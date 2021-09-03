@@ -97,19 +97,39 @@ class GroupConfigTest(TestCase):
         group = self.create_group('group', self.cluster.id, 'cluster')
         config = {'level1_1': 'str', 'level1_2': 1, 'level1_3': {'level2_1': [1, 2, 3]}}
         utils.gen_prototype_config(
-            prototype=self.cluster.prototype, name='level1_1', field_type='string'
+            prototype=self.cluster.prototype,
+            name='level1_1',
+            field_type='string',
+            group_customization=True,
         )
         utils.gen_prototype_config(
-            prototype=self.cluster.prototype, name='level1_2', field_type='integer'
+            prototype=self.cluster.prototype,
+            name='level1_2',
+            field_type='integer',
+            group_customization=False,
         )
         utils.gen_prototype_config(
-            prototype=self.cluster.prototype, name='level1_3', field_type='group'
+            prototype=self.cluster.prototype,
+            name='level1_3',
+            field_type='group',
+            group_customization=False,
         )
         utils.gen_prototype_config(
-            prototype=self.cluster.prototype, name='level1_3', subname='level2_1', field_type='list'
+            prototype=self.cluster.prototype,
+            name='level1_3',
+            subname='level2_1',
+            field_type='list',
+            group_customization=True,
         )
-        group_keys = {'level1_1': False, 'level1_2': False, 'level1_3': {'level2_1': False}}
-        self.assertDictEqual(group.create_group_keys(config, group.get_config_spec()), group_keys)
+        test_group_keys = {'level1_1': False, 'level1_2': False, 'level1_3': {'level2_1': False}}
+        test_custom_group_keys = {
+            'level1_1': True,
+            'level1_2': False,
+            'level1_3': {'level2_1': True},
+        }
+        group_keys, custom_group_keys = group.create_group_keys(config, group.get_config_spec())
+        self.assertDictEqual(test_group_keys, group_keys)
+        self.assertDictEqual(test_custom_group_keys, custom_group_keys)
 
     def test_update_parent_config(self):
         """Test update config group"""

@@ -242,6 +242,7 @@ config_dict_sub_common: &config_dict_sub_common
     display_name: string
     description: string_or_none
     ui_options: json
+    group_customization: boolean
   required_items: &config_dict_sub_required
     - type
 

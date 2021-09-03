@@ -462,6 +462,7 @@ def save_prototype_config(
         dict_to_obj(conf, 'display_name', sc)
         dict_to_obj(conf, 'required', sc)
         dict_to_obj(conf, 'ui_options', sc)
+        dict_to_obj(conf, 'group_customization', sc)
         conf['limits'] = process_limits(conf, name, subname)
         dict_to_obj(conf, 'limits', sc)
         if 'display_name' not in conf:
