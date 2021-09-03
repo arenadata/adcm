@@ -195,7 +195,7 @@ class TestTaskHeaderPopup:
         ids=["all_jobs", 'in_progress_jobs', 'success_jobs', 'failed_jobs'],
     )
     def test_link_to_jobs_in_header_popup(self, login_to_adcm_over_api, app_fs, job_link, filter):
-        """Link to /task from popup with all filter"""
+        """Link to /task from popup with filter"""
 
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         cluster_page.header.click_job_block_in_header()
@@ -207,9 +207,14 @@ class TestTaskHeaderPopup:
 
     def test_acknowledge_jobs_in_header_popup(self, cluster: Cluster, page: JobListPage):
         """Run action and click acknowledge in header popup"""
-
+        with allure.step('Run action in cluster'):
+            action = cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME)
+            run_cluster_action_and_assert_result(cluster, action.name, status='success')
         page.header.click_job_block_in_header()
-        page.header
+        page.header.click_acknowledge_btn_in_job_popup()
+        page.header.check_no_jobs_presented()
+
+        assert page.header.get_jobs_circle_color() == "background: transparent;", "Bell circle should be without color"
 
     @pytest.mark.parametrize(
         'job_info',

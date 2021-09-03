@@ -517,9 +517,16 @@ class PageHeader(BasePageObject):
         self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
         self.find_and_click(AuthorizedHeaderLocators.JobPopup.failed_jobs)
 
-    def click_failed_jobs_in_job_popup(self):
+    def click_acknowledge_btn_in_job_popup(self):
         self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
-        self.find_and_click(AuthorizedHeaderLocators.JobPopup.ac)
+        self.find_and_click(AuthorizedHeaderLocators.JobPopup.acknowledge_btn)
+
+    def get_jobs_circle_color(self):
+        return self.find_element(AuthorizedHeaderLocators.bell_icon).get_attribute("style")
+
+    @allure.step("Check that job list is empty")
+    def check_no_jobs_presented(self):
+        assert ("Nothing to display" in self.find_element(AuthorizedHeaderLocators.empty_text).text), "There should be message 'Nothing to display'"
 
 
 class PageFooter(BasePageObject):

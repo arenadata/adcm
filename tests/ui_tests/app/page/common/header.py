@@ -35,6 +35,7 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
     job_block_previous = Locator(By.XPATH, "//app-bell/div", "Header jobs block previous version")
     job_block = Locator(By.CLASS_NAME, "job-status", "Header jobs block")
     job_popup = Locator(By.XPATH, "//app-popover", "Header jobs pop up")
+    bell_icon = Locator(By.CSS_SELECTOR, "div.circle", "Bell icon")
 
     in_progress_job_button = Locator(
         By.XPATH,
@@ -48,6 +49,7 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
     help_button = Locator(By.XPATH, "//button[@adcm_test='help']", "Header button for help")
     account_button = Locator(By.XPATH, "//button[@adcm_test='account']", "Header button for account settings")
     popup_block = Locator(By.XPATH, "//div[contains(@class, 'mat-menu-content')]", "Header popup block")
+    empty_text = Locator(By.CSS_SELECTOR, "app-notifications *.empty-label", "Text in popup")
 
     class JobPopup:
         """ADCM header popup with jobs"""
@@ -63,6 +65,7 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
         job_name = Locator(By.XPATH, "./a", "Job name in job row")
 
         show_all_link = Locator(By.CSS_SELECTOR, "app-popover a[href='/task']", "Link to task page")
+        acknowledge_btn = Locator(By.CSS_SELECTOR, "a.acknowledge", "Acknowledge button")
 
     class HelpPopup:
         """ADCM header popup with help links"""
