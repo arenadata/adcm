@@ -128,3 +128,8 @@ class JobListPage(BasePageObject):
             if status.value in class_string:
                 return status
         raise KeyError('Job status not found in class string: %s' % str(class_string))
+
+    def get_selected_filter(self):
+        for filter_element in self.find_elements(TaskListLocators.Filter.filter_btn):
+            if filter_element.get_attribute("aria-pressed") == "true":
+                return filter_element.text

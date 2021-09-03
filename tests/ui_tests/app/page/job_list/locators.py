@@ -11,12 +11,16 @@
 # limitations under the License.
 from selenium.webdriver.common.by import By
 
-from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.helpers.locator import (
+    Locator,
+    TemplateLocator,
+)
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 
 
 class TaskListLocators:
     class Filter:
+        filter_btn = Locator(By.CSS_SELECTOR, "mat-button-toggle button", "Filter button")
         all = Locator(By.XPATH, "//mat-button-toggle[@value='']/button", "All jobs filter button")
         running = Locator(By.XPATH, "//mat-button-toggle[@value='running']/button", "Running filter button")
         success = Locator(By.XPATH, "//mat-button-toggle[@value='success']/button", "Success filter button")

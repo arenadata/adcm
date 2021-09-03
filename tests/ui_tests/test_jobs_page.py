@@ -191,7 +191,9 @@ class TestTaskHeaderPopup:
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         cluster_page.header.click_job_block_in_header()
         cluster_page.header.click_all_link_in_job_popup()
-        JobListPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
+        job_page = JobListPage(app_fs.driver, app_fs.adcm.url)
+        job_page.wait_page_is_opened()
+        assert job_page.get_selected_filter() == "All", "Jobs should be filtered by All"
 
     def test_link_to_in_progress_jobs_on_task_page(self, login_to_adcm_over_api, app_fs):
         """Link to /task from popup with in_progress filter"""
@@ -199,7 +201,9 @@ class TestTaskHeaderPopup:
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         cluster_page.header.click_job_block_in_header()
         cluster_page.header.click_in_progress_in_job_popup()
-        JobListPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
+        job_page = JobListPage(app_fs.driver, app_fs.adcm.url)
+        job_page.wait_page_is_opened()
+        assert job_page.get_selected_filter() == "In progress", "Jobs should be filtered by In progress"
 
     def test_link_to_success_jobs_on_task_page(self, login_to_adcm_over_api, app_fs):
         """Link to /task from popup with success filter"""
@@ -207,7 +211,9 @@ class TestTaskHeaderPopup:
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         cluster_page.header.click_job_block_in_header()
         cluster_page.header.click_success_jobs_in_job_popup()
-        JobListPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
+        job_page = JobListPage(app_fs.driver, app_fs.adcm.url)
+        job_page.wait_page_is_opened()
+        assert job_page.get_selected_filter() == "Success", "Jobs should be filtered by Success"
 
     def test_link_to_failed_jobs_on_task_page(self, login_to_adcm_over_api, app_fs):
         """Link to /task from popup with failed filter"""
@@ -215,7 +221,9 @@ class TestTaskHeaderPopup:
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         cluster_page.header.click_job_block_in_header()
         cluster_page.header.click_failed_jobs_in_job_popup()
-        JobListPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
+        job_page = JobListPage(app_fs.driver, app_fs.adcm.url)
+        job_page.wait_page_is_opened()
+        assert job_page.get_selected_filter() == "Failed", "Jobs should be filtered by Failed"
 
     def test_acknowledge_jobs_in_header_popup(self, cluster: Cluster, page: JobListPage):
         """Run action and click acknowledge in header popup"""

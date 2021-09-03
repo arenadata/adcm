@@ -51,6 +51,7 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
 
     class JobPopup:
         """ADCM header popup with jobs"""
+        block = Locator(By.CSS_SELECTOR, "app-popover", "Popup block with jobs")
 
         success_jobs = Locator(By.XPATH, "//div[@mattooltip='Show success jobs']", "Success jobs")
         in_progress_jobs = Locator(By.XPATH, "//div[@mattooltip='Show jobs in progress']", "In progress jobs")
@@ -59,6 +60,8 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
         job_row = Locator(By.XPATH, "//div/div[contains(@class, 'notification')]", "Job row in popup list")
         job_status = Locator(By.XPATH, "./mat-icon", "Job status in job row")
         job_name = Locator(By.XPATH, "./a", "Job name in job row")
+
+        show_all_link = Locator(By.CSS_SELECTOR, "app-popover a[href='/task']", "Link to task page")
 
     class HelpPopup:
         """ADCM header popup with help links"""
