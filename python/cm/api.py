@@ -52,6 +52,7 @@ from cm.models import (
     ClusterBind,
     DummyData,
     Role,
+    GroupConfig,
 )
 
 
@@ -59,6 +60,49 @@ def check_proto_type(proto, check_type):
     if proto.type != check_type:
         msg = 'Prototype type should be {}, not {}'
         err('OBJ_TYPE_ERROR', msg.format(check_type, proto.type))
+
+
+def load_service_map():
+    comps = {}
+    hosts = {}
+    hc_map = {}
+    services = {}
+    passive = {}
+    for c in ServiceComponent.objects.filter(prototype__monitoring='passive'):
+        passive[c.id] = True
+
+    for hc in HostComponent.objects.all():
+        if hc.component.id in passive:
+            continue
+        key = '{}.{}'.format(hc.host.id, hc.component.id)
+        hc_map[key] = {'cluster': hc.cluster.id, 'service': hc.service.id}
+        if str(hc.cluster.id) not in comps:
+            comps[str(hc.cluster.id)] = {}
+        if str(hc.service.id) not in comps[str(hc.cluster.id)]:
+            comps[str(hc.cluster.id)][str(hc.service.id)] = []
+        comps[str(hc.cluster.id)][str(hc.service.id)].append(key)
+
+    for host in Host.objects.filter(prototype__monitoring='active'):
+        if host.cluster:
+            cluster_id = host.cluster.id
+        else:
+            cluster_id = 0
+        if cluster_id not in hosts:
+            hosts[cluster_id] = []
+        hosts[cluster_id].append(host.id)
+
+    for co in ClusterObject.objects.filter(prototype__monitoring='active'):
+        if co.cluster.id not in services:
+            services[co.cluster.id] = []
+        services[co.cluster.id].append(co.id)
+
+    m = {
+        'hostservice': hc_map,
+        'component': comps,
+        'service': services,
+        'host': hosts,
+    }
+    return cm.status_api.api_post('/servicemap/', m)
 
 
 def add_cluster(proto, name, desc=''):
@@ -72,7 +116,7 @@ def add_cluster(proto, name, desc=''):
         process_file_type(cluster, spec, conf)
         cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.post_event('create', 'cluster', cluster.id)
-    cm.status_api.load_service_map()
+    load_service_map()
     log.info(f'cluster #{cluster.id} {cluster.name} is added')
     return cluster
 
@@ -98,7 +142,7 @@ def add_host(proto, provider, fqdn, desc='', lock=False):
         cm.issue.update_hierarchy_issues(host)
     event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
-    cm.status_api.load_service_map()
+    load_service_map()
     log.info(f'host #{host.id} {host.fqdn} is added')
     return host
 
@@ -152,7 +196,7 @@ def add_host_to_cluster(cluster, host):
         host.save()
         cm.issue.update_hierarchy_issues(host)
     cm.status_api.post_event('add', 'host', host.id, 'cluster', str(cluster.id))
-    cm.status_api.load_service_map()
+    load_service_map()
     log.info('host #%s %s is added to cluster #%s %s', host.id, host.fqdn, cluster.id, cluster.name)
     return host
 
@@ -200,7 +244,7 @@ def delete_host(host):
     host_id = host.id
     host.delete()
     cm.status_api.post_event('delete', 'host', host_id)
-    cm.status_api.load_service_map()
+    load_service_map()
     log.info(f'host #{host_id} is deleted')
 
 
@@ -268,7 +312,7 @@ def delete_service(service):
     service_id = service.id
     service.delete()
     cm.status_api.post_event('delete', 'service', service_id)
-    cm.status_api.load_service_map()
+    load_service_map()
     log.info(f'service #{service_id} is deleted')
 
 
@@ -276,7 +320,7 @@ def delete_cluster(cluster):
     cluster_id = cluster.id
     cluster.delete()
     cm.status_api.post_event('delete', 'cluster', cluster_id)
-    cm.status_api.load_service_map()
+    load_service_map()
 
 
 def remove_host_from_cluster(host):
@@ -289,7 +333,7 @@ def remove_host_from_cluster(host):
         host.save()
         cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.post_event('remove', 'host', host.id, 'cluster', str(cluster.id))
-    cm.status_api.load_service_map()
+    load_service_map()
     return host
 
 
@@ -327,7 +371,7 @@ def add_service_to_cluster(cluster, proto):
         process_file_type(cs, spec, conf)
         cm.issue.update_hierarchy_issues(cs)
     cm.status_api.post_event('add', 'service', cs.id, 'cluster', str(cluster.id))
-    cm.status_api.load_service_map()
+    load_service_map()
     log.info(
         f'service #{cs.id} {cs.prototype.name} is added to cluster #{cluster.id} {cluster.name}'
     )
@@ -432,26 +476,12 @@ def accept_license(bundle):
 def update_obj_config(obj_conf, conf, attr, desc=''):
     if not isinstance(attr, dict):
         err('INVALID_CONFIG_UPDATE', 'attr should be a map')
-    if hasattr(obj_conf, 'adcm'):
-        obj = obj_conf.adcm
-        proto = obj_conf.adcm.prototype
-    elif hasattr(obj_conf, 'clusterobject'):
-        obj = obj_conf.clusterobject
-        proto = obj_conf.clusterobject.prototype
-    elif hasattr(obj_conf, 'servicecomponent'):
-        obj = obj_conf.servicecomponent
-        proto = obj_conf.servicecomponent.prototype
-    elif hasattr(obj_conf, 'cluster'):
-        obj = obj_conf.cluster
-        proto = obj_conf.cluster.prototype
-    elif hasattr(obj_conf, 'host'):
-        obj = obj_conf.host
-        proto = obj_conf.host.prototype
-    elif hasattr(obj_conf, 'hostprovider'):
-        obj = obj_conf.hostprovider
-        proto = obj_conf.hostprovider.prototype
-    else:
+    obj = obj_conf.object
+    if obj is None:
         err('INVALID_CONFIG_UPDATE', 'unknown object type "{}"'.format(obj_conf))
+    if isinstance(obj, GroupConfig):
+        obj = obj.object
+    proto = obj.prototype
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
     if not attr:
         if old_conf.attr:
@@ -566,7 +596,7 @@ def save_hc(cluster, host_comp_list):
     event.send_state()
     cm.status_api.post_event('change_hostcomponentmap', 'cluster', cluster.id)
     cm.issue.update_hierarchy_issues(cluster)
-    cm.status_api.load_service_map()
+    load_service_map()
     return result
 
 

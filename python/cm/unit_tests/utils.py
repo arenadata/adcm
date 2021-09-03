@@ -35,6 +35,13 @@ def gen_prototype(bundle: models.Bundle, proto_type):
     )
 
 
+def gen_prototype_config(prototype: models.Prototype, name: str, field_type: str, **kwargs):
+    """Generate prototype for config field"""
+    return models.PrototypeConfig.objects.create(
+        prototype=prototype, name=name, type=field_type, **kwargs
+    )
+
+
 def gen_adcm():
     """Generate or return existing the only ADCM object"""
     try:
@@ -117,3 +124,16 @@ def gen_host_component(component, host):
         service=component.service,
         component=component,
     )
+
+
+def gen_config(config: dict = None, attr: dict = None):
+    """Generate config, creating `ObjectConfig` object and `ConfigLog` object"""
+    if config is None:
+        config = {}
+    if attr is None:
+        attr = {}
+    oc = models.ObjectConfig.objects.create(current=0, previous=0)
+    cl = models.ConfigLog.objects.create(obj_ref=oc, description='init', config=config, attr=attr)
+    oc.current = cl.id
+    oc.save()
+    return oc

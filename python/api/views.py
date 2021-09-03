@@ -10,13 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import rest_framework
 import django.contrib.auth
-
+import rest_framework
 from rest_framework import routers, status
+from rest_framework import viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 import api.serializers
 import cm.api
@@ -40,6 +41,9 @@ class APIRoot(routers.APIRootView):
         'host': 'host',
         'service': 'service',
         'component': 'component',
+        'group-config': 'group-config-list',
+        'config': 'config-list',
+        'config-log': 'config-log-list',
         'job': 'job',
         'stack': 'stack',
         'stats': 'stats',
@@ -97,12 +101,20 @@ class LogOut(GenericAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ADCMInfo(GenericAPIView):
+class ADCMInfo(APIView):
     permission_classes = (rest_framework.permissions.AllowAny,)
-    serializer_class = api.serializers.EmptySerializer
 
     def get(self, request):
         """
         General info about ADCM
         """
         return Response({'adcm_version': ADCM_VERSION, 'google_oauth': cm.api.has_google_oauth()})
+
+
+class ViewInterfaceGenericViewSet(viewsets.GenericViewSet):
+    def get_serializer_class(self):
+        view = self.request.query_params.get('view', None)
+        if view == 'interface':
+            return self.ui_serializer_class
+        else:
+            return self.serializer_class

@@ -20,6 +20,8 @@ $gutter-width: 1.5rem !default;
 $element-top-margin: $gutter-width/3 !default;
 $element-bottom-margin: ($gutter-width*2)/3 !default;
 
+$spacer: 1rem !default;
+
 @import "./assets/scss/grid";
 
 body {
@@ -74,10 +76,10 @@ mat-toolbar.toolbar {
 }
 
 mat-form-field textarea {
-  background-color: #cccccc!important;
-  color: #333!important;
+  background-color: #cccccc !important;
+  color: #333 !important;
   min-height: 100px;
-  padding: 8px!important;
+  padding: 8px !important;
   box-sizing: border-box;
 }
 
@@ -89,11 +91,11 @@ mat-form-field textarea {
 }
 
 .noflex,
-.noflex>.mat-list-item-content {
+.noflex > .mat-list-item-content {
   display: block !important;
 }
 
-mat-checkbox.advanced>label>span {
+mat-checkbox.advanced > label > span {
   border-bottom: dotted 1px #00e676;
   line-height: 20px !important;
 }
@@ -226,7 +228,7 @@ mat-cell.control {
 }
 
 .mat-expansion-panel {
-  box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.6), 0px 2px 2px 0px rgba(2, 2, 2, 0.8), 0px 1px 5px 0px rgba(10, 10, 10, 0.9) !important;
+  box-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.6), 0px 2px 2px 0px rgba(2, 2, 2, 0.8), 0px 1px 5px 0px rgba(10, 10, 10, 0.9) !important;
 
   &.panel {
     margin: 6px 0;
@@ -295,11 +297,11 @@ mat-cell.control {
   box-shadow: 0 14px 28px rgba(41, 41, 41, 0.25), 0 10px 10px rgba(29, 29, 29, 0.22);
 }
 
-.alone>.field-group {
+.alone > .field-group {
   margin: 0 24px;
 }
 
-.alone>.read-only {
+.alone > .read-only {
   margin: 0 14px !important;
 }
 
@@ -343,7 +345,7 @@ mat-cell.control {
 }
 
 .material-icons {
-  font-family: 'Material Icons';
+  font-family: 'Material Icons', serif;
   font-weight: normal;
   font-style: normal;
   font-size: 24px;
@@ -392,8 +394,24 @@ mat-cell.control {
   padding: 8px 14px;
   background-color: #37474F;
   border-radius: 5px;
-  box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2),
+  box-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2),
   0px 2px 2px 0px rgba(0, 0, 0, 0.14),
   0px 1px 5px 0px rgba(0, 0, 0, 0.12);
   z-index: 1100;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.flex-row {
+  flex-direction: row;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.w100 {
+  width: 100%;
 }

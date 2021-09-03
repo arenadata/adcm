@@ -30,6 +30,11 @@ import { SharedModule } from './shared/shared.module';
 import { LogComponent } from './ws-logs/log.component';
 import { appInitializer, translateLoader } from '@app/shared/translate/intializer';
 import { AppRoutingModule } from '@app/app-routing.module';
+import { ListService } from '@app/shared/components/list/list.service';
+import { LIST_SERVICE_PROVIDER } from '@app/shared/components/list/list-service-token';
+import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
+import { AddService } from '@app/shared/add-component/add.service';
+import { CONFIG_GROUP_LIST_SERVICE, ConfigGroupListService } from '@app/config-groups';
 
 @NgModule({
   declarations: [
@@ -70,7 +75,20 @@ import { AppRoutingModule } from '@app/app-routing.module';
       useFactory: appInitializer,
       deps: [TranslateService, Injector],
       multi: true
+    },
+    {
+      provide: LIST_SERVICE_PROVIDER,
+      useClass: ListService
+    },
+    {
+      provide: ADD_SERVICE_PROVIDER,
+      useClass: AddService
+    },
+    {
+      provide: CONFIG_GROUP_LIST_SERVICE,
+      useClass: ConfigGroupListService
     }
   ],
 })
-export class AppModule {}
+export class AppModule {
+}

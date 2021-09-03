@@ -16,22 +16,21 @@ from rest_framework import serializers
 import cm.api
 import cm.job
 import cm.status_api
-from cm.logger import log  # pylint: disable=unused-import
+from api.action.serializers import ActionShort
+from api.api_views import (
+    UrlField,
+    CommonAPIURL,
+    ObjectURL,
+    check_obj,
+    hlink,
+    filter_actions,
+    get_upgradable_func,
+)
+from api.component.serializers import ComponentDetailSerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.host.serializers import HostSerializer
 from cm.errors import AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
-
-from api.api_views import check_obj, hlink, filter_actions, get_upgradable_func
-from api.api_views import UrlField, CommonAPIURL, ObjectURL
-from api.action.serializers import ActionShort
-from api.component.serializers import ComponentDetailSerializer
-from api.host.serializers import HostSerializer
-
-
-def get_cluster_id(obj):
-    if hasattr(obj.obj_ref, 'clusterobject'):
-        return obj.obj_ref.clusterobject.cluster.id
-    else:
-        return obj.obj_ref.cluster.id
 
 
 class ClusterSerializer(serializers.Serializer):
@@ -84,6 +83,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     imports = hlink('cluster-import', 'id', 'cluster_id')
     bind = hlink('cluster-bind', 'id', 'cluster_id')
     prototype = hlink('cluster-type-details', 'prototype_id', 'prototype_id')
+    group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
     def get_issue(self, obj):
         return cm.issue.aggregate_issues(obj)
@@ -244,11 +244,11 @@ class HCComponentSerializer(ComponentDetailSerializer):
 
         process_requires(obj.requires)
         out = []
-        for service_name, value in comp_list.items():
+        for service_name, params in comp_list.items():
             comp_out = []
-            service = value['service']
-            for comp_name in value['components']:
-                comp = value['components'][comp_name]
+            service = params['service']
+            for comp_name in params['components']:
+                comp = params['components'][comp_name]
                 comp_out.append(
                     {
                         'prototype_id': comp.id,

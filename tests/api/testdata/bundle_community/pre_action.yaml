@@ -1,0 +1,8 @@
+- name: Dummy pre action
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Pre action
+      debug:
+        msg: "Pre action success"
