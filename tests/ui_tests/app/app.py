@@ -122,10 +122,18 @@ class ADCMTest:
 
     def _configure_downloads(self, browser: str, downloads_directory: os.PathLike):
         if browser == "Chrome":
-            self.opts.add_experimental_option("prefs", {"download.default_directory": str(downloads_directory)})
+            self.opts.add_experimental_option(
+                "prefs",
+                {
+                    "download.default_directory": '/home/selenium/Downloads'
+                    if self.selenoid['host']
+                    else str(downloads_directory)
+                },
+            )
         else:
-            # do not use default download directory
-            self.opts.set_preference("browser.download.folderList", 2)
-            self.opts.set_preference("browser.download.dir", str(downloads_directory))
+            if not self.selenoid['host']:
+                # do not use default download directory
+                self.opts.set_preference("browser.download.folderList", 2)
+                self.opts.set_preference("browser.download.dir", str(downloads_directory))
             # allow documents to be saved without asking what to do
             self.opts.set_preference("browser.helperApps.neverAsk.saveToDisk", "text/plain")
