@@ -645,11 +645,8 @@ class TestClusterConfigPage:
         with allure.step("Check that rows are not filtered"):
             config_rows = cluster_config_page.config.get_all_config_rows()
             assert len(config_rows) == 4, "Rows are filtered: there should be 4 row"
-        with cluster_config_page.config.wait_rows_change():
+        with cluster_config_page.config.wait_rows_change(amount_to_change=2):
             cluster_config_page.config.click_on_group(params["group_name"])
-        with allure.step("Check that groups are closed"):
-            config_rows = cluster_config_page.config.get_all_config_rows()
-            assert len(config_rows) == 2, "Groups are not closed: there should be 2 row"
 
     def test_save_custom_config_on_cluster_config_page(self, app_fs, create_community_cluster):
         params = {

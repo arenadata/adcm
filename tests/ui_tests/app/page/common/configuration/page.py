@@ -234,14 +234,17 @@ class CommonConfigMenuObj(BasePageObject):
         assert len(visible_fields) == 0, f"Those fields should be visible: {visible_fields}"
 
     @contextmanager
-    def wait_rows_change(self):
+    def wait_rows_change(self, amount_to_change: Optional[int] = None):
         """Wait changing rows amount."""
 
-        current_amount = len(self.get_all_config_rows())
+        amount_before = len(self.get_all_config_rows())
         yield
 
         def wait_changing_rows_amount():
-            assert len(self.get_all_config_rows()) != current_amount, "Amount of rows on the page hasn't changed"
+            amount_after = len(self.get_all_config_rows())
+            assert amount_after != amount_before, "Amount of rows on the page hasn't changed"
+            if amount_to_change:
+                assert amount_after == amount_to_change, f"Amount of rows on the page should be {amount_to_change}"
 
         wait_until_step_succeeds(wait_changing_rows_amount, period=1, timeout=10)
 
