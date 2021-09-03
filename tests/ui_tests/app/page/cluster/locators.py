@@ -117,9 +117,7 @@ class ClusterStatusLocators:
         service_group = Locator(By.CSS_SELECTOR, "div[class*='mat-expansion-panel-content']", "Service group")
 
         class ServiceGroupRow:
-            service_name = Locator(
-                By.CSS_SELECTOR, "div[class]:not(div[class*='component'])>div>span>span", "Service name"
-            )
+            service_name = Locator(By.XPATH, ".//div[not(contains(@class, 'component'))]/span", "Service name")
             host_name = Locator(By.CSS_SELECTOR, "div[class*='component']>span>span", "Host name")
 
 

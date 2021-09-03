@@ -481,11 +481,12 @@ class ClusterStatusPage(ClusterPageMixin):
     def get_config_group_info(self, row: WebElement):
         components_items = list()
         self.wait_group_opened(row)
-        self.wait_element_visible(ClusterStatusLocators.GroupRow.ServiceGroupRow.service_name)
         for item in self.find_children(row, ClusterStatusLocators.GroupRow.service_group):
             components_items.append(
                 StatusGroupInfo(
-                    service=self.find_child(item, ClusterStatusLocators.GroupRow.ServiceGroupRow.service_name).text,
+                    service=self.find_child(
+                        item, ClusterStatusLocators.GroupRow.ServiceGroupRow.service_name
+                    ).text.split("\n")[0],
                     hosts=[
                         h.text
                         for h in self.find_children(item, ClusterStatusLocators.GroupRow.ServiceGroupRow.host_name)
