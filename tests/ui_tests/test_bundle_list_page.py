@@ -158,6 +158,7 @@ def test_two_bundles(create_bundle_archives: List[str], page: BundleListPage):
 
 
 @allure.issue("https://arenadata.atlassian.net/browse/ADCM-2010")
+@pytest.mark.skip(reason="Not worked using selenoid https://github.com/aerokube/selenoid/issues/844")
 @pytest.mark.parametrize(
     "create_bundle_archives", [([CLUSTER_CE_CONFIG, CLUSTER_EE_CONFIG], LICENSE_FP)], indirect=True
 )
