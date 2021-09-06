@@ -67,6 +67,10 @@ class GroupConfigTest(TestCase):
         cl_attr = {
             'activatable_group': {'active': True},
             'group_keys': {'group': {'string': False}, 'activatable_group': {'integer': False}},
+            'custom_group_keys': {
+                'group': {'string': False},
+                'activatable_group': {'integer': False},
+            },
         }
         self.assertDictEqual(cl.attr, cl_attr)
 
@@ -87,8 +91,26 @@ class GroupConfigTest(TestCase):
         """Test get_config_spec() method"""
         group = self.create_group('group', self.cluster.id, 'cluster')
         spec = {
-            'group': {'type': 'group', 'fields': {'string': {'type': 'string'}}},
-            'activatable_group': {'type': 'group', 'fields': {'integer': {'type': 'integer'}}},
+            'group': {
+                'type': 'group',
+                'group_customization': False,
+                'fields': {
+                    'string': {
+                        'type': 'string',
+                        'group_customization': False,
+                    }
+                },
+            },
+            'activatable_group': {
+                'type': 'group',
+                'group_customization': False,
+                'fields': {
+                    'integer': {
+                        'type': 'integer',
+                        'group_customization': False,
+                    }
+                },
+            },
         }
         self.assertDictEqual(group.get_config_spec(), spec)
 
@@ -165,5 +187,9 @@ class GroupConfigTest(TestCase):
             {
                 'activatable_group': {'active': True},
                 'group_keys': {'group': {'string': True}, 'activatable_group': {'integer': False}},
+                'custom_group_keys': {
+                    'group': {'string': False},
+                    'activatable_group': {'integer': False},
+                },
             },
         )
