@@ -150,8 +150,7 @@ class DbFiller:
                     endpoint=Endpoints.get_by_data_class(field.f_type.fk_link), force=force
                 )
             return self._choose_fk_field_value(field=field, fk_data=fk_data)
-        else:
-            return self._generate_field_value(field=field)
+        return self._generate_field_value(field=field)
 
     def _solve_field_relations(self, endpoint: Endpoints, data: dict, field: Field, force=False):
         """

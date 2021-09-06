@@ -21,10 +21,9 @@ def get_endpoint_data(adcm: ADCMTestApiWrapper, endpoint: Endpoints) -> list:
     )
     if isinstance(res.json(), list):
         return res.json()
-    else:
-        # New endpoints always return a response with pagination.
-        # In the future all endpoints will return that
-        return res.json().get("results")
+    # New endpoints always return a response with pagination.
+    # In the future all endpoints will return that
+    return res.json().get("results")
 
 
 def get_object_data(adcm: ADCMTestApiWrapper, endpoint: Endpoints, object_id: int) -> dict:

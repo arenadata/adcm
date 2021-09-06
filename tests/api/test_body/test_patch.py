@@ -6,6 +6,7 @@ from typing import List
 import allure
 import pytest
 
+from tests.api.test_body import _test_patch_put_body_positive
 from tests.api.testdata.generators import (
     get_positive_data_for_patch_body_check,
     get_negative_data_for_patch_body_check,
@@ -13,8 +14,7 @@ from tests.api.testdata.generators import (
     TestDataWithPreparedBody,
 )
 from tests.api.testdata.db_filler import DbFiller
-from tests.api.utils.api_objects import ADCMTestApiWrapper, ExpectedBody
-from tests.api.utils.tools import not_set
+from tests.api.utils.api_objects import ADCMTestApiWrapper
 
 from tests.api.utils.types import get_fields
 from tests.api.utils.methods import Methods
@@ -66,16 +66,7 @@ def test_patch_body_positive(prepare_patch_body_data):
     Positive cases of PATCH request body testing
     Includes sets of correct field values - boundary values, nullable if possible.
     """
-    adcm, test_data_list = prepare_patch_body_data
-    for test_data in test_data_list:
-        # Set expected response fields
-        test_data.response.body = ExpectedBody()
-        for field in get_fields(test_data.request.endpoint.data_class):
-            test_data.response.body.fields[field.name] = not_set
-            if expected_field_value := test_data.request.data.get(field.name):
-                test_data.response.body.fields[field.name] = expected_field_value
-        with allure.step(f'Assert - {test_data.description}'):
-            adcm.exec_request(request=test_data.request, expected_response=test_data.response)
+    _test_patch_put_body_positive(prepare_patch_body_data)
 
 
 @pytest.mark.parametrize(
