@@ -40,15 +40,13 @@ def prepare_patch_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
     for test_data_with_prepared_values in test_data_list:
         test_data, prepared_field_values = deepcopy(test_data_with_prepared_values)
         for field in get_fields(test_data.request.endpoint.data_class):
-            if (field.name in prepared_field_values) and not prepared_field_values[
-                field.name
-            ].drop_key:
+            if (field.name in prepared_field_values) and not prepared_field_values[field.name].drop_key:
                 current_field_value = full_item[field.name]
                 if prepared_field_values[field.name].unchanged_value is False:
                     changed_field_value = changed_fields.get(field.name, None)
-                    test_data.request.data[field.name] = prepared_field_values[
-                        field.name
-                    ].return_value(dbfiller, current_field_value, changed_field_value)
+                    test_data.request.data[field.name] = prepared_field_values[field.name].return_value(
+                        dbfiller, current_field_value, changed_field_value
+                    )
                 else:
                     test_data.request.data[field.name] = current_field_value
 
@@ -58,9 +56,7 @@ def prepare_patch_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
     return adcm_api_fs, final_test_data_list
 
 
-@pytest.mark.parametrize(
-    "prepare_patch_body_data", get_positive_data_for_patch_body_check(), indirect=True
-)
+@pytest.mark.parametrize("prepare_patch_body_data", get_positive_data_for_patch_body_check(), indirect=True)
 def test_patch_body_positive(prepare_patch_body_data):
     """
     Positive cases of PATCH request body testing
@@ -69,9 +65,7 @@ def test_patch_body_positive(prepare_patch_body_data):
     _test_patch_put_body_positive(prepare_patch_body_data)
 
 
-@pytest.mark.parametrize(
-    "prepare_patch_body_data", get_negative_data_for_patch_body_check(), indirect=True
-)
+@pytest.mark.parametrize("prepare_patch_body_data", get_negative_data_for_patch_body_check(), indirect=True)
 def test_patch_body_negative(prepare_patch_body_data, flexible_assert_step):
     """
     Negative cases of PATCH request body testing

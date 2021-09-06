@@ -373,11 +373,7 @@ def get_fields(data_class: type, predicate: Callable = None) -> List[Field]:
 
     if predicate is None:
         predicate = dummy_predicate
-    return [
-        value
-        for (key, value) in data_class.__dict__.items()
-        if isinstance(value, Field) and predicate(value)
-    ]
+    return [value for (key, value) in data_class.__dict__.items() if isinstance(value, Field) and predicate(value)]
 
 
 def is_fk_field(field: Field) -> bool:

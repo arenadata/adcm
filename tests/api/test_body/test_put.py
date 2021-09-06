@@ -46,9 +46,9 @@ def prepare_put_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
                     if prepared_field_values[field.name].unchanged_value is False:
                         current_field_value = full_item[field.name]
                         changed_field_value = changed_fields.get(field.name, None)
-                        test_data.request.data[field.name] = prepared_field_values[
-                            field.name
-                        ].return_value(dbfiller, current_field_value, changed_field_value)
+                        test_data.request.data[field.name] = prepared_field_values[field.name].return_value(
+                            dbfiller, current_field_value, changed_field_value
+                        )
 
                 else:
                     if field.name in test_data.request.data:
@@ -66,9 +66,7 @@ def prepare_put_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
     return adcm_api_fs, final_test_data_list
 
 
-@pytest.mark.parametrize(
-    "prepare_put_body_data", get_positive_data_for_put_body_check(), indirect=True
-)
+@pytest.mark.parametrize("prepare_put_body_data", get_positive_data_for_put_body_check(), indirect=True)
 def test_put_body_positive(prepare_put_body_data):
     """
     Positive cases of PUT request body testing
@@ -77,9 +75,7 @@ def test_put_body_positive(prepare_put_body_data):
     _test_patch_put_body_positive(prepare_put_body_data)
 
 
-@pytest.mark.parametrize(
-    "prepare_put_body_data", get_negative_data_for_put_body_check(), indirect=True
-)
+@pytest.mark.parametrize("prepare_put_body_data", get_negative_data_for_put_body_check(), indirect=True)
 @allure.issue(
     name="Error message changing non-changeable fields",
     url="https://arenadata.atlassian.net/browse/ADSS-186",

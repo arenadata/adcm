@@ -45,9 +45,9 @@ def prepare_post_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
                     valid_field_value = None
                     if field.name in test_data.request.data:
                         valid_field_value = test_data.request.data[field.name]
-                    test_data.request.data[field.name] = prepared_field_values[
-                        field.name
-                    ].return_value(valid_field_value)
+                    test_data.request.data[field.name] = prepared_field_values[field.name].return_value(
+                        valid_field_value
+                    )
 
                 else:
                     if field.name in test_data.request.data:
@@ -57,9 +57,7 @@ def prepare_post_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
     return adcm_api_fs, final_test_data_list
 
 
-@pytest.mark.parametrize(
-    "prepare_post_body_data", get_positive_data_for_post_body_check(), indirect=True
-)
+@pytest.mark.parametrize("prepare_post_body_data", get_positive_data_for_post_body_check(), indirect=True)
 def test_post_body_positive(prepare_post_body_data):
     """
     Positive cases of request body testing
@@ -77,9 +75,7 @@ def test_post_body_positive(prepare_post_body_data):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)
 
 
-@pytest.mark.parametrize(
-    "prepare_post_body_data", get_negative_data_for_post_body_check(), indirect=True
-)
+@pytest.mark.parametrize("prepare_post_body_data", get_negative_data_for_post_body_check(), indirect=True)
 def test_post_body_negative(prepare_post_body_data, flexible_assert_step):
     """
     Negative cases of request body testing

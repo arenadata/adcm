@@ -94,9 +94,7 @@ class Endpoints(Enum):
                 try:
                     return self.get_by_data_class(field.f_type.fk_link)
                 except AttributeError:
-                    raise ValueError(
-                        f"Field {field_name} must be a Foreign Key field type"
-                    ) from AttributeError
+                    raise ValueError(f"Field {field_name} must be a Foreign Key field type") from AttributeError
         return None
 
     Cluster = Endpoint(

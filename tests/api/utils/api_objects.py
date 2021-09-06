@@ -50,9 +50,7 @@ class ADCMTestApiWrapper:
         Execute HTTP request based on "request" argument.
         Assert response params amd values based on "expected_response" argument.
         """
-        url = self.get_url_for_endpoint(
-            endpoint=request.endpoint, method=request.method, object_id=request.object_id
-        )
+        url = self.get_url_for_endpoint(endpoint=request.endpoint, method=request.method, object_id=request.object_id)
         url_params = request.url_params.copy()
 
         step_name = f"Send {request.method.name} {url.replace(self._base_url, '')}"

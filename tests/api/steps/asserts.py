@@ -26,9 +26,7 @@ class BodyAssertionError(AssertionError):
 @allure.step("Response status code should be equal {status_code}")
 def status_code_should_be(response: Response, status_code=HTTPStatus.OK):
     """Assert response status code"""
-    assert (
-        response.status_code == status_code
-    ), f"Expecting status code {status_code} but got {response.status_code}"
+    assert response.status_code == status_code, f"Expecting status code {status_code} but got {response.status_code}"
 
 
 @allure.step("Response body should be")
@@ -49,9 +47,7 @@ def body_should_be(response: Response, expected_body: ExpectedBody):
 
     if expected_fields_values:
         with allure.step("Fields values should be"):
-            actual_fields_values = {
-                key: value for key, value in actual_body.items() if key in expected_fields_values
-            }
+            actual_fields_values = {key: value for key, value in actual_body.items() if key in expected_fields_values}
             allure.attach(
                 json.dumps(expected_fields_values, indent=2),
                 name='Expected fields values',
@@ -63,8 +59,6 @@ def body_should_be(response: Response, expected_body: ExpectedBody):
                 attachment_type=allure.attachment_type.JSON,
             )
             try:
-                assert (
-                    actual_fields_values == expected_fields_values
-                ), "Response fields values assertion failed!"
+                assert actual_fields_values == expected_fields_values, "Response fields values assertion failed!"
             except AssertionError as error:
                 raise BodyAssertionError(error) from error

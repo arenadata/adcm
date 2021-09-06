@@ -43,16 +43,12 @@ def prepare_basic_adcm_data(sdk_client_fs: ADCMClient):
 
 
 @pytest.fixture()
-def adcm_api_fs(
-    sdk_client_fs, prepare_basic_adcm_data  # pylint: disable=redefined-outer-name
-) -> ADCMTestApiWrapper:
+def adcm_api_fs(sdk_client_fs, prepare_basic_adcm_data) -> ADCMTestApiWrapper:  # pylint: disable=redefined-outer-name
     """Runs ADCM container with previously initialized image.
     Returns authorized instance of ADCMTestApiWrapper object
     """
     assert prepare_basic_adcm_data
-    return ADCMTestApiWrapper(
-        adcm_api_wrapper=sdk_client_fs._api  # pylint: disable=protected-access
-    )
+    return ADCMTestApiWrapper(adcm_api_wrapper=sdk_client_fs._api)  # pylint: disable=protected-access
 
 
 @pytest.fixture()

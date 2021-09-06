@@ -12,9 +12,7 @@ def get_endpoint_data(adcm: ADCMTestApiWrapper, endpoint: Endpoints) -> list:
     Data of LIST method excludes links to related objects and huge fields
     """
     if Methods.LIST not in endpoint.methods:
-        raise AttributeError(
-            f"Method {Methods.LIST.name} is not available for endpoint {endpoint.path}"
-        )
+        raise AttributeError(f"Method {Methods.LIST.name} is not available for endpoint {endpoint.path}")
     res = adcm.exec_request(
         request=Request(endpoint=endpoint, method=Methods.LIST),
         expected_response=ExpectedResponse(status_code=Methods.LIST.value.default_success_code),
