@@ -295,8 +295,7 @@ class BasePageObject:
 
         def send_keys_and_check():
             if clean_input:
-                with allure.step("Clear element"):
-                    self.clear_by_keys(locator)
+                self.clear_by_keys(locator)
             input_element = self.find_element(locator, timeout)
             input_element.send_keys(text)
             assert (
