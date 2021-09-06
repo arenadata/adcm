@@ -6,7 +6,7 @@ from typing import List, Type, Optional
 
 import attr
 
-from .data_classes import (
+from tests.api.utils.data_classes import (
     BaseClass,
     ConfigGroupFields,
     HostGroupFields,
@@ -18,8 +18,8 @@ from .data_classes import (
     ObjectConfigFields,
     ConfigLogFields,
 )
-from .methods import Methods
-from .types import get_fields
+from tests.api.utils.methods import Methods
+from tests.api.utils.types import get_fields
 
 
 @attr.dataclass
