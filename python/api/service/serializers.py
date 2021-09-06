@@ -22,6 +22,8 @@ from api.cluster.serializers import BindSerializer
 from api.component.serializers import ComponentUISerializer
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+
 from cm import status_api
 from cm.api import add_service_to_cluster, multi_bind, bind
 from cm.errors import AdcmEx
@@ -79,8 +81,11 @@ class ServiceDetailSerializer(ServiceSerializer):
         lookup_field='prototype_id',
         lookup_url_kwarg='prototype_id',
     )
+
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
+    locked = serializers.BooleanField(read_only=True)
+    group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
     def get_status(self, obj):
         return status_api.get_service_status(obj.cluster.id, obj.id)

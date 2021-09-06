@@ -11,11 +11,13 @@
 # limitations under the License.
 
 import json
+from typing import List
+
 import requests
 
+from cm.config import STATUS_SECRET_KEY
 from cm.logger import log
 from cm.models import HostComponent, ServiceComponent, ClusterObject, Host, ADCMEntity
-from cm.config import STATUS_SECRET_KEY
 
 API_URL = "http://localhost:8020/api/v1"
 TIMEOUT = 0.01
@@ -48,8 +50,8 @@ class Event:
     def set_task_status(self, task_id, status):
         self.events.append((set_task_status, (task_id, status)))
 
-    def change_concern(self, obj: ADCMEntity):
-        self.events.append((change_concern, (obj,)))
+    def change_concern(self, obj: ADCMEntity, concerns: List[dict]):
+        self.events.append((change_concern, (obj, concerns)))
 
 
 def api_post(path, data):
@@ -109,6 +111,7 @@ def post_event(event, obj_type, obj_id, det_type=None, det_val=None):
             'details': details,
         },
     }
+    log.debug('post_event %s', data)
     return api_post('/event/', data)
 
 
@@ -216,11 +219,11 @@ def load_service_map():
     return api_post('/servicemap/', m)
 
 
-def change_concern(obj: ADCMEntity):
+def change_concern(obj: ADCMEntity, concerns: List[dict]):
     return post_event(
         event='concern_change',
         obj_type=obj.prototype.type,
         obj_id=obj.pk,
         det_type='concern',
-        det_val=[i.reason for i in obj.concerns.all()],
+        det_val=concerns,
     )

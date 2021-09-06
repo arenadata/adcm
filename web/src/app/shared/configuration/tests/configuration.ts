@@ -10,7 +10,7 @@ import { IFieldOptions } from './../types';
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { getControlType, getKey, getOptions, getValidator, getValue, TFormOptions, IOutput } from '../field.service';
+import { getControlType, getKey, getOptions, getValidator, getValue, TFormOptions, IOutput } from '../services/field.service';
 
 import { IConfig, IConfigAttr, IFieldStack, ILimits, IPanelOptions, IUIoptions, stateType, TNForm, TValue } from '../types';
 import { IYContainer, IYField, IYspec } from '../yspec/yspec.service';

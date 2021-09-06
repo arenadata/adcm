@@ -180,17 +180,26 @@ class ContextActionModule(ActionBase):
                 task_vars, {'provider_id': self._get_job_var(task_vars, 'provider_id')}
             )
         elif obj_type == "component" and "component_name" in self._task.args:
-            check_context_type(task_vars, 'cluster', 'service', 'component')
-            if task_vars['job'].get('service_id', None) is None:
-                if 'service_name' not in self._task.args:
+            if "service_name" in self._task.args:
+                check_context_type(task_vars, 'cluster', 'service', 'component')
+                res = self._do_component_by_name(
+                    task_vars,
+                    {
+                        'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
+                        'service_id': None,
+                    },
+                )
+            else:
+                check_context_type(task_vars, 'cluster', 'service', 'component')
+                if task_vars['job'].get('service_id', None) is None:
                     raise AnsibleError(MSG_NO_SERVICE_NAME)
-            res = self._do_component_by_name(
-                task_vars,
-                {
-                    'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
-                    'service_id': task_vars['job'].get('service_id', None),
-                },
-            )
+                res = self._do_component_by_name(
+                    task_vars,
+                    {
+                        'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
+                        'service_id': self._get_job_var(task_vars, 'service_id'),
+                    },
+                )
         elif obj_type == "component":
             check_context_type(task_vars, 'component')
             res = self._do_component(
