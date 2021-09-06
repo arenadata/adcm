@@ -213,8 +213,11 @@ class TestTaskHeaderPopup:
         page.header.click_job_block_in_header()
         page.header.click_acknowledge_btn_in_job_popup()
         page.header.check_no_jobs_presented()
-
         assert page.header.get_jobs_circle_color() == "background: transparent;", "Bell circle should be without color"
+        assert page.header.get_success_job_amount_from_header() == "0", "Success job amount should be 0"
+        assert page.header.get_in_progress_job_amount_from_header() == "0", "In progress job amount should be 0"
+        assert page.header.get_failed_job_amount_from_header() == "0", "Failed job amount should be 0"
+        page.header.check_acknowledge_btn_not_displayed()
 
     @pytest.mark.parametrize(
         'job_info',

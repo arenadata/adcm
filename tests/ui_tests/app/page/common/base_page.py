@@ -465,6 +465,11 @@ class PageHeader(BasePageObject):
         self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
         return self.find_element(AuthorizedHeaderLocators.JobPopup.in_progress_jobs).text.split("\n")[1]
 
+    def get_failed_job_amount_from_header(self):
+        self.hover_element(AuthorizedHeaderLocators.job_block_previous)
+        self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
+        return self.find_element(AuthorizedHeaderLocators.JobPopup.failed_jobs).text.split("\n")[1]
+
     @allure.step('Open profile using account popup in header')
     def open_profile(self):
         """Open profile page"""
@@ -527,6 +532,10 @@ class PageHeader(BasePageObject):
     @allure.step("Check that job list is empty")
     def check_no_jobs_presented(self):
         assert ("Nothing to display" in self.find_element(AuthorizedHeaderLocators.empty_text).text), "There should be message 'Nothing to display'"
+
+    @allure.step("Check acknowledge button not displayed")
+    def check_acknowledge_btn_not_displayed(self):
+        assert not self.is_element_displayed(AuthorizedHeaderLocators.JobPopup.acknowledge_btn)
 
 
 class PageFooter(BasePageObject):
