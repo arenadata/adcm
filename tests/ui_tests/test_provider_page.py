@@ -211,7 +211,7 @@ class TestProviderConfigPage:
         provider_config_page = ProviderConfigPage(
             app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
         ).open()
-        with provider_config_page.config.wait_rows_change(amount_to_change=1):
+        with provider_config_page.config.wait_rows_change(expected_rows_amount=1):
             provider_config_page.config.search(params["search_param"])
         with allure.step(f"Check that rows are filtered by {params['search_param']}"):
             config_rows = provider_config_page.config.get_all_config_rows()
@@ -223,7 +223,7 @@ class TestProviderConfigPage:
         with allure.step("Check that rows are not filtered"):
             config_rows = provider_config_page.config.get_all_config_rows()
             assert len(config_rows) == 4, "Rows are filtered: there should be 4 row"
-        with provider_config_page.config.wait_rows_change(amount_to_change=2):
+        with provider_config_page.config.wait_rows_change(expected_rows_amount=2):
             provider_config_page.config.click_on_group(params["group_name"])
 
     @pytest.mark.smoke()
