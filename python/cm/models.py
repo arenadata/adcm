@@ -416,7 +416,7 @@ class ADCMEntity(ADCMModel):
         del self._multi_state[multi_state]
         self.save()
         if event:
-            event.change_object_multistate(self.prototype.type, self.id, multi_state)
+            event.change_object_multi_state(self.prototype.type, self.id, multi_state)
         log.info('remove "%s" from "%s" multi_state', multi_state, self)
 
     def has_multi_state_intersection(self, multi_states: List[str]) -> bool:
