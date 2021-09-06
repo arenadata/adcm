@@ -171,6 +171,7 @@ class ActionModule(ContextActionModule):
             unset_host_multi_state,
             self._task.args['host_id'],
             self._task.args["state"],
+            self._task.args.get("missing_ok", False),
         )
         res['state'] = self._task.args["state"]
         return res
@@ -181,8 +182,8 @@ class ActionModule(ContextActionModule):
             context['cluster_id'],
             context['service_id'],
             self._task.args['component_name'],
-            self._task.args['state'],
             self._task.args.get('service_name', None),
+            self._task.args['state'],
             self._task.args.get("missing_ok", False),
         )
         res['state'] = self._task.args['state']
