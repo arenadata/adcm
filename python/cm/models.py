@@ -15,13 +15,12 @@
 
 
 from __future__ import unicode_literals
-from enum import Enum
-from itertools import chain
-from typing import Iterable, List, Optional
 
 from collections.abc import Mapping
 from copy import deepcopy
-from typing import Dict
+from enum import Enum
+from itertools import chain
+from typing import Dict, Iterable, List, Optional
 
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
