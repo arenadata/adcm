@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cm', '0069_messagetemplate'),
+        ('cm', '0071_messagetemplate'),
     ]
 
     operations = [
