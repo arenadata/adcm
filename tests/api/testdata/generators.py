@@ -486,7 +486,7 @@ def _prepare_test_data_with_one_by_one_fields(
         if not param_value.error_messages:
             continue
         body = ExpectedBody()
-        body.fields_values = {param_name: param_value.get_error_data()}
+        body.fields = {param_name: param_value.get_error_data()}
         request_data[param_name] = param_value
         request = Request(method=method, endpoint=endpoint)
         response = ExpectedResponse(status_code=status_code, body=body)
