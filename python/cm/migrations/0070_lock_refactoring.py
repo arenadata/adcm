@@ -18,7 +18,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cm', '0067_tasklog_object_type'),
+        ('cm', '0069_auto_20210607_1125'),
     ]
 
     operations = [

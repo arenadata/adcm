@@ -15,13 +15,12 @@
 
 
 from __future__ import unicode_literals
-from enum import Enum
-from itertools import chain
-from typing import Iterable, List, Optional
 
 from collections.abc import Mapping
 from copy import deepcopy
-from typing import Dict
+from enum import Enum
+from itertools import chain
+from typing import Dict, Iterable, List, Optional
 
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -318,8 +317,6 @@ class ADCMEntity(ADCMModel):
     state = models.CharField(max_length=64, default='created')
     _multi_state = models.JSONField(default=dict, db_column='multi_state')
     concerns = models.ManyToManyField('ConcernItem', blank=True, related_name='%(class)s_entities')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
     group_config = GenericRelation(
         'GroupConfig',
         object_id_field='object_id',
@@ -700,9 +697,7 @@ class GroupConfig(ADCMModel):
             ).distinct()
         else:
             raise AdcmEx('GROUP_CONFIG_TYPE_ERROR')
-        return hosts.difference(
-            Host.objects.filter(groupconfig__in=self.object.group_config.all())
-        )
+        return hosts.difference(Host.objects.filter(groupconfig__in=self.object.group_config.all()))
 
     def check_host_candidate(self, host):
         """Checking host candidate for group"""

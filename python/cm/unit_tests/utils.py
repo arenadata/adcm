@@ -205,7 +205,7 @@ def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
         host=host,
     )
 
-  
+
 def gen_config(config: dict = None, attr: dict = None):
     """Generate config, creating `ObjectConfig` object and `ConfigLog` object"""
     if config is None:

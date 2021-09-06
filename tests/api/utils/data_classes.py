@@ -105,15 +105,9 @@ class ConfigGroupFields(BaseClass):
         required=True,
         postable=True,
     )
-    name = Field(
-        name="name", f_type=String(max_length=30), required=True, postable=True, changeable=True
-    )
-    description = Field(
-        name="description", f_type=Text(), nullable=True, postable=True, changeable=True
-    )
-    config = Field(
-        name="config", f_type=ForeignKey(fk_link=ObjectConfigFields), nullable=True, changeable=True
-    )
+    name = Field(name="name", f_type=String(max_length=30), required=True, postable=True, changeable=True)
+    description = Field(name="description", f_type=Text(), nullable=True, postable=True, changeable=True)
+    config = Field(name="config", f_type=ForeignKey(fk_link=ObjectConfigFields), nullable=True, changeable=True)
     url = Field(name="url", f_type=String(), default_value="auto")
 
 
@@ -124,9 +118,7 @@ class ConfigLogFields(BaseClass):
 
     id = Field(name="id", f_type=PositiveInt(), default_value="auto")
     date = Field(name="date", f_type=DateTime(), default_value="auto")
-    obj_ref = Field(
-        name="obj_ref", f_type=ForeignKey(fk_link=ObjectConfigFields), required=True, postable=True
-    )
+    obj_ref = Field(name="obj_ref", f_type=ForeignKey(fk_link=ObjectConfigFields), required=True, postable=True)
     description = Field(
         name="description",
         f_type=Text(),
