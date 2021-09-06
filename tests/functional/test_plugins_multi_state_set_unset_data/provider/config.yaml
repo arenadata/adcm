@@ -17,7 +17,7 @@
     set_provider: &general_action
       type: job
       script_type: ansible
-      script: actions.yaml
+      script: set.yaml
       states:
         available: any
       params:
@@ -35,6 +35,43 @@
       <<: *general_action
       params:
         ansible_tags: host
+
+    unset_provider: &unset_action
+      type: job
+      script_type: ansible
+      script: unset.yaml
+      states:
+        available: any
+      params:
+        ansible_tags: provider
+
+    unset_host_from_provider:
+      <<: *unset_action
+      params:
+        ansible_tags: host_from_provider
+      config:
+        - name: host_id
+          type: integer
+
+    unset_host:
+      <<: *unset_action
+      params:
+        ansible_tags: host
+
+    unset_provider_missing:
+      <<: *unset_action
+      params:
+        ansible_tags: provider_missing
+
+    unset_host_from_provider_missing:
+      <<: *unset_action
+      params:
+        ansible_tags: provider_host_missing
+
+    unset_host_missing:
+      <<: *unset_action
+      params:
+        ansible_tags: host_missing
 
 - type: host
   name: Awesome host

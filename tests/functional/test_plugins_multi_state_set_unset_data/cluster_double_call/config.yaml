@@ -28,6 +28,16 @@
       states:
         available: any
 
+    double_unset:
+      type: task
+      scripts:
+        - name: first_unset_actions
+          script_type: ansible
+          script: unset_first.yaml
+        - name: second_unset_actions
+          script_type: ansible
+          script: unset_second.yaml
+
 - type: service
   name: first
   version: 1
