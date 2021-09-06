@@ -37,6 +37,8 @@
         - name: second_unset_actions
           script_type: ansible
           script: unset_second.yaml
+      states:
+        available: any
 
 - type: service
   name: first

@@ -21,9 +21,9 @@ from adcm_pytest_plugin.steps.actions import (
     run_service_action_and_assert_result,
     run_provider_action_and_assert_result,
     run_host_action_and_assert_result,
+    wait_for_task_and_assert_result,
 )
-from adcm_pytest_plugin.utils import catch_failed
-from adcm_client.objects import ADCMClient, Cluster, Provider, TaskFailed, Action
+from adcm_client.objects import ADCMClient, Cluster, Provider, Action
 
 # pylint: disable=redefined-outer-name
 
@@ -309,5 +309,9 @@ def _test_successful_multi_state_set_unset(
 def _run_successful_task(action: Action, action_owner_name: str):
     """Run action and expect it succeeds"""
     task = action.run()
-    with catch_failed(TaskFailed, f'Action {action.name} should have succeeded when ran on {action_owner_name}'):
-        task.try_wait()
+    try:
+        wait_for_task_and_assert_result(task, status="success")
+    except AssertionError as error:
+        raise AssertionError(
+            f'Action {action.name} should have succeeded when ran on {action_owner_name}:\n' f'{error}'
+        ) from error
