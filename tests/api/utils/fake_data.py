@@ -136,9 +136,7 @@ def gen_object(prop=None):
             output[k] = _get_generator(json_prop)
 
         if k == "duration":
-            with allure.step(
-                "Set 'duration' property to 2 sec in fake generated data by JSON schema"
-            ):
+            with allure.step("Set 'duration' property to 2 sec in fake generated data by JSON schema"):
                 output[k] = 2
 
     return output

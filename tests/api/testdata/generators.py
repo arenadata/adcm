@@ -156,16 +156,14 @@ def get_positive_data_for_post_body_check():
                         _get_datasets(
                             endpoint,
                             desc="Only Required=True AND POSTable=True fields with valid values",
-                            field_conditions=lambda x: not x.postable
-                            or (not x.required and not x.custom_required),
+                            field_conditions=lambda x: not x.postable or (not x.required and not x.custom_required),
                             value_properties={"drop_key": True},
                         ),
                         _get_datasets(
                             endpoint,
                             desc="POSTable=True fields with valid values without fields "
                             "with (Default!=null) OR (Default=null AND Nullable=True)",
-                            field_conditions=lambda x: x.default_value
-                            or (x.default_value is None and x.nullable),
+                            field_conditions=lambda x: x.default_value or (x.default_value is None and x.nullable),
                             value_properties={"drop_key": True},
                         ),
                         _get_datasets(
@@ -210,8 +208,7 @@ def get_negative_data_for_post_body_check():
                         ),
                         _get_datasets(
                             endpoint,
-                            desc="Drop fields with "
-                            "Default=null AND Nullable=False AND Required=False",
+                            desc="Drop fields with " "Default=null AND Nullable=False AND Required=False",
                             field_conditions=lambda x: x.default_value is None
                             and (not x.required and not x.nullable and not x.dynamic_nullable),
                             value_properties={
@@ -257,8 +254,7 @@ def get_positive_data_for_patch_body_check():
                     [
                         _get_datasets(
                             endpoint,
-                            desc="Object as is (all fields) "
-                            "without any changes in field set or values",
+                            desc="Object as is (all fields) " "without any changes in field set or values",
                             field_conditions=lambda x: True,
                             value_properties={"unchanged_value": True},
                         ),
@@ -302,8 +298,7 @@ def get_negative_data_for_patch_body_check():
                         _get_datasets(
                             endpoint,
                             desc="Changed values for all Changeable=False fields",
-                            field_conditions=lambda x: (not x.changeable)
-                            and (x.required or x.postable),
+                            field_conditions=lambda x: (not x.changeable) and (x.required or x.postable),
                             value_properties={
                                 "generated_value": True,
                                 "error_message": BaseType.error_message_cannot_be_changed,
@@ -336,8 +331,7 @@ def get_positive_data_for_put_body_check():
                     [
                         _get_datasets(
                             endpoint,
-                            desc="Object as is (all fields) "
-                            "without any changes in field set or values",
+                            desc="Object as is (all fields) " "without any changes in field set or values",
                             field_conditions=lambda x: True,
                             value_properties={"unchanged_value": True},
                         ),
@@ -390,8 +384,7 @@ def get_negative_data_for_put_body_check():
                         _get_datasets(
                             endpoint,
                             desc="Changed values for all Changeable=False fields",
-                            field_conditions=lambda x: not x.changeable
-                            and (x.required or x.postable),
+                            field_conditions=lambda x: not x.changeable and (x.required or x.postable),
                             value_properties={
                                 "generated_value": True,
                                 "error_message": BaseType.error_message_cannot_be_changed,
@@ -429,16 +422,10 @@ def get_data_for_body_check(method: Methods, endpoints_with_test_sets: List[tupl
                 status_code = method.default_success_code if positive else HTTPStatus.BAD_REQUEST
                 # It makes no sense to check with all fields if test_set contains only one field
                 if positive or len(test_set) > 1:
-                    values.append(
-                        _prepare_test_data_with_all_fields(endpoint, method, status_code, test_set)
-                    )
+                    values.append(_prepare_test_data_with_all_fields(endpoint, method, status_code, test_set))
 
                 if not positive:
-                    values.extend(
-                        _prepare_test_data_with_one_by_one_fields(
-                            endpoint, method, status_code, test_set
-                        )
-                    )
+                    values.extend(_prepare_test_data_with_one_by_one_fields(endpoint, method, status_code, test_set))
             if positive:
                 for value in values:
                     test_data.append(
@@ -539,9 +526,7 @@ def _get_datasets(
     return [dataset] if dataset else [], desc
 
 
-def _get_special_body_datasets(
-    endpoint: Endpoints, desc, method: Methods, positive_case: bool
-) -> (list, str):
+def _get_special_body_datasets(endpoint: Endpoints, desc, method: Methods, positive_case: bool) -> (list, str):
     """Get datasets with based on special values for fields"""
     datasets = []
     special_values = {}
@@ -562,9 +547,7 @@ def _get_special_body_datasets(
                 negative_values = get_fields(
                     endpoint.data_class,
                     predicate=lambda x: x.f_type.get_negative_values()
-                    and (  # noqa: W504
-                        x.changeable if method in [Methods.PATCH, Methods.PUT] else x.postable
-                    ),
+                    and (x.changeable if method in [Methods.PATCH, Methods.PUT] else x.postable),  # noqa: W504
                 )
                 if negative_values:
                     special_values[field.name] = (

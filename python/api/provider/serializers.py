@@ -15,6 +15,7 @@ from rest_framework import serializers
 
 import cm
 from api.action.serializers import ActionShort
+
 from api.api_views import (
     hlink,
     check_obj,
@@ -23,7 +24,9 @@ from api.api_views import (
     CommonAPIURL,
     ObjectURL,
 )
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.serializers import StringListSerializer
 from api.serializers import UpgradeSerializer, UrlField
 from cm.errors import AdcmEx
 from cm.models import Action, Prototype
@@ -55,7 +58,6 @@ class ProviderSerializer(serializers.Serializer):
 
 
 class ProviderDetailSerializer(ProviderSerializer):
-    issue = serializers.SerializerMethodField()
     edition = serializers.CharField(read_only=True)
     license = serializers.CharField(read_only=True)
     bundle_id = serializers.IntegerField(read_only=True)
@@ -64,10 +66,10 @@ class ProviderDetailSerializer(ProviderSerializer):
     action = CommonAPIURL(view_name='object-action')
     upgrade = hlink('provider-upgrade', 'id', 'provider_id')
     host = ObjectURL(read_only=True, view_name='host')
+    multi_state = StringListSerializer(read_only=True)
+    concerns = ConcernItemSerializer(many=True, read_only=True)
+    locked = serializers.BooleanField(read_only=True)
     group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
-
-    def get_issue(self, obj):
-        return cm.issue.aggregate_issues(obj)
 
 
 class ProviderUISerializer(ProviderDetailSerializer):
@@ -77,6 +79,7 @@ class ProviderUISerializer(ProviderDetailSerializer):
     prototype_display_name = serializers.SerializerMethodField()
     upgradable = serializers.SerializerMethodField()
     get_upgradable = get_upgradable_func
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)

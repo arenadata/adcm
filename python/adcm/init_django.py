@@ -15,3 +15,6 @@ import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "adcm.settings")
 django.setup()
+
+# init ORM signal callbacks
+import cm.signal_callbacks  # pylint: disable=wrong-import-position,unused-import

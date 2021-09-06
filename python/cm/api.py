@@ -9,51 +9,48 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint:disable=logging-fstring-interpolation
 
 import json
 
-from django.db import transaction
 from django.core.exceptions import MultipleObjectsReturned
+from django.db import transaction
 from django.utils import timezone
 
-import cm.errors
 import cm.issue
 import cm.status_api
-import cm.lock
-from cm import config
-from cm.logger import log
-from cm.upgrade import check_license, version_in
 from cm.adcm_config import (
-    proto_ref,
+    check_json_config,
+    get_prototype_config,
+    init_object_config,
     obj_ref,
     prepare_social_auth,
     process_file_type,
+    proto_ref,
     read_bundle_file,
-    get_prototype_config,
-    init_object_config,
     save_obj_config,
-    check_json_config,
 )
-from cm.errors import AdcmEx
-from cm.errors import raise_AdcmEx as err
-from cm.status_api import Event
+from cm.api_context import ctx
+from cm.errors import AdcmEx, raise_AdcmEx as err
+from cm.logger import log
 from cm.models import (
+    ADCM,
     Cluster,
-    Prototype,
+    ClusterBind,
+    ClusterObject,
+    ConfigLog,
+    DummyData,
+    GroupConfig,
     Host,
     HostComponent,
-    ADCM,
-    ClusterObject,
-    ServiceComponent,
-    ConfigLog,
     HostProvider,
-    PrototypeImport,
+    Prototype,
     PrototypeExport,
-    ClusterBind,
-    DummyData,
+    PrototypeImport,
     Role,
-    GroupConfig,
+    ServiceComponent,
 )
+from cm.upgrade import check_license, version_in
 
 
 def check_proto_type(proto, check_type):
@@ -121,26 +118,23 @@ def add_cluster(proto, name, desc=''):
     return cluster
 
 
-def add_host(proto, provider, fqdn, desc='', lock=False):
+def add_host(proto, provider, fqdn, desc=''):
     check_proto_type(proto, 'host')
     check_license(proto.bundle)
     if proto.bundle != provider.prototype.bundle:
         msg = 'Host prototype bundle #{} does not match with host provider bundle #{}'
         err('FOREIGN_HOST', msg.format(proto.bundle.id, provider.prototype.bundle.id))
     spec, _, conf, attr = get_prototype_config(proto)
-    event = Event()
     with transaction.atomic():
         obj_conf = init_object_config(spec, conf, attr)
         host = Host(
             prototype=proto, provider=provider, fqdn=fqdn, config=obj_conf, description=desc
         )
         host.save()
-        if lock:
-            host.stack = ['created']
-            host.set_state(config.Job.LOCKED, event)
+        host.add_to_concerns(ctx.lock)
         process_file_type(host, spec, conf)
         cm.issue.update_hierarchy_issues(host)
-    event.send_state()
+    ctx.event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
     load_service_map()
     log.info(f'host #{host.id} {host.fqdn} is added')
@@ -155,7 +149,7 @@ def add_provider_host(provider_id, fqdn, desc=''):
     """
     provider = HostProvider.obj.get(id=provider_id)
     proto = Prototype.objects.get(bundle=provider.prototype.bundle, type='host')
-    return add_host(proto, provider, fqdn, desc, lock=True)
+    return add_host(proto, provider, fqdn, desc)
 
 
 def add_host_provider(proto, name, desc=''):
@@ -166,8 +160,10 @@ def add_host_provider(proto, name, desc=''):
         obj_conf = init_object_config(spec, conf, attr)
         provider = HostProvider(prototype=proto, name=name, config=obj_conf, description=desc)
         provider.save()
+        provider.add_to_concerns(ctx.lock)
         process_file_type(provider, spec, conf)
         cm.issue.update_hierarchy_issues(provider)
+    ctx.event.send_state()
     cm.status_api.post_event('create', 'provider', provider.id)
     log.info(f'host provider #{provider.id} {provider.name} is added')
     return provider
@@ -194,6 +190,7 @@ def add_host_to_cluster(cluster, host):
     with transaction.atomic():
         host.cluster = cluster
         host.save()
+        host.add_to_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(host)
     cm.status_api.post_event('add', 'host', host.id, 'cluster', str(cluster.id))
     load_service_map()
@@ -331,7 +328,9 @@ def remove_host_from_cluster(host):
     with transaction.atomic():
         host.cluster = None
         host.save()
+        host.remove_from_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(cluster)
+    ctx.event.send_state()
     cm.status_api.post_event('remove', 'host', host.id, 'cluster', str(cluster.id))
     load_service_map()
     return host
@@ -568,19 +567,13 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
 
 
 def save_hc(cluster, host_comp_list):
-    event = Event()
     hc_queryset = HostComponent.objects.filter(cluster=cluster)
-
-    # TODO: double purpose code need to be refactored
-    # HC mapping could be edited with OR without hierarchy locking
     old_hosts = {i.host for i in hc_queryset.select_related('host').all()}
     new_hosts = {i[1] for i in host_comp_list}
     for removed_host in old_hosts.difference(new_hosts):
-        if removed_host.state == config.Job.LOCKED:
-            cm.lock._unlock_obj(removed_host, event)  # pylint: disable=protected-access
+        removed_host.remove_from_concerns(ctx.lock)
     for added_host in new_hosts.difference(old_hosts):
-        if added_host.cluster.state == config.Job.LOCKED:
-            cm.lock._lock_obj(added_host, event)  # pylint: disable=protected-access
+        added_host.add_to_concerns(ctx.lock)
 
     hc_queryset.delete()
     result = []
@@ -593,7 +586,7 @@ def save_hc(cluster, host_comp_list):
         )
         hc.save()
         result.append(hc)
-    event.send_state()
+    ctx.event.send_state()
     cm.status_api.post_event('change_hostcomponentmap', 'cluster', cluster.id)
     cm.issue.update_hierarchy_issues(cluster)
     load_service_map()
@@ -872,14 +865,3 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
             if source_proto == export_cluster.prototype:
                 msg = 'can not multi bind {} to {}'
                 err('BIND_ERROR', msg.format(proto_ref(source_proto), obj_ref(cluster)))
-
-
-def push_obj(obj, state):
-    stack = obj.stack
-    if not stack:
-        stack = [state]
-    else:
-        stack[0] = state
-    obj.stack = stack
-    obj.save()
-    return obj
