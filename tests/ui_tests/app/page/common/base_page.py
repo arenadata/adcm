@@ -276,8 +276,9 @@ class BasePageObject:
         with allure.step(f'Wait page {page_name} is opened'):
             wait_until_step_succeeds(assert_page_is_opened, period=0.5, timeout=timeout)
 
+    @allure.step('Write text to input element: "{text}"')
     def send_text_to_element(
-        self, locator: Locator, text: str, is_with_clear: bool = True, timeout: Optional[int] = None
+        self, locator: Locator, text: str, clean_input: bool = True, timeout: Optional[int] = None
     ):
         """
         Writes text to input element found by locator
@@ -293,8 +294,9 @@ class BasePageObject:
         expected_value = element.get_property('value') + text
 
         def send_keys_and_check():
-            if is_with_clear:
-                self.clear_by_keys(locator)
+            if clean_input:
+                with allure.step("Clear element"):
+                    self.clear_by_keys(locator)
             input_element = self.find_element(locator, timeout)
             input_element.send_keys(text)
             assert (
