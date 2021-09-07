@@ -298,6 +298,13 @@ class ConfigLog(ADCMModel):
                 cg.config.previous = cg.config.current
                 cg.config.current = group_config.id
                 cg.config.save()
+        if isinstance(obj, GroupConfig):
+            # `custom_group_keys` read only field in attr,
+            # needs to be replaced when creating an object with ORM
+            # for api it is checked in /cm/adcm_config.py:check_custom_group_keys_attr()
+            _, custom_group_keys = obj.create_group_keys(self.config, obj.get_config_spec())
+            self.attr.update({'custom_group_keys': custom_group_keys})
+
         super().save(*args, **kwargs)
 
 

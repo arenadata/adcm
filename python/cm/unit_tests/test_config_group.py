@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import copy
 
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
@@ -21,8 +22,8 @@ class GroupConfigTest(TestCase):
     """Tests `GroupConfig` model"""
 
     def setUp(self) -> None:
-        config = {'group': {'string': 'string'}, 'activatable_group': {'integer': 1}}
-        attr = {'activatable_group': {'active': True}}
+        self.cluster_config = {'group': {'string': 'string'}, 'activatable_group': {'integer': 1}}
+        self.cluster_attr = {'activatable_group': {'active': True}}
         self.cluster = utils.gen_cluster()
         utils.gen_prototype_config(
             prototype=self.cluster.prototype, name='group', field_type='group', display_name='group'
@@ -47,7 +48,7 @@ class GroupConfigTest(TestCase):
             subname='integer',
             display_name='integer',
         )
-        self.cluster.config = utils.gen_config(config=config, attr=attr)
+        self.cluster.config = utils.gen_config(config=self.cluster_config, attr=self.cluster_attr)
         self.cluster.save()
 
     @staticmethod
@@ -154,7 +155,7 @@ class GroupConfigTest(TestCase):
         self.assertDictEqual(test_custom_group_keys, custom_group_keys)
 
     def test_update_parent_config(self):
-        """Test update config group"""
+        """Test update parent config for group"""
         group = self.create_group('group', self.cluster.id, 'cluster')
         cl = ConfigLog.objects.get(id=group.config.current)
         cl.config = {'group': {'string': 'str'}, 'activatable_group': {'integer': 1}}
@@ -193,3 +194,21 @@ class GroupConfigTest(TestCase):
                 },
             },
         )
+
+    def test_create_config_for_group(self):
+        """Test create new config for GroupConfig"""
+        group = self.create_group('group', self.cluster.id, 'cluster')
+        cl_current = ConfigLog.objects.get(id=group.config.current)
+        attr = copy.deepcopy(cl_current.attr)
+        attr.update(
+            {
+                'custom_group_keys': {
+                    'group': {'string': True},
+                    'activatable_group': {'integer': True},
+                }
+            }
+        )
+        cl_new = ConfigLog.objects.create(
+            obj_ref=cl_current.obj_ref, config=cl_current.config, attr=attr
+        )
+        self.assertDictEqual(cl_current.attr, cl_new.attr)
