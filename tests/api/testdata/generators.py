@@ -32,6 +32,8 @@ class TestData:  # pylint: disable=too-few-public-methods
     request: Request
     response: ExpectedResponse
     description: Optional[str] = None
+    # Will not be discovered as a test class
+    __test__ = False
 
     def __repr__(self):
         return (
@@ -44,9 +46,10 @@ class TestDataWithPreparedBody(NamedTuple):
     """
     Class for separating request body and data needed to send and assert it
     """
-
     test_data: TestData
     test_body: dict
+    # Will not be discovered as a test class
+    __test__ = False
 
 
 def _fill_pytest_param(
