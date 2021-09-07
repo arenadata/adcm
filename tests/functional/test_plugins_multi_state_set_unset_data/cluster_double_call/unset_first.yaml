@@ -21,3 +21,4 @@
     - adcm_multi_state_unset:
         type: "cluster"
         state: "much"
+        missing_ok: true
