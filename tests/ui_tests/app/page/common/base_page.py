@@ -470,7 +470,9 @@ class PageHeader(BasePageObject):
 
     def wait_success_job_amount_from_header(self, expected_job_amount: int):
         def wait_job():
-            assert self.get_success_job_amount_from_header() == expected_job_amount
+            assert (
+                int(self.get_success_job_amount_from_header()) == expected_job_amount
+            ), f"Should be {expected_job_amount} tasks in popup header"
 
         wait_until_step_succeeds(wait_job, period=1, timeout=70)
 
