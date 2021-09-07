@@ -202,9 +202,10 @@ def build_objects_comparator(
     def compare(adcm_object: AnyADCMObject, expected_value: ADCMObjectField):
         adcm_object_name = compose_name(adcm_object)
         adcm_object.reread()
-        assert (
-            actual_value := field_converter(get_compare_field(adcm_object))
-        ) == expected_value, f'Multi state of {adcm_object_name} should be {expected_value}, not {actual_value}'
+        with allure.step(f"Assert that {adcm_object_name} has {expected_value} of multi state value"):
+            assert (
+                actual_value := field_converter(get_compare_field(adcm_object))
+            ) == expected_value, f'Multi state of {adcm_object_name} should be {expected_value}, not {actual_value}'
 
     return compare
 
