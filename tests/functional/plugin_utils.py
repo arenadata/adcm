@@ -13,14 +13,19 @@
 Common functions and helpers for testing plugins (state, multi_state, config)
 """
 
-from typing import Union, Callable, Any, TypeVar, Collection, Type, Optional, List, Tuple
+from typing import Union, Callable, TypeVar, Collection, Type, Optional, List, Tuple, Dict, Set
+from contextlib import contextmanager
+from operator import methodcaller
 
 import allure
 import pytest
 
 from _pytest.mark.structures import ParameterSet
+from adcm_client.objects import Cluster, Service, Component, Provider, Host, ADCMClient, Action
 from adcm_pytest_plugin import utils as plugin_utils
-from adcm_client.objects import Cluster, Service, Component, Provider, Host, ADCMClient
+from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
+
+ADCMObjects = (Cluster, Service, Component, Provider, Host)
 
 ClusterRelatedObject = Union[Cluster, Service, Component]
 ProviderRelatedObject = Union[Provider, Host]
@@ -28,6 +33,39 @@ AnyADCMObject = Union[ClusterRelatedObject, ProviderRelatedObject]
 ADCMObjectField = TypeVar('ADCMObjectField')
 
 DEFAULT_OBJECT_NAMES = ('first', 'second')
+
+
+def create_two_clusters(adcm_client: ADCMClient, caller_file: str, bundle_dir: str) -> Tuple[Cluster, Cluster]:
+    """
+    Create two clusters with two services on each with "default object names"
+    :param adcm_client: ADCM client
+    :param caller_file: Pass __file__ here
+    :param bundle_dir: Bundle directory name (e.g. "cluster", "provider")
+    """
+    uploaded_bundle = adcm_client.upload_from_fs(plugin_utils.get_data_dir(caller_file, bundle_dir))
+    first_cluster = uploaded_bundle.cluster_create(name=DEFAULT_OBJECT_NAMES[0])
+    second_cluster = uploaded_bundle.cluster_create(name=DEFAULT_OBJECT_NAMES[1])
+    clusters = (first_cluster, second_cluster)
+    for cluster in clusters:
+        for name in DEFAULT_OBJECT_NAMES:
+            cluster.service_add(name=name)
+    return clusters
+
+
+def create_two_providers(adcm_client: ADCMClient, caller_file: str, bundle_dir: str) -> Tuple[Provider, Provider]:
+    """
+    Create two providers with two hosts
+    :param adcm_client: ADCM client
+    :param caller_file: Pass __file__ here
+    :param bundle_dir: Bundle directory name (e.g. "cluster", "provider")
+    """
+    uploaded_bundle = adcm_client.upload_from_fs(plugin_utils.get_data_dir(caller_file, bundle_dir))
+    first_provider, second_provider, *_ = [uploaded_bundle.provider_create(name=name) for name in DEFAULT_OBJECT_NAMES]
+    providers = (first_provider, second_provider)
+    for provider in providers:
+        for suffix in DEFAULT_OBJECT_NAMES:
+            provider.host_create(fqdn=f'{provider.name}-{suffix}')
+    return providers
 
 
 def generate_cluster_success_params(action_prefix: str, id_template: str) -> List[ParameterSet]:
@@ -201,131 +239,153 @@ def compose_name(adcm_object: AnyADCMObject) -> str:
 
 
 def build_objects_comparator(
-    get_compare_field: Callable[[AnyADCMObject], ADCMObjectField],
     field_name: str,
-    field_converter: Callable[[Any], ADCMObjectField] = str,
+    get_compare_value: Callable[[AnyADCMObject], ADCMObjectField],
 ) -> Callable[[AnyADCMObject, ADCMObjectField], None]:
     """Get function to compare value of ADCM object's field with expected one"""
 
-    def compare(adcm_object: AnyADCMObject, expected_value: Union[ADCMObjectField, Collection[ADCMObjectField]]):
+    def compare(adcm_object: AnyADCMObject, expected_value: ADCMObjectField):
         adcm_object_name = compose_name(adcm_object)
         adcm_object.reread()
         with allure.step(f"Assert that {adcm_object_name} has {expected_value} in {field_name.lower()} value"):
             assert (
-                actual_value := field_converter(get_compare_field(adcm_object))
+                actual_value := get_compare_value(adcm_object)
             ) == expected_value, f'{field_name} of {adcm_object_name} should be {expected_value}, not {actual_value}'
 
     return compare
 
 
 def build_objects_checker(
-    parent_type: Union[Type[Cluster], Type[Provider]],
-    comparator: Callable[[AnyADCMObject, ADCMObjectField], None],
     changed: ADCMObjectField,
-    unchanged: ADCMObjectField,
-    allure_message: str,
+    extractor: Callable[[AnyADCMObject], ADCMObjectField],
+    comparator: Optional[Callable[[AnyADCMObject, ADCMObjectField], None]] = None,
+    field_name: Optional[str] = None,
+    step_title: Optional[str] = None,
 ) -> Callable[..., None]:
     """
-    Get function to check that particular objects were changed (has value of some field equals to changed).
+    Get context manager to check that only particular objects were changed
+
+    :param changed: Value expected to be found in ADCM object's attribute after changes made
+    :param extractor: Function that returns value of ADCM object's attribute that will be compared
+    :param comparator: Function that takes ADCM object and value to compare as arguments
+                       and asserts that ADCM object's value is the same as given one.
+                       If it's not provided, then default is build using build_objects_comparator.
+                       If you use default, then it's better to provide field_name,
+                       otherwise assertion message will be uninformative.
+    :param field_name: Provide name of "to change" field to use default allure step title template
+    :param step_title: Provide it to use fully custom allure step title
     """
-    if parent_type == Cluster:
-        return _check_cluster_related_objects(comparator, changed, unchanged, allure_message)
-    if parent_type == Provider:
-        return _check_provider_related_objects(comparator, changed, unchanged, allure_message)
-    raise ValueError('parent_type should be either Cluster or Provider class')
+    if step_title:
+        title = step_title
+    elif field_name:
+        title = f'Check {field_name.lower()} of presented objects changed correctly'
+    else:
+        title = 'Check objects changed correctly'
 
+    if comparator is None:
+        comparator = build_objects_comparator(
+            get_compare_value=extractor, field_name=field_name if field_name else 'Attribute'
+        )
 
-def _check_cluster_related_objects(
-    comparator: Callable[[AnyADCMObject, ADCMObjectField], None],
-    changed: ADCMObjectField,
-    unchanged: ADCMObjectField,
-    allure_message: str,
-) -> Callable[[ADCMClient, Collection[ClusterRelatedObject], Optional[ADCMObjectField]], None]:
-    """Returns function to check state of cluster related objects"""
-
-    @allure.step(allure_message)
+    @contextmanager
     def wrapped(
         adcm_client: ADCMClient,
-        changed_adcm_objects: Collection[ClusterRelatedObject] = (),
-        alternative_changed: Optional[ADCMObjectField] = None,
+        changed_objects: Collection[ClusterRelatedObject] = (),
+        changed: ADCMObjectField = changed,
     ):
-        actual_changed = alternative_changed if alternative_changed else changed
-        for adcm_object in changed_adcm_objects:
-            comparator(adcm_object, actual_changed)
+        unchanged_attributes = freeze_objects_attribute(
+            adcm_client, extractor, to_ignore=__build_ignore_map(changed_objects)
+        )
 
-        cluster_ids = {obj.id for obj in changed_adcm_objects if isinstance(obj, Cluster)}
-        service_ids = {obj.id for obj in changed_adcm_objects if isinstance(obj, Service)}
-        component_ids = {obj.id for obj in changed_adcm_objects if isinstance(obj, Component)}
-        for cluster in adcm_client.cluster_list():
-            if cluster.id not in cluster_ids:
-                comparator(cluster, unchanged)
-            for service in cluster.service_list():
-                if service.id not in service_ids:
-                    comparator(service, unchanged)
-                for component in service.component_list():
-                    if component.id not in component_ids:
-                        comparator(component, unchanged)
+        yield
+
+        with allure.step(title):
+            for adcm_object in changed_objects:
+                comparator(adcm_object, changed)
+
+        with allure.step('Check other objects was left intact'):
+            unchanged_components = unchanged_attributes.pop(Component)
+            for object_class, id_attr_map in unchanged_attributes.items():
+                get_method_name = object_class.__name__.lower()
+                for object_id, unchanged_value in id_attr_map.items():
+                    get_object_by_id = methodcaller(get_method_name, id=object_id)
+                    comparator(get_object_by_id(adcm_client), unchanged_value)
+            __check_components(
+                adcm_client,
+                comparator,
+                components=unchanged_components,
+                service_ids=unchanged_attributes[Service].keys(),
+            )
 
     return wrapped
 
 
-def _check_provider_related_objects(
-    comparator: Callable[[AnyADCMObject, ADCMObjectField], None],
-    changed: ADCMObjectField,
-    unchanged: ADCMObjectField,
-    allure_message: str,
-) -> Callable[[ADCMClient, Collection[ProviderRelatedObject], Optional[ADCMObjectField]], None]:
-    """Returns function to check state of provider related objects"""
-
-    @allure.step(allure_message)
-    def wrapped(
-        adcm_client: ADCMClient,
-        changed_adcm_objects: Collection[ProviderRelatedObject] = (),
-        alternative_changed: Optional[ADCMObjectField] = None,
-    ):
-        actual_changed = alternative_changed if alternative_changed else changed
-        for adcm_object in changed_adcm_objects:
-            comparator(adcm_object, actual_changed)
-        provider_ids = {obj.id for obj in changed_adcm_objects if isinstance(obj, Provider)}
-        host_ids = {obj.id for obj in changed_adcm_objects if isinstance(obj, Host)}
-        for provider in adcm_client.provider_list():
-            if provider.id not in provider_ids:
-                comparator(provider, unchanged)
-            for host in provider.host_list():
-                if host.id not in host_ids:
-                    comparator(host, unchanged)
-
-    return wrapped
-
-
-def create_two_clusters(adcm_client: ADCMClient, caller_file: str, bundle_dir: str) -> Tuple[Cluster, Cluster]:
+@allure.step('Save objects configurations before changes')
+def freeze_objects_attribute(
+    adcm_client: ADCMClient,
+    get_attribute_func: Callable[[AnyADCMObject], ADCMObjectField],
+    to_ignore: Dict[Type[AnyADCMObject], Set[int]],
+):
     """
-    Create two clusters with two services on each with "default object names"
-    :param adcm_client: ADCM client
-    :param caller_file: Pass __file__ here
-    :param bundle_dir: Bundle directory name (e.g. "cluster", "provider")
+    Freeze all "dummies" (objects created before this fixture was called
+    by getting some value from objects (with callable provided in param)
+    and saving it to dict of following structure:
+    {
+        Cluster: {cluster_id: value},
+        Service: {service_id: value},
+        Component: {component_id: value},
+        Provider: {provider_id: value},
+        Host: {host_id: value},
+    }
     """
-    uploaded_bundle = adcm_client.upload_from_fs(plugin_utils.get_data_dir(caller_file, bundle_dir))
-    first_cluster = uploaded_bundle.cluster_create(name=DEFAULT_OBJECT_NAMES[0])
-    second_cluster = uploaded_bundle.cluster_create(name=DEFAULT_OBJECT_NAMES[1])
-    clusters = (first_cluster, second_cluster)
-    for cluster in clusters:
-        for name in DEFAULT_OBJECT_NAMES:
-            cluster.service_add(name=name)
-    return clusters
+    frozen_objects = {cls: {} for cls in ADCMObjects}
+    for cluster in adcm_client.cluster_list():
+        if cluster.id not in to_ignore[Cluster]:
+            frozen_objects[Cluster][cluster.id] = get_attribute_func(cluster)
+        for service in cluster.service_list():
+            if service.id not in to_ignore[Service]:
+                frozen_objects[Service][service.id] = get_attribute_func(service)
+            for component in service.component_list():
+                if component.id not in to_ignore[Component]:
+                    frozen_objects[Component][component.id] = get_attribute_func(component)
+    for provider in adcm_client.provider_list():
+        if provider.id not in to_ignore[Provider]:
+            frozen_objects[Provider][provider.id] = get_attribute_func(provider)
+        for host in provider.host_list():
+            if host.id not in to_ignore[Host]:
+                frozen_objects[Host][host.id] = get_attribute_func(host)
+    return frozen_objects
 
 
-def create_two_providers(adcm_client: ADCMClient, caller_file: str, bundle_dir: str) -> Tuple[Provider, Provider]:
-    """
-    Create two providers with two hosts
-    :param adcm_client: ADCM client
-    :param caller_file: Pass __file__ here
-    :param bundle_dir: Bundle directory name (e.g. "cluster", "provider")
-    """
-    uploaded_bundle = adcm_client.upload_from_fs(plugin_utils.get_data_dir(caller_file, bundle_dir))
-    first_provider, second_provider, *_ = [uploaded_bundle.provider_create(name=name) for name in DEFAULT_OBJECT_NAMES]
-    providers = (first_provider, second_provider)
-    for provider in providers:
-        for suffix in DEFAULT_OBJECT_NAMES:
-            provider.host_create(fqdn=f'{provider.name}-{suffix}')
-    return providers
+def run_successful_task(action: Action, action_owner_name: str):
+    """Run action and expect it succeeds"""
+    task = action.run()
+    try:
+        wait_for_task_and_assert_result(task, status="success")
+    except AssertionError as error:
+        raise AssertionError(
+            f'Action {action.name} should have succeeded when ran on {action_owner_name}:\n' f'{error}'
+        ) from error
+
+
+def __check_components(
+    adcm_client: ADCMClient,
+    comparator: Callable,
+    components: Dict[int, ADCMObjectField],
+    service_ids: Collection[int],
+):
+    """Check components config is intact since .component is not implemented"""
+    component_ids = components.keys()
+    for service in (adcm_client.service(id=sid) for sid in service_ids):
+        for component in service.component_list():
+            if (component_id := component.id) in component_ids:
+                comparator(component, components[component_id])
+
+
+def __build_ignore_map(objects_to_ignore: Collection[AnyADCMObject]):
+    """Returns map with ids of objects to ignore grouped by class"""
+    # may be empty
+    ignore_map = {cls: set() for cls in ADCMObjects}
+    for obj in objects_to_ignore:
+        ignore_map[obj.__class__].add(obj.id)
+    return ignore_map

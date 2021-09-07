@@ -34,8 +34,9 @@
   gather_facts: false
   connection: local
   tasks:
-    - adcm_config:
-        type: "provider"
+    - adcm_config: &action
+        type: "service"
+        service_name: "second"
         key: "int"
         value: *new_int
       register: out
@@ -50,7 +51,7 @@
         - int
 
     - adcm_config:
-        type: "provider"
+        <<: *action
         key: "float"
         value: *new_float
       register: out
@@ -65,7 +66,7 @@
         - float
 
     - adcm_config:
-        type: "provider"
+        <<: *action
         key: "text"
         value: *new_text
       register: out
@@ -80,7 +81,7 @@
         - text
 
     - adcm_config:
-        type: "provider"
+        <<: *action
         key: "file"
         value: *new_file
       register: out
@@ -95,7 +96,7 @@
         - file
 
     - adcm_config:
-        type: "provider"
+        <<: *action
         key: "string"
         value: *new_string
       register: out
@@ -110,7 +111,7 @@
         - string
 
     - adcm_config:
-        type: "provider"
+        <<: *action
         key: "json"
         value: *new_json
       register: out
@@ -125,7 +126,7 @@
         - json
 
     - adcm_config:
-        type: "provider"
+        <<: *action
         key: "list"
         value: *new_list
       register: out
@@ -140,7 +141,7 @@
         - list
 
     - adcm_config:
-        type: "provider"
+        <<: *action
         key: "map"
         value: *new_map
       register: out
