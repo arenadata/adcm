@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# -*- coding: utf-8 -*-
-
 
 from __future__ import unicode_literals
 
@@ -416,7 +414,7 @@ class ADCMEntity(ADCMModel):
         del self._multi_state[multi_state]
         self.save()
         if event:
-            event.change_object_multistate(self.prototype.type, self.id, multi_state)
+            event.change_object_multi_state(self.prototype.type, self.id, multi_state)
         log.info('remove "%s" from "%s" multi_state', multi_state, self)
 
     def has_multi_state_intersection(self, multi_states: List[str]) -> bool:

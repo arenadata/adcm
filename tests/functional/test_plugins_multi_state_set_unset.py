@@ -20,9 +20,10 @@ from adcm_pytest_plugin.steps.actions import (
     run_service_action_and_assert_result,
     run_provider_action_and_assert_result,
     run_host_action_and_assert_result,
+    wait_for_task_and_assert_result,
+    run_component_action_and_assert_result,
 )
-from adcm_pytest_plugin.utils import catch_failed
-from adcm_client.objects import ADCMClient, Cluster, Provider, TaskFailed, Action
+from adcm_client.objects import ADCMClient, Cluster, Provider, Action
 
 # pylint: disable=redefined-outer-name, duplicate-code
 
@@ -201,7 +202,7 @@ def test_forbidden_multi_state_set_actions(sdk_client_fs: ADCMClient):
             check_provider_related_objects_multi_state(sdk_client_fs)
 
 
-@pytest.mark.usefixtures('two_providers')
+@pytest.mark.usefixtures('two_providers', 'two_clusters')
 def test_missing_ok_multi_state_unset(sdk_client_fs: ADCMClient):
     """
     Checking behaviour of flag "missing_ok":
@@ -210,6 +211,9 @@ def test_missing_ok_multi_state_unset(sdk_client_fs: ADCMClient):
     """
     provider = sdk_client_fs.provider()
     host = provider.host()
+    cluster = sdk_client_fs.cluster()
+    service = cluster.service()
+    component = service.component()
     with allure.step('Check job fails with "missing_ok: false" and state not in multi_state'):
         for forbidden_action in ('unset_provider', 'unset_host'):
             run_host_action_and_assert_result(host, forbidden_action, 'failed')
@@ -218,11 +222,24 @@ def test_missing_ok_multi_state_unset(sdk_client_fs: ADCMClient):
             provider, 'unset_host_from_provider', status='failed', config={'host_id': host.id}
         )
         check_provider_related_objects_multi_state(sdk_client_fs)
+        run_cluster_action_and_assert_result(cluster, 'unset_cluster', status='failed')
+        check_cluster_related_objects_multi_state(sdk_client_fs)
+        run_service_action_and_assert_result(service, 'unset_service', status='failed')
+        check_cluster_related_objects_multi_state(sdk_client_fs)
+        run_component_action_and_assert_result(component, 'unset_component', status='failed')
+        check_cluster_related_objects_multi_state(sdk_client_fs)
+
     with allure.step('Check job succeed with "missing_ok: true" without changing multi_state of any object'):
         for allowed_action in ('unset_provider_missing', 'unset_host_missing'):
             run_host_action_and_assert_result(host, allowed_action)
             check_provider_related_objects_multi_state(sdk_client_fs)
         run_provider_action_and_assert_result(provider, 'unset_host_from_provider_missing', config={'host_id': host.id})
+        run_cluster_action_and_assert_result(cluster, 'unset_cluster_missing')
+        check_cluster_related_objects_multi_state(sdk_client_fs)
+        run_service_action_and_assert_result(service, 'unset_service_missing')
+        check_cluster_related_objects_multi_state(sdk_client_fs)
+        run_component_action_and_assert_result(component, 'unset_component_missing')
+        check_cluster_related_objects_multi_state(sdk_client_fs)
 
 
 # pylint: disable-next=possibly-unused-variable
@@ -297,5 +314,9 @@ def _test_successful_multi_state_set_unset(
 def _run_successful_task(action: Action, action_owner_name: str):
     """Run action and expect it succeeds"""
     task = action.run()
-    with catch_failed(TaskFailed, f'Action {action.name} should have succeeded when ran on {action_owner_name}'):
-        task.try_wait()
+    try:
+        wait_for_task_and_assert_result(task, status="success")
+    except AssertionError as error:
+        raise AssertionError(
+            f'Action {action.name} should have succeeded when ran on {action_owner_name}:\n' f'{error}'
+        ) from error

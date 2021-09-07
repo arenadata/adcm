@@ -106,3 +106,24 @@
         missing_ok: true
       tags:
         - component_missing
+
+    - adcm_multi_state_unset:
+        type: "cluster"
+        state: "ifeelgood!"
+        missing_ok: true
+        tags:
+          - cluster_missing
+
+    - adcm_multi_state_unset:
+        type: "service"
+        state: "ifeelgood!"
+        missing_ok: true
+        tags:
+          - service_missing
+
+    - adcm_multi_state_unset:
+        type: "component"
+        state: "ifeelgood!"
+        missing_ok: true
+        tags:
+          - component_missing
