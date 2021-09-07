@@ -58,6 +58,7 @@ class GroupConfigHostViewSet(
 ):  # pylint: disable=too-many-ancestors
     queryset = Host.objects.all()
     serializer_class = GroupConfigHostSerializer
+    lookup_url_kwarg = 'host_id'
 
     def destroy(self, request, *args, **kwargs):
         group_config = GroupConfig.obj.get(id=self.kwargs.get('parent_lookup_groupconfig'))
@@ -77,6 +78,7 @@ class GroupConfigHostViewSet(
 class GroupConfigHostCandidateViewSet(NestedViewSetMixin, ListModelMixin, viewsets.GenericViewSet):
     queryset = Host.objects.all()
     serializer_class = GroupConfigHostCandidateSerializer
+    lookup_url_kwarg = 'host_id'
 
     def list(self, request, *args, **kwargs):
         group_config = GroupConfig.obj.get(id=self.kwargs.get('parent_lookup_groupconfig'))
