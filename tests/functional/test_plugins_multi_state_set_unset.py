@@ -24,7 +24,7 @@ from adcm_pytest_plugin.steps.actions import (
 from adcm_pytest_plugin.utils import catch_failed
 from adcm_client.objects import ADCMClient, Cluster, Provider, TaskFailed, Action
 
-# pylint: disable=redefined-outer-name, R0801
+# pylint: disable=redefined-outer-name, duplicate-code
 
 # same for cluster, service, component (when only 2 of each)
 from tests.functional.plugin_utils import (
