@@ -59,8 +59,9 @@ def _fill_pytest_param(
     """
     Create pytest.param for each test data set
     """
-    allure.dynamic.label("page_url", endpoint.path)
-    marks = []
+    marks = [
+        pytest.mark.allure_label(endpoint.path, label_type="page_url"),
+    ]
     if positive:
         marks.append(pytest.mark.positive)
         positive_str = "positive"
