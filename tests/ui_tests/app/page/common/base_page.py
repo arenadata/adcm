@@ -74,11 +74,6 @@ class BasePageObject:
         default_loc_timeout: int = 15,
         **kwargs,
     ):
-        if any(str.isdigit(char) for char in path_template):
-            raise ValueError(
-                f"Path template {path_template} should not contain any digits. "
-                "Please use template string and pass values as kwargs"
-            )
         self.driver = driver
         self.base_url = base_url
         self.path = path_template.format(**kwargs)
@@ -469,9 +464,15 @@ class PageHeader(BasePageObject):
         return self.find_element(AuthorizedHeaderLocators.JobPopup.in_progress_jobs).text.split("\n")[1]
 
     def get_failed_job_amount_from_header(self):
-        self.hover_element(AuthorizedHeaderLocators.job_block_previous)
+        self.hover_element(AuthorizedHeaderLocators.job_block)
         self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
         return self.find_element(AuthorizedHeaderLocators.JobPopup.failed_jobs).text.split("\n")[1]
+
+    def wait_success_job_amount_from_header(self, expected_job_amount: int):
+        def wait_job():
+            assert self.get_success_job_amount_from_header() == expected_job_amount
+
+        wait_until_step_succeeds(wait_job, period=1, timeout=70)
 
     @allure.step('Open profile using account popup in header')
     def open_profile(self):
@@ -496,6 +497,11 @@ class PageHeader(BasePageObject):
         """Get job rows from *opened* popup"""
         self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
         return self.find_elements(AuthorizedHeaderLocators.JobPopup.job_row)
+
+    def click_on_task_row_by_name(self, task_name: str):
+        for task in self.get_job_rows_from_popup():
+            if task.text == task_name:
+                task.click()
 
     def get_single_job_row_from_popup(self, row_num: int = 0) -> WebElement:
         """Get single job row from *opened* popup"""
@@ -534,10 +540,16 @@ class PageHeader(BasePageObject):
 
     @allure.step("Check that job list is empty")
     def check_no_jobs_presented(self):
-        assert ("Nothing to display" in self.find_element(AuthorizedHeaderLocators.empty_text).text), "There should be message 'Nothing to display'"
+        if not self.is_element_displayed(AuthorizedHeaderLocators.JobPopup.block):
+            self.find_and_click(AuthorizedHeaderLocators.jobs)
+        assert (
+            "Nothing to display" in self.find_element(AuthorizedHeaderLocators.JobPopup.empty_text).text
+        ), "There should be message 'Nothing to display'"
 
     @allure.step("Check acknowledge button not displayed")
     def check_acknowledge_btn_not_displayed(self):
+        if not self.is_element_displayed(AuthorizedHeaderLocators.JobPopup.block):
+            self.find_and_click(AuthorizedHeaderLocators.jobs)
         assert not self.is_element_displayed(AuthorizedHeaderLocators.JobPopup.acknowledge_btn)
 
 

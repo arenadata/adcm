@@ -23,7 +23,7 @@ class CommonTable:
     """Common table locators (eg, cluster list page table)."""
 
     header = Locator(By.CSS_SELECTOR, "mat-header-cell>div", "Table header")
-    row = Locator(By.CSS_SELECTOR, "mat-row", "Table row")
+    row = Locator(By.CSS_SELECTOR, "mat-row[adwphover]", "Table row")
 
     class ActionPopup:
         """Common popup for action in tables."""
