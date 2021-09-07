@@ -31,6 +31,7 @@ def _test_patch_put_body_positive(prepare_body_data: Tuple):
     """
     adcm, test_data_list = prepare_body_data
     for test_data in test_data_list:
+        allure.dynamic.label("page_url", test_data.request.endpoint.path)
         # Set expected response fields values
         test_data.response.body = ExpectedBody()
         for field in get_fields(test_data.request.endpoint.data_class):

@@ -59,6 +59,7 @@ def _fill_pytest_param(
     """
     Create pytest.param for each test data set
     """
+    allure.dynamic.label("page_url", endpoint.path)
     marks = []
     if positive:
         marks.append(pytest.mark.positive)
@@ -68,7 +69,7 @@ def _fill_pytest_param(
         positive_str = "negative"
     if endpoint.spec_link:
         marks.append(allure.link(url=endpoint.spec_link, name="Endpoint spec"))
-    param_id = f"{endpoint.path}_{method.name}_{positive_str}"
+    param_id = f"{endpoint.path.replace('/', '_')}_{method.name}_{positive_str}"
     if addition:
         param_id += f"_{addition}"
     return pytest.param(value, marks=marks, id=param_id)

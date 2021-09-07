@@ -3,12 +3,20 @@ import os
 
 import allure
 import pytest
+from _pytest.config import Config
 from adcm_client.objects import ADCMClient, Cluster, Service
 from adcm_pytest_plugin.utils import get_or_add_service
 
 from tests.api.steps.asserts import BodyAssertionError
 from tests.api.steps.common import assume_step
 from tests.api.utils.api_objects import ADCMTestApiWrapper
+
+
+def pytest_configure(config: Config):
+    """
+    Exclude prepare test data classes from pytest collect
+    """
+    config.inicfg["python_classes"] = "*Test"
 
 
 def pytest_addoption(parser):
