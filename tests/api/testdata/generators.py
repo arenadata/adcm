@@ -46,6 +46,7 @@ class TestDataWithPreparedBody(NamedTuple):
     """
     Class for separating request body and data needed to send and assert it
     """
+
     test_data: TestData
     test_body: dict
     # Will not be discovered as a test class
