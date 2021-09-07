@@ -595,9 +595,10 @@ class UserProfile(ADCMModel):
 class Role(ADCMModel):
     name = models.CharField(max_length=32, unique=True)
     description = models.TextField(blank=True)
-    permissions = models.ManyToManyField(Permission, blank=True)
-    user = models.ManyToManyField(User, blank=True)
-    group = models.ManyToManyField(Group, blank=True)
+    childs = models.ManyToManyField("self", symmetrical=False, null=True)
+    permissions = models.ManyToManyField(Permission, null=True)
+    user = models.ManyToManyField(User, null=True)
+    group = models.ManyToManyField(Group, null=True)
 
 
 class TaskLog(ADCMModel):

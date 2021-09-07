@@ -45,6 +45,7 @@ class RoleSerializer(serializers.Serializer):
 
 class RoleDetailSerializer(RoleSerializer):
     permissions = PermSerializer(many=True, read_only=True)
+    childs = RoleSerializer(many=True, read_only=True)
 
 
 class GroupSerializer(serializers.Serializer):
@@ -75,6 +76,8 @@ class UserSerializer(serializers.Serializer):
     is_superuser = serializers.BooleanField(required=False)
 
     def to_internal_value(self, data):
+        if 'username' not in data:
+            return super().to_internal_value(data)
         username = data['username']
         if len(username) > MAX_NAME_LENGTH:
             raise AdcmEx(
