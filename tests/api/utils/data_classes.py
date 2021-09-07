@@ -106,10 +106,11 @@ class GroupConfigFields(BaseClass):
         postable=True,
     )
     name = Field(name="name", f_type=String(max_length=30), required=True, postable=True, changeable=True)
-    description = Field(name="description", f_type=Text(), postable=True, changeable=True)
+    description = Field(name="description", f_type=Text(), postable=True, changeable=True, default_value="")
     config = Field(
         name="config",
         f_type=ForeignKey(fk_link=ObjectConfigFields),
+        default_value="auto",
     )
     url = Field(name="url", f_type=String(), default_value="auto")
 
