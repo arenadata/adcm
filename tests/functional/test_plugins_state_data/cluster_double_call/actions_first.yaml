@@ -10,16 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
+
 - hosts: localhost
-  gather_facts: false
   connection: local
+  gather_facts: false
   tasks:
     - adcm_state:
-        type: "service"
-        state: "ifeelgood!"
-      register: out
-
-    - name: "Check return value"
-      fail:
-        msg: "Expected value is ifeelgood!, actual value is {{ out.state }}"
-      when: out.state != "ifeelgood!"
+        type: "cluster"
+        state: "much"
+    - adcm_state:
+        type: "cluster"
+        state: "better"

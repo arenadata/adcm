@@ -15,7 +15,6 @@ from typing import Tuple, List, Callable
 import pytest
 import allure
 
-from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
     run_service_action_and_assert_result,
@@ -26,7 +25,7 @@ from adcm_pytest_plugin.steps.actions import (
 )
 from adcm_client.objects import ADCMClient, Cluster, Provider, Action
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, duplicate-code
 
 # same for cluster, service, component (when only 2 of each)
 from tests.functional.plugin_utils import (
@@ -38,9 +37,10 @@ from tests.functional.plugin_utils import (
     AnyADCMObject,
     get_cluster_related_object,
     get_provider_related_object,
+    create_two_clusters,
+    create_two_providers,
 )
 
-NAMES = ('first', 'second')
 # default *solo* multi state value
 MULTI_STATE = ['ifeelgood!']
 
@@ -54,7 +54,7 @@ def _prepare_multi_state(multi_state: List[str]) -> List[str]:
     return multi_state
 
 
-multi_state_comparator = build_objects_comparator(lambda obj: obj.multi_state, _prepare_multi_state)
+multi_state_comparator = build_objects_comparator(lambda obj: obj.multi_state, 'Multi state', _prepare_multi_state)
 
 check_cluster_related_objects_multi_state = build_objects_checker(
     Cluster,
@@ -79,27 +79,15 @@ check_provider_related_objects_multi_state = build_objects_checker(
 @pytest.fixture()
 def two_clusters(request, sdk_client_fs: ADCMClient) -> Tuple[Cluster, Cluster]:
     """Get two clusters with both services"""
-    bundle_dir = "cluster" if not hasattr(request, 'param') else request.param
-    uploaded_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, bundle_dir))
-    first_cluster = uploaded_bundle.cluster_create(name=NAMES[0])
-    second_cluster = uploaded_bundle.cluster_create(name=NAMES[1])
-    clusters = (first_cluster, second_cluster)
-    for cluster in clusters:
-        for name in NAMES:
-            cluster.service_add(name=name)
-    return clusters
+    return create_two_clusters(
+        sdk_client_fs, caller_file=__file__, bundle_dir="cluster" if not hasattr(request, 'param') else request.param
+    )
 
 
 @pytest.fixture()
 def two_providers(sdk_client_fs: ADCMClient) -> Tuple[Provider, Provider]:
     """Get two providers with two hosts"""
-    uploaded_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "provider"))
-    first_provider, second_provider, *_ = [uploaded_bundle.provider_create(name=name) for name in NAMES]
-    providers = (first_provider, second_provider)
-    for provider in providers:
-        for suffix in NAMES:
-            provider.host_create(fqdn=f'{provider.name}-{suffix}')
-    return providers
+    return create_two_providers(sdk_client_fs, __file__, "provider")
 
 
 # !===== Tests =====!
