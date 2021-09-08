@@ -501,9 +501,10 @@ class PageHeader(BasePageObject):
         return self.find_elements(AuthorizedHeaderLocators.JobPopup.job_row)
 
     def click_on_task_row_by_name(self, task_name: str):
-        for task in self.get_job_rows_from_popup():
-            if task.text == task_name:
-                task.click()
+        for task in self.find_elements(AuthorizedHeaderLocators.JobPopup.job_row):
+            name = self.find_child(task, AuthorizedHeaderLocators.JobPopup.JobRow.job_name)
+            if name.text == task_name:
+                name.click()
 
     def get_single_job_row_from_popup(self, row_num: int = 0) -> WebElement:
         """Get single job row from *opened* popup"""

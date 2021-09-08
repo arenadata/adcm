@@ -298,7 +298,7 @@ class TestTaskHeaderPopup:
         ), f"Failed job amount should be {job_info['failed_jobs']}"
         assert job_info['background'] in cluster_page.header.get_jobs_circle_color(), "Bell circle should be colored"
 
-    @pytest.mark.xfail("https://arenadata.atlassian.net/browse/ADCM-2048")
+    @pytest.mark.xfail()
     def test_on_tasks_in_header_popup(self, cluster: Cluster, page: JobListPage, app_fs):
         """Run action and click on it in header popup"""
         actions = {SUCCESS_ACTION_DISPLAY_NAME: 'success', FAIL_ACTION_DISPLAY_NAME: 'failed'}
