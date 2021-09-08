@@ -505,6 +505,8 @@ class PageHeader(BasePageObject):
             name = self.find_child(task, AuthorizedHeaderLocators.JobPopup.JobRow.job_name)
             if name.text == task_name:
                 name.click()
+                return
+        raise AssertionError(f"Task with name '{task_name}' not found")
 
     def get_single_job_row_from_popup(self, row_num: int = 0) -> WebElement:
         """Get single job row from *opened* popup"""
