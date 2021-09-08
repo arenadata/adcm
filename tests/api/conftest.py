@@ -43,7 +43,8 @@ def prepare_basic_adcm_data(sdk_client_fs: ADCMClient) -> ADCMClient:
         hc_list = []
         for host in hosts:
             cluster.host_add(host)
-            for j in range(4)[1:]:
+            # Now we have service_[1..3] in cluster template
+            for j in range(1, 4):
                 service: Service = get_or_add_service(cluster, f"service_{j}")
                 for component in service.component_list():
                     hc_list.append((host, component))

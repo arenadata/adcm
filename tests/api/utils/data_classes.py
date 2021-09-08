@@ -112,6 +112,13 @@ class GroupConfigFields(BaseClass):
         f_type=ForeignKey(fk_link=ObjectConfigFields),
         default_value="auto",
     )
+    host_candidate = Field(
+        # Link to host candidates url for this object. Auto-filled when group-config object creates
+        # Candidates list depends on ADCM object for which group-config was created.
+        name="host_candidate",
+        f_type=String(),
+        default_value="auto",
+    )
     url = Field(name="url", f_type=String(), default_value="auto")
 
 
@@ -182,13 +189,6 @@ class GroupConfigHostCandidatesFields(BaseClass):
     description = Field(name="description", f_type=String(), default_value="auto")
     state = Field(name="state", f_type=String(), default_value="auto")
     url = Field(name="url", f_type=String(), default_value="auto")
-
-
-GroupConfigFields.host_candidate = Field(
-    name="host_candidate",
-    f_type=BackReferenceFK(fk_link=GroupConfigHostCandidatesFields),
-    default_value="auto",
-)
 
 
 class GroupConfigHostsFields(BaseClass):

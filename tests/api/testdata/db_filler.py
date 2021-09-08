@@ -98,9 +98,12 @@ class DbFiller:
         """
 
         for data_class in endpoint.data_class.predefined_dependencies:
+            # If this is 'object' endpoint (for example, group-config/{id}/host)
+            # we don't force create object and try to get one (first) of current created
             if f"{Endpoints.get_by_data_class(data_class).path}/{{id}}" in endpoint.path:
                 endpoint_data = self._get_or_create_data_for_endpoint(endpoint=Endpoints.get_by_data_class(data_class))
                 endpoint.path = endpoint.path.format(id=str(endpoint_data[0]["id"]))
+            # else force create depended endpoint object
             else:
                 self._get_or_create_data_for_endpoint(endpoint=Endpoints.get_by_data_class(data_class), force=True)
 
