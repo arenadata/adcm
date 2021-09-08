@@ -25,7 +25,7 @@ import { EventMessage, SocketState } from '@app/core/store';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { Store } from '@ngrx/store';
 import { BehaviorSubject, Observable, of, Subscription } from 'rxjs';
-import { catchError, finalize, map, skip, tap } from 'rxjs/operators';
+import { catchError, finalize, tap } from 'rxjs/operators';
 
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
@@ -34,7 +34,6 @@ import { IConfig } from '../types';
 import { historyAnime, ISearchParam, MainService } from './main.service';
 import { WorkerInstance } from '@app/core/services/cluster.service';
 import { ActivatedRoute } from '@angular/router';
-import { FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'app-config-form',
@@ -112,7 +111,6 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
       });
     }
 
-    this.watchFormUpdates();
   };
 
   filter(c: ISearchParam): void {
@@ -203,44 +201,5 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
         return of(null);
       })
     );
-  }
-
-  private watchFormUpdates(): void {
-    const path = (form: FormGroup) => {
-      const changes = [];
-
-      // Select all dirty
-      Object.entries(form.controls).filter(([_, control]) => control.dirty).forEach(([key, control]) => {
-        if (control instanceof FormGroup) {
-          path(control).forEach((d) => {
-            changes.push([key, d]);
-          });
-          return;
-        }
-
-        changes.push(key);
-      });
-
-      return changes;
-    };
-
-    this._changesSubscription.unsubscribe();
-
-    // sync with groups checkboxes
-    this._changesSubscription = this.fields.form.valueChanges.pipe(
-      skip(2),
-      map(() => path(this.fields.form)),
-    )
-      .subscribe(results => {
-        results.forEach((param) => {
-          if (Array.isArray(param)) {
-            param.reduce((acc, cur) => {
-              return acc.get(cur);
-            }, this.fields.groupsForm).setValue(true, { emitEvent: false });
-          } else {
-            this.fields.groupsForm.controls[param].setValue(true, { emitEvent: false });
-          }
-        });
-      });
   }
 }

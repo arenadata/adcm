@@ -29,7 +29,7 @@ import { FormGroup } from '@angular/forms';
         <div class="row d-flex">
           <div class="group-checkbox d-flex" style="padding: 5px">
             <ng-container *ngIf="showCheckbox && item.configGroup as ConfigGroupControl">
-              <mat-checkbox [formControl]="ConfigGroupControl"></mat-checkbox>
+              <mat-checkbox [formControl]="ConfigGroupControl" [disabled]="item.read_only"></mat-checkbox>
             </ng-container>
           </div>
           <app-field class="w100" *ngIf="!item.hidden" [form]="form" [options]="item"
