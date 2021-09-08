@@ -13,6 +13,7 @@ pytestmark = [
 ]
 
 
+@allure.title("Prepare data for methods tests")
 @pytest.fixture(params=get_data_for_methods_check())
 def prepare_data(request, adcm_api_fs):
     """

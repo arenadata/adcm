@@ -15,5 +15,4 @@ import pytest
 pytestmark = [
     pytest.mark.allure_label("API Tests", label_type="layer"),
     pytest.mark.allure_label("API base", label_type="parentSuite"),
-    pytest.mark.xfail(reason="Group config will be refactored"),
 ]

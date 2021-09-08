@@ -1,8 +1,0 @@
-- name: Dummy post action with config
-  hosts: localhost
-  gather_facts: no
-
-  tasks:
-    - name: Post action
-      debug:
-        msg: "Post action success"

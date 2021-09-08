@@ -32,6 +32,8 @@ class TestData:  # pylint: disable=too-few-public-methods
     request: Request
     response: ExpectedResponse
     description: Optional[str] = None
+    # Will not be discovered as a test class
+    __test__ = False
 
     def __repr__(self):
         return (
@@ -47,6 +49,8 @@ class TestDataWithPreparedBody(NamedTuple):
 
     test_data: TestData
     test_body: dict
+    # Will not be discovered as a test class
+    __test__ = False
 
 
 def _fill_pytest_param(
@@ -59,7 +63,9 @@ def _fill_pytest_param(
     """
     Create pytest.param for each test data set
     """
-    marks = []
+    marks = [
+        pytest.mark.allure_label(f"/api/v1/{endpoint.path}", label_type="page_url"),
+    ]
     if positive:
         marks.append(pytest.mark.positive)
         positive_str = "positive"
@@ -68,7 +74,7 @@ def _fill_pytest_param(
         positive_str = "negative"
     if endpoint.spec_link:
         marks.append(allure.link(url=endpoint.spec_link, name="Endpoint spec"))
-    param_id = f"{endpoint.path}_{method.name}_{positive_str}"
+    param_id = f"{endpoint.path.replace('/', '_')}_{method.name}_{positive_str}"
     if addition:
         param_id += f"_{addition}"
     return pytest.param(value, marks=marks, id=param_id)
@@ -486,7 +492,7 @@ def _prepare_test_data_with_one_by_one_fields(
         if not param_value.error_messages:
             continue
         body = ExpectedBody()
-        body.fields_values = {param_name: param_value.get_error_data()}
+        body.fields = {param_name: param_value.get_error_data()}
         request_data[param_name] = param_value
         request = Request(method=method, endpoint=endpoint)
         response = ExpectedResponse(status_code=status_code, body=body)

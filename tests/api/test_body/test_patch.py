@@ -24,6 +24,7 @@ pytestmark = [
 ]
 
 
+@allure.title("Prepare patch body data")
 @pytest.fixture()
 def prepare_patch_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
     """
