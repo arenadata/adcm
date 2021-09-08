@@ -74,11 +74,6 @@ class BasePageObject:
         default_loc_timeout: int = 15,
         **kwargs,
     ):
-        if any(str.isdigit(char) for char in path_template):
-            raise ValueError(
-                f"Path template {path_template} should not contain any digits. "
-                "Please use template string and pass values as kwargs"
-            )
         self.driver = driver
         self.base_url = base_url
         self.path = path_template.format(**kwargs)
@@ -468,6 +463,19 @@ class PageHeader(BasePageObject):
         self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
         return self.find_element(AuthorizedHeaderLocators.JobPopup.in_progress_jobs).text.split("\n")[1]
 
+    def get_failed_job_amount_from_header(self):
+        self.hover_element(AuthorizedHeaderLocators.job_block)
+        self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
+        return self.find_element(AuthorizedHeaderLocators.JobPopup.failed_jobs).text.split("\n")[1]
+
+    def wait_success_job_amount_from_header(self, expected_job_amount: int):
+        def wait_job():
+            assert (
+                int(self.get_success_job_amount_from_header()) == expected_job_amount
+            ), f"Should be {expected_job_amount} tasks in popup header"
+
+        wait_until_step_succeeds(wait_job, period=1, timeout=70)
+
     @allure.step('Open profile using account popup in header')
     def open_profile(self):
         """Open profile page"""
@@ -492,6 +500,14 @@ class PageHeader(BasePageObject):
         self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
         return self.find_elements(AuthorizedHeaderLocators.JobPopup.job_row)
 
+    def click_on_task_row_by_name(self, task_name: str):
+        for task in self.find_elements(AuthorizedHeaderLocators.JobPopup.job_row):
+            name = self.find_child(task, AuthorizedHeaderLocators.JobPopup.JobRow.job_name)
+            if name.text == task_name:
+                name.click()
+                return
+        raise AssertionError(f"Task with name '{task_name}' not found")
+
     def get_single_job_row_from_popup(self, row_num: int = 0) -> WebElement:
         """Get single job row from *opened* popup"""
 
@@ -503,6 +519,43 @@ class PageHeader(BasePageObject):
         rows = self.get_job_rows_from_popup()
         assert_enough_rows(row_num, len(rows))
         return rows[row_num]
+
+    def click_all_link_in_job_popup(self):
+        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
+        self.find_and_click(AuthorizedHeaderLocators.JobPopup.show_all_link)
+
+    def click_in_progress_in_job_popup(self):
+        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
+        self.find_and_click(AuthorizedHeaderLocators.JobPopup.in_progress_jobs)
+
+    def click_success_jobs_in_job_popup(self):
+        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
+        self.find_and_click(AuthorizedHeaderLocators.JobPopup.success_jobs)
+
+    def click_failed_jobs_in_job_popup(self):
+        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
+        self.find_and_click(AuthorizedHeaderLocators.JobPopup.failed_jobs)
+
+    def click_acknowledge_btn_in_job_popup(self):
+        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
+        self.find_and_click(AuthorizedHeaderLocators.JobPopup.acknowledge_btn)
+
+    def get_jobs_circle_color(self):
+        return self.find_element(AuthorizedHeaderLocators.bell_icon).get_attribute("style")
+
+    @allure.step("Check that job list is empty")
+    def check_no_jobs_presented(self):
+        if not self.is_element_displayed(AuthorizedHeaderLocators.JobPopup.block):
+            self.find_and_click(AuthorizedHeaderLocators.jobs)
+        assert (
+            "Nothing to display" in self.find_element(AuthorizedHeaderLocators.JobPopup.empty_text).text
+        ), "There should be message 'Nothing to display'"
+
+    @allure.step("Check acknowledge button not displayed")
+    def check_acknowledge_btn_not_displayed(self):
+        if not self.is_element_displayed(AuthorizedHeaderLocators.JobPopup.block):
+            self.find_and_click(AuthorizedHeaderLocators.jobs)
+        assert not self.is_element_displayed(AuthorizedHeaderLocators.JobPopup.acknowledge_btn)
 
 
 class PageFooter(BasePageObject):

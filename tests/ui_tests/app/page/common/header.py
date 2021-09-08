@@ -38,6 +38,7 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
     help_button = Locator(By.CSS_SELECTOR, "button[adcm_test='help']", "Header button for help")
     account_button = Locator(By.CSS_SELECTOR, "button[adcm_test='account']", "Header button for account settings")
     popup_block = Locator(By.CSS_SELECTOR, "*.mat-menu-content", "Header popup block")
+    bell_icon = Locator(By.CSS_SELECTOR, "div.circle", "Bell icon")
 
     class JobPopup:
         """ADCM header popup with jobs"""
@@ -47,12 +48,15 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
         success_jobs = Locator(By.CSS_SELECTOR, "div[mattooltip='Show success jobs']", "Success jobs")
         in_progress_jobs = Locator(By.CSS_SELECTOR, "div[mattooltip='Show jobs in progress']", "In progress jobs")
         failed_jobs = Locator(By.CSS_SELECTOR, "div[mattooltip='Show failed jobs']", "Failed jobs")
-
         job_row = Locator(By.CSS_SELECTOR, "div>div[class*='notification']", "Job row in popup list")
-        job_status = Locator(By.CSS_SELECTOR, "mat-icon", "Job status in job row")
-        job_name = Locator(By.CSS_SELECTOR, "a", "Job name in job row")
+
+        class JobRow:
+            job_status = Locator(By.CSS_SELECTOR, "mat-icon", "Job status in job row")
+            job_name = Locator(By.CSS_SELECTOR, "a", "Job row name in popup list")
 
         show_all_link = Locator(By.CSS_SELECTOR, "app-popover a[href='/task']", "Link to task page")
+        empty_text = Locator(By.CSS_SELECTOR, "app-notifications *.empty-label", "Text in popup")
+        acknowledge_btn = Locator(By.CSS_SELECTOR, "a.acknowledge", "Acknowledge button")
 
     class HelpPopup:
         """ADCM header popup with help links"""
