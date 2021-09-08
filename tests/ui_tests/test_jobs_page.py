@@ -186,7 +186,7 @@ class TestTaskPage:
 class TestTaskHeaderPopup:
     @pytest.mark.smoke()
     @pytest.mark.parametrize(
-        'job_link, job_filter',
+        ('job_link', 'job_filter'),
         [
             ("click_all_link_in_job_popup", "All"),
             ("click_in_progress_in_job_popup", "In progress"),
