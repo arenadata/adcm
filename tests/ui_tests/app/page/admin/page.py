@@ -96,7 +96,7 @@ class AdminUsersPage(GeneralAdminPage):
 
     def is_user_presented(self, username: str) -> bool:
         """Check if user is presented in users list"""
-        for row in self.table.get_all_rows():
+        for row in self.find_elements(AdminUsersLocators.user_row):
             if self.find_child(row, AdminUsersLocators.Row.username).text == username:
                 return True
         return False
