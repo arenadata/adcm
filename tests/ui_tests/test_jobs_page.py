@@ -46,11 +46,10 @@ CLUSTER_NAME = 'test_cluster'
 SERVICE_NAME = 'test_service'
 COMPONENT_NAME = 'test_component'
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, unused-argument
 
 
 @pytest.fixture()
-# pylint: disable-next=unused-argument
 def page(app_fs: ADCMTest, login_to_adcm_over_api) -> JobListPage:
     return JobListPage(app_fs.driver, app_fs.adcm.url).open()
 
@@ -187,7 +186,7 @@ class TestTaskPage:
 class TestTaskHeaderPopup:
     @pytest.mark.smoke()
     @pytest.mark.parametrize(
-        'job_link, filter',
+        'job_link, job_filter',
         [
             ("click_all_link_in_job_popup", "All"),
             ("click_in_progress_in_job_popup", "In progress"),
@@ -196,7 +195,7 @@ class TestTaskHeaderPopup:
         ],
         ids=["all_jobs", 'in_progress_jobs', 'success_jobs', 'failed_jobs'],
     )
-    def test_link_to_jobs_in_header_popup(self, login_to_adcm_over_api, app_fs, job_link, filter):
+    def test_link_to_jobs_in_header_popup(self, login_to_adcm_over_api, app_fs, job_link, job_filter):
         """Link to /task from popup with filter"""
 
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -205,7 +204,7 @@ class TestTaskHeaderPopup:
         open_filter()
         job_page = JobListPage(app_fs.driver, app_fs.adcm.url)
         job_page.wait_page_is_opened()
-        assert job_page.get_selected_filter() == filter, f"Jobs should be filtered by {filter}"
+        assert job_page.get_selected_filter() == job_filter, f"Jobs should be filtered by {job_filter}"
 
     @pytest.mark.smoke()
     def test_acknowledge_jobs_in_header_popup(self, cluster: Cluster, page: JobListPage):
@@ -232,7 +231,9 @@ class TestTaskHeaderPopup:
                 'success_jobs': "1",
                 'in_progress_job_jobs': "0",
                 'failed_jobs': "0",
-                'background': 'conic-gradient(rgb(255, 234, 0) 0deg, rgb(255, 234, 0) 0deg, rgb(30, 229, 100) 0deg, rgb(30, 229, 100) 360deg, rgb(255, 138, 128) 360deg, rgb(255, 138, 128) 360deg)',
+                'background': 'conic-gradient(rgb(255, 234, 0) 0deg, rgb(255, 234, 0) 0deg, '
+                'rgb(30, 229, 100) 0deg, rgb(30, 229, 100) 360deg, '
+                'rgb(255, 138, 128) 360deg, rgb(255, 138, 128) 360deg)',
             },
             {
                 'status': JobStatus.FAILED,
@@ -240,7 +241,9 @@ class TestTaskHeaderPopup:
                 'success_jobs': "0",
                 'in_progress_job_jobs': "0",
                 'failed_jobs': "1",
-                'background': 'conic-gradient(rgb(255, 234, 0) 0deg, rgb(255, 234, 0) 0deg, rgb(30, 229, 100) 0deg, rgb(30, 229, 100) 0deg, rgb(255, 138, 128) 0deg, rgb(255, 138, 128) 360deg)',
+                'background': 'conic-gradient(rgb(255, 234, 0) 0deg, rgb(255, 234, 0) 0deg, '
+                'rgb(30, 229, 100) 0deg, rgb(30, 229, 100) 0deg, '
+                'rgb(255, 138, 128) 0deg, rgb(255, 138, 128) 360deg)',
             },
             {
                 'status': JobStatus.RUNNING,
@@ -248,7 +251,9 @@ class TestTaskHeaderPopup:
                 'success_jobs': "0",
                 'in_progress_job_jobs': "1",
                 'failed_jobs': "0",
-                'background': 'conic-gradient(rgb(255, 234, 0) 0deg, rgb(255, 234, 0) 360deg, rgb(30, 229, 100) 360deg, rgb(30, 229, 100) 360deg, rgb(255, 138, 128) 360deg, rgb(255, 138, 128) 360deg)',
+                'background': 'conic-gradient(rgb(255, 234, 0) 0deg, rgb(255, 234, 0) 360deg, '
+                'rgb(30, 229, 100) 360deg, rgb(30, 229, 100) 360deg, '
+                'rgb(255, 138, 128) 360deg, rgb(255, 138, 128) 360deg)',
             },
             {
                 'status': JobStatus.RUNNING,
@@ -260,7 +265,9 @@ class TestTaskHeaderPopup:
                 'success_jobs': "1",
                 'in_progress_job_jobs': "1",
                 'failed_jobs': "1",
-                'background': 'conic-gradient(rgb(255, 234, 0) 0deg, rgb(255, 234, 0) 120deg, rgb(30, 229, 100) 120deg, rgb(30, 229, 100) 240deg, rgb(255, 138, 128) 240deg, rgb(255, 138, 128) 360deg)',
+                'background': 'conic-gradient(rgb(255, 234, 0) 0deg, rgb(255, 234, 0) 120deg, '
+                'rgb(30, 229, 100) 120deg, rgb(30, 229, 100) 240deg, '
+                'rgb(255, 138, 128) 240deg, rgb(255, 138, 128) 360deg)',
             },
         ],
         ids=['success_job', 'failed_job', 'in_progress_job', 'three_job'],
@@ -304,7 +311,7 @@ class TestTaskHeaderPopup:
             page.header.click_on_task_row_by_name(task_name=action_name)
             job_page = JobPageStdout(app_fs.driver, app_fs.adcm.url, job_id=1)
             job_page.check_title(action_name)
-            job_page.check_text(success_task=False if action_name is FAIL_ACTION_DISPLAY_NAME else True)
+            job_page.check_text(success_task=bool(action_name == FAIL_ACTION_DISPLAY_NAME))
 
     def test_six_tasks_in_header_popup(self, cluster: Cluster, login_to_adcm_over_api, app_fs):
         """Check list of tasks in header popup"""

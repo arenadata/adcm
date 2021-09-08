@@ -23,6 +23,7 @@ class TaskListLocators:
         running = Locator(By.CSS_SELECTOR, "mat-button-toggle[value='running'] button", "Running filter button")
         success = Locator(By.CSS_SELECTOR, "mat-button-toggle[value='success'] button", "Success filter button")
         failed = Locator(By.CSS_SELECTOR, "mat-button-toggle[value='failed'] button", "Failed filter button")
+        filter_btn = Locator(By.CSS_SELECTOR, "mat-button-toggle button", "Filter button")
 
     class Table(CommonTable):
         class Row:
