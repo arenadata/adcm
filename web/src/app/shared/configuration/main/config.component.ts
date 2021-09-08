@@ -66,7 +66,6 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   @Output()
   event = new EventEmitter<{ name: string; data?: any }>();
   private _workerSubscription: Subscription = Subscription.EMPTY;
-  private _changesSubscription: Subscription = Subscription.EMPTY;
 
   constructor(
     private service: MainService,
@@ -95,7 +94,6 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   ngOnDestroy() {
     super.ngOnDestroy();
     this._workerSubscription.unsubscribe();
-    this._changesSubscription.unsubscribe();
   }
 
   onReady(): void {
