@@ -287,7 +287,10 @@ class ConfigLog(ADCMModel):
                 update(config, diff)
                 group_config.config = config
                 attr = deepcopy(self.attr)
-                attr.update({'group_keys': cg.create_group_keys(self.config, cg.get_config_spec())})
+                group_keys, custom_group_keys = cg.create_group_keys(
+                    self.config, cg.get_config_spec()
+                )
+                attr.update({'group_keys': group_keys, 'custom_group_keys': custom_group_keys})
                 update(attr, current_group_config.attr)
                 group_config.attr = attr
                 group_config.description = current_group_config.description
@@ -295,6 +298,13 @@ class ConfigLog(ADCMModel):
                 cg.config.previous = cg.config.current
                 cg.config.current = group_config.id
                 cg.config.save()
+        if isinstance(obj, GroupConfig):
+            # `custom_group_keys` read only field in attr,
+            # needs to be replaced when creating an object with ORM
+            # for api it is checked in /cm/adcm_config.py:check_custom_group_keys_attr()
+            _, custom_group_keys = obj.create_group_keys(self.config, obj.get_config_spec())
+            self.attr.update({'custom_group_keys': custom_group_keys})
+
         super().save(*args, **kwargs)
 
 
@@ -552,28 +562,44 @@ class GroupConfig(ADCMModel):
         for field in PrototypeConfig.objects.filter(
             prototype=self.object.prototype, action__isnull=True
         ).order_by('id'):
+            group_customization = field.group_customization
+            if group_customization is None:
+                group_customization = self.object.prototype.config_group_customized
+            field_spec = {'type': field.type, 'group_customization': group_customization}
             if field.subname == '':
                 if field.type == 'group':
-                    spec[field.name] = {'type': field.type, 'fields': {}}
-                else:
-                    spec[field.name] = {'type': field.type}
+                    field_spec.update({'fields': {}})
+                spec[field.name] = field_spec
             else:
-                spec[field.name]['fields'][field.subname] = {'type': field.type}
+                spec[field.name]['fields'][field.subname] = field_spec
         return spec
 
     def create_group_keys(
-        self, config: dict, config_spec: dict, group_keys: Dict[str, bool] = None
+        self,
+        config: dict,
+        config_spec: dict,
+        group_keys: Dict[str, bool] = None,
+        custom_group_keys: Dict[str, bool] = None,
     ):
-        """Creating group keys from origin config"""
+        """
+        Returns a map of fields that are included in a group,
+        as well as a map of fields that cannot be included in a group
+        """
         if group_keys is None:
             group_keys = {}
+        if custom_group_keys is None:
+            custom_group_keys = {}
         for k in config.keys():
             if config_spec[k]['type'] == 'group':
                 group_keys.setdefault(k, {})
-                self.create_group_keys(config.get(k, {}), config_spec[k]['fields'], group_keys[k])
+                custom_group_keys.setdefault(k, {})
+                self.create_group_keys(
+                    config.get(k, {}), config_spec[k]['fields'], group_keys[k], custom_group_keys[k]
+                )
             else:
                 group_keys[k] = False
-        return group_keys
+                custom_group_keys[k] = config_spec[k]['group_customization']
+        return group_keys, custom_group_keys
 
     def get_group_config(self):
         def get_diff(config, group_keys, diff=None):
@@ -609,9 +635,7 @@ class GroupConfig(ADCMModel):
             ).distinct()
         else:
             raise AdcmEx('GROUP_CONFIG_TYPE_ERROR')
-        return hosts.difference(
-            Host.objects.filter(groupconfig__in=self.object.group_config.all())
-        )
+        return hosts.difference(Host.objects.filter(groupconfig__in=self.object.group_config.all()))
 
     def check_host_candidate(self, host):
         """Checking host candidate for group"""
@@ -630,7 +654,10 @@ class GroupConfig(ADCMModel):
                 config_log.config = deepcopy(parent_config_log.config)
                 attr = deepcopy(parent_config_log.attr)
                 config_spec = self.get_config_spec()
-                attr.update({'group_keys': self.create_group_keys(config_log.config, config_spec)})
+                group_keys, custom_group_keys = self.create_group_keys(
+                    config_log.config, config_spec
+                )
+                attr.update({'group_keys': group_keys, 'custom_group_keys': custom_group_keys})
                 config_log.attr = attr
                 config_log.description = parent_config_log.description
                 config_log.save()
@@ -761,6 +788,7 @@ class PrototypeConfig(ADCMModel):
     limits = models.JSONField(default=dict)
     ui_options = models.JSONField(blank=True, default=dict)
     required = models.BooleanField(default=True)
+    group_customization = models.BooleanField(null=True)
 
     class Meta:
         unique_together = (('prototype', 'action', 'name', 'subname'),)
@@ -1005,6 +1033,7 @@ class StagePrototypeConfig(ADCMModel):
     limits = models.JSONField(default=dict)
     ui_options = models.JSONField(blank=True, default=dict)
     required = models.BooleanField(default=True)
+    group_customization = models.BooleanField(null=True)
 
     class Meta:
         unique_together = (('prototype', 'action', 'name', 'subname'),)

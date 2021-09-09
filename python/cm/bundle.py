@@ -550,6 +550,7 @@ def copy_stage_config(stage_config, prototype):
                 'limits',
                 'required',
                 'ui_options',
+                'group_customization',
             ),
         )
         if sc.action:
@@ -710,6 +711,7 @@ def update_bundle_from_stage(
                 'limits',
                 'required',
                 'ui_options',
+                'group_customization',
             )
             act = None
             if sc.action:
