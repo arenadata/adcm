@@ -148,10 +148,10 @@
   dependencies:
     tslib "^2.0.0"
 
-"@angular/cdk@^11.1.1":
-  version "11.1.2"
-  resolved "https://rt.adsw.io/artifactory/api/npm/arenadata-npm/@angular/cdk/-/cdk-11.1.2.tgz#89708a97be340bbfb7d64c84dbc7bb100f77d7ff"
-  integrity sha1-iXCKl740C7+31kyE28e7EA931/8=
+"@angular/cdk@^11.2.13":
+  version "11.2.13"
+  resolved "https://rt.adsw.io/artifactory/api/npm/arenadata-npm/@angular/cdk/-/cdk-11.2.13.tgz#d54c9187e3b8cf3f8ba190b1edddc08ed2b740de"
+  integrity sha1-1UyRh+O4zz+LoZCx7d3AjtK3QN4=
   dependencies:
     tslib "^2.0.0"
   optionalDependencies:
@@ -263,10 +263,10 @@
   resolved "https://rt.adsw.io/artifactory/api/npm/arenadata-npm/@angular/language-service/-/language-service-11.2.14.tgz#452369cdffe76ac6d07836596fb47f9e69a6d119"
   integrity sha1-RSNpzf/nasbQeDZZb7R/nmmm0Rk=
 
-"@angular/material@^11.1.1":
-  version "11.1.2"
-  resolved "https://rt.adsw.io/artifactory/api/npm/arenadata-npm/@angular/material/-/material-11.1.2.tgz#6b466c95b65921e95d26bce34216439fc9b7881e"
-  integrity sha1-a0ZslbZZIeldJrzjQhZDn8m3iB4=
+"@angular/material@^11.2.13":
+  version "11.2.13"
+  resolved "https://rt.adsw.io/artifactory/api/npm/arenadata-npm/@angular/material/-/material-11.2.13.tgz#99960316d3ce58aac7497d7bb8b0c05468f502b9"
+  integrity sha1-mZYDFtPOWKrHSX17uLDAVGj1Ark=
   dependencies:
     tslib "^2.0.0"
 
