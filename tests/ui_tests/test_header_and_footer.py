@@ -99,7 +99,7 @@ class TestHeader:
         header.click_logout_in_acc_popup()
         header.wait_url_contains_path(LoginPage(app_fs.driver, app_fs.adcm.url).path)
 
-    @pytest.mark.xfail("https://arenadata.atlassian.net/browse/ADCM-2054")
+    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2054")
     def test_check_back_button_in_browser_for_header_links(self, app_fs, sdk_client_fs):
         add_dummy_objects_to_adcm(sdk_client_fs)
         with allure.step("Check back button for cluster page header link"):
