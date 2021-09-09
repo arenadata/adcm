@@ -10,9 +10,56 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django_filters import rest_framework as drf_filters
+
 from api.api_views import PageView, DetailViewRO
-from cm.models import ConcernItem
+from cm import models
 from . import serializers
+
+
+class ConcernFilter(drf_filters.FilterSet):
+    adcm = drf_filters.ModelMultipleChoiceFilter(
+        queryset=models.ADCM.objects.all(),
+        field_name='adcm_entities__id',
+        to_field_name='id',
+    )
+    cluster = drf_filters.ModelMultipleChoiceFilter(
+        queryset=models.Cluster.objects.all(),
+        field_name='cluster_entities__id',
+        to_field_name='id',
+    )
+    service = drf_filters.ModelMultipleChoiceFilter(
+        queryset=models.ClusterObject.objects.all(),
+        field_name='clusterobject_entities__id',
+        to_field_name='id',
+    )
+    component = drf_filters.ModelMultipleChoiceFilter(
+        queryset=models.ServiceComponent.objects.all(),
+        field_name='servicecomponent_entities__id',
+        to_field_name='id',
+    )
+    provider = drf_filters.ModelMultipleChoiceFilter(
+        queryset=models.HostProvider.objects.all(),
+        field_name='hostprovider_entities__id',
+        to_field_name='id',
+    )
+    host = drf_filters.ModelMultipleChoiceFilter(
+        queryset=models.Host.objects.all(),
+        field_name='host_entities__id',
+        to_field_name='id',
+    )
+
+    class Meta:
+        model = models.ConcernItem
+        fields = [
+            'name',
+            'adcm',
+            'cluster',
+            'service',
+            'component',
+            'provider',
+            'host',
+        ]
 
 
 class ConcernItemList(PageView):
@@ -21,10 +68,10 @@ class ConcernItemList(PageView):
     List of all existing concern items
     """
 
-    queryset = ConcernItem.objects.all()
+    queryset = models.ConcernItem.objects.all()
     serializer_class = serializers.ConcernItemSerializer
     serializer_class_ui = serializers.ConcernItemDetailSerializer
-    filterset_fields = ('name',)
+    filterset_class = ConcernFilter
     ordering_fields = ('name',)
 
 
@@ -34,7 +81,7 @@ class ConcernItemDetail(DetailViewRO):
     Show concern item
     """
 
-    queryset = ConcernItem.objects.all()
+    queryset = models.ConcernItem.objects.all()
     serializer_class = serializers.ConcernItemDetailSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'concern_id'
