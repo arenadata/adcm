@@ -32,4 +32,14 @@ class Migration(migrations.Migration):
             name='config_group_customized',
             field=models.BooleanField(default=False),
         ),
+        migrations.AddField(
+            model_name='prototypeconfig',
+            name='group_customization',
+            field=models.BooleanField(null=True),
+        ),
+        migrations.AddField(
+            model_name='stageprototypeconfig',
+            name='group_customization',
+            field=models.BooleanField(null=True),
+        ),
     ]
