@@ -189,6 +189,7 @@ class GroupConfigConfigSerializer(serializers.ModelSerializer):
         lookup_url_kwarg='pk',
         source='*',
     )
+    current_id = serializers.IntegerField(source='current')
     previous = MultiHyperlinkedRelatedField(
         'group-config-config-log-detail',
         'parent_lookup_obj_ref__group_config',
@@ -197,6 +198,7 @@ class GroupConfigConfigSerializer(serializers.ModelSerializer):
         lookup_url_kwarg='pk',
         source='*',
     )
+    previous_id = serializers.IntegerField(source='previous')
     history = serializers.SerializerMethodField()
     url = MultiHyperlinkedIdentityField(
         'group-config-config-detail', 'parent_lookup_group_config', 'pk'
@@ -204,7 +206,7 @@ class GroupConfigConfigSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ObjectConfig
-        fields = ('id', 'current', 'previous', 'history', 'url')
+        fields = ('id', 'current', 'current_id', 'previous', 'previous_id', 'history', 'url')
 
     def get_history(self, obj):
         kwargs = {
@@ -229,12 +231,12 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ConfigLog
-        fields = ('id', 'date', 'obj_ref', 'description', 'config', 'attr', 'url')
+        fields = ('id', 'date', 'description', 'config', 'attr', 'url')
         extra_kwargs = {'config': {'required': True}}
 
     @atomic
     def create(self, validated_data):
-        object_config = validated_data.get('obj_ref')
+        object_config = self.context.get('obj_ref')
         config = validated_data.get('config')
         attr = validated_data.get('attr', {})
         description = validated_data.get('description', '')
@@ -249,4 +251,4 @@ class UIGroupConfigConfigLogSerializer(GroupConfigConfigLogSerializer):
 
     class Meta:
         model = ConfigLog
-        fields = ('id', 'date', 'obj_ref', 'description', 'config', 'attr', 'url')
+        fields = ('id', 'date', 'description', 'config', 'attr', 'url')
