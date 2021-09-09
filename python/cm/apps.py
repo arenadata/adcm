@@ -78,5 +78,5 @@ def fill_role(apps, **kwargs):
 class CmConfig(AppConfig):
     name = 'cm'
 
-    def ready(self):
-        post_migrate.connect(fill_role, sender=self)
+    #def ready(self):
+    #    post_migrate.connect(fill_role, sender=self)

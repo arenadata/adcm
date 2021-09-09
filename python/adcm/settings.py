@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework.authtoken',
     'social_django',
+    'adwp_users',
     'cm.apps.CmConfig',
 ]
 
@@ -148,6 +149,8 @@ DATABASES = {
     }
 }
 
+
+AUTH_USER_MODEL = 'adwp_users.User'
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
