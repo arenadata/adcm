@@ -32,6 +32,8 @@ from tests.ui_tests.utils import (
     close_current_tab,
 )
 
+# pylint: disable=no-self-use, # pylint: disable=no-self-use
+
 pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
 
 
