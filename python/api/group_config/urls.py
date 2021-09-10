@@ -22,12 +22,24 @@ root.register(
     r'host',
     views.GroupConfigHostViewSet,
     basename='group-config-host',
-    parents_query_lookups=['groupconfig'],
+    parents_query_lookups=['group_config'],
 )
 root.register(
     r'host-candidate',
     views.GroupConfigHostCandidateViewSet,
     basename='group-config-host-candidate',
-    parents_query_lookups=['groupconfig'],
+    parents_query_lookups=['group_config'],
+)
+config = root.register(
+    r'config',
+    views.GroupConfigConfigViewSet,
+    basename='group-config-config',
+    parents_query_lookups=['group_config'],
+)
+config.register(
+    r'config-log',
+    views.GroupConfigConfigLogViewSet,
+    basename='group-config-config-log',
+    parents_query_lookups=['obj_ref__group_config', 'obj_ref'],
 )
 urlpatterns = router.urls

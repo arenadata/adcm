@@ -326,12 +326,6 @@ class ADCMEntity(ADCMModel):
     state = models.CharField(max_length=64, default='created')
     _multi_state = models.JSONField(default=dict, db_column='multi_state')
     concerns = models.ManyToManyField('ConcernItem', blank=True, related_name='%(class)s_entities')
-    group_config = GenericRelation(
-        'GroupConfig',
-        object_id_field='object_id',
-        content_type_field='object_type',
-        on_delete=models.CASCADE,
-    )
 
     class Meta:
         abstract = True
@@ -435,7 +429,6 @@ class ADCMEntity(ADCMModel):
 
 class ADCM(ADCMEntity):
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
-    group_config = None
 
     @property
     def bundle_id(self):
@@ -454,6 +447,12 @@ class ADCM(ADCMEntity):
 class Cluster(ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
+    group_config = GenericRelation(
+        'GroupConfig',
+        object_id_field='object_id',
+        content_type_field='object_type',
+        on_delete=models.CASCADE,
+    )
 
     __error_code__ = 'CLUSTER_NOT_FOUND'
 
@@ -485,6 +484,12 @@ class Cluster(ADCMEntity):
 class HostProvider(ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
+    group_config = GenericRelation(
+        'GroupConfig',
+        object_id_field='object_id',
+        content_type_field='object_type',
+        on_delete=models.CASCADE,
+    )
 
     __error_code__ = 'PROVIDER_NOT_FOUND'
 
@@ -518,7 +523,6 @@ class Host(ADCMEntity):
     description = models.TextField(blank=True)
     provider = models.ForeignKey(HostProvider, on_delete=models.CASCADE, null=True, default=None)
     cluster = models.ForeignKey(Cluster, on_delete=models.SET_NULL, null=True, default=None)
-    group_config = None
 
     __error_code__ = 'HOST_NOT_FOUND'
 
@@ -545,6 +549,12 @@ class Host(ADCMEntity):
 class ClusterObject(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
+    group_config = GenericRelation(
+        'GroupConfig',
+        object_id_field='object_id',
+        content_type_field='object_type',
+        on_delete=models.CASCADE,
+    )
 
     __error_code__ = 'CLUSTER_SERVICE_NOT_FOUND'
 
@@ -585,6 +595,12 @@ class ServiceComponent(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
+    group_config = GenericRelation(
+        'GroupConfig',
+        object_id_field='object_id',
+        content_type_field='object_type',
+        on_delete=models.CASCADE,
+    )
 
     __error_code__ = 'COMPONENT_NOT_FOUND'
 
@@ -631,7 +647,7 @@ class GroupConfig(ADCMModel):
     object = GenericForeignKey('object_type', 'object_id')
     name = models.CharField(max_length=30)
     description = models.TextField(blank=True)
-    hosts = models.ManyToManyField(Host, blank=True)
+    hosts = models.ManyToManyField(Host, blank=True, related_name='group_config')
     config = models.OneToOneField(
         ObjectConfig, on_delete=models.CASCADE, null=True, related_name='group_config'
     )
@@ -722,7 +738,7 @@ class GroupConfig(ADCMModel):
             ).distinct()
         else:
             raise AdcmEx('GROUP_CONFIG_TYPE_ERROR')
-        return hosts.difference(Host.objects.filter(groupconfig__in=self.object.group_config.all()))
+        return hosts.exclude(group_config__in=self.object.group_config.all())
 
     def check_host_candidate(self, host):
         """Checking host candidate for group"""
