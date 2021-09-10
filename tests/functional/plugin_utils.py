@@ -363,7 +363,7 @@ def run_successful_task(action: Action, action_owner_name: str):
         wait_for_task_and_assert_result(task, status="success")
     except AssertionError as error:
         raise AssertionError(
-            f'Action {action.name} should have succeeded when ran on {action_owner_name}:\n' f'{error}'
+            f'Action {action.name} should have succeeded when ran on {action_owner_name}:\n{error}'
         ) from error
 
 
