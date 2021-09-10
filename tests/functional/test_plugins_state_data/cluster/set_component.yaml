@@ -10,48 +10,58 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-
 - hosts: localhost
-  connection: local
   gather_facts: false
+  connection: local
   tasks:
-    - adcm_multi_state_unset:
-        type: "provider"
+    - adcm_state:
+        type: "component"
         state: "ifeelgood!"
       tags:
-        - provider
+        - directly
 
-    - adcm_multi_state_unset:
-        type: "host"
-        host_id: "{{job.config.host_id}}"
+    - adcm_state:
+        type: "component"
+        component_name: "first"
         state: "ifeelgood!"
       tags:
-        - host_from_provider
+        - first
 
-    - adcm_multi_state_unset:
-        type: "host"
+    - adcm_state:
+        type: "component"
+        component_name: "second"
         state: "ifeelgood!"
       tags:
-        - host
+        - second
 
-    - adcm_multi_state_unset:
-        type: "provider"
+    - adcm_state:
+        type: "component"
+        component_name: "first"
+        service_name: "first"
         state: "ifeelgood!"
-        missing_ok: true
       tags:
-        - provider_missing
+        - first_first
 
-    - adcm_multi_state_unset:
-        type: "host"
+    - adcm_state:
+        type: "component"
+        component_name: "second"
+        service_name: "first"
         state: "ifeelgood!"
-        host_id: "{{job.config.host_id}}"
-        missing_ok: true
       tags:
-        - provider_host_missing
+        - first_second
 
-    - adcm_multi_state_unset:
-        type: "host"
+    - adcm_state:
+        type: "component"
+        component_name: "first"
+        service_name: "second"
         state: "ifeelgood!"
-        missing_ok: true
       tags:
-        - host_missing
+        - second_first
+
+    - adcm_state:
+        type: "component"
+        component_name: "second"
+        service_name: "second"
+        state: "ifeelgood!"
+      tags:
+        - second_second

@@ -24,13 +24,9 @@ from rest_framework.mixins import (
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from cm.models import GroupConfig, Host
-from .serializers import (
-    GroupConfigSerializer,
-    revert_model_name,
-    GroupConfigHostSerializer,
-    GroupConfigHostCandidateSerializer,
-)
+from api.views import ViewInterfaceGenericViewSet
+from cm.models import GroupConfig, Host, ObjectConfig, ConfigLog
+from . import serializers
 
 
 class GroupConfigFilterSet(FilterSet):
@@ -39,7 +35,7 @@ class GroupConfigFilterSet(FilterSet):
     )
 
     def filter_object_type(self, queryset, name, value):
-        value = revert_model_name(value)
+        value = serializers.revert_model_name(value)
         object_type = ContentType.objects.get(app_label='cm', model=value)
         return queryset.filter(**{name: object_type})
 
@@ -57,39 +53,105 @@ class GroupConfigHostViewSet(
     viewsets.GenericViewSet,
 ):  # pylint: disable=too-many-ancestors
     queryset = Host.objects.all()
-    serializer_class = GroupConfigHostSerializer
+    serializer_class = serializers.GroupConfigHostSerializer
+    lookup_url_kwarg = 'host_id'
 
     def destroy(self, request, *args, **kwargs):
-        group_config = GroupConfig.obj.get(id=self.kwargs.get('parent_lookup_groupconfig'))
+        group_config = GroupConfig.obj.get(id=self.kwargs.get('parent_lookup_group_config'))
         host = self.get_object()
         group_config.hosts.remove(host)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        group_config_id = self.kwargs.get('parent_lookup_groupconfig')
+        group_config_id = self.kwargs.get('parent_lookup_group_config')
         if group_config_id is not None:
             group_config = GroupConfig.obj.get(id=group_config_id)
-            context.update({'groupconfig': group_config})
+            context.update({'group_config': group_config})
         return context
 
 
-class GroupConfigHostCandidateViewSet(NestedViewSetMixin, ListModelMixin, viewsets.GenericViewSet):
-    queryset = Host.objects.all()
-    serializer_class = GroupConfigHostCandidateSerializer
+class GroupConfigHostCandidateViewSet(
+    NestedViewSetMixin, viewsets.ReadOnlyModelViewSet
+):  # pylint: disable=too-many-ancestors
+    serializer_class = serializers.GroupConfigHostCandidateSerializer
+    lookup_url_kwarg = 'host_id'
 
-    def list(self, request, *args, **kwargs):
-        group_config = GroupConfig.obj.get(id=self.kwargs.get('parent_lookup_groupconfig'))
-        page = self.paginate_queryset(group_config.host_candidate())
-        serializer = self.serializer_class(
-            page, many=True, context={'request': request, 'groupconfig': group_config}
-        )
-        return self.get_paginated_response(serializer.data)
+    def get_queryset(self):
+        group_config_id = self.kwargs.get('parent_lookup_group_config')
+        if group_config_id is None:
+            return None
+        group_config = GroupConfig.obj.get(id=group_config_id)
+        return group_config.host_candidate()
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        group_config_id = self.kwargs.get('parent_lookup_group_config')
+        if group_config_id is not None:
+            group_config = GroupConfig.obj.get(id=group_config_id)
+            context.update({'group_config': group_config})
+        return context
+
+
+class GroupConfigConfigViewSet(NestedViewSetMixin, RetrieveModelMixin, viewsets.GenericViewSet):
+    queryset = ObjectConfig.objects.all()
+    serializer_class = serializers.GroupConfigConfigSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        group_config_id = self.kwargs.get('parent_lookup_group_config')
+        if group_config_id is not None:
+            group_config = GroupConfig.obj.get(id=group_config_id)
+            context.update({'group_config': group_config})
+            context.update({'obj_ref__group_config': group_config})
+        obj_ref_id = self.kwargs.get('pk')
+        if obj_ref_id is not None:
+            obj_ref = ObjectConfig.obj.get(id=obj_ref_id)
+            context.update({'obj_ref': obj_ref})
+        return context
+
+
+class GroupConfigConfigLogViewSet(
+    NestedViewSetMixin,
+    RetrieveModelMixin,
+    ListModelMixin,
+    CreateModelMixin,
+    ViewInterfaceGenericViewSet,
+):  # pylint: disable=too-many-ancestors
+    serializer_class = serializers.GroupConfigConfigLogSerializer
+    ui_serializer_class = serializers.UIGroupConfigConfigLogSerializer
+    filterset_fields = ('id',)
+    ordering_fields = ('id',)
+
+    def get_queryset(self):
+        kwargs = {
+            'obj_ref__group_config': self.kwargs.get('parent_lookup_obj_ref__group_config'),
+            'obj_ref': self.kwargs.get('parent_lookup_obj_ref'),
+        }
+        return ConfigLog.objects.filter(**kwargs).order_by('-id')
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        group_config_id = self.kwargs.get('parent_lookup_obj_ref__group_config')
+        if group_config_id is not None:
+            group_config = GroupConfig.obj.get(id=group_config_id)
+            context.update({'obj_ref__group_config': group_config})
+        obj_ref_id = self.kwargs.get('parent_lookup_obj_ref')
+        if obj_ref_id is not None:
+            obj_ref = ObjectConfig.obj.get(id=obj_ref_id)
+            context.update({'obj_ref': obj_ref})
+        return context
 
 
 class GroupConfigViewSet(
     NestedViewSetMixin, viewsets.ModelViewSet
 ):  # pylint: disable=too-many-ancestors
     queryset = GroupConfig.objects.all()
-    serializer_class = GroupConfigSerializer
+    serializer_class = serializers.GroupConfigSerializer
     filterset_class = GroupConfigFilterSet
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        if self.kwargs:
+            context.update({'group_config': self.get_object()})
+        return context

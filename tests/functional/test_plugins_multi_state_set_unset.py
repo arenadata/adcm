@@ -15,17 +15,17 @@ from typing import Tuple, List, Callable
 import pytest
 import allure
 
-from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
     run_service_action_and_assert_result,
     run_provider_action_and_assert_result,
     run_host_action_and_assert_result,
     wait_for_task_and_assert_result,
+    run_component_action_and_assert_result,
 )
 from adcm_client.objects import ADCMClient, Cluster, Provider, Action
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, duplicate-code
 
 # same for cluster, service, component (when only 2 of each)
 from tests.functional.plugin_utils import (
@@ -37,9 +37,10 @@ from tests.functional.plugin_utils import (
     AnyADCMObject,
     get_cluster_related_object,
     get_provider_related_object,
+    create_two_clusters,
+    create_two_providers,
 )
 
-NAMES = ('first', 'second')
 # default *solo* multi state value
 MULTI_STATE = ['ifeelgood!']
 
@@ -53,7 +54,7 @@ def _prepare_multi_state(multi_state: List[str]) -> List[str]:
     return multi_state
 
 
-multi_state_comparator = build_objects_comparator(lambda obj: obj.multi_state, _prepare_multi_state)
+multi_state_comparator = build_objects_comparator(lambda obj: obj.multi_state, 'Multi state', _prepare_multi_state)
 
 check_cluster_related_objects_multi_state = build_objects_checker(
     Cluster,
@@ -78,27 +79,15 @@ check_provider_related_objects_multi_state = build_objects_checker(
 @pytest.fixture()
 def two_clusters(request, sdk_client_fs: ADCMClient) -> Tuple[Cluster, Cluster]:
     """Get two clusters with both services"""
-    bundle_dir = "cluster" if not hasattr(request, 'param') else request.param
-    uploaded_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, bundle_dir))
-    first_cluster = uploaded_bundle.cluster_create(name=NAMES[0])
-    second_cluster = uploaded_bundle.cluster_create(name=NAMES[1])
-    clusters = (first_cluster, second_cluster)
-    for cluster in clusters:
-        for name in NAMES:
-            cluster.service_add(name=name)
-    return clusters
+    return create_two_clusters(
+        sdk_client_fs, caller_file=__file__, bundle_dir="cluster" if not hasattr(request, 'param') else request.param
+    )
 
 
 @pytest.fixture()
 def two_providers(sdk_client_fs: ADCMClient) -> Tuple[Provider, Provider]:
     """Get two providers with two hosts"""
-    uploaded_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "provider"))
-    first_provider, second_provider, *_ = [uploaded_bundle.provider_create(name=name) for name in NAMES]
-    providers = (first_provider, second_provider)
-    for provider in providers:
-        for suffix in NAMES:
-            provider.host_create(fqdn=f'{provider.name}-{suffix}')
-    return providers
+    return create_two_providers(sdk_client_fs, __file__, "provider")
 
 
 # !===== Tests =====!
@@ -213,7 +202,7 @@ def test_forbidden_multi_state_set_actions(sdk_client_fs: ADCMClient):
             check_provider_related_objects_multi_state(sdk_client_fs)
 
 
-@pytest.mark.usefixtures('two_providers')
+@pytest.mark.usefixtures('two_providers', 'two_clusters')
 def test_missing_ok_multi_state_unset(sdk_client_fs: ADCMClient):
     """
     Checking behaviour of flag "missing_ok":
@@ -222,6 +211,9 @@ def test_missing_ok_multi_state_unset(sdk_client_fs: ADCMClient):
     """
     provider = sdk_client_fs.provider()
     host = provider.host()
+    cluster = sdk_client_fs.cluster()
+    service = cluster.service()
+    component = service.component()
     with allure.step('Check job fails with "missing_ok: false" and state not in multi_state'):
         for forbidden_action in ('unset_provider', 'unset_host'):
             run_host_action_and_assert_result(host, forbidden_action, 'failed')
@@ -230,11 +222,24 @@ def test_missing_ok_multi_state_unset(sdk_client_fs: ADCMClient):
             provider, 'unset_host_from_provider', status='failed', config={'host_id': host.id}
         )
         check_provider_related_objects_multi_state(sdk_client_fs)
+        run_cluster_action_and_assert_result(cluster, 'unset_cluster', status='failed')
+        check_cluster_related_objects_multi_state(sdk_client_fs)
+        run_service_action_and_assert_result(service, 'unset_service', status='failed')
+        check_cluster_related_objects_multi_state(sdk_client_fs)
+        run_component_action_and_assert_result(component, 'unset_component', status='failed')
+        check_cluster_related_objects_multi_state(sdk_client_fs)
+
     with allure.step('Check job succeed with "missing_ok: true" without changing multi_state of any object'):
         for allowed_action in ('unset_provider_missing', 'unset_host_missing'):
             run_host_action_and_assert_result(host, allowed_action)
             check_provider_related_objects_multi_state(sdk_client_fs)
         run_provider_action_and_assert_result(provider, 'unset_host_from_provider_missing', config={'host_id': host.id})
+        run_cluster_action_and_assert_result(cluster, 'unset_cluster_missing')
+        check_cluster_related_objects_multi_state(sdk_client_fs)
+        run_service_action_and_assert_result(service, 'unset_service_missing')
+        check_cluster_related_objects_multi_state(sdk_client_fs)
+        run_component_action_and_assert_result(component, 'unset_component_missing')
+        check_cluster_related_objects_multi_state(sdk_client_fs)
 
 
 # pylint: disable-next=possibly-unused-variable

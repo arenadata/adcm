@@ -106,13 +106,13 @@ def test_check_host_lock_during_operations(forth_p: Provider):
     2. Create host first host on provider
     3. Run job that creates the second host on provider
     4. Wait until second host will be created.
-    5. Check that both host has "locked" state
-    6. Wait for job to be finished without erros
-    7. Check that both hosts is in "created" state
+    5. Check that both host is locked
+    6. Wait for job to be finished without errors
+    7. Check that both hosts is free
     8. Run remove action on one of hosts
-    9. Check that host under action is "locked", while other host is "created"
+    9. Check that host under action is locked, while other host is free
     10. Wait for job to be finished without errors
-    11. Check that remaining host is in "created" state.
+    11. Check that remaining host is free.
     """
     with allure.step('Create host first host on provider'):
         forth_p.action(name="create_host").run(config_diff={'fqdn': "forth_one"}).try_wait()
@@ -122,25 +122,25 @@ def test_check_host_lock_during_operations(forth_p: Provider):
         wait_until_step_succeeds(_assert_that_object_exists, period=0.5, get_object_func=forth_p.host, fqdn="forth_two")
         forth_two_h = forth_p.host(fqdn="forth_two")
         forth_one_h = forth_p.host(fqdn='forth_one')
-    with allure.step('Check that both host has "locked" state'):
-        assert forth_one_h.state == 'locked'
-        assert forth_two_h.state == 'locked'
-    with allure.step('Wait for job to be finished without erros'):
-        job.try_wait()
-    with allure.step('Check that both hosts is in "created" state'):
-        forth_one_h.reread()
-        forth_two_h.reread()
-        assert forth_one_h.state == 'created'
-        assert forth_two_h.state == 'created'
-    with allure.step('Run remove action on one of hosts'):
-        job = forth_one_h.action(name="remove_host").run(config={"sleep": 2})
-    with allure.step('Check that host under action is "locked", while other host is "created"'):
-        forth_one_h.reread()
-        forth_two_h.reread()
-        assert forth_one_h.state == 'locked'
-        assert forth_two_h.state == 'created'
+    with allure.step('Check that both host has is locked'):
+        assert forth_one_h.locked is True
+        assert forth_two_h.locked is True
     with allure.step('Wait for job to be finished without errors'):
         job.try_wait()
-    with allure.step('Check that remaining host is in "created" state'):
+    with allure.step('Check that both hosts is free'):
+        forth_one_h.reread()
         forth_two_h.reread()
-        assert forth_two_h.state == 'created'
+        assert forth_one_h.locked is False
+        assert forth_two_h.locked is False
+    with allure.step('Run remove action on one of hosts'):
+        job = forth_one_h.action(name="remove_host").run(config={"sleep": 2})
+    with allure.step('Check that host under action is locked, while other host is free'):
+        forth_one_h.reread()
+        forth_two_h.reread()
+        assert forth_one_h.locked is True
+        assert forth_two_h.locked is False
+    with allure.step('Wait for job to be finished without errors'):
+        job.try_wait()
+    with allure.step('Check that remaining host is free'):
+        forth_two_h.reread()
+        assert forth_two_h.locked is False

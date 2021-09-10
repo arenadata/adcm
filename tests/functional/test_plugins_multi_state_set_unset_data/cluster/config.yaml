@@ -90,6 +90,11 @@
       params:
         ansible_tags: cluster
 
+    unset_cluster_missing:
+      <<: *unset_action
+      params:
+        ansible_tags: cluster_missing
+
     unset_service:
       <<: *unset_action
       params:

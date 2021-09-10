@@ -391,11 +391,6 @@ def is_fk_or_back_ref(field: Field) -> bool:
     return isinstance(field.f_type, (ForeignKey, BackReferenceFK))
 
 
-def is_back_ref_fk(field: Field) -> bool:
-    """Predicate for back reference fields"""
-    return isinstance(field.f_type, (ForeignKey, BackReferenceFK))
-
-
 def is_huge_field(field):
     """Predicate for select only huge fields"""
     return field.f_type.is_huge

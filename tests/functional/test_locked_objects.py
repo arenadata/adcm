@@ -557,7 +557,8 @@ def is_locked(obj: Union[Cluster, Service, Component, Provider, Host]):
     """
 
     with allure.step(f"Assert that {obj.__class__.__name__} is locked"):
-        assert_state(obj=obj, state="locked")
+        assert_state(obj=obj, state="created")
+        assert obj.locked is True, f"{obj.__class__.__name__} should be locked"
         assert (
             obj.action_list() == []
         ), f"{obj.__class__.__name__} action list isn't empty. {obj.__class__.__name__} not locked"
@@ -568,7 +569,8 @@ def is_free(obj: Union[Cluster, Service, Component, Provider, Host]):
     Assert that object state is 'created' and action list isn't empty
     """
     with allure.step(f"Assert that {obj.__class__.__name__} is free"):
-        assert_state(obj, state="created")
+        assert_state(obj=obj, state="created")
+        assert obj.locked is False, f"{obj.__class__.__name__} should be available"
         assert obj.action_list(), (
             f"{obj.__class__.__name__} action list is empty. " f"Actions should be available for unlocked objects"
         )

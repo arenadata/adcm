@@ -76,11 +76,24 @@ def fill_role(apps, **kwargs):
     fill_admin_role(Role, Permission)
 
 
+_watched_m2m_links = (
+    # 'cluster',
+    'group-config',
+    'group-config-hosts',
+    'adcm-concerns',
+    'cluster-concerns',
+    'cluster-object-concerns',
+    'service-component-concerns',
+    'host-provider-concerns',
+    'host-concerns',
+)
+
+
 def filter_out_event(module, name):
     # We filter the sending of events only for the cm application
     if module[0:2] != 'cm':
         return True
-    if name not in ('group-config', 'group-config-hosts'):
+    if name not in _watched_m2m_links:
         return True
     return False
 
