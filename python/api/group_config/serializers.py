@@ -144,7 +144,7 @@ class GroupConfigHostSerializer(serializers.ModelSerializer):
 
     id = serializers.PrimaryKeyRelatedField(queryset=Host.objects.all())
     url = MultiHyperlinkedIdentityField(
-        'group-config-host-detail', 'parent_lookup_groupconfig', 'pk'
+        'group-config-host-detail', 'parent_lookup_groupconfig', 'host_id'
     )
 
     class Meta:

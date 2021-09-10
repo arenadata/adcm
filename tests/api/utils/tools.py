@@ -11,7 +11,7 @@ import allure
 from requests_toolbelt.utils import dump
 
 
-class NotSet:
+class NotSet:  # pylint: disable=too-few-public-methods
     pass
 
 
@@ -51,16 +51,16 @@ def get_connection_ip(remote_host):
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.connect((remote_host, 1))
-    ip = sock.getsockname()[0]
+    ip_ = sock.getsockname()[0]
     sock.close()
-    return ip
+    return ip_
 
 
 def get_if_name_by_ip(if_ip):
     """Get interface name by interface IP"""
     for adapter in ifaddr.get_adapters():
-        for ip in adapter.ips:
-            if ip.ip == if_ip:
+        for ip_ in adapter.ips:
+            if ip_.ip == if_ip:
                 return adapter.name
     raise ValueError(f"IP {if_ip} does not match any network interface!")
 

@@ -21,7 +21,6 @@ import sys
 import adcm.init_django  # DO NOT DELETE !!!
 from cm import config
 import cm.job
-import cm.lock
 from cm.logger import log
 from cm.models import LogStorage
 from cm.status_api import Event

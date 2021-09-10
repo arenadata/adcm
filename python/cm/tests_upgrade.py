@@ -14,18 +14,25 @@ from django.test import TestCase
 
 import cm.api
 import cm.job
-from cm.models import Cluster, Host, ClusterObject, ServiceComponent, HostComponent
-from cm.models import Bundle, Upgrade, Prototype, PrototypeConfig, ConfigLog
+import cm.upgrade
+from cm import adcm_config, issue
 from cm.errors import AdcmEx
-from cm import adcm_config
+from cm.models import (
+    Bundle,
+    ClusterObject,
+    ConfigLog,
+    Host,
+    HostComponent,
+    IssueType,
+    Prototype,
+    PrototypeConfig,
+    ServiceComponent,
+    Upgrade,
+)
+from cm.unit_tests import utils
 
 
 class TestUpgradeVersion(TestCase):
-    def cook_cluster(self):
-        b = Bundle(name="ADH", version="1.0")
-        proto = Prototype(type="cluster", name="ADH", bundle=b)
-        return Cluster(prototype=proto, issue={})
-
     def cook_upgrade(self):
         return Upgrade(
             min_version="1.0",
@@ -37,12 +44,10 @@ class TestUpgradeVersion(TestCase):
 
     def check_upgrade(self, obj, upgrade, result):
         ok, msg = cm.upgrade.check_upgrade(obj, upgrade)
-        if not ok:
-            print("check_upgrade msg: ", msg)
-        self.assertEqual(ok, result)
+        self.assertEqual(ok, result, f'check_upgrade msg: {msg or None}')
 
     def test_version(self):
-        obj = self.cook_cluster()
+        obj = utils.gen_cluster()
         upgrade = self.cook_upgrade()
 
         obj.prototype.version = "1.5"
@@ -58,7 +63,7 @@ class TestUpgradeVersion(TestCase):
         self.check_upgrade(obj, upgrade, True)
 
     def test_strict_version(self):
-        obj = self.cook_cluster()
+        obj = utils.gen_cluster()
         upgrade = self.cook_upgrade()
         upgrade.min_strict = True
         upgrade.max_strict = True
@@ -76,7 +81,7 @@ class TestUpgradeVersion(TestCase):
         self.check_upgrade(obj, upgrade, False)
 
     def test_state(self):
-        obj = self.cook_cluster()
+        obj = utils.gen_cluster()
         upgrade = self.cook_upgrade()
         upgrade.state_available = ["installed", "any"]
         obj.prototype.version = "1.5"
@@ -88,8 +93,8 @@ class TestUpgradeVersion(TestCase):
         self.check_upgrade(obj, upgrade, True)
 
     def test_issue(self):
-        obj = self.cook_cluster()
-        obj.issue = {"config": False}
+        obj = utils.gen_cluster()
+        issue.create_issue(obj, IssueType.Config)
         upgrade = self.cook_upgrade()
         self.check_upgrade(obj, upgrade, False)
 

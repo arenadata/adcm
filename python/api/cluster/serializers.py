@@ -18,19 +18,28 @@ import cm.job
 import cm.status_api
 from api.action.serializers import ActionShort
 from api.api_views import (
-    UrlField,
     CommonAPIURL,
     ObjectURL,
+    UrlField,
     check_obj,
-    hlink,
     filter_actions,
     get_upgradable_func,
+    hlink,
 )
 from api.component.serializers import ComponentDetailSerializer
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.host.serializers import HostSerializer
+from api.serializers import StringListSerializer
 from cm.errors import AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
+
+
+def get_cluster_id(obj):
+    if hasattr(obj.obj_ref, 'clusterobject'):
+        return obj.obj_ref.clusterobject.cluster.id
+    else:
+        return obj.obj_ref.cluster.id
 
 
 class ClusterSerializer(serializers.Serializer):
@@ -66,8 +75,6 @@ class ClusterSerializer(serializers.Serializer):
 
 
 class ClusterDetailSerializer(ClusterSerializer):
-    # stack = serializers.JSONField(read_only=True)
-    issue = serializers.SerializerMethodField()
     bundle_id = serializers.IntegerField(read_only=True)
     edition = serializers.CharField(read_only=True)
     license = serializers.CharField(read_only=True)
@@ -83,10 +90,10 @@ class ClusterDetailSerializer(ClusterSerializer):
     imports = hlink('cluster-import', 'id', 'cluster_id')
     bind = hlink('cluster-bind', 'id', 'cluster_id')
     prototype = hlink('cluster-type-details', 'prototype_id', 'prototype_id')
+    multi_state = StringListSerializer(read_only=True)
+    concerns = ConcernItemSerializer(many=True, read_only=True)
+    locked = serializers.BooleanField(read_only=True)
     group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
-
-    def get_issue(self, obj):
-        return cm.issue.aggregate_issues(obj)
 
     def get_status(self, obj):
         return cm.status_api.get_cluster_status(obj.id)
@@ -99,6 +106,7 @@ class ClusterUISerializer(ClusterDetailSerializer):
     prototype_display_name = serializers.SerializerMethodField()
     upgradable = serializers.SerializerMethodField()
     get_upgradable = get_upgradable_func
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)

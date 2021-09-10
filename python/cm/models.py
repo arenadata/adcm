@@ -1,4 +1,5 @@
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines,unsupported-membership-test,unsupported-delete-operation
+#   pylint could not understand that JSON fields are dicts
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -10,13 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
 
 from collections.abc import Mapping
 from copy import deepcopy
-from typing import Dict
+from enum import Enum
+from itertools import chain
+from typing import Dict, Iterable, List, Optional
 
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -28,6 +30,16 @@ from django.dispatch import receiver
 
 from cm.errors import AdcmEx
 from cm.logger import log
+
+
+class PrototypeEnum(Enum):
+    ADCM = 'adcm'
+    Cluster = 'cluster'
+    Service = 'service'
+    Component = 'component'
+    Provider = 'provider'
+    Host = 'host'
+
 
 PROTO_TYPE = (
     ('adcm', 'adcm'),
@@ -312,8 +324,8 @@ class ADCMEntity(ADCMModel):
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
     config = models.OneToOneField(ObjectConfig, on_delete=models.CASCADE, null=True)
     state = models.CharField(max_length=64, default='created')
-    stack = models.JSONField(default=list)
-    issue = models.JSONField(default=dict)
+    _multi_state = models.JSONField(default=dict, db_column='multi_state')
+    concerns = models.ManyToManyField('ConcernItem', blank=True, related_name='%(class)s_entities')
     group_config = GenericRelation(
         'GroupConfig',
         object_id_field='object_id',
@@ -324,18 +336,101 @@ class ADCMEntity(ADCMModel):
     class Meta:
         abstract = True
 
+    @property
+    def locked(self) -> bool:
+        """Check if actions could be run over entity"""
+        return self.concerns.filter(blocking=True).exists()
+
+    def add_to_concerns(self, item: 'ConcernItem') -> None:
+        """Attach entity to ConcernItem to keep up with it"""
+        if not item or getattr(item, 'id', None) is None:
+            return
+
+        if item in self.concerns.all():
+            return
+
+        self.concerns.add(item)
+
+    def remove_from_concerns(self, item: 'ConcernItem') -> None:
+        """Detach entity from ConcernItem when it outdated"""
+        if not item or not hasattr(item, 'id'):
+            return
+
+        if item not in self.concerns.all():
+            return
+
+        self.concerns.remove(item)
+
+    def get_own_issue(self, issue_type: 'IssueType') -> Optional['ConcernItem']:
+        """Get object's issue of specified type or None"""
+        issue_name = issue_type.gen_issue_name(self)
+        for issue in self.concerns.filter(type=ConcernType.Issue, name=issue_name):
+            return issue
+
+    @property
+    def display_name(self):
+        """Unified `display name` for object's string representation"""
+        own_name = getattr(self, 'name', None)
+        fqdn = getattr(self, 'fqdn', None)
+        return own_name or fqdn or self.prototype.display_name or self.prototype.name
+
     def __str__(self):
-        """Legacy `cm.adcm_config.obj_ref()` to avoid cyclic imports"""
-        name = getattr(self, 'name', None) or getattr(self, 'fqdn', self.prototype.name)
+        own_name = getattr(self, 'name', None)
+        fqdn = getattr(self, 'fqdn', None)
+        name = own_name or fqdn or self.prototype.name
         return '{} #{} "{}"'.format(self.prototype.type, self.id, name)
 
-    def set_state(self, state: str, event=None) -> 'ADCMEntity':
-        """Legacy `cm.api.set_object_state()` to avoid cyclic imports"""
-        self.state = state
+    def set_state(self, state: str, event=None) -> None:
+        self.state = state or self.state
         self.save()
-        event.set_object_state(self.prototype.type, self.id, state)
+        if event:
+            event.set_object_state(self.prototype.type, self.id, state)
         log.info('set %s state to "%s"', self, state)
-        return self
+
+    def get_id_chain(self) -> dict:
+        """
+        Get object ID chain for front-end URL generation in message templates
+        result looks like {'cluster': 12, 'service': 34, 'component': 45}
+        """
+        ids = {}
+        ids[self.prototype.type] = self.pk
+        for attr in ['cluster', 'service', 'provider']:
+            value = getattr(self, attr, None)
+            if value:
+                ids[attr] = value.pk
+
+        return ids
+
+    @property
+    def multi_state(self) -> List[str]:
+        """Easy to operate self._multi_state representation"""
+        return sorted(self._multi_state.keys())
+
+    def set_multi_state(self, multi_state: str, event=None) -> None:
+        """Append new unique multi_state to entity._multi_state"""
+        if multi_state in self._multi_state:
+            return
+
+        self._multi_state.update({multi_state: 1})
+        self.save()
+        if event:
+            event.change_object_multi_state(self.prototype.type, self.id, multi_state)
+        log.info('add "%s" to "%s" multi_state', multi_state, self)
+
+    def unset_multi_state(self, multi_state: str, event=None) -> None:
+        """Remove specified multi_state from entity._multi_state"""
+        if multi_state not in self._multi_state:
+            return
+
+        del self._multi_state[multi_state]
+        self.save()
+        if event:
+            event.change_object_multi_state(self.prototype.type, self.id, multi_state)
+        log.info('remove "%s" from "%s" multi_state', multi_state, self)
+
+    def has_multi_state_intersection(self, multi_states: List[str]) -> bool:
+        """Check if entity._multi_state has an intersection with list of multi_states"""
+        return bool(set(self._multi_state).intersection(multi_states))
 
 
 class ADCM(ADCMEntity):
@@ -466,10 +561,6 @@ class ClusterObject(ADCMEntity):
         return self.prototype.name
 
     @property
-    def display_name(self):
-        return self.prototype.display_name or self.name
-
-    @property
     def description(self):
         return self.prototype.description
 
@@ -500,10 +591,6 @@ class ServiceComponent(ADCMEntity):
     @property
     def name(self):
         return self.prototype.name
-
-    @property
-    def display_name(self):
-        return self.prototype.display_name or self.name
 
     @property
     def description(self):
@@ -730,10 +817,20 @@ class Action(ADCMModel):
         return self.prototype.type
 
     def __str__(self):
-        return "{} {}".format(self.prototype, self.name)
+        return "{} {}".format(self.prototype, self.display_name or self.name)
 
     class Meta:
         unique_together = (('prototype', 'name'),)
+
+    def get_id_chain(self, target_ids: dict) -> dict:
+        """Get action ID chain for front-end URL generation in message templates"""
+        target_ids['action'] = self.pk
+        result = {
+            'type': self.prototype.type + '_action_run',
+            'name': self.display_name or self.name,
+            'ids': target_ids,
+        }
+        return result
 
 
 class SubAction(ADCMModel):
@@ -873,6 +970,32 @@ class TaskLog(ADCMModel):
     verbose = models.BooleanField(default=False)
     start_date = models.DateTimeField()
     finish_date = models.DateTimeField()
+    lock = models.ForeignKey('ConcernItem', null=True, on_delete=models.SET_NULL, default=None)
+
+    def lock_affected(self, objects: Iterable[ADCMEntity]) -> None:
+        if self.lock:
+            return
+
+        reason = MessageTemplate.get_message_from_template(
+            MessageTemplate.KnownNames.LockedByAction.value,
+            action=self.action,
+            target=self.task_object,
+        )
+        self.lock = ConcernItem.objects.create(
+            type=ConcernType.Lock.value, name=None, reason=reason, blocking=True
+        )
+        self.save()
+        for obj in objects:
+            obj.add_to_concerns(self.lock)
+
+    def unlock_affected(self) -> None:
+        if not self.lock:
+            return
+
+        lock = self.lock
+        self.lock = None
+        self.save()
+        lock.delete()
 
 
 class JobLog(ADCMModel):
@@ -1064,3 +1187,160 @@ class StagePrototypeImport(ADCMModel):
 
 class DummyData(ADCMModel):
     date = models.DateTimeField(auto_now=True)
+
+
+class MessageTemplate(ADCMModel):
+    """
+    Templates for `ConcernItem.reason
+    There are two sources of templates - they are pre-created in migrations or loaded from bundles
+
+    expected template format is
+        {
+            'message': 'Lorem ${ipsum} dolor sit ${amet}',
+            'placeholder': {
+                'lorem': {'type': 'cluster'},
+                'amet': {'type': 'action'}
+            }
+        }
+
+    placeholder fill functions have unified interface:
+      @classmethod
+      def _func(cls, placeholder_name, **kwargs) -> dict
+
+    TODO: load from bundle
+    TODO: check consistency on creation
+    TODO: separate JSON processing logic from model
+    """
+
+    name = models.CharField(max_length=160, unique=True)
+    template = models.JSONField()
+
+    class KnownNames(Enum):
+        LockedByAction = 'locked by action on target'  # kwargs=(action, target)
+        ConfigIssue = 'object config issue'  # kwargs=(source, )
+        RequiredServiceIssue = 'required service issue'  # kwargs=(source, )
+        RequiredImportIssue = 'required import issue'  # kwargs=(source, )
+        HostComponentIssue = 'host component issue'  # kwargs=(source, )
+
+    class PlaceHolderType(Enum):
+        Action = 'action'
+        ADCMEntity = 'adcm_entity'
+        ADCM = 'adcm'
+        Cluster = 'cluster'
+        Service = 'service'
+        Component = 'component'
+        Provider = 'provider'
+        Host = 'host'
+
+    @classmethod
+    def get_message_from_template(cls, name: str, **kwargs) -> dict:
+        """Find message template by its name and fill placeholders"""
+        tpl = cls.obj.get(name=name).template
+        filled_placeholders = {}
+        try:
+            for ph_name, ph_data in tpl['placeholder'].items():
+                filled_placeholders[ph_name] = cls._fill_placeholder(ph_name, ph_data, **kwargs)
+        except (KeyError, AttributeError, TypeError, AssertionError) as ex:
+            if isinstance(ex, KeyError):
+                msg = f'Message templating KeyError: "{ex.args[0]}" not found'
+            elif isinstance(ex, AttributeError):
+                msg = f'Message templating AttributeError: "{ex.args[0]}"'
+            elif isinstance(ex, TypeError):
+                msg = f'Message templating TypeError: "{ex.args[0]}"'
+            elif isinstance(ex, AssertionError):
+                msg = 'Message templating AssertionError: expected kwarg were not found'
+            else:
+                msg = None
+            raise AdcmEx('MESSAGE_TEMPLATING_ERROR', msg=msg) from ex
+        tpl['placeholder'] = filled_placeholders
+        return tpl
+
+    @classmethod
+    def _fill_placeholder(cls, ph_name: str, ph_data: dict, **ph_source_data) -> dict:
+        type_map = {
+            cls.PlaceHolderType.Action.value: cls._action_placeholder,
+            cls.PlaceHolderType.ADCMEntity.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.ADCM.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Cluster.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Service.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Component.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Provider.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Host.value: cls._adcm_entity_placeholder,
+        }
+        return type_map[ph_data['type']](ph_name, **ph_source_data)
+
+    @classmethod
+    def _action_placeholder(cls, _, **kwargs) -> dict:
+        action = kwargs.get('action')
+        assert action
+        target = kwargs.get('target')
+        assert target
+
+        ids = target.get_id_chain()
+        ids['action'] = action.pk
+        return {
+            'type': cls.PlaceHolderType.Action.value,
+            'name': action.display_name,
+            'ids': ids,
+        }
+
+    @classmethod
+    def _adcm_entity_placeholder(cls, ph_name, **kwargs) -> dict:
+        obj = kwargs.get(ph_name)
+        assert obj
+
+        return {
+            'type': obj.prototype.type,
+            'name': obj.display_name,
+            'ids': obj.get_id_chain(),
+        }
+
+
+class IssueType(Enum):
+    Config = 'config'
+    RequiredService = 'required_service'
+    RequiredImport = 'required_import'
+    HostComponent = 'host_component'
+
+    def gen_issue_name(self, obj: ADCMEntity) -> str:
+        """Generate unique issue name for object"""
+        return f'{self.name} issue on {obj.prototype.type} {obj.pk}'
+
+
+class ConcernType(models.TextChoices):
+    Lock = 'lock', 'lock'
+    Issue = 'issue', 'issue'
+    Flag = 'flag', 'flag'
+
+
+class ConcernItem(ADCMModel):
+    """
+    Representation for object's lock/issue/flag
+    Man-to-many from ADCMEntities
+    One-to-one from TaskLog
+    ...
+
+    `type` is literally type of concern
+    `name` is used for (un)setting flags from ansible playbooks
+    `reason` is used to display/notify on front-end, text template and data for URL generation
+        should be generated from pre-created templates model `MessageTemplate`
+    `blocking` blocks actions from running
+    `related_objects` are back-refs from affected ADCMEntities.concerns
+    """
+
+    type = models.CharField(max_length=8, choices=ConcernType.choices, default=ConcernType.Lock)
+    name = models.CharField(max_length=160, null=True, unique=True)
+    reason = models.JSONField(default=dict)
+    blocking = models.BooleanField(default=True)
+
+    @property
+    def related_objects(self) -> Iterable[ADCMEntity]:
+        """List of objects that has that item in concerns"""
+        return chain(
+            self.adcm_entities.all(),
+            self.cluster_entities.all(),
+            self.clusterobject_entities.all(),
+            self.servicecomponent_entities.all(),
+            self.hostprovider_entities.all(),
+            self.host_entities.all(),
+        )

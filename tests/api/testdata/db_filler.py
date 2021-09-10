@@ -60,9 +60,7 @@ class DbFiller:
         full_item = get_object_data(
             adcm=self.adcm,
             endpoint=endpoint,
-            object_id=self._get_or_create_data_for_endpoint(endpoint=endpoint,)[
-                0
-            ]['id'],
+            object_id=self._get_or_create_data_for_endpoint(endpoint=endpoint)[0]['id'],
         )
         # GET, DELETE
         if method in (Methods.GET, Methods.DELETE):
@@ -94,29 +92,26 @@ class DbFiller:
             return result
         raise ValueError(f"No such method {method}")
 
-    def _get_or_create_data_for_endpoint(
-        self, endpoint: Endpoints, force=False, prepare_data_only=False
-    ):
+    def _get_or_create_data_for_endpoint(self, endpoint: Endpoints, force=False, prepare_data_only=False):
         """
         Get data for endpoint with data preparation
         """
-        # GroupConfig should be filled using custom algorithm
-        if endpoint in (Endpoints.GroupConfig,):
-            return self._generate_data_for_special_endpoints(
-                endpoint=endpoint, prepare_data_only=prepare_data_only
-            )
 
         for data_class in endpoint.data_class.predefined_dependencies:
-            self._get_or_create_data_for_endpoint(
-                endpoint=Endpoints.get_by_data_class(data_class), force=force
-            )
+            # If this is 'object' endpoint (for example, group-config/{id}/host)
+            # we don't force create object and try to get one (first) of current created
+            if f"{Endpoints.get_by_data_class(data_class).path}/{{id}}" in endpoint.path:
+                endpoint_data = self._get_or_create_data_for_endpoint(endpoint=Endpoints.get_by_data_class(data_class))
+                endpoint.path = endpoint.path.format(id=str(endpoint_data[0]["id"]))
+            # else force create depended endpoint object
+            else:
+                self._get_or_create_data_for_endpoint(endpoint=Endpoints.get_by_data_class(data_class), force=True)
 
         if force and not prepare_data_only and Methods.POST not in endpoint.methods:
             if current_ep_data := get_endpoint_data(adcm=self.adcm, endpoint=endpoint):
                 return current_ep_data
             raise ValueError(
-                f"Force data creation is not available for {endpoint.path}"
-                "and there is no any existing data"
+                f"Force data creation is not available for {endpoint.path} and there is no any existing data"
             )
 
         if not force and (current_ep_data := get_endpoint_data(adcm=self.adcm, endpoint=endpoint)):
@@ -126,32 +121,26 @@ class DbFiller:
         data = self._prepare_data_for_object_creation(endpoint=endpoint, force=force)
 
         for data_class in endpoint.data_class.implicitly_depends_on:
-            self._get_or_create_data_for_endpoint(
-                endpoint=Endpoints.get_by_data_class(data_class), force=force
-            )
+            self._get_or_create_data_for_endpoint(endpoint=Endpoints.get_by_data_class(data_class), force=force)
 
         if not prepare_data_only:
             response = self.adcm.exec_request(
                 request=Request(endpoint=endpoint, method=Methods.POST, data=data),
-                expected_response=ExpectedResponse(
-                    status_code=Methods.POST.value.default_success_code
-                ),
+                expected_response=ExpectedResponse(status_code=Methods.POST.value.default_success_code),
             )
             return [response.json()]
         return [data]
 
     def _prepare_field_value_for_object_creation(self, field, force=False):
         if is_fk_field(field):
-            fk_data = get_endpoint_data(
-                adcm=self.adcm, endpoint=Endpoints.get_by_data_class(field.f_type.fk_link)
-            )
+            fk_endpoint = Endpoints.get_by_data_class(field.f_type.fk_link)
+            fk_data = None
+            if "{id}" not in fk_endpoint.path:
+                fk_data = get_endpoint_data(adcm=self.adcm, endpoint=fk_endpoint)
             if not fk_data or force:
-                fk_data = self._get_or_create_data_for_endpoint(
-                    endpoint=Endpoints.get_by_data_class(field.f_type.fk_link), force=force
-                )
+                fk_data = self._get_or_create_data_for_endpoint(endpoint=fk_endpoint, force=force)
             return self._choose_fk_field_value(field=field, fk_data=fk_data)
-        else:
-            return self._generate_field_value(field=field)
+        return self._generate_field_value(field=field)
 
     def _solve_field_relations(self, endpoint: Endpoints, data: dict, field: Field, force=False):
         """
@@ -164,55 +153,30 @@ class DbFiller:
                 _data[related_field_name] = self._prepare_field_value_for_object_creation(
                     field=field.f_type.relates_on.field, force=force
                 )
-        else:
-            related_object_data = get_object_data(  # pylint: disable=unused-variable
-                adcm=self.adcm,
-                endpoint=Endpoints.get_by_data_class(field.f_type.relates_on.data_class),
-                object_id=self._used_fkeys[field.f_type.relates_on.data_class.__name__],
-            )[related_field_name]
-            raise NotImplementedError(
-                "Logic when field has relations with field from another endpoint "
-                "has not yet been implemented"
-            )
 
-        if endpoint == Endpoints.ConfigGroup:
+        if endpoint == Endpoints.GroupConfig:
             if field.name == "object_id":
-                field.f_type.fk_link = Endpoints.get_by_path(data[related_field_name]).data_class
+                field.f_type.fk_link = Endpoints.get_by_path(_data[related_field_name]).data_class
 
         elif endpoint == Endpoints.ConfigLog:
             if field.name in ["config", "attr"]:
-                config_url = get_object_data(
+                current_config_log = get_object_data(
                     adcm=self.adcm,
-                    endpoint=Endpoints.get_by_data_class(
-                        field.f_type.relates_on.field.f_type.fk_link
-                    ),
-                    object_id=_data[related_field_name],
-                )[
-                    "current"
-                ]  # get current config link
-                split_url = config_url.strip("/").split("/")
-                path = split_url[-2]
-                object_id = int(split_url[-1])
-                reference_json = get_object_data(
-                    adcm=self.adcm,
-                    endpoint=Endpoints.get_by_path(path),
-                    object_id=object_id,
-                )[field.name]
-                field.f_type.schema = build_schema_by_json(reference_json)
+                    endpoint=endpoint,
+                    # In our case, we don't have truly config history for objects,
+                    # current config always first after obj_ref value
+                    object_id=_data[related_field_name] + 1,
+                )
+                field.f_type.schema = build_schema_by_json(current_config_log[field.name])
 
         else:
-            raise NotImplementedError(
-                f"Relations logic needs to be implemented for {endpoint} for field {field.name}"
-            )
+            raise NotImplementedError(f"Relations logic needs to be implemented for {endpoint} for field {field.name}")
 
         return _data, field
 
     def _prepare_data_for_object_creation(self, endpoint: Endpoints = None, force=False):
         data = {}
-        for field in get_fields(
-            data_class=endpoint.data_class,
-            predicate=lambda x: x.name != "id" and x.postable,
-        ):
+        for field in get_fields(data_class=endpoint.data_class, predicate=lambda x: x.postable):
             if field.name in data:
                 continue
             if field.f_type.relates_on:
@@ -230,6 +194,12 @@ class DbFiller:
         IMPORTANT: Class context _available_fkeys and _used_fkeys
                    will be relevant only for the last object in set
         """
+        for data_class in endpoint.data_class.predefined_dependencies:
+            if f"{Endpoints.get_by_data_class(data_class).path}/{{id}}" in endpoint.path:
+                endpoint_data = self._get_or_create_data_for_endpoint(endpoint=Endpoints.get_by_data_class(data_class))
+                endpoint.path = endpoint.path.format(id=str(endpoint_data[0]["id"]))
+            else:
+                self._get_or_create_data_for_endpoint(endpoint=Endpoints.get_by_data_class(data_class), force=True)
         current_ep_data = get_endpoint_data(adcm=self.adcm, endpoint=endpoint)
         if len(current_ep_data) < count:
             for _ in range(count - len(current_ep_data)):
@@ -239,43 +209,9 @@ class DbFiller:
                 self._get_or_create_data_for_endpoint(
                     endpoint=endpoint,
                     force=True,
-                    prepare_data_only=False,
                 )
                 if len(get_endpoint_data(adcm=self.adcm, endpoint=endpoint)) > count:
                     break
-
-    def _generate_data_for_special_endpoints(self, endpoint: Endpoints, prepare_data_only: bool):
-        """
-        Data for some endpoints can be generated with custom logics
-        This logics is implemented here
-        """
-        if endpoint == Endpoints.ConfigGroup:
-            # Constrains for Changeable, the host cannot be a member of
-            # different groups of the same object
-            old_data = get_endpoint_data(adcm=self.adcm, endpoint=endpoint)
-            attempts_count = 10
-            while True:
-                new_data = self._prepare_data_for_object_creation(endpoint=endpoint, force=True)
-                if (new_data["object_type"], new_data["object_id"]) not in [
-                    (old_obj["object_type"], old_obj["object_id"]) for old_obj in old_data
-                ]:
-                    break
-                attempts_count -= 1
-                if attempts_count == 0:
-                    raise ValueError(
-                        "Failed to create config group with different "
-                        "object_type and object_id in 10 attempts"
-                    )
-            if not prepare_data_only:
-                response = self.adcm.exec_request(
-                    request=Request(endpoint=endpoint, method=Methods.POST, data=new_data),
-                    expected_response=ExpectedResponse(
-                        status_code=Methods.POST.value.default_success_code
-                    ),
-                )
-                return [response.json()]
-            return [new_data]
-        raise NotImplementedError(f"There is no special generator for {endpoint}")
 
     @staticmethod
     def _generate_field_value(field: Field, old_value=None):
@@ -302,18 +238,14 @@ class DbFiller:
                 # that we have no idea how to properly use it
                 self._available_fkeys[fk_class_name].update(keys)
                 if new_fk:
-                    self._add_child_fk_values_to_available_fkeys(
-                        fk_ids=keys, fk_data_class=field.f_type.fk_link
-                    )
+                    self._add_child_fk_values_to_available_fkeys(fk_ids=keys, fk_data_class=field.f_type.fk_link)
             else:
                 key = random.choice(list(fk_vals))
                 result = key
                 self._used_fkeys[fk_class_name] = key
                 self._available_fkeys[fk_class_name].add(key)
                 if new_fk:
-                    self._add_child_fk_values_to_available_fkeys(
-                        fk_ids=[key], fk_data_class=field.f_type.fk_link
-                    )
+                    self._add_child_fk_values_to_available_fkeys(fk_ids=[key], fk_data_class=field.f_type.fk_link)
             return result
         # if field is not FK
         raise ValueError("Argument field is not FKey!")
@@ -335,9 +267,7 @@ class DbFiller:
                         [el["id"] for el in fk_data[fk_field_name]]
                     )
                 elif isinstance(child_fk_field.f_type, ForeignKey):
-                    self._available_fkeys[child_fk_field.f_type.fk_link.__name__].add(
-                        fk_data[fk_field_name]
-                    )
+                    self._available_fkeys[child_fk_field.f_type.fk_link.__name__].add(fk_data[fk_field_name])
 
     @allure.step("Generate new value for unchangeable FK_field")
     def generate_new_value_for_unchangeable_fk_field(self, f_type, current_field_value):
@@ -346,9 +276,7 @@ class DbFiller:
             raise ValueError("Field type is not ForeignKey")
         new_objects = get_endpoint_data(self.adcm, Endpoints.get_by_data_class(f_type.fk_link))
         if len(new_objects) == 1:
-            with assume_step(
-                f'Data creation is not available for {f_type.fk_link}', exception=ValueError
-            ):
+            with assume_step(f'Data creation is not available for {f_type.fk_link}', exception=ValueError):
                 new_objects = self._get_or_create_data_for_endpoint(
                     endpoint=Endpoints.get_by_data_class(f_type.fk_link), force=True
                 )

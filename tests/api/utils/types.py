@@ -373,11 +373,7 @@ def get_fields(data_class: type, predicate: Callable = None) -> List[Field]:
 
     if predicate is None:
         predicate = dummy_predicate
-    return [
-        value
-        for (key, value) in data_class.__dict__.items()
-        if isinstance(value, Field) and predicate(value)
-    ]
+    return [value for (key, value) in data_class.__dict__.items() if isinstance(value, Field) and predicate(value)]
 
 
 def is_fk_field(field: Field) -> bool:
@@ -392,11 +388,6 @@ def is_fk_field_only(field):
 
 def is_fk_or_back_ref(field: Field) -> bool:
     """Predicate for fk and back reference fields"""
-    return isinstance(field.f_type, (ForeignKey, BackReferenceFK))
-
-
-def is_back_ref_fk(field: Field) -> bool:
-    """Predicate for back reference fields"""
     return isinstance(field.f_type, (ForeignKey, BackReferenceFK))
 
 

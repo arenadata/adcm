@@ -663,7 +663,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         response = self.api_post(f'/cluster/{cluster_id}/action/{action_id}/run/', {})
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.json()['code'], 'TASK_ERROR')
-        self.assertEqual(response.json()['desc'], 'action has issues')
+        self.assertEqual(response.json()['desc'], 'object is locked')  # was 'action has issues'
 
         response = self.api_post(f'/cluster/{cluster_id}/config/history/', {'config': {'required': 42}})
         self.assertEqual(response.status_code, 201)
