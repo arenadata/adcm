@@ -47,8 +47,6 @@ class APIRoot(routers.APIRootView):
         'token': 'token',
         'logout': 'logout',
         'user': 'user-list',
-        'group': 'group-list',
-        'role': 'role-list',
         'info': 'adcm-info',
     }
 

@@ -14,7 +14,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User, Group
-from rest_framework import status
+from rest_framework import routers, status
 from rest_framework.response import Response
 
 from api.api_views import PageView, PageViewAdd, DetailViewRO, GenericAPIPermView, update
@@ -47,6 +47,18 @@ def delete_user(username):
         pass
     user.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class UserRoot(routers.APIRootView):
+    """
+    User API Root
+    """
+
+    api_root_dict = {
+        'user': 'user-list',
+        'group': 'group-list',
+        'role': 'role-list',
+    }
 
 
 class UserList(PageViewAdd):
