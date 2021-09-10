@@ -39,7 +39,7 @@ def create_two_clusters(adcm_client: ADCMClient, caller_file: str, bundle_dir: s
     """
     Create two clusters with two services on each with "default object names"
     :param adcm_client: ADCM client
-    :param caller_file: Pass __file__ here
+    :param caller_file: Pass __file__ here (it will be passed to get_data_dir alongside bundle_dir)
     :param bundle_dir: Bundle directory name (e.g. "cluster", "provider")
     """
     uploaded_bundle = adcm_client.upload_from_fs(plugin_utils.get_data_dir(caller_file, bundle_dir))
@@ -56,11 +56,12 @@ def create_two_providers(adcm_client: ADCMClient, caller_file: str, bundle_dir: 
     """
     Create two providers with two hosts
     :param adcm_client: ADCM client
-    :param caller_file: Pass __file__ here
+    :param caller_file: Pass __file__ here (it will be passed to get_data_dir alongside bundle_dir)
     :param bundle_dir: Bundle directory name (e.g. "cluster", "provider")
     """
     uploaded_bundle = adcm_client.upload_from_fs(plugin_utils.get_data_dir(caller_file, bundle_dir))
-    first_provider, second_provider, *_ = [uploaded_bundle.provider_create(name=name) for name in DEFAULT_OBJECT_NAMES]
+    first_provider = uploaded_bundle.provider_create(name=DEFAULT_OBJECT_NAMES[0])
+    second_provider = uploaded_bundle.provider_create(name=DEFAULT_OBJECT_NAMES[1])
     providers = (first_provider, second_provider)
     for provider in providers:
         for suffix in DEFAULT_OBJECT_NAMES:
@@ -260,7 +261,6 @@ def build_objects_checker(
     extractor: Callable[[AnyADCMObject], ADCMObjectField],
     comparator: Optional[Callable[[AnyADCMObject, ADCMObjectField], None]] = None,
     field_name: Optional[str] = None,
-    step_title: Optional[str] = None,
 ) -> Callable[..., None]:
     """
     Get context manager to check that only particular objects were changed
@@ -273,33 +273,32 @@ def build_objects_checker(
                        If you use default, then it's better to provide field_name,
                        otherwise assertion message will be uninformative.
     :param field_name: Provide name of "to change" field to use default allure step title template
-    :param step_title: Provide it to use fully custom allure step title
     """
-    if step_title:
-        title = step_title
-    elif field_name:
-        title = f'Check {field_name.lower()} of presented objects changed correctly'
-    else:
-        title = 'Check objects changed correctly'
-
     if comparator is None:
         comparator = build_objects_comparator(
             get_compare_value=extractor, field_name=field_name if field_name else 'Attribute'
         )
+
+    title = (
+        f'Check {field_name.lower()} of presented objects changed correctly'
+        if field_name
+        else 'Check objects changed correctly'
+    )
 
     @contextmanager
     def wrapped(
         adcm_client: ADCMClient,
         changed_objects: Collection[ClusterRelatedObject] = (),
         changed: ADCMObjectField = changed,
+        allure_step_title: str = title,
     ):
         unchanged_attributes = freeze_objects_attribute(
-            adcm_client, extractor, to_ignore=__build_ignore_map(changed_objects)
+            adcm_client, extractor, to_ignore=_build_ignore_map(changed_objects)
         )
 
         yield
 
-        with allure.step(title):
+        with allure.step(allure_step_title):
             for adcm_object in changed_objects:
                 comparator(adcm_object, changed)
 
@@ -339,21 +338,21 @@ def freeze_objects_attribute(
     }
     """
     frozen_objects = {cls: {} for cls in ADCMObjects}
+
+    def freeze(obj: AnyADCMObject):
+        if (obj_id := obj.id) not in to_ignore[(obj_class := obj.__class__)]:
+            frozen_objects[obj_class][obj_id] = get_attribute_func(obj)
+
     for cluster in adcm_client.cluster_list():
-        if cluster.id not in to_ignore[Cluster]:
-            frozen_objects[Cluster][cluster.id] = get_attribute_func(cluster)
+        freeze(cluster)
         for service in cluster.service_list():
-            if service.id not in to_ignore[Service]:
-                frozen_objects[Service][service.id] = get_attribute_func(service)
+            freeze(service)
             for component in service.component_list():
-                if component.id not in to_ignore[Component]:
-                    frozen_objects[Component][component.id] = get_attribute_func(component)
+                freeze(component)
     for provider in adcm_client.provider_list():
-        if provider.id not in to_ignore[Provider]:
-            frozen_objects[Provider][provider.id] = get_attribute_func(provider)
+        freeze(provider)
         for host in provider.host_list():
-            if host.id not in to_ignore[Host]:
-                frozen_objects[Host][host.id] = get_attribute_func(host)
+            freeze(host)
     return frozen_objects
 
 
@@ -368,6 +367,15 @@ def run_successful_task(action: Action, action_owner_name: str):
         ) from error
 
 
+def _build_ignore_map(objects_to_ignore: Collection[AnyADCMObject]):
+    """Returns map with ids of objects to ignore grouped by class"""
+    # may be empty
+    ignore_map = {cls: set() for cls in ADCMObjects}
+    for obj in objects_to_ignore:
+        ignore_map[obj.__class__].add(obj.id)
+    return ignore_map
+
+
 def __check_components(
     adcm_client: ADCMClient,
     comparator: Callable,
@@ -380,12 +388,3 @@ def __check_components(
         for component in service.component_list():
             if (component_id := component.id) in component_ids:
                 comparator(component, components[component_id])
-
-
-def __build_ignore_map(objects_to_ignore: Collection[AnyADCMObject]):
-    """Returns map with ids of objects to ignore grouped by class"""
-    # may be empty
-    ignore_map = {cls: set() for cls in ADCMObjects}
-    for obj in objects_to_ignore:
-        ignore_map[obj.__class__].add(obj.id)
-    return ignore_map

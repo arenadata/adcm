@@ -54,9 +54,9 @@ def _prepare_multi_state(multi_state: List[str]) -> List[str]:
 check_objects_multi_state_changed = build_objects_checker(
     field_name=FIELD_NAME,
     changed=['ifeelgood!'],
-    extractor=(_extractor := lambda obj: _prepare_multi_state(obj.multi_state)),
+    extractor=(_multi_state_extractor := lambda obj: _prepare_multi_state(obj.multi_state)),
 )
-
+check_multi_state_was_unset = build_objects_checker(field_name=FIELD_NAME, changed=[], extractor=_multi_state_extractor)
 
 # !===== Fixtures =====!
 
@@ -134,9 +134,11 @@ def test_provider_related_objects(
 def test_double_call_to_multi_state_set(two_clusters: Tuple[Cluster, Cluster], sdk_client_fs: ADCMClient):
     """Test that double call to plugin from two files doesn't fail"""
     check_multi_state_after_set = build_objects_checker(
-        _prepare_multi_state(['much', 'better', 'actually']), extractor=_extractor, field_name=FIELD_NAME
+        _prepare_multi_state(['much', 'better', 'actually']), extractor=_multi_state_extractor, field_name=FIELD_NAME
     )
-    check_multi_state_after_unset = build_objects_checker(['actually'], extractor=_extractor, field_name=FIELD_NAME)
+    check_multi_state_after_unset = build_objects_checker(
+        ['actually'], extractor=_multi_state_extractor, field_name=FIELD_NAME
+    )
     cluster = two_clusters[0]
     with check_multi_state_after_set(sdk_client_fs, {cluster}):
         run_cluster_action_and_assert_result(cluster, 'double_call_two_playbooks')
@@ -154,7 +156,7 @@ def test_host_from_provider(two_providers: Tuple[Provider, Provider], sdk_client
         f'Set multi state of {host_name} with action from {provider_name}'
     ):
         run_provider_action_and_assert_result(provider, 'set_host_from_provider', config={'host_id': host.id})
-    with check_objects_multi_state_changed(sdk_client_fs), allure.step(
+    with check_multi_state_was_unset(sdk_client_fs, {host}), allure.step(
         f'Unset multi state of {host_name} with action from {provider_name}'
     ):
         run_provider_action_and_assert_result(provider, 'unset_host_from_provider', config={'host_id': host.id})
@@ -185,7 +187,7 @@ def test_forbidden_multi_state_set_actions(sdk_client_fs: ADCMClient):
                 run_provider_action_and_assert_result(provider, forbidden_action, status='failed')
 
 
-@pytest.mark.usefixtures('two_providers')
+@pytest.mark.usefixtures('two_providers', 'two_clusters')
 def test_missing_ok_multi_state_unset(sdk_client_fs: ADCMClient):
     """
     Checking behaviour of flag "missing_ok":
@@ -225,7 +227,6 @@ def test_missing_ok_multi_state_unset(sdk_client_fs: ADCMClient):
             run_component_action_and_assert_result(component, 'unset_component_missing')
 
 
-# pylint: disable-next=possibly-unused-variable
 def test_multi_state_set_from_host_actions(
     two_clusters: Tuple[Cluster, Cluster], two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient
 ):
@@ -260,7 +261,7 @@ def test_multi_state_set_unset_from_different_objects(two_clusters: Tuple[Cluste
     ):
         run_cluster_action_and_assert_result(cluster, f'set_{service.name}_service')
 
-    with check_objects_multi_state_changed(sdk_client_fs), allure.step(
+    with check_multi_state_was_unset(sdk_client_fs, {service}), allure.step(
         f'Unset multi_state of {service_name} from itself'
     ):
         run_service_action_and_assert_result(service, 'unset_service')
@@ -270,13 +271,12 @@ def test_multi_state_set_unset_from_different_objects(two_clusters: Tuple[Cluste
     ):
         run_cluster_action_and_assert_result(cluster, 'set_cluster')
 
-    with check_objects_multi_state_changed(sdk_client_fs), allure.step(
+    with check_multi_state_was_unset(sdk_client_fs, {cluster}), allure.step(
         f'Unset multi_state of {cluster_name} from {service_name}'
     ):
         run_service_action_and_assert_result(service, 'unset_cluster')
 
 
-# pylint: disable-next=too-many-arguments
 def _test_successful_multi_state_set_unset(
     set_action_name: str,
     object_to_be_changed: Tuple[str, ...],
@@ -293,7 +293,7 @@ def _test_successful_multi_state_set_unset(
         f'Set multi state of {changed_object_name} with action from {action_owner_name}'
     ):
         run_successful_task(action_owner_object.action(name=set_action_name), action_owner_name)
-    with check_objects_multi_state_changed(sdk_client_fs), allure.step(
+    with check_multi_state_was_unset(sdk_client_fs, {object_to_be_changed}), allure.step(
         f'Unset multi state of {changed_object_name} with action from {action_owner_name}'
     ):
         run_successful_task(action_owner_object.action(name=f'un{set_action_name}'), action_owner_name)

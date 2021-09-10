@@ -17,7 +17,6 @@ import pytest
 
 from coreapi.exceptions import ErrorMessage
 from adcm_client.objects import ADCMClient, Cluster, Provider
-from adcm_pytest_plugin.utils import get_data_dir
 from adcm_pytest_plugin.steps.actions import (
     run_provider_action_and_assert_result,
     run_cluster_action_and_assert_result,
@@ -34,6 +33,8 @@ from tests.functional.plugin_utils import (
     get_cluster_related_object,
     generate_provider_success_params,
     get_provider_related_object,
+    create_two_clusters,
+    create_two_providers,
 )
 
 # pylint:disable=redefined-outer-name, duplicate-code
@@ -82,26 +83,13 @@ check_config_changed = build_objects_checker(
 def two_clusters(request, sdk_client_fs: ADCMClient) -> Tuple[Cluster, Cluster]:
     """Get two clusters with both services"""
     bundle_dir = "cluster" if not hasattr(request, 'param') else request.param
-    uploaded_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, bundle_dir))
-    first_cluster = uploaded_bundle.cluster_create(name=('first', 'second')[0])
-    second_cluster = uploaded_bundle.cluster_create(name=('first', 'second')[1])
-    clusters = (first_cluster, second_cluster)
-    for cluster in clusters:
-        for name in ('first', 'second'):
-            cluster.service_add(name=name)
-    return clusters
+    return create_two_clusters(sdk_client_fs, __file__, bundle_dir)
 
 
 @pytest.fixture()
 def two_providers(sdk_client_fs: ADCMClient) -> Tuple[Provider, Provider]:
     """Get two providers with two hosts"""
-    uploaded_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
-    first_provider, second_provider, *_ = [uploaded_bundle.provider_create(name=name) for name in ('first', 'second')]
-    providers = (first_provider, second_provider)
-    for provider in providers:
-        for suffix in ('first', 'second'):
-            provider.host_create(fqdn=f'{provider.name}-{suffix}')
-    return providers
+    return create_two_providers(sdk_client_fs, __file__, "provider")
 
 
 @pytest.mark.parametrize(
@@ -116,12 +104,11 @@ def test_cluster_related_objects(
     sdk_client_fs: ADCMClient,
 ):
     """
-    Check that correct multi_state_set calls can run successfully
+    Check that correct adcm_config calls can run successfully
         with Cluster, Service, Component
         and change only the objects that must be changed
-    Then unset state and check that none of objects has multi state
     """
-    _test_successful_multi_state_set_unset(
+    _test_successful_config_change(
         change_action_name,
         object_to_be_changed,
         action_owner,
@@ -142,12 +129,11 @@ def test_provider_related_objects(
     sdk_client_fs: ADCMClient,
 ):
     """
-    Check that correct multi_state_set calls can run successfully
+    Check that correct adcm_config calls can run successfully
         with Provider and Host
         and change only the objects that must be changed
-    Then unset state and check that none of objects has multi state
     """
-    _test_successful_multi_state_set_unset(
+    _test_successful_config_change(
         change_action_name,
         object_to_be_changed,
         action_owner,
@@ -168,7 +154,6 @@ def test_host_from_provider(two_providers: Tuple[Provider, Provider], sdk_client
         run_provider_action_and_assert_result(provider, 'change_host_from_provider', config={'host_id': host.id})
 
 
-# pylint: disable-next=possibly-unused-variable
 def test_multijob(
     two_clusters: Tuple[Cluster, Cluster], two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient
 ):
@@ -179,10 +164,11 @@ def test_multijob(
     for obj in (cluster, service, component, provider, host):
         classname = obj.__class__.__name__.lower()
         affected_objects.add(obj)
+        object_name = compose_name(obj)
         with check_config_changed(sdk_client_fs, affected_objects), allure.step(
-            f'Change {(obj_name := compose_name(obj))} state with multijob action'
+            f'Change {object_name} state with multijob action'
         ):
-            run_successful_task(obj.action(name=f'change_{classname}_multijob'), obj_name)
+            run_successful_task(obj.action(name=f'change_{classname}_multijob'), object_name)
 
 
 @pytest.mark.usefixtures('two_clusters', 'two_providers')
@@ -212,7 +198,6 @@ def test_forbidden_actions(sdk_client_fs: ADCMClient):
             )
 
 
-# pylint: disable-next=possibly-unused-variable
 def test_from_host_actions(
     two_clusters: Tuple[Cluster, Cluster], two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient
 ):
@@ -236,15 +221,14 @@ def test_from_host_actions(
             run_host_action_and_assert_result(host, f'change_{classname}_host')
 
 
-# pylint: disable-next=too-many-arguments
-def _test_successful_multi_state_set_unset(
+def _test_successful_config_change(
     action_name: str,
     object_to_be_changed: Tuple[str, ...],
     action_owner: Tuple[str, ...],
     sdk_client_fs: ADCMClient,
     get_object_func: Callable[..., AnyADCMObject],
 ):
-    """Test successful multi state of one object set and then unset"""
+    """Test successful change of config of one object"""
     object_to_be_changed = get_object_func(sdk_client_fs, *object_to_be_changed)
     changed_object_name = compose_name(object_to_be_changed)
     action_owner_object = get_object_func(sdk_client_fs, *action_owner)

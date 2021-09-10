@@ -168,7 +168,6 @@ def test_double_call_to_state_set(two_clusters: Tuple[Cluster, Cluster], sdk_cli
         check_objects_state_changed(sdk_client_fs, {cluster})
 
 
-# pylint: disable-next=possibly-unused-variable
 def test_state_set_from_host_actions(
     two_providers: Tuple[Provider, Provider], two_clusters: Tuple[Cluster, Cluster], sdk_client_fs: ADCMClient
 ):
