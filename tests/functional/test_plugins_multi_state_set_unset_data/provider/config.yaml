@@ -67,6 +67,9 @@
       <<: *unset_action
       params:
         ansible_tags: provider_host_missing
+      config:
+        - name: host_id
+          type: integer
 
     unset_host_missing:
       <<: *unset_action
