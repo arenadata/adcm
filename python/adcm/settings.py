@@ -27,7 +27,6 @@ from os.path import dirname
 
 from django.core.management.utils import get_random_secret_key
 
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = dirname(dirname(dirname(os.path.abspath(__file__))))
 CONF_DIR = BASE_DIR + '/data/conf/'
@@ -47,19 +46,16 @@ else:
     # manage.py calls during image build
     SECRET_KEY = get_random_secret_key()
 
-
 if os.path.exists(CONFIG_FILE):
     with open(CONFIG_FILE, encoding='utf_8') as f:
         ADCM_VERSION = json.load(f)['version']
 else:
     ADCM_VERSION = '2019.02.07.00'
 
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
 ALLOWED_HOSTS = ['*']
-
 
 # Application definition
 
@@ -152,7 +148,6 @@ DATABASES = {
         },
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -262,3 +257,5 @@ LOGGING = {
         },
     },
 }
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
