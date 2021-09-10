@@ -521,7 +521,7 @@ def check_custom_group_keys_attr(proto, custom_group_keys, spec):
     for key, value in flat_custom_group_keys.items():
         group_customization = spec[key].group_customization
         if group_customization is None:
-            group_customization = proto.config_group_customized
+            group_customization = proto.config_group_customization
         if value != group_customization:
             msg = '`custom_group_keys` field cannot be changed, read-only'
             err('ATTRIBUTE_ERROR', msg)

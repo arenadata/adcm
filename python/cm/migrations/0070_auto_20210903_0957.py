@@ -24,12 +24,12 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='prototype',
-            name='config_group_customized',
+            name='config_group_customization',
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
             model_name='stageprototype',
-            name='config_group_customized',
+            name='config_group_customization',
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
