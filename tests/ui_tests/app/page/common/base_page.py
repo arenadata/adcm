@@ -349,6 +349,10 @@ class BasePageObject:
         ):
             return False
 
+    @allure.step("Click back button in browser")
+    def click_back_button_in_browser(self):
+        self.driver.back()
+
 
 class PageHeader(BasePageObject):
     """Class for header manipulating."""
