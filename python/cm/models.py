@@ -793,8 +793,11 @@ SCRIPT_TYPE = (
 )
 
 
-class Action(ADCMModel):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+class AbstractAction(ADCMModel):
+    """Abstract base class for both Action and StageAction"""
+
+    prototype = None
+
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
@@ -806,9 +809,17 @@ class Action(ADCMModel):
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
 
+    state_available = models.JSONField(default=list)
+    state_unavailable = models.JSONField(default=list)
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    state_available = models.JSONField(default=list)
+
+    multi_state_available = models.JSONField(default=list)
+    multi_state_unavailable = models.JSONField(default=list)
+    multi_state_on_success_set = models.JSONField(default=list)
+    multi_state_on_success_unset = models.JSONField(default=list)
+    multi_state_on_fail_set = models.JSONField(default=list)
+    multi_state_on_fail_unset = models.JSONField(default=list)
 
     params = models.JSONField(default=dict)
     log_files = models.JSONField(default=list)
@@ -817,6 +828,17 @@ class Action(ADCMModel):
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
     host_action = models.BooleanField(default=False)
+
+    class Meta:
+        abstract = True
+        unique_together = (('prototype', 'name'),)
+
+    def __str__(self):
+        return "{} {}".format(self.prototype, self.display_name or self.name)
+
+
+class Action(AbstractAction):
+    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
 
     __error_code__ = 'ACTION_NOT_FOUND'
 
@@ -831,12 +853,6 @@ class Action(ADCMModel):
     @property
     def prototype_type(self):
         return self.prototype.type
-
-    def __str__(self):
-        return "{} {}".format(self.prototype, self.display_name or self.name)
-
-    class Meta:
-        unique_together = (('prototype', 'name'),)
 
     def get_id_chain(self, target_ids: dict) -> dict:
         """Get action ID chain for front-end URL generation in message templates"""
@@ -1118,36 +1134,8 @@ class StageUpgrade(ADCMModel):
     state_on_success = models.CharField(max_length=64, blank=True)
 
 
-class StageAction(ADCMModel):
+class StageAction(AbstractAction):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=160)
-    display_name = models.CharField(max_length=160, blank=True)
-    description = models.TextField(blank=True)
-    ui_options = models.JSONField(default=dict)
-
-    type = models.CharField(max_length=16, choices=ACTION_TYPE)
-    button = models.CharField(max_length=64, default=None, null=True)
-
-    script = models.CharField(max_length=160)
-    script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
-
-    state_on_success = models.CharField(max_length=64, blank=True)
-    state_on_fail = models.CharField(max_length=64, blank=True)
-    state_available = models.JSONField(default=list)
-
-    params = models.JSONField(default=dict)
-    log_files = models.JSONField(default=list)
-
-    hostcomponentmap = models.JSONField(default=list)
-    allow_to_terminate = models.BooleanField(default=False)
-    partial_execution = models.BooleanField(default=False)
-    host_action = models.BooleanField(default=False)
-
-    def __str__(self):
-        return "{}:{}".format(self.prototype, self.name)
-
-    class Meta:
-        unique_together = (('prototype', 'name'),)
 
 
 class StageSubAction(ADCMModel):

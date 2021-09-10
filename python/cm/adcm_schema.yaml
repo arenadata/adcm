@@ -663,6 +663,9 @@ common_action: &common_action
     host_action: boolean
     log_files: list_of_string
     states: action_states_dict
+    masking: action_masking
+    on_fail: post_action
+    on_success: post_action
     hc_acl: action_hc_acl_list
     config: config_obj
 
@@ -739,6 +742,33 @@ action_states_dict:
     available: any_or_list
   required_items:
     - available
+
+action_masking:
+  match: dict
+  items:
+    state: availability_set
+    multi_state: availability_set
+  required_items:
+    - state
+    - multi_state
+
+availability_set:
+  match: dict
+  items:
+    available: any_or_list
+    unavailable: list_of_string
+
+post_action:
+  match: dict
+  items:
+    state: string
+    multi_state: multi_state_set
+
+multi_state_set:
+  match: dict
+  items:
+    set: string
+    unset: list_of_string
 
 # Common types
 list_of_string:
