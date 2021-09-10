@@ -10,16 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 # pylint:disable=redefined-outer-name
 from typing import (
     List,
     Tuple,
 )
 
-import os
 import allure
 import pytest
-
 from _pytest.fixtures import SubRequest
 from adcm_client.objects import (
     ADCMClient,
