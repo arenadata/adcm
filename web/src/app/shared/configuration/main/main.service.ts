@@ -143,10 +143,6 @@ export class MainService {
   }
 
   findFieldiCompare(key: string, cc: CompareConfig) {
-    console.log(key);
-    console.log(cc);
-
-
     const value = key
       .split('/')
       .reverse()
