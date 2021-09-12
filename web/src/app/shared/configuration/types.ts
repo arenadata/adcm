@@ -110,7 +110,8 @@ export interface IConfig {
 export interface IConfigAttr {
   [group: string]: { active?: boolean };
 
-  'group_keys'?: any;
+  group_keys?: { [key: string]: boolean };
+  custom_group_keys?: { [key: string]: boolean };
 }
 
 //#region Modified data for ngForm build

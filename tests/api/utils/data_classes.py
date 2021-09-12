@@ -86,7 +86,7 @@ class ObjectConfigFields(BaseClass):
     url = Field(name="url", f_type=String(), default_value="auto")
 
 
-class ConfigGroupFields(BaseClass):
+class GroupConfigFields(BaseClass):
     """
     Data type class for Config Group object
     https://spec.adsw.io/adcm_core/objects.html#group
@@ -106,8 +106,19 @@ class ConfigGroupFields(BaseClass):
         postable=True,
     )
     name = Field(name="name", f_type=String(max_length=30), required=True, postable=True, changeable=True)
-    description = Field(name="description", f_type=Text(), nullable=True, postable=True, changeable=True)
-    config = Field(name="config", f_type=ForeignKey(fk_link=ObjectConfigFields), nullable=True, changeable=True)
+    description = Field(name="description", f_type=Text(), postable=True, changeable=True, default_value="")
+    config = Field(
+        name="config",
+        f_type=ForeignKey(fk_link=ObjectConfigFields),
+        default_value="auto",
+    )
+    host_candidate = Field(
+        # Link to host candidates url for this object. Auto-filled when group-config object creates
+        # Candidates list depends on ADCM object for which group-config was created.
+        name="host_candidate",
+        f_type=String(),
+        default_value="auto",
+    )
     url = Field(name="url", f_type=String(), default_value="auto")
 
 
@@ -123,7 +134,6 @@ class ConfigLogFields(BaseClass):
         name="description",
         f_type=Text(),
         default_value="",
-        nullable=True,
         postable=True,
     )
     config = Field(
@@ -131,6 +141,7 @@ class ConfigLogFields(BaseClass):
         f_type=Json(relates_on=Relation(field=obj_ref)),
         default_value={},
         postable=True,
+        required=True,
     )
     attr = Field(
         name="attr",
@@ -159,34 +170,53 @@ ObjectConfigFields.history = Field(
 )
 
 
-class HostGroupFields(BaseClass):
+class GroupConfigHostCandidatesFields(BaseClass):
     """
-    Data type class for Host Group object
-    https://spec.adsw.io/adcm_core/objects.html#group
+    Data type class for GroupConfigHostCandidates object
     """
 
-    id = Field(name="id", f_type=PositiveInt(), default_value="auto")
-    host = Field(
-        name="host",
-        f_type=ForeignKey(fk_link=HostFields),
-        required=True,
-        postable=True,
-        changeable=True,
+    predefined_dependencies = [GroupConfigFields]
+
+    id = Field(
+        name="id",
+        f_type=PositiveInt(),
+        default_value="auto",
     )
-    group = Field(
-        name="group",
-        f_type=ForeignKey(fk_link=ConfigGroupFields),
-        required=True,
-        postable=True,
-        changeable=True,
-    )
+    cluster_id = Field(name="cluster_id", f_type=PositiveInt(), default_value="auto")
+    prototype_id = Field(name="prototype_id", f_type=PositiveInt(), default_value="auto")
+    provider_id = Field(name="provider_id", f_type=PositiveInt(), default_value="auto")
+    fqdn = Field(name="fqdn", f_type=String(), default_value="auto")
+    description = Field(name="description", f_type=String(), default_value="auto")
+    state = Field(name="state", f_type=String(), default_value="auto")
     url = Field(name="url", f_type=String(), default_value="auto")
 
 
-# Back-reference from HostGroupFields
-ConfigGroupFields.hosts = Field(
+class GroupConfigHostsFields(BaseClass):
+    """
+    Data type class for GroupConfigHostsFields object
+    https://spec.adsw.io/adcm_core/objects.html#group-config-hosts
+    """
+
+    predefined_dependencies = [GroupConfigFields]
+
+    id = Field(
+        name="id",
+        f_type=ForeignKey(fk_link=GroupConfigHostCandidatesFields),
+        required=True,
+        postable=True,
+    )
+    cluster_id = Field(name="cluster_id", f_type=PositiveInt(), default_value="auto")
+    prototype_id = Field(name="prototype_id", f_type=PositiveInt(), default_value="auto")
+    provider_id = Field(name="provider_id", f_type=PositiveInt(), default_value="auto")
+    fqdn = Field(name="fqdn", f_type=String(), default_value="auto")
+    description = Field(name="description", f_type=String(), default_value="auto")
+    state = Field(name="state", f_type=String(), default_value="auto")
+    url = Field(name="url", f_type=String(), default_value="auto")
+
+
+# Back-reference from GroupConfigHostsFields
+GroupConfigFields.hosts = Field(
     name="hosts",
-    f_type=BackReferenceFK(fk_link=HostGroupFields),
+    f_type=BackReferenceFK(fk_link=GroupConfigHostsFields),
     default_value="auto",
-    nullable=True,
 )

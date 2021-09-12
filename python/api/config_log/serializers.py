@@ -14,10 +14,9 @@ from django.db.transaction import atomic
 from rest_framework import serializers
 
 import logrotate
-from cm.adcm_config import ui_config
+from api.serializers import UIConfigField
 from cm.api import update_obj_config
-from cm.errors import raise_AdcmEx
-from cm.models import ConfigLog, GroupConfig
+from cm.models import ConfigLog
 
 
 class ConfigLogSerializer(serializers.ModelSerializer):
@@ -38,19 +37,6 @@ class ConfigLogSerializer(serializers.ModelSerializer):
         if hasattr(object_config, 'adcm'):
             logrotate.run()
         return cl
-
-
-class UIConfigField(serializers.JSONField):
-    def to_representation(self, value):
-        obj = value.obj_ref.object
-        if obj is None:
-            raise_AdcmEx('INVALID_CONFIG_UPDATE', 'unknown object type "{}"'.format(value.obj_ref))
-        if isinstance(obj, GroupConfig):
-            obj = obj.object
-        return ui_config(obj, value)
-
-    def to_internal_value(self, data):
-        return {'config': data}
 
 
 class UIConfigLogSerializer(ConfigLogSerializer):

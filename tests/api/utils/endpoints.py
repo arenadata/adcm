@@ -8,8 +8,8 @@ import attr
 
 from tests.api.utils.data_classes import (
     BaseClass,
-    ConfigGroupFields,
-    HostGroupFields,
+    GroupConfigFields,
+    GroupConfigHostsFields,
     HostFields,
     ClusterFields,
     ServiceFields,
@@ -17,6 +17,7 @@ from tests.api.utils.data_classes import (
     ProviderFields,
     ObjectConfigFields,
     ConfigLogFields,
+    GroupConfigHostCandidatesFields,
 )
 from tests.api.utils.methods import Methods
 from tests.api.utils.types import get_fields
@@ -50,6 +51,10 @@ class Endpoints(Enum):
     def path(self):
         """Getter for Endpoint.path attribute"""
         return self.endpoint.path
+
+    @path.setter
+    def path(self, value):
+        self.endpoint.path = value
 
     @property
     def methods(self):
@@ -138,7 +143,7 @@ class Endpoints(Enum):
     )
 
     ObjectConfig = Endpoint(
-        path="object-config",
+        path="config",
         methods=[Methods.GET, Methods.LIST],
         data_class=ObjectConfigFields,
         spec_link="https://spec.adsw.io/adcm_core/objects.html#object-config",
@@ -151,8 +156,8 @@ class Endpoints(Enum):
         spec_link="https://spec.adsw.io/adcm_core/objects.html#object-config",
     )
 
-    ConfigGroup = Endpoint(
-        path="config-group",
+    GroupConfig = Endpoint(
+        path="group-config",
         methods=[
             Methods.GET,
             Methods.LIST,
@@ -161,20 +166,27 @@ class Endpoints(Enum):
             Methods.PATCH,
             Methods.DELETE,
         ],
-        data_class=ConfigGroupFields,
-        spec_link="https://spec.adsw.io/adcm_core/objects.html#config-group",
+        data_class=GroupConfigFields,
+        spec_link="https://spec.adsw.io/adcm_core/objects.html#group-config",
     )
 
-    HostGroup = Endpoint(
-        path="host-group",
+    GroupConfigHosts = Endpoint(
+        path=f"{GroupConfig.path}/{{id}}/host",
         methods=[
             Methods.GET,
             Methods.LIST,
             Methods.POST,
-            Methods.PUT,
-            Methods.PATCH,
             Methods.DELETE,
         ],
-        data_class=HostGroupFields,
-        spec_link="https://spec.adsw.io/adcm_core/objects.html#host-group",
+        data_class=GroupConfigHostsFields,
+        spec_link="https://spec.adsw.io/adcm_core/objects.html#group-config-hosts",
+    )
+
+    GroupConfigHostCandidates = Endpoint(
+        path=f"{GroupConfig.path}/{{id}}/host-candidate",
+        methods=[
+            Methods.LIST,
+        ],
+        data_class=GroupConfigHostCandidatesFields,
+        spec_link="https://spec.adsw.io/adcm_core/objects.html",
     )

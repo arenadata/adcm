@@ -28,8 +28,8 @@ class NumberInFilter(drf_filters.BaseInFilter, drf_filters.NumberFilter):
 class HostFilter(drf_filters.FilterSet):
     cluster_is_null = drf_filters.BooleanFilter(field_name='cluster_id', lookup_expr='isnull')
     provider_is_null = drf_filters.BooleanFilter(field_name='provider_id', lookup_expr='isnull')
-    groupconfig = drf_filters.ModelChoiceFilter(
-        queryset=GroupConfig.objects.all(), field_name='groupconfig', label='GroupConfig'
+    group_config = drf_filters.ModelChoiceFilter(
+        queryset=GroupConfig.objects.all(), field_name='group_config', label='GroupConfig'
     )
     hostcomponent__service_id = drf_filters.ModelChoiceFilter(
         queryset=ClusterObject.objects.all(),
@@ -44,8 +44,8 @@ class HostFilter(drf_filters.FilterSet):
         distinct=True,
     )
 
-    exclude_groupconfig__in = NumberInFilter(
-        field_name='groupconfig', lookup_expr='in', label='ExcludeGroupConfigIn', exclude=True
+    exclude_group_config__in = NumberInFilter(
+        field_name='group_config', lookup_expr='in', label='ExcludeGroupConfigIn', exclude=True
     )
 
     class Meta:
@@ -57,10 +57,10 @@ class HostFilter(drf_filters.FilterSet):
             'fqdn',
             'cluster_is_null',
             'provider_is_null',
-            'groupconfig',
+            'group_config',
             'hostcomponent__service_id',
             'hostcomponent__component_id',
-            'exclude_groupconfig__in',
+            'exclude_group_config__in',
         ]
 
 
@@ -84,10 +84,10 @@ class HostList(PageView):
         'fqdn',
         'cluster_is_null',
         'provider_is_null',
-        'groupconfig',
+        'group_config',
         'hostcomponent__service_id',
         'hostcomponent__component_id',
-        'exclude_groupconfig__in',
+        'exclude_group_config__in',
     )  # just for documentation
     ordering_fields = (
         'fqdn',

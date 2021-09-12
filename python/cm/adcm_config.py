@@ -500,6 +500,33 @@ def check_json_config(proto, obj, new_conf, old_conf=None, attr=None):
     return check_config_spec(proto, obj, spec, flat_spec, new_conf, old_conf, attr)
 
 
+def check_structure_for_group_attr(group_attr, spec, key_name):
+    """Check structure for `group_keys` and `custom_group_keys` field in attr"""
+    flat_group_attr = to_flat_dict(group_attr, spec)
+    for key, value in flat_group_attr.items():
+        if key not in spec:
+            msg = 'invalid field in `{}`'
+            err('ATTRIBUTE_ERROR', msg.format(key_name))
+        if not isinstance(value, bool):
+            msg = 'invalid type `{}` field in `{}`'
+            err('ATTRIBUTE_ERROR', msg.format(key, key_name))
+    return flat_group_attr
+
+
+def check_custom_group_keys_attr(proto, custom_group_keys, spec):
+    """Check `custom_group_keys` field in attr"""
+    flat_custom_group_keys = check_structure_for_group_attr(
+        custom_group_keys, spec, 'custom_group_keys'
+    )
+    for key, value in flat_custom_group_keys.items():
+        group_customization = spec[key].group_customization
+        if group_customization is None:
+            group_customization = proto.config_group_customization
+        if value != group_customization:
+            msg = '`custom_group_keys` field cannot be changed, read-only'
+            err('ATTRIBUTE_ERROR', msg)
+
+
 def check_attr(proto, attr, spec):
     if not attr:
         return
@@ -507,8 +534,12 @@ def check_attr(proto, attr, spec):
     allowed_key = ('active',)
     if not isinstance(attr, dict):
         err('ATTRIBUTE_ERROR', 'Attr should be a map')
-    for key in attr:
+    for key, value in attr.items():
         if key == 'group_keys':
+            check_structure_for_group_attr(value, spec, key)
+            continue
+        if key == 'custom_group_keys':
+            check_custom_group_keys_attr(proto, value, spec)
             continue
         if key + '/' not in spec:
             msg = 'There isn\'t group "{}" in config ({})'
@@ -516,15 +547,15 @@ def check_attr(proto, attr, spec):
         if spec[key + '/'].type != 'group':
             msg = 'Config key "{}" is not a group ({})'
             err('ATTRIBUTE_ERROR', msg.format(key, ref))
-        if not isinstance(attr[key], dict):
+        if not isinstance(value, dict):
             msg = 'Value of attribute "{}" should be a map ({})'
             err('ATTRIBUTE_ERROR', msg.format(key, ref))
-        for attr_key in attr[key]:
+        for attr_key in value:
             if attr_key not in allowed_key:
                 msg = 'Not allowed key "{}" of attribute "{}" ({})'
                 err('ATTRIBUTE_ERROR', msg.format(attr_key, key, ref))
-        if 'active' in attr[key]:
-            if not isinstance(attr[key]['active'], bool):
+        if 'active' in value:
+            if not isinstance(value['active'], bool):
                 msg = 'Value of key "{}" of attribute "{}" should be boolean ({})'
                 err('ATTRIBUTE_ERROR', msg.format('active', key, ref))
 
