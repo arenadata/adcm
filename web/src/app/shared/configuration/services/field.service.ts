@@ -148,18 +148,16 @@ const handleTree = (c: ISearchParam): ((a: TFormOptions) => TFormOptions) => (a:
   return a;
 };
 
-const findAttrValue = <T extends object>(object: T, key: string): boolean => {
-  let value = false;
-  Object.keys(object).some(function (k) {
-    if (k === key) {
-      value = object[k];
-      return true;
+const findAttrValue = <T extends object>(obj: T, key: string): boolean => {
+  let value;
+  for (let i in obj) {
+    if (!obj.hasOwnProperty(i)) continue;
+    if (typeof obj[i] === 'object') {
+      value = findAttrValue<Object>(obj[i], key);
+    } else if (i === key) {
+      value = obj[i];
     }
-    if (object[k] && typeof object[k] === 'object') {
-      value = findAttrValue<T>(object[k], key);
-      return value !== undefined;
-    }
-  });
+  }
   return value;
 };
 
@@ -204,7 +202,7 @@ export class FieldService {
 
   toGroupsFormGroup(config: IConfigAttr): FormGroup {
     const buildFormGroup = (group_keys) => this.fb.group(Object.entries(group_keys).map(([key, value]) => [key, value]).reduce((acc, [key, value]: [string, boolean]) => {
-      if (findAttrValue(config.custom_group_keys, key)) { // if value for this key in "custom_group_keys" === false then skip
+      if (!findAttrValue(config.custom_group_keys, key)) { // if value for this key in "custom_group_keys" === false then skip
         return { ...acc };
       } else if (isBoolean(value) || isEmptyObject(value)) {
         return { ...acc, [key]: value };
