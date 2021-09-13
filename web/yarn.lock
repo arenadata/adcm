@@ -7,10 +7,10 @@
   resolved "https://rt.adsw.io/artifactory/api/npm/arenadata-npm/@aduh95/viz.js/-/viz.js-3.5.0.tgz#23f075b11a5555f33195c033b3330a8deab4bc2b"
   integrity sha1-I/B1sRpVVfMxlcAzszMKjeq0vCs=
 
-"@adwp-ui/widgets@0.0.38":
-  version "0.0.38"
-  resolved "https://rt.adsw.io/artifactory/api/npm/arenadata-npm/@adwp-ui/widgets/-/@adwp-ui/widgets-0.0.38.tgz#9454edce4e8d0397b8002d6885a161dfebf38146"
-  integrity sha1-lFTtzk6NA5e4AC1ohaFh3+vzgUY=
+"@adwp-ui/widgets@0.0.39":
+  version "0.0.39"
+  resolved "https://rt.adsw.io/artifactory/api/npm/arenadata-npm/@adwp-ui/widgets/-/@adwp-ui/widgets-0.0.39.tgz#5578264bc2929c4e0c663a4aa611c7e255eedbe7"
+  integrity sha1-VXgmS8KSnE4MZjpKphHH4lXu2+c=
   dependencies:
     tslib "^2.0.0"
 
