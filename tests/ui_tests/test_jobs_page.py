@@ -273,6 +273,7 @@ def test_invoker_object_url(cluster: Cluster, provider: Provider, page: JobListP
 
 # !==== HELPERS =====!
 
+
 def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Provider, Host]):
     """
     Run the "Long" action
