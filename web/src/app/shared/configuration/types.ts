@@ -110,7 +110,8 @@ export interface IConfig {
 export interface IConfigAttr {
   [group: string]: { active?: boolean };
 
-  'group_keys'?: any;
+  group_keys?: { [key: string]: boolean };
+  custom_group_keys?: { [key: string]: boolean };
 }
 
 //#region Modified data for ngForm build
@@ -167,7 +168,11 @@ export interface IPanelOptions extends IFormOptions {
   active: boolean;
 }
 
-export interface IFieldOptions extends IFormOptions {
+export interface ICanGroup {
+  group?: boolean;
+}
+
+export interface IFieldOptions extends IFormOptions, ICanGroup {
   controlType: controlType;
   validator: IValidator;
   compare: ICompare[];

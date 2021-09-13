@@ -148,6 +148,19 @@ const handleTree = (c: ISearchParam): ((a: TFormOptions) => TFormOptions) => (a:
   return a;
 };
 
+const findAttrValue = <T extends object>(obj: T, key: string): boolean => {
+  let value;
+  for (let i in obj) {
+    if (!obj.hasOwnProperty(i)) continue;
+    if (typeof obj[i] === 'object') {
+      value = findAttrValue<Object>(obj[i], key);
+    } else if (i === key) {
+      value = obj[i];
+    }
+  }
+  return value;
+};
+
 @Injectable()
 export class FieldService {
   constructor(public fb: FormBuilder) {}
@@ -187,14 +200,18 @@ export class FieldService {
     );
   }
 
-  toGroupsFormGroup(params: { [group: string]: any } = {}): FormGroup {
-    return this.fb.group(Object.entries(params).map(([key, value]) => [key, value]).reduce((acc, [key, value]) => {
-      if (isBoolean(value) || isEmptyObject(value)) {
+  toGroupsFormGroup(config: IConfigAttr): FormGroup {
+    const buildFormGroup = (group_keys) => this.fb.group(Object.entries(group_keys).map(([key, value]) => [key, value]).reduce((acc, [key, value]: [string, boolean]) => {
+      if (!findAttrValue(config.custom_group_keys, key)) { // if value for this key in "custom_group_keys" === false then skip
+        return { ...acc };
+      } else if (isBoolean(value) || isEmptyObject(value)) {
         return { ...acc, [key]: value };
       } else if (!isEmptyObject(value)) {
-        return { ...acc, [key]: this.toGroupsFormGroup(value) };
+        return { ...acc, [key]: buildFormGroup(value) };
       }
     }, {}));
+
+    return buildFormGroup(config.group_keys ?? {});
   }
 
   // TODO:

@@ -101,10 +101,5 @@ export class AppService {
       this.snackBar.open(astr[0], 'Hide', data);
     });
 
-    // test only
-    // this.store
-    //   .select(getMessage)
-    //   .pipe(filter((e) => !!e))
-    //   .subscribe((e) => console.log('EVENT:', e.event, { ...e.object, details: JSON.stringify(e.object.details) }));
   }
 }
