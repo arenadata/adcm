@@ -1,0 +1,47 @@
+---
+
+root:
+  match: dict
+  items:
+      version: integer
+      roles: role_list
+      
+role_list:
+  match: list
+  item: role
+  
+role:
+  match: dict
+  items:
+    name: string
+    apps: app_list
+    
+app_list:
+  match: list
+  item: app
+  
+app:
+  match: dict
+  items:
+    label: string
+    models: model_list
+    
+model_list:
+  match: list
+  item: model
+
+model:
+  match: dict
+  items:
+    name: string
+    codenames: codename
+    
+codename:
+  match: list
+  item: string
+
+string:
+  match: string
+  
+integer:
+  match: int

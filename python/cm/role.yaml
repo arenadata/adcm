@@ -1,0 +1,30 @@
+---
+
+version: 1
+
+roles:
+    - name: admin
+      apps:
+        - label: drf
+          models:
+            - name: cluster
+              codenames:
+                - view
+                - add
+                - delete
+        - label: auth
+          models:
+            - name: group
+              codenames:
+                - view
+    - name: view
+      apps:
+        - label: cm
+          models:
+            - name: clusterobject
+              codenames:
+                - view
+          
+
+ 
+        
