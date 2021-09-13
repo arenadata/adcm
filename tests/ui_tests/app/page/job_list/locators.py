@@ -11,7 +11,9 @@
 # limitations under the License.
 from selenium.webdriver.common.by import By
 
-from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.helpers.locator import (
+    Locator,
+)
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 
 
@@ -21,6 +23,7 @@ class TaskListLocators:
         running = Locator(By.CSS_SELECTOR, "mat-button-toggle[value='running'] button", "Running filter button")
         success = Locator(By.CSS_SELECTOR, "mat-button-toggle[value='success'] button", "Success filter button")
         failed = Locator(By.CSS_SELECTOR, "mat-button-toggle[value='failed'] button", "Failed filter button")
+        filter_btn = Locator(By.CSS_SELECTOR, "mat-button-toggle button", "Filter button")
 
     class Table(CommonTable):
         class Row:

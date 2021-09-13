@@ -24,7 +24,7 @@ class CommonTable:
 
     visible_row = Locator(By.CSS_SELECTOR, "mat-row[adwphover]", "Visible table row")
     header = Locator(By.CSS_SELECTOR, "mat-header-cell>div", "Table header")
-    row = Locator(By.CSS_SELECTOR, "mat-row", "Table row")
+    row = Locator(By.CSS_SELECTOR, "mat-row[adwphover]", "Table row")
 
     class ActionPopup:
         """Common popup for action in tables."""

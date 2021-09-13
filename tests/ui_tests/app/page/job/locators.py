@@ -21,17 +21,17 @@ class JobPageLocators(ObjectPageLocators):
     """Locators for detailed job page"""
 
     job_info = Locator(By.TAG_NAME, "app-job-info", "Job info section")
-    start_time = Locator(By.CSS_SELECTOR, ".time-info div:nth-child(1) span", "Job start time")
-    execution_time = Locator(By.CSS_SELECTOR, ".time-info div:nth-child(2) span", "Job execution time")
-    finish_time = Locator(By.CSS_SELECTOR, ".time-info div:nth-child(3) span", "Job finish time")
+    start_date = Locator(By.CSS_SELECTOR, ".time-info>div:first-child>span", "Start date")
+    finish_date = Locator(By.CSS_SELECTOR, ".time-info>div:last-child>span", "Finish date")
+    duration = Locator(By.CSS_SELECTOR, ".time-info>div:nth-child(2)>span", "Task duration")
 
     class Menu:
         # keep stdout(-err) prefix in naming
-        stdout_tab = Locator(By.XPATH, "//a[.//span[text()='ansible [ stdout ]']]", "stdout menu tab")
+        stdout_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_1']", "Job stdout tab")
         stdout_download_btn = Locator(
             By.XPATH, "//a[.//span[text()='ansible [ stdout ]']]//button", "Download stdout button"
         )
-        stderr_tab = Locator(By.XPATH, "//a[.//span[text()='ansible [ stderr ]']]", "stdout err tab")
+        stderr_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_2']", "Job stderr tab")
         stderr_download_btn = Locator(
             By.XPATH, "//a[.//span[text()='ansible [ stderr ]']]//button", "Download stdout button"
         )
