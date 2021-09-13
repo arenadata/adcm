@@ -45920,9 +45920,6 @@
                         },
                         {
                             "name": "SubtitleComponent"
-                        },
-                        {
-                            "name": "TopComponent"
                         }
                     ]
                 },
@@ -48389,7 +48386,7 @@
                 "name": "Template",
                 "ctype": "miscellaneous",
                 "subtype": "variable",
-                "file": "src/stories/issue-messages/issue-messages-popup.stories.ts",
+                "file": "src/stories/issue-messages/issue-messages.stories.ts",
                 "deprecated": false,
                 "deprecationMessage": "",
                 "type": "Story",
@@ -48399,7 +48396,7 @@
                 "name": "Template",
                 "ctype": "miscellaneous",
                 "subtype": "variable",
-                "file": "src/stories/issue-messages/issue-messages.stories.ts",
+                "file": "src/stories/issue-messages/issue-messages-popup.stories.ts",
                 "deprecated": false,
                 "deprecationMessage": "",
                 "type": "Story",
