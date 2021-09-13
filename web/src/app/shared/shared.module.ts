@@ -13,7 +13,6 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { AdwpListModule } from '@adwp-ui/widgets';
 
 import { AddingModule } from './add-component/adding.module';
 import {
@@ -66,9 +65,6 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
     HostComponentsMapModule,
     DetailsModule,
     TranslateModule,
-    AdwpListModule.forRoot({
-      itemsPerPage: [10, 25, 50, 100],
-    }),
   ],
   declarations: [
     DialogComponent,
@@ -95,7 +91,7 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
     ServiceComponentsComponent,
     ToDataSourcePipe,
     PickKeysPipe,
-    TranslateKeysPipe
+    TranslateKeysPipe,
   ],
   exports: [
     FormsModule,
@@ -125,7 +121,6 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
     EditionColumnComponent,
     ClusterColumnComponent,
     ServiceComponentsComponent,
-    AdwpListModule,
     ToDataSourcePipe,
     PickKeysPipe,
     TranslateKeysPipe,
