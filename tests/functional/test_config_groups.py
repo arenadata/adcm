@@ -76,8 +76,10 @@ class TestGroupsIntersection:
 
     @allure.step("Check that the only second host is present in candidates on second provider group")
     def assert_host_candidate_equal_expected(self, group: HostList, expected_hosts: int):
-        assert len(group) == expected_hosts, f"{expected_hosts} hosts should be available in group"
-        assert group[0].fqdn == self.SECOND_HOST, f"Should be available host '{self.SECOND_HOST}'"
+        with allure.step(f"Check that {expected_hosts} hosts are available in group"):
+            assert len(group) == expected_hosts, f"{expected_hosts} hosts should be available in group"
+        with allure.step(f"Check that host '{self.SECOND_HOST}' is available in group"):
+            assert group[0].fqdn == self.SECOND_HOST, f"Should be available host '{self.SECOND_HOST}'"
 
     @pytest.fixture()
     def cluster_with_components(
