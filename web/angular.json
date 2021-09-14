@@ -22,9 +22,7 @@
               "src/assets"
             ],
             "styles": [
-              "src/adcm-theme.scss",
-              "src/styles.scss",
-              "src/adcm2.scss"
+              "src/styles.scss"
             ],
             "scripts": []
           },
@@ -80,9 +78,7 @@
             "tsConfig": "src/tsconfig.spec.json",
             "scripts": [],
             "styles": [
-              "src/adcm-theme.scss",
-              "src/styles.scss",
-              "src/adcm2.scss"
+              "src/styles.scss"
             ],
             "assets": [
               "src/assets"
