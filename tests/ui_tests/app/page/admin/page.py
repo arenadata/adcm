@@ -90,7 +90,7 @@ class AdminUsersPage(GeneralAdminPage):
     def get_all_user_rows(self) -> List[WebElement]:
         """Get all user rows (locator differs from self.table.get_all_rows())"""
         try:
-            return self.find_elements(self.table.locators.row, timeout=5)
+            return self.find_elements(AdminUsersLocators.user_row, timeout=5)
         except TimeoutException:
             return []
 
