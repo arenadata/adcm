@@ -89,6 +89,7 @@ description         text    null    False    False            True              
 hosts               M2M     null    False    False            False              False              M2M link to Host objects.
 host_candidate      link    null    False    False            False              False              Reference to list host candidate for adding to a group
 config              FK      null    False    False            False              False              FK field on ObjectConfig object
+config_id           integer null    False    False            False              False              Additional information about config. Read Only.
 url                 link    null    False    False            False              False              Reference to this object
 =================== ======= ======= ======== ================ ================== ================== ===========
 
