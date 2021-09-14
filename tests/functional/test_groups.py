@@ -11,13 +11,21 @@
 # limitations under the License.
 # pylint: disable=redefined-outer-name, unused-argument, duplicate-code
 
+from typing import List
+
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, Bundle, Cluster, Provider, Host
+from adcm_client.objects import (
+    ADCMClient,
+    Bundle,
+    Cluster,
+    Provider,
+    Host,
+)
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import get_data_dir
 from coreapi.exceptions import ErrorMessage
-from typing import List
+
 from tests.library.errorcodes import GROUP_CONFIG_HOST_ERROR
 
 CLUSTER_BUNDLE_PATH = get_data_dir(__file__, "cluster_simple")
