@@ -69,10 +69,12 @@ class TestGroupsIntersection:
 
     @allure.step('Check error')
     def assert_that_host_add_is_unavaliable(self, error):
-        GROUP_CONFIG_HOST_ERROR.equal(error)
-        assert (
-            self.HOST_ERROR_MESSAGE in error.value.error['desc']
-        ), f"Should be error message '{self.HOST_ERROR_MESSAGE}'"
+        with allure.step(f"Check that error is '{GROUP_CONFIG_HOST_ERROR.code}'"):
+            GROUP_CONFIG_HOST_ERROR.equal(error)
+        with allure.step(f"Check error message is '{self.HOST_ERROR_MESSAGE}'"):
+            assert (
+                self.HOST_ERROR_MESSAGE in error.value.error['desc']
+            ), f"Should be error message '{self.HOST_ERROR_MESSAGE}'"
 
     @allure.step("Check that the only second host is present in candidates on second provider group")
     def assert_host_candidate_equal_expected(self, group: HostList, expected_hosts: int):
