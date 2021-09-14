@@ -129,6 +129,7 @@ REST_FRAMEWORK = {
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.OrderingFilter',
     ],
+    'EXCEPTION_HANDLER': 'cm.errors.custom_drf_exception_handler',
 }
 
 # Database
