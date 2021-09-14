@@ -11,7 +11,7 @@
 # limitations under the License.
 # pylint: disable=redefined-outer-name, unused-argument, duplicate-code
 
-from typing import List
+from typing import Tuple
 
 import allure
 import pytest
@@ -20,6 +20,8 @@ from adcm_client.objects import (
     Cluster,
     Provider,
     HostList,
+    Service,
+    Host,
 )
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import get_data_dir
@@ -58,7 +60,7 @@ class TestGroupsIntersection:
     SECOND_HOST = "test_host_2"
 
     @pytest.fixture()
-    def create_two_hosts(self, provider):
+    def create_two_hosts(self, provider) -> Tuple[Host, Host]:
         with allure.step("Create host for config groups"):
             test_host_1 = provider.host_create(fqdn=self.FIRST_HOST)
         with allure.step("Create host for host candidate check"):
@@ -78,8 +80,10 @@ class TestGroupsIntersection:
         assert group[0].fqdn == self.SECOND_HOST, f"Should be available host '{self.SECOND_HOST}'"
 
     @pytest.fixture()
-    def cluster_with_components(self, create_two_hosts, cluster: Cluster, provider: Provider):
-        """Add service, two hosts and create components"""
+    def cluster_with_components(
+        self, create_two_hosts, cluster: Cluster, provider: Provider
+    ) -> Tuple[Service, Host, Host]:
+        """Add service, two hosts and create components to check intersection in config groups"""
 
         service = cluster.service_add(name='test_service_1')
         test_host_1, test_host_2 = create_two_hosts
