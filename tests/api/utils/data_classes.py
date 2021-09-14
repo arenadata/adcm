@@ -112,7 +112,7 @@ class GroupConfigFields(BaseClass):
         f_type=ForeignKey(fk_link=ObjectConfigFields),
         default_value="auto",
     )
-    config_id = Field(name='config_id', f_type=PositiveInt(), postable=False, changeable=False, default_value=None)
+    config_id = Field(name='config_id', f_type=PositiveInt(), default_value="auto")
     host_candidate = Field(
         # Link to host candidates url for this object. Auto-filled when group-config object creates
         # Candidates list depends on ADCM object for which group-config was created.
