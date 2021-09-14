@@ -77,10 +77,6 @@ def test_put_body_positive(prepare_put_body_data):
 
 
 @pytest.mark.parametrize("prepare_put_body_data", get_negative_data_for_put_body_check(), indirect=True)
-@allure.issue(
-    name="Error message changing non-changeable fields",
-    url="https://arenadata.atlassian.net/browse/ADSS-186",
-)
 def test_put_body_negative(prepare_put_body_data, flexible_assert_step):
     """
     Negative cases of PUT request body testing

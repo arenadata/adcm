@@ -5,15 +5,13 @@ from collections.abc import Callable
 from datetime import datetime, timedelta
 from random import randint, choice
 from typing import ClassVar, List, Type, Union, NamedTuple, Optional
-from multipledispatch import dispatch
 
 import attr
-
+from multipledispatch import dispatch
 
 # There is no circular import, because the import of the module is not yet completed at the moment,
 # and this allows you to resolve the conflict.
 from tests.api.utils import data_classes  # pylint: disable=unused-import,cyclic-import
-
 from tests.api.utils.fake_data import generate_json_from_schema, gen_string
 from tests.api.utils.tools import random_string
 
