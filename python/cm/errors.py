@@ -12,8 +12,10 @@
 
 import rest_framework.status as rfs
 from rest_framework.exceptions import APIException
+from rest_framework.views import exception_handler
 
 from cm.logger import log
+
 
 WARN = 'warning'
 ERR = 'error'
@@ -101,6 +103,7 @@ ERRORS = {
     'WRONG_ACTION_TYPE': ("config action type error", rfs.HTTP_409_CONFLICT, ERR),
     'WRONG_ACTION_HC': ("action hostcomponentmap error", rfs.HTTP_409_CONFLICT, ERR),
     'WRONG_CLUSTER_ID_TYPE': ("cluster id must be integer", rfs.HTTP_400_BAD_REQUEST, ERR),
+    'OVERFLOW': ("integer or floats in a request cause an overflow", rfs.HTTP_400_BAD_REQUEST, ERR),
     'WRONG_NAME': ("wrong name", rfs.HTTP_400_BAD_REQUEST, ERR),
     'LONG_NAME': ("name is too long", rfs.HTTP_400_BAD_REQUEST, ERR),
     'INVALID_INPUT': ("invalid input", rfs.HTTP_400_BAD_REQUEST, ERR),
@@ -114,7 +117,6 @@ ERRORS = {
     'NO_JOBS_RUNNING': ("no jobs running", rfs.HTTP_409_CONFLICT, ERR),
     'BAD_QUERY_PARAMS': ("bad query params", rfs.HTTP_400_BAD_REQUEST),
     'DUMP_LOAD_CLUSTER_ERROR': ("Dumping or Loading error", rfs.HTTP_409_CONFLICT),
-
     'MESSAGE_TEMPLATING_ERROR': ("Message templating error", rfs.HTTP_409_CONFLICT, ERR),
     'ISSUE_INTEGRITY_ERROR': ("Issue object integrity error", rfs.HTTP_409_CONFLICT, ERR),
     'GROUP_CONFIG_HOST_ERROR': (
@@ -186,3 +188,12 @@ def raise_AdcmEx(code, msg='', args=''):
         err_msg = msg
     log.error(err_msg)
     raise AdcmEx(code, msg=msg, args=args)
+
+
+def custom_drf_exception_handler(exc, context):
+    if isinstance(exc, OverflowError):
+        # This is an error with DB mostly. For example SqlLite can't handle 64bit numbers.
+        # So we have to handle this right and rise HTTP 400, instead of HTTP 500
+        return exception_handler(AdcmEx('OVERFLOW'), context)
+
+    return exception_handler(exc, context)
