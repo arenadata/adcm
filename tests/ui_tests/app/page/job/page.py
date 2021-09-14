@@ -104,9 +104,9 @@ class JobPage(BasePageObject):
         return DetailedPageJobInfo(
             name=self.find_element(JobPageLocators.title).text.strip(),
             invoker_objects=invoker_objects,
-            execution_time=self.find_element(JobPageLocators.execution_time).text.strip(),
-            start_date=self.find_element(JobPageLocators.start_time).text.strip(),
-            finish_date=self.find_element(JobPageLocators.finish_time).text.strip(),
+            execution_time=self.find_element(JobPageLocators.duration).text.strip(),
+            start_date=self.find_element(JobPageLocators.start_date).text.strip(),
+            finish_date=self.find_element(JobPageLocators.finish_date).text.strip(),
         )
 
     @allure.step('Open stdout menu')
