@@ -17,7 +17,6 @@ import allure
 import pytest
 from adcm_client.objects import (
     ADCMClient,
-    Bundle,
     Cluster,
     Provider,
     Host,
@@ -33,24 +32,16 @@ PROVIDER_BUNDLE_PATH = get_data_dir(__file__, "hostprovider_bundle")
 
 
 @pytest.fixture()
-def cluster_bundle(request, sdk_client_fs: ADCMClient) -> Bundle:
+def cluster(request, sdk_client_fs: ADCMClient) -> Cluster:
     bundle_path = request.param if hasattr(request, "param") else CLUSTER_BUNDLE_PATH
-    return sdk_client_fs.upload_from_fs(bundle_path)
-
-
-@pytest.fixture()
-def cluster(cluster_bundle: Bundle) -> Cluster:
+    cluster_bundle = sdk_client_fs.upload_from_fs(bundle_path)
     return cluster_bundle.cluster_create(name=utils.random_string())
 
 
 @pytest.fixture()
-def provider_bundle(request, sdk_client_fs: ADCMClient) -> Bundle:
+def provider(request, sdk_client_fs: ADCMClient) -> Provider:
     bundle_path = request.param if hasattr(request, "param") else PROVIDER_BUNDLE_PATH
-    return sdk_client_fs.upload_from_fs(bundle_path)
-
-
-@pytest.fixture()
-def provider(provider_bundle: Bundle) -> Provider:
+    provider_bundle = sdk_client_fs.upload_from_fs(bundle_path)
     return provider_bundle.provider_create(name=utils.random_string())
 
 
