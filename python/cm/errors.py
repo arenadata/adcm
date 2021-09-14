@@ -139,6 +139,11 @@ ERRORS = {
         rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),
+    'GROUP_CONFIG_OBJECT_ID_ERROR': (
+        ("There is no such object with provided object_id and object_type"),
+        rfs.HTTP_400_BAD_REQUEST,
+        ERR,
+    ),
 }
 
 

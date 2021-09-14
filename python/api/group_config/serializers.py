@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from django.contrib.contenttypes.models import ContentType
+from django.apps import apps
 from django.db.transaction import atomic
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
@@ -70,6 +71,14 @@ def revert_model_name(name):
         return name
 
 
+def model_by_type(type_name):
+    """Function return ORM object according to 'object_type'."""
+    # TODO: Refactoring. Move all Generic FK related functions to separate module.
+
+    check_object_type(type_name)
+    return apps.get_model(app_label='cm', model_name=revert_model_name(type_name))
+
+
 class ObjectTypeField(serializers.Field):
     def to_representation(self, value):
         return translate_model_name(value.model)
@@ -109,6 +118,11 @@ class GroupConfigSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializ
         lookup_url_kwarg='parent_lookup_group_config',
         source='*',
     )
+
+    def validate_object_id(self, value):
+        data = self.get_initial()
+        if not model_by_type(data['object_type']).objects.filter(id=data['object_id']):
+            raise AdcmEx('GROUP_CONFIG_OBJECT_ID_ERROR')
 
     class Meta:
         model = GroupConfig
