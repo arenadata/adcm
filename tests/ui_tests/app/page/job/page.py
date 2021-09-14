@@ -62,42 +62,6 @@ class JobPageMixin(BasePageObject):
     def check_title(self, expected_title: str):
         assert self.find_element(ObjectPageLocators.title).text == expected_title
 
-
-class JobPageStdout(JobPageMixin):
-    """Job Page Stdout log"""
-
-    MENU_SUFFIX = '1'
-
-    @allure.step("Check text on the page")
-    def check_text(self, success_task: bool = True):
-        task_result = 'Success' if success_task else 'Fail'
-        headings = [
-            "PLAY [SeeMeInAction]",
-            "TASK [Gathering Facts] ",
-            f"TASK [{task_result}] ***",
-            "PLAY RECAP",
-            "Gathering Facts ---",
-            f"{task_result} ---",
-        ]
-        page_text = self.find_element(ObjectPageLocators.text).text
-        for header in headings:
-            assert header in page_text, f"There are no header '{header}' on the page"
-
-
-class JobPageStderr(JobPageMixin):
-    """Job Page Stderr log"""
-
-    MENU_SUFFIX = '2'
-
-
-class JobPage(BasePageObject):
-    """Job detailed page"""
-
-    def __init__(self, driver, base_url, job_id: int):
-        super().__init__(driver, base_url, "/job/{job_id}", job_id=job_id)
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
-
     def get_job_info(self) -> DetailedPageJobInfo:
         """Get information about job from detail page"""
         invoker_objects = self.find_element(JobPageLocators.subtitle).text.strip().replace(' / ', '/')
@@ -129,3 +93,30 @@ class JobPage(BasePageObject):
         self.find_and_click(locator)
         self.wait_element_attribute(locator, 'class', 'active', exact_match=False)
         self.wait_element_hide(CommonToolbarLocators.progress_bar)
+
+
+class JobPageStdout(JobPageMixin):
+    """Job Page Stdout log"""
+
+    MENU_SUFFIX = '1'
+
+    @allure.step("Check text on the page")
+    def check_text(self, success_task: bool = True):
+        task_result = 'Success' if success_task else 'Fail'
+        headings = [
+            "PLAY [SeeMeInAction]",
+            "TASK [Gathering Facts] ",
+            f"TASK [{task_result}] ***",
+            "PLAY RECAP",
+            "Gathering Facts ---",
+            f"{task_result} ---",
+        ]
+        page_text = self.find_element(ObjectPageLocators.text).text
+        for header in headings:
+            assert header in page_text, f"There are no header '{header}' on the page"
+
+
+class JobPageStderr(JobPageMixin):
+    """Job Page Stderr log"""
+
+    MENU_SUFFIX = '2'

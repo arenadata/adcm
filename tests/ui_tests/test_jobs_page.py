@@ -34,7 +34,7 @@ from adcm_client.objects import (
 
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
-from tests.ui_tests.app.page.job.page import JobPageStdout, JobPage
+from tests.ui_tests.app.page.job.page import JobPageStdout
 from tests.ui_tests.app.page.job_list.page import (
     JobListPage,
     JobStatus,
@@ -116,7 +116,7 @@ def test_run_multijob(cluster: Cluster, page: JobListPage):
             ), f'Job at position #{i} should be {expected_info}, not {actual_info}'
     with allure.step("Open first job's page"):
         page.click_on_job()
-        detail_page = JobPage(page.driver, page.base_url, task.jobs[0]['id'])
+        detail_page = JobPageStdout(page.driver, page.base_url, task.jobs[0]['id'])
         detail_page.wait_page_is_opened()
 
 
@@ -148,7 +148,7 @@ def test_open_task_by_click_on_name(cluster: Cluster, page: JobListPage):
     with allure.step('Click on task name'):
         page.click_on_action_name_in_row(page.table.get_row())
     with allure.step('Check Task detailed page is opened'):
-        job_page = JobPage(page.driver, page.base_url, task.id)
+        job_page = JobPageStdout(page.driver, page.base_url, task.id)
         job_page.wait_page_is_opened()
 
 
@@ -202,128 +202,17 @@ def test_invoker_object_url(cluster: Cluster, provider: Provider, page: JobListP
         service: Service = cluster.service(name=SERVICE_NAME)
         component: Component = service.component(name=COMPONENT_NAME)
         component_action = component.action(display_name=COMPONENT_ACTION_DISPLAY_NAME)
-        _check_link_to_invoker_object('component', component_link, page, component_action)
+        _check_link_to_invoker_object(component_link, page, component_action)
     with allure.step('Create host, run action on host and check job link to it'):
         host = provider.host_create(host_fqdn)
         host_action = host.action(display_name=FAIL_ACTION_DISPLAY_NAME)
-        _check_link_to_invoker_object('host', host_job_link, page, host_action)
+        _check_link_to_invoker_object(host_job_link, page, host_action)
     with allure.step('Add host to the cluster, assign component on it'):
         cluster.host_add(host)
         cluster.hostcomponent_set((host, component))
     with allure.step('Run component host action on host and check job link to it'):
         host_action = _wait_and_get_action_on_host(host, ON_HOST_ACTION_DISPLAY_NAME)
-        _check_link_to_invoker_object('host', host_component_link, page, host_action)
-
-
-# !==== HELPERS =====!
-
-
-def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Provider, Host]):
-    """
-    Run the "Long" action
-    Check popup info
-    Check table info without filter (All)
-    Activate filter "Running"
-    Check table info
-    """
-    owner_name = action_owner.name if action_owner.__class__ != Host else action_owner.fqdn
-    expected_info = {
-        'status': JobStatus.RUNNING,
-        'action_name': LONG_ACTION_DISPLAY_NAME,
-        'invoker_objects': owner_name,
-    }
-    with allure.step(
-        f'Run action "{LONG_ACTION_DISPLAY_NAME}" on {action_owner.__class__}'
-    ), page.table.wait_rows_change():
-        long_action = action_owner.action(display_name=LONG_ACTION_DISPLAY_NAME)
-        long_action.run()
-    _check_job_info_in_popup(page, {'status': expected_info['status'], 'action_name': expected_info['action_name']})
-    _check_running_job_info_in_table(page, expected_info)
-    page.select_filter_running_tab()
-    _check_running_job_info_in_table(page, expected_info)
-
-
-@allure.step('Check running job information in table')
-def _check_running_job_info_in_table(page: JobListPage, expected_info: dict):
-    """Get info about job from table and check it"""
-    wait_and_assert_ui_info(
-        {**expected_info, 'start_date': is_not_empty, 'finish_date': is_empty},
-        page.get_task_info_from_table,
-    )
-
-
-@allure.step('Check finished job information in table')
-def _check_finished_job_info_in_table(page: JobListPage, expected_info: dict):
-    """Get and check info about successfully finished job from table"""
-    wait_and_assert_ui_info(
-        {**expected_info, 'start_date': is_not_empty, 'finish_date': is_not_empty},
-        page.get_task_info_from_table,
-    )
-
-
-@allure.step('Check job information in popup')
-def _check_job_info_in_popup(page: JobListPage, expected_info: dict):
-    """Get job info from popup and check it"""
-    with page.header.open_jobs_popup():
-        wait_and_assert_ui_info({**expected_info}, page.get_task_info_from_popup)
-
-
-@allure.step('Run {success} success and {failed} failed actions on hosts')
-def _run_actions_on_hosts(hosts: List[Host], success: int, failed: int):
-    """
-    Run success and failed actions
-    and then wait for all of them to be finished
-    """
-    actions_distribution = [SUCCESS_ACTION_DISPLAY_NAME] * success + [FAIL_ACTION_DISPLAY_NAME] * failed
-    task_list = [host.action(display_name=actions_distribution[i]).run() for i, host in enumerate(hosts)]
-    for task in task_list:
-        task.wait(timeout=60)
-
-
-@allure.step('Open detailed job page')
-def _open_detailed_job_page(job_id: int, app_fs: ADCMTest) -> JobPage:
-    """Open detailed job page"""
-    return JobPage(app_fs.driver, app_fs.adcm.url, job_id).open()
-
-
-def _check_link_to_invoker_object(link_object_name: str, expected_link: str, page: JobListPage, action: Action):
-    """
-    Check that link to object invoked action is correct
-    :param link_object_name: Name of object to add in assertion message like 'host', 'component'
-    :param expected_link: "Link" to invoker objects
-    :param page: Page with jobs table
-    :param action: Action to run
-    """
-    expected_value = {'invoker_objects': expected_link}
-    with page.table.wait_rows_change():
-        action.run()
-    wait_and_assert_ui_info(
-        expected_value, page.get_task_info_from_table, get_info_kwargs={'full_invoker_objects_link': True}
-    )
-    # task_info: TableTaskInfo = page.get_task_info_from_table(full_invoker_objects_link=True)
-    # assert (actual_link := task_info.invoker_objects) == expected_link, (
-    #     f'Link to {link_object_name} object in jobs table ' f'should be "{expected_link}", not "{actual_link}"'
-    # )
-    detail_page = JobPage(page.driver, page.base_url, action.task_list()[0].id).open()
-    wait_and_assert_ui_info(expected_value, detail_page.get_job_info)
-    # actual_link = detail_page.get_job_info().invoker_objects
-    # assert actual_link == expected_link, (
-    #     f'Link to {link_object_name} object on detailed job page ' f'should be "{expected_link}", not "{actual_link}"'
-    # )
-    page.open()
-
-
-def _wait_and_get_action_on_host(host: Host, display_name: str) -> Action:
-    """Wait until action is presented on host (wait for host action)"""
-
-    def wait_for_action_to_be_presented():
-        try:
-            host.action(display_name=display_name)
-        except ObjectNotFound:
-            assert False, f'Action "{display_name}" is not presented on host {host.fqdn}'
-
-    utils.wait_until_step_succeeds(wait_for_action_to_be_presented, period=0.1, timeout=5)
-    return host.action(display_name=display_name)
+        _check_link_to_invoker_object(host_component_link, page, host_action)
 
 
 @pytest.mark.smoke()
@@ -535,3 +424,107 @@ class TestTaskHeaderPopup:
         cluster_page.header.wait_success_job_amount_from_header(1)
         assert cluster_page.header.get_in_progress_job_amount_from_header() == "0", "In progress job amount should be 0"
         assert cluster_page.header.get_failed_job_amount_from_header() == "0", "Failed job amount should be 0"
+
+
+# !==== HELPERS =====!
+
+
+def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Provider, Host]):
+    """
+    Run the "Long" action
+    Check popup info
+    Check table info without filter (All)
+    Activate filter "Running"
+    Check table info
+    """
+    owner_name = action_owner.name if action_owner.__class__ != Host else action_owner.fqdn
+    expected_info = {
+        'status': JobStatus.RUNNING,
+        'action_name': LONG_ACTION_DISPLAY_NAME,
+        'invoker_objects': owner_name,
+    }
+    with allure.step(
+        f'Run action "{LONG_ACTION_DISPLAY_NAME}" on {action_owner.__class__}'
+    ), page.table.wait_rows_change():
+        long_action = action_owner.action(display_name=LONG_ACTION_DISPLAY_NAME)
+        long_action.run()
+    _check_job_info_in_popup(page, {'status': expected_info['status'], 'action_name': expected_info['action_name']})
+    _check_running_job_info_in_table(page, expected_info)
+    page.select_filter_running_tab()
+    _check_running_job_info_in_table(page, expected_info)
+
+
+@allure.step('Check running job information in table')
+def _check_running_job_info_in_table(page: JobListPage, expected_info: dict):
+    """Get info about job from table and check it"""
+    wait_and_assert_ui_info(
+        {**expected_info, 'start_date': is_not_empty, 'finish_date': is_empty},
+        page.get_task_info_from_table,
+    )
+
+
+@allure.step('Check finished job information in table')
+def _check_finished_job_info_in_table(page: JobListPage, expected_info: dict):
+    """Get and check info about successfully finished job from table"""
+    wait_and_assert_ui_info(
+        {**expected_info, 'start_date': is_not_empty, 'finish_date': is_not_empty},
+        page.get_task_info_from_table,
+    )
+
+
+@allure.step('Check job information in popup')
+def _check_job_info_in_popup(page: JobListPage, expected_info: dict):
+    """Get job info from popup and check it"""
+    with page.header.open_jobs_popup():
+        wait_and_assert_ui_info({**expected_info}, page.get_task_info_from_popup)
+
+
+@allure.step('Run {success} success and {failed} failed actions on hosts')
+def _run_actions_on_hosts(hosts: List[Host], success: int, failed: int):
+    """
+    Run success and failed actions
+    and then wait for all of them to be finished
+    """
+    actions_distribution = [SUCCESS_ACTION_DISPLAY_NAME] * success + [FAIL_ACTION_DISPLAY_NAME] * failed
+    task_list = [host.action(display_name=actions_distribution[i]).run() for i, host in enumerate(hosts)]
+    for task in task_list:
+        task.wait(timeout=60)
+
+
+@allure.step('Open detailed job page')
+def _open_detailed_job_page(job_id: int, app_fs: ADCMTest) -> JobPageStdout:
+    """Open detailed job page (stdout page)"""
+    return JobPageStdout(app_fs.driver, app_fs.adcm.url, job_id).open()
+
+
+def _check_link_to_invoker_object(expected_link: str, page: JobListPage, action: Action):
+    """
+    Check that link to object invoked action is correct
+    :param expected_link: "Link" to invoker objects
+    :param page: Page with jobs table
+    :param action: Action to run
+    """
+    expected_value = {'invoker_objects': expected_link}
+    with page.table.wait_rows_change():
+        action.run()
+    wait_and_assert_ui_info(
+        expected_value, page.get_task_info_from_table, get_info_kwargs={'full_invoker_objects_link': True}
+    )
+    detail_page = JobPageStdout(page.driver, page.base_url, action.task_list()[0].id).open()
+    wait_and_assert_ui_info(expected_value, detail_page.get_job_info)
+    page.open()
+
+
+def _wait_and_get_action_on_host(host: Host, display_name: str) -> Action:
+    """Wait until action is presented on host (wait for host action)"""
+
+    def wait_for_action_to_be_presented():
+        try:
+            host.action(display_name=display_name)
+        except ObjectNotFound:
+            assert (  # noqa: PT015
+                False
+            ), f'Action "{display_name}" is not presented on host {host.fqdn}. Actions: {host.action_list()}'
+
+    utils.wait_until_step_succeeds(wait_for_action_to_be_presented, period=0.1, timeout=5)
+    return host.action(display_name=display_name)
