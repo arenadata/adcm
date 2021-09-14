@@ -29,6 +29,7 @@ from adcm_client.objects import (
     Host,
     Component,
     Action,
+    ObjectNotFound,
 )
 
 from tests.ui_tests.app.app import ADCMTest
@@ -37,7 +38,6 @@ from tests.ui_tests.app.page.job.page import JobPageStdout, JobPage
 from tests.ui_tests.app.page.job_list.page import (
     JobListPage,
     JobStatus,
-    TableTaskInfo,
 )
 from tests.ui_tests.utils import (
     wait_and_assert_ui_info,
@@ -96,62 +96,6 @@ def provider(provider_bundle: Bundle) -> Provider:
 def created_hosts(provider: Provider) -> List[Host]:
     """Create 11 hosts for "parallel" actions execution"""
     return [provider.host_create(f'host-{i}') for i in range(11)]
-
-
-@pytest.mark.smoke()
-def test_cluster_action_job(cluster: Cluster, page: JobListPage):
-    """Run action on cluster and validate job in table and popup"""
-    _test_run_action(page, cluster)
-
-
-@pytest.mark.smoke()
-def test_service_action_job(cluster: Cluster, page: JobListPage):
-    """Run action on service and validate job in table and popup"""
-    _test_run_action(page, cluster.service_list()[0])
-
-
-@pytest.mark.smoke()
-def test_provider_action_job(provider: Provider, page: JobListPage):
-    """Run action on host provider and validate job in table and popup"""
-    _test_run_action(page, provider)
-
-
-@pytest.mark.smoke()
-def test_host_action_job(provider: Provider, page: JobListPage):
-    """Run action on host and validate job in table and popup"""
-    _test_run_action(page, provider.host_create('some-fqdn'))
-
-
-@pytest.mark.smoke()
-@pytest.mark.parametrize(
-    'job_info',
-    [
-        {
-            'expected_status': 'success',
-            'status': JobStatus.SUCCESS,
-            'action_name': SUCCESS_ACTION_DISPLAY_NAME,
-        },
-        {
-            'expected_status': 'failed',
-            'status': JobStatus.FAILED,
-            'action_name': FAIL_ACTION_DISPLAY_NAME,
-        },
-    ],
-    ids=['success_job', 'failed_job'],
-)
-def test_finished_job_has_correct_info(job_info: dict, cluster: Cluster, page: JobListPage):
-    """Run action that finishes (success/failed) and check it is displayed correctly"""
-    expected_info_in_popup = {**job_info}
-    expected_status = expected_info_in_popup.pop('expected_status')
-    expected_info_in_table = {**expected_info_in_popup, 'invoker_objects': cluster.name}
-    with allure.step(f'Run action and wait for "{expected_status}" status'):
-        action = cluster.action(display_name=expected_info_in_popup['action_name'])
-        run_cluster_action_and_assert_result(cluster, action.name, status=expected_status)
-    _check_finished_job_info_in_table(page, expected_info_in_table)
-    open_filter_on_page = getattr(page, f'select_filter_{expected_status}_tab')
-    open_filter_on_page()
-    _check_finished_job_info_in_table(page, expected_info_in_table)
-    _check_job_info_in_popup(page, expected_info_in_popup)
 
 
 def test_run_multijob(cluster: Cluster, page: JobListPage):
@@ -258,17 +202,17 @@ def test_invoker_object_url(cluster: Cluster, provider: Provider, page: JobListP
         service: Service = cluster.service(name=SERVICE_NAME)
         component: Component = service.component(name=COMPONENT_NAME)
         component_action = component.action(display_name=COMPONENT_ACTION_DISPLAY_NAME)
-        _check_link_to_invoker_object_in_table('component', component_link, page, component_action)
+        _check_link_to_invoker_object('component', component_link, page, component_action)
     with allure.step('Create host, run action on host and check job link to it'):
         host = provider.host_create(host_fqdn)
         host_action = host.action(display_name=FAIL_ACTION_DISPLAY_NAME)
-        _check_link_to_invoker_object_in_table('host', host_job_link, page, host_action)
+        _check_link_to_invoker_object('host', host_job_link, page, host_action)
     with allure.step('Add host to the cluster, assign component on it'):
         cluster.host_add(host)
         cluster.hostcomponent_set((host, component))
     with allure.step('Run component host action on host and check job link to it'):
-        host_action = host.action(display_name=ON_HOST_ACTION_DISPLAY_NAME)
-        _check_link_to_invoker_object_in_table('host', host_component_link, page, host_action)
+        host_action = _wait_and_get_action_on_host(host, ON_HOST_ACTION_DISPLAY_NAME)
+        _check_link_to_invoker_object('host', host_component_link, page, host_action)
 
 
 # !==== HELPERS =====!
@@ -342,9 +286,7 @@ def _open_detailed_job_page(job_id: int, app_fs: ADCMTest) -> JobPage:
     return JobPage(app_fs.driver, app_fs.adcm.url, job_id).open()
 
 
-def _check_link_to_invoker_object_in_table(
-    link_object_name: str, expected_link: str, page: JobListPage, action: Action
-):
+def _check_link_to_invoker_object(link_object_name: str, expected_link: str, page: JobListPage, action: Action):
     """
     Check that link to object invoked action is correct
     :param link_object_name: Name of object to add in assertion message like 'host', 'component'
@@ -352,18 +294,36 @@ def _check_link_to_invoker_object_in_table(
     :param page: Page with jobs table
     :param action: Action to run
     """
+    expected_value = {'invoker_objects': expected_link}
     with page.table.wait_rows_change():
         action.run()
-    task_info: TableTaskInfo = page.get_task_info_from_table(full_invoker_objects_link=True)
-    assert (actual_link := task_info.invoker_objects) == expected_link, (
-        f'Link to {link_object_name} object in jobs table ' f'should be "{expected_link}", not "{actual_link}"'
+    wait_and_assert_ui_info(
+        expected_value, page.get_task_info_from_table, get_info_kwargs={'full_invoker_objects_link': True}
     )
+    # task_info: TableTaskInfo = page.get_task_info_from_table(full_invoker_objects_link=True)
+    # assert (actual_link := task_info.invoker_objects) == expected_link, (
+    #     f'Link to {link_object_name} object in jobs table ' f'should be "{expected_link}", not "{actual_link}"'
+    # )
     detail_page = JobPage(page.driver, page.base_url, action.task_list()[0].id).open()
-    actual_link = detail_page.get_job_info().invoker_objects
-    assert actual_link == expected_link, (
-        f'Link to {link_object_name} object on detailed job page ' f'should be "{expected_link}", not "{actual_link}"'
-    )
+    wait_and_assert_ui_info(expected_value, detail_page.get_job_info)
+    # actual_link = detail_page.get_job_info().invoker_objects
+    # assert actual_link == expected_link, (
+    #     f'Link to {link_object_name} object on detailed job page ' f'should be "{expected_link}", not "{actual_link}"'
+    # )
     page.open()
+
+
+def _wait_and_get_action_on_host(host: Host, display_name: str) -> Action:
+    """Wait until action is presented on host (wait for host action)"""
+
+    def wait_for_action_to_be_presented():
+        try:
+            host.action(display_name=display_name)
+        except ObjectNotFound:
+            assert False, f'Action "{display_name}" is not presented on host {host.fqdn}'
+
+    utils.wait_until_step_succeeds(wait_for_action_to_be_presented, period=0.1, timeout=5)
+    return host.action(display_name=display_name)
 
 
 @pytest.mark.smoke()
