@@ -1,3 +1,14 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 ---
 - hosts: localhost
   vars:
@@ -23,9 +34,9 @@
   gather_facts: false
   connection: local
   tasks:
-    - adcm_config:
-        type: "service"
-        service_name: "Second"
+    - adcm_config: &action
+        type: "component"
+        component_name: "first"
         key: "int"
         value: *new_int
       register: out
@@ -40,8 +51,7 @@
         - int
 
     - adcm_config:
-        type: "service"
-        service_name: "Second"
+        <<: *action
         key: "float"
         value: *new_float
       register: out
@@ -56,8 +66,7 @@
         - float
 
     - adcm_config:
-        type: "service"
-        service_name: "Second"
+        <<: *action
         key: "text"
         value: *new_text
       register: out
@@ -72,8 +81,7 @@
         - text
 
     - adcm_config:
-        type: "service"
-        service_name: "Second"
+        <<: *action
         key: "file"
         value: *new_file
       register: out
@@ -88,8 +96,7 @@
         - file
 
     - adcm_config:
-        type: "service"
-        service_name: "Second"
+        <<: *action
         key: "string"
         value: *new_string
       register: out
@@ -104,8 +111,7 @@
         - string
 
     - adcm_config:
-        type: "service"
-        service_name: "Second"
+        <<: *action
         key: "json"
         value: *new_json
       register: out
@@ -120,8 +126,7 @@
         - json
 
     - adcm_config:
-        type: "service"
-        service_name: "Second"
+        <<: *action
         key: "list"
         value: *new_list
       register: out
@@ -136,8 +141,7 @@
         - list
 
     - adcm_config:
-        type: "service"
-        service_name: "Second"
+        <<: *action
         key: "map"
         value: *new_map
       register: out
