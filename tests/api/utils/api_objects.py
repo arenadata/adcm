@@ -1,5 +1,6 @@
 """Module contains api objects for executing and checking requests"""
 from dataclasses import field, dataclass
+from http import HTTPStatus
 from typing import Optional
 from urllib.parse import urlencode
 
@@ -75,6 +76,13 @@ class ADCMTestApiWrapper:
             except AssertionError:
                 if request.data.get("name") and "\n" in request.data.get("name"):
                     pytest.xfail(reason="ADCM-2052 String type fields with '\\n' in value")
+                if (
+                    request.endpoint == Endpoints.GroupConfig
+                    and response.status_code == HTTPStatus.NOT_FOUND
+                    and request.data.get("object_id")
+                    and request.data.get("object_id") == 100
+                ):
+                    pytest.xfail("ADCM-2051 404 on POST negative cases for /group-config/")
                 raise
 
             if expected_response.body is not None:
