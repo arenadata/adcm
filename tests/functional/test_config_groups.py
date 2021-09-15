@@ -22,6 +22,7 @@ from adcm_client.objects import (
     HostList,
     Service,
     Host,
+    GroupConfig,
 )
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import get_data_dir
@@ -68,18 +69,20 @@ class TestGroupsIntersection:
         return test_host_1, test_host_2
 
     @allure.step('Check error')
-    def assert_that_host_add_is_unavaliable(self, error):
+    def assert_that_host_add_is_unavailable(self, service_group: GroupConfig, host: Host):
         with allure.step(f"Check that error is '{GROUP_CONFIG_HOST_ERROR.code}'"):
-            GROUP_CONFIG_HOST_ERROR.equal(error)
+            with pytest.raises(ErrorMessage) as e:
+                service_group.host_add(host)
+            GROUP_CONFIG_HOST_ERROR.equal(e)
         with allure.step(f"Check error message is '{self.HOST_ERROR_MESSAGE}'"):
             assert (
-                self.HOST_ERROR_MESSAGE in error.value.error['desc']
+                self.HOST_ERROR_MESSAGE in e.value.error['desc']
             ), f"Should be error message '{self.HOST_ERROR_MESSAGE}'"
 
     @allure.step("Check that the only second host is present in candidates on second provider group")
-    def assert_host_candidate_equal_expected(self, group: HostList, expected_hosts: int):
-        with allure.step(f"Check that {expected_hosts} hosts are available in group"):
-            assert len(group) == expected_hosts, f"{expected_hosts} hosts should be available in group"
+    def assert_host_candidate_equal_expected(self, group: HostList, expected_hosts_amount: int):
+        with allure.step(f"Check that {expected_hosts_amount} hosts are available in group"):
+            assert len(group) == expected_hosts_amount, f"{expected_hosts_amount} hosts should be available in group"
         with allure.step(f"Check that host '{self.SECOND_HOST}' is available in group"):
             assert group[0].fqdn == self.SECOND_HOST, f"Should be available host '{self.SECOND_HOST}'"
 
@@ -111,9 +114,7 @@ class TestGroupsIntersection:
             cluster_group.host_add(test_host_1)
         with allure.step("Create the second group for cluster and check that not allowed to add the first host to it"):
             cluster_group_2 = cluster.group_config_create(name=self.SECOND_GROUP)
-            with pytest.raises(ErrorMessage) as e:
-                cluster_group_2.host_add(test_host_1)
-            self.assert_that_host_add_is_unavaliable(e)
+            self.assert_that_host_add_is_unavailable(cluster_group_2, test_host_1)
             self.assert_host_candidate_equal_expected(cluster_group_2.host_candidate(), 1)
 
     def test_that_groups_not_allowed_to_intersect_in_provider(self, sdk_client_fs, create_two_hosts, provider):
@@ -125,9 +126,7 @@ class TestGroupsIntersection:
             provider_group.host_add(test_host_1)
         with allure.step("Create the second group for provider and check that not allowed to add the first host to it"):
             provider_group_2 = provider.group_config_create(name=self.SECOND_GROUP)
-            with pytest.raises(ErrorMessage) as e:
-                provider_group_2.host_add(test_host_1)
-            self.assert_that_host_add_is_unavaliable(e)
+            self.assert_that_host_add_is_unavailable(provider_group_2, test_host_1)
             self.assert_host_candidate_equal_expected(provider_group_2.host_candidate(), 1)
 
     def test_that_groups_not_allowed_to_intersect_in_service(self, sdk_client_fs, cluster_with_components):
@@ -139,9 +138,7 @@ class TestGroupsIntersection:
             service_group.host_add(test_host_1)
         with allure.step("Create the second group for service and check that not allowed to add the first host to it"):
             service_group_2 = service.group_config_create(name=self.SECOND_GROUP)
-            with pytest.raises(ErrorMessage) as e:
-                service_group_2.host_add(test_host_1)
-            self.assert_that_host_add_is_unavaliable(e)
+            self.assert_that_host_add_is_unavailable(service_group_2, test_host_1)
             self.assert_host_candidate_equal_expected(service_group_2.host_candidate(), 1)
 
     def test_that_groups_not_allowed_to_intersect_in_component(self, sdk_client_fs, cluster_with_components):
@@ -159,7 +156,5 @@ class TestGroupsIntersection:
             component_group_2 = service.component(name=self.FIRST_COMPONENT_NAME).group_config_create(
                 name=self.SECOND_GROUP
             )
-            with pytest.raises(ErrorMessage) as e:
-                component_group_2.host_add(test_host_1)
-        self.assert_that_host_add_is_unavaliable(e)
+        self.assert_that_host_add_is_unavailable(component_group_2, test_host_1)
         self.assert_host_candidate_equal_expected(component_group_2.host_candidate(), 1)
