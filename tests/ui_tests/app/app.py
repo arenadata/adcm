@@ -15,7 +15,10 @@
 
 import os
 
+from typing import Union, Optional
+
 import allure
+
 from adcm_client.wrappers.docker import ADCM
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
@@ -30,7 +33,7 @@ class ADCMTest:
 
     __slots__ = ("opts", "capabilities", "driver", "ui", "adcm", "selenoid")
 
-    def __init__(self, browser="Chrome", downloads: os.PathLike = None):
+    def __init__(self, browser="Chrome", downloads: Optional[Union[os.PathLike, str]] = None):
         self.opts = FirefoxOptions() if browser == "Firefox" else ChromeOptions()
         self.opts.headless = True
         self.opts.add_argument("--no-sandbox")
@@ -120,15 +123,13 @@ class ADCMTest:
     def destroy(self):
         self.driver.quit()
 
-    def _configure_downloads(self, browser: str, downloads_directory: os.PathLike):
+    def _configure_downloads(self, browser: str, downloads_directory: Optional[Union[os.PathLike, str]]):
+        if downloads_directory is None:
+            return
         if browser == "Chrome":
             self.opts.add_experimental_option(
                 "prefs",
-                {
-                    "download.default_directory": '/home/selenium/Downloads'
-                    if self.selenoid['host']
-                    else str(downloads_directory)
-                },
+                {"download.default_directory": str(downloads_directory)},
             )
         else:
             if not self.selenoid['host']:

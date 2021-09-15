@@ -12,8 +12,10 @@
 
 # pylint:disable=redefined-outer-name
 
+import os
 import json
 import tempfile
+
 from typing import Generator
 
 import requests
@@ -28,6 +30,9 @@ from tests.ui_tests.app.api import ADCMDirectAPIClient
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage
+
+
+SELENOID_DOWNLOADS_PATH = '/home/selenium/Downloads'
 
 
 @allure.title("Additional ADCM init config")
@@ -49,7 +54,13 @@ def additional_adcm_init_config(request) -> dict:
 
 @pytest.fixture(scope="session")
 def downloads_directory(tmpdir_factory: pytest.TempdirFactory):
-    """Folder in which browser downloads will be stored"""
+    """
+    Folder in which browser downloads will be stored
+    If SELENOID_HOST env variable is provided, then no directory is created
+    and path to selenoid downloads returned as string
+    """
+    if os.environ.get("SELENOID_HOST"):
+        return SELENOID_DOWNLOADS_PATH
     downloads_dirname = 'browser-downloads'
     return tmpdir_factory.mktemp(downloads_dirname)
 
@@ -57,6 +68,8 @@ def downloads_directory(tmpdir_factory: pytest.TempdirFactory):
 @pytest.fixture()
 def clean_downloads_fs(request: SubRequest, downloads_directory):
     """Clean downloads directory before use"""
+    if downloads_directory == SELENOID_DOWNLOADS_PATH:
+        return
     for item in downloads_directory.listdir():
         item.remove()
     yield
