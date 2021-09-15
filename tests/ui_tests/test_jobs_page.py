@@ -307,7 +307,7 @@ class TestTaskHeaderPopup:
                 job_info['background'] in cluster_page.header.get_jobs_circle_color()
             ), "Bell circle should be colored"
 
-        wait_until_step_succeeds(wait_for_background, period=1, timeout=10)
+        wait_until_step_succeeds(wait_for_background, period=0.3, timeout=5)
 
     def test_on_tasks_in_header_popup(self, cluster: Cluster, page: JobListPage, app_fs):
         """Run action and click on it in header popup"""

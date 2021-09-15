@@ -50,7 +50,7 @@ class JobPageMixin(BasePageObject):
     def check_title(self, expected_title: str):
         self.wait_element_visible(ObjectPageLocators.title)
         current_title = self.find_element(ObjectPageLocators.title).text
-        assert current_title == expected_title, f"Should be title '{expected_title}', but was {current_title}''"
+        assert current_title == expected_title, f"Title should be '{expected_title}', but was {current_title}''"
 
 
 class JobPageStdout(JobPageMixin):
