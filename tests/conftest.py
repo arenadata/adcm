@@ -14,7 +14,7 @@ import os
 import sys
 import tarfile
 from pathlib import PosixPath
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 import pytest
 import yaml
@@ -149,3 +149,11 @@ def create_bundle_archives(request, tmp_path: PosixPath) -> List[str]:
                 archive.add(license_fp, arcname=config[0]['license'])
         archives.append(str(archive_path))
     return archives
+
+
+@pytest.fixture(scope="session")
+def adcm_image_tags(cmd_opts) -> Tuple[str, str]:
+    """Get tag parts of --adcm-image argument (split by ":")"""
+    if not cmd_opts.adcm_image:
+        pytest.fail("CLI parameter adcm_image should be provided")
+    return tuple(cmd_opts.adcm_image.split(":", maxsplit=2))  # type: ignore
