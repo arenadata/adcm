@@ -12,13 +12,19 @@
 
 # pylint:disable=redefined-outer-name
 import os
-
-import coreapi
-import pytest
+import allure
 import yaml
+import pytest
+import coreapi
+
+
+from _pytest.fixtures import SubRequest
+from coreapi.exceptions import ErrorMessage
 from adcm_client.base import ActionHasIssues
 from adcm_client.objects import ADCMClient, Cluster, Service, Provider, Host
-from adcm_pytest_plugin.utils import fixture_parametrized_by_data_subdirs
+from adcm_pytest_plugin.utils import fixture_parametrized_by_data_subdirs, get_data_dir
+
+from tests.library.errorcodes import CONFIG_KEY_ERROR, ADCMError, CONFIG_NOT_FOUND
 
 
 def get_value(path, entity, value_type):
@@ -654,3 +660,52 @@ def test_required_without_default_sent_null_value(r_wod_nv):
        in action.
     """
     assert_config_type(*r_wod_nv, True, False, 'null_value')
+
+
+# !===== Negative scenarious =====!
+
+
+@pytest.fixture()
+def cluster(request: SubRequest, sdk_client_fs: ADCMClient) -> Cluster:
+    """Upload cluster bundle, create cluster, add service"""
+    bundle_subdir = request.param if hasattr(request, 'param') else "simple_config"
+    bundle = sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), bundle_subdir, "cluster"))
+    cluster = bundle.cluster_create(name='test_cluster')
+    cluster.service_add(name='test_service')
+    return cluster
+
+
+@pytest.fixture()
+def provider(request: SubRequest, sdk_client_fs: ADCMClient) -> Provider:
+    """Upload provider bundle, create provider, add host"""
+    bundle_subdir = request.param if hasattr(request, 'param') else "simple_config"
+    bundle = sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), bundle_subdir, "provider"))
+    provider = bundle.provider_create(name='test_provider')
+    provider.host_create(fqdn='test_service')
+    return provider
+
+
+@pytest.mark.parametrize("cluster", ["no_config"], indirect=True)
+@pytest.mark.parametrize("provider", ["no_config"], indirect=True)
+def test_config_absence(cluster: Cluster, provider: Provider):
+    """Check that ADCM reacts adequate on passing config to bundle with no config"""
+    _expect_correct_fail_on_config(cluster, provider, {'oh_no': 'config is absent'}, CONFIG_NOT_FOUND)
+
+
+def test_pass_wrong_config_keys(cluster: Cluster, provider: Provider):
+    """Check that ADCM reacts adequate on passing incorrect keys in config_set"""
+    _expect_correct_fail_on_config(cluster, provider, {'no_such_key': 'okay'}, CONFIG_KEY_ERROR)
+
+
+def _expect_correct_fail_on_config(cluster: Cluster, provider: Provider, config: dict, error: ADCMError):
+    """Check that config_set fails with CONFIG_VALUE_ERROR"""
+    component = (service := cluster.service()).component()
+    host = provider.host()
+    for obj in (cluster, service, component, provider, host):
+        with allure.step(f'Try to change config of {obj.__class__.__name__} and expect {error}'):
+            try:
+                obj.config_set(config)
+            except ErrorMessage as e:
+                error.equal(e)
+            else:
+                raise AssertionError("Config set should've failed")

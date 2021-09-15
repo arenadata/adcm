@@ -25,7 +25,7 @@ from adcm_pytest_plugin.steps.actions import (
     run_host_action_and_assert_result,
 )
 
-from tests.library.errorcodes import CONFIG_VALUE_ERROR
+from tests.library.errorcodes import CONFIG_VALUE_ERROR, CONFIG_KEY_ERROR, CONFIG_NOT_FOUND
 
 # pylint: disable=redefined-outer-name
 
@@ -71,7 +71,7 @@ def test_config_not_presented(cluster: Cluster, provider: Provider, sdk_client_f
                 try:
                     ACTION_MAP[obj.__class__](obj, 'no_config', 'failed', config={'some_param': "1"})
                 except ErrorMessage as e:
-                    CONFIG_VALUE_ERROR.equal(e)
+                    CONFIG_NOT_FOUND.equal(e)
                 else:
                     raise AssertionError("Action run request should've failed")
             with allure.step("Check that job wasn't launched"):
@@ -92,7 +92,7 @@ def test_incorrect_config(cluster: Cluster, provider: Provider, sdk_client_fs: A
                 try:
                     ACTION_MAP[obj.__class__](obj, 'with_config', 'failed', config={'no_such_param': "1"})
                 except ErrorMessage as e:
-                    CONFIG_VALUE_ERROR.equal(e)
+                    CONFIG_KEY_ERROR.equal(e)
                 else:
                     raise AssertionError("Action should've failed")
             with allure.step("Check that job wasn't launched"):

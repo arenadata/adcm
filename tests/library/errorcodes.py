@@ -18,10 +18,11 @@ class ADCMError:  # pylint: disable=too-few-public-methods
         self.code = code
 
     def equal(self, e, *args):
-        title = e.value.error.title
-        code = e.value.error.get("code", "")
-        desc = e.value.error.get("desc", "")
-        error_args = e.value.error.get("args", "")
+        error = e.value.error if hasattr(e, 'value') else e.error
+        title = error.title
+        code = error.get("code", "")
+        desc = error.get("desc", "")
+        error_args = error.get("args", "")
         expect(title == self.title, f'Expected title is "{self.title}", actual is "{title}"')
         expect(code == self.code, f'Expected error code is "{self.code}", actual is "{code}"')
         for i in args:
@@ -32,6 +33,9 @@ class ADCMError:  # pylint: disable=too-few-public-methods
                 f'\nargs is: \n"{error_args or None}"',
             )
         assert_expectations()
+
+    def __str__(self):
+        return f'{self.code} {self.title}'
 
 
 INVALID_OBJECT_DEFINITION = ADCMError(
