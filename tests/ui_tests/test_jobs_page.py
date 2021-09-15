@@ -526,5 +526,5 @@ def _wait_and_get_action_on_host(host: Host, display_name: str) -> Action:
                 False
             ), f'Action "{display_name}" is not presented on host {host.fqdn}. Actions: {host.action_list()}'
 
-    utils.wait_until_step_succeeds(wait_for_action_to_be_presented, period=0.1, timeout=5)
+    utils.wait_until_step_succeeds(wait_for_action_to_be_presented, period=0.1, timeout=10)
     return host.action(display_name=display_name)

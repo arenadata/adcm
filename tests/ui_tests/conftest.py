@@ -69,6 +69,7 @@ def downloads_directory(tmpdir_factory: pytest.TempdirFactory):
 def clean_downloads_fs(request: SubRequest, downloads_directory):
     """Clean downloads directory before use"""
     if downloads_directory == SELENOID_DOWNLOADS_PATH:
+        yield
         return
     for item in downloads_directory.listdir():
         item.remove()

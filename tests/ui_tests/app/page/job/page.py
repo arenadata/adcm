@@ -37,14 +37,11 @@ class DetailedPageJobInfo:
 
 class JobPageMixin(BasePageObject):
 
-    MENU_SUFFIX: str
     MAIN_ELEMENTS: list
     job_id: int
 
     def __init__(self, driver, base_url, job_id: int):
-        if self.MENU_SUFFIX is None:
-            raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
-        super().__init__(driver, base_url, "/cluster/{job_id}/" + self.MENU_SUFFIX, job_id=job_id)
+        super().__init__(driver, base_url, "/job/{job_id}", job_id=job_id)
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.job_id = job_id
@@ -98,8 +95,6 @@ class JobPageMixin(BasePageObject):
 class JobPageStdout(JobPageMixin):
     """Job Page Stdout log"""
 
-    MENU_SUFFIX = '1'
-
     @allure.step("Check text on the page")
     def check_text(self, success_task: bool = True):
         task_result = 'Success' if success_task else 'Fail'
@@ -118,5 +113,3 @@ class JobPageStdout(JobPageMixin):
 
 class JobPageStderr(JobPageMixin):
     """Job Page Stderr log"""
-
-    MENU_SUFFIX = '2'
