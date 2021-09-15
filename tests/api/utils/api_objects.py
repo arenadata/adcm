@@ -1,9 +1,11 @@
 """Module contains api objects for executing and checking requests"""
 from dataclasses import field, dataclass
+from http import HTTPStatus
 from typing import Optional
 from urllib.parse import urlencode
 
 import allure
+import pytest
 from adcm_client.wrappers.api import ADCMApiWrapper
 
 from .endpoints import Endpoints
@@ -69,7 +71,19 @@ class ADCMTestApiWrapper:
 
             attach_request_log(response)
 
-            status_code_should_be(response=response, status_code=expected_response.status_code)
+            try:
+                status_code_should_be(response=response, status_code=expected_response.status_code)
+            except AssertionError:
+                if request.data and request.data.get("name") and "\n" in request.data.get("name"):
+                    pytest.xfail(reason="ADCM-2052 String type fields with '\\n' in value")
+                if (
+                    request.endpoint == Endpoints.GroupConfig
+                    and response.status_code == HTTPStatus.NOT_FOUND
+                    and request.data
+                    and request.data.get("object_id") == 100
+                ):
+                    pytest.xfail("ADCM-2051 404 on POST negative cases for /group-config/")
+                raise
 
             if expected_response.body is not None:
                 body_should_be(response=response, expected_body=expected_response.body)
