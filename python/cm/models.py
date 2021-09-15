@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-instance-attributes
+
 from __future__ import unicode_literals
 
 from collections.abc import Mapping
@@ -863,6 +865,32 @@ class Action(AbstractAction):
             'ids': target_ids,
         }
         return result
+
+    def allowed(self, obj: ADCMEntity) -> bool:
+        """Check if action is allowed to be run on object"""
+        if isinstance(self.state_unavailable, list) and obj.state in self.state_unavailable:
+            return False
+
+        if isinstance(self.multi_state_unavailable, list) and obj.has_multi_state_intersection(
+            self.multi_state_unavailable
+        ):
+            return False
+
+        allowed = False
+
+        if self.state_available == 'any':
+            allowed = True
+        elif isinstance(self.state_available, list) and obj.state in self.state_available:
+            allowed = True
+
+        if self.multi_state_available == 'any':
+            allowed = True
+        elif isinstance(self.multi_state_available, list) and obj.has_multi_state_intersection(
+            self.multi_state_available
+        ):
+            allowed = True
+
+        return allowed
 
 
 class SubAction(ADCMModel):

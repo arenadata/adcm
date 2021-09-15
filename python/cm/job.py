@@ -36,6 +36,7 @@ from cm.inventory import get_obj_config, process_config_and_attr
 from cm.logger import log
 from cm.models import (
     ADCM,
+    ADCMEntity,
     Action,
     CheckLog,
     Cluster,
@@ -173,7 +174,7 @@ def get_host_object(action, cluster):
     return obj
 
 
-def check_action_state(action, task_object, cluster):
+def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster):
     if action.host_action:
         obj = get_host_object(action, cluster)
     else:
@@ -181,11 +182,10 @@ def check_action_state(action, task_object, cluster):
 
     if obj.locked:
         err('TASK_ERROR', 'object is locked')
-    available = action.state_available
-    if available == 'any':
+
+    if action.allowed(obj):
         return
-    if obj.state in available:
-        return
+
     err('TASK_ERROR', 'action is disabled')
 
 

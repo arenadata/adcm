@@ -65,40 +65,18 @@ def update(serializer, **kwargs):
 
 
 def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
+    """Filter out actions that are not allowed to run on object at that moment"""
     if obj.locked:
         return []
 
-    allowed = set()
-    forbidden = set()
-    for act in actions_set:
-        st_available = act.state_available
-        st_unavailable = act.state_unavailable
-        mst_available = act.multi_state_available
-        mst_unavailable = act.multi_state_unavailable
-
-        if st_available == 'any':
-            allowed.add(act)
-        elif isinstance(st_available, list) and obj.state in st_available:
-            allowed.add(act)
-
-        if isinstance(st_unavailable, list) and obj.state in st_unavailable:
-            forbidden.add(act)
-
-        if mst_available == 'any':
-            allowed.add(act)
-        elif isinstance(mst_available, list) and obj.has_multi_state_intersection(mst_available):
-            allowed.add(act)
-
-        if isinstance(mst_unavailable, list) and obj.has_multi_state_intersection(mst_unavailable):
-            forbidden.add(act)
-
-    filtered = list(allowed - forbidden)
-    for act in filtered:
-        act.config = PrototypeConfig.objects.filter(prototype=act.prototype, action=act).order_by(
-            'id'
-        )
-
-    return filtered
+    allowed = []
+    for action in actions_set:
+        if action.allowed(obj):
+            allowed.append(action)
+            action.config = PrototypeConfig.objects.filter(
+                prototype=action.prototype, action=action
+            ).order_by('id')
+    return allowed
 
 
 def get_upgradable_func(self, obj):
