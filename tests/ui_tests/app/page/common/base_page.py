@@ -39,6 +39,7 @@ from tests.ui_tests.app.page.common.header import (
     AuthorizedHeaderLocators,
 )
 from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
+from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.utils import assert_enough_rows
 
 
@@ -270,6 +271,7 @@ class BasePageObject:
         page_name = self.__class__.__name__.replace('Page', '')
         with allure.step(f'Wait page {page_name} is opened'):
             wait_until_step_succeeds(assert_page_is_opened, period=0.5, timeout=timeout)
+            self.wait_element_hide(CommonToolbarLocators.progress_bar)
 
     @allure.step('Write text to input element: "{text}"')
     def send_text_to_element(
@@ -346,6 +348,10 @@ class BasePageObject:
             TimeoutError,
         ):
             return False
+
+    @allure.step("Click back button in browser")
+    def click_back_button_in_browser(self):
+        self.driver.back()
 
 
 class PageHeader(BasePageObject):
