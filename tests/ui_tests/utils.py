@@ -252,7 +252,7 @@ def wait_file_is_presented(
     filename: str,
     app_fs: ADCMTest,
     dirname: os.PathLike,
-    timeout: Union[int, float] = 70,
+    timeout: Union[int, float] = 30,
     period: Union[int, float] = 1,
 ):
     """Checks if file is presented in directory"""
