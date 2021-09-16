@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=redefined-outer-name, unused-argument, duplicate-code
+# pylint: disable=redefined-outer-name, unused-argument, duplicate-code, no-self-use
 
 from typing import Tuple
 
@@ -154,7 +154,7 @@ class TestGroupsIntersection:
     def test_that_groups_not_allowed_to_intersect_in_service(self, sdk_client_fs, cluster, cluster_with_components):
         """Test that groups are not allowed to intersect in service"""
 
-        service, test_host_1, test_host_2 = cluster_with_components
+        service, test_host_1, _ = cluster_with_components
         with allure.step("Create group for service and add the first host"):
             service_group = service.group_config_create(name=FIRST_GROUP)
             service_group.host_add(test_host_1)
