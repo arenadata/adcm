@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint:disable=too-many-locals
+
 from unittest.mock import patch
 
 from django.test import TestCase
@@ -65,7 +67,7 @@ class TestApi(TestCase):
             }
         )
 
-    @patch('cm.status_api.load_service_map')
+    @patch('cm.api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
     @patch('cm.status_api.post_event')
     def test_save_hc(self, mock_post_event, mock_update_issues, mock_load_service_map):
@@ -96,8 +98,9 @@ class TestApi(TestCase):
 
     @patch('cm.api.ctx')
     @patch('cm.status_api.load_service_map')
+    @patch('cm.api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
-    def test_save_hc__big_update__locked_hierarchy(self, mock_post, mock_load, ctx):
+    def test_save_hc__big_update__locked_hierarchy(self, mock_issue, mock_post, mock_load, ctx):
         """
         Update bigger HC map - move `component_2` from `host_2` to `host_3`
         On locked hierarchy (from ansible task)
@@ -126,9 +129,9 @@ class TestApi(TestCase):
         host_1.refresh_from_db()
         host_2.refresh_from_db()
         host_3.refresh_from_db()
-        self.assertTrue(host_1.is_locked)
-        self.assertTrue(host_2.is_locked)
-        self.assertFalse(host_3.is_locked)
+        self.assertTrue(host_1.locked)
+        self.assertTrue(host_2.locked)
+        self.assertFalse(host_3.locked)
 
         new_hc_list = [
             (service, host_1, component_1),
@@ -140,11 +143,11 @@ class TestApi(TestCase):
         host_1.refresh_from_db()
         host_2.refresh_from_db()
         host_3.refresh_from_db()
-        self.assertTrue(host_1.is_locked)
-        self.assertFalse(host_2.is_locked)
-        self.assertTrue(host_3.is_locked)
+        self.assertTrue(host_1.locked)
+        self.assertFalse(host_2.locked)
+        self.assertTrue(host_3.locked)
 
-    @patch('cm.status_api.load_service_map')
+    @patch('cm.api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
     def test_save_hc__big_update__unlocked_hierarchy(self, mock_update, mock_load):
         """
@@ -168,9 +171,9 @@ class TestApi(TestCase):
         host_1.refresh_from_db()
         host_2.refresh_from_db()
         host_3.refresh_from_db()
-        self.assertFalse(host_1.is_locked)
-        self.assertFalse(host_2.is_locked)
-        self.assertFalse(host_3.is_locked)
+        self.assertFalse(host_1.locked)
+        self.assertFalse(host_2.locked)
+        self.assertFalse(host_3.locked)
 
         new_hc_list = [
             (service, host_1, component_1),
@@ -182,6 +185,6 @@ class TestApi(TestCase):
         host_1.refresh_from_db()
         host_2.refresh_from_db()
         host_3.refresh_from_db()
-        self.assertFalse(host_1.is_locked)
-        self.assertFalse(host_2.is_locked)
-        self.assertFalse(host_3.is_locked)
+        self.assertFalse(host_1.locked)
+        self.assertFalse(host_2.locked)
+        self.assertFalse(host_3.locked)

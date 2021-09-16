@@ -109,7 +109,9 @@ state:
 class ActionModule(ContextActionModule):
 
     TRANSFERS_FILES = False
-    _VALID_ARGS = frozenset(('type', 'service_name', 'component_name', 'state', 'missing_ok'))
+    _VALID_ARGS = frozenset(
+        ('type', 'service_name', 'component_name', 'state', 'missing_ok', 'host_id')
+    )
     _MANDATORY_ARGS = ('type', 'state')
 
     def _do_cluster(self, task_vars, context):
@@ -169,6 +171,7 @@ class ActionModule(ContextActionModule):
             unset_host_multi_state,
             self._task.args['host_id'],
             self._task.args["state"],
+            self._task.args.get("missing_ok", False),
         )
         res['state'] = self._task.args["state"]
         return res
@@ -179,8 +182,8 @@ class ActionModule(ContextActionModule):
             context['cluster_id'],
             context['service_id'],
             self._task.args['component_name'],
-            self._task.args['state'],
             self._task.args.get('service_name', None),
+            self._task.args['state'],
             self._task.args.get("missing_ok", False),
         )
         res['state'] = self._task.args['state']

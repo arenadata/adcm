@@ -386,6 +386,7 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 'display_name',
                 'description',
                 'adcm_min_version',
+                'config_group_customization',
             ),
         )
         p.bundle = bundle
@@ -456,10 +457,19 @@ def copy_stage_actons(stage_actions, prototype):
 def copy_stage_sub_actons(bundle):
     sub_actions = []
     for ssubaction in StageSubAction.objects.all():
+        if ssubaction.action.prototype.type == 'component':
+            parent = Prototype.objects.get(
+                bundle=bundle,
+                type='service',
+                name=ssubaction.action.prototype.parent.name,
+            )
+        else:
+            parent = None
         action = Action.objects.get(
             prototype__bundle=bundle,
             prototype__type=ssubaction.action.prototype.type,
             prototype__name=ssubaction.action.prototype.name,
+            prototype__parent=parent,
             prototype__version=ssubaction.action.prototype.version,
             name=ssubaction.action.name,
         )
@@ -492,6 +502,7 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
                 'display_name',
                 'description',
                 'adcm_min_version',
+                'config_group_customization',
             ),
         )
         comp.bundle = bundle
@@ -539,6 +550,7 @@ def copy_stage_config(stage_config, prototype):
                 'limits',
                 'required',
                 'ui_options',
+                'group_customization',
             ),
         )
         if sc.action:
@@ -608,6 +620,7 @@ def update_bundle_from_stage(
             p.shared = sp.shared
             p.monitoring = sp.monitoring
             p.adcm_min_version = sp.adcm_min_version
+            p.config_group_customization = sp.config_group_customization
         except Prototype.DoesNotExist:
             p = copy_obj(
                 sp,
@@ -626,6 +639,7 @@ def update_bundle_from_stage(
                     'display_name',
                     'description',
                     'adcm_min_version',
+                    'config_group_customization',
                 ),
             )
             p.bundle = bundle
@@ -697,6 +711,7 @@ def update_bundle_from_stage(
                 'limits',
                 'required',
                 'ui_options',
+                'group_customization',
             )
             act = None
             if sc.action:

@@ -135,7 +135,6 @@ describe('YspecService', () => {
     };
 
     const _out = service.build();
-    //console.log(_out);
     expect(_out).toEqual(output);
   });
 

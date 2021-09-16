@@ -60,11 +60,10 @@ MSG_NO_SERVICE_CONTEXT = (
 )
 MSG_MANDATORY_ARGS = "Arguments {} are mandatory. Bad Dobby!"
 MSG_NO_ROUTE = "Incorrect combination of args. Bad Dobby!"
-MSG_WRONG_SERVICE = "Do not try to change one service from another."
 MSG_NO_SERVICE_NAME = "You must specify service name in arguments."
 MSG_NO_MULTI_STATE_TO_DELETE = (
     "You try to delete absent multi_state. You should define missing_ok as True "
-    "or choose an exsisting multi_state"
+    "or choose an existing multi_state"
 )
 
 
@@ -180,17 +179,26 @@ class ContextActionModule(ActionBase):
                 task_vars, {'provider_id': self._get_job_var(task_vars, 'provider_id')}
             )
         elif obj_type == "component" and "component_name" in self._task.args:
-            check_context_type(task_vars, 'cluster', 'service', 'component')
-            if task_vars['job'].get('service_id', None) is None:
-                if 'service_name' not in self._task.args:
+            if "service_name" in self._task.args:
+                check_context_type(task_vars, 'cluster', 'service', 'component')
+                res = self._do_component_by_name(
+                    task_vars,
+                    {
+                        'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
+                        'service_id': None,
+                    },
+                )
+            else:
+                check_context_type(task_vars, 'cluster', 'service', 'component')
+                if task_vars['job'].get('service_id', None) is None:
                     raise AnsibleError(MSG_NO_SERVICE_NAME)
-            res = self._do_component_by_name(
-                task_vars,
-                {
-                    'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
-                    'service_id': task_vars['job'].get('service_id', None),
-                },
-            )
+                res = self._do_component_by_name(
+                    task_vars,
+                    {
+                        'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
+                        'service_id': self._get_job_var(task_vars, 'service_id'),
+                    },
+                )
         elif obj_type == "component":
             check_context_type(task_vars, 'component')
             res = self._do_component(

@@ -10,13 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnInit } from '@angular/core';
-import { Issue } from '@app/core/types';
 
 import { ComponentData } from './tooltip/tooltip.service';
+import { IIssues } from '@app/models/issue';
 
 export interface IIssueInfo {
   id: number;
-  issue: Issue;
+  issue: IIssues;
   cluster_id?: number;
   name?: string;
   path?: string;
@@ -43,7 +43,7 @@ export interface IIssueInfo {
   styles: ['a, .item-step { display: block; margin: 6px 0 8px 12px; white-space: nowrap;}'],
 })
 export class IssueInfoComponent implements OnInit {
-  issues: Issue;
+
   @Input() intro = 'Issues in:';
   @Input() path: string;
   @Input() current: IIssueInfo;

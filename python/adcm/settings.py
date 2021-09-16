@@ -27,7 +27,6 @@ from os.path import dirname
 
 from django.core.management.utils import get_random_secret_key
 
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = dirname(dirname(dirname(os.path.abspath(__file__))))
 CONF_DIR = BASE_DIR + '/data/conf/'
@@ -47,19 +46,16 @@ else:
     # manage.py calls during image build
     SECRET_KEY = get_random_secret_key()
 
-
 if os.path.exists(CONFIG_FILE):
     with open(CONFIG_FILE, encoding='utf_8') as f:
         ADCM_VERSION = json.load(f)['version']
 else:
     ADCM_VERSION = '2019.02.07.00'
 
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
 ALLOWED_HOSTS = ['*']
-
 
 # Application definition
 
@@ -78,6 +74,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework.authtoken',
     'social_django',
+    'adwp_events',
     'cm.apps.CmConfig',
 ]
 
@@ -128,6 +125,11 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 50,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    'EXCEPTION_HANDLER': 'cm.errors.custom_drf_exception_handler',
 }
 
 # Database
@@ -147,7 +149,6 @@ DATABASES = {
         },
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -209,12 +210,25 @@ STATICFILES_DIRS = (
     # Don't forget to use absolute paths, not relative paths.
 )
 
+ADWP_EVENT_SERVER = {
+    # path to json file with Event Server secret token
+    'SECRETS_FILE': os.path.join(BASE_DIR, 'data/var/secrets.json'),
+    # URL of Event Server REST API
+    'API_URL': 'http://localhost:8020/api/v1',
+}
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'filters': {
         'require_debug_false': {
             '()': 'django.utils.log.RequireDebugFalse',
+        },
+    },
+    'formatters': {
+        'adwp': {
+            'format': '{asctime} {levelname} {module} {message}',
+            'style': '{',
         },
     },
     'handlers': {
@@ -224,6 +238,12 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'data/log/adcm_debug.log'),
         },
+        'adwp_file': {
+            'level': 'DEBUG',
+            'formatter': 'adwp',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'data/log/adwp.log'),
+        },
     },
     'loggers': {
         'django': {
@@ -231,5 +251,12 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'adwp.events': {
+            'handlers': ['adwp_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'

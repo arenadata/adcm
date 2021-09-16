@@ -27,7 +27,7 @@ export class ConcernService implements EventableService {
   events(events?: EntityEvent[]): Observable<EventMessage> {
     return this.store.pipe(
       selectMessage,
-      filter(event => event?.object?.type === 'concern'),
+      filter(event => event?.object?.type === 'cluster-concerns'),
       filter(event => !events || events.includes(event?.event)),
     );
   }

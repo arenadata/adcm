@@ -1,6 +1,5 @@
 # pylint: disable=too-many-lines,unsupported-membership-test,unsupported-delete-operation
 #   pylint could not understand that JSON fields are dicts
-
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,15 +13,20 @@
 # limitations under the License.
 
 from __future__ import unicode_literals
+
+from collections.abc import Mapping
+from copy import deepcopy
 from enum import Enum
 from itertools import chain
-from typing import Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional
 
 from django.contrib.auth.models import User, Group, Permission
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models
+from django.db import models, transaction
+from django.db.models.signals import m2m_changed
+from django.dispatch import receiver
 
 from cm.errors import AdcmEx
 from cm.logger import log
@@ -45,7 +49,6 @@ PROTO_TYPE = (
     ('host', 'host'),
     ('provider', 'provider'),
 )
-
 
 LICENSE_STATE = (
     ('absent', 'absent'),
@@ -123,6 +126,40 @@ class ADCMModel(models.Model):
     class Meta:
         abstract = True
 
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        """
+        Saving the current instance values from the database for `not_changeable_fields` feature
+        """
+        # Default implementation of from_db()
+        if len(values) != len(cls._meta.concrete_fields):
+            values_iter = iter(values)
+            values = [
+                next(values_iter) if f.attname in field_names else models.DEFERRED
+                for f in cls._meta.concrete_fields
+            ]
+        instance = cls(*values)
+        instance._state.adding = False
+        instance._state.db = db
+        # customization to store the original field values on the instance
+        # pylint: disable=attribute-defined-outside-init
+        instance._loaded_values = dict(zip(field_names, values))
+        return instance
+
+    def save(self, *args, **kwargs):
+        """Checking not changeable fields before saving"""
+        if not self._state.adding:
+            not_changeable_fields = getattr(self, 'not_changeable_fields', ())
+            for field_name in not_changeable_fields:
+                if isinstance(getattr(self, field_name), models.Model):
+                    field_name = f'{field_name}_id'
+                if getattr(self, field_name) != self._loaded_values[field_name]:
+                    raise AdcmEx(
+                        'NOT_CHANGEABLE_FIELDS',
+                        f'{", ".join(not_changeable_fields)} fields cannot be changed',
+                    )
+        super().save(*args, **kwargs)
+
 
 class Bundle(ADCMModel):
     name = models.CharField(max_length=160)
@@ -188,6 +225,7 @@ class Prototype(ADCMModel):
     adcm_min_version = models.CharField(max_length=80, default=None, null=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
     description = models.TextField(blank=True)
+    config_group_customization = models.BooleanField(default=False)
 
     __error_code__ = 'PROTOTYPE_NOT_FOUND'
 
@@ -204,6 +242,24 @@ class ObjectConfig(ADCMModel):
 
     __error_code__ = 'CONFIG_NOT_FOUND'
 
+    @property
+    def object(self):
+        """Returns object for ObjectConfig"""
+        object_types = [
+            'adcm',
+            'cluster',
+            'clusterobject',
+            'servicecomponent',
+            'hostprovider',
+            'host',
+            'group_config',
+        ]
+        for object_type in object_types:
+            if hasattr(self, object_type):
+                obj = getattr(self, object_type)
+                return obj
+        return None
+
 
 class ConfigLog(ADCMModel):
     obj_ref = models.ForeignKey(ObjectConfig, on_delete=models.CASCADE)
@@ -213,6 +269,55 @@ class ConfigLog(ADCMModel):
     description = models.TextField(blank=True)
 
     __error_code__ = 'CONFIG_NOT_FOUND'
+
+    @transaction.atomic()
+    def save(self, *args, **kwargs):
+        """Saving config and updating config groups"""
+
+        def update(origin, renovator):
+            """
+            Updating the original dictionary with a check for the presence of keys in the original
+            """
+            for key, value in renovator.items():
+                if key not in origin:
+                    continue
+                if isinstance(value, Mapping):
+                    origin[key] = update(origin.get(key, {}), value)
+                else:
+                    origin[key] = value
+            return origin
+
+        obj = self.obj_ref.object
+        if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
+            # Sync group configs with object config
+            for cg in obj.group_config.all():
+                diff = cg.get_group_config()
+                group_config = ConfigLog()
+                current_group_config = ConfigLog.objects.get(id=cg.config.current)
+                group_config.obj_ref = cg.config
+                config = deepcopy(self.config)
+                update(config, diff)
+                group_config.config = config
+                attr = deepcopy(self.attr)
+                group_keys, custom_group_keys = cg.create_group_keys(
+                    self.config, cg.get_config_spec()
+                )
+                attr.update({'group_keys': group_keys, 'custom_group_keys': custom_group_keys})
+                update(attr, current_group_config.attr)
+                group_config.attr = attr
+                group_config.description = current_group_config.description
+                group_config.save()
+                cg.config.previous = cg.config.current
+                cg.config.current = group_config.id
+                cg.config.save()
+        if isinstance(obj, GroupConfig):
+            # `custom_group_keys` read only field in attr,
+            # needs to be replaced when creating an object with ORM
+            # for api it is checked in /cm/adcm_config.py:check_custom_group_keys_attr()
+            _, custom_group_keys = obj.create_group_keys(self.config, obj.get_config_spec())
+            self.attr.update({'custom_group_keys': custom_group_keys})
+
+        super().save(*args, **kwargs)
 
 
 class ADCMEntity(ADCMModel):
@@ -226,7 +331,7 @@ class ADCMEntity(ADCMModel):
         abstract = True
 
     @property
-    def is_locked(self) -> bool:
+    def locked(self) -> bool:
         """Check if actions could be run over entity"""
         return self.concerns.filter(blocking=True).exists()
 
@@ -314,7 +419,7 @@ class ADCMEntity(ADCMModel):
         del self._multi_state[multi_state]
         self.save()
         if event:
-            event.change_object_multistate(self.prototype.type, self.id, multi_state)
+            event.change_object_multi_state(self.prototype.type, self.id, multi_state)
         log.info('remove "%s" from "%s" multi_state', multi_state, self)
 
     def has_multi_state_intersection(self, multi_states: List[str]) -> bool:
@@ -342,6 +447,12 @@ class ADCM(ADCMEntity):
 class Cluster(ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
+    group_config = GenericRelation(
+        'GroupConfig',
+        object_id_field='object_id',
+        content_type_field='object_type',
+        on_delete=models.CASCADE,
+    )
 
     __error_code__ = 'CLUSTER_NOT_FOUND'
 
@@ -373,6 +484,12 @@ class Cluster(ADCMEntity):
 class HostProvider(ADCMEntity):
     name = models.CharField(max_length=80, unique=True)
     description = models.TextField(blank=True)
+    group_config = GenericRelation(
+        'GroupConfig',
+        object_id_field='object_id',
+        content_type_field='object_type',
+        on_delete=models.CASCADE,
+    )
 
     __error_code__ = 'PROVIDER_NOT_FOUND'
 
@@ -432,6 +549,12 @@ class Host(ADCMEntity):
 class ClusterObject(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey("self", on_delete=models.CASCADE, null=True, default=None)
+    group_config = GenericRelation(
+        'GroupConfig',
+        object_id_field='object_id',
+        content_type_field='object_type',
+        on_delete=models.CASCADE,
+    )
 
     __error_code__ = 'CLUSTER_SERVICE_NOT_FOUND'
 
@@ -472,6 +595,12 @@ class ServiceComponent(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
     prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE, null=True, default=None)
+    group_config = GenericRelation(
+        'GroupConfig',
+        object_id_field='object_id',
+        content_type_field='object_type',
+        on_delete=models.CASCADE,
+    )
 
     __error_code__ = 'COMPONENT_NOT_FOUND'
 
@@ -510,6 +639,147 @@ class ServiceComponent(ADCMEntity):
 
     class Meta:
         unique_together = (('cluster', 'service', 'prototype'),)
+
+
+class GroupConfig(ADCMModel):
+    object_id = models.PositiveIntegerField()
+    object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object = GenericForeignKey('object_type', 'object_id')
+    name = models.CharField(max_length=30)
+    description = models.TextField(blank=True)
+    hosts = models.ManyToManyField(Host, blank=True, related_name='group_config')
+    config = models.OneToOneField(
+        ObjectConfig, on_delete=models.CASCADE, null=True, related_name='group_config'
+    )
+
+    __error_code__ = 'GROUP_CONFIG_NOT_FOUND'
+
+    not_changeable_fields = ('id', 'object_id', 'object_type')
+
+    class Meta:
+        unique_together = ['object_id', 'name', 'object_type']
+
+    def get_config_spec(self):
+        """Return spec for config"""
+        spec = {}
+        for field in PrototypeConfig.objects.filter(
+            prototype=self.object.prototype, action__isnull=True
+        ).order_by('id'):
+            group_customization = field.group_customization
+            if group_customization is None:
+                group_customization = self.object.prototype.config_group_customization
+            field_spec = {'type': field.type, 'group_customization': group_customization}
+            if field.subname == '':
+                if field.type == 'group':
+                    field_spec.update({'fields': {}})
+                spec[field.name] = field_spec
+            else:
+                spec[field.name]['fields'][field.subname] = field_spec
+        return spec
+
+    def create_group_keys(
+        self,
+        config: dict,
+        config_spec: dict,
+        group_keys: Dict[str, bool] = None,
+        custom_group_keys: Dict[str, bool] = None,
+    ):
+        """
+        Returns a map of fields that are included in a group,
+        as well as a map of fields that cannot be included in a group
+        """
+        if group_keys is None:
+            group_keys = {}
+        if custom_group_keys is None:
+            custom_group_keys = {}
+        for k in config.keys():
+            if config_spec[k]['type'] == 'group':
+                group_keys.setdefault(k, {})
+                custom_group_keys.setdefault(k, {})
+                self.create_group_keys(
+                    config.get(k, {}), config_spec[k]['fields'], group_keys[k], custom_group_keys[k]
+                )
+            else:
+                group_keys[k] = False
+                custom_group_keys[k] = config_spec[k]['group_customization']
+        return group_keys, custom_group_keys
+
+    def get_group_config(self):
+        def get_diff(config, group_keys, diff=None):
+            if diff is None:
+                diff = {}
+            for k, v in group_keys.items():
+                if isinstance(v, Mapping):
+                    diff.setdefault(k, {})
+                    get_diff(config[k], group_keys[k], diff[k])
+                    if not diff[k]:
+                        diff.pop(k)
+                else:
+                    if v:
+                        diff[k] = config[k]
+            return diff
+
+        cl = ConfigLog.obj.get(id=self.config.current)
+        config = cl.config
+        group_keys = cl.attr.get('group_keys', {})
+        return get_diff(config, group_keys)
+
+    def host_candidate(self):
+        """Returns candidate hosts valid to add to the group"""
+        if isinstance(self.object, (Cluster, HostProvider)):
+            hosts = self.object.host_set.all()
+        elif isinstance(self.object, ClusterObject):
+            hosts = Host.objects.filter(
+                cluster=self.object.cluster, hostcomponent__service=self.object
+            ).distinct()
+        elif isinstance(self.object, ServiceComponent):
+            hosts = Host.objects.filter(
+                cluster=self.object.cluster, hostcomponent__component=self.object
+            ).distinct()
+        else:
+            raise AdcmEx('GROUP_CONFIG_TYPE_ERROR')
+        return hosts.exclude(group_config__in=self.object.group_config.all())
+
+    def check_host_candidate(self, host):
+        """Checking host candidate for group"""
+        if host not in self.host_candidate():
+            raise AdcmEx('GROUP_CONFIG_HOST_ERROR')
+
+    @transaction.atomic()
+    def save(self, *args, **kwargs):
+        obj = self.object_type.model_class().obj.get(id=self.object_id)
+        if self._state.adding:
+            if obj.config is not None:
+                parent_config_log = ConfigLog.obj.get(id=obj.config.current)
+                self.config = ObjectConfig.objects.create(current=0, previous=0)
+                config_log = ConfigLog()
+                config_log.obj_ref = self.config
+                config_log.config = deepcopy(parent_config_log.config)
+                attr = deepcopy(parent_config_log.attr)
+                config_spec = self.get_config_spec()
+                group_keys, custom_group_keys = self.create_group_keys(
+                    config_log.config, config_spec
+                )
+                attr.update({'group_keys': group_keys, 'custom_group_keys': custom_group_keys})
+                config_log.attr = attr
+                config_log.description = parent_config_log.description
+                config_log.save()
+                self.config.current = config_log.pk
+                self.config.save()
+        super().save(*args, **kwargs)
+
+
+@receiver(m2m_changed, sender=GroupConfig.hosts.through)
+def verify_host_candidate_for_group_config(sender, **kwargs):
+    """Checking host candidate for group config before add to group"""
+    group_config = kwargs.get('instance')
+    action = kwargs.get('action')
+    host_ids = kwargs.get('pk_set')
+
+    if action == 'pre_add':
+        for host_id in host_ids:
+            host = Host.objects.get(id=host_id)
+            group_config.check_host_candidate(host)
 
 
 ACTION_TYPE = (
@@ -631,6 +901,7 @@ class PrototypeConfig(ADCMModel):
     limits = models.JSONField(default=dict)
     ui_options = models.JSONField(blank=True, default=dict)
     required = models.BooleanField(default=True)
+    group_customization = models.BooleanField(null=True)
 
     class Meta:
         unique_together = (('prototype', 'action', 'name', 'subname'),)
@@ -704,7 +975,7 @@ class TaskLog(ADCMModel):
     object_id = models.PositiveIntegerField()
     object_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)
     task_object = GenericForeignKey('object_type', 'object_id')
-    action = models.ForeignKey(Action, on_delete=models.CASCADE, null=True, default=None)
+    action = models.ForeignKey(Action, on_delete=models.SET_NULL, null=True, default=None)
     pid = models.PositiveIntegerField(blank=True, default=0)
     selector = models.JSONField(default=dict)
     status = models.CharField(max_length=16, choices=JOB_STATUS)
@@ -824,6 +1095,7 @@ class StagePrototype(ADCMModel):
     adcm_min_version = models.CharField(max_length=80, default=None, null=True)
     description = models.TextField(blank=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
+    config_group_customization = models.BooleanField(default=False)
 
     __error_code__ = 'PROTOTYPE_NOT_FOUND'
 
@@ -900,6 +1172,7 @@ class StagePrototypeConfig(ADCMModel):
     limits = models.JSONField(default=dict)
     ui_options = models.JSONField(blank=True, default=dict)
     required = models.BooleanField(default=True)
+    group_customization = models.BooleanField(null=True)
 
     class Meta:
         unique_together = (('prototype', 'action', 'name', 'subname'),)

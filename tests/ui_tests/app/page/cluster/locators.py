@@ -13,14 +13,10 @@
 
 from selenium.webdriver.common.by import By
 
-from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.helpers.locator import (
+    Locator,
+)
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
-
-
-class ClusterMainLocators:
-    """Cluster main page elements locators"""
-
-    text = Locator(By.XPATH, "//mat-card-content", "Cluster main page text")
 
 
 class ClusterServicesLocators:
@@ -57,7 +53,13 @@ class ClusterServicesLocators:
 class ClusterImportLocators:
     """Cluster import page elements locators"""
 
+    save_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Save button")
     import_item_block = Locator(By.XPATH, "//div[@class='items']/div", "Import item block")
+
+    class ImportItem:
+        name = Locator(By.XPATH, ".//h3", "Import item name")
+        import_chbx = Locator(By.XPATH, ".//mat-checkbox", "Import checkbox")
+        description = Locator(By.XPATH, ".//app-exports/div/div", "Description text")
 
 
 class ClusterHostLocators:
@@ -97,3 +99,17 @@ class ClusterComponentsLocators:
         class RelationsRow:
             name = Locator(By.XPATH, "./div/span", "Related item name")
             delete_btn = Locator(By.XPATH, ".//button", "Delete item button")
+
+
+class ClusterStatusLocators:
+    """Cluster status page elements locators"""
+
+    collapse_btn = Locator(By.XPATH, "//mat-card-content//button[@cdk-describedby-host]", "Collapse list button")
+    group_row = Locator(By.XPATH, "//mat-expansion-panel", "Group row")
+
+    class GroupRow:
+        service_group = Locator(By.XPATH, ".//div[contains(@class, 'mat-expansion-panel-content')]", "Service group")
+
+        class ServiceGroupRow:
+            service_name = Locator(By.XPATH, ".//div[not(contains(@class, 'component'))]/span", "Service name")
+            host_name = Locator(By.XPATH, ".//div[contains(@class, 'component')]/span", "Host name")

@@ -11,16 +11,17 @@
 // limitations under the License.
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { openClose } from '@app/core/animations';
-import { clearEmptyField, Cluster, Host, Provider } from '@app/core/types';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 import { EventHelper } from '@adwp-ui/widgets';
 
+import { openClose } from '@app/core/animations';
+import { clearEmptyField, Host, Provider } from '@app/core/types';
 import { ActionsDirective } from '../components/actions/actions.directive';
 import { AddService } from './add.service';
 import { BaseFormDirective } from './base-form.directive';
 import { DisplayMode } from './provider.component';
+import { ICluster } from '@app/models/cluster';
 
 @Component({
   selector: 'app-add-host',
@@ -91,7 +92,7 @@ export class HostComponent extends BaseFormDirective implements OnInit {
   @Output() event = new EventEmitter();
 
   providers$ = new BehaviorSubject<Partial<Provider[]>>([]);
-  clusters$ = new BehaviorSubject<Partial<Cluster>[]>([]);
+  clusters$ = new BehaviorSubject<Partial<ICluster>[]>([]);
   expanded = false;
   createdProviderId: number;
 
@@ -187,7 +188,7 @@ export class HostComponent extends BaseFormDirective implements OnInit {
 
   getClusters() {
     this.service
-      .getList<Cluster>('cluster', { limit: this.limit, page: this.pageCluster - 1 })
+      .getList<ICluster>('cluster', { limit: this.limit, page: this.pageCluster - 1 })
       .subscribe((list) => this.clusters$.next([...this.clusters$.getValue(), ...list]));
   }
 }

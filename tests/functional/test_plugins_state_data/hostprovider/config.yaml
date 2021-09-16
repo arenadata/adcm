@@ -1,34 +1,58 @@
 ---
 
 - type: provider
-  name: Plugins testing
+  name: Plugins testing provider
   version: 1
 
   actions:
-    set_state:
+    set_provider:
       type: job
       script_type: ansible
       script: set_provider.yaml
       states:
         available: any
 
-    set_host_state:
-      type: job
-      script_type: ansible
-      script: set_host_from_provider.yaml
-      states:
-        available: any
-      config:
-        - name: fqdn
-          type: string
-
-- type: host
-  name: plugins
-  version: 1
-  actions:
     set_host:
       type: job
       script_type: ansible
       script: set_host.yaml
       states:
         available: any
+
+    set_host_from_provider:
+      type: job
+      script_type: ansible
+      script: set_host_from_provider.yaml
+      states:
+        available: any
+      config:
+        - name: host_id
+          type: integer
+
+- type: host
+  name: plugins
+  version: 1
+  actions:
+    set_provider:
+      type: job
+      script_type: ansible
+      script: set_provider.yaml
+      states:
+        available: any
+
+    set_host:
+      type: job
+      script_type: ansible
+      script: set_host.yaml
+      states:
+        available: any
+
+    set_host_from_provider:
+      type: job
+      script_type: ansible
+      script: set_host_from_provider.yaml
+      states:
+        available: any
+      config:
+        - name: host_id
+          type: integer

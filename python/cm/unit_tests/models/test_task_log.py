@@ -29,14 +29,14 @@ class TaskLogLockTest(TestCase):
         task.save()
 
         task.lock_affected([cluster])
-        self.assertFalse(cluster.is_locked)
+        self.assertFalse(cluster.locked)
 
     def test_lock_affected(self):
         cluster = utils.gen_cluster()
         task = utils.gen_task_log(cluster)
 
         task.lock_affected([cluster])
-        self.assertTrue(cluster.is_locked)
+        self.assertTrue(cluster.locked)
         task.refresh_from_db()
         self.assertIsNotNone(task.lock)
 
@@ -46,5 +46,5 @@ class TaskLogLockTest(TestCase):
         task.lock_affected([cluster])
 
         task.unlock_affected()
-        self.assertFalse(cluster.is_locked)
+        self.assertFalse(cluster.locked)
         self.assertIsNone(task.lock)

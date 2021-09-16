@@ -149,11 +149,11 @@ def test_with_new_default_variables(sdk_client_fs: ADCMClient):
             assert variable['name'] in service_config_after.keys()
 
 
-def test_decrase_config(sdk_client_fs: ADCMClient):
+def test_decrease_config(sdk_client_fs: ADCMClient):
     """Upgrade cluster with config without old values in config. Deleted lines not presented"""
-    with allure.step('Create upgradable cluster with decrase variables'):
+    with allure.step('Create upgradable cluster with decrease variables'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
-        sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_decrase_variables'))
+        sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_decrease_variables'))
         cluster = bundle.cluster_create("test")
         service = cluster.service_add(name="zookeeper")
         cluster_config_before = cluster.config()
@@ -252,6 +252,33 @@ def test_change_config(sdk_client_fs: ADCMClient):
             assert cluster_config_before[key] == cluster_config_after[key]
         for key in service_config_before:
             assert service_config_before[key] == service_config_after[key]
+
+
+@allure.issue("https://arenadata.atlassian.net/browse/ADCM-1971")
+def test_upgrade_cluster_with_config_groups(sdk_client_fs):
+    with allure.step('Create cluster with different groups on config'):
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_groups'))
+        sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_with_groups'))
+        cluster = bundle.cluster_create("test")
+        service = cluster.service_add(name="zookeeper")
+    with allure.step('Upgrade cluster with new change values to 1.6'):
+        upgrade = cluster.upgrade(name='upgrade to 1.6')
+        upgrade.do()
+    with allure.step('Assert that configs save success after upgrade'):
+        cluster.config_set(
+            {
+                **cluster.config(),
+                "activatable_group_with_ro": {"readonly-key": "value"},
+                "activatable_group": {"required": 10, "writable-key": "value"},
+            }
+        )
+        service.config_set(
+            {
+                **cluster.config(),
+                "activatable_group_with_ro": {"readonly-key": "value"},
+                "activatable_group": {"required": 10, "writable-key": "value"},
+            }
+        )
 
 
 def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient):

@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, Input, ViewChild } from '@angular/core';
 import { IAction } from '@app/core/types';
-import { FieldService } from '@app/shared/configuration/field.service';
+import { FieldService } from '@app/shared/configuration/services/field.service';
 import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
 
 @Component({
@@ -22,15 +22,6 @@ import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.c
     </div>
     <app-config-fields #fields [model]="action?.config" [ngStyle]="{ display: 'inherit' }"></app-config-fields>
   `,
-  styles: [
-    `
-      .config-tools {
-        line-height: 40px;
-        display: flex;
-        justify-content: center;
-      }
-    `
-  ]
 })
 export class ActionMasterConfigComponent {
   @Input() action: IAction;
