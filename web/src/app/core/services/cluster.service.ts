@@ -18,7 +18,6 @@ import { Store } from '@ngrx/store';
 
 import {
   Bundle,
-  Cluster,
   Entities,
   Host,
   IAction,
@@ -35,10 +34,11 @@ import { EntityNames } from '@app/models/entity-names';
 import { HttpResponseBase } from '@angular/common/http';
 import { setPathOfRoute } from '@app/store/navigation/navigation.store';
 import { EntityService } from '@app/abstract/entity-service';
+import { ICluster } from '@app/models/cluster';
 
 export interface WorkerInstance {
   current: Entities;
-  cluster: Cluster | null;
+  cluster: ICluster | null;
 }
 
 @Injectable({
@@ -53,7 +53,7 @@ export class ClusterService {
     return this.worker ? this.worker.cluster : null;
   }
 
-  set Cluster(cluster: Cluster) {
+  set Cluster(cluster: ICluster) {
     if (cluster) cluster.typeName = 'cluster';
     if (this.worker) this.worker.cluster = cluster;
     else this.worker = { current: cluster, cluster: cluster };
@@ -73,8 +73,8 @@ export class ClusterService {
     this.worker = null;
   }
 
-  one_cluster(id: number): Observable<Cluster> {
-    return this.Cluster ? of(this.Cluster) : this.api.getOne<Cluster>('cluster', id);
+  one_cluster(id: number): Observable<ICluster> {
+    return this.Cluster ? of(this.Cluster) : this.api.getOne<ICluster>('cluster', id);
   }
 
   one_service(id: number): Observable<Service> {
@@ -110,7 +110,7 @@ export class ClusterService {
 
     const typeName = EntityNames.find((a) => param.keys.some((b) => a === b));
     const id = +param.get(typeName);
-    const cluster$ = param.has('cluster') ? this.api.getOne<Cluster>('cluster', +param.get('cluster')) : of(null);
+    const cluster$ = param.has('cluster') ? this.api.getOne<ICluster>('cluster', +param.get('cluster')) : of(null);
     return cluster$
       .pipe(
         tap((cluster) => (this.Cluster = cluster)),
@@ -170,7 +170,7 @@ export class ClusterService {
     return this.api.get<Entities>(this.Current.url).pipe(
       filter((_) => !!this.worker),
       map((a) => {
-        if (typeName === 'cluster') this.worker.cluster = { ...(a as Cluster), typeName };
+        if (typeName === 'cluster') this.worker.cluster = { ...(a as ICluster), typeName };
         this.worker.current = { ...a, typeName, name: a.display_name || a.name || (a as Host).fqdn };
         return this.worker;
       })

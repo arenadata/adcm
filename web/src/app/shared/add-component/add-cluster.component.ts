@@ -10,11 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { clearEmptyField, Cluster } from '@app/core/types';
-
-import { BaseFormDirective } from './base-form.directive';
+import { clearEmptyField } from '@app/core/types';
 import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
+
+import { BaseFormDirective } from './base-form.directive';
+import { ICluster } from '@app/models/cluster';
 
 @Component({
   selector: 'app-add-cluster',
@@ -27,7 +28,7 @@ import { take } from 'rxjs/operators';
     </ng-container>
   `,
 })
-export class ClusterComponent extends BaseFormDirective implements OnInit, OnDestroy {
+export class AddClusterComponent extends BaseFormDirective implements OnInit, OnDestroy {
   sgn: Subscription;
   ngOnInit() {
     this.form = this.service.model('cluster').form;
@@ -41,7 +42,7 @@ export class ClusterComponent extends BaseFormDirective implements OnInit, OnDes
   save() {
     const data = clearEmptyField(this.form.value);
     this.service
-      .add<Cluster>(data, 'cluster')
+      .add<ICluster>(data, 'cluster')
       .pipe(take(1))
       .subscribe((_) => this.onCancel());
   }
