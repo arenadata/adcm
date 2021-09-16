@@ -9,20 +9,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 import { MatDialog } from '@angular/material/dialog';
 import { ParamMap } from '@angular/router';
-import { clearMessages, EventMessage, getMessage, SocketState } from '@app/core/store';
-import { Bundle, Cluster, EmmitRow, Entities, Host as AdcmHost, TypeName } from '@app/core/types';
 import { select, Store } from '@ngrx/store';
 import { filter, mergeMap, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { IListResult } from '@adwp-ui/widgets';
 import { Sort } from '@angular/material/sort';
 import { Observable, Subject } from 'rxjs';
 
+import { clearMessages, EventMessage, getMessage, SocketState } from '@app/core/store';
+import { Bundle, EmmitRow, Entities, Host as AdcmHost, TypeName } from '@app/core/types';
 import { DialogComponent } from '@app/shared/components';
 import { ListResult } from '@app/models/list-result';
 import { ListService } from './list.service';
 import { ListDirective } from '@app/abstract-directives/list.directive';
+import { ICluster } from '@app/models/cluster';
 
 
 const TemporaryEntityNameConverter = (currentName: Partial<TypeName>): string => {
@@ -34,7 +36,7 @@ const TemporaryEntityNameConverter = (currentName: Partial<TypeName>): string =>
 };
 
 interface IRowHost extends AdcmHost {
-  clusters: Partial<Cluster>[];
+  clusters: Partial<ICluster>[];
   page: number;
 }
 

@@ -19,7 +19,7 @@ import { StuffModule } from '@app/shared/stuff.module';
 import { AddButtonComponent } from './add-button.component';
 import { AddFormComponent } from './add-form.component';
 import { BaseFormDirective } from './base-form.directive';
-import { ClusterComponent } from './cluster.component';
+import { AddClusterComponent } from './add-cluster.component';
 import { HostComponent } from './host.component';
 import { Host2clusterComponent } from './host2cluster.component';
 import { ProviderComponent } from './provider.component';
@@ -30,7 +30,7 @@ import { ControlsComponent } from './controls.component';
   declarations: [
     AddButtonComponent,
     AddFormComponent,
-    ClusterComponent,
+    AddClusterComponent,
     HostComponent,
     Host2clusterComponent,
     ProviderComponent,
@@ -42,7 +42,7 @@ import { ControlsComponent } from './controls.component';
   exports: [
     AddButtonComponent,
     ProviderComponent,
-    ClusterComponent,
+    AddClusterComponent,
     HostComponent,
     ServiceComponent,
     Host2clusterComponent,

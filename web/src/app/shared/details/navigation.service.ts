@@ -10,13 +10,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { ApiBase, Cluster, IAction, isIssue, Issue, Job, JobObject, LogFile, TypeName } from '@app/core/types';
+import { ApiBase, IAction, Job, JobObject, LogFile, TypeName } from '@app/core/types';
 import { AdcmTypedEntity } from '@app/models/entity';
+import { IIssues } from '@app/models/issue';
+import { IssueHelper } from '@app/helpers/issue-helper';
+import { ICluster } from '@app/models/cluster';
 
 export const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';
 
 export interface IDetails {
-  parent?: Cluster;
+  parent?: ICluster;
   typeName: TypeName;
   id: number;
   name: string;
@@ -26,7 +29,7 @@ export interface IDetails {
   /** link to actionss */
   action: string;
   actions: IAction[];
-  issue: Issue;
+  issue: IIssues;
   log_files?: LogFile[];
   objects: JobObject[];
   prototype_name: string;
@@ -102,7 +105,7 @@ export const Config = {
 
 @Injectable()
 export class NavigationService {
-  findIssue = (url: string, issue: Issue) => Object.keys(issue).some((p) => p === url || (IssueSet[url] && IssueSet[url].some((a) => a === p)));
+  findIssue = (url: string, issue: IIssues) => Object.keys(issue).some((p) => p === url || (IssueSet[url] && IssueSet[url].some((a) => a === p)));
   getIssueMessage = (flag: boolean) => (flag ? ISSUE_MESSAGE : '');
 
   getLeft(current: Partial<ApiBase>): INavItem[] {
@@ -112,7 +115,7 @@ export class NavigationService {
         url: `${a.id}`,
         action: () => (location.href = a.download_url)
       }));
-      const def = (typeName: TypeName, issue: Issue, status: number) =>
+      const def = (typeName: TypeName, issue: IIssues, status: number) =>
         Config.menu[typeName].map((i: INavItem) => ({
           ...i,
           issue: this.findIssue(i.url, issue),
@@ -124,10 +127,10 @@ export class NavigationService {
   }
 
   getTop(current: IDetails): INavItem[] {
-    const issue = (i: Issue) => (isIssue(i) ? ISSUE_MESSAGE : '');
-    const link = (p: { typeName: string; id: number }) => (p ? `/${p.typeName}/${p.id}` : '');
+    const issue = (i: IIssues) => (IssueHelper.isIssue(i) ? ISSUE_MESSAGE : '');
+    const link = (p: { typeName: string; id?: number }) => (p ? `/${p.typeName}/${p.id}` : '');
     const typeObj = (type: string, prev: string) => ({ url: `${prev}/${type}`, title: `${type}s` });
-    const fullLink = (c: { parent?: Cluster; typeName: TypeName; id: number; name: string; issue?: Issue }): INavItem[] => [
+    const fullLink = (c: { parent?: ICluster; typeName: TypeName; id?: number; name?: string; issue?: IIssues }): INavItem[] => [
       typeObj(c.typeName === 'job' ? 'task' : c.typeName, link(c.parent)),
       {
         id: c.id,

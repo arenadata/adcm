@@ -17,9 +17,10 @@ import { Observable } from 'rxjs';
 import { environment } from '@env/environment';
 import { ApiService } from '@app/core/api';
 import { ClusterService } from '@app/core/services/cluster.service';
-import { Bundle, Cluster, Entities, Host, IAction, Service, TypeName } from '@app/core/types';
+import { Bundle, Entities, Host, IAction, Service, TypeName } from '@app/core/types';
 import { IListService, ListInstance } from '@app/shared/components/list/list-service-token';
 import { ListResult } from '@app/models/list-result';
+import { ICluster } from '@app/models/cluster';
 
 const COLUMNS_SET = {
   cluster: ['name', 'prototype_version', 'description', 'state', 'status', 'actions', 'import', 'upgrade', 'config', 'controls'],
@@ -88,7 +89,7 @@ export class ListService implements IListService<Entities> {
   // host
   getClustersForHost(param: Params): Observable<{ id: number; title: string }[]> {
     return this.api.root
-      .pipe(switchMap((root) => this.api.getList<Cluster>(root.cluster, convertToParamMap(param))))
+      .pipe(switchMap((root) => this.api.getList<ICluster>(root.cluster, convertToParamMap(param))))
       .pipe(map((res) => res.results.map((a) => ({ id: a.id, title: a.name }))));
   }
 

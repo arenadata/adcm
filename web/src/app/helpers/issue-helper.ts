@@ -10,14 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export interface InnerIssue {
-  id: number;
-  name: string;
-  issue: Issue;
-}
+import { IIssues } from '../models/issue';
 
-export interface Issue {
-  [key: string]: false | [InnerIssue];
-}
+export class IssueHelper {
 
-export const isIssue = (issue: Issue): boolean => !!(issue && Object.keys(issue).length);
+  static isIssue(issue: IIssues): boolean {
+    return !!(issue && Object.keys(issue).length);
+  }
+
+}
