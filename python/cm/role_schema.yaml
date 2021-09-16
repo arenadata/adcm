@@ -19,6 +19,7 @@ role:
   match: dict
   items:
     name: string
+    description: string
     apps: app_list
     childs: child_list
   required_items:

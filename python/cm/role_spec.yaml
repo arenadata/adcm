@@ -1,6 +1,6 @@
 ---
 
-version: 1
+version: 2
 
 roles:
     - name: admin
@@ -24,6 +24,7 @@ roles:
         - devops
     
     - name: devops
+      description: Role for DevOps
       apps:
         - label: cm
           models:
@@ -34,7 +35,6 @@ roles:
             - name: cluster
               codenames:
                 - add
-                - change
                 - delete
 
           

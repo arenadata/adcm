@@ -82,6 +82,8 @@ def upgrade_role(role, data):
         new_role.permissions.clear()
     except Role.DoesNotExist:
         new_role = Role(name=role['name'])
+    if 'description' in role:
+        new_role.description = role['description']
     new_role.save()
     for perm in perm_list:
         new_role.permissions.add(perm)
@@ -94,8 +96,7 @@ def get_role_spec():
         with open(config.ROLE_SPEC, encoding='utf_8') as fd:
             data = ruyaml.round_trip_load(fd)
     except FileNotFoundError:
-        log.warning('Can not open role file "%s"', config.ROLE_SPEC)
-        return {}
+        err('INVALID_ROLE_SPEC', f'Can not open role file "{config.ROLE_SPEC}"')
     except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
         err('INVALID_ROLE_SPEC', f'YAML decode "{config.ROLE_SPEC}" error: {e}')
 
@@ -118,8 +119,6 @@ def get_role_spec():
 
 def init_roles():
     role_data = get_role_spec()
-    if not role_data:
-        return
     check_roles_childs(role_data)
 
     rm = RoleMigration.obj.last()
@@ -130,6 +129,6 @@ def init_roles():
         # To do: upgrade Role's users and groups !!!
         rm.version = role_data['version']
         rm.save()
-        log.info('Roles are upgraded to version %s', rm.version)
+        return f'Roles are upgraded to version {rm.version}'
     else:
-        log.debug('skip roles upgrade (version %s)', rm.version)
+        return f'Roles are already at version {rm.version}'
