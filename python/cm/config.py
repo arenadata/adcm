@@ -40,7 +40,7 @@ LOG_FILE = os.path.join(LOG_DIR, 'adcm.log')
 
 SECRETS_FILE = os.path.join(BASE_DIR, 'data', 'var', 'secrets.json')
 
-ROLE_FILE = os.path.join(CODE_DIR, 'cm', 'role.yaml')
+ROLE_SPEC = os.path.join(CODE_DIR, 'cm', 'role_spec.yaml')
 ROLE_SCHEMA = os.path.join(CODE_DIR, 'cm', 'role_schema.yaml')
 
 STATUS_SECRET_KEY = ''

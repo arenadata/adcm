@@ -5,26 +5,43 @@ root:
   items:
       version: integer
       roles: role_list
+  required_items:
+    - version
+    - roles
       
 role_list:
   match: list
   item: role
+
+# Role
   
 role:
   match: dict
   items:
     name: string
     apps: app_list
-    
+    childs: child_list
+  required_items:
+    - name  
+
+child_list:
+  match: list
+  item: string
+        
 app_list:
   match: list
   item: app
+
+# Application permissions
   
 app:
   match: dict
   items:
     label: string
     models: model_list
+  required_items:
+    - label
+    - models
     
 model_list:
   match: list
@@ -35,6 +52,9 @@ model:
   items:
     name: string
     codenames: codename
+  required_items:
+    - name
+    - codenames
     
 codename:
   match: list

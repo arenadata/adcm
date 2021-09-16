@@ -5,7 +5,7 @@ version: 1
 roles:
     - name: admin
       apps:
-        - label: drf
+        - label: cm
           models:
             - name: cluster
               codenames:
@@ -16,14 +16,27 @@ roles:
           models:
             - name: group
               codenames:
-                - view
-    - name: view
+                - add
+                - change
+    - name: ops
+      childs:
+        - admin
+        - devops
+    
+    - name: devops
       apps:
         - label: cm
           models:
             - name: clusterobject
               codenames:
                 - view
+                - change
+            - name: cluster
+              codenames:
+                - add
+                - change
+                - delete
+
           
 
  

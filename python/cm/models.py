@@ -601,6 +601,11 @@ class Role(ADCMModel):
     group = models.ManyToManyField(Group, null=True)
 
 
+class RoleMigration(ADCMModel):
+    version = models.PositiveIntegerField(primary_key=True)
+    date = models.DateTimeField(auto_now=True)
+
+
 class TaskLog(ADCMModel):
     object_id = models.PositiveIntegerField()
     object_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)

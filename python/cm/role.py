@@ -12,25 +12,92 @@
 
 import ruyaml
 
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import Permission
+
 import cm.checker
 from cm import config
 from cm.logger import log
 from cm.errors import raise_AdcmEx as err
+from cm.models import Role, RoleMigration
 
 
-def process(data):
-    pass
+def upgrade(data):
+    new_roles = {}
+    for role in data['roles']:
+        new_roles[role['name']] = upgrade_role(role, data)
+
+    log.debug('NEW Roles: %s', new_roles)
+    for role in data['roles']:
+        role_obj = new_roles[role['name']]
+        role_obj.childs.clear()
+        if 'childs' not in role:
+            continue
+        for child in role['childs']:
+            child_role = new_roles[child]
+            role_obj.childs.add(child_role)
+        role_obj.save()
 
 
-def init_roles():
+def find_role(name, roles):
+    for role in roles:
+        if role['name'] == name:
+            return role
+    return err('INVALID_ROLE_SPEC', f'child role "{name}" is absent')
+
+
+def check_roles_childs(data):
+    for role in data['roles']:
+        if 'childs' in role:
+            for child in role['childs']:
+                find_role(child, data['roles'])
+
+
+def get_role_permissions(role, data):
+    all_perm = []
+    if 'apps' not in role:
+        return []
+    for app in role['apps']:
+        for model in app['models']:
+            try:
+                ct = ContentType.objects.get(app_label=app['label'], model=model['name'])
+            except ContentType.DoesNotExist:
+                msg = 'no model "{}" in application "{}"'
+                err('INVALID_ROLE_SPEC', msg.format(model['name'], app['label']))
+            for code in model['codenames']:
+                codename = f"{code}_{model['name']}"
+                try:
+                    perm = Permission.objects.get(content_type=ct, codename=codename)
+                except Permission.DoesNotExist:
+                    err('INVALID_ROLE_SPEC', f'permission with codename "{codename}" is not found')
+                if perm not in all_perm:
+                    all_perm.append(perm)
+    return all_perm
+
+
+def upgrade_role(role, data):
+    perm_list = get_role_permissions(role, data['roles'])
     try:
-        with open(config.ROLE_FILE, encoding='utf_8') as fd:
+        new_role = Role.objects.get(name=role['name'])
+        new_role.permissions.clear()
+    except Role.DoesNotExist:
+        new_role = Role(name=role['name'])
+    new_role.save()
+    for perm in perm_list:
+        new_role.permissions.add(perm)
+    new_role.save()
+    return new_role
+
+
+def get_role_spec():
+    try:
+        with open(config.ROLE_SPEC, encoding='utf_8') as fd:
             data = ruyaml.round_trip_load(fd)
     except FileNotFoundError:
-        log.warning('Can not open role file "%s"', config.ROLE_FILE)
-        return
+        log.warning('Can not open role file "%s"', config.ROLE_SPEC)
+        return {}
     except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
-        err('INVALID_ROLE', f'YAML decode "{config.ROLE_FILE}" error: {e}')
+        err('INVALID_ROLE_SPEC', f'YAML decode "{config.ROLE_SPEC}" error: {e}')
 
     with open(config.ROLE_SCHEMA, encoding='utf_8') as fd:
         rules = ruyaml.round_trip_load(fd)
@@ -44,5 +111,25 @@ def init_roles():
                 if 'Input data for' in ee.message:
                     continue
                 args += f'line {ee.line}: {ee}\n'
-        err('INVALID_ROLE', f'"{config.ROLE_FILE}" line {e.line} error: {e}', args)
-    process(data)
+        err('INVALID_ROLE_SPEC', f'"{config.ROLE_SPEC}" line {e.line} error: {e}', args)
+
+    return data
+
+
+def init_roles():
+    role_data = get_role_spec()
+    if not role_data:
+        return
+    check_roles_childs(role_data)
+
+    rm = RoleMigration.obj.last()
+    if rm is None:
+        rm = RoleMigration(version=0)
+    if role_data['version'] > rm.version:
+        upgrade(role_data)
+        # To do: upgrade Role's users and groups !!!
+        rm.version = role_data['version']
+        rm.save()
+        log.info('Roles are upgraded to version %s', rm.version)
+    else:
+        log.debug('skip roles upgrade (version %s)', rm.version)
