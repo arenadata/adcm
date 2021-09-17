@@ -81,30 +81,31 @@ def create_two_hosts(provider) -> Tuple[Host, Host]:
 
 @allure.step('Check error')
 def assert_that_host_add_is_unavailable(service_group: GroupConfig, host: Host):
-    with allure.step(f"Check that error is '{GROUP_CONFIG_HOST_ERROR.code}'"):
+    with allure.step(f'Check that error is "{GROUP_CONFIG_HOST_ERROR.code}"'):
         with pytest.raises(ErrorMessage) as e:
             service_group.host_add(host)
         GROUP_CONFIG_HOST_ERROR.equal(e)
-    with allure.step(f"Check error message is '{HOST_ERROR_MESSAGE}'"):
+    with allure.step(f'Check error message is "{HOST_ERROR_MESSAGE}"'):
         assert HOST_ERROR_MESSAGE in e.value.error['desc'], f"Should be error message '{HOST_ERROR_MESSAGE}'"
 
 
 @allure.step('Check that host exists')
 def assert_that_host_exists(service_group: GroupConfig, host: Host):
-    with allure.step(f"Check that error is '{GROUP_CONFIG_HOST_EXISTS.code}'"):
+    with allure.step(f'Check that error is "{GROUP_CONFIG_HOST_EXISTS.code}"'):
         with pytest.raises(ErrorMessage) as e:
             service_group.host_add(host)
         GROUP_CONFIG_HOST_EXISTS.equal(e)
-    with allure.step(f"Check error message is '{HOST_EXISTS_MESSAGE}'"):
+    with allure.step(f'Check error message is "{HOST_EXISTS_MESSAGE}"'):
         assert HOST_EXISTS_MESSAGE in e.value.error['desc'], f"Should be error message '{HOST_EXISTS_MESSAGE}'"
 
 
-@allure.step("Check that the only second host is present in candidates on second provider group")
-def assert_host_candidate_equal_expected(group: HostList, expected_hosts_name: [str]):
-    with allure.step(f"Check that {len(expected_hosts_name)} hosts are available in group"):
-        assert len(group) == len(expected_hosts_name), f"{len(expected_hosts_name)} hosts should be available in group"
+@allure.step("Check that the only second host is present in candidates on second group")
+def assert_host_candidate_equal_expected(group: HostList, expected_hosts_names: [str]):
+    expected_hosts_amount = len(expected_hosts_names)
+    with allure.step(f"Check that {expected_hosts_amount} hosts are available in group"):
+        assert len(group) == expected_hosts_amount, f"{expected_hosts_amount} hosts should be available in group"
     with allure.step(f"Check that host '{SECOND_HOST}' is available in group"):
-        assert [g.fqdn for g in group] == expected_hosts_name, f"Should be available hosts '{expected_hosts_name}'"
+        assert [g.fqdn for g in group] == expected_hosts_names, f"Should be available hosts '{expected_hosts_names}'"
 
 
 class TestGroupsIntersection:
@@ -179,6 +180,8 @@ class TestGroupsIntersection:
 
 
 class TestIncorrectHostInGroups:
+    """Test for incorrect hosts in group caused errors like GROUP_CONFIG_HOST_ERROR or GROUP_CONFIG_HOST_EXISTS"""
+
     @pytest.fixture()
     def cluster_with_components_on_one_host(
         self, create_two_hosts, cluster: Cluster, provider: Provider
@@ -217,7 +220,7 @@ class TestIncorrectHostInGroups:
         service, test_host_1, test_host_2 = cluster_with_components_on_one_host
         with allure.step("Create group for service"):
             service_group = service.group_config_create(name=FIRST_GROUP)
-        with allure.step("Create the second group for service and check that not allowed to add the first host to it"):
+        with allure.step("Try to add the second host not from service nd check group hosts list"):
             assert_that_host_add_is_unavailable(service_group, test_host_2)
             assert_host_candidate_equal_expected(service_group.host_candidate(), [FIRST_HOST])
         with allure.step("Add first host to service group and check that second add is not available"):
