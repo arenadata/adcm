@@ -48,7 +48,9 @@ class JobPageMixin(BasePageObject):
 
     @allure.step("Check title on the page")
     def check_title(self, expected_title: str):
-        assert self.find_element(ObjectPageLocators.title).text == expected_title
+        self.wait_element_visible(ObjectPageLocators.title)
+        current_title = self.find_element(ObjectPageLocators.title).text
+        assert current_title == expected_title, f"Title should be '{expected_title}', but was {current_title}''"
 
 
 class JobPageStdout(JobPageMixin):
