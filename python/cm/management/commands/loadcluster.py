@@ -18,6 +18,7 @@ from datetime import datetime
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.transaction import atomic
+from django.db.utils import IntegrityError
 
 from cm import models
 from cm.errors import AdcmEx
@@ -95,8 +96,12 @@ def create_cluster(cluster):
     prototype = get_prototype(bundle_hash=cluster.pop('bundle_hash'), type='cluster')
     ex_id = cluster.pop('id')
     config = create_config(cluster.pop('config'))
-    cluster = models.Cluster.objects.create(prototype=prototype, config=config, **cluster)
-    return ex_id, cluster
+    try:
+        models.Cluster.objects.get(name=cluster['name'])
+        raise AdcmEx('CLUSTER_CONFLICT', 'Cluster with the same name already exist')
+    except models.Cluster.DoesNotExist:
+        cluster = models.Cluster.objects.create(prototype=prototype, config=config, **cluster)
+        return ex_id, cluster
 
 
 def create_provider(provider):
@@ -108,11 +113,19 @@ def create_provider(provider):
     :return: HostProvider object
     :rtype: models.HostProvider
     """
-    prototype = get_prototype(bundle_hash=provider.pop('bundle_hash'), type='provider')
+    bundle_hash = provider.pop('bundle_hash')
     ex_id = provider.pop('id')
-    config = create_config(provider.pop('config'))
-    provider = models.HostProvider.objects.create(prototype=prototype, config=config, **provider)
-    return ex_id, provider
+    try:
+        same_name_provider = models.HostProvider.objects.get(name=provider['name'])
+        if same_name_provider.prototype.bundle.hash != bundle_hash:
+            raise IntegrityError('Name of provider already in use in another bundle')
+        else:
+            return ex_id, same_name_provider
+    except models.HostProvider.DoesNotExist:
+        prototype = get_prototype(bundle_hash=bundle_hash, type='provider')
+        config = create_config(provider.pop('config'))
+        provider = models.HostProvider.objects.create(prototype=prototype, config=config, **provider)
+        return ex_id, provider
 
 
 def create_host(host, cluster):
@@ -126,19 +139,25 @@ def create_host(host, cluster):
     :return: Host object
     :rtype: models.Host
     """
-    prototype = get_prototype(bundle_hash=host.pop('bundle_hash'), type='host')
-    ex_id = host.pop('id')
     host.pop('provider')
     config = create_config(host.pop('config'))
     provider = models.HostProvider.objects.get(name=host.pop('provider__name'))
-    host = models.Host.objects.create(
-        prototype=prototype,
-        provider=provider,
-        config=config,
-        cluster=cluster,
-        **host,
-    )
-    return ex_id, host
+    try:
+        models.Host.objects.get(fqdn=host['fqdn'])
+        provider.delete()
+        cluster.delete()
+        raise AdcmEx('HOST_CONFLICT', 'Host fqdn already in use')
+    except models.Host.DoesNotExist:
+        prototype = get_prototype(bundle_hash=host.pop('bundle_hash'), type='host')
+        ex_id = host.pop('id')
+        host = models.Host.objects.create(
+            prototype=prototype,
+            provider=provider,
+            config=config,
+            cluster=cluster,
+            **host,
+        )
+        return ex_id, host
 
 
 def create_service(service, cluster):
@@ -223,7 +242,7 @@ def check(data):
     """
     if settings.ADCM_VERSION != data['ADCM_VERSION']:
         raise AdcmEx(
-            'DUMP_LOAD_CLUSTER_ERROR',
+            'DUMP_LOAD_ADCM_VERSION_ERROR',
             msg=(
                 f'ADCM versions do not match, dump version: {data["ADCM_VERSION"]},'
                 f' load version: {settings.ADCM_VERSION}'
@@ -235,7 +254,7 @@ def check(data):
             models.Bundle.objects.get(hash=bundle_hash)
         except models.Bundle.DoesNotExist as err:
             raise AdcmEx(
-                'DUMP_LOAD_CLUSTER_ERROR',
+                'DUMP_LOAD_BUNDLE_ERROR',
                 msg=f'Bundle "{bundle["name"]} {bundle["version"]}" not found',
             ) from err
 

@@ -110,8 +110,10 @@ ERRORS = {
     'TOO_LONG': ("response is too long", rfs.HTTP_400_BAD_REQUEST, WARN),
     'NOT_IMPLEMENTED': ("not implemented yet", rfs.HTTP_501_NOT_IMPLEMENTED, ERR),
     'NO_JOBS_RUNNING': ("no jobs running", rfs.HTTP_409_CONFLICT, ERR),
-    'BAD_QUERY_PARAMS': ("bad query params", rfs.HTTP_400_BAD_REQUEST),
-    'DUMP_LOAD_CLUSTER_ERROR': ("Dumping or Loading error", rfs.HTTP_409_CONFLICT),
+    'BAD_QUERY_PARAMS': ("bad query params", rfs.HTTP_400_BAD_REQUEST, ERR),
+    'DUMP_LOAD_CLUSTER_ERROR': ("Dumping or loading error with cluster", rfs.HTTP_409_CONFLICT, ERR),
+    'DUMP_LOAD_BUNDLE_ERROR': ("Dumping or loading error with bundle", rfs.HTTP_409_CONFLICT, ERR),
+    'DUMP_LOAD_ADCM_VERSION_ERROR': ("Dumping or loading error. Versions of ADCM didn't match", rfs.HTTP_409_CONFLICT)
 }
 
 
