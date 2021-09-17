@@ -13,6 +13,8 @@
 
 import os
 import re
+from copy import deepcopy
+from typing import Any
 
 import json
 import yaml
@@ -364,12 +366,42 @@ def save_actions(proto, conf, bundle_hash):
         fix_display_name(ac, action)
         check_action_hc(proto, ac, action_name)
         dict_to_obj(ac, 'hc_acl', action, 'hostcomponentmap')
-        if 'states' in ac:
-            if 'on_success' in ac['states'] and ac['states']['on_success']:
-                action.state_on_success = ac['states']['on_success']
-            if 'on_fail' in ac['states'] and ac['states']['on_fail']:
-                action.state_on_fail = ac['states']['on_fail']
-            action.state_available = ac['states']['available']
+        if 'masking' in ac:
+            action.state_available = _deep_get(ac, 'masking', 'state', 'available', default='any')
+            action.state_unavailable = _deep_get(ac, 'masking', 'state', 'unavailable', default=[])
+            action.state_on_success = _deep_get(ac, 'on_success', 'state', default='')
+            action.state_on_fail = _deep_get(ac, 'on_fail', 'state', default='')
+
+            action.multi_state_available = _deep_get(
+                ac, 'masking', 'multi_state', 'available', default='any'
+            )
+            action.multi_state_unavailable = _deep_get(
+                ac, 'masking', 'multi_state', 'unavailable', default=[]
+            )
+            action.multi_state_on_success_set = _deep_get(
+                ac, 'on_success', 'multi_state', 'set', default=[]
+            )
+            action.multi_state_on_success_unset = _deep_get(
+                ac, 'on_success', 'multi_state', 'unset', default=[]
+            )
+            action.multi_state_on_fail_set = _deep_get(
+                ac, 'on_fail', 'multi_state', 'set', default=[]
+            )
+            action.multi_state_on_fail_unset = _deep_get(
+                ac, 'on_fail', 'multi_state', 'unset', default=[]
+            )
+        else:
+            action.state_available = _deep_get(ac, 'states', 'available', default=[])
+            action.state_unavailable = []
+            action.state_on_success = _deep_get(ac, 'states', 'on_success', default='')
+            action.state_on_fail = _deep_get(ac, 'states', 'on_fail', default='')
+
+            action.multi_state_available = 'any'
+            action.multi_state_unavailable = []
+            action.multi_state_on_success_set = []
+            action.multi_state_on_success_unset = []
+            action.multi_state_on_fail_set = []
+            action.multi_state_on_fail_unset = []
         action.save()
         save_sub_actions(proto, ac, action)
         save_prototype_config(proto, ac, bundle_hash, action)
@@ -562,3 +594,17 @@ def dict_json_to_obj(dictionary, key, obj, obj_key=''):
     if isinstance(dictionary, dict):
         if key in dictionary:
             setattr(obj, obj_key, json.dumps(dictionary[key]))
+
+
+def _deep_get(deep_dict: dict, *nested_keys: str, default: Any) -> Any:
+    """
+    Safe dict.get() for deep-nested dictionaries
+    dct[key1][key2][...] -> _deep_get(dct, key1, key2, ..., default_value)
+    """
+    val = deepcopy(deep_dict)
+    for key in nested_keys:
+        try:
+            val = val[key]
+        except KeyError:
+            return default
+    return val
