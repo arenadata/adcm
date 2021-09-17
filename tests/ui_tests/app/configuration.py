@@ -63,7 +63,7 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
         assert errors
         if field_type == 'password':
             assert len(errors) == 2
-            error_text = "Field [{}] is required!".format(field_type)
+            error_text = f"Field [{field_type}] is required!"
             error_texts = [error.text for error in errors]
             assert error_text in error_texts
 
@@ -77,19 +77,19 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
     @allure.step('Check that mat form field text have expected value: {expected_text}')
     def assert_form_field_text_equal(self, form_field_element: WebElement, expected_text: str):
         field_text = self.get_form_field_text(form_field_element)
-        err_msg = "Actual field text: {}. Expected field text: {}".format(field_text, expected_text)
+        err_msg = f"Actual field text: {field_text}. Expected field text: {expected_text}"
         assert field_text == expected_text, err_msg
 
     @allure.step('Check that expected text in form field: {expected_text}')
     def assert_form_field_text_in(self, form_field_element: WebElement, expected_text: str):
         field_text = self.get_form_field_text(form_field_element)
-        err_msg = "Actual field text: {}. Expected part of text: {}".format(field_text, expected_text)
+        err_msg = f"Actual field text: {field_text}. Expected part of text: {expected_text}"
         assert expected_text in field_text, err_msg
 
     @allure.step('Check that expected text in form field: {expected_text}')
     def assert_text_in_form_field_element(self, element: WebElement, expected_text: str):
         result = self._wait_text_element_in_element(element, Common.mat_form_field, text=expected_text)
-        err_msg = "Expected text not presented: {}.".format(expected_text)
+        err_msg = f"Expected text not presented: {expected_text}."
         assert result, err_msg
 
     @staticmethod

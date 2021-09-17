@@ -48,7 +48,7 @@ def save_definition(path, fname, conf, obj_list, bundle_hash, adcm=False):
 
 
 def cook_obj_id(conf):
-    return '{}.{}.{}'.format(conf['type'], conf['name'], conf['version'])
+    return f'{conf["type"]}.{conf["name"]}.{conf["version"]}'
 
 
 def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm=False):
@@ -64,7 +64,7 @@ def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm=False)
 
 
 def check_object_definition(fname, conf, def_type, obj_list):
-    ref = '{} "{}" {}'.format(def_type, conf['name'], conf['version'])
+    ref = f'{def_type} "{conf["name"]}" {conf["version"]}'
     if cook_obj_id(conf) in obj_list:
         err('INVALID_OBJECT_DEFINITION', f'Duplicate definition of {ref} (file {fname})')
 
@@ -408,7 +408,7 @@ def save_actions(proto, conf, bundle_hash):
 
 
 def check_action(proto, action, act_config):
-    err_msg = 'Action name "{}" of {} "{}" {}'.format(action, proto.type, proto.name, proto.version)
+    err_msg = f'Action name "{action}" of {proto.type} "{proto.name}" {proto.version}'
     validate_name(action, err_msg)
 
 
@@ -419,7 +419,7 @@ def is_group(conf):
 
 
 def get_yspec(proto, ref, bundle_hash, conf, name, subname):
-    msg = 'yspec file of config key "{}/{}":'.format(name, subname)
+    msg = f'yspec file of config key "{name}/{subname}":'
     yspec_body = read_bundle_file(proto, conf['yspec'], bundle_hash, msg)
     try:
         schema = yaml.safe_load(yspec_body)
@@ -478,7 +478,7 @@ def save_prototype_config(
                     opt['active'] = conf['active']
 
         if 'read_only' in conf and 'writable' in conf:
-            key_ref = '(config key "{}/{}" of {})'.format(name, subname, ref)
+            key_ref = f'(config key "{name}/{subname}" of {ref})'
             msg = 'can not have "read_only" and "writable" simultaneously {}'
             err('INVALID_CONFIG_DEFINITION', msg.format(key_ref))
 
@@ -513,16 +513,16 @@ def save_prototype_config(
     if isinstance(conf_dict, dict):
         for (name, conf) in conf_dict.items():
             if 'type' in conf:
-                validate_name(name, 'Config key "{}" of {}'.format(name, ref))
+                validate_name(name, f'Config key "{name}" of {ref}')
                 sc = cook_conf(proto, conf, name, '')
                 sc.save()
             else:
-                validate_name(name, 'Config group "{}" of {}'.format(name, ref))
+                validate_name(name, f'Config group "{name}" of {ref}')
                 group_conf = {'type': 'group', 'required': False}
                 sc = cook_conf(proto, group_conf, name, '')
                 sc.save()
                 for (subname, subconf) in conf.items():
-                    err_msg = 'Config key "{}/{}" of {}'.format(name, subname, ref)
+                    err_msg = f'Config key "{name}/{subname}" of {ref}'
                     validate_name(name, err_msg)
                     validate_name(subname, err_msg)
                     sc = cook_conf(proto, subconf, name, subname)
@@ -531,13 +531,13 @@ def save_prototype_config(
     elif isinstance(conf_dict, list):
         for conf in conf_dict:
             name = conf['name']
-            validate_name(name, 'Config key "{}" of {}'.format(name, ref))
+            validate_name(name, f'Config key "{name}" of {ref}')
             sc = cook_conf(proto, conf, name, '')
             sc.save()
             if is_group(conf):
                 for subconf in conf['subs']:
                     subname = subconf['name']
-                    err_msg = 'Config key "{}/{}" of {}'.format(name, subname, ref)
+                    err_msg = f'Config key "{name}/{subname}" of {ref}'
                     validate_name(name, err_msg)
                     validate_name(subname, err_msg)
                     sc = cook_conf(proto, subconf, name, subname)
@@ -547,7 +547,7 @@ def save_prototype_config(
 
 def validate_name(value, name):
     if not isinstance(value, str):
-        err("WRONG_NAME", '{} should be string'.format(name))
+        err("WRONG_NAME", f'{name} should be string')
     p = re.compile(NAME_REGEX)
     msg1 = (
         '{} is incorrect. Only latin characters, digits,'
