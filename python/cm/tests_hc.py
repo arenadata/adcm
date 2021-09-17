@@ -109,7 +109,7 @@ class TestHC(TestCase):
         (hc_list, delta) = cm.job.check_hostcomponentmap(cluster, action, hc)
         self.assertNotEqual(hc_list, None)
         self.assertEqual(delta['remove'], {})
-        group = '{}.{}'.format(co.prototype.name, sc1.prototype.name)
+        group = f'{co.prototype.name}.{sc1.prototype.name}'
         self.assertEqual(delta['add'][group]['server01.inter.net'], h1)
         self.assertEqual(delta['add'][group]['server02.inter.net'], h2)
 
@@ -122,5 +122,5 @@ class TestHC(TestCase):
         (hc_list, delta) = cm.job.check_hostcomponentmap(cluster, action, hc)
         self.assertNotEqual(hc_list, None)
         self.assertEqual(delta['add'], {})
-        group = '{}.{}'.format(co.prototype.name, sc1.prototype.name)
+        group = f'{co.prototype.name}.{sc1.prototype.name}'
         self.assertEqual(delta['remove'][group]['server01.inter.net'], h1)
