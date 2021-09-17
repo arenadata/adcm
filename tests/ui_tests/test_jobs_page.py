@@ -99,141 +99,29 @@ def created_hosts(provider: Provider) -> List[Host]:
     return [provider.host_create(f'host-{i}') for i in range(11)]
 
 
-def test_run_multijob(cluster: Cluster, page: JobListPage):
-    """Run action with many jobs"""
-    with allure.step('Run action with multiple job'):
-        action = cluster.action(display_name=MULTIJOB_ACTION_DISPLAY_NAME)
-        task = run_cluster_action_and_assert_result(cluster, action.name)
-    page.expand_task_in_row(0)
-    with allure.step('Check jobs info'):
-        expected_jobs = [{'name': job['name'], 'status': JobStatus.SUCCESS} for job in action.subs]
-        jobs_info = page.get_all_jobs_info()
-        assert (expected_amount := len(expected_jobs)) == (actual_amount := len(jobs_info)), (
-            'Amount of jobs is not correct: ' f'should be {expected_amount}, but {actual_amount} was found'
-        )
-        for i in range(actual_amount):
-            assert (actual_info := asdict(jobs_info[i])) == (
-                expected_info := expected_jobs[i]
-            ), f'Job at position #{i} should be {expected_info}, not {actual_info}'
-    with allure.step("Open first job's page"):
-        page.click_on_job()
-        detail_page = JobPageStdout(page.driver, page.base_url, task.jobs[0]['id'])
-        detail_page.wait_page_is_opened()
-
-
-def test_filtering_and_pagination(created_hosts: List[Host], page: JobListPage):
-    """Check filtering and pagination"""
-    params = {'success': 6, 'failed': 5, 'second_page': 1}
-    _run_actions_on_hosts(created_hosts, params['success'], params['failed'])
-    with allure.step('Check status filtering'):
-        with page.table.wait_rows_change():
-            page.select_filter_failed_tab()
-        assert (row_count := page.table.row_count) == params['failed'], (
-            f'Tab "Failed" should have {params["failed"]} rows, ' f'but {row_count} rows are presented'
-        )
-        with page.table.wait_rows_change():
-            page.select_filter_success_tab()
-        assert (row_count := page.table.row_count) == params['success'], (
-            f'Tab "Success" should have {params["success"]}, ' f'but {row_count} rows are presented'
-        )
-    with allure.step('Check pagination'):
-        with page.table.wait_rows_change():
-            page.select_filter_all_tab()
-        page.table.check_pagination(params['second_page'])
-
-
-def test_open_task_by_click_on_name(cluster: Cluster, page: JobListPage):
-    """Click on task name and task page should be opened"""
-    with allure.step('Run "Long" action'), page.table.wait_rows_change():
-        task = cluster.action(display_name=LONG_ACTION_DISPLAY_NAME).run()
-    with allure.step('Click on task name'):
-        page.click_on_action_name_in_row(page.table.get_row())
-    with allure.step('Check Task detailed page is opened'):
-        job_page = JobPageStdout(page.driver, page.base_url, task.id)
-        job_page.wait_page_is_opened()
-
-
-@pytest.mark.parametrize('log_type', ['stdout', 'stderr'], ids=['stdout_menu', 'stderr_menu'])
-@pytest.mark.usefixtures('login_to_adcm_over_api')
-def test_open_log_menu(log_type: str, cluster: Cluster, app_fs: ADCMTest):
-    """Open stdout/stderr log menu and check info"""
-    action = cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME)
-    task = run_cluster_action_and_assert_result(cluster, action.name)
-    job_page = _open_detailed_job_page(task.jobs[0]['id'], app_fs)
-    with allure.step(f'Open menu with {log_type} logs and check all info is presented'):
-        getattr(job_page, f'open_{log_type}_menu')()
-        wait_and_assert_ui_info(
-            {
-                'name': SUCCESS_ACTION_DISPLAY_NAME,
-                'invoker_objects': cluster.name,
-                'start_date': is_not_empty,
-                'finish_date': is_not_empty,
-                'execution_time': is_not_empty,
-            },
-            job_page.get_job_info,
-        )
-
-
-@pytest.mark.usefixtures("login_to_adcm_over_api", "clean_downloads_fs")
-def test_download_log(cluster: Cluster, app_fs: ADCMTest, downloads_directory):
-    """Download log file from detailed page menu"""
-    downloaded_file_template = '{job_id}-ansible-{log_type}.txt'
-    action = cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME)
-    task = run_cluster_action_and_assert_result(cluster, action.name)
-    job_id = task.jobs[0]['id']
-    job_page = _open_detailed_job_page(job_id, app_fs)
-    with allure.step('Download logfiles'):
-        job_page.click_on_log_download('stdout')
-        wait_file_is_presented(
-            downloaded_file_template.format(job_id=job_id, log_type='stdout'), app_fs, dirname=downloads_directory
-        )
-        job_page.click_on_log_download('stderr')
-        wait_file_is_presented(
-            downloaded_file_template.format(job_id=job_id, log_type='stderr'), app_fs, dirname=downloads_directory
-        )
-
-
-def test_invoker_object_url(cluster: Cluster, provider: Provider, page: JobListPage):
-    """Check link to object that invoked action is correct"""
-    host_fqdn = 'run-on-me'
-    host_job_link = f'{host_fqdn}/{provider.name}'
-    component_link = f'{COMPONENT_NAME}/{SERVICE_NAME}/{CLUSTER_NAME}'
-    host_component_link = f'{host_fqdn}/{component_link}'
-    with allure.step('Run action on component and check job link to it'):
-        service: Service = cluster.service(name=SERVICE_NAME)
-        component: Component = service.component(name=COMPONENT_NAME)
-        component_action = component.action(display_name=COMPONENT_ACTION_DISPLAY_NAME)
-        _check_link_to_invoker_object(component_link, page, component_action)
-    with allure.step('Create host, run action on host and check job link to it'):
-        host = provider.host_create(host_fqdn)
-        host_action = host.action(display_name=FAIL_ACTION_DISPLAY_NAME)
-        _check_link_to_invoker_object(host_job_link, page, host_action)
-    with allure.step('Add host to the cluster, assign component on it'):
-        cluster.host_add(host)
-        cluster.hostcomponent_set((host, component))
-    with allure.step('Run component host action on host and check job link to it'):
-        host_action = _wait_and_get_action_on_host(host, ON_HOST_ACTION_DISPLAY_NAME)
-        _check_link_to_invoker_object(host_component_link, page, host_action)
-
-
 @pytest.mark.smoke()
 class TestTaskPage:
+    @pytest.mark.smoke()
     def test_cluster_action_job(self, cluster: Cluster, page: JobListPage):
         """Run action on cluster and validate job in table and popup"""
         _test_run_action(page, cluster)
 
+    @pytest.mark.smoke()
     def test_service_action_job(self, cluster: Cluster, page: JobListPage):
         """Run action on service and validate job in table and popup"""
         _test_run_action(page, cluster.service_list()[0])
 
+    @pytest.mark.smoke()
     def test_provider_action_job(self, provider: Provider, page: JobListPage):
         """Run action on host provider and validate job in table and popup"""
         _test_run_action(page, provider)
 
+    @pytest.mark.smoke()
     def test_host_action_job(self, provider: Provider, page: JobListPage):
         """Run action on host and validate job in table and popup"""
         _test_run_action(page, provider.host_create('some-fqdn'))
 
+    @pytest.mark.smoke()
     @pytest.mark.parametrize(
         'job_info',
         [
@@ -263,6 +151,120 @@ class TestTaskPage:
         open_filter_on_page()
         _check_finished_job_info_in_table(page, expected_info_in_table)
         _check_job_info_in_popup(page, expected_info_in_popup)
+
+    @pytest.mark.smoke()
+    def test_run_multijob(self, cluster: Cluster, page: JobListPage):
+        """Run action with many jobs"""
+        with allure.step('Run action with multiple job'):
+            action = cluster.action(display_name=MULTIJOB_ACTION_DISPLAY_NAME)
+            task = run_cluster_action_and_assert_result(cluster, action.name)
+        page.expand_task_in_row(0)
+        with allure.step('Check jobs info'):
+            expected_jobs = [{'name': job['name'], 'status': JobStatus.SUCCESS} for job in action.subs]
+            jobs_info = page.get_all_jobs_info()
+            assert (expected_amount := len(expected_jobs)) == (actual_amount := len(jobs_info)), (
+                'Amount of jobs is not correct: ' f'should be {expected_amount}, but {actual_amount} was found'
+            )
+            for i in range(actual_amount):
+                assert (actual_info := asdict(jobs_info[i])) == (
+                    expected_info := expected_jobs[i]
+                ), f'Job at position #{i} should be {expected_info}, not {actual_info}'
+        with allure.step("Open first job's page"):
+            page.click_on_job()
+            detail_page = JobPageStdout(page.driver, page.base_url, task.jobs[0]['id'])
+            detail_page.wait_page_is_opened()
+
+    def test_filtering_and_pagination(self, created_hosts: List[Host], page: JobListPage):
+        """Check filtering and pagination"""
+        params = {'success': 6, 'failed': 5, 'second_page': 1}
+        _run_actions_on_hosts(created_hosts, params['success'], params['failed'])
+        with allure.step('Check status filtering'):
+            with page.table.wait_rows_change():
+                page.select_filter_failed_tab()
+            assert (row_count := page.table.row_count) == params['failed'], (
+                f'Tab "Failed" should have {params["failed"]} rows, ' f'but {row_count} rows are presented'
+            )
+            with page.table.wait_rows_change():
+                page.select_filter_success_tab()
+            assert (row_count := page.table.row_count) == params['success'], (
+                f'Tab "Success" should have {params["success"]}, ' f'but {row_count} rows are presented'
+            )
+        with allure.step('Check pagination'):
+            with page.table.wait_rows_change():
+                page.select_filter_all_tab()
+            page.table.check_pagination(params['second_page'])
+
+    @pytest.mark.smoke()
+    def test_open_task_by_click_on_name(self, cluster: Cluster, page: JobListPage):
+        """Click on task name and task page should be opened"""
+        with allure.step('Run "Long" action'), page.table.wait_rows_change():
+            task = cluster.action(display_name=LONG_ACTION_DISPLAY_NAME).run()
+        with allure.step('Click on task name'):
+            page.click_on_action_name_in_row(page.table.get_row())
+        with allure.step('Check Task detailed page is opened'):
+            job_page = JobPageStdout(page.driver, page.base_url, task.id)
+            job_page.wait_page_is_opened()
+
+    @pytest.mark.smoke()
+    @pytest.mark.parametrize('log_type', ['stdout', 'stderr'], ids=['stdout_menu', 'stderr_menu'])
+    @pytest.mark.usefixtures('login_to_adcm_over_api')
+    def test_open_log_menu(self, log_type: str, cluster: Cluster, app_fs: ADCMTest):
+        """Open stdout/stderr log menu and check info"""
+        action = cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME)
+        task = run_cluster_action_and_assert_result(cluster, action.name)
+        job_page = _open_detailed_job_page(task.jobs[0]['id'], app_fs)
+        with allure.step(f'Open menu with {log_type} logs and check all info is presented'):
+            getattr(job_page, f'open_{log_type}_menu')()
+            wait_and_assert_ui_info(
+                {
+                    'name': SUCCESS_ACTION_DISPLAY_NAME,
+                    'invoker_objects': cluster.name,
+                    'start_date': is_not_empty,
+                    'finish_date': is_not_empty,
+                    'execution_time': is_not_empty,
+                },
+                job_page.get_job_info,
+            )
+
+    @pytest.mark.usefixtures("login_to_adcm_over_api", "clean_downloads_fs")
+    def test_download_log(self, cluster: Cluster, app_fs: ADCMTest, downloads_directory):
+        """Download log file from detailed page menu"""
+        downloaded_file_template = '{job_id}-ansible-{log_type}.txt'
+        action = cluster.action(display_name=SUCCESS_ACTION_DISPLAY_NAME)
+        task = run_cluster_action_and_assert_result(cluster, action.name)
+        job_id = task.jobs[0]['id']
+        job_page = _open_detailed_job_page(job_id, app_fs)
+        with allure.step('Download logfiles'):
+            job_page.click_on_log_download('stdout')
+            wait_file_is_presented(
+                downloaded_file_template.format(job_id=job_id, log_type='stdout'), app_fs, dirname=downloads_directory
+            )
+            job_page.click_on_log_download('stderr')
+            wait_file_is_presented(
+                downloaded_file_template.format(job_id=job_id, log_type='stderr'), app_fs, dirname=downloads_directory
+            )
+
+    def test_invoker_object_url(self, cluster: Cluster, provider: Provider, page: JobListPage):
+        """Check link to object that invoked action is correct"""
+        host_fqdn = 'run-on-me'
+        host_job_link = f'{host_fqdn}/{provider.name}'
+        component_link = f'{COMPONENT_NAME}/{SERVICE_NAME}/{CLUSTER_NAME}'
+        host_component_link = f'{host_fqdn}/{component_link}'
+        with allure.step('Run action on component and check job link to it'):
+            service: Service = cluster.service(name=SERVICE_NAME)
+            component: Component = service.component(name=COMPONENT_NAME)
+            component_action = component.action(display_name=COMPONENT_ACTION_DISPLAY_NAME)
+            _check_link_to_invoker_object(component_link, page, component_action)
+        with allure.step('Create host, run action on host and check job link to it'):
+            host = provider.host_create(host_fqdn)
+            host_action = host.action(display_name=FAIL_ACTION_DISPLAY_NAME)
+            _check_link_to_invoker_object(host_job_link, page, host_action)
+        with allure.step('Add host to the cluster, assign component on it'):
+            cluster.host_add(host)
+            cluster.hostcomponent_set((host, component))
+        with allure.step('Run component host action on host and check job link to it'):
+            host_action = _wait_and_get_action_on_host(host, ON_HOST_ACTION_DISPLAY_NAME)
+            _check_link_to_invoker_object(host_component_link, page, host_action)
 
 
 class TestTaskHeaderPopup:
