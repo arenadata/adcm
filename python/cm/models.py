@@ -651,7 +651,7 @@ class GroupConfig(ADCMModel):
     description = models.TextField(blank=True)
     hosts = models.ManyToManyField(Host, blank=True, related_name='group_config')
     config = models.OneToOneField(
-        ObjectConfig, on_delete=models.CASCADE, null=True, related_name='group_config'
+        ObjectConfig, on_delete=models.CASCADE, null=False, related_name='group_config'
     )
 
     __error_code__ = 'GROUP_CONFIG_NOT_FOUND'
