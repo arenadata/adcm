@@ -78,14 +78,14 @@ class ActionModule(ActionBase):
         log.info('ansible module adcm_hc: cluster #%s, ops: %s', cluster_id, ops)
 
         if not isinstance(ops, list):
-            raise AnsibleError(f'Operations should be an array: {ops}')
+            raise AnsibleError('Operations should be an array: %s' % ops)
 
         for op in ops:
             if not isinstance(op, dict):
-                raise AnsibleError(f'Operation items should be a dictionary: {op}')
+                raise AnsibleError('Operation items should be a dictionary: %s' % op)
             args = frozenset(op.keys())
             if args.difference(self._VALID_SUB_ARGS):
-                raise AnsibleError(f'Invalid operation arguments: {op}')
+                raise AnsibleError('Invalid operation arguments: %s' % op)
 
         try:
             change_hc(job_id, cluster_id, ops)

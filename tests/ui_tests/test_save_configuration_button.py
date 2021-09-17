@@ -145,7 +145,7 @@ def cluster(bundle: Bundle) -> Cluster:
 
 @pytest.fixture()
 def cluster_config_page(app_fs, cluster: Cluster, login_to_adcm_over_api):  # pylint: disable=unused-argument
-    return Configuration(app_fs.driver, f"{app_fs.adcm.url}/cluster/{cluster.cluster_id}/config")
+    return Configuration(app_fs.driver, "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id))
 
 
 @pytest.fixture()
@@ -171,7 +171,7 @@ def provider_config_page(app_fs, provider: Provider, login_to_adcm_over_api) -> 
 
     return Configuration(
         app_fs.driver,
-        f"{app_fs.adcm.url}/provider/{provider.provider_id}/config",
+        "{}/provider/{}/config".format(app_fs.adcm.url, provider.provider_id),
     )
 
 
@@ -185,7 +185,7 @@ def host(provider: Provider) -> Host:
 def host_config_page(app_fs, host: Host, login_to_adcm_over_api) -> Configuration:
     return Configuration(
         app_fs.driver,
-        f"{app_fs.adcm.url}/host/{host.id}/config",
+        "{}/host/{}/config".format(app_fs.adcm.url, host.id),
     )
 
 

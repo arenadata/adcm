@@ -69,7 +69,7 @@ DEFAULT_VALUE = {
 
 class ListWithoutRepr(list):
     def __repr__(self):
-        return f'<{self.__class__.__name__} instance at {id(self):#x}>'
+        return '<%s instance at %#x>' % (self.__class__.__name__, id(self))
 
 
 @allure.step('Generate data set for groups')
@@ -277,13 +277,13 @@ def prepare_config(config):
         config[0][0]['config'][0]['ui_options']['advanced'],
     )
     temdir = tempfile.mkdtemp()
-    d_name = f"{temdir}/configs/fields/{config[0][0]['config'][0]['type']}/{config_folder_name}"
+    d_name = "{}/configs/fields/{}/{}".format(temdir, config[0][0]['config'][0]['type'], config_folder_name)
 
     os.makedirs(d_name)
     if config[0][0]['config'][0]['name'] == 'file':
-        with open(f"{d_name}/file.txt", 'w', encoding='utf_8') as file:
+        with open("{}/file.txt".format(d_name), 'w', encoding='utf_8') as file:
             file.write("test")
-    with open(f"{d_name}/config.yaml", 'w', encoding='utf_8') as yaml_file:
+    with open("{}/config.yaml".format(d_name), 'w', encoding='utf_8') as yaml_file:
         yaml.dump(config[0], yaml_file)
     return config[0][0], config[1], d_name
 
@@ -313,12 +313,12 @@ def prepare_group_config(config):
         config[0]['config'][0]['subs'][0]['ui_options']['advanced'],
     )
     temdir = tempfile.mkdtemp()
-    d_name = f"{temdir}/configs/groups/{config_folder_name}"
+    d_name = "{}/configs/groups/{}".format(temdir, config_folder_name)
     os.makedirs(d_name)
     if config[0]['config'][0]['subs'][0]['name'] == 'file':
-        with open(f"{d_name}/file.txt", 'w', encoding='utf_8') as file:
+        with open("{}/file.txt".format(d_name), 'w', encoding='utf_8') as file:
             file.write("test")
-    with open(f"{d_name}/config.yaml", 'w', encoding='utf_8') as yaml_file:
+    with open("{}/config.yaml".format(d_name), 'w', encoding='utf_8') as yaml_file:
         yaml.dump(list(config), yaml_file)
     return config[0], d_name
 
@@ -352,7 +352,7 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs):
 
     fields = ui_config.get_app_fields()
     with allure.step('Check save button status'):
-        save_err_mess = f"Correct status for save button {[expected['save']]}"
+        save_err_mess = "Correct status for save button {}".format([expected['save']])
         assert expected['save'] == ui_config.save_button_status(), save_err_mess
     with allure.step('Check field configuration'):
         if expected['visible']:
@@ -404,7 +404,7 @@ def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, a
     groups = ui_config.get_group_elements()
     fields = ui_config.get_app_fields()
     with allure.step('Check save button status'):
-        save_err_mess = f"Correct status for save button {[expected['save']]}"
+        save_err_mess = "Correct status for save button {}".format([expected['save']])
         assert expected['save'] == ui_config.save_button_status(), save_err_mess
     with allure.step('Check configuration'):
         if expected['group_visible'] and not expected['field_visible']:

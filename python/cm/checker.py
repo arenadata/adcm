@@ -45,10 +45,10 @@ class DataError(Exception):
 
 def check_type(data, data_type, path, rule=None, parent=None):
     if not isinstance(data, data_type):
-        msg = f'Object should be a {str(data_type)}'
+        msg = 'Object should be a {}'.format(str(data_type))
         if path:
             last = path[-1]
-            msg = f'{last[0]} "{last[1]}" should be a {str(data_type)}'
+            msg = '{} "{}" should be a {}'.format(last[0], last[1], str(data_type))
         raise FormatError(path, msg, data, rule, parent)
 
 
@@ -63,7 +63,7 @@ def match_none(data, rules, rule, path, parent=None):
         msg = 'Object should be empty'
         if path:
             last = path[-1]
-            msg = f'{last[0]} "{last[1]}" should be empty'
+            msg = '{} "{}" should be empty'.format(last[0], last[1])
         raise FormatError(path, msg, data, rule, parent)
 
 

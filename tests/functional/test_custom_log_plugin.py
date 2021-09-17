@@ -21,17 +21,17 @@ FIELD = ['name', 'format', 'storage_type']
 @pytest.mark.parametrize("bundle", FIELD)
 def test_required_fields(sdk_client_fs: ADCMClient, bundle):
     """Task should be failed if required field not presented"""
-    stack_dir = utils.get_data_dir(__file__, "required_fields", f"no_{bundle}")
+    stack_dir = utils.get_data_dir(__file__, "required_fields", "no_{}".format(bundle))
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(utils.random_string())
     task = cluster.action(name='custom_log').run()
     task.wait()
     with allure.step('Check job state'):
-        assert task.status == 'failed', f"Current job status {task.status}. Expected: failed"
+        assert task.status == 'failed', "Current job status {}. Expected: failed".format(task.status)
     with allure.step('Check if logs are equal 2'):
         job = task.job()
         logs = job.log_list()
-        assert len(logs) == 2, f"Logs count not equal 2, current log count {len(logs)}"
+        assert len(logs) == 2, "Logs count not equal 2, current log count {}".format(len(logs))
 
 
 @pytest.mark.parametrize("bundle", FORMAT_STORAGE)
@@ -47,9 +47,9 @@ def test_different_storage_types_with_format(sdk_client_fs: ADCMClient, bundle):
         job = task.job()
         logs = job.log_list()
         log = job.log(job_id=job.id, log_id=logs[2].id)
-        assert len(logs) == 3, f"Logs count {len(logs)}. Expected 3"
-        assert job.status == 'success', f"Current job status {job.status}. Expected: success"
-        err_msg = f"Expected log format {log_format}. Actual log format {log.format}"
+        assert len(logs) == 3, "Logs count {}. Expected 3".format(len(logs))
+        assert job.status == 'success', "Current job status {}. Expected: success".format(job.status)
+        err_msg = "Expected log format {}. Actual log format {}".format(log_format, log.format)
         assert log.format == log_format, err_msg
         assert log.type == 'custom'
 

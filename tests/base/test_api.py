@@ -129,7 +129,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         return 0
 
     def get_component_id(self, cluster_id, service_id, component_name):
-        response = self.api_get(f'/cluster/{cluster_id}/service/{service_id}/component/')
+        response = self.api_get('/cluster/{}/service/{}/component/'.format(cluster_id, service_id))
         self.assertEqual(response.status_code, 200)
         for comp in response.json():
             if comp['name'] == component_name:

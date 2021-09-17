@@ -1,4 +1,4 @@
-@import "node_modules/@adwp-ui/widgets/styles/lib.theme";
+@import "./assets/scss/normalize";
 
 // Media Query Ranges
 $small-screen-up: 601px !default;
@@ -32,7 +32,46 @@ body {
   background-color: #303030;
 }
 
+app-root {
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+
+  & main {
+    flex: 1;
+    display: flex;
+    overflow: auto;
+  }
+
+  & footer {
+    color: #ccc;
+
+    & div {
+      text-align: right;
+      padding: 4px 10px;
+      font-size: .8em;
+
+      & .left {
+        float: left;
+      }
+    }
+  }
+}
+
+.top .mat-list-item-content {
+  justify-content: center;
+}
+
+/** css for list only  - TODO: make the list as module and lazy loading  */
 mat-toolbar.toolbar {
+  height: auto;
+  min-height: 50px;
+  justify-content: space-between;
   background-color: #21212163;
 }
 
@@ -123,6 +162,8 @@ mat-checkbox.advanced > label > span {
 }
 
 .mat-dialog-content {
+  margin: 0 -18px !important;
+  max-height: 80vh !important;
   padding-top: 2px !important;
   padding-bottom: 2px !important;
 }
@@ -320,7 +361,6 @@ mat-cell.control {
   -webkit-font-smoothing: antialiased;
 }
 
-
 * {
   scrollbar-width: auto;
   scrollbar-color: #B5C6CA #FFF;
@@ -374,5 +414,4 @@ mat-cell.control {
 
 .w100 {
   width: 100%;
-
 }

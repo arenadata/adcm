@@ -69,7 +69,7 @@ class ClusterSerializer(serializers.Serializer):
         try:
             instance.save()
         except IntegrityError:
-            msg = f'cluster with name "{instance.name}" already exists'
+            msg = 'cluster with name "{}" already exists'.format(instance.name)
             raise AdcmEx("CLUSTER_CONFLICT", msg) from None
         return instance
 

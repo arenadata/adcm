@@ -195,7 +195,7 @@ def get_obj_config(obj):
 
 
 def check_component_constraint(service, hc_in):
-    ref = f'in host component list for {obj_ref(service)}'
+    ref = 'in host component list for {}'.format(obj_ref(service))
     all_host = Host.objects.filter(cluster=service.cluster)
 
     def cc_err(msg):

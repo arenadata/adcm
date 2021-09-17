@@ -136,7 +136,7 @@ class HostListCluster(HostList):
 
 def check_host(host, cluster):
     if host.cluster != cluster:
-        msg = f"Host #{host.id} doesn't belong to cluster #{cluster.id}"
+        msg = "Host #{} doesn't belong to cluster #{}".format(host.id, cluster.id)
         raise AdcmEx('FOREIGN_HOST', msg)
 
 

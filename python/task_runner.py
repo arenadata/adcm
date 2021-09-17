@@ -134,7 +134,7 @@ def run_task(task_id, args=None):
 def do():
     global TASK_ID
     if len(sys.argv) < 2:
-        print(f"\nUsage:\n{os.path.basename(sys.argv[0])} task_id [restart]\n")
+        print("\nUsage:\n{} task_id [restart]\n".format(os.path.basename(sys.argv[0])))
         sys.exit(4)
     elif len(sys.argv) > 2:
         TASK_ID = sys.argv[1]

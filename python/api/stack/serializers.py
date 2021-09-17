@@ -42,7 +42,7 @@ class UploadBundle(serializers.Serializer):
 
     def create(self, validated_data):
         fd = self.context['request'].data['file']
-        fname = f'{config.DOWNLOAD_DIR}/{fd}'
+        fname = '{}/{}'.format(config.DOWNLOAD_DIR, fd)
         with open(fname, 'wb+') as dest:
             for chunk in fd.chunks():
                 dest.write(chunk)

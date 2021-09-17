@@ -34,7 +34,7 @@ def read_conf(template_file_name):
         with open(template_file_name, encoding='utf_8') as file:
             data = file.read()
     except FileNotFoundError:
-        print(f"Can't open template file: '{template_file_name}'")
+        print("Can't open template file: '{}'".format(template_file_name))
     return data
 
 

@@ -63,9 +63,9 @@ class LoginPage(BasePageObject):
     def fill_login_user_form(self, username, password):
         self.wait_element_visible(LoginPageLocators.login_form_block)
         self.clear_by_keys(LoginPageLocators.login_input)
-        self.send_text_to_element(locator=LoginPageLocators.login_input, text=username)
+        self.set_locator_value(locator=LoginPageLocators.login_input, value=username)
         self.clear_by_keys(LoginPageLocators.password_input)
-        self.send_text_to_element(locator=LoginPageLocators.password_input, text=password)
+        self.set_locator_value(locator=LoginPageLocators.password_input, value=password)
 
     @allure.step('Login with {username}: {password}')
     def login_user(self, username, password):

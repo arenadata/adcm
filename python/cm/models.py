@@ -117,7 +117,7 @@ class ADCMManager(models.Manager):
         except ObjectDoesNotExist:
             if not hasattr(self.model, '__error_code__'):
                 raise AdcmEx('NO_MODEL_ERROR_CODE', f'model: {self.model.__name__}') from None
-            msg = f'{self.model.__name__} {kwargs} does not exist'
+            msg = '{} {} does not exist'.format(self.model.__name__, kwargs)
             raise AdcmEx(self.model.__error_code__, msg) from None
 
 
@@ -374,7 +374,7 @@ class ADCMEntity(ADCMModel):
         own_name = getattr(self, 'name', None)
         fqdn = getattr(self, 'fqdn', None)
         name = own_name or fqdn or self.prototype.name
-        return f'{self.prototype.type} #{self.id} "{name}"'
+        return '{} #{} "{}"'.format(self.prototype.type, self.id, name)
 
     def set_state(self, state: str, event=None) -> None:
         self.state = state or self.state
@@ -537,7 +537,7 @@ class Host(ADCMEntity):
         return self.prototype.monitoring
 
     def __str__(self):
-        return f"{self.fqdn}"
+        return "{}".format(self.fqdn)
 
     @property
     def serialized_issue(self):

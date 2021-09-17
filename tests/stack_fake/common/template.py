@@ -22,7 +22,7 @@ def render(template_file_name, context):
         with open(template_file_name, encoding='utf_8') as file:
             tmpl = Template(file.read())
     except FileNotFoundError:
-        print(f"Can't open template file: '{template_file_name}'")
+        print("Can't open template file: '{}'".format(template_file_name))
         sys.exit(2)
     return tmpl.render(c=context)
 
@@ -32,7 +32,7 @@ def render_to_file(template_file_name, out_file_name, context):
         with open(out_file_name, 'w', encoding='utf_8') as file:
             file.write(render(template_file_name, context))
     except FileNotFoundError:
-        print(f"Can't open output file: '{out_file_name}'")
+        print("Can't open output file: '{}'".format(out_file_name))
         sys.exit(2)
 
 
@@ -41,7 +41,7 @@ def read_json(json_file_name):
         with open(json_file_name, encoding='utf_8') as file:
             config = json.load(file)
     except FileNotFoundError:
-        print(f"Can't open json config file: '{json_file_name}'")
+        print("Can't open json config file: '{}'".format(json_file_name))
         sys.exit(2)
     return config
 
@@ -53,7 +53,7 @@ def template(tmpl, out_file, config):
 
 def main():
     if len(sys.argv) < 4:
-        print(f"\nUsage:\n{os.path.basename(sys.argv[0])} template out_file config.json\n")
+        print("\nUsage:\n{} template out_file config.json\n".format(os.path.basename(sys.argv[0])))
         sys.exit(4)
     else:
         template(sys.argv[1], sys.argv[2], sys.argv[3])

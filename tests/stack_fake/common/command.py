@@ -36,13 +36,13 @@ def get_log_handler(fname):
 
 @contextmanager
 def open_file(root, tag, command_id):
-    fname = f"{root}/{command_id}-{tag}.txt"
+    fname = "{}/{}-{}.txt".format(root, command_id, tag)
     with open(fname, 'w', encoding='utf_8') as file:
         yield from file
 
 
 def print_log(root, tag, command_id):
-    fname = f"{root}/{command_id}-{tag}.txt"
+    fname = "{}/{}-{}.txt".format(root, command_id, tag)
     with open(fname, 'r', encoding='utf_8') as file:
         flog = file.read()
         sys.stderr.write(flog)
@@ -51,7 +51,7 @@ def print_log(root, tag, command_id):
 def add_path(path):
     env = os.environ
     os_path = env['PATH']
-    env['PATH'] = f"{os_path}:{path}"
+    env['PATH'] = "{}:{}".format(os_path, path)
     return env
 
 
@@ -82,7 +82,7 @@ def run_python_script(base_dir, py_script, command, json_config, out_file, err_f
 
 
 def cook_hook(root, hook, command):
-    return (f'{root}/{hook}', f'{root}/{hook}/scripts/hook.py', command)
+    return ('{}/{}'.format(root, hook), '{}/{}/scripts/hook.py'.format(root, hook), command)
 
 
 def cook_command_pipe(hook_dir, command_tuple):
@@ -103,14 +103,14 @@ def cook_command_pipe(hook_dir, command_tuple):
 
 def cook_hook_folder(root, folder):
     stack = folder.split('/services/')[0]
-    return f"{root}/cache/{stack}/hooks"
+    return "{}/cache/{}/hooks".format(root, stack)
 
 
 def run_ambari_command(folder, script, command, command_id):
-    base_dir = f'{ROOT_DIR}/cache/{folder}'
+    base_dir = '{}/cache/{}'.format(ROOT_DIR, folder)
     hook_dir = cook_hook_folder(ROOT_DIR, folder)
-    json_config = f"{ROOT_DIR}/data/command-{command_id}.json"
-    py_script = f'{base_dir}/{script}'
+    json_config = "{}/data/command-{}.json".format(ROOT_DIR, command_id)
+    py_script = '{}/{}'.format(base_dir, script)
 
     log.debug("command.py called as: %s", sys.argv)
     log.info('%s run %s', command_id, command)

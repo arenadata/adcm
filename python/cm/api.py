@@ -114,7 +114,7 @@ def add_cluster(proto, name, desc=''):
         cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.post_event('create', 'cluster', cluster.id)
     load_service_map()
-    log.info('cluster #%s %s is added', cluster.id, cluster.name)
+    log.info(f'cluster #{cluster.id} {cluster.name} is added')
     return cluster
 
 
@@ -137,7 +137,7 @@ def add_host(proto, provider, fqdn, desc=''):
     ctx.event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
     load_service_map()
-    log.info('host #%s %s is added', host.id, host.fqdn)
+    log.info(f'host #{host.id} {host.fqdn} is added')
     return host
 
 
@@ -165,7 +165,7 @@ def add_host_provider(proto, name, desc=''):
         cm.issue.update_hierarchy_issues(provider)
     ctx.event.send_state()
     cm.status_api.post_event('create', 'provider', provider.id)
-    log.info('host provider #%s %s is added', provider.id, provider.name)
+    log.info(f'host provider #{provider.id} {provider.name} is added')
     return provider
 
 
@@ -177,13 +177,13 @@ def delete_host_provider(provider):
     provider_id = provider.id
     provider.delete()
     cm.status_api.post_event('delete', 'provider', provider_id)
-    log.info('host provider #%s is deleted', provider_id)
+    log.info(f'host provider #{provider_id} is deleted')
 
 
 def add_host_to_cluster(cluster, host):
     if host.cluster:
         if host.cluster.id != cluster.id:
-            msg = f'Host #{host.id} belong to cluster #{host.cluster.id}'
+            msg = 'Host #{} belong to cluster #{}'.format(host.id, host.cluster.id)
             err('FOREIGN_HOST', msg)
         else:
             err('HOST_CONFLICT')
@@ -242,7 +242,7 @@ def delete_host(host):
     host.delete()
     cm.status_api.post_event('delete', 'host', host_id)
     load_service_map()
-    log.info('host #%s is deleted', host_id)
+    log.info(f'host #{host_id} is deleted')
 
 
 def delete_host_by_id(host_id):
@@ -303,14 +303,14 @@ def delete_service_by_name(service_name, cluster_id):
 
 def delete_service(service):
     if HostComponent.objects.filter(cluster=service.cluster, service=service).exists():
-        err('SERVICE_CONFLICT', f'Service #{service.id} has component(s) on host(s)')
+        err('SERVICE_CONFLICT', 'Service #{} has component(s) on host(s)'.format(service.id))
     if ClusterBind.objects.filter(source_service=service).exists():
-        err('SERVICE_CONFLICT', f'Service #{service.id} has exports(s)')
+        err('SERVICE_CONFLICT', 'Service #{} has exports(s)'.format(service.id))
     service_id = service.id
     service.delete()
     cm.status_api.post_event('delete', 'service', service_id)
     load_service_map()
-    log.info('service #%s is deleted', service_id)
+    log.info(f'service #{service_id} is deleted')
 
 
 def delete_cluster(cluster):
@@ -324,7 +324,7 @@ def remove_host_from_cluster(host):
     cluster = host.cluster
     hc = HostComponent.objects.filter(cluster=cluster, host=host)
     if hc:
-        return err('HOST_CONFLICT', f'Host #{host.id} has component(s)')
+        return err('HOST_CONFLICT', 'Host #{} has component(s)'.format(host.id))
     with transaction.atomic():
         host.cluster = None
         host.save()
@@ -372,11 +372,7 @@ def add_service_to_cluster(cluster, proto):
     cm.status_api.post_event('add', 'service', cs.id, 'cluster', str(cluster.id))
     load_service_map()
     log.info(
-        'service #%s %s is added to cluster #%s %s',
-        cs.id,
-        cs.prototype.name,
-        cluster.id,
-        cluster.name,
+        f'service #{cs.id} {cs.prototype.name} is added to cluster #{cluster.id} {cluster.name}'
     )
     return cs
 
@@ -462,7 +458,7 @@ def get_bundle_proto(bundle):
 def get_license(bundle):
     if not bundle.license_path:
         return None
-    ref = f'bundle "{bundle.name}" {bundle.version}'
+    ref = 'bundle "{}" {}'.format(bundle.name, bundle.version)
     proto = get_bundle_proto(bundle)
     return read_bundle_file(proto, bundle.license_path, bundle.hash, 'license file', ref)
 
@@ -481,11 +477,10 @@ def update_obj_config(obj_conf, conf, attr, desc=''):
         err('INVALID_CONFIG_UPDATE', 'attr should be a map')
     obj = obj_conf.object
     if obj is None:
-        err('INVALID_CONFIG_UPDATE', f'unknown object type "{obj_conf}"')
+        err('INVALID_CONFIG_UPDATE', 'unknown object type "{}"'.format(obj_conf))
     if isinstance(obj, GroupConfig):
         obj = obj.object
     proto = obj.prototype
-
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
     if not attr:
         if old_conf.attr:
@@ -556,7 +551,7 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
         service = ClusterObject.obj.get(id=item['service_id'], cluster=cluster)
         comp = ServiceComponent.obj.get(id=item['component_id'], cluster=cluster, service=service)
         if not host.cluster:
-            msg = f'host #{host.id} {host.fqdn} does not belong to any cluster'
+            msg = 'host #{} {} does not belong to any cluster'.format(host.id, host.fqdn)
             raise AdcmEx("FOREIGN_HOST", msg)
         if host.cluster.id != cluster.id:
             msg = 'host {} (cluster #{}) does not belong to cluster #{}'
@@ -656,7 +651,7 @@ def get_import(cluster, service=None):
                         }
                     )
             else:
-                err('BIND_ERROR', f'unexpected export type: {pe.prototype.type}')
+                err('BIND_ERROR', 'unexpected export type: {}'.format(pe.prototype.type))
         return exports
 
     imports = []
@@ -814,11 +809,11 @@ def bind(cluster, service, export_cluster, export_service_id):  # pylint: disabl
     if export_service_id:
         export_service = ClusterObject.obj.get(cluster=export_cluster, id=export_service_id)
         if not PrototypeExport.objects.filter(prototype=export_service.prototype):
-            err('BIND_ERROR', f'{obj_ref(export_service)} do not have exports')
+            err('BIND_ERROR', '{} do not have exports'.format(obj_ref(export_service)))
         name = export_service.prototype.name
     else:
         if not PrototypeExport.objects.filter(prototype=export_cluster.prototype):
-            err('BIND_ERROR', f'{obj_ref(export_cluster)} does not have exports')
+            err('BIND_ERROR', '{} does not have exports'.format(obj_ref(export_cluster)))
         name = export_cluster.prototype.name
 
     import_obj = cluster

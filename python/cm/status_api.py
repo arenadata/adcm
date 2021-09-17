@@ -152,23 +152,23 @@ def get_status(url):
 
 
 def get_cluster_status(cluster_id):
-    return get_status(f'/cluster/{cluster_id}/')
+    return get_status('/cluster/{}/'.format(cluster_id))
 
 
 def get_service_status(cluster_id, service_id):
-    return get_status(f'/cluster/{cluster_id}/service/{service_id}/')
+    return get_status('/cluster/{}/service/{}/'.format(cluster_id, service_id))
 
 
 def get_host_status(host_id):
-    return get_status(f'/host/{host_id}/')
+    return get_status('/host/{}/'.format(host_id))
 
 
 def get_hc_status(host_id, comp_id):
-    return get_status(f'/host/{host_id}/component/{comp_id}/')
+    return get_status('/host/{}/component/{}/'.format(host_id, comp_id))
 
 
 def get_component_status(comp_id):
-    return get_status(f'/component/{comp_id}/')
+    return get_status('/component/{}/'.format(comp_id))
 
 
 def load_service_map():
@@ -183,7 +183,7 @@ def load_service_map():
     for hc in HostComponent.objects.all():
         if hc.component.id in passive:
             continue
-        key = f'{hc.host.id}.{hc.component.id}'
+        key = '{}.{}'.format(hc.host.id, hc.component.id)
         hc_map[key] = {'cluster': hc.cluster.id, 'service': hc.service.id}
         if str(hc.cluster.id) not in comps:
             comps[str(hc.cluster.id)] = {}

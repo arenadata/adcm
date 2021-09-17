@@ -152,7 +152,7 @@ def get_error(code):
         else:
             return (code, err[0], err[1], err[2])
     else:
-        msg = f'unknow error: "{code}"'
+        msg = 'unknow error: "{}"'.format(code)
         return ('UNKNOWN_ERROR', msg, rfs.HTTP_501_NOT_IMPLEMENTED, CRIT)
 
 

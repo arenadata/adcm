@@ -323,7 +323,7 @@ class TestClusterServiceConfigHistory:
         with allure.step("Check config history"):
             for conf in _get_config_history(service):
                 # url changed, because request is related to the service
-                assert f"/service/{service.id}" in conf["url"]
+                assert "/service/{}".format(service.id) in conf["url"]
 
     def test_get_config_from_nonexistant_cluster_service(self, cluster_with_service: Tuple[Cluster, Service]):
         _, service = cluster_with_service
@@ -345,7 +345,7 @@ class TestClusterConfig:
             history = _get_config_history(cluster)
         with allure.step("Check config history"):
             for conf in history:
-                assert f"api/v1/cluster/{cluster.id}/config/" in conf["url"]
+                assert "api/v1/cluster/{0}/config/".format(cluster.id) in conf["url"]
 
     def test_read_default_cluster_config(self, cluster: Cluster):
         config = cluster.config(full=True)

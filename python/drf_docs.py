@@ -45,11 +45,15 @@ def drf_docs():
         if not (order or filtr):
             continue
 
-        print(f"{p.pattern}")
+        print("{}".format(p.pattern))
         if order:
-            print(f"	ORDERING:  {[fix_ordering(ord, p.callback.view_class) for ord in order]}")
+            print("	ORDERING:  {}".format([
+                fix_ordering(ord, p.callback.view_class) for ord in order
+            ]))
         if filtr:
-            print(f"	FILTERING: {[fix_ordering(flt, p.callback.view_class) for flt in filtr]}")
+            print("	FILTERING: {}".format([
+                fix_ordering(flt, p.callback.view_class) for flt in filtr
+            ]))
 
 
 drf_docs()

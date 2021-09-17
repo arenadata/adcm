@@ -39,7 +39,6 @@ from tests.ui_tests.app.page.common.header import (
     AuthorizedHeaderLocators,
 )
 from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
-from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.utils import assert_enough_rows
 
 
@@ -75,6 +74,11 @@ class BasePageObject:
         default_loc_timeout: int = 15,
         **kwargs,
     ):
+        if any(str.isdigit(char) for char in path_template):
+            raise ValueError(
+                f"Path template {path_template} should not contain any digits. "
+                "Please use template string and pass values as kwargs"
+            )
         self.driver = driver
         self.base_url = base_url
         self.path = path_template.format(**kwargs)
@@ -158,6 +162,29 @@ class BasePageObject:
                 EC.presence_of_all_elements_located([locator.by, locator.value]),
                 message=f"Can't find {locator.name} on page " f"{self.driver.current_url} for {loc_timeout} seconds",
             )
+
+    def send_text_to_element(self, locator: Locator, text: str, timeout: Optional[int] = None):
+        """
+        Writes text to input element found by locator
+
+        If value of input before and after is the same, then retries to send keys again,
+        because sometimes text doesn't appear in input
+
+        :param locator: Locator of element to write into (should be input)
+        :param text: Text to use in .send_keys method
+        :param timeout: Timeout on finding element
+        """
+        element = self.find_element(locator, timeout)
+        expected_value = element.get_property('value') + text
+
+        def send_keys_and_check():
+            input_element = self.find_element(locator, timeout)
+            input_element.send_keys(text)
+            assert (actual_value := input_element.get_property('value')) == expected_value, (
+                f'Value of input {locator} expected to be ' f'"{expected_value}", but "{actual_value}" was found'
+            )
+
+        wait_until_step_succeeds(send_keys_and_check, period=0.5, timeout=1.5)
 
     def is_element_displayed(self, element: Union[Locator, WebElement], timeout: int = None) -> bool:
         """Checks if element is displayed."""
@@ -271,49 +298,22 @@ class BasePageObject:
         page_name = self.__class__.__name__.replace('Page', '')
         with allure.step(f'Wait page {page_name} is opened'):
             wait_until_step_succeeds(assert_page_is_opened, period=0.5, timeout=timeout)
-            self.wait_element_hide(CommonToolbarLocators.progress_bar)
 
-    @allure.step('Write text to input element: "{text}"')
-    def send_text_to_element(
-        self, locator: Locator, text: str, clean_input: bool = True, timeout: Optional[int] = None
-    ):
-        """
-        Writes text to input element found by locator
+    def set_locator_value(self, locator: Locator, value: str) -> None:
+        """Fill locator with value."""
 
-        If value of input before and after is the same, then retries to send keys again,
-        because sometimes text doesn't appear in input
-
-        :param locator: Locator of element to write into (should be input)
-        :param text: Text to use in .send_keys method
-        :param timeout: Timeout on finding element
-        """
-        element = self.find_element(locator, timeout)
-        expected_value = element.get_property('value') + text
-
-        def send_keys_and_check():
-            if clean_input:
-                self.clear_by_keys(locator)
-            input_element = self.find_element(locator, timeout)
-            input_element.send_keys(text)
-            assert (
-                actual_value := input_element.get_property('value')
-            ) == expected_value, (
-                f'Value of input {locator.name} expected to be "{expected_value}", but "{actual_value}" was found'
-            )
-
-        wait_until_step_succeeds(send_keys_and_check, period=0.5, timeout=1.5)
+        with allure.step(f'Set value "{value}" to "{locator.name}"'):
+            element = self.wait_element_clickable(locator)
+            element.click()
+            element.clear()
+            element.send_keys(value)
 
     @allure.step('Clear element')
     def clear_by_keys(self, locator: Locator) -> None:
         """Clears element value by keyboard."""
-
-        def clear():
-            element = self.find_element(locator)
-            element.send_keys(Keys.CONTROL + "a")
-            element.send_keys(Keys.BACK_SPACE)
-            assert self.find_element(locator).text == ""
-
-        wait_until_step_succeeds(clear, period=0.5, timeout=self.default_loc_timeout)
+        element = self.find_element(locator)
+        element.send_keys(Keys.CONTROL + "a")
+        element.send_keys(Keys.BACK_SPACE)
 
     @allure.step('Wait Config has been loaded after authentication')
     def wait_config_loaded(self):
@@ -349,10 +349,6 @@ class BasePageObject:
         ):
             return False
 
-    @allure.step("Click back button in browser")
-    def click_back_button_in_browser(self):
-        self.driver.back()
-
 
 class PageHeader(BasePageObject):
     """Class for header manipulating."""
@@ -374,7 +370,7 @@ class PageHeader(BasePageObject):
                 AuthorizedHeaderLocators.hosts,
                 AuthorizedHeaderLocators.jobs,
                 AuthorizedHeaderLocators.bundles,
-                AuthorizedHeaderLocators.job_block,
+                AuthorizedHeaderLocators.job_block_previous,
                 AuthorizedHeaderLocators.help_button,
                 AuthorizedHeaderLocators.account_button,
             ]
@@ -413,7 +409,7 @@ class PageHeader(BasePageObject):
         self.find_and_click(CommonHeaderLocators.bundles)
 
     def click_job_block_in_header(self):
-        self.find_and_click(AuthorizedHeaderLocators.job_block)
+        self.find_and_click(AuthorizedHeaderLocators.job_block_previous)
 
     def click_help_button_in_header(self):
         self.find_and_click(AuthorizedHeaderLocators.help_button)
@@ -460,27 +456,14 @@ class PageHeader(BasePageObject):
         self.find_and_click(AuthorizedHeaderLocators.AccountPopup.logout_button)
 
     def get_success_job_amount_from_header(self):
-        self.hover_element(AuthorizedHeaderLocators.job_block)
+        self.hover_element(AuthorizedHeaderLocators.job_block_previous)
         self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
         return self.find_element(AuthorizedHeaderLocators.JobPopup.success_jobs).text.split("\n")[1]
 
     def get_in_progress_job_amount_from_header(self):
-        self.hover_element(AuthorizedHeaderLocators.job_block)
+        self.hover_element(AuthorizedHeaderLocators.job_block_previous)
         self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
         return self.find_element(AuthorizedHeaderLocators.JobPopup.in_progress_jobs).text.split("\n")[1]
-
-    def get_failed_job_amount_from_header(self):
-        self.hover_element(AuthorizedHeaderLocators.job_block)
-        self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
-        return self.find_element(AuthorizedHeaderLocators.JobPopup.failed_jobs).text.split("\n")[1]
-
-    def wait_success_job_amount_from_header(self, expected_job_amount: int):
-        def wait_job():
-            assert (
-                int(self.get_success_job_amount_from_header()) == expected_job_amount
-            ), f"Should be {expected_job_amount} tasks in popup header"
-
-        wait_until_step_succeeds(wait_job, period=1, timeout=70)
 
     @allure.step('Open profile using account popup in header')
     def open_profile(self):
@@ -497,7 +480,7 @@ class PageHeader(BasePageObject):
     @contextmanager
     def open_jobs_popup(self):
         """Open jobs popup by hovering icon and hover JOBS menu item afterwards"""
-        self.hover_element(AuthorizedHeaderLocators.job_block)
+        self.hover_element(AuthorizedHeaderLocators.job_block_previous)
         yield
         self.hover_element(AuthorizedHeaderLocators.jobs)
 
@@ -505,14 +488,6 @@ class PageHeader(BasePageObject):
         """Get job rows from *opened* popup"""
         self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
         return self.find_elements(AuthorizedHeaderLocators.JobPopup.job_row)
-
-    def click_on_task_row_by_name(self, task_name: str):
-        for task in self.find_elements(AuthorizedHeaderLocators.JobPopup.job_row):
-            name = self.find_child(task, AuthorizedHeaderLocators.JobPopup.JobRow.job_name)
-            if name.text == task_name:
-                name.click()
-                return
-        raise AssertionError(f"Task with name '{task_name}' not found")
 
     def get_single_job_row_from_popup(self, row_num: int = 0) -> WebElement:
         """Get single job row from *opened* popup"""
@@ -525,43 +500,6 @@ class PageHeader(BasePageObject):
         rows = self.get_job_rows_from_popup()
         assert_enough_rows(row_num, len(rows))
         return rows[row_num]
-
-    def click_all_link_in_job_popup(self):
-        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
-        self.find_and_click(AuthorizedHeaderLocators.JobPopup.show_all_link)
-
-    def click_in_progress_in_job_popup(self):
-        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
-        self.find_and_click(AuthorizedHeaderLocators.JobPopup.in_progress_jobs)
-
-    def click_success_jobs_in_job_popup(self):
-        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
-        self.find_and_click(AuthorizedHeaderLocators.JobPopup.success_jobs)
-
-    def click_failed_jobs_in_job_popup(self):
-        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
-        self.find_and_click(AuthorizedHeaderLocators.JobPopup.failed_jobs)
-
-    def click_acknowledge_btn_in_job_popup(self):
-        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
-        self.find_and_click(AuthorizedHeaderLocators.JobPopup.acknowledge_btn)
-
-    def get_jobs_circle_color(self):
-        return self.find_element(AuthorizedHeaderLocators.bell_icon).get_attribute("style")
-
-    @allure.step("Check that job list is empty")
-    def check_no_jobs_presented(self):
-        if not self.is_element_displayed(AuthorizedHeaderLocators.JobPopup.block):
-            self.find_and_click(AuthorizedHeaderLocators.jobs)
-        assert (
-            "Nothing to display" in self.find_element(AuthorizedHeaderLocators.JobPopup.empty_text).text
-        ), "There should be message 'Nothing to display'"
-
-    @allure.step("Check acknowledge button not displayed")
-    def check_acknowledge_btn_not_displayed(self):
-        if not self.is_element_displayed(AuthorizedHeaderLocators.JobPopup.block):
-            self.find_and_click(AuthorizedHeaderLocators.jobs)
-        assert not self.is_element_displayed(AuthorizedHeaderLocators.JobPopup.acknowledge_btn)
 
 
 class PageFooter(BasePageObject):

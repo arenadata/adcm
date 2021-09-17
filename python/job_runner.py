@@ -27,13 +27,13 @@ from cm.status_api import Event
 
 
 def open_file(root, tag, job_id):
-    fname = f'{root}/{job_id}/{tag}.txt'
+    fname = '{}/{}/{}.txt'.format(root, job_id, tag)
     f = open(fname, 'w', encoding='utf_8')
     return f
 
 
 def read_config(job_id):
-    fd = open(f'{config.RUN_DIR}/{job_id}/config.json', encoding='utf_8')
+    fd = open('{}/{}/config.json'.format(config.RUN_DIR, job_id), encoding='utf_8')
     conf = json.load(fd)
     fd.close()
     return conf
@@ -140,7 +140,7 @@ def run_ansible(job_id):
 
 def do():
     if len(sys.argv) < 2:
-        print(f"\nUsage:\n{os.path.basename(sys.argv[0])} job_id\n")
+        print("\nUsage:\n{} job_id\n".format(os.path.basename(sys.argv[0])))
         sys.exit(4)
     else:
         run_ansible(sys.argv[1])

@@ -42,7 +42,7 @@ class Daemon:
                 # exit first parent
                 sys.exit(0)
         except OSError as e:
-            sys.stderr.write(f"fork #1 failed: {e.errno:d} ({e.strerror})\n")
+            sys.stderr.write("fork #1 failed: %d (%s)\n" % (e.errno, e.strerror))
             sys.exit(1)
 
         # decouple from parent environment
@@ -57,14 +57,14 @@ class Daemon:
                 # exit from second parent
                 sys.exit(0)
         except OSError as e:
-            sys.stderr.write(f"fork #2 failed: {e.errno:d} ({e.strerror})\n")
+            sys.stderr.write("fork #2 failed: %d (%s)\n" % (e.errno, e.strerror))
             sys.exit(1)
 
         try:
             pidfile = open(self.pidfile, 'w+', encoding='utf_8')
         except IOError as e:
-            sys.stderr.write(f"Can't open pid file {self.pidfile}\n")
-            sys.stderr.write(f"{e.strerror}\n")
+            sys.stderr.write("Can't open pid file %s\n" % self.pidfile)
+            sys.stderr.write("%s\n" % e.strerror)
             sys.exit(1)
 
         # redirect standard file descriptors
@@ -80,7 +80,7 @@ class Daemon:
         # write pidfile
         atexit.register(self.delpid)
         pid = str(os.getpid())
-        pidfile.write(f"{pid}\n")
+        pidfile.write("%s\n" % pid)
 
     def delpid(self):
         os.remove(self.pidfile)
