@@ -96,7 +96,7 @@ def assert_cluster_config(bundle: Bundle, statemap: dict):
             for k, v in service_expected_cnf.items():
                 expect(
                     v == service_actual_cnf[k],
-                    f'Cluster {cname} service {sname} config {k} is {str(service_actual_cnf[k])} while expected {str(v)}',
+                    f'Cluster {cname} service {sname} config {k} is {str(service_actual_cnf[k])} while expected {v}',
                 )
     assert_expectations()
 
