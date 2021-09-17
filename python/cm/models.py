@@ -836,7 +836,7 @@ class AbstractAction(ADCMModel):
         unique_together = (('prototype', 'name'),)
 
     def __str__(self):
-        return "{} {}".format(self.prototype, self.display_name or self.name)
+        return f'{self.prototype} {self.display_name or self.name}'
 
 
 class Action(AbstractAction):

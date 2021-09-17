@@ -71,7 +71,7 @@ def load_service_map():
     for hc in HostComponent.objects.all():
         if hc.component.id in passive:
             continue
-        key = '{}.{}'.format(hc.host.id, hc.component.id)
+        key = f'{hc.host.id}.{hc.component.id}'
         hc_map[key] = {'cluster': hc.cluster.id, 'service': hc.service.id}
         if str(hc.cluster.id) not in comps:
             comps[str(hc.cluster.id)] = {}

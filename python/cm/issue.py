@@ -81,7 +81,7 @@ def check_required_import(obj: [Cluster, ClusterObject]):
         service = obj
         cluster = obj.cluster
     else:
-        raise TypeError('Could not check import for %s' % obj)
+        raise TypeError(f'Could not check import for {obj}')
     res, _ = do_check_import(cluster, service)
     return res
 
