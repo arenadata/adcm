@@ -104,6 +104,8 @@ def prepare_task(
     cluster = get_object_cluster(obj)
     check_task(action, obj, cluster, conf)
     _, spec = check_action_config(action, obj, conf, attr)
+    if conf and not spec:
+        err("CONFIG_VALUE_ERROR", "Absent config in action prototype")
     host_map, delta = check_hostcomponentmap(cluster, action, hc)
     check_action_hosts(action, obj, cluster, hosts)
     old_hc = api.get_hc(cluster)
