@@ -93,13 +93,13 @@ def create_cluster(cluster):
     :return: Cluster object
     :rtype: models.Cluster
     """
-    prototype = get_prototype(bundle_hash=cluster.pop('bundle_hash'), type='cluster')
-    ex_id = cluster.pop('id')
-    config = create_config(cluster.pop('config'))
     try:
         models.Cluster.objects.get(name=cluster['name'])
         raise AdcmEx('CLUSTER_CONFLICT', 'Cluster with the same name already exist')
     except models.Cluster.DoesNotExist:
+        prototype = get_prototype(bundle_hash=cluster.pop('bundle_hash'), type='cluster')
+        ex_id = cluster.pop('id')
+        config = create_config(cluster.pop('config'))
         cluster = models.Cluster.objects.create(prototype=prototype, config=config, **cluster)
         return ex_id, cluster
 
@@ -119,12 +119,13 @@ def create_provider(provider):
         same_name_provider = models.HostProvider.objects.get(name=provider['name'])
         if same_name_provider.prototype.bundle.hash != bundle_hash:
             raise IntegrityError('Name of provider already in use in another bundle')
-        else:
-            return ex_id, same_name_provider
+        return ex_id, same_name_provider
     except models.HostProvider.DoesNotExist:
         prototype = get_prototype(bundle_hash=bundle_hash, type='provider')
         config = create_config(provider.pop('config'))
-        provider = models.HostProvider.objects.create(prototype=prototype, config=config, **provider)
+        provider = models.HostProvider.objects.create(
+            prototype=prototype, config=config, **provider
+        )
         return ex_id, provider
 
 
