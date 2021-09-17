@@ -89,16 +89,14 @@ def assert_cluster_config(bundle: Bundle, statemap: dict):
         for k, v in expected_cnf.items():
             expect(
                 v == actual_cnf[k],
-                'Cluster {} config "{}" is "{}" while expected "{}"'.format(cname, k, str(actual_cnf[k]), str(v)),
+                f'Cluster {cname} config "{k}" is "{str(actual_cnf[k])}" while expected "{str(v)}"',
             )
         for sname, service_expected_cnf in clv['services'].items():
             service_actual_cnf = bundle.cluster(name=cname).service(name=sname).config()
             for k, v in service_expected_cnf.items():
                 expect(
                     v == service_actual_cnf[k],
-                    'Cluster {} service {} config {} is {} while expected {}'.format(
-                        cname, sname, k, str(service_actual_cnf[k]), str(v)
-                    ),
+                    f'Cluster {cname} service {sname} config {k} is {str(service_actual_cnf[k])} while expected {str(v)}',
                 )
     assert_expectations()
 
@@ -247,16 +245,14 @@ def assert_provider_config(bundle: Bundle, statemap: dict):
         for k, v in expected_cnf.items():
             expect(
                 v == actual_cnf[k],
-                'Provider {} config "{}" is "{}" while expected "{}"'.format(pname, k, str(actual_cnf[k]), str(v)),
+                f'Provider {pname} config "{k}" is "{str(actual_cnf[k])}" while expected "{str(v)}"',
             )
         for hname, host_expected_cnf in plv['hosts'].items():
             host_actual_cnf = bundle.provider(name=pname).host(fqdn=hname).config()
             for k, v in host_expected_cnf.items():
                 expect(
                     v == host_actual_cnf[k],
-                    'Provider {} host {} config {} is {} while expected {}'.format(
-                        pname, hname, k, str(host_actual_cnf[k]), str(v)
-                    ),
+                    f'Provider {pname} host {hname} config {k} is {str(host_actual_cnf[k])} while expected {str(v)}',
                 )
     assert_expectations()
 
