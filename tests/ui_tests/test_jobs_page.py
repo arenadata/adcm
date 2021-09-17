@@ -44,6 +44,7 @@ from tests.ui_tests.utils import (
     is_not_empty,
     is_empty,
     wait_file_is_presented,
+    wait_until_step_succeeds,
 )
 
 LONG_ACTION_DISPLAY_NAME = 'Long action'
@@ -377,9 +378,14 @@ class TestTaskHeaderPopup:
         assert (
             cluster_page.header.get_failed_job_amount_from_header() == job_info['failed_jobs']
         ), f"Failed job amount should be {job_info['failed_jobs']}"
-        assert job_info['background'] in cluster_page.header.get_jobs_circle_color(), "Bell circle should be colored"
 
-    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2048")
+        def wait_for_background():
+            assert (
+                job_info['background'] in cluster_page.header.get_jobs_circle_color()
+            ), "Bell circle should be colored"
+
+        wait_until_step_succeeds(wait_for_background, period=0.3, timeout=5)
+
     def test_on_tasks_in_header_popup(self, cluster: Cluster, page: JobListPage, app_fs):
         """Run action and click on it in header popup"""
         actions = {SUCCESS_ACTION_DISPLAY_NAME: 'success', FAIL_ACTION_DISPLAY_NAME: 'failed'}
@@ -392,7 +398,7 @@ class TestTaskHeaderPopup:
             page.header.click_on_task_row_by_name(task_name=action_name)
             job_page = JobPageStdout(app_fs.driver, app_fs.adcm.url, job_id=1)
             job_page.check_title(action_name)
-            job_page.check_text(success_task=bool(action_name == FAIL_ACTION_DISPLAY_NAME))
+            job_page.check_text(success_task=bool(action_name == SUCCESS_ACTION_DISPLAY_NAME))
 
     def test_six_tasks_in_header_popup(self, cluster: Cluster, login_to_adcm_over_api, app_fs):
         """Check list of tasks in header popup"""
