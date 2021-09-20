@@ -104,6 +104,6 @@ class LookupModule(LookupBase):
                 raise AnsibleError('there is no adcm_hostid in hostvars')
             res = set_host_state(variables['adcm_hostid'], terms[1])
         else:
-            raise AnsibleError('unknown object type: %s' % terms[0])
+            raise AnsibleError(f'unknown object type: {terms[0]}')
         ret.append(res)
         return ret

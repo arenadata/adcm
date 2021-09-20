@@ -81,7 +81,7 @@ def check_required_import(obj: [Cluster, ClusterObject]):
         service = obj
         cluster = obj.cluster
     else:
-        raise TypeError('Could not check import for %s' % obj)
+        raise TypeError(f'Could not check import for {obj}')
     res, _ = do_check_import(cluster, service)
     return res
 
@@ -195,7 +195,7 @@ def get_obj_config(obj):
 
 
 def check_component_constraint(service, hc_in):
-    ref = 'in host component list for {}'.format(obj_ref(service))
+    ref = f'in host component list for {obj_ref(service)}'
     all_host = Host.objects.filter(cluster=service.cluster)
 
     def cc_err(msg):
