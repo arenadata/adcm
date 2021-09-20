@@ -497,7 +497,7 @@ def prepare_job_config(
     elif action.prototype.type == 'adcm':
         job_conf['job']['hostgroup'] = '127.0.0.1'
     else:
-        err('NOT_IMPLEMENTED', 'unknown prototype type "{}"'.format(action.prototype.type))
+        err('NOT_IMPLEMENTED', f'unknown prototype type "{action.prototype.type}"')
 
     if conf:
         job_conf['job']['config'] = conf
