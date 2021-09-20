@@ -15,6 +15,7 @@ import ruyaml
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import Permission
 
+import cm.api
 import cm.checker
 from cm import config
 from cm.logger import log
@@ -27,7 +28,6 @@ def upgrade(data):
     for role in data['roles']:
         new_roles[role['name']] = upgrade_role(role, data)
 
-    log.debug('NEW Roles: %s', new_roles)
     for role in data['roles']:
         role_obj = new_roles[role['name']]
         role_obj.childs.clear()
@@ -37,6 +37,14 @@ def upgrade(data):
             child_role = new_roles[child]
             role_obj.childs.add(child_role)
         role_obj.save()
+
+    for role in new_roles.values():
+        perm_list = cm.api.get_role_permissions(role)
+        for user in role.user.all():
+            user.user_permissions.clear()
+            for perm in perm_list:
+                user.user_permissions.add(perm)
+            user.save()
 
 
 def find_role(name, roles):
@@ -84,7 +92,6 @@ def upgrade_role(role, data):
         new_role = Role(name=role['name'])
     if 'description' in role:
         new_role.description = role['description']
-    new_role.save()
     for perm in perm_list:
         new_role.permissions.add(perm)
     new_role.save()
@@ -126,9 +133,10 @@ def init_roles():
         rm = RoleMigration(version=0)
     if role_data['version'] > rm.version:
         upgrade(role_data)
-        # To do: upgrade Role's users and groups !!!
         rm.version = role_data['version']
         rm.save()
-        return f'Roles are upgraded to version {rm.version}'
+        msg = f'Roles are upgraded to version {rm.version}'
+        log.info(msg)
     else:
-        return f'Roles are already at version {rm.version}'
+        msg = f'Roles are already at version {rm.version}'
+    return msg

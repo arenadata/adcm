@@ -1,6 +1,6 @@
 ---
 
-version: 2
+version: 4
 
 roles:
     - name: admin
@@ -11,13 +11,11 @@ roles:
               codenames:
                 - view
                 - add
-                - delete
         - label: auth
           models:
             - name: group
               codenames:
                 - add
-                - change
     - name: ops
       childs:
         - admin
@@ -32,6 +30,10 @@ roles:
               codenames:
                 - view
                 - change
+            - name: host
+              codenames:
+                - add
+                - delete
             - name: cluster
               codenames:
                 - add
