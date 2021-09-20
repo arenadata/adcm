@@ -96,7 +96,7 @@ class BasePage:
         self._elements(locator, wait, **kwargs)
 
     def _get_adcm_test_element(self, element_name):
-        return self._getelement(bys.by_xpath("//*[@adcm_test='{}']".format(element_name)))
+        return self._getelement(bys.by_xpath(f"//*[@adcm_test='{element_name}']"))
 
     def _getelement(self, locator: tuple, timer=10):
         return WDW(self.driver, timer, ignored_exceptions=self.ignored_exceptions).until(

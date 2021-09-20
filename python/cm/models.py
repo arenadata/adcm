@@ -97,7 +97,7 @@ class ADCMManager(models.Manager):
         except ObjectDoesNotExist:
             if not hasattr(self.model, '__error_code__'):
                 raise AdcmEx('NO_MODEL_ERROR_CODE', f'model: {self.model.__name__}') from None
-            msg = '{} {} does not exist'.format(self.model.__name__, kwargs)
+            msg = f'{self.model.__name__} {kwargs} does not exist'
             raise AdcmEx(self.model.__error_code__, msg) from None
 
 
@@ -213,7 +213,7 @@ class ADCMEntity(ADCMModel):
     def __str__(self):
         """Legacy `cm.adcm_config.obj_ref()` to avoid cyclic imports"""
         name = getattr(self, 'name', None) or getattr(self, 'fqdn', self.prototype.name)
-        return '{} #{} "{}"'.format(self.prototype.type, self.id, name)
+        return f'{self.prototype.type} #{self.id} "{name}"'
 
     def set_state(self, state: str, event=None) -> 'ADCMEntity':
         """Legacy `cm.api.set_object_state()` to avoid cyclic imports"""
@@ -320,7 +320,7 @@ class Host(ADCMEntity):
         return self.prototype.monitoring
 
     def __str__(self):
-        return "{}".format(self.fqdn)
+        return f"{self.fqdn}"
 
     @property
     def serialized_issue(self):
@@ -473,7 +473,7 @@ class Action(ADCMModel):
         return self.prototype.type
 
     def __str__(self):
-        return "{} {}".format(self.prototype, self.name)
+        return f"{self.prototype} {self.name}"
 
     class Meta:
         unique_together = (('prototype', 'name'),)
@@ -746,7 +746,7 @@ class StageAction(ADCMModel):
     host_action = models.BooleanField(default=False)
 
     def __str__(self):
-        return "{}:{}".format(self.prototype, self.name)
+        return f"{self.prototype}:{self.name}"
 
     class Meta:
         unique_together = (('prototype', 'name'),)

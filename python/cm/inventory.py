@@ -162,18 +162,18 @@ def get_host_groups(cluster_id, delta, action_host=None):
     for hc in all_hosts:
         if action_host and hc.host.id not in action_host:
             continue
-        key1 = '{}.{}'.format(hc.service.prototype.name, hc.component.prototype.name)
+        key1 = f'{hc.service.prototype.name}.{hc.component.prototype.name}'
         if key1 not in groups:
             groups[key1] = {'hosts': {}}
         groups[key1]['hosts'][hc.host.fqdn] = get_obj_config(hc.host)
-        key2 = '{}'.format(hc.service.prototype.name)
+        key2 = f'{hc.service.prototype.name}'
         if key2 not in groups:
             groups[key2] = {'hosts': {}}
         groups[key2]['hosts'][hc.host.fqdn] = get_obj_config(hc.host)
 
     for htype in delta:
         for key in delta[htype]:
-            lkey = '{}.{}'.format(key, htype)
+            lkey = f'{key}.{htype}'
             if lkey not in groups:
                 groups[lkey] = {'hosts': {}}
             for fqdn in delta[htype][key]:
