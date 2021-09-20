@@ -8,4 +8,4 @@ pip install --no-cache-dir -r /requirements-base.txt
 rm /requirements-base.txt
 apk del git
 apk del .pynacl_deps
-rm /etc/nginx/conf.d/default.conf
+rm /etc/nginx/http.d/default.conf

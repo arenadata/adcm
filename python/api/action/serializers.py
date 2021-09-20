@@ -92,6 +92,9 @@ class SubActionSerializer(serializers.Serializer):
 
 class StackActionDetailSerializer(StackActionSerializer):
     state_available = serializers.JSONField()
+    state_unavailable = serializers.JSONField()
+    multi_state_available = serializers.JSONField()
+    multi_state_unavailable = serializers.JSONField()
     params = serializers.JSONField(required=False)
     log_files = serializers.JSONField(required=False)
     config = serializers.SerializerMethodField()

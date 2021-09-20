@@ -11,12 +11,12 @@
 # limitations under the License.
 
 import json
-import requests
-import simplejson
 
+import requests
+
+from cm.config import STATUS_SECRET_KEY
 from cm.logger import log
 from cm.models import HostComponent, ServiceComponent, ClusterObject, Host
-from cm.config import STATUS_SECRET_KEY
 
 API_URL = "http://localhost:8020/api/v1"
 TIMEOUT = 0.01
@@ -26,17 +26,22 @@ class Event:
     def __init__(self):
         self.events = []
 
+    def __del__(self):
+        self.send_state()
+
     def send_state(self):
-        for _ in range(len(self.events)):
+        while self.events:
             try:
-                event = self.events.pop(0)
-                func, args = event
+                func, args = self.events.pop(0)
                 func.__call__(*args)
             except IndexError:
                 pass
 
     def set_object_state(self, obj_type, obj_id, state):
         self.events.append((set_obj_state, (obj_type, obj_id, state)))
+
+    def change_object_multi_state(self, obj_type, obj_id, multi_state):
+        self.events.append((change_obj_multi_state, (obj_type, obj_id, multi_state)))
 
     def set_job_status(self, job_id, status):
         self.events.append((set_job_status, (job_id, status)))
@@ -102,6 +107,7 @@ def post_event(event, obj_type, obj_id, det_type=None, det_val=None):
             'details': details,
         },
     }
+    log.debug('post_event %s', data)
     return api_post('/event/', data)
 
 
@@ -122,13 +128,22 @@ def set_obj_state(obj_type, obj_id, state):
     return post_event('change_state', obj_type, obj_id, 'state', state)
 
 
+def change_obj_multi_state(obj_type, obj_id, multi_state):
+    if obj_type == 'adcm':
+        return None
+    if obj_type not in ('cluster', 'service', 'host', 'provider', 'component'):
+        log.error('Unknown object type: "%s"', obj_type)
+        return None
+    return post_event('change_state', obj_type, obj_id, 'multi_state', multi_state)
+
+
 def get_status(url):
     r = api_get(url)
     if r is None:
         return 32
     try:
         js = r.json()
-    except simplejson.scanner.JSONDecodeError:
+    except ValueError:
         return 8
     if 'status' in js:
         return js['status']

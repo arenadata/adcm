@@ -10,14 +10,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { ParamMap, Params, convertToParamMap } from '@angular/router';
-import { switchMap, tap, map } from 'rxjs/operators';
+import { convertToParamMap, ParamMap, Params } from '@angular/router';
+import { map, switchMap, tap } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 
 import { environment } from '@env/environment';
 import { ApiService } from '@app/core/api';
 import { ClusterService } from '@app/core/services/cluster.service';
-import { Bundle, Cluster, Entities, Host, IAction, Service, TypeName } from '@app/core/types';
+import { Bundle, Entities, Host, IAction, Service, TypeName } from '@app/core/types';
+import { IListService, ListInstance } from '@app/shared/components/list/list-service-token';
+import { ListResult } from '@app/models/list-result';
+import { ICluster } from '@app/models/cluster';
 
 const COLUMNS_SET = {
   cluster: ['name', 'prototype_version', 'description', 'state', 'status', 'actions', 'import', 'upgrade', 'config', 'controls'],
@@ -30,16 +33,10 @@ const COLUMNS_SET = {
   bundle: ['name', 'version', 'edition', 'description', 'controls'],
 };
 
-
-export interface ListInstance {
-  typeName: TypeName;
-  columns: string[];
-}
-
 @Injectable({
   providedIn: 'root',
 })
-export class ListService {
+export class ListService implements IListService<Entities> {
   current: ListInstance;
 
   constructor(private api: ApiService, private detail: ClusterService) {}
@@ -49,7 +46,7 @@ export class ListService {
     return this.current;
   }
 
-  getList(p: ParamMap, typeName: string) {
+  getList(p: ParamMap, typeName: string): Observable<ListResult<Entities>> {
     const listParamStr = localStorage.getItem('list:param');
     if (p?.keys.length) {
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
@@ -92,7 +89,7 @@ export class ListService {
   // host
   getClustersForHost(param: Params): Observable<{ id: number; title: string }[]> {
     return this.api.root
-      .pipe(switchMap((root) => this.api.getList<Cluster>(root.cluster, convertToParamMap(param))))
+      .pipe(switchMap((root) => this.api.getList<ICluster>(root.cluster, convertToParamMap(param))))
       .pipe(map((res) => res.results.map((a) => ({ id: a.id, title: a.name }))));
   }
 

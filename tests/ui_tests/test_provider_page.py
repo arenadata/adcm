@@ -211,10 +211,11 @@ class TestProviderConfigPage:
         provider_config_page = ProviderConfigPage(
             app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
         ).open()
-        with provider_config_page.config.wait_rows_change(expected_rows_amount=1):
+        with provider_config_page.config.wait_rows_change():
             provider_config_page.config.search(params["search_param"])
         with allure.step(f"Check that rows are filtered by {params['search_param']}"):
             config_rows = provider_config_page.config.get_all_config_rows()
+            assert len(config_rows) == 1, "Rows are not filtered: there should be 1 row"
             assert (
                 provider_config_page.config.get_config_row_info(config_rows[0]).name == f"{params['search_param']}:"
             ), f"Name should be {params['search_param']}"
@@ -223,8 +224,11 @@ class TestProviderConfigPage:
         with allure.step("Check that rows are not filtered"):
             config_rows = provider_config_page.config.get_all_config_rows()
             assert len(config_rows) == 4, "Rows are filtered: there should be 4 row"
-        with provider_config_page.config.wait_rows_change(expected_rows_amount=2):
+        with provider_config_page.config.wait_rows_change():
             provider_config_page.config.click_on_group(params["group_name"])
+        with allure.step("Check that groups are closed"):
+            config_rows = provider_config_page.config.get_all_config_rows()
+            assert len(config_rows) == 2, "Groups are not closed: there should be 2 row"
 
     @pytest.mark.smoke()
     def test_save_custom_config_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
