@@ -9,27 +9,32 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, ViewChild } from '@angular/core';
 import { MatSelectionList, MatSelectionListChange } from '@angular/material/list';
-import { SelectOption } from '../../../core/types';
+import { Host } from '@app/core/types';
 import { Observable } from 'rxjs';
 
-import { BaseFormDirective } from '../../../shared/add-component';
+import { BaseFormDirective } from '@app/shared/add-component';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfigGroupHostAddService } from '../../service';
-import { ClusterService } from '../../../core/services/cluster.service';
+import { ClusterService } from '@app/core/services/cluster.service';
+import { ListResult } from '@app/models/list-result';
+import { PageEvent } from '@angular/material/paginator';
 
 @Component({
   selector: 'app-config-group-host-add',
   template: `
-    <ng-container *ngIf="options$ | async as hosts">
+    <ng-container *ngIf="list$ | async as list">
       <mat-selection-list #listServices (selectionChange)="selectAll($event)">
-        <mat-list-option *ngIf="hosts.length">All</mat-list-option>
-        <mat-list-option *ngFor="let host of hosts" [value]="host">
-          {{ host.name }}
+        <mat-list-option *ngIf="list.count">All</mat-list-option>
+        <mat-list-option *ngFor="let host of list.results" [value]="host">
+          {{ host.fqdn }}
         </mat-list-option>
       </mat-selection-list>
-      <app-add-controls *ngIf="hosts.length; else not" [title]="'Add'" [disabled]="!form.valid" (cancel)="onCancel()"
+      <mat-paginator *ngIf="list.count" [length]="list.count" [pageSizeOptions]="[10, 25, 50, 100]"
+                     [pageIndex]="pageIndex" [pageSize]="pageSize"
+                     (page)="pageHandler($event)"></mat-paginator>
+      <app-add-controls *ngIf="list.count; else not" [title]="'Add'" [disabled]="!form.valid" (cancel)="onCancel()"
                         (save)="save()"></app-add-controls>
     </ng-container>
     <ng-template #not>
@@ -39,10 +44,15 @@ import { ClusterService } from '../../../core/services/cluster.service';
         </i>
       </p>
     </ng-template>
-  `
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AddHostToConfigGroupComponent extends BaseFormDirective implements OnInit {
-  options$: Observable<SelectOption[]>;
+
+  pageIndex = 0;
+  pageSize = 10;
+
+  list$: Observable<ListResult<Host>>;
   @ViewChild('listServices')
   private listServices: MatSelectionList;
 
@@ -51,8 +61,7 @@ export class AddHostToConfigGroupComponent extends BaseFormDirective implements 
   }
 
   ngOnInit(): void {
-    const { typeName } = this.cluster.Current;
-    this.options$ = this.service.getList(typeName, {});
+    this.getAvailableHosts(this.pageIndex, this.pageSize);
   }
 
   selectAll(e: MatSelectionListChange): void {
@@ -73,5 +82,16 @@ export class AddHostToConfigGroupComponent extends BaseFormDirective implements 
       .add(result)
       .pipe(this.takeUntil())
       .subscribe(() => this.dialog.closeAll());
+  }
+
+  getAvailableHosts(pageIndex, pageSize): void {
+    const { typeName } = this.cluster.Current;
+    this.list$ = this.service.getListResults<Host>(typeName, { limit: pageSize, page: pageIndex });
+  }
+
+  pageHandler(pageEvent: PageEvent): void {
+    this.pageIndex = pageEvent.pageIndex;
+    this.pageSize = pageEvent.pageSize;
+    this.getAvailableHosts(this.pageIndex, this.pageSize);
   }
 }
