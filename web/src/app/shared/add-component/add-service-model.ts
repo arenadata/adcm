@@ -5,6 +5,7 @@ import { Host, Service, TypeName } from '@app/core/types';
 import { Params } from '@angular/router';
 import { BaseFormDirective } from '@app/shared/add-component/base-form.directive';
 import { ICluster } from '@app/models/cluster';
+import { ListResult } from '@app/models/list-result';
 
 export const ADD_SERVICE_PROVIDER = new InjectionToken<IAddService>('AddService');
 
@@ -33,7 +34,7 @@ export interface IAddService {
 
   addHostInCluster?(ids: number[]): Observable<unknown[]>;
 
-  getListResults?<T>(type: TypeName, param: Params);
+  getListResults?<T>(type: TypeName, param: Params): Observable<ListResult<T>>;
 
   getProtoServiceForCurrentCluster?(): Observable<{ name: string, id: number, url: string, version: string, edition: string, description: string, display_name: string, license: 'unaccepted' | 'accepted' | 'absent', bundle_id: number, bundle_edition: string, selected: boolean }[]>;
 
