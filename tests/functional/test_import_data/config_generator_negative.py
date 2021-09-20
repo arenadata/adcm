@@ -193,23 +193,23 @@ TEMPLATE_CLUSTER = """
 """
 
 for variable in VARIABLES:
-    d_name = "service_import_check_negative/{}_{}_{}".format(variable[0], variable[3], variable[4])
+    d_name = f"service_import_check_negative/{variable[0]}_{variable[3]}_{variable[4]}"
     export_dir = d_name + "/export"
     import_dir = d_name + "/import"
     for d in d_name, export_dir, import_dir:
         os.makedirs(d)
-    with open("{}/import/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
+    with open(f"{d_name}/import/config.yaml", "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_SERVICE.format(variable[1], variable[2], variable[3], variable[4]))
-    with open("{}/export/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
+    with open(f"{d_name}/export/config.yaml", "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_EXPORT_SERVICE.format(variable[5]))
 
 for variable in VARIABLES:
-    d_name = "cluster_import_check_negative/{}_{}_{}".format(variable[0], variable[3], variable[4])
+    d_name = f"cluster_import_check_negative/{variable[0]}_{variable[3]}_{variable[4]}"
     export_dir = d_name + "/export"
     import_dir = d_name + "/import"
     for d in d_name, export_dir, import_dir:
         os.makedirs(d)
-    with open("{}/import/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
+    with open(f"{d_name}/import/config.yaml", "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_CLUSTER.format(variable[1], variable[2], variable[3], variable[4]))
-    with open("{}/export/config.yaml".format(d_name), "w+", encoding='utf_8') as f:
+    with open(f"{d_name}/export/config.yaml", "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_EXPORT_CLUSTER.format(variable[5]))

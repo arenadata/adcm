@@ -185,7 +185,7 @@ def test_coreapi_schema(sdk_client_fs: ADCMClient, tested_class: Type[BaseAPIObj
         for _filter in tested_class.FILTERS:
             expect(
                 _filter in params,
-                "Filter {} should be acceptable for coreapi in class {}".format(_filter, tested_class.__name__),
+                f"Filter {_filter} should be acceptable for coreapi in class {tested_class.__name__}",
             )
         assert_expectations()
 
