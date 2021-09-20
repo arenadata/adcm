@@ -296,7 +296,7 @@ def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branc
                 msg = 'There is no component "{}" on host "{}"'
                 err('COMPONENT_CONFLICT', msg.format(component.prototype.name, host.fqdn))
         else:
-            err('INVALID_INPUT', 'unknown hc action "{}"'.format(op['action']))
+            err('INVALID_INPUT', f'unknown hc action "{op["action"]}"')
 
     add_hc(cluster, hc)
 
