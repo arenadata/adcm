@@ -249,7 +249,7 @@ def get_host(host_id):
 def get_target_host(host_id):
     host = Host.objects.get(id=host_id)
     groups = {
-        'target': {'hosts': get_hosts([host], host), 'vars': get_cluster_config(host.cluster.id)}
+        'target': {'hosts': get_hosts([host], host), 'vars': get_cluster_config(host.cluster)}
     }
     return groups
 
