@@ -220,7 +220,7 @@ class TestIncorrectHostInGroups:
         service, test_host_1, test_host_2 = cluster_with_components_on_one_host
         with allure.step("Create group for service"):
             service_group = service.group_config_create(name=FIRST_GROUP)
-        with allure.step("Try to add the second host not from service nd check group hosts list"):
+        with allure.step("Try to add the second host not from service and check group hosts list"):
             assert_that_host_add_is_unavailable(service_group, test_host_2)
             assert_host_candidate_equal_expected(service_group.host_candidate(), [FIRST_HOST])
         with allure.step("Add first host to service group and check that second add is not available"):
