@@ -72,7 +72,7 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app_fs):
     bundle = sdk_client_fs.upload_from_fs(path)
     cluster_name = path.split("/")[-1]
     cluster = bundle.cluster_create(name=cluster_name)
-    config = Configuration(app_fs.driver, "{}/cluster/{}/config".format(app_fs.adcm.url, cluster.cluster_id))
+    config = Configuration(app_fs.driver, f"{app_fs.adcm.url}/cluster/{cluster.cluster_id}/config")
 
     groups = config.get_field_groups()
     for group in groups:
