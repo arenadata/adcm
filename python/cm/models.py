@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-instance-attributes
+
 from __future__ import unicode_literals
 
 from collections.abc import Mapping
@@ -649,7 +651,7 @@ class GroupConfig(ADCMModel):
     description = models.TextField(blank=True)
     hosts = models.ManyToManyField(Host, blank=True, related_name='group_config')
     config = models.OneToOneField(
-        ObjectConfig, on_delete=models.CASCADE, null=True, related_name='group_config'
+        ObjectConfig, on_delete=models.CASCADE, null=False, related_name='group_config'
     )
 
     __error_code__ = 'GROUP_CONFIG_NOT_FOUND'
@@ -793,8 +795,11 @@ SCRIPT_TYPE = (
 )
 
 
-class Action(ADCMModel):
-    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
+class AbstractAction(ADCMModel):
+    """Abstract base class for both Action and StageAction"""
+
+    prototype = None
+
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     description = models.TextField(blank=True)
@@ -806,9 +811,17 @@ class Action(ADCMModel):
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
 
+    state_available = models.JSONField(default=list)
+    state_unavailable = models.JSONField(default=list)
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
-    state_available = models.JSONField(default=list)
+
+    multi_state_available = models.JSONField(default=list)
+    multi_state_unavailable = models.JSONField(default=list)
+    multi_state_on_success_set = models.JSONField(default=list)
+    multi_state_on_success_unset = models.JSONField(default=list)
+    multi_state_on_fail_set = models.JSONField(default=list)
+    multi_state_on_fail_unset = models.JSONField(default=list)
 
     params = models.JSONField(default=dict)
     log_files = models.JSONField(default=list)
@@ -817,6 +830,17 @@ class Action(ADCMModel):
     allow_to_terminate = models.BooleanField(default=False)
     partial_execution = models.BooleanField(default=False)
     host_action = models.BooleanField(default=False)
+
+    class Meta:
+        abstract = True
+        unique_together = (('prototype', 'name'),)
+
+    def __str__(self):
+        return "{} {}".format(self.prototype, self.display_name or self.name)
+
+
+class Action(AbstractAction):
+    prototype = models.ForeignKey(Prototype, on_delete=models.CASCADE)
 
     __error_code__ = 'ACTION_NOT_FOUND'
 
@@ -832,12 +856,6 @@ class Action(ADCMModel):
     def prototype_type(self):
         return self.prototype.type
 
-    def __str__(self):
-        return "{} {}".format(self.prototype, self.display_name or self.name)
-
-    class Meta:
-        unique_together = (('prototype', 'name'),)
-
     def get_id_chain(self, target_ids: dict) -> dict:
         """Get action ID chain for front-end URL generation in message templates"""
         target_ids['action'] = self.pk
@@ -847,6 +865,32 @@ class Action(ADCMModel):
             'ids': target_ids,
         }
         return result
+
+    def allowed(self, obj: ADCMEntity) -> bool:
+        """Check if action is allowed to be run on object"""
+        if isinstance(self.state_unavailable, list) and obj.state in self.state_unavailable:
+            return False
+
+        if isinstance(self.multi_state_unavailable, list) and obj.has_multi_state_intersection(
+            self.multi_state_unavailable
+        ):
+            return False
+
+        allowed = False
+
+        if self.state_available == 'any':
+            allowed = True
+        elif isinstance(self.state_available, list) and obj.state in self.state_available:
+            allowed = True
+
+        if self.multi_state_available == 'any':
+            allowed = True
+        elif isinstance(self.multi_state_available, list) and obj.has_multi_state_intersection(
+            self.multi_state_available
+        ):
+            allowed = True
+
+        return allowed
 
 
 class SubAction(ADCMModel):
@@ -1118,36 +1162,8 @@ class StageUpgrade(ADCMModel):
     state_on_success = models.CharField(max_length=64, blank=True)
 
 
-class StageAction(ADCMModel):
+class StageAction(AbstractAction):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
-    name = models.CharField(max_length=160)
-    display_name = models.CharField(max_length=160, blank=True)
-    description = models.TextField(blank=True)
-    ui_options = models.JSONField(default=dict)
-
-    type = models.CharField(max_length=16, choices=ACTION_TYPE)
-    button = models.CharField(max_length=64, default=None, null=True)
-
-    script = models.CharField(max_length=160)
-    script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
-
-    state_on_success = models.CharField(max_length=64, blank=True)
-    state_on_fail = models.CharField(max_length=64, blank=True)
-    state_available = models.JSONField(default=list)
-
-    params = models.JSONField(default=dict)
-    log_files = models.JSONField(default=list)
-
-    hostcomponentmap = models.JSONField(default=list)
-    allow_to_terminate = models.BooleanField(default=False)
-    partial_execution = models.BooleanField(default=False)
-    host_action = models.BooleanField(default=False)
-
-    def __str__(self):
-        return "{}:{}".format(self.prototype, self.name)
-
-    class Meta:
-        unique_together = (('prototype', 'name'),)
 
 
 class StageSubAction(ADCMModel):

@@ -36,6 +36,7 @@ from cm.inventory import get_obj_config, process_config_and_attr
 from cm.logger import log
 from cm.models import (
     ADCM,
+    ADCMEntity,
     Action,
     CheckLog,
     Cluster,
@@ -173,7 +174,7 @@ def get_host_object(action, cluster):
     return obj
 
 
-def check_action_state(action, task_object, cluster):
+def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster):
     if action.host_action:
         obj = get_host_object(action, cluster)
     else:
@@ -181,11 +182,10 @@ def check_action_state(action, task_object, cluster):
 
     if obj.locked:
         err('TASK_ERROR', 'object is locked')
-    available = action.state_available
-    if available == 'any':
+
+    if action.allowed(obj):
         return
-    if obj.state in available:
-        return
+
     err('TASK_ERROR', 'action is disabled')
 
 
@@ -579,13 +579,19 @@ def get_state(action, job, status):
     return state
 
 
-def set_action_state(action, task, obj, state):
+def set_action_state(
+    action, task, obj, state: str, multi_state_set: str = None, multi_state_unset: str = None
+):
     if not obj:
         log.warning('empty object for action %s of task #%s', action.name, task.id)
         return
     msg = 'action "%s" of task #%s will set %s state to "%s"'
     log.info(msg, action.name, task.id, obj_ref(obj), state)
-    obj.set_state(state)
+    obj.set_state(state, ctx.event)
+    if multi_state_set:
+        obj.set_multi_state(multi_state_set, ctx.event)
+    if multi_state_unset:
+        obj.unset_multi_state(multi_state_unset, ctx.event)
 
 
 def restore_hc(task, action, status):
