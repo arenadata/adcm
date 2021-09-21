@@ -59,7 +59,7 @@ CLUSTER_NAME = 'test_cluster'
 SERVICE_NAME = 'test_service'
 COMPONENT_NAME = 'test_component'
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, no-self-use
 
 
 @pytest.fixture()
@@ -281,7 +281,8 @@ class TestTaskHeaderPopup:
         ],
         ids=["all_jobs", 'in_progress_jobs', 'success_jobs', 'failed_jobs'],
     )
-    def test_link_to_jobs_in_header_popup(self, login_to_adcm_over_api, app_fs, job_link, job_filter):
+    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    def test_link_to_jobs_in_header_popup(self, app_fs, job_link, job_filter):
         """Link to /task from popup with filter"""
 
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -358,8 +359,9 @@ class TestTaskHeaderPopup:
         ],
         ids=['success_job', 'failed_job', 'in_progress_job', 'three_job'],
     )
+    @pytest.mark.usefixtures('login_to_adcm_over_api')
     def test_job_has_correct_info_in_header_popup(
-        self, job_info: dict, cluster: Cluster, login_to_adcm_over_api, app_fs
+        self, job_info: dict, cluster: Cluster, app_fs
     ):
         """Run action that finishes (success/failed) and check it in header popup"""
 
@@ -404,7 +406,8 @@ class TestTaskHeaderPopup:
             job_page.check_title(action_name)
             job_page.check_text(success_task=bool(action_name == SUCCESS_ACTION_DISPLAY_NAME))
 
-    def test_six_tasks_in_header_popup(self, cluster: Cluster, login_to_adcm_over_api, app_fs):
+    @pytest.mark.usefixtures('login_to_adcm_over_api')
+    def test_six_tasks_in_header_popup(self, cluster: Cluster, app_fs):
         """Check list of tasks in header popup"""
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         with allure.step('Run actions in cluster'):
@@ -422,7 +425,8 @@ class TestTaskHeaderPopup:
         with allure.step("Check that in job list page 6 tasks"):
             assert job_page.table.row_count == 6, "Job list page should contain 6 tasks"
 
-    def test_acknowledge_running_job_in_header_popup(self, cluster: Cluster, app_fs, login_to_adcm_over_api):
+    @pytest.mark.usefixtures('login_to_adcm_over_api', 'cluster')
+    def test_acknowledge_running_job_in_header_popup(self, app_fs):
         """Run action and click acknowledge in header popup while it runs"""
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         with allure.step('Run action in cluster'):

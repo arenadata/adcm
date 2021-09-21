@@ -476,6 +476,19 @@ class PageHeader(BasePageObject):
         self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
         return self.find_element(AuthorizedHeaderLocators.JobPopup.in_progress_jobs).text.split("\n")[1]
 
+    def get_failed_job_amount_from_header(self):
+        self.hover_element(AuthorizedHeaderLocators.job_block)
+        self.wait_element_visible(AuthorizedHeaderLocators.job_popup)
+        return self.find_element(AuthorizedHeaderLocators.JobPopup.failed_jobs).text.split("\n")[1]
+
+    def wait_success_job_amount_from_header(self, expected_job_amount: int):
+        def wait_job():
+            assert (
+                int(self.get_success_job_amount_from_header()) == expected_job_amount
+            ), f"Should be {expected_job_amount} tasks in popup header"
+
+        wait_until_step_succeeds(wait_job, period=1, timeout=70)
+
     @allure.step('Open profile using account popup in header')
     def open_profile(self):
         """Open profile page"""
