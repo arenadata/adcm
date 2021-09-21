@@ -525,6 +525,17 @@ class PageHeader(BasePageObject):
         assert_enough_rows(row_num, len(rows))
         return rows[row_num]
 
+    def get_jobs_circle_color(self):
+        return self.find_element(AuthorizedHeaderLocators.bell_icon).get_attribute("style")
+
+    def click_all_link_in_job_popup(self):
+        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
+        self.find_and_click(AuthorizedHeaderLocators.JobPopup.show_all_link)
+
+    def click_acknowledge_btn_in_job_popup(self):
+        self.wait_element_visible(AuthorizedHeaderLocators.JobPopup.block)
+        self.find_and_click(AuthorizedHeaderLocators.JobPopup.acknowledge_btn)
+
 
 class PageFooter(BasePageObject):
     """Class for footer manipulating."""
