@@ -9,20 +9,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, Injector, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, convertToParamMap, ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 
-import { ChannelService } from '@app/core/services';
-import { keyChannelStrim } from '@app/core/services';
-import { WorkerInstance, ClusterService } from '@app/core/services/cluster.service';
+import { ChannelService, keyChannelStrim } from '@app/core/services';
+import { ClusterService, WorkerInstance } from '@app/core/services/cluster.service';
 import { EventMessage, getNavigationPath, setPathOfRoute, SocketState } from '@app/core/store';
-import { Cluster, Host, IAction, Issue, Job, isIssue, EmmitRow } from '@app/core/types';
+import { EmmitRow, Host, IAction, Job } from '@app/core/types';
 import { SocketListenerDirective } from '@app/shared/directives/socketListener.directive';
 import { IDetails } from './navigation.service';
 import { AdcmEntity } from '@app/models/entity';
+import { EntityService } from '@app/abstract/entity-service';
+import { IIssues } from '@app/models/issue';
+import { IssueHelper } from '@app/helpers/issue-helper';
+import { ICluster } from '@app/models/cluster';
 
 @Component({
   selector: 'app-detail',
@@ -34,11 +37,13 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   upgradable = false;
   actions: IAction[] = [];
   status: number | string;
-  issue: Issue;
+  issue: IIssues;
   current: IDetails;
   currentName = '';
 
   navigationPath: Observable<AdcmEntity[]> = this.store.select(getNavigationPath).pipe(this.takeUntil());
+
+  entityService: EntityService<any>;
 
   constructor(
     socket: Store<SocketState>,
@@ -46,8 +51,13 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
     private service: ClusterService,
     private channel: ChannelService,
     private store: Store,
+    injector: Injector
   ) {
     super(socket);
+    const serviceToken = route.snapshot.data['entityService'];
+    if (serviceToken) {
+      this.entityService = injector.get<EntityService<any>>(serviceToken);
+    }
   }
 
   get Current() {
@@ -56,7 +66,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
 
   ngOnInit(): void {
     this.request$ = this.route.paramMap.pipe(
-      switchMap((param) => this.service.getContext(param)),
+      switchMap((param) => this.service.getContext(param, this.entityService)),
       tap((w) => this.run(w))
     );
 
@@ -68,7 +78,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   }
 
   get isIssue() {
-    return isIssue(this.issue);
+    return IssueHelper.isIssue(this.issue);
   }
 
   run(w: WorkerInstance) {
@@ -86,7 +96,7 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
       bundle_id,
       state,
     } = w.current;
-    const { upgradable, upgrade, hostcomponent } = w.current as Cluster;
+    const { upgradable, upgrade, hostcomponent } = w.current as ICluster;
     const { log_files, objects } = w.current as Job;
     const { provider_id } = w.current as Host;
 

@@ -11,8 +11,9 @@
 // limitations under the License.
 import { Component, Input } from '@angular/core';
 
-import { ApiBase, Issue } from '@app/core/types';
+import { ApiBase } from '@app/core/types';
 import { NavigationService, INavItem } from '../navigation.service';
+import { IIssues } from '@app/models/issue';
 
 @Component({
   selector: 'app-details-left',
@@ -52,7 +53,7 @@ export class LeftComponent {
     if (c) this.items = this.navigation.getLeft(c);
   }
 
-  @Input() set issue(i: Issue) {
+  @Input() set issue(i: IIssues) {
     if (i) this.items = this.items.map((a) => ({ ...a, issue: this.navigation.findIssue(a.url, i) ? 'issue' : '' }));
   }
 

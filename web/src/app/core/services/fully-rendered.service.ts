@@ -52,7 +52,6 @@ export class FullyRenderedService {
           // Complete the observable after it emits the first result
           take(1),
           tap((stateStable) => {
-            //console.log('FULLY RENDERED!!!!');
             callback();
           })
         )

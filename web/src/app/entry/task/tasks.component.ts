@@ -14,9 +14,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { filter, tap } from 'rxjs/operators';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { BaseDirective, IColumns, IListResult, InstanceTakenFunc, Paging } from '@adwp-ui/widgets';
-import { MatButtonToggleChange } from '@angular/material/button-toggle';
-
 import { DateHelper } from '@app/helpers/date-helper';
+
 import { EventMessage } from '@app/core/store';
 import { JobStatus, Task, Job } from '@app/core/types';
 import { TaskObjectsComponent } from '@app/components/columns/task-objects/task-objects.component';
@@ -25,6 +24,7 @@ import { JobsComponent } from '@app/components/task/jobs/jobs.component';
 import { TaskNameComponent } from '@app/components/columns/task-name/task-name.component';
 import { TaskService } from '@app/services/task.service';
 import { JobService } from '@app/services/job.service';
+import { MatButtonToggleChange } from '@angular/material/button-toggle';
 
 type TaskStatus = '' | 'running' | 'success' | 'failed';
 

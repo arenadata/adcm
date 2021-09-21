@@ -121,7 +121,7 @@ class TestJobRunner(TestCase):
 
     @patch('builtins.open')
     def test_open_file(self, _mock_open):
-        file_path = "root/tag/1.txt"
+        file_path = f"{'root'}/{'tag'}/{1}.txt"
         job_runner.open_file('root', 1, 'tag')
         _mock_open.assert_called_once_with(file_path, 'w', encoding='utf_8')
 
@@ -131,7 +131,7 @@ class TestJobRunner(TestCase):
         _mock_open.side_effect = mock_open(read_data='').return_value
         mock_json.return_value = {}
         conf = job_runner.read_config(1)
-        file_name = f'{config.RUN_DIR}/1/config.json'
+        file_name = f'{config.RUN_DIR}/{1}/config.json'
         _mock_open.assert_called_once_with(file_name, encoding='utf_8')
         self.assertDictEqual(conf, {})
 
@@ -202,9 +202,9 @@ class TestJobRunner(TestCase):
                 '--vault-password-file',
                 f'{config.CODE_DIR}/ansible_secret.py',
                 '-e',
-                f'@{config.RUN_DIR}/1/config.json',
+                f'@{config.RUN_DIR}/{1}/config.json',
                 '-i',
-                f'{config.RUN_DIR}/1/inventory.json',
+                f'{config.RUN_DIR}/{1}/inventory.json',
                 conf['job']['playbook'],
             ],
             env=env,

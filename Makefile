@@ -2,7 +2,7 @@
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 ADCMBASE_IMAGE ?= hub.arenadata.io/adcm/base
-ADCMBASE_TAG ?= 20210317134752
+ADCMBASE_TAG ?= 20210901163306
 
 APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
@@ -90,4 +90,4 @@ npm_check: ## Run npm-check
 
 django_tests : ## Run django tests.
 	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) python python/manage.py test cm
+	docker run -e DJANGO_SETTINGS_MODULE=adcm.test -i --rm -v $(CURDIR)/:/adcm -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) python python/manage.py test cm

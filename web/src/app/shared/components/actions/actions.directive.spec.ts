@@ -15,10 +15,10 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ApiService } from '@app/core/api';
-import { FieldService } from '@app/shared/configuration/field.service';
+import { FieldService } from '@app/shared/configuration/services/field.service';
 
 import { ActionParameters, ActionsDirective } from './actions.directive';
-import { ActionMasterComponent } from './master/master.component';
+import { ActionMasterComponent } from '@app/shared/components';
 
 const TestParams: ActionParameters = {
   cluster: { id: 1, hostcomponent: '' },
@@ -37,7 +37,7 @@ const TestParams: ActionParameters = {
 };
 
 @Component({
-  template: '<button [appActions]="TestParam">ActionsTestName</button>',
+  template: '<button [appActions]="{actions: []}">ActionsTestName</button>',
 })
 class TestComponent {
   testParams: ActionParameters;

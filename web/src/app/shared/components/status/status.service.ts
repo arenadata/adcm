@@ -10,10 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { ApiService } from '@app/core/api';
-import { Cluster, IComponent, Host, HostComponent, Service } from '@app/core/types';
 import { combineLatest, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+
+import { ApiService } from '@app/core/api';
+import { IComponent, Host, HostComponent, Service } from '@app/core/types';
+import { ICluster } from '@app/models/cluster';
 
 export interface StatusInfo {
   id: number;
@@ -56,7 +58,7 @@ export class StatusService {
       .pipe(map((a) => a.hc.map((hc) => ({ ...hc, monitoring: a.component.find((b) => b.id === hc.component_id).monitoring }))));
   }
 
-  getServiceComponentsByCluster(cluster: Cluster, service_id?: number): Observable<IComponent[]> {
+  getServiceComponentsByCluster(cluster: ICluster, service_id?: number): Observable<IComponent[]> {
     return this.api.get<IComponent[]>(cluster.status_url).pipe(map((s) => s.filter((se) => (service_id ? se.service_id === service_id : true))));
   }
 
@@ -156,7 +158,7 @@ export class StatusService {
   }
 
   getClusterById(id: number) {
-    return this.api.getOne<Cluster>('cluster', id);
+    return this.api.getOne<ICluster>('cluster', id);
   }
 
   getAllClusterStatus(id: number) {

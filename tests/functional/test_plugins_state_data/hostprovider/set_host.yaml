@@ -5,10 +5,4 @@
   tasks:
     - adcm_state:
         type: "host"
-        state: "statez"
-      register: out
-
-    - name: "Check return value"
-      fail:
-        msg: "Expected value is statez, actual value is {{ out.state }}"
-      when: out.state != "statez"
+        state: "ifeelgood!"

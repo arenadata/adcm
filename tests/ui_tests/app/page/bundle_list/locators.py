@@ -21,19 +21,25 @@ class BundleListLocators:
 
     class Tooltip:
         apps_btn = Locator(By.XPATH, "//a[.//mat-icon[text()='apps']]", "Apps button")
-        upload_btn = Locator(By.CSS_SELECTOR, "input[value='upload_bundle_file']", "Bundle upload button")
+        upload_btn = Locator(By.XPATH, "//input[@value='upload_bundle_file']", "Bundle upload button")
 
     class Table(CommonTable):
         class Row:
-            name = Locator(By.CSS_SELECTOR, "mat-cell:first-child", "Bundle name in row")
-            version = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Bundle version in row")
-            edition = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(3)", "Bundle edition in row")
-            description = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(4)", "Bundle description in row")
-            delete_btn = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(5) button", "Bundle delete button in row")
+            name = Locator(By.XPATH, "./mat-cell[1]", "Bundle name in row")
+            version = Locator(By.XPATH, "./mat-cell[2]", "Bundle version in row")
+            edition = Locator(By.XPATH, "./mat-cell[3]", "Bundle edition in row")
+            description = Locator(By.XPATH, "./mat-cell[4]", "Bundle description in row")
+            delete_btn = Locator(By.XPATH, "./mat-cell[5]//button", "Bundle delete button in row")
             license_btn = Locator(
-                By.CSS_SELECTOR, "button[mattooltip='Accept license agreement']", "Licence warning button in row"
+                By.XPATH,
+                "//button[@mattooltip='Accept license agreement']",
+                "Licence warning button in row",
             )
 
     class LicensePopup:
-        block = Locator(By.XPATH, "//app-dialog[./h3[contains(text(), 'license')]]", "block with license agreement")
+        block = Locator(
+            By.XPATH,
+            "//app-dialog[./h3[contains(text(), 'license')]]",
+            "block with license agreement",
+        )
         agree_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Yes')]]", "Agree button")

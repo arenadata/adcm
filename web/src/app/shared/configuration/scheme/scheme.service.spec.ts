@@ -12,7 +12,7 @@
 import { TestBed } from '@angular/core/testing';
 
 import { SchemeService } from './scheme.service';
-import { FieldService } from '../field.service';
+import { FieldService } from '../services/field.service';
 import { FormGroup, FormControl, FormArray } from '@angular/forms';
 import { IFieldOptions } from '../types';
 

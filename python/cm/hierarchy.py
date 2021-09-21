@@ -13,7 +13,7 @@
 from typing import Set, Optional, Tuple
 
 from cm.models import (
-    ADCMModel,
+    ADCMEntity,
     ClusterObject,
     Host,
     HostComponent,
@@ -35,7 +35,7 @@ class Node:
 
     order = ('root', 'cluster', 'service', 'component', 'host', 'provider')
 
-    def __init__(self, value: Optional[ADCMModel]):
+    def __init__(self, value: Optional[ADCMEntity]):
         self.children = set()
         if value is None:  # tree virtual root
             self.id = 0
@@ -75,7 +75,7 @@ class Node:
         return result
 
     @staticmethod
-    def get_obj_key(obj) -> Tuple[str, int]:
+    def get_obj_key(obj: ADCMEntity) -> Tuple[str, int]:
         """Make simple unique key for caching in tree"""
         if obj is None:
             return 'root', 0
@@ -99,14 +99,14 @@ class Tree:
         common_virtual_root -> *cluster -> *service -> *component -> *host -> provider
     """
 
-    def __init__(self, obj):
+    def __init__(self, obj: ADCMEntity):
         self.root = Node(value=None)
         self._nodes = {self.root.key: self.root}
         self.built_from = self._make_node(obj)
         self._build_tree_up(self.built_from)  # go to the root ...
         self._build_tree_down(self.root)  # ... and find all its children
 
-    def _make_node(self, obj) -> Node:
+    def _make_node(self, obj: ADCMEntity) -> Node:
         cached = self._nodes.get(Node.get_obj_key(obj))
         if cached:
             return cached
@@ -175,7 +175,7 @@ class Tree:
             parent.add_child(node)
             self._build_tree_up(parent)
 
-    def get_node(self, obj) -> Node:
+    def get_node(self, obj: ADCMEntity) -> Node:
         """Get tree node by its object"""
         key = Node.get_obj_key(obj)
         cached = self._nodes.get(key)
