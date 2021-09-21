@@ -683,12 +683,16 @@ def check_config_type(
     if spec['type'] == 'list':
         if not isinstance(value, list):
             err('CONFIG_VALUE_ERROR', tmpl1.format("should be an array"))
+        if 'required' in spec and spec['required'] and value == []:
+            err('CONFIG_VALUE_ERROR', tmpl1.format("should be not empty"))
         for idx, v in enumerate(value):
             check_str(idx, v)
 
     if spec['type'] == 'map':
         if not isinstance(value, dict):
             err('CONFIG_VALUE_ERROR', tmpl1.format("should be a map"))
+        if 'required' in spec and spec['required'] and value == {}:
+            err('CONFIG_VALUE_ERROR', tmpl1.format("should be not empty"))
         for k, v in value.items():
             check_str(k, v)
 
