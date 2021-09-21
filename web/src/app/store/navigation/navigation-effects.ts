@@ -45,13 +45,14 @@ export class NavigationEffects {
 
   changePathOfEvent$ = createEffect(() => this.actions$.pipe(
     ofType(socketResponse),
-    filter(action => ['raise_issue', 'clear_issue'].includes(action.message.event)),
+    filter(action => ['cluster-concerns', 'service-concerns'].includes(action.message.object.type)),
     concatMap((event: { message: EventMessage }) => {
       return new Observable<Action>(subscriber => {
         this.store.select(getNavigationPath).pipe(take(1)).subscribe((path) => {
           if (path.some(item => item.typeName === getEventEntityType(event.message.object.type) && event.message.object.id === item.id)) {
             this.entityGetter(getEventEntityType(event.message.object.type), event.message.object.id)
               .subscribe((entity) => {
+                console.log('getter response', entity);
                 subscriber.next(setPath({
                   path: path.reduce((acc, item) =>
                     acc.concat(getEventEntityType(event.message.object.type) === item.typeName && item.id === event.message.object.id ? entity : item), []),

@@ -10,7 +10,26 @@
       <mat-icon>play_circle_outline</mat-icon> {{placeholder.name}}
     </button>
   </ng-container>
-  <a routerLink="/" *ngSwitchDefault>{{placeholder.name}}</a>
+  <a
+    *ngSwitchCase="IMPlaceholderItemType.Cluster"
+    [routerLink]="['/cluster', placeholder.ids.cluster, 'main']"
+    class="issue"
+  >
+    {{placeholder.name}}
+  </a>
+  <a
+    *ngSwitchCase="IMPlaceholderItemType.Service"
+    [routerLink]="['/cluster', placeholder.ids.cluster, 'service', placeholder.ids.service, 'main']"
+    class="issue"
+  >
+    {{placeholder.name}}
+  </a>
+  <a
+    *ngSwitchCase="IMPlaceholderItemType.Component"
+    [routerLink]="['/cluster', placeholder.ids.cluster, 'service', placeholder.ids.service, 'component', placeholder.ids.component, 'main']"
+    class="issue"
+  >
+    {{placeholder.name}}
+  </a>
+  <a *ngSwitchDefault routerLink="/" class="issue">{{placeholder.name}}</a>
 </ng-container>
-
-

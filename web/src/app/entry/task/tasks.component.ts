@@ -168,7 +168,7 @@ export class TasksComponent extends BaseDirective implements OnInit {
   }
 
   startListen() {
-    this.taskService.events(['change_job_status'])
+    this.taskService.events({ events: ['change_job_status'] })
       .pipe(
         this.takeUntil(),
       )
@@ -209,7 +209,7 @@ export class TasksComponent extends BaseDirective implements OnInit {
         }
       });
 
-    this.jobService.events(['change_job_status'])
+    this.jobService.events({ events: ['change_job_status'] })
       .pipe(this.takeUntil())
       .subscribe(event => this.jobChanged(event));
   }

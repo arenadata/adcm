@@ -8,6 +8,7 @@ import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive'
 import { UpgradeComponent } from '@app/shared/components';
 import { ActionsButtonComponent } from '@app/components/actions-button/actions-button.component';
 import { IssueType } from '@app/models/issue';
+import { BaseEntity } from '@app/core/types';
 
 export class ListFactory {
 
@@ -73,7 +74,7 @@ export class ListFactory {
     };
   }
 
-  static actionsButton<T>(type: IssueType): IComponentColumn<T> {
+  static actionsButton<T extends BaseEntity>(type: IssueType): IComponentColumn<T> {
     return {
       label: 'Actions',
       type: 'component',

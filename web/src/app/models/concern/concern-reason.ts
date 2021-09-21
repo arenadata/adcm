@@ -1,6 +1,9 @@
 export enum IMPlaceholderItemType {
   ComponentActionRun = 'component_action_run',
   ComponentConfig = 'component_config',
+  Cluster = 'cluster',
+  Service = 'service',
+  Component = 'component',
 }
 
 export interface IMPlaceholderItem {
@@ -19,8 +22,32 @@ export interface IMPlaceholderAction extends IMPlaceholderItem {
   };
 }
 
-export interface IMPlaceholderComponent extends IMPlaceholderItem {
+export interface IMPlaceholderComponentConfig extends IMPlaceholderItem {
   type: IMPlaceholderItemType.ComponentConfig;
+  ids: {
+    cluster: number;
+    service: number;
+    component: number;
+  };
+}
+
+export interface IMPlaceholderCluster extends IMPlaceholderItem {
+  type: IMPlaceholderItemType.Cluster;
+  ids: {
+    cluster: number;
+  };
+}
+
+export interface IMPlaceholderService extends IMPlaceholderItem {
+  type: IMPlaceholderItemType.Service;
+  ids: {
+    cluster: number;
+    service: number;
+  };
+}
+
+export interface IMPlaceholderComponent extends IMPlaceholderItem {
+  type: IMPlaceholderItemType.Component;
   ids: {
     cluster: number;
     service: number;

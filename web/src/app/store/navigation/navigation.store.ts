@@ -42,7 +42,12 @@ export const getNavigationPath = createSelector(
 );
 
 export function getEventEntityType(type: string): TypeName {
-  return type === 'component' ? 'servicecomponent' : <TypeName>type;
+  switch (<TypeName>type) {
+    case 'component':
+      return 'servicecomponent';
+    case 'cluster-concerns':
+      return 'cluster';
+  }
 }
 
 export function getPath(getters: Observable<AdcmTypedEntity>[]): Observable<Action> {

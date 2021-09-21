@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { ApiBase, IAction, Job, JobObject, LogFile, TypeName } from '@app/core/types';
+import { BaseEntity, IAction, Job, JobObject, LogFile, TypeName } from '@app/core/types';
 import { AdcmTypedEntity } from '@app/models/entity';
 import { IIssues } from '@app/models/issue';
 import { IssueHelper } from '@app/helpers/issue-helper';
@@ -108,8 +108,8 @@ export class NavigationService {
   findIssue = (url: string, issue: IIssues) => Object.keys(issue).some((p) => p === url || (IssueSet[url] && IssueSet[url].some((a) => a === p)));
   getIssueMessage = (flag: boolean) => (flag ? ISSUE_MESSAGE : '');
 
-  getLeft(current: Partial<ApiBase>): INavItem[] {
-    const getMenu = (c: Partial<ApiBase>) => {
+  getLeft(current: Partial<BaseEntity>): INavItem[] {
+    const getMenu = (c: Partial<BaseEntity>) => {
       const forJob = (job: Job) => job.log_files.map((a) => ({
         title: `${a.name} [ ${a.type} ]`,
         url: `${a.id}`,

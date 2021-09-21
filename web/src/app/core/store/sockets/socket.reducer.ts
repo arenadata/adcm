@@ -30,7 +30,7 @@ export interface IEMObject {
   type: TypeName;
   id: number;
   details: {
-    id?: string;
+    id?: number;
     type: string;
     value: any;
   };
