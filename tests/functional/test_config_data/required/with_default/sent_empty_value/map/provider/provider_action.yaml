@@ -3,8 +3,11 @@
   hosts: host_map_required_with_default_sent_empty_value
   gather_facts: false
   vars:
-    sent_value: &id001 {}
-    test_value: *id001
+    sent_value: {}
+    test_value:
+      age: '24'
+      name: Joe
+      sex: m
   tasks:
   - name: Ansible | List all known variables and facts
     debug:
