@@ -11,12 +11,10 @@
 # limitations under the License.
 
 # pylint: disable=redefined-outer-name, no-self-use
-from typing import Union
-
 import allure
 import pytest
-from adcm_client.base import ObjectNotFound
-from adcm_client.objects import Cluster, Provider, Host, Service, Component
+
+from adcm_client.objects import Cluster, Provider
 from adcm_pytest_plugin.steps.actions import (
     run_host_action_and_assert_result,
     run_cluster_action_and_assert_result,
@@ -24,18 +22,21 @@ from adcm_pytest_plugin.steps.actions import (
     run_component_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import get_data_dir
+from tests.functional.tools import action_in_object_is_absent, action_in_object_is_present
+from tests.functional.test_actions import (
+    FIRST_SERVICE,
+    SECOND_SERVICE,
+    FIRST_COMPONENT,
+    SECOND_COMPONENT,
+    SWITCH_SERVICE_STATE,
+    SWITCH_CLUSTER_STATE,
+    SWITCH_HOST_STATE,
+    SWITCH_COMPONENT_STATE,
+)
 
 ACTION_ON_HOST = "action_on_host"
 ACTION_ON_HOST_MULTIJOB = "action_on_host_multijob"
 ACTION_ON_HOST_STATE_REQUIRED = "action_on_host_state_installed"
-FIRST_SERVICE = "Dummy service"
-SECOND_SERVICE = "Second service"
-FIRST_COMPONENT = "first"
-SECOND_COMPONENT = "second"
-SWITCH_SERVICE_STATE = "switch_service_state"
-SWITCH_CLUSTER_STATE = "switch_cluster_state"
-SWITCH_HOST_STATE = "switch_host_state"
-SWITCH_COMPONENT_STATE = "switch_component_state"
 
 
 @allure.title("Create cluster")
@@ -328,24 +329,3 @@ def test_target_group_in_inventory(cluster_with_target_group_action: Cluster, pr
         assert (
             f"We are on host: {hostname}" in sdk_client_fs.job().log(type="stdout").content
         ), "No hostname info in the job log"
-
-
-ObjTypes = Union[Cluster, Host, Service, Component]
-
-
-def action_in_object_is_present(action: str, obj: ObjTypes):
-    with allure.step(f"Assert that action {action} is present in {_get_object_represent(obj)}"):
-        try:
-            obj.action(name=action)
-        except ObjectNotFound as err:
-            raise AssertionError(f"Action {action} not found in object {obj}") from err
-
-
-def action_in_object_is_absent(action: str, obj: ObjTypes):
-    with allure.step(f"Assert that action {action} is absent in {_get_object_represent(obj)}"):
-        with pytest.raises(ObjectNotFound):
-            obj.action(name=action)
-
-
-def _get_object_represent(obj: ObjTypes) -> str:
-    return f"host {obj.fqdn}" if isinstance(obj, Host) else f"cluster {obj.name}"
