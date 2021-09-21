@@ -11,6 +11,7 @@ import { ListService } from '../shared/components/list/list.service';
 import { LIST_SERVICE_PROVIDER } from '../shared/components/list/list-service-token';
 import { ConfigGroupHostListComponent } from './pages';
 import { AddHostToConfigGroupComponent } from './components';
+import { MatPaginatorModule } from '@angular/material/paginator';
 
 
 @NgModule({
@@ -26,7 +27,8 @@ import { AddHostToConfigGroupComponent } from './components';
     AdwpListModule,
     MatListModule,
     AddingModule,
-    FormElementsModule
+    FormElementsModule,
+    MatPaginatorModule
   ],
   exports: [
     AddConfigGroupComponent,

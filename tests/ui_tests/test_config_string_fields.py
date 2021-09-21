@@ -85,7 +85,7 @@ def test_required_string_frontend_error(ui_config, required_field):
                 ui_config.clear_element(input_element)
                 time.sleep(2)
                 error = textbox.find_element(*Common.mat_error).text
-                assert 'Field [{}] is required!'.format(name) == error
+                assert f'Field [{name}] is required!' == error
                 assert not ui_config.save_button_status()
 
 

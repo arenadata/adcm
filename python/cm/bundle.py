@@ -121,14 +121,14 @@ def untar_safe(bundle_hash, path):
     try:
         dir_path = untar(bundle_hash, path)
     except tarfile.ReadError:
-        err('BUNDLE_ERROR', "Can\'t open bundle tar file: {}".format(path))
+        err('BUNDLE_ERROR', f"Can\'t open bundle tar file: {path}")
     return dir_path
 
 
 def untar(bundle_hash, bundle):
     path = os.path.join(config.BUNDLE_DIR, bundle_hash)
     if os.path.isdir(path):
-        err('BUNDLE_ERROR', 'bundle directory "{}" already exists'.format(path))
+        err('BUNDLE_ERROR', f'bundle directory "{path}" already exists')
     tar = tarfile.open(bundle)
     tar.extractall(path=path)
     tar.close()
@@ -139,9 +139,9 @@ def get_hash_safe(path):
     try:
         bundle_hash = get_hash(path)
     except FileNotFoundError:
-        err('BUNDLE_ERROR', "Can\'t find bundle file: {}".format(path))
+        err('BUNDLE_ERROR', f"Can\'t find bundle file: {path}")
     except PermissionError:
-        err('BUNDLE_ERROR', "Can\'t open bundle file: {}".format(path))
+        err('BUNDLE_ERROR', f"Can\'t open bundle file: {path}")
     return bundle_hash
 
 
@@ -224,7 +224,7 @@ def process_bundle(path, bundle_hash):
 def check_stage():
     def count(model):
         if model.objects.all().count():
-            err('BUNDLE_ERROR', 'Stage is not empty {}'.format(model))
+            err('BUNDLE_ERROR', f'Stage is not empty {model}')
 
     for model in STAGE:
         count(model)
@@ -247,7 +247,7 @@ def re_check_actions():
         if not act.hostcomponentmap:
             continue
         hc = act.hostcomponentmap
-        ref = 'in hc_acl of action "{}" of {}'.format(act.name, proto_ref(act.prototype))
+        ref = f'in hc_acl of action "{act.name}" of {proto_ref(act.prototype)}'
         for item in hc:
             sp = StagePrototype.objects.filter(type='service', name=item['service'])
             if not sp:
@@ -263,7 +263,7 @@ def re_check_actions():
 def check_component_requires(comp):
     if not comp.requires:
         return
-    ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.parent))
+    ref = f'in requires of component "{comp.name}" of {proto_ref(comp.parent)}'
     req_list = comp.requires
     for i, item in enumerate(req_list):
         if 'service' in item:
@@ -282,7 +282,7 @@ def check_component_requires(comp):
 def check_bound_component(comp):
     if not comp.bound_to:
         return
-    ref = 'in "bound_to" of component "{}" of {}'.format(comp.name, proto_ref(comp.parent))
+    ref = f'in "bound_to" of component "{comp.name}" of {proto_ref(comp.parent)}'
     bind = comp.bound_to
     service = StagePrototype.obj.get(name=bind['service'], type='service')
     bind_comp = StagePrototype.obj.get(name=bind['component'], type='component', parent=service)
@@ -436,9 +436,14 @@ def copy_stage_actons(stage_actions, prototype):
             'type',
             'script',
             'script_type',
+            'state_available',
             'state_on_success',
             'state_on_fail',
-            'state_available',
+            'multi_state_available',
+            'multi_state_on_success_set',
+            'multi_state_on_success_unset',
+            'multi_state_on_fail_set',
+            'multi_state_on_fail_unset',
             'params',
             'log_files',
             'hostcomponentmap',
@@ -654,9 +659,14 @@ def update_bundle_from_stage(
                         'type',
                         'script',
                         'script_type',
+                        'state_available',
                         'state_on_success',
                         'state_on_fail',
-                        'state_available',
+                        'multi_state_available',
+                        'multi_state_on_success_set',
+                        'multi_state_on_success_unset',
+                        'multi_state_on_fail_set',
+                        'multi_state_on_fail_unset',
                         'params',
                         'log_files',
                         'hostcomponentmap',
@@ -678,9 +688,14 @@ def update_bundle_from_stage(
                         'type',
                         'script',
                         'script_type',
+                        'state_available',
                         'state_on_success',
                         'state_on_fail',
-                        'state_available',
+                        'multi_state_available',
+                        'multi_state_on_success_set',
+                        'multi_state_on_success_unset',
+                        'multi_state_on_fail_set',
+                        'multi_state_on_fail_unset',
                         'params',
                         'log_files',
                         'hostcomponentmap',

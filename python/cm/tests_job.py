@@ -122,19 +122,25 @@ class TestJob(TestCase):
         task = models.TaskLog.objects.create(
             action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now()
         )
+        to_set = 'to set'
+        to_unset = 'to unset'
+        for obj in (adcm, cluster, cluster_object, host_provider, host):
+            obj.set_multi_state(to_unset)
 
         data = [
-            (cluster_object, 'running'),
-            (cluster, 'removed'),
-            (host, None),
-            (host_provider, 'stopped'),
-            (adcm, 'initiated'),
+            (cluster_object, 'running', to_set, to_unset),
+            (cluster, 'removed', to_set, to_unset),
+            (host, None, to_set, to_unset),
+            (host_provider, 'stopped', to_set, to_unset),
+            (adcm, 'initiated', to_set, to_unset),
         ]
 
-        for obj, state in data:
+        for obj, state, ms_to_set, ms_to_unset in data:
             with self.subTest(obj=obj, state=state):
-                job_module.set_action_state(action, task, obj, state)
+                job_module.set_action_state(action, task, obj, state, ms_to_set, ms_to_unset)
                 self.assertEqual(obj.state, state or 'created')
+                self.assertIn(to_set, obj.multi_state)
+                self.assertNotIn(to_unset, obj.multi_state)
 
     @patch('cm.job.api.save_hc')
     def test_restore_hc(self, mock_save_hc):
@@ -406,7 +412,7 @@ class TestJob(TestCase):
                     job_config['job']['hostgroup'] = '127.0.0.1'
 
                 mock_open.assert_called_with(
-                    '{}/{}/config.json'.format(config.RUN_DIR, job.id), 'w', encoding='utf_8'
+                    f'{config.RUN_DIR}/{job.id}/config.json', 'w', encoding='utf_8'
                 )
                 mock_dump.assert_called_with(job_config, fd, indent=3, sort_keys=True)
                 mock_get_adcm_config.assert_called()

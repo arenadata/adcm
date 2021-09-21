@@ -12,7 +12,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { ApiService } from '@app/core/api';
-import { Cluster } from '@app/core/types';
+import { ICluster } from '@app/models/cluster';
 import { MaterialModule } from '@app/shared/material.module';
 import { StuffModule } from '@app/shared/stuff.module';
 
@@ -79,7 +79,7 @@ describe('TopComponent', () => {
       typeName: 'service',
       id: 1,
       issue: {},
-      parent: { id: 1, name: 'cluster_test', issue: {} } as Cluster
+      parent: { id: 1, name: 'cluster_test', issue: {} } as ICluster
     } as IDetails;
     fixture.detectChanges();
     const links = fixture.nativeElement.querySelectorAll('app-crumbs mat-nav-list a');
