@@ -14,16 +14,26 @@
 import json
 import random
 import string
+from itertools import chain
 import adcm.init_django  # pylint: disable=unused-import
 
 from django.contrib.auth.models import User
 
+from cm import issue
 from cm.logger import log
-from cm.models import UserProfile, DummyData, CheckLog, GroupCheckLog
+from cm.models import (
+    UserProfile,
+    DummyData,
+    CheckLog,
+    GroupCheckLog,
+    Cluster,
+    HostProvider,
+    ConcernType,
+    ConcernItem,
+)
 from cm.bundle import load_adcm
 from cm.config import SECRETS_FILE
 from cm.job import abort_all
-from cm.lock import unlock_all
 from cm.status_api import Event
 
 
@@ -55,6 +65,22 @@ def clear_temp_tables():
     GroupCheckLog.objects.all().delete()
 
 
+def drop_locks():
+    """Drop orphaned locks"""
+    ConcernItem.objects.filter(type=ConcernType.Lock).delete()
+
+
+def recheck_issues():
+    """
+    Drop old issues and re-check from scratch
+    Could slow down startup process
+    """
+    ConcernItem.objects.filter(type=ConcernType.Issue).delete()
+    for model in chain([Cluster, HostProvider]):
+        for obj in model.objects.all():
+            issue.update_hierarchy_issues(obj)
+
+
 def init():
     log.info("Start initializing ADCM DB...")
     try:
@@ -68,11 +94,12 @@ def init():
     create_status_user()
     event = Event()
     abort_all(event)
-    unlock_all(event)
     clear_temp_tables()
     event.send_state()
     load_adcm()
     create_dummy_data()
+    drop_locks()
+    recheck_issues()
     log.info("ADCM DB is initialized")
 
 

@@ -9,6 +9,6 @@ export abstract class EntityService<T> {
   ) {
   }
 
-  abstract get(id: number, params: { [key: string]: string }): Observable<T>;
+  abstract get(id: number, params?: { [key: string]: string }): Observable<T>;
 
 }

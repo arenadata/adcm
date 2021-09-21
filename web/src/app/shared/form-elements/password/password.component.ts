@@ -24,7 +24,7 @@ import { fromEvent, merge } from 'rxjs';
 import { debounceTime, pluck, tap } from 'rxjs/operators';
 
 import { FieldDirective } from '../field.directive';
-import { FieldService } from './../../configuration/field.service';
+import { FieldService } from '../../configuration/services/field.service';
 
 @Component({
   selector: 'app-fields-password',
