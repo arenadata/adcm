@@ -360,9 +360,7 @@ class TestTaskHeaderPopup:
         ids=['success_job', 'failed_job', 'in_progress_job', 'three_job'],
     )
     @pytest.mark.usefixtures('login_to_adcm_over_api')
-    def test_job_has_correct_info_in_header_popup(
-        self, job_info: dict, cluster: Cluster, app_fs
-    ):
+    def test_job_has_correct_info_in_header_popup(self, job_info: dict, cluster: Cluster, app_fs):
         """Run action that finishes (success/failed) and check it in header popup"""
 
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
