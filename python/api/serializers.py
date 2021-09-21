@@ -87,7 +87,7 @@ class UIConfigField(serializers.JSONField):
     def to_representation(self, value):
         obj = value.obj_ref.object
         if obj is None:
-            raise_AdcmEx('INVALID_CONFIG_UPDATE', 'unknown object type "{}"'.format(value.obj_ref))
+            raise_AdcmEx('INVALID_CONFIG_UPDATE', f'unknown object type "{value.obj_ref}"')
         if isinstance(obj, GroupConfig):
             obj = obj.object
         return ui_config(obj, value)
