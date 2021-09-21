@@ -21,31 +21,12 @@ from adcm_client.objects import ADCMClient, Cluster, Host, Service
 from adcm_pytest_plugin.docker_utils import ADCM
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
-from version_utils import rpm
 
-
-@pytest.fixture(scope="session")
-def upgrade_target(cmd_opts) -> Tuple[str, str]:
-    if not cmd_opts.adcm_image:
-        pytest.fail("CLI parameter adcm_image should be provided")
-    return tuple(cmd_opts.adcm_image.split(":", maxsplit=2))  # type: ignore
+from tests.upgrade_utils import upgrade_adcm_version
 
 
 def old_adcm_images():
     return parametrized_by_adcm_version(adcm_min_version="2019.10.08")[0]
-
-
-@allure.step("Check that version has been changed")
-def _check_that_version_changed(before: str, after: str) -> None:
-    if rpm.compare_versions(after, before) < 1:
-        raise AssertionError("ADCM version after upgrade is older or equal to the version before")
-
-
-def _upgrade_adcm(adcm: ADCM, sdk: ADCMClient, credentials: dict, target: Tuple[str, str]) -> None:
-    buf = sdk.adcm_version
-    adcm.upgrade(target)
-    sdk.reset(url=adcm.url, **credentials)
-    _check_that_version_changed(buf, sdk.adcm_version)
 
 
 def _create_cluster(sdk_client_fs: ADCMClient, bundle_dir: str = "cluster_bundle") -> Cluster:
@@ -85,14 +66,14 @@ def test_upgrade_adcm(
     adcm_fs: ADCM,
     sdk_client_fs: ADCMClient,
     adcm_api_credentials: dict,
-    upgrade_target: Tuple[str, str],
+    adcm_image_tags: Tuple[str, str],
 ) -> None:
     """Test adcm upgrade"""
     cluster = _create_cluster(sdk_client_fs)
     host = _create_host(sdk_client_fs)
     cluster.host_add(host)
 
-    _upgrade_adcm(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+    upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, adcm_image_tags)
 
     _check_that_cluster_exists(sdk_client_fs, cluster)
     _check_that_host_exists(cluster, host)
@@ -104,7 +85,7 @@ def test_pass_in_config_encryption_after_upgrade(
     adcm_fs: ADCM,
     sdk_client_fs: ADCMClient,
     adcm_api_credentials: dict,
-    upgrade_target: Tuple[str, str],
+    adcm_image_tags: Tuple[str, str],
 ) -> None:
     """Test adcm upgrade with encrypted fields"""
     cluster = _create_cluster(sdk_client_fs, "cluster_with_pass_verify")
@@ -114,7 +95,7 @@ def test_pass_in_config_encryption_after_upgrade(
     cluster.config_set_diff(config_diff)
     service.config_set_diff(config_diff)
 
-    _upgrade_adcm(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+    upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, adcm_image_tags)
 
     _check_encryption(cluster)
     _check_encryption(service)
