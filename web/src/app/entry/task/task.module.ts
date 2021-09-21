@@ -17,6 +17,9 @@ import { SharedModule } from '@app/shared/shared.module';
 
 import { HoverDirective } from './hover.directive';
 import { TasksComponent } from './tasks.component';
+import { TaskObjectsComponent } from '@app/components/columns/task-objects/task-objects.component';
+import { ObjectLinkColumnPipe } from '@app/pipes/object-link-column.pipe';
+import { SortObjectsPipe } from '@app/pipes/sort-objects.pipe';
 import { TaskStatusColumnComponent } from '@app/components/columns/task-status-column/task-status-column.component';
 import { JobsComponent } from '@app/components/task/jobs/jobs.component';
 import { JobStatusColumnComponent } from '@app/components/columns/job-status-column/job-status-column.component';
@@ -40,6 +43,9 @@ const routes: Routes = [
   declarations: [
     TasksComponent,
     HoverDirective,
+    TaskObjectsComponent,
+    ObjectLinkColumnPipe,
+    SortObjectsPipe,
     TaskStatusColumnComponent,
     TaskNameComponent,
     JobNameComponent,

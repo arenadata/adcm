@@ -386,6 +386,7 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 'display_name',
                 'description',
                 'adcm_min_version',
+                'config_group_customization',
             ),
         )
         p.bundle = bundle
@@ -435,9 +436,14 @@ def copy_stage_actons(stage_actions, prototype):
             'type',
             'script',
             'script_type',
+            'state_available',
             'state_on_success',
             'state_on_fail',
-            'state_available',
+            'multi_state_available',
+            'multi_state_on_success_set',
+            'multi_state_on_success_unset',
+            'multi_state_on_fail_set',
+            'multi_state_on_fail_unset',
             'params',
             'log_files',
             'hostcomponentmap',
@@ -501,6 +507,7 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
                 'display_name',
                 'description',
                 'adcm_min_version',
+                'config_group_customization',
             ),
         )
         comp.bundle = bundle
@@ -548,6 +555,7 @@ def copy_stage_config(stage_config, prototype):
                 'limits',
                 'required',
                 'ui_options',
+                'group_customization',
             ),
         )
         if sc.action:
@@ -617,6 +625,7 @@ def update_bundle_from_stage(
             p.shared = sp.shared
             p.monitoring = sp.monitoring
             p.adcm_min_version = sp.adcm_min_version
+            p.config_group_customization = sp.config_group_customization
         except Prototype.DoesNotExist:
             p = copy_obj(
                 sp,
@@ -635,6 +644,7 @@ def update_bundle_from_stage(
                     'display_name',
                     'description',
                     'adcm_min_version',
+                    'config_group_customization',
                 ),
             )
             p.bundle = bundle
@@ -649,9 +659,14 @@ def update_bundle_from_stage(
                         'type',
                         'script',
                         'script_type',
+                        'state_available',
                         'state_on_success',
                         'state_on_fail',
-                        'state_available',
+                        'multi_state_available',
+                        'multi_state_on_success_set',
+                        'multi_state_on_success_unset',
+                        'multi_state_on_fail_set',
+                        'multi_state_on_fail_unset',
                         'params',
                         'log_files',
                         'hostcomponentmap',
@@ -673,9 +688,14 @@ def update_bundle_from_stage(
                         'type',
                         'script',
                         'script_type',
+                        'state_available',
                         'state_on_success',
                         'state_on_fail',
-                        'state_available',
+                        'multi_state_available',
+                        'multi_state_on_success_set',
+                        'multi_state_on_success_unset',
+                        'multi_state_on_fail_set',
+                        'multi_state_on_fail_unset',
                         'params',
                         'log_files',
                         'hostcomponentmap',
@@ -706,6 +726,7 @@ def update_bundle_from_stage(
                 'limits',
                 'required',
                 'ui_options',
+                'group_customization',
             )
             act = None
             if sc.action:

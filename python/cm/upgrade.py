@@ -15,7 +15,6 @@ import functools
 from django.db import transaction
 from version_utils import rpm
 
-from cm import config
 import cm.issue
 import cm.status_api
 from cm.adcm_config import proto_ref, obj_ref, switch_config
@@ -115,7 +114,7 @@ def check_upgrade_edition(obj, upgrade):
 
 
 def check_upgrade_state(obj, upgrade):
-    if obj.state == config.Job.LOCKED:
+    if obj.locked:
         return False, 'object is locked'
     if upgrade.state_available:
         available = upgrade.state_available
@@ -198,9 +197,9 @@ def check_upgrade_import(obj, upgrade):  # pylint: disable=too-many-branches
 
 
 def check_upgrade(obj, upgrade):
-    issue = cm.issue.aggregate_issues(obj)
-    if not cm.issue.issue_to_bool(issue):
-        return False, f'{obj_ref(obj)} has issue: {issue}'
+    if obj.locked:
+        concerns = [i.name or 'Action lock' for i in obj.concerns.all()]
+        return False, f'{obj} has blocking concerns to address: {concerns}'
 
     check_list = [
         check_upgrade_version,
