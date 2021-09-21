@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { filter, tap } from 'rxjs/operators';
 
 import { ConcernEventFilter, EventableService } from '@app/models/eventable-service';
 import { EventMessage, selectMessage, SocketState } from '@app/core/store';
@@ -27,8 +27,9 @@ export class ConcernService implements EventableService {
   events(eventFilter?: ConcernEventFilter): Observable<EventMessage> {
     return this.store.pipe(
       selectMessage,
+      filter(event => !!event),
       // filter(event => event?.object?.type === 'cluster-concerns'),
-      filter(event => !eventFilter?.events || eventFilter.events.includes(event?.event)),
+      filter(event => !eventFilter?.events || eventFilter.events.includes(event.event)),
       filter(event => !eventFilter?.types || eventFilter.types.includes(event.object?.type)),
     );
   }

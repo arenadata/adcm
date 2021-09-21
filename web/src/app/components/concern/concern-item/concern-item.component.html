@@ -31,5 +31,12 @@
   >
     {{placeholder.name}}
   </a>
+  <a
+    *ngSwitchCase="IMPlaceholderItemType.HostProvider"
+    [routerLink]="['/provider', placeholder.ids.provider, 'main']"
+    class="issue"
+  >
+    {{placeholder.name}}
+  </a>
   <a *ngSwitchDefault routerLink="/" class="issue">{{placeholder.name}}</a>
 </ng-container>

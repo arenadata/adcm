@@ -74,16 +74,13 @@ export class ListFactory {
     };
   }
 
-  static actionsButton<T extends BaseEntity>(type: IssueType): IComponentColumn<T> {
+  static actionsButton<T extends BaseEntity>(): IComponentColumn<T> {
     return {
       label: 'Actions',
       type: 'component',
       className: 'list-control',
       headerClassName: 'list-control',
       component: ActionsButtonComponent,
-      instanceTaken: (componentRef: ComponentRef<ActionsButtonComponent<T>>) => {
-        componentRef.instance.issueType = type;
-      }
     };
   }
 

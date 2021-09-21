@@ -4,6 +4,7 @@ export enum IMPlaceholderItemType {
   Cluster = 'cluster',
   Service = 'service',
   Component = 'component',
+  HostProvider = 'provider',
 }
 
 export interface IMPlaceholderItem {
@@ -52,6 +53,13 @@ export interface IMPlaceholderComponent extends IMPlaceholderItem {
     cluster: number;
     service: number;
     component: number;
+  };
+}
+
+export interface IMPlaceholderHostProvider extends IMPlaceholderItem {
+  type: IMPlaceholderItemType.HostProvider;
+  ids: {
+    provider: number;
   };
 }
 

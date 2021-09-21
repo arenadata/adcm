@@ -47,7 +47,7 @@ export class HostproviderComponent extends AdwpListDirective<any> {
     ListFactory.nameColumn(),
     ListFactory.bundleColumn(),
     ListFactory.stateColumn(),
-    ListFactory.actionsColumn(),
+    ListFactory.actionsButton(),
     ListFactory.updateColumn(),
     ListFactory.configColumn(this),
     ListFactory.deleteColumn(this),

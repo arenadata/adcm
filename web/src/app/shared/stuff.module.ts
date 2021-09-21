@@ -24,7 +24,6 @@ import { MaterialModule } from './material.module';
 import { MenuItemComponent } from './components/actions/action-list/menu-item/menu-item.component';
 import { CardItemComponent } from './components/actions/action-card/card-item/card-item.component';
 import { PopoverComponent } from '@app/components/popover/popover.component';
-import { IssuesComponent } from '@app/components/issues/issues.component';
 import { KeysPipe } from '@app/pipes/keys.pipe';
 import { IsArrayPipe } from '@app/pipes/is-array.pipe';
 import { IssuePathPipe } from '@app/pipes/issue-path.pipe';
@@ -54,7 +53,6 @@ import { ConcernListRefComponent } from '@app/components/concern/concern-list-re
     CardItemComponent,
     PopoverDirective,
     PopoverComponent,
-    IssuesComponent,
     ConcernComponent,
     ConcernItemComponent,
     IssueMessagePlaceholderPipe,
@@ -87,7 +85,6 @@ import { ConcernListRefComponent } from '@app/components/concern/concern-list-re
         CardItemComponent,
         PopoverDirective,
         PopoverComponent,
-        IssuesComponent,
         ConcernComponent,
         ConcernItemComponent,
         IssueMessagePlaceholderPipe,

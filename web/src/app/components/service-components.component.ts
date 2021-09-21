@@ -39,7 +39,7 @@ export class ServiceComponentsComponent extends AdwpListDirective<any> implement
     ListFactory.nameColumn('display_name'),
     ListFactory.stateColumn(),
     ListFactory.statusColumn(this),
-    ListFactory.actionsButton('servicecomponent'),
+    ListFactory.actionsButton(),
     ListFactory.configColumn(this),
   ] as IColumns<any>;
 

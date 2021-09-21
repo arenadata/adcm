@@ -37,12 +37,14 @@ export abstract class ConcernListDirective<T> extends AdwpListDirective<T> imple
         this.takeUntil(),
       ).subscribe(console.log);
 
-    this.concernService.events({ types: this.eventTypes }).pipe(this.takeUntil()).subscribe(resp => {
-      const row = this.findRow(resp.object.id);
-      if (row) {
-        this.rewriteRow(row);
-      }
-    });
+    this.concernService.events({ types: this.eventTypes })
+      .pipe(this.takeUntil())
+      .subscribe(resp => {
+        const row = this.findRow(resp.object.id);
+        if (row) {
+          this.rewriteRow(row);
+        }
+      });
   }
 
 }
