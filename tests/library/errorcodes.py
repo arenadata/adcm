@@ -78,6 +78,11 @@ CONFIG_KEY_ERROR = ADCMError(
     'CONFIG_KEY_ERROR',
 )
 
+GROUP_CONFIG_HOST_ERROR = ADCMError(
+    '400 Bad Request',
+    'GROUP_CONFIG_HOST_ERROR',
+)
+
 TASK_ERROR = ADCMError(
     '409 Conflict',
     'TASK_ERROR',

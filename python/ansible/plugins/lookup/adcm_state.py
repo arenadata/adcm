@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=wrong-import-position, unused-import, import-error
+# pylint: disable=wrong-import-position, import-error
 
 
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 
 try:
-    from __main__ import display
+    from __main__ import display  # pylint: disable=unused-import
 except ImportError:
     from ansible.utils.display import Display  # pylint: disable=ungrouped-imports
 
@@ -26,13 +26,11 @@ except ImportError:
 import sys
 
 sys.path.append('/adcm/python')
-import adcm.init_django
-import cm.status_api
+import adcm.init_django  # pylint: disable=unused-import
 from cm.logger import log
-from cm.status_api import Event
 from cm.ansible_plugin import (
     set_service_state,
-    set_service_state_by_id,
+    set_service_state_by_name,
     set_cluster_state,
     set_provider_state,
     set_host_state,
@@ -76,7 +74,6 @@ class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):  # pylint: disable=too-many-branches
         log.debug('run %s %s', terms, kwargs)
         ret = []
-        event = Event()
         if len(terms) < 2:
             msg = 'not enough arguments to set state ({} of 2)'
             raise AnsibleError(msg.format(len(terms)))
@@ -86,11 +83,9 @@ class LookupModule(LookupBase):
                 raise AnsibleError('there is no cluster in hostvars')
             cluster = variables['cluster']
             if 'service_name' in kwargs:
-                res = set_service_state(cluster['id'], kwargs['service_name'], terms[1])
+                res = set_service_state_by_name(cluster['id'], kwargs['service_name'], terms[1])
             elif 'job' in variables and 'service_id' in variables['job']:
-                res = set_service_state_by_id(
-                    cluster['id'], variables['job']['service_id'], terms[1]
-                )
+                res = set_service_state(cluster['id'], variables['job']['service_id'], terms[1])
             else:
                 msg = 'no service_id in job or service_name in params'
                 raise AnsibleError(msg)
@@ -103,13 +98,12 @@ class LookupModule(LookupBase):
             if 'provider' not in variables:
                 raise AnsibleError('there is no provider in hostvars')
             provider = variables['provider']
-            res = set_provider_state(provider['id'], terms[1], event)
+            res = set_provider_state(provider['id'], terms[1])
         elif terms[0] == 'host':
             if 'adcm_hostid' not in variables:
                 raise AnsibleError('there is no adcm_hostid in hostvars')
             res = set_host_state(variables['adcm_hostid'], terms[1])
         else:
             raise AnsibleError(f'unknown object type: {terms[0]}')
-        event.send_state()
         ret.append(res)
         return ret

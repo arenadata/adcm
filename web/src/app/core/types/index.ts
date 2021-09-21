@@ -15,6 +15,5 @@ export * from './utils';
 export * from './actions';
 export * from './stack';
 export * from './host-component';
-export * from './issue';
 export * from './import-export';
 export * from './task-job';

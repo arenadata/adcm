@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from dataclasses import dataclass
-from enum import Enum
 from typing import TypeVar, Union
 
 import allure
+
+from enum import Enum
 from selenium.webdriver.remote.webelement import WebElement
 
 from tests.ui_tests.app.helpers.locator import Locator
@@ -89,8 +90,8 @@ class JobListPage(BasePageObject):
         job = self.header.get_single_job_row_from_popup(row_num)
         popup_locators = AuthorizedHeaderLocators.JobPopup
         return PopupTaskInfo(
-            action_name=self.find_child(job, popup_locators.JobRow.job_name).text,
-            status=self._get_status_from_class_string(self.find_child(job, popup_locators.JobRow.job_status)),
+            action_name=self.find_child(job, popup_locators.job_name).text,
+            status=self._get_status_from_class_string(self.find_child(job, popup_locators.job_status)),
         )
 
     @allure.step('Select the "All" filter tab')
@@ -127,8 +128,3 @@ class JobListPage(BasePageObject):
             if status.value in class_string:
                 return status
         raise KeyError('Job status not found in class string: %s' % str(class_string))
-
-    def get_selected_filter(self):
-        for filter_element in self.find_elements(TaskListLocators.Filter.filter_btn):
-            if filter_element.get_attribute("aria-pressed") == "true":
-                return filter_element.text

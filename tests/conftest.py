@@ -56,7 +56,7 @@ def pytest_generate_tests(metafunc):
 def pytest_runtest_setup(item: Function):
     """
     Pytest hook that overrides test parameters
-    In case of adss tests, parameters in allure report don't make sense unlike test ID
+    In case of adcm tests, parameters in allure report don't make sense unlike test ID
     So, we remove all parameters in allure report but add one parameter with test ID
     """
     yield

@@ -12,18 +12,20 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
-import { EmmitRow, Issue, isIssue } from '@app/core/types';
+import { EmmitRow } from '@app/core/types';
 import { concat, Observable, of } from 'rxjs';
 import { filter, map, switchMap } from 'rxjs/operators';
 import { EventHelper } from '@adwp-ui/widgets';
 
 import { BaseDirective } from '../directives';
 import { DialogComponent } from './dialog.component';
+import { IIssues } from '@app/models/issue';
+import { IssueHelper } from '@app/helpers/issue-helper';
 
 export interface UpgradeItem {
   upgradable: boolean;
   upgrade: string;
-  issue: Issue;
+  issue: IIssues;
 }
 
 export interface Upgrade {
@@ -97,7 +99,7 @@ export class UpgradeComponent extends BaseDirective implements OnChanges {
   }
 
   checkIssue() {
-    return this.pRow.upgradable && !isIssue(this.pRow.issue);
+    return this.pRow.upgradable && !IssueHelper.isIssue(this.pRow.issue);
   }
 
   runUpgrade(item: Upgrade) {

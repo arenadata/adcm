@@ -395,7 +395,8 @@ def assert_config_type(path, config_type, entities, is_required, is_default, sen
     Running test scenario for cluster, service, provider and host
     """
     for entity in entities:
-        ASSERT_TYPE[config_type](path, config_type, entity, is_required, is_default, sent_value_type)
+        with allure.step(f"Assert that {entity} config works expected"):
+            ASSERT_TYPE[config_type](path, config_type, entity, is_required, is_default, sent_value_type)
 
 
 @fixture_parametrized_by_data_subdirs(__file__, 'not_required', 'with_default', 'sent_correct_value')

@@ -27,33 +27,35 @@ from django.db import transaction
 from django.utils import timezone
 
 from cm import config
-from cm import api, issue, inventory, adcm_config, variant
+from cm import api, inventory, adcm_config, variant
 from cm.adcm_config import obj_ref, process_file_type
+from cm.api_context import ctx
 from cm.errors import raise_AdcmEx as err
+from cm.hierarchy import Tree
 from cm.inventory import get_obj_config, process_config_and_attr
-from cm.lock import lock_objects, unlock_objects
 from cm.logger import log
 from cm.models import (
-    Cluster,
+    ADCM,
+    ADCMEntity,
     Action,
+    CheckLog,
+    Cluster,
+    ClusterObject,
+    DummyData,
+    GroupCheckLog,
+    Host,
+    HostComponent,
+    HostProvider,
+    JobLog,
+    LogStorage,
+    ServiceComponent,
     SubAction,
     TaskLog,
-    JobLog,
-    CheckLog,
-    Host,
-    ADCM,
-    ClusterObject,
-    HostComponent,
-    ServiceComponent,
-    HostProvider,
-    DummyData,
-    LogStorage,
     ConfigLog,
-    GroupCheckLog,
     get_object_cluster,
     get_model_by_type,
 )
-from cm.status_api import Event, post_event
+from cm.status_api import post_event
 
 
 def start_task(action, obj, conf, attr, hc, hosts, verbose):
@@ -61,21 +63,13 @@ def start_task(action, obj, conf, attr, hc, hosts, verbose):
         msg = f'unknown type "{action.type}" for action: {action}, {action.context}: {obj.name}'
         err('WRONG_ACTION_TYPE', msg)
 
-    event = Event()
-    task = prepare_task(action, obj, conf, attr, hc, hosts, event, verbose)
-    event.send_state()
-    run_task(task, event)
-    event.send_state()
+    task = prepare_task(action, obj, conf, attr, hc, hosts, ctx.event, verbose)
+    ctx.event.send_state()
+    run_task(task, ctx.event)
+    ctx.event.send_state()
     log_rotation()
 
     return task
-
-
-def check_task(action, obj, cluster, conf):
-    check_action_state(action, obj, cluster)
-    iss = issue.aggregate_issues(obj)
-    if not issue.issue_to_bool(iss):
-        err('TASK_ERROR', 'action has issues', iss)
 
 
 def check_action_hosts(action, obj, cluster, hosts):
@@ -102,7 +96,7 @@ def prepare_task(
     action, obj, conf, attr, hc, hosts, event, verbose
 ):  # pylint: disable=too-many-locals
     cluster = get_object_cluster(obj)
-    check_task(action, obj, cluster, conf)
+    check_action_state(action, obj, cluster)
     _, spec = check_action_config(action, obj, conf, attr)
     if conf and not spec:
         err("CONFIG_VALUE_ERROR", "Absent config in action prototype")
@@ -113,18 +107,17 @@ def prepare_task(
     if not attr:
         attr = {}
 
-    with transaction.atomic():
+    with transaction.atomic():  # pylint: disable=too-many-locals
         DummyData.objects.filter(id=1).update(date=timezone.now())
-        lock_objects(obj, event)
-
-        if host_map:
-            api.save_hc(cluster, host_map)
 
         if action.type == 'task':
             task = create_task(action, obj, conf, attr, old_hc, delta, hosts, event, verbose)
         else:
             task = create_one_job_task(action, obj, conf, attr, old_hc, hosts, event, verbose)
             create_job(action, None, event, task)
+
+        if host_map:
+            api.save_hc(cluster, host_map)
 
         if conf:
             new_conf = process_config_and_attr(task, conf, attr, spec)
@@ -136,15 +129,14 @@ def prepare_task(
 
 
 def restart_task(task):
-    event = Event()
     if task.status in (config.Job.CREATED, config.Job.RUNNING):
         err('TASK_ERROR', f'task #{task.id} is running')
     elif task.status == config.Job.SUCCESS:
-        run_task(task, event)
-        event.send_state()
+        run_task(task, ctx.event)
+        ctx.event.send_state()
     elif task.status in (config.Job.FAILED, config.Job.ABORTED):
-        run_task(task, event, 'restart')
-        event.send_state()
+        run_task(task, ctx.event, 'restart')
+        ctx.event.send_state()
     else:
         err('TASK_ERROR', f'task #{task.id} has unexpected status: {task.status}')
 
@@ -169,6 +161,8 @@ def cancel_task(task):
         i += 1
     if i == 10:
         err('NO_JOBS_RUNNING', 'no jobs running')
+    task.unlock_affected()
+    ctx.event.send_state()
     os.kill(task.pid, signal.SIGTERM)
 
 
@@ -182,19 +176,18 @@ def get_host_object(action, cluster):
     return obj
 
 
-def check_action_state(action, task_object, cluster):
+def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster):
     if action.host_action:
         obj = get_host_object(action, cluster)
     else:
         obj = task_object
 
-    if obj.state == config.Job.LOCKED:
+    if obj.locked:
         err('TASK_ERROR', 'object is locked')
-    available = action.state_available
-    if available == 'any':
+
+    if action.allowed(obj):
         return
-    if obj.state in available:
-        return
+
     err('TASK_ERROR', 'action is disabled')
 
 
@@ -537,6 +530,9 @@ def create_one_job_task(action, obj, conf, attr, hc, hosts, event, verbose):
         status=config.Job.CREATED,
     )
     task.save()
+    tree = Tree(obj)
+    affected = (node.value for node in tree.get_all_affected(tree.built_from))
+    task.lock_affected(affected)
     set_task_status(task, config.Job.CREATED, event)
     return task
 
@@ -585,13 +581,19 @@ def get_state(action, job, status):
     return state
 
 
-def set_action_state(action, task, obj, state):
+def set_action_state(
+    action, task, obj, state: str, multi_state_set: str = None, multi_state_unset: str = None
+):
     if not obj:
         log.warning('empty object for action %s of task #%s', action.name, task.id)
         return
     msg = 'action "%s" of task #%s will set %s state to "%s"'
     log.info(msg, action.name, task.id, obj_ref(obj), state)
-    api.push_obj(obj, state)
+    obj.set_state(state, ctx.event)
+    if multi_state_set:
+        obj.set_multi_state(multi_state_set, ctx.event)
+    if multi_state_unset:
+        obj.unset_multi_state(multi_state_unset, ctx.event)
 
 
 def restore_hc(task, action, status):
@@ -627,15 +629,14 @@ def finish_task(task, job, status):
     except model.DoesNotExist:
         obj = None
     state = get_state(action, job, status)
-    event = Event()
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
         if state is not None:
             set_action_state(action, task, obj, state)
-        unlock_objects(obj or get_object_cluster(obj), event)
         restore_hc(task, action, status)
-        set_task_status(task, status, event)
-    event.send_state()
+        task.unlock_affected()
+        set_task_status(task, status, ctx.event)
+    ctx.event.send_state()
 
 
 def cook_log_name(tag, level, ext='txt'):
@@ -858,5 +859,7 @@ def set_job_status(job_id, status, event, pid=0):
 def abort_all(event):
     for task in TaskLog.objects.filter(status=config.Job.RUNNING):
         set_task_status(task, config.Job.ABORTED, event)
+        task.unlock_affected()
     for job in JobLog.objects.filter(status=config.Job.RUNNING):
         set_job_status(job.id, config.Job.ABORTED, event)
+    ctx.event.send_state()
