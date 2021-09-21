@@ -58,11 +58,6 @@ class BundleListPage(BasePageObject):
         """Upload bundle with 'Upload bundles' button"""
         self.find_element(BundleListLocators.Tooltip.upload_btn).send_keys(bundle_path)
 
-    @allure.step('Upload bundles from {bundle_paths}')
-    def upload_bundles(self, bundle_paths: list):
-        """Upload multiple bundles at once with 'Upload bundles' button"""
-        self.find_element(BundleListLocators.Tooltip.upload_btn).send_keys("\n".join(bundle_paths))
-
     @allure.step('Remove bundle')
     def delete_bundle(self, row_num: int = 0):
         """Remove bundle by clicking on trash icon in row"""

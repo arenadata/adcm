@@ -14,7 +14,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { MatListModule } from '@angular/material/list';
 import { ApiService } from '@app/core/api/api.service';
-import { FieldService } from '@app/shared/configuration/field.service';
+import { FieldService } from '@app/shared/configuration/services/field.service';
 import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
 import { ServiceHostComponent } from '@app/shared/host-components-map/services2hosts/service-host.component';
 

@@ -89,14 +89,14 @@ class AdminUsersPage(GeneralAdminPage):
     @allure.step('Get user row where username is {username}')
     def get_user_row_by_username(self, username: str) -> WebElement:
         """Search for user row by username and return it"""
-        for row in self.find_elements(AdminUsersLocators.user_row):
+        for row in self.table.get_all_rows():
             if self.find_child(row, AdminUsersLocators.Row.username).text == username:
                 return row
         raise AssertionError(f'User row with username "{username}" was not found')
 
     def is_user_presented(self, username: str) -> bool:
         """Check if user is presented in users list"""
-        for row in self.find_elements(AdminUsersLocators.user_row):
+        for row in self.table.get_all_rows():
             if self.find_child(row, AdminUsersLocators.Row.username).text == username:
                 return True
         return False

@@ -21,10 +21,8 @@ from django.utils import timezone
 import cm
 from cm import config
 import cm.job as job_module
-import cm.lock as lock_module
 from cm import models
 from cm.logger import log
-from cm.unit_tests import utils
 
 
 class TestJob(TestCase):
@@ -112,8 +110,7 @@ class TestJob(TestCase):
 
                 self.assertEqual(state, test_state)
 
-    @patch('cm.api.push_obj')
-    def test_set_action_state(self, mock_push_obj):
+    def test_set_action_state(self):
         bundle = models.Bundle.objects.create()
         prototype = models.Prototype.objects.create(bundle=bundle)
         cluster = models.Cluster.objects.create(prototype=prototype)
@@ -125,55 +122,25 @@ class TestJob(TestCase):
         task = models.TaskLog.objects.create(
             action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now()
         )
+        to_set = 'to set'
+        to_unset = 'to unset'
+        for obj in (adcm, cluster, cluster_object, host_provider, host):
+            obj.set_multi_state(to_unset)
 
         data = [
-            (cluster_object, 'running'),
-            (cluster, 'removed'),
-            (host, None),
-            (host_provider, 'stopped'),
-            (adcm, 'initiated'),
+            (cluster_object, 'running', to_set, to_unset),
+            (cluster, 'removed', to_set, to_unset),
+            (host, None, to_set, to_unset),
+            (host_provider, 'stopped', to_set, to_unset),
+            (adcm, 'initiated', to_set, to_unset),
         ]
 
-        for obj, state in data:
+        for obj, state, ms_to_set, ms_to_unset in data:
             with self.subTest(obj=obj, state=state):
-
-                job_module.set_action_state(action, task, obj, state)
-
-                mock_push_obj.assert_called_with(obj, state)
-
-    def test_unlock_obj(self):
-        event = Mock()
-        obj1 = Mock(stack=['running'])
-        obj2 = Mock(stack=[])
-        obj3 = Mock(stack='')
-
-        data = [
-            (obj1, obj1.set_state.assert_called_once),
-            (obj2, obj2.set_state.assert_not_called),
-            (obj3, obj3.set_state.assert_not_called),
-        ]
-
-        for obj, check_assert in data:
-            with self.subTest(obj=obj):
-                lock_module._unlock_obj(obj, event)
-                check_assert()
-
-    @patch('cm.lock._unlock_obj')
-    def test_unlock_objects(self, mock_unlock_obj):
-        bundle = utils.gen_bundle()
-        cluster = utils.gen_cluster(bundle=bundle)
-        service = utils.gen_service(cluster, bundle=bundle)
-        component = utils.gen_component(service, bundle=bundle)
-        host_provider = utils.gen_provider(bundle=bundle)
-        host = utils.gen_host(provider=host_provider, cluster=cluster, bundle=bundle)
-        utils.gen_host_component(component, host)
-        event = Mock()
-
-        for obj in [cluster, service, component, host, host_provider]:
-            with self.subTest(obj=obj):
-                lock_module.unlock_objects(obj, event)
-                self.assertEqual(mock_unlock_obj.call_count, 5)
-                mock_unlock_obj.reset_mock()
+                job_module.set_action_state(action, task, obj, state, ms_to_set, ms_to_unset)
+                self.assertEqual(obj.state, state or 'created')
+                self.assertIn(to_set, obj.multi_state)
+                self.assertNotIn(to_unset, obj.multi_state)
 
     @patch('cm.job.api.save_hc')
     def test_restore_hc(self, mock_save_hc):
@@ -208,7 +175,6 @@ class TestJob(TestCase):
         )
 
         job_module.restore_hc(task, action, config.Job.FAILED)
-
         mock_save_hc.assert_called_once_with(cluster, [(cluster_object, host, service_component)])
 
     @patch('cm.job.err')
@@ -446,7 +412,7 @@ class TestJob(TestCase):
                     job_config['job']['hostgroup'] = '127.0.0.1'
 
                 mock_open.assert_called_with(
-                    '{}/{}/config.json'.format(config.RUN_DIR, job.id), 'w', encoding='utf_8'
+                    f'{config.RUN_DIR}/{job.id}/config.json', 'w', encoding='utf_8'
                 )
                 mock_dump.assert_called_with(job_config, fd, indent=3, sort_keys=True)
                 mock_get_adcm_config.assert_called()

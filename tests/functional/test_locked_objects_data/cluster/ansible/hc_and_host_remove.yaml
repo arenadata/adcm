@@ -19,8 +19,8 @@
         operations:
           -
             action: "remove"
-            service: "second"
-            component: "dummy"
+            service: "first_service"
+            component: "first_service_component_1"
             host: "host_0"
 
     - name: Remove host

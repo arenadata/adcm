@@ -1,9 +1,9 @@
 import { Component, Input } from '@angular/core';
 import { EventHelper } from '@adwp-ui/widgets';
 
-import { isIssue, Issue } from '@app/core/types';
 import { IssuesComponent } from '@app/components/issues/issues.component';
-import { IssueType } from '@app/models/issue';
+import { IIssues, IssueType } from '@app/models/issue';
+import { IssueHelper } from '@app/helpers/issue-helper';
 
 @Component({
   selector: 'app-actions-button',
@@ -18,8 +18,8 @@ export class ActionsButtonComponent<T> {
   @Input() row: T;
   @Input() issueType: IssueType;
 
-  notIssue(issue: Issue): boolean {
-    return !isIssue(issue);
+  notIssue(issue: IIssues): boolean {
+    return !IssueHelper.isIssue(issue);
   }
 
   getClusterData(row: any) {

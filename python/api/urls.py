@@ -11,17 +11,14 @@
 # limitations under the License.
 
 from django.urls import path, include, register_converter
-
-from rest_framework_swagger.views import get_swagger_view
 from rest_framework.schemas import get_schema_view
+from rest_framework_swagger.views import get_swagger_view
 
 from api import views, docs
-
 
 register_converter(views.NameConverter, 'name')
 swagger_view = get_swagger_view(title='ArenaData Chapel API')
 schema_view = get_schema_view(title='ArenaData Chapel API')
-
 
 urlpatterns = [
     path('info/', views.ADCMInfo.as_view(), name='adcm-info'),
@@ -39,8 +36,12 @@ urlpatterns = [
     path('provider/', include('api.provider.urls')),
     path('host/', include('api.host.urls')),
     path('adcm/', include('api.adcm.urls')),
+    path('group-config/', include('api.group_config.urls')),
+    path('config/', include('api.object_config.urls')),
+    path('config-log/', include('api.config_log.urls')),
     path('task/', include('api.job.task_urls')),
     path('job/', include('api.job.urls')),
+    path('concern/', include('api.concern.urls')),
     # path('docs/', include_docs_urls(title='ArenaData Chapel API')),
     path('swagger/', swagger_view),
     path('schema/', schema_view),

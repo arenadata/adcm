@@ -25,7 +25,7 @@ class HostListLocators:
 
     class Tooltip:
         apps_btn = Locator(By.XPATH, "//a[.//mat-icon[text()='apps']]", "Apps button")
-        host_add_btn = Locator(By.CSS_SELECTOR, "button[adcm_test='create-btn']", "Host add button")
+        host_add_btn = Locator(By.XPATH, "//button[@adcm_test='create-btn']", "Host add button")
 
     class HostTable(CommonTable):
         cluster_option = TemplateLocator(
@@ -33,12 +33,12 @@ class HostListLocators:
         )
 
         class HostRow:
-            fqdn = Locator(By.CSS_SELECTOR, "mat-cell:first-child", "Host FQDN in row")
-            provider = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Host provider in row")
-            cluster = Locator(By.CSS_SELECTOR, "app-cluster-column", "Host cluster in row")
-            state = Locator(By.CSS_SELECTOR, "app-state-column", "Host state in row")
-            status = Locator(By.CSS_SELECTOR, "app-status-column button", "Host status in row")
-            actions = Locator(By.CSS_SELECTOR, "app-actions-column button", "Host actions in row")
+            fqdn = Locator(By.XPATH, "./mat-cell[1]", "Host FQDN in row")
+            provider = Locator(By.XPATH, "./mat-cell[2]", "Host provider in row")
+            cluster = Locator(By.XPATH, ".//app-cluster-column", "Host cluster in row")
+            state = Locator(By.XPATH, ".//app-state-column", "Host state in row")
+            status = Locator(By.XPATH, ".//app-status-column/button", "Host status in row")
+            actions = Locator(By.XPATH, ".//app-actions-column//button", "Host actions in row")
             config = Locator(By.XPATH, ".//button[.//mat-icon[text()='settings']]", "Host config in row")
             delete_btn = Locator(By.XPATH, ".//button[.//mat-icon[text()='delete']]", "Host delete button in row")
             link_off_btn = Locator(By.XPATH, ".//button[.//mat-icon[text()='link_off']]", "Host link off button in row")
