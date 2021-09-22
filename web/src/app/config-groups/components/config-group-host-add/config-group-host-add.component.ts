@@ -20,12 +20,13 @@ import { ConfigGroupHostAddService } from '../../service';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ListResult } from '@app/models/list-result';
 import { PageEvent } from '@angular/material/paginator';
+import { FormControl, Validators } from '@angular/forms';
 
 @Component({
   selector: 'app-config-group-host-add',
   template: `
-    <ng-container *ngIf="list$ | async as list">
-      <mat-selection-list #listServices (selectionChange)="selectAll($event)">
+    <ng-container [formGroup]="form" *ngIf="list$ | async as list">
+      <mat-selection-list #selectionList formControlName="hosts" (selectionChange)="selectAll($event)">
         <mat-list-option *ngIf="list.count">All</mat-list-option>
         <mat-list-option *ngFor="let host of list.results" [value]="host">
           {{ host.fqdn }}
@@ -53,11 +54,13 @@ export class AddHostToConfigGroupComponent extends BaseFormDirective implements 
   pageSize = 10;
 
   list$: Observable<ListResult<Host>>;
-  @ViewChild('listServices')
-  private listServices: MatSelectionList;
+  @ViewChild('selectionList')
+  private list: MatSelectionList;
 
   constructor(service: ConfigGroupHostAddService, dialog: MatDialog, private cluster: ClusterService) {
     super(service, dialog);
+
+    this.form.addControl('hosts', new FormControl(null, [Validators.required]));
   }
 
   ngOnInit(): void {
@@ -66,15 +69,15 @@ export class AddHostToConfigGroupComponent extends BaseFormDirective implements 
 
   selectAll(e: MatSelectionListChange): void {
     if (!e.option.value) {
-      if (e.option.selected) this.listServices.selectAll();
-      else this.listServices.deselectAll();
+      if (e.option.selected) this.list.selectAll();
+      else this.list.deselectAll();
     }
   }
 
   save(): void {
     const groupId = this.service.Current.id;
-    const result = this.listServices.selectedOptions.selected.filter(a => a.value).map(a => ({
-      host: +a.value.id,
+    const result = this.form.get('hosts')?.value?.filter(Boolean).map(v => ({
+      host: +v.id,
       group: groupId
     }));
 
