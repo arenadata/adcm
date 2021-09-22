@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework.authtoken',
     'social_django',
+    'rbac',
     'cm.apps.CmConfig',
 ]
 
