@@ -26,7 +26,7 @@ import { FormGroup } from '@angular/forms';
       <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form" [showCheckbox]="showCheckbox"
                         [groupForm]="groupsForm"></app-group-fields>
       <ng-template #one>
-        <div class="row d-flex">
+        <div class="field-row row d-flex">
           <div class="group-checkbox d-flex" style="padding: 5px">
             <ng-container *ngIf="showCheckbox && item.configGroup as ConfigGroupControl">
               <mat-checkbox [formControl]="ConfigGroupControl" [disabled]="item.read_only"></mat-checkbox>
@@ -38,10 +38,15 @@ import { FormGroup } from '@angular/forms';
       </ng-template>
     </ng-container>
   `,
-  styles: [`.group-checkbox {
-    justify-content: center;
-    align-items: center
-  }`]
+  styles: [
+    `.group-checkbox {
+      justify-content: center;
+      align-items: center
+    }`,
+    `.field-row:nth-child(odd) {
+      background-color: #4e4e4e;
+    }`
+  ]
 })
 export class ConfigFieldsComponent extends BaseDirective {
 
