@@ -80,7 +80,7 @@ def create_two_hosts(provider) -> Tuple[Host, Host]:
 
 
 @pytest.fixture()
-def cluster_with_components_on_one_host(
+def cluster_with_components_on_first_host(
     create_two_hosts, cluster: Cluster, provider: Provider
 ) -> Tuple[Service, Host, Host]:
     """Add service, two hosts and create components to check config groups"""
@@ -215,10 +215,10 @@ class TestIncorrectHostInGroups:
             assert_that_host_exists(provider_group, correct_host)
             assert_host_candidate_equal_expected(provider_group.host_candidate(), [])
 
-    def test_add_incorrect_host_to_service_group(self, cluster_with_components_on_one_host):
+    def test_add_incorrect_host_to_service_group(self, cluster_with_components_on_first_host):
         """Test exception rise when we try to add incorrect host to service group"""
 
-        service, test_host_1, test_host_2 = cluster_with_components_on_one_host
+        service, test_host_1, test_host_2 = cluster_with_components_on_first_host
         with allure.step("Create group for service"):
             service_group = service.group_config_create(name=FIRST_GROUP)
         with allure.step("Try to add the second host not from service and check group hosts list"):
@@ -248,10 +248,10 @@ class TestIncorrectHostInGroups:
             assert_that_host_exists(cluster_group, test_host_1)
             assert_host_candidate_equal_expected(cluster_group.host_candidate(), [])
 
-    def test_add_incorrect_host_to_component_group(self, cluster_with_components_on_one_host):
+    def test_add_incorrect_host_to_component_group(self, cluster_with_components_on_first_host):
         """Test exception rise when we try to add incorrect host to component group"""
 
-        service, test_host_1, test_host_2 = cluster_with_components_on_one_host
+        service, test_host_1, test_host_2 = cluster_with_components_on_first_host
         with allure.step("Create group for component"):
             component_group = service.component(name=FIRST_COMPONENT_NAME).group_config_create(name=FIRST_GROUP)
         with allure.step("Try to add host not from cluster to component group"):
@@ -278,20 +278,22 @@ class TestDeleteHostInGroups:
         with allure.step("Create config group for cluster and add the host"):
             cluster_group = cluster.group_config_create(name=FIRST_GROUP)
             cluster_group.host_add(test_host)
+            assert_that_host_exists(cluster_group, test_host)
         cluster.host_delete(test_host)
         self.check_no_hosts_in_group(cluster_group)
         with allure.step("Check that there are no hosts available to add in cluster group"):
             assert_host_candidate_equal_expected(cluster_group.host_candidate(), [])
 
     def test_delete_host_from_group_after_deleting_in_service(
-        self, cluster, sdk_client_fs, cluster_with_components_on_one_host
+        self, cluster, sdk_client_fs, cluster_with_components_on_first_host
     ):
         """Test that host removed from conf group after removing from service"""
 
-        service, test_host_1, test_host_2 = cluster_with_components_on_one_host
+        service, test_host_1, test_host_2 = cluster_with_components_on_first_host
         with allure.step("Create group for service and add the host"):
             service_group = service.group_config_create(name=FIRST_GROUP)
             service_group.host_add(test_host_1)
+            assert_that_host_exists(service_group, test_host_1)
         with allure.step("Change host in service"):
             cluster.host_add(test_host_2)
             cluster.hostcomponent_set(
@@ -301,14 +303,15 @@ class TestDeleteHostInGroups:
         self.check_no_hosts_in_group(service_group)
 
     def test_delete_host_from_group_after_delete_in_component(
-        self, cluster, sdk_client_fs, cluster_with_components_on_one_host
+        self, cluster, sdk_client_fs, cluster_with_components_on_first_host
     ):
         """Test that host removed from conf group after removing from component"""
 
-        service, test_host_1, test_host_2 = cluster_with_components_on_one_host
+        service, test_host_1, test_host_2 = cluster_with_components_on_first_host
         with allure.step("Create config group for component and add the first host"):
             component_group = service.component(name=FIRST_COMPONENT_NAME).group_config_create(name=FIRST_GROUP)
             component_group.host_add(test_host_1)
+            assert_that_host_exists(component_group, test_host_1)
         with allure.step("Change host in component"):
             cluster.host_add(test_host_2)
             cluster.hostcomponent_set(
@@ -324,6 +327,7 @@ class TestDeleteHostInGroups:
             test_host = provider.host_create(fqdn=FIRST_HOST)
             provider_group = provider.group_config_create(name=FIRST_GROUP)
             provider_group.host_add(test_host)
+            assert_that_host_exists(provider_group, test_host)
         with allure.step("Delete host"):
             test_host.delete()
         self.check_no_hosts_in_group(provider_group)
