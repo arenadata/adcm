@@ -32,7 +32,8 @@ from tests.ui_tests.app.page.profile.page import ProfilePage
 # pylint: disable=redefined-outer-name
 
 
-def old_adcm_image():
+def old_adcm_image() -> Tuple[str, str]:
+    """Get previous ADCM version"""
     return parametrized_by_adcm_version(adcm_min_version="2021.03.10")[0][-1]
 
 
@@ -47,6 +48,7 @@ def wait_info_popup_contains(page: BasePage, text: str):
 
 @allure.step('Check tabs opens correctly')
 def open_different_tabs(page: AdminIntroPage):
+    """Open different tabs (cluster list, bundle list, profile page)"""
     page.header.click_cluster_tab_in_header()
     ClusterListPage(page.driver, page.base_url).wait_page_is_opened()
     page.header.click_bundles_tab_in_header()
@@ -63,6 +65,12 @@ def test_upgrade_adcm(
     adcm_api_credentials: dict,
     adcm_image_tags: Tuple[str, str],
 ):
+    """
+    Login to ADCM (previous version)
+    Upgrade ADCM
+    Check messages about ADCM upgrade
+    Check that user is still logged in (open different tabs)
+    """
     credentials = {**adcm_api_credentials}
     credentials['username'] = credentials.pop('user')
     with allure.step('Login to ADCM with UI'):

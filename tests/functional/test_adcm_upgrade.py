@@ -11,7 +11,7 @@
 # limitations under the License.
 
 # pylint:disable=redefined-outer-name
-from typing import Tuple, Union
+from typing import Tuple, Union, List, Any
 
 import allure
 import pytest
@@ -25,7 +25,7 @@ from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
 from tests.upgrade_utils import upgrade_adcm_version
 
 
-def old_adcm_images():
+def old_adcm_images() -> Tuple[List[Tuple[str, str]], Any]:
     return parametrized_by_adcm_version(adcm_min_version="2019.10.08")[0]
 
 
