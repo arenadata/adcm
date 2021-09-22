@@ -39,21 +39,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='role',
             name='childs',
-            field=models.ManyToManyField(null=True, to='cm.Role'),
-        ),
-        migrations.AlterField(
-            model_name='role',
-            name='group',
-            field=models.ManyToManyField(null=True, to='auth.Group'),
-        ),
-        migrations.AlterField(
-            model_name='role',
-            name='permissions',
-            field=models.ManyToManyField(null=True, to='auth.Permission'),
-        ),
-        migrations.AlterField(
-            model_name='role',
-            name='user',
-            field=models.ManyToManyField(null=True, to=settings.AUTH_USER_MODEL),
+            field=models.ManyToManyField(blank=True, to='cm.Role'),
         ),
     ]
