@@ -571,14 +571,19 @@ def get_list_of_continue_existed_hc(cluster, host_comp_list):
     result = []
     for (service, host, comp) in host_comp_list:
         try:
-            still_existed_hc = HostComponent.objects.get(cluster=cluster, service=service, host=host, component=comp)
+            still_existed_hc = HostComponent.objects.get(
+                cluster=cluster,
+                service=service,
+                host=host,
+                component=comp
+            )
             result.append(still_existed_hc)
         except HostComponent.DoesNotExist:
             continue
     return result
 
 
-def save_hc(cluster, host_comp_list):
+def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     hc_queryset = HostComponent.objects.filter(cluster=cluster)
     new_hc_list = get_list_of_continue_existed_hc(cluster, host_comp_list)
     old_hosts = {i.host for i in hc_queryset.select_related('host').all()}
@@ -590,7 +595,9 @@ def save_hc(cluster, host_comp_list):
 
     for removed_hc in list(set(hc_queryset)-set(new_hc_list)):
         groupconfigs = GroupConfig.objects.filter(hosts=removed_hc.host)
-        cluster_group = GroupConfig.objects.filter(object_type=ContentType.objects.get_for_model(Cluster))
+        cluster_group = GroupConfig.objects.filter(
+            object_type=ContentType.objects.get_for_model(Cluster)
+        )
         for gc in groupconfigs:
             if gc not in cluster_group:
                 if gc.object_id in [removed_hc.component.id, removed_hc.service.id]:

@@ -27,7 +27,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
-from django.db.models.signals import m2m_changed, pre_delete
+from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 
 from cm.errors import AdcmEx
@@ -920,8 +920,6 @@ class HostComponent(ADCMModel):
 
     class Meta:
         unique_together = (('host', 'service', 'component'),)
-
-
 
 
 CONFIG_FIELD_TYPE = (
