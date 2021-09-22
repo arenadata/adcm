@@ -89,7 +89,7 @@ def test_upgrade_adcm(
             'No connection to back-end. Check your internet connection.',
             'New version available. Page has been refreshed.',
         ):
-            wait_until_step_succeeds(wait_info_popup_contains, page=intro_page, text=message, timeout=10, period=0.2)
+            wait_until_step_succeeds(wait_info_popup_contains, page=intro_page, text=message, timeout=20, period=0.5)
     with allure.step('Wait for upgrade to finish'):
         upgrade_thread.join(timeout=60)
     open_different_tabs(intro_page)
