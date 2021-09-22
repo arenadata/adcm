@@ -29,7 +29,6 @@ from cm.models import (
     HostComponent,
     get_model_by_type,
 )
-from cm.errors import AdcmEx
 from . import serializers
 
 
@@ -123,9 +122,6 @@ class ActionDetail(DetailViewRO):
         """
         obj, action_id = get_obj(**kwargs)
         action = check_obj(Action, {'id': action_id}, 'ACTION_NOT_FOUND')
-        if not action.allowed(obj):
-            raise AdcmEx('ACTION_NOT_FOUND')
-
         if isinstance(obj, Host) and action.host_action:
             objects = {'host': obj}
         else:
@@ -147,8 +143,5 @@ class RunTask(GenericAPIPermView):
         """
         obj, action_id = get_obj(**kwargs)
         action = check_obj(Action, {'id': action_id}, 'ACTION_NOT_FOUND')
-        if not action.allowed(obj):
-            raise AdcmEx('ACTION_NOT_FOUND')
-
         serializer = self.serializer_class(data=request.data, context={'request': request})
         return create(serializer, action=action, task_object=obj)
