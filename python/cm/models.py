@@ -922,13 +922,6 @@ class HostComponent(ADCMModel):
         unique_together = (('host', 'service', 'component'),)
 
 
-@receiver(pre_delete, sender=HostComponent)
-def delete_group_config_host_before_host_component_deleting(sender, instance, **kwargs):
-    groupconfig = GroupConfig.objects.filter(hosts=instance.host.id)
-    if groupconfig:
-        for item in groupconfig:
-            host = Host.objects.get(pk=instance.host_id)
-            host.group_config.remove(item)
 
 
 CONFIG_FIELD_TYPE = (
