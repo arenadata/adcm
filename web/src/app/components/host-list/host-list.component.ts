@@ -68,7 +68,7 @@ export class HostListComponent extends AdwpListDirective<IHost> {
     },
     ListFactory.stateColumn(),
     ListFactory.statusColumn(this),
-    ListFactory.actionsColumn(),
+    ListFactory.actionsButton(),
     ListFactory.configColumn(this),
     ListFactory.deleteColumn(this),
   ] as IColumns<IHost>;

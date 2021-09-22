@@ -35,7 +35,7 @@ export class HostComponent extends AdwpListDirective<IHost> {
     ListFactory.providerColumn(),
     ListFactory.stateColumn(),
     ListFactory.statusColumn(this),
-    ListFactory.actionsColumn(),
+    ListFactory.actionsButton(),
     ListFactory.configColumn(this),
     {
       type: 'buttons',

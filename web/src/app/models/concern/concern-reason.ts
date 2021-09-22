@@ -5,6 +5,7 @@ export enum IMPlaceholderItemType {
   Service = 'service',
   Component = 'component',
   HostProvider = 'provider',
+  Host = 'host',
 }
 
 export interface IMPlaceholderItem {
@@ -59,6 +60,14 @@ export interface IMPlaceholderComponent extends IMPlaceholderItem {
 export interface IMPlaceholderHostProvider extends IMPlaceholderItem {
   type: IMPlaceholderItemType.HostProvider;
   ids: {
+    provider: number;
+  };
+}
+
+export interface IMPlaceholderHost extends IMPlaceholderItem {
+  type: IMPlaceholderItemType.Host;
+  ids: {
+    host: number;
     provider: number;
   };
 }
