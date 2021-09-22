@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=wrong-import-position, unused-import, import-error
+# pylint: disable=wrong-import-position, import-error
 
 import sys
 
@@ -18,18 +18,18 @@ from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 
 try:
-    from __main__ import display
+    from __main__ import display  # pylint: disable=unused-import
 except ImportError:
     from ansible.utils.display import Display  # pylint: disable=ungrouped-imports
 
     display = Display()
 
 sys.path.append('/adcm/python')
-import adcm.init_django
+import adcm.init_django  # pylint: disable=unused-import
 from cm.logger import log
 from cm.ansible_plugin import (
     set_service_config,
-    set_service_config_by_id,
+    set_service_config_by_name,
     set_cluster_config,
     set_provider_config,
     set_host_config,
@@ -83,9 +83,11 @@ class LookupModule(LookupBase):
                 raise AnsibleError('there is no cluster in hostvars')
             cluster = variables['cluster']
             if 'service_name' in kwargs:
-                res = set_service_config(cluster['id'], kwargs['service_name'], terms[1], terms[2])
+                res = set_service_config_by_name(
+                    cluster['id'], kwargs['service_name'], terms[1], terms[2]
+                )
             elif 'job' in variables and 'service_id' in variables['job']:
-                res = set_service_config_by_id(
+                res = set_service_config(
                     cluster['id'], variables['job']['service_id'], terms[1], terms[2]
                 )
             else:
@@ -106,7 +108,7 @@ class LookupModule(LookupBase):
                 raise AnsibleError('there is no adcm_hostid in hostvars')
             res = set_host_config(variables['adcm_hostid'], terms[1], terms[2])
         else:
-            raise AnsibleError('unknown object type: %s' % terms[0])
+            raise AnsibleError(f'unknown object type: {terms[0]}')
 
         ret.append(res)
         return ret

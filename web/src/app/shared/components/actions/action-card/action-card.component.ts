@@ -15,9 +15,11 @@ import { Observable, of } from 'rxjs';
 
 import { ClusterService } from '@app/core/services/cluster.service';
 import { EventMessage, SocketState } from '@app/core/store';
-import { Cluster, Entities, isIssue } from '@app/core/types';
+import { Entities } from '@app/core/types';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { ActionsService } from '../actions.service';
+import { IssueHelper } from '@app/helpers/issue-helper';
+import { ICluster } from '@app/models/cluster';
 
 @Component({
   selector: 'app-action-card',
@@ -41,7 +43,7 @@ export class ActionCardComponent extends SocketListenerDirective implements OnIn
   }
 
   ngOnInit(): void {
-    if (!isIssue(this.clusterService.Current.issue))
+    if (!IssueHelper.isIssue(this.clusterService.Current.issue))
       this.actions$ = this.service.getActions(this.clusterService.Current.action);
     super.startListenSocket();
   }
@@ -54,7 +56,7 @@ export class ActionCardComponent extends SocketListenerDirective implements OnIn
   }
 
   get clusterData() {
-    const { id, hostcomponent } = this.clusterService.Cluster || (this.clusterService.Current as Cluster);
+    const { id, hostcomponent } = this.clusterService.Cluster || (this.clusterService.Current as ICluster);
     return { id, hostcomponent };
   }
 }

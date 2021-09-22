@@ -1,7 +1,8 @@
 import { Component, Input } from '@angular/core';
 import { EventHelper } from '@adwp-ui/widgets';
 
-import { isIssue, Issue } from '@app/core/types';
+import { IIssues } from '@app/models/issue';
+import { IssueHelper } from '@app/helpers/issue-helper';
 
 @Component({
   selector: 'app-actions-column',
@@ -14,8 +15,8 @@ export class ActionsColumnComponent<T> {
 
   @Input() row: T;
 
-  notIssue(issue: Issue): boolean {
-    return !isIssue(issue);
+  notIssue(issue: IIssues): boolean {
+    return !IssueHelper.isIssue(issue);
   }
 
   getClusterData(row: any) {

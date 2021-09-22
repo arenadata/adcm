@@ -45,30 +45,39 @@ def test_cluster_service_state_locked(sdk_client_fs: ADCMClient):
     with allure.step('Add services multi and stab'):
         cluster.service_add(name='multi')
         cluster.service_add(name='stab')
-    with allure.step('Check services states: created'):
+    with allure.step('Check that services is not locked and its state is created'):
         assert bundle.cluster(name=bundle.name).state == 'created'
         assert bundle.cluster(name=bundle.name).service(name='multi').state == 'created'
         assert bundle.cluster(name=bundle.name).service(name='stab').state == 'created'
+        assert bundle.cluster(name=bundle.name).locked is False
+        assert bundle.cluster(name=bundle.name).service(name='multi').locked is False
+        assert bundle.cluster(name=bundle.name).service(name='stab').locked is False
     with allure.step('Run cluster action: multi'):
         task = cluster.action(name='multi').run()
-    with allure.step('Check services states: locked and then created'):
-        assert bundle.cluster(name=bundle.name).state == 'locked'
-        assert bundle.cluster(name=bundle.name).service(name='multi').state == 'locked'
-        assert bundle.cluster(name=bundle.name).service(name='stab').state == 'locked'
-        task.wait()
-        assert bundle.cluster(name=bundle.name).state == 'multi_ok'
+    with allure.step('Check services: locked and then free'):
+        assert bundle.cluster(name=bundle.name).state == 'created'
         assert bundle.cluster(name=bundle.name).service(name='multi').state == 'created'
         assert bundle.cluster(name=bundle.name).service(name='stab').state == 'created'
+        assert bundle.cluster(name=bundle.name).locked is True
+        assert bundle.cluster(name=bundle.name).service(name='multi').locked is True
+        assert bundle.cluster(name=bundle.name).service(name='stab').locked is True
+        task.wait()
+        assert bundle.cluster(name=bundle.name).state == 'multi_ok'
+        assert bundle.cluster(name=bundle.name).locked is False
+        assert bundle.cluster(name=bundle.name).service(name='multi').locked is False
+        assert bundle.cluster(name=bundle.name).service(name='stab').locked is False
     with allure.step('Run service action: multi'):
         task = cluster.service(name='multi').action(name='multi').run()
     with allure.step('Check services states: locked and created'):
-        assert bundle.cluster(name=bundle.name).state == 'locked'
-        assert bundle.cluster(name=bundle.name).service(name='multi').state == 'locked'
-        assert bundle.cluster(name=bundle.name).service(name='stab').state == 'created'
+        assert bundle.cluster(name=bundle.name).locked is True
+        assert bundle.cluster(name=bundle.name).service(name='multi').locked is True
+        assert bundle.cluster(name=bundle.name).service(name='stab').locked is False
         task.wait()
         assert bundle.cluster(name=bundle.name).state == 'multi_ok'
+        assert bundle.cluster(name=bundle.name).locked is False
         assert bundle.cluster(name=bundle.name).service(name='multi').state == 'multi_ok'
-        assert bundle.cluster(name=bundle.name).service(name='stab').state == 'created'
+        assert bundle.cluster(name=bundle.name).service(name='multi').locked is False
+        assert bundle.cluster(name=bundle.name).service(name='stab').locked is False
 
 
 @fixture_parametrized_by_data_subdirs(__file__, 'provider_and_host')

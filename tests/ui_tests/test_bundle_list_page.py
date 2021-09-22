@@ -9,15 +9,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
 from typing import List
 
-import allure
+import os
 import pytest
-from adcm_client.objects import ADCMClient, Bundle
+import allure
+
 from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.utils import catch_failed
-from selenium.common.exceptions import ElementClickInterceptedException
+from adcm_client.objects import ADCMClient, Bundle
 
 from tests.conftest import DUMMY_CLUSTER_BUNDLE
 from tests.ui_tests.app.app import ADCMTest
@@ -155,19 +154,6 @@ def test_two_bundles(create_bundle_archives: List[str], page: BundleListPage):
     with allure.step('Check there are exactly 2 rows'):
         rows = page.table.row_count
         assert rows == 2, f'Row amount should be 2, but only {rows} is presented'
-
-
-@allure.issue("https://arenadata.atlassian.net/browse/ADCM-2010")
-@pytest.mark.skip(reason="Not worked using selenoid https://github.com/aerokube/selenoid/issues/844")
-@pytest.mark.parametrize(
-    "create_bundle_archives", [([CLUSTER_CE_CONFIG, CLUSTER_EE_CONFIG], LICENSE_FP)], indirect=True
-)
-def test_accept_license_with_two_bundles_upload_at_once(create_bundle_archives: List[str], page: BundleListPage):
-    """Upload two bundles and accept license"""
-    with page.table.wait_rows_change():
-        page.upload_bundles(create_bundle_archives)
-    with catch_failed(ElementClickInterceptedException, "License was not accepted by single button click"):
-        page.accept_licence(row_num=1)
 
 
 @pytest.mark.smoke()
