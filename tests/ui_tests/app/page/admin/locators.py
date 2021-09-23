@@ -18,8 +18,8 @@ from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMe
 class AdminIntroLocators:
     """Locators for Admin Intro menu"""
 
-    intro_title = Locator(By.XPATH, "//mat-card-header", "Intro header container")
-    intro_text = Locator(By.XPATH, "//mat-card-content", "Intro text container")
+    intro_title = Locator(By.CSS_SELECTOR, "mat-card-header", "Intro header container")
+    intro_text = Locator(By.CSS_SELECTOR, "mat-card-content", "Intro text container")
 
 
 class AdminSettingsLocators(CommonConfigMenu):
@@ -30,17 +30,15 @@ class AdminUsersLocators:
     """Locators for Admin Users menu"""
 
     add_user_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Add user')]]", "Add user button")
-    user_row = Locator(By.XPATH, "//mat-row", "Table row")
+    user_row = Locator(By.CSS_SELECTOR, "mat-row", "Table row")
 
     class Row:
         """Existing user row"""
 
-        username = Locator(By.XPATH, "./mat-cell[1]", "Username in row")
-        password = Locator(By.XPATH, "./mat-cell[2]//input[@data-placeholder='Password']", "Password in row")
+        username = Locator(By.CSS_SELECTOR, "mat-cell:first-child", "Username in row")
+        password = Locator(By.CSS_SELECTOR, "input[data-placeholder='Password']", "Password in row")
         password_confirm = Locator(
-            By.XPATH,
-            "./mat-cell[2]//input[@data-placeholder='Confirm Password']",
-            "Password confirmation in row",
+            By.CSS_SELECTOR, "input[data-placeholder='Confirm Password']", "Password confirmation in row"
         )
         confirm_update_btn = Locator(
             By.XPATH,
@@ -52,8 +50,10 @@ class AdminUsersLocators:
     class AddUserPopup:
         """Popup with new user info"""
 
-        block = Locator(By.XPATH, "//mat-card[contains(@class, 'users-add-card')]", "Add user popup block")
-        username = Locator(By.XPATH, "//input[@formcontrolname='username']", "New user username")
-        password = Locator(By.XPATH, "//input[@formcontrolname='password']", "New user password")
-        password_confirm = Locator(By.XPATH, "//input[@formcontrolname='cpassword']", "New user password confirmation")
+        block = Locator(By.CSS_SELECTOR, "mat-card[class*='users-add-card']", "Add user popup block")
+        username = Locator(By.CSS_SELECTOR, "input[formcontrolname='username']", "New user username")
+        password = Locator(By.CSS_SELECTOR, "input[formcontrolname='password']", "New user password")
+        password_confirm = Locator(
+            By.CSS_SELECTOR, "input[formcontrolname='cpassword']", "New user password confirmation"
+        )
         save_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Add user save button")

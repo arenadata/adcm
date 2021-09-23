@@ -18,21 +18,20 @@ from tests.ui_tests.app.helpers.locator import Locator
 class CommonHeaderLocators:
     """ADCM header locators"""
 
-    block = Locator(By.XPATH, "//app-top/mat-toolbar", "Header block")
+    block = Locator(By.CSS_SELECTOR, "app-top mat-toolbar", "Header block")
 
     arenadata_logo = Locator(By.XPATH, "//a[./img[@alt='Arenadata cluster manager']]", "Header logo Arenadata")
 
-    clusters = Locator(By.CLASS_NAME, "topmenu_clusters", "Header button Clusters")
-    hostproviders = Locator(By.CLASS_NAME, "topmenu_hostproviders", "Header button Hostproviders")
-    hosts = Locator(By.CLASS_NAME, "topmenu_hosts", "Header button Hosts")
-    jobs = Locator(By.CLASS_NAME, "topmenu_jobs", "Header button Jobs")
-    bundles = Locator(By.CLASS_NAME, "topmenu_bundles", "Header button Bundles")
+    clusters = Locator(By.CSS_SELECTOR, ".topmenu_clusters", "Header button Clusters")
+    hostproviders = Locator(By.CSS_SELECTOR, ".topmenu_hostproviders", "Header button Hostproviders")
+    hosts = Locator(By.CSS_SELECTOR, ".topmenu_hosts", "Header button Hosts")
+    jobs = Locator(By.CSS_SELECTOR, ".topmenu_jobs", "Header button Jobs")
+    bundles = Locator(By.CSS_SELECTOR, ".topmenu_bundles", "Header button Bundles")
 
 
 class AuthorizedHeaderLocators(CommonHeaderLocators):
     """ADCM header locators for authorized user"""
 
-    job_block_previous = Locator(By.XPATH, "//app-bell/div", "Header jobs block previous version")
     job_block = Locator(By.CSS_SELECTOR, "app-bell div", "Header jobs block previous version")
     job_popup = Locator(By.CSS_SELECTOR, "app-popover", "Header jobs pop up")
 
@@ -56,13 +55,10 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
 
         block = Locator(By.CSS_SELECTOR, "app-popover", "Popup block with jobs")
 
-        success_jobs = Locator(By.XPATH, "//div[@mattooltip='Show success jobs']", "Success jobs")
-        in_progress_jobs = Locator(By.XPATH, "//div[@mattooltip='Show jobs in progress']", "In progress jobs")
-        failed_jobs = Locator(By.XPATH, "//div[@mattooltip='Show failed jobs']", "Failed jobs")
-
-        job_row = Locator(By.XPATH, "//div/div[contains(@class, 'notification')]", "Job row in popup list")
-        job_status = Locator(By.XPATH, "./mat-icon", "Job status in job row")
-        job_name = Locator(By.XPATH, "./a", "Job name in job row")
+        success_jobs = Locator(By.CSS_SELECTOR, "div[mattooltip='Show success jobs']", "Success jobs")
+        in_progress_jobs = Locator(By.CSS_SELECTOR, "div[mattooltip='Show jobs in progress']", "In progress jobs")
+        failed_jobs = Locator(By.CSS_SELECTOR, "div[mattooltip='Show failed jobs']", "Failed jobs")
+        job_row = Locator(By.CSS_SELECTOR, "div>div[class*='notification']", "Job row in popup list")
 
         show_all_link = Locator(By.CSS_SELECTOR, "app-popover a[href='/task']", "Link to task page")
         empty_text = Locator(By.CSS_SELECTOR, "app-notifications *.empty-label", "Text in popup")
@@ -75,12 +71,12 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
     class HelpPopup:
         """ADCM header popup with help links"""
 
-        ask_link = Locator(By.XPATH, "//a[@adcm_test='ask_for_help']", "Ask for help link")
-        doc_link = Locator(By.XPATH, "//a[@adcm_test='dock']", "Documentation link")
+        ask_link = Locator(By.CSS_SELECTOR, "a[adcm_test='ask_for_help']", "Ask for help link")
+        doc_link = Locator(By.CSS_SELECTOR, "a[adcm_test='dock']", "Documentation link")
 
     class AccountPopup:
         """ADCM header popup with account settings"""
 
-        settings_link = Locator(By.XPATH, "//a[@adcm_test='settings']", "Settings link")
-        profile_link = Locator(By.XPATH, "//button[@adcm_test='profile']", "Profile link")
-        logout_button = Locator(By.XPATH, "//button[@adcm_test='logout']", "logout button")
+        settings_link = Locator(By.CSS_SELECTOR, "a[adcm_test='settings']", "Settings link")
+        profile_link = Locator(By.CSS_SELECTOR, "button[adcm_test='profile']", "Profile link")
+        logout_button = Locator(By.CSS_SELECTOR, "button[adcm_test='logout']", "logout button")

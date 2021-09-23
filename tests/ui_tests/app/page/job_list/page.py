@@ -98,8 +98,8 @@ class JobListPage(BasePageObject):
         job = self.header.get_single_job_row_from_popup(row_num)
         popup_locators = AuthorizedHeaderLocators.JobPopup
         return PopupTaskInfo(
-            action_name=self.find_child(job, popup_locators.job_name).text,
-            status=self._get_status_from_class_string(self.find_child(job, popup_locators.job_status)),
+            action_name=self.find_child(job, popup_locators.JobRow.job_name).text,
+            status=self._get_status_from_class_string(self.find_child(job, popup_locators.JobRow.job_status)),
         )
 
     def get_all_jobs_info(self) -> List[SubTaskJobInfo]:

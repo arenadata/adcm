@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { MatCheckbox } from '@angular/material/checkbox';
-import { MatSelectionList } from '@angular/material/list';
+import { MatSelectionList, MatSelectionListChange } from '@angular/material/list';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { openClose } from '@app/core/animations';
 import { Host } from '@app/core/types';
@@ -46,16 +46,17 @@ import { DisplayMode } from './provider.component';
                         [matTooltip]="cb.checked ? 'Deselect all' : 'Select all'"></mat-checkbox>
         </div>
       </div>
-      <mat-selection-list class="add-host2cluster" #listHosts>
-        <mat-list-option *ngFor="let host of list" [value]="host.id" [appTooltip]="host.fqdn"
+      <mat-selection-list class="add-host2cluster" #listHosts (selectionChange)="selectionChange($event)">
+        <mat-list-option *ngFor="let host of list" [selected]="selected[host.id]" [value]="host.id"
+                         [appTooltip]="host.fqdn"
                          [appTooltipShowByCondition]="true">
           {{ host.fqdn }}
         </mat-list-option>
       </mat-selection-list>
       <mat-paginator *ngIf="Count" [length]="Count" [pageSizeOptions]="[10, 25, 50, 100]"
                      (page)="pageHandler($event)"></mat-paginator>
-      <app-add-controls *ngIf="Count" [title]="'Add'" [disabled]="!listHosts?._value?.length" (cancel)="onCancel()"
-                        (save)="addHost2Cluster(listHosts._value)"></app-add-controls>
+      <app-add-controls *ngIf="Count" [title]="'Add'" [disabled]="disabled" (cancel)="onCancel()"
+                        (save)="addHost2Cluster()"></app-add-controls>
     </div>
   `,
   styleUrls: ['host2cluster.component.scss'],
@@ -71,6 +72,12 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
   @ViewChild('listHosts') listHosts: MatSelectionList;
   @ViewChild('cb') allCbx: MatCheckbox;
   @ViewChild(MatPaginator) paginator: MatPaginator;
+
+  selected: { [key: number]: boolean } = {};
+
+  get disabled() {
+    return !Object.keys(this.selected).length;
+  }
 
   ngOnInit() {
     this.getAvailableHosts();
@@ -90,8 +97,19 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
   }
 
   selectAllHost(flag: boolean) {
-    if (!flag) this.listHosts.selectAll();
-    else this.listHosts.deselectAll();
+    if (!flag) {
+      this.listHosts.selectAll();
+      this.listHosts.options.forEach((o) => {
+        this.selected[o.value] = true;
+      });
+    } else {
+      this.listHosts.deselectAll();
+      this.listHosts.options.forEach((o) => {
+        if (this.selected[o.value]) {
+          delete this.selected[o.value];
+        }
+      });
+    }
   }
 
   save() {
@@ -108,9 +126,11 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
     }
   }
 
-  addHost2Cluster(value: number[]) {
+  addHost2Cluster() {
+    const value = Object.keys(this.selected);
+
     this.service
-      .addHostInCluster(value.filter((a) => !!a))
+      .addHostInCluster(value.map((a) => +a))
       .pipe(this.takeUntil())
       .subscribe(() => {
         this.paginator.firstPage();
@@ -120,5 +140,14 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
 
   pageHandler(pageEvent: PageEvent) {
     this.getAvailableHosts(pageEvent.pageIndex, pageEvent.pageSize);
+  }
+
+  selectionChange(e: MatSelectionListChange): void {
+    const value = e.option.value;
+    if (this.selected[value]) {
+      delete this.selected[value];
+    } else {
+      this.selected[value] = true;
+    }
   }
 }

@@ -19,10 +19,10 @@ class BundleLocators:
     """Bundle main page elements locators"""
 
     class MenuNavigation:
-        main = Locator(By.XPATH, "//a[@adcm_test='tab_main']", "Main link in side menu")
+        main = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_main']", "Main link in side menu")
 
 
 class BundleMainMenuLocators(ObjectPageLocators):
     """Bundle object page main menu locators"""
 
-    text = Locator(By.XPATH, "//mat-card-content", "Bundle main page text")
+    text = Locator(By.CSS_SELECTOR, "mat-card-content", "Bundle main page text")
