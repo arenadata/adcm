@@ -748,9 +748,6 @@ action_masking:
   items:
     state: availability_set
     multi_state: availability_set
-  required_items:
-    - state
-    - multi_state
 
 availability_set:
   match: dict
