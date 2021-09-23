@@ -12,7 +12,8 @@
 
 from django.db import models
 from django.db.transaction import atomic
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
+
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
@@ -26,10 +27,23 @@ class PasswordField(serializers.CharField):
         return '******'
 
 
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = (
+            'id',
+            'name',
+        )
+
+
 class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSerializer):
     """User serializer"""
 
     password = PasswordField()
+    groups = serializers.SerializerMethodField()
+    add_group = serializers.HyperlinkedIdentityField(
+        view_name='rbac-user-group-list', lookup_field= 'id'
+    )
 
     class Meta:
         model = User
@@ -41,14 +55,20 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
             'last_name',
             'email',
             'is_superuser',
+            'groups',
             'url',
+            'add_group'
         )
         extra_kwargs = {
-            #'url': {'view_name': 'rbac:user-detail', 'lookup_field': 'id'},
-            'url': {'view_name': 'rbac_user:user-detail', 'lookup_field': 'id'},
+            #'url': {'view_name': 'rbac_user:user-detail', 'lookup_field': 'id'},
+            'url': {'view_name': 'rbac-user-detail', 'lookup_field': 'id'},
             'is_superuser': {'required': False},
             'profile': {'required': False},
         }
+
+    def get_groups(self, obj):
+        groups = obj.groups.all()
+        return GroupSerializer(groups, many=True, context=self.context).data
 
     def create(self, validated_data):
         extra_fields = {}
@@ -94,3 +114,24 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
                     if isinstance(field, (models.JSONField, models.TextField)):
                         del fields[name]
         return fields
+
+
+class UserGroupSerializer(serializers.ModelSerializer):
+    """Serializer for user's groups"""
+
+    id = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all())
+
+    class Meta:
+        model = Group
+        fields = (
+            'id',
+            'name',
+            #'url',
+        )
+        read_only_fields = ('name',)
+
+    def create(self, validated_data):
+        user = self.context.get('user')
+        group = validated_data['id']
+        user.groups.add(group)
+        return group

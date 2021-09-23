@@ -10,10 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.contrib.auth.models import User, Group
+from rest_framework import status
 from rest_framework import viewsets
-from django.contrib.auth.models import User
+from rest_framework.mixins import (
+    ListModelMixin,
+    CreateModelMixin,
+    RetrieveModelMixin,
+    DestroyModelMixin,
+)
+from rest_framework.response import Response
 
-from .serializers import UserSerializer
+from .serializers import UserSerializer, UserGroupSerializer
 
 
 # pylint: disable=too-many-ancestors
@@ -25,3 +33,32 @@ class UserViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
     filterset_fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser']
     ordering_fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser']
+
+
+class UserGroupViewSet(
+    ListModelMixin,
+    CreateModelMixin,
+    RetrieveModelMixin,
+    DestroyModelMixin,
+    viewsets.GenericViewSet,
+):  # pylint: disable=too-many-ancestors
+    queryset = Group.objects.all()
+    serializer_class = UserGroupSerializer
+    lookup_url_kwarg = 'group_id'
+
+    def destroy(self, request, *args, **kwargs):
+        user = User.objects.get(id=self.kwargs.get('id'))
+        group = self.get_object()
+        user.groups.remove(group)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def get_queryset(self):
+        return self.queryset.filter(user__id=self.kwargs.get('id'))
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        user_id = self.kwargs.get('id')
+        if user_id is not None:
+            user = User.objects.get(id=user_id)
+            context.update({'user': user})
+        return context

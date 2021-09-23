@@ -11,41 +11,41 @@
 # limitations under the License.
 
 from django.urls import path, include
-from rest_framework.routers import SimpleRouter, Route
 
-from .views import UserViewSet
+from .views import UserViewSet, UserGroupViewSet
 
-
-class UserRouter(SimpleRouter):
-    """Router for User"""
-
-    routes = [
-        Route(
-            url='^{prefix}$',
-            mapping={'get': 'list', 'post': 'create'},
-            name='{basename}-list',
-            detail=False,
-            initkwargs={'suffix': 'List'},
-        ),
-        Route(
-            url='^{prefix}/{lookup}/$',
-            mapping={
-                'get': 'retrieve',
-                'put': 'update',
-                'patch': 'partial_update',
-                'delete': 'destroy',
-            },
-            name='{basename}-detail',
-            detail=True,
-            initkwargs={'suffix': 'Detail'},
-        ),
-    ]
-
-
-router = UserRouter()
-
-router.register('', UserViewSet, basename='user')
 
 urlpatterns = [
-    path('', include((router.urls, 'rbac_user'))),
+    path('', UserViewSet.as_view({'get': 'list', 'post': 'create'}), name='rbac-user-list'),
+    path(
+        '<int:id>/',
+        include(
+            [
+                path(
+                    '',
+                    UserViewSet.as_view(
+                        {'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy'}
+                    ),
+                    name='rbac-user-detail',
+                ),
+                path(
+                    'group/',
+                    include(
+                        [
+                            path(
+                                '',
+                                UserGroupViewSet.as_view({'get': 'list', 'post': 'create'}),
+                                name='rbac-user-group-list',
+                            ),
+                            path(
+                                '<int:group_id>/',
+                                UserGroupViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}),
+                                name='rbac-user-group-detail',
+                            ),
+                        ]
+                    ),
+                ),
+            ]
+        ),
+    ),
 ]
