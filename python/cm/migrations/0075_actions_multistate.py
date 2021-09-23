@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='action',
             name='multi_state_available',
-            field=models.JSONField(default=list),
+            field=models.JSONField(default='any'),
         ),
         migrations.AddField(
             model_name='action',
@@ -48,7 +48,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='stageaction',
             name='multi_state_available',
-            field=models.JSONField(default=list),
+            field=models.JSONField(default='any'),
         ),
         migrations.AddField(
             model_name='stageaction',
