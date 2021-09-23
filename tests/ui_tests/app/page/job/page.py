@@ -10,29 +10,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
+from typing import Literal
+
 import allure
 
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageHeader,
-    PageFooter,
-)
-from tests.ui_tests.app.page.common.common_locators import (
-    ObjectPageLocators,
-)
+from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
+from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
+from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 from tests.ui_tests.app.page.job.locators import JobPageLocators
+
+
+@dataclass
+class DetailedPageJobInfo:
+    """Job info from detailed page"""
+
+    # name of action / job
+    name: str
+    # name of object(s) which invoked this job
+    invoker_objects: str
+    execution_time: str
+    start_date: str
+    finish_date: str
 
 
 class JobPageMixin(BasePageObject):
 
-    MENU_SUFFIX: str
     MAIN_ELEMENTS: list
     job_id: int
 
     def __init__(self, driver, base_url, job_id: int):
-        if self.MENU_SUFFIX is None:
-            raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
-        super().__init__(driver, base_url, "/cluster/{job_id}/" + self.MENU_SUFFIX, job_id=job_id)
+        super().__init__(driver, base_url, "/job/{job_id}", job_id=job_id)
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.job_id = job_id
@@ -52,11 +61,41 @@ class JobPageMixin(BasePageObject):
         current_title = self.find_element(ObjectPageLocators.title).text
         assert current_title == expected_title, f"Title should be '{expected_title}', but was {current_title}''"
 
+    def get_job_info(self) -> DetailedPageJobInfo:
+        """Get information about job from detail page"""
+        invoker_objects = self.find_element(JobPageLocators.subtitle).text.strip().replace(' / ', '/')
+        return DetailedPageJobInfo(
+            name=self.find_element(JobPageLocators.title).text.strip(),
+            invoker_objects=invoker_objects,
+            execution_time=self.find_element(JobPageLocators.duration).text.strip(),
+            start_date=self.find_element(JobPageLocators.start_date).text.strip(),
+            finish_date=self.find_element(JobPageLocators.finish_date).text.strip(),
+        )
+
+    @allure.step('Open stdout menu')
+    def open_stdout_menu(self):
+        """Open menu with stdout logs"""
+        self._open_menu(JobPageLocators.Menu.stdout_tab)
+
+    @allure.step('Open stderr menu')
+    def open_stderr_menu(self):
+        """Open menu with stderr logs"""
+        self._open_menu(JobPageLocators.Menu.stderr_tab)
+
+    @allure.step('Click on {log_type} download button')
+    def click_on_log_download(self, log_type: Literal['stderr', 'stdout']):
+        """Click on log download button"""
+        locator = getattr(JobPageLocators.Menu, f'{log_type}_download_btn')
+        self.find_and_click(locator)
+
+    def _open_menu(self, locator: Locator):
+        self.find_and_click(locator)
+        self.wait_element_attribute(locator, 'class', 'active', exact_match=False)
+        self.wait_element_hide(CommonToolbarLocators.progress_bar)
+
 
 class JobPageStdout(JobPageMixin):
     """Job Page Stdout log"""
-
-    MENU_SUFFIX = '1'
 
     @allure.step("Check text on the page")
     def check_text(self, success_task: bool = True):
@@ -76,5 +115,3 @@ class JobPageStdout(JobPageMixin):
 
 class JobPageStderr(JobPageMixin):
     """Job Page Stderr log"""
-
-    MENU_SUFFIX = '2'

@@ -40,6 +40,16 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
     popup_block = Locator(By.CSS_SELECTOR, "*.mat-menu-content", "Header popup block")
     bell_icon = Locator(By.CSS_SELECTOR, "div.circle", "Bell icon")
 
+    in_progress_job_button = Locator(
+        By.XPATH,
+        "//button[@mattooltip='Show jobs in progress']",
+        "Header button for in progress Jobs",
+    )
+    success_job_button = Locator(
+        By.XPATH, "//button[@mattooltip='Show success jobs']", "Header button for success Jobs"
+    )
+    failed_job_button = Locator(By.XPATH, "//button[@mattooltip='Show failed jobs']", "Header button for failed Jobs")
+
     class JobPopup:
         """ADCM header popup with jobs"""
 
@@ -50,13 +60,13 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
         failed_jobs = Locator(By.CSS_SELECTOR, "div[mattooltip='Show failed jobs']", "Failed jobs")
         job_row = Locator(By.CSS_SELECTOR, "div>div[class*='notification']", "Job row in popup list")
 
-        class JobRow:
-            job_status = Locator(By.CSS_SELECTOR, "mat-icon", "Job status in job row")
-            job_name = Locator(By.CSS_SELECTOR, "a", "Job row name in popup list")
-
         show_all_link = Locator(By.CSS_SELECTOR, "app-popover a[href='/task']", "Link to task page")
         empty_text = Locator(By.CSS_SELECTOR, "app-notifications *.empty-label", "Text in popup")
         acknowledge_btn = Locator(By.CSS_SELECTOR, "a.acknowledge", "Acknowledge button")
+
+        class JobRow:
+            job_status = Locator(By.CSS_SELECTOR, "mat-icon", "Job status in job row")
+            job_name = Locator(By.CSS_SELECTOR, "a", "Job row name in popup list")
 
     class HelpPopup:
         """ADCM header popup with help links"""

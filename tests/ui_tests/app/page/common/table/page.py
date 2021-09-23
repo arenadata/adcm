@@ -32,7 +32,7 @@ class CommonTableObj(BasePageObject):
 
     def __init__(self, driver, base_url, table_class_locators=CommonTable):
         super().__init__(driver, base_url)
-        self.table = table_class_locators
+        self.locators = table_class_locators
 
     @property
     def row_count(self) -> int:
@@ -42,7 +42,7 @@ class CommonTableObj(BasePageObject):
     @allure.step("Get all rows from the table")
     def get_all_rows(self) -> list:
         try:
-            return self.find_elements(self.table.row, timeout=5)
+            return self.find_elements(self.locators.visible_row, timeout=5)
         except TimeoutException:
             return []
 
@@ -56,10 +56,10 @@ class CommonTableObj(BasePageObject):
         return rows[row_num]
 
     def click_previous_page(self):
-        self.find_and_click(self.table.Pagination.previous_page)
+        self.find_and_click(self.locators.Pagination.previous_page)
 
     def click_next_page(self):
-        self.find_and_click(self.table.Pagination.next_page)
+        self.find_and_click(self.locators.Pagination.next_page)
 
     @contextmanager
     def wait_rows_change(self):
@@ -76,7 +76,7 @@ class CommonTableObj(BasePageObject):
 
     @allure.step("Click on page number {number}")
     def click_page_by_number(self, number: int):
-        page_loc = self.table.Pagination.page_to_choose_btn
+        page_loc = self.locators.Pagination.page_to_choose_btn
         WDW(self.driver, self.default_loc_timeout).until(
             EC.presence_of_element_located([page_loc.by, page_loc.value.format(number)]),
             message=f"Can't find page {number} in table on page {self.driver.current_url} "

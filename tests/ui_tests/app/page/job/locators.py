@@ -11,16 +11,27 @@
 # limitations under the License.
 from selenium.webdriver.common.by import By
 
-from tests.ui_tests.app.helpers.locator import (
-    Locator,
+from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.page.common.common_locators import (
+    ObjectPageLocators,
 )
 
 
-class JobPageLocators:
-    class Menu:
-        stdout_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_1']", "Job stdout tab")
-        stderr_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_2']", "Job stderr tab")
+class JobPageLocators(ObjectPageLocators):
+    """Locators for detailed job page"""
 
+    job_info = Locator(By.TAG_NAME, "app-job-info", "Job info section")
     start_date = Locator(By.CSS_SELECTOR, ".time-info>div:first-child>span", "Start date")
     finish_date = Locator(By.CSS_SELECTOR, ".time-info>div:last-child>span", "Finish date")
     duration = Locator(By.CSS_SELECTOR, ".time-info>div:nth-child(2)>span", "Task duration")
+
+    class Menu:
+        # keep stdout(-err) prefix in naming
+        stdout_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_1']", "Job stdout tab")
+        stdout_download_btn = Locator(
+            By.XPATH, "//a[.//span[text()='ansible [ stdout ]']]//button", "Download stdout button"
+        )
+        stderr_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_2']", "Job stderr tab")
+        stderr_download_btn = Locator(
+            By.XPATH, "//a[.//span[text()='ansible [ stderr ]']]//button", "Download stdout button"
+        )
