@@ -488,7 +488,7 @@ class ClusterStatusPage(ClusterPageMixin):
                         item, ClusterStatusLocators.GroupRow.ServiceGroupRow.service_name
                     ).text.split("\n")[0],
                     hosts=[
-                        h.text.split("\n")[1]
+                        h.text
                         for h in self.find_children(item, ClusterStatusLocators.GroupRow.ServiceGroupRow.host_name)
                     ],
                 )

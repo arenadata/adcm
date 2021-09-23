@@ -11,14 +11,16 @@
 # limitations under the License.
 from selenium.webdriver.common.by import By
 
-from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.helpers.locator import (
+    Locator,
+)
 
 
-class DeleteDialog:
-    body = Locator(By.CSS_SELECTOR, "mat-dialog-container", "Dialog with choices")
-    yes = Locator(By.XPATH, "//button//span[contains(text(), 'Yes')]", "Yes button in delete dialog")
+class JobPageLocators:
+    class Menu:
+        stdout_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_1']", "Job stdout tab")
+        stderr_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_2']", "Job stderr tab")
 
-
-class ActionDialog:
-    body = Locator(By.CSS_SELECTOR, "mat-dialog-container", "Dialog with choices")
-    run = Locator(By.CSS_SELECTOR, "app-dialog button[color='accent']", "Run button in action dialog")
+    start_date = Locator(By.CSS_SELECTOR, ".time-info>div:first-child>span", "Start date")
+    finish_date = Locator(By.CSS_SELECTOR, ".time-info>div:last-child>span", "Finish date")
+    duration = Locator(By.CSS_SELECTOR, ".time-info>div:nth-child(2)>span", "Task duration")
