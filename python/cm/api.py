@@ -593,7 +593,7 @@ def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     for added_host in new_hosts.difference(old_hosts):
         added_host.add_to_concerns(ctx.lock)
 
-    for removed_hc in list(set(hc_queryset)-set(new_hc_list)):
+    for removed_hc in list(set(hc_queryset) - set(new_hc_list)):
         groupconfigs = GroupConfig.objects.filter(hosts=removed_hc.host)
         cluster_group = GroupConfig.objects.filter(
             object_type=ContentType.objects.get_for_model(Cluster)
