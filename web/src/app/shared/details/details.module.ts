@@ -18,6 +18,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterModule } from '@angular/router';
+import { AdwpListModule } from '@adwp-ui/widgets';
 
 import { StuffModule } from '../stuff.module';
 import { DetailComponent } from './detail.component';
@@ -30,7 +31,9 @@ import { ActionsButtonComponent } from '@app/components/actions-button/actions-b
 
 import { NavItemPipe } from '@app/pipes/nav-item.pipe';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ObjectLinkSubtitlePipe } from './object-link-subtitle.pipe';
+import { ObjectLinkColumnPipe } from '@app/pipes/object-link-column.pipe';
+import { SortObjectsPipe } from '@app/pipes/sort-objects.pipe';
+import { TaskObjectsComponent } from '@app/components/columns/task-objects/task-objects.component';
 
 @NgModule({
   imports: [
@@ -44,10 +47,17 @@ import { ObjectLinkSubtitlePipe } from './object-link-subtitle.pipe';
     MatIconModule,
     MatButtonModule,
     MatTooltipModule,
+    AdwpListModule.forRoot({
+      itemsPerPage: [10, 25, 50, 100],
+    }),
   ],
   exports: [
     DetailComponent,
     ActionsButtonComponent,
+    ObjectLinkColumnPipe,
+    SortObjectsPipe,
+    AdwpListModule,
+    TaskObjectsComponent,
   ],
   declarations: [
     DetailComponent,
@@ -59,7 +69,9 @@ import { ObjectLinkSubtitlePipe } from './object-link-subtitle.pipe';
 
     NavItemPipe,
 
-    ObjectLinkSubtitlePipe,
+    ObjectLinkColumnPipe,
+    SortObjectsPipe,
+    TaskObjectsComponent,
   ],
   providers: [
     NavigationService,

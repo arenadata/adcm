@@ -17,6 +17,7 @@ from tests.ui_tests.app.page.admin.page import AdminIntroPage, AdminUsersPage, A
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.utils import expect_rows_amount_change
 
+
 # pylint: disable=redefined-outer-name
 
 
