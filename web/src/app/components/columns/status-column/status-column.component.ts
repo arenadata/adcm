@@ -1,5 +1,5 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { AdwpCellComponent } from '@adwp-ui/widgets/public-api';
+import { AdwpCellComponent } from '@adwp-ui/widgets';
 
 export interface StatusData<T> {
   event: MouseEvent;
