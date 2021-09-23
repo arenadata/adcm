@@ -1,14 +1,13 @@
 import { BehaviorSubject } from 'rxjs';
-import { Paging } from '@adwp-ui/widgets';
+import { IListResult, Paging } from '@adwp-ui/widgets';
 import { Sort } from '@angular/material/sort';
-import { ParamMap } from '@angular/router';
+import { convertToParamMap, ParamMap } from '@angular/router';
 
 import { BaseListDirective } from '@app/shared/components/list/base-list.directive';
 import { Host as AdcmHost, TypeName } from '@app/core/types';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { IHost } from '@app/models/host';
 import { ICluster } from '@app/models/cluster';
-import { IListResult } from '@adwp-ui/widgets';
 import { ListDirective } from '@app/abstract-directives/list.directive';
 import { ListService } from '@app/shared/components/list/list.service';
 import { Store } from '@ngrx/store';
@@ -45,7 +44,7 @@ export class AdwpBaseListDirective extends BaseListDirective {
       this.sorting.next({ direction, active });
     }
 
-    this.listParams = params;
+    this.listParams = convertToParamMap({ ...params, page, limit });
     this.refresh();
   }
 

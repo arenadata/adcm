@@ -167,7 +167,19 @@ class CommonConfigMenuObj(BasePageObject):
     @allure.step('Click on group {title}')
     def click_on_group(self, title: str):
         """Click on group with given title"""
-        self.find_and_click(self.locators.group_btn(title))
+
+        def is_group_expanded(group: WebElement):
+            return "expanded" in group.get_attribute("class")
+
+        def click_group():
+            group = self.find_element(self.locators.group_btn(title))
+            is_expanded = is_group_expanded(group)
+            group.click()
+            assert (
+                is_group_expanded(self.find_element(self.locators.group_btn(title))) != is_expanded
+            ), f"Group should be{'' if is_group_expanded else ' not '}expanded"
+
+        wait_until_step_succeeds(click_group, period=1, timeout=10)
 
     @allure.step('Search for {keys}')
     def search(self, keys: str):
@@ -224,16 +236,21 @@ class CommonConfigMenuObj(BasePageObject):
         assert len(visible_fields) == 0, f"Those fields should be visible: {visible_fields}"
 
     @contextmanager
-    def wait_rows_change(self):
+    def wait_rows_change(self, expected_rows_amount: Optional[int] = None):
         """Wait changing rows amount."""
 
-        current_amount = len(self.get_all_config_rows())
+        amount_before = len(self.get_all_config_rows())
         yield
 
-        def wait_scroll():
-            assert len(self.get_all_config_rows()) != current_amount, "Amount of rows on the page hasn't changed"
+        def wait_changing_rows_amount():
+            amount_after = len(self.get_all_config_rows())
+            assert amount_after != amount_before, "Amount of rows on the page hasn't changed"
+            if expected_rows_amount:
+                assert (
+                    amount_after == expected_rows_amount
+                ), f"Amount of rows on the page should be {expected_rows_amount}"
 
-        wait_until_step_succeeds(wait_scroll, period=1, timeout=10)
+        wait_until_step_succeeds(wait_changing_rows_amount, period=1, timeout=10)
 
     @allure.step("Get info by row")
     def get_config_row_info(self, row: WebElement):

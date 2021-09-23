@@ -21,38 +21,36 @@ class ClusterListLocators:
     """Cluster List page elements locators"""
 
     class Tooltip:
-        cluster_add_btn = Locator(By.XPATH, "//button[@adcm_test='create-btn']", "Cluster add button")
+        cluster_add_btn = Locator(By.CSS_SELECTOR, "button[adcm_test='create-btn']", "Cluster add button")
 
     class CreateClusterPopup:
-        block = Locator(By.XPATH, "//mat-dialog-container", "Popup block")
-        bundle_select_btn = Locator(By.XPATH, "//mat-select[@placeholder='Bundle']", "Select bundle")
-        version_select_btn = Locator(By.XPATH, "//mat-select[@formcontrolname='bundle_id'']", "Select bundle version")
-        select_option = Locator(By.XPATH, "//mat-option", "Select option")
+        block = Locator(By.CSS_SELECTOR, "mat-dialog-container", "Popup block")
+        bundle_select_btn = Locator(By.CSS_SELECTOR, "mat-select[placeholder='Bundle']", "Select bundle")
+        version_select_btn = Locator(
+            By.CSS_SELECTOR, "mat-select[formcontrolname='bundle_id']", "Select bundle version"
+        )
+        select_option = Locator(By.CSS_SELECTOR, "mat-option", "Select option")
 
-        upload_bundle_btn = Locator(By.XPATH, "//input[@value='upload_bundle_file']", "Upload bundle button")
-        cluster_name_input = Locator(By.XPATH, "//input[@data-placeholder='Cluster name']", "Cluster name input")
-        description_input = Locator(By.XPATH, "//input[@data-placeholder='Description']", "Description input")
+        upload_bundle_btn = Locator(By.CSS_SELECTOR, "input[value='upload_bundle_file']", "Upload bundle button")
+        cluster_name_input = Locator(By.CSS_SELECTOR, "input[data-placeholder='Cluster name']", "Cluster name input")
+        description_input = Locator(By.CSS_SELECTOR, "input[data-placeholder='Description']", "Description input")
 
-        create_btn = Locator(By.XPATH, "//button[./span[text()='Create']]", "Create button")
-        cancel_btn = Locator(By.XPATH, "//button[./span[text()='Cancel']]", "Cancel button")
+        create_btn = Locator(By.CSS_SELECTOR, "app-add-controls button:last-child", "Create button")
+        cancel_btn = Locator(By.CSS_SELECTOR, "app-add-controls button:first-child", "Cancel button")
 
     class ClusterTable(CommonTable):
         class ClusterRow:
-            name = Locator(By.XPATH, "./mat-cell[1]", "Cluster name in row")
-            bundle = Locator(By.XPATH, "./mat-cell[2]", "Cluster bundle in row")
-            description = Locator(By.XPATH, "./mat-cell[3]", "Cluster description in row")
-            state = Locator(By.XPATH, ".//app-state-column", "Cluster state in row")
-            status = Locator(By.XPATH, ".//app-status-column/button", "Cluster status in row")
-            actions = Locator(By.XPATH, ".//app-actions-button//button", "Cluster actions in row")
-            imports = Locator(By.XPATH, "./mat-cell[7]/button", "Cluster imports in row")
-            upgrade = Locator(By.XPATH, ".//app-upgrade/button", "Cluster upgrade in row")
-            config = Locator(By.XPATH, "./mat-cell[9]/button", "Cluster config in row")
-            delete_btn = Locator(By.XPATH, "./mat-cell[10]/button", "Cluster delete button in row")
+            name = Locator(By.CSS_SELECTOR, "mat-cell:first-of-type", "Cluster name in row")
+            bundle = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Cluster bundle in row")
+            description = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(3)", "Cluster description in row")
+            state = Locator(By.CSS_SELECTOR, "app-state-column", "Cluster state in row")
+            status = Locator(By.CSS_SELECTOR, "app-status-column button", "Cluster status in row")
+            actions = Locator(By.CSS_SELECTOR, "app-actions-button button", "Cluster actions in row")
+            imports = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(7) button", "Cluster imports in row")
+            upgrade = Locator(By.CSS_SELECTOR, "app-upgrade button", "Cluster upgrade in row")
+            config = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(9) button", "Cluster config in row")
+            delete_btn = Locator(By.CSS_SELECTOR, "mat-cell:last-of-type button", "Cluster delete button in row")
 
     class LicensePopup:
-        block = Locator(
-            By.XPATH,
-            "//app-dialog[./h3[contains(text(), 'license')]]",
-            "block with license agreement",
-        )
+        block = Locator(By.XPATH, "//app-dialog[./h3[contains(text(), 'license')]]", "block with license agreement")
         agree_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Yes')]]", "Agree button")
