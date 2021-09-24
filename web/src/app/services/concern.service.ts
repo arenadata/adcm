@@ -28,9 +28,8 @@ export class ConcernService implements EventableService {
     return this.store.pipe(
       selectMessage,
       filter(event => !!event),
-      // filter(event => event?.object?.type === 'cluster-concerns'),
       filter(event => !eventFilter?.events || eventFilter.events.includes(event.event)),
-      filter(event => !eventFilter?.types || eventFilter.types.includes(event.object?.type)),
+      filter(event => !eventFilter?.types || eventFilter.types.includes(event.object?.type as any)),
     );
   }
 

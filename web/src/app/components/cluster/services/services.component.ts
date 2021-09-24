@@ -5,6 +5,7 @@ import { TypeName } from '@app/core/types';
 import { ListFactory } from '@app/factories/list-factory';
 import { IClusterService } from '@app/models/cluster-service';
 import { ConcernListDirective } from '@app/abstract-directives/concern-list.directive';
+import { ConcernEventType } from '../../../models/concern/concern-reason';
 
 @Component({
   selector: 'app-services',
@@ -29,7 +30,7 @@ import { ConcernListDirective } from '@app/abstract-directives/concern-list.dire
 export class ServicesComponent extends ConcernListDirective<IClusterService> {
 
   type: TypeName = 'service2cluster';
-  eventTypes: TypeName[] = ['service-concerns', 'cluster-concerns'];
+  eventTypes = [ConcernEventType.Service];
 
   listColumns = [
     ListFactory.nameColumn('display_name'),

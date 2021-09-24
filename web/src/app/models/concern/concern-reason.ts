@@ -1,3 +1,11 @@
+export enum ConcernEventType {
+  Cluster = 'cluster-concerns',
+  Service = 'cluster-object-concerns',
+  Host = 'host-concerns',
+  HostProvider = 'host-provider-concerns',
+  ServiceComponent = 'service-component-concerns',
+}
+
 export enum IMPlaceholderItemType {
   ComponentActionRun = 'component_action_run',
   ComponentConfig = 'component_config',

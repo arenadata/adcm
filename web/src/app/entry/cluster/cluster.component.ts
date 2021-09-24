@@ -17,6 +17,7 @@ import { ICluster } from '@app/models/cluster';
 import { TypeName } from '@app/core/types';
 import { ListFactory } from '@app/factories/list-factory';
 import { ConcernListDirective } from '../../abstract-directives/concern-list.directive';
+import { ConcernEventType } from '../../models/concern/concern-reason';
 
 @Component({
   template: `
@@ -48,7 +49,7 @@ import { ConcernListDirective } from '../../abstract-directives/concern-list.dir
 export class ClusterListComponent extends ConcernListDirective<ICluster> {
 
   type: TypeName = 'cluster';
-  eventTypes: TypeName[] = ['cluster-concerns', 'service-concerns'];
+  eventTypes = [ConcernEventType.Cluster];
 
   listColumns = [
     ListFactory.nameColumn(),

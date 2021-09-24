@@ -36,9 +36,7 @@ export type TypeName =
   'servicecomponent' |
   'component' |
   'group_config' |
-  'group_config_hosts' |
-  'cluster-concerns' |
-  'service-concerns';
+  'group_config_hosts';
 export type Entities = ICluster | Service | Host | Provider | Job | Task | Bundle;
 
 /**

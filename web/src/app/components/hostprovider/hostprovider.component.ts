@@ -13,8 +13,9 @@ import { Component } from '@angular/core';
 import { IColumns } from '@adwp-ui/widgets';
 
 import { TypeName } from '@app/core/types';
-import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { ListFactory } from '@app/factories/list-factory';
+import { ConcernListDirective } from '@app/abstract-directives/concern-list.directive';
+import { ConcernEventType } from '@app/models/concern/concern-reason';
 
 @Component({
   selector: 'app-hostprovider',
@@ -39,9 +40,10 @@ import { ListFactory } from '@app/factories/list-factory';
   `,
   styles: [':host { flex: 1; }'],
 })
-export class HostproviderComponent extends AdwpListDirective<any> {
+export class HostproviderComponent extends ConcernListDirective<any> {
 
   type: TypeName = 'provider';
+  eventTypes = [ConcernEventType.HostProvider];
 
   listColumns = [
     ListFactory.nameColumn(),

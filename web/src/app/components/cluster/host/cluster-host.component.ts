@@ -1,10 +1,11 @@
 import { Component } from '@angular/core';
 import { IColumns } from '@adwp-ui/widgets';
 
-import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { TypeName } from '@app/core/types';
 import { IHost } from '@app/models/host';
 import { ListFactory } from '@app/factories/list-factory';
+import { ConcernListDirective } from '../../../abstract-directives/concern-list.directive';
+import { ConcernEventType } from '../../../models/concern/concern-reason';
 
 @Component({
   selector: 'app-cluster-host',
@@ -26,9 +27,10 @@ import { ListFactory } from '@app/factories/list-factory';
   `,
   styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
 })
-export class HostComponent extends AdwpListDirective<IHost> {
+export class ClusterHostComponent extends ConcernListDirective<IHost> {
 
   type: TypeName = 'host2cluster';
+  eventTypes = [ConcernEventType.Host];
 
   listColumns = [
     ListFactory.fqdnColumn(),

@@ -13,6 +13,7 @@ import { Observable, zip } from 'rxjs';
 
 import { AdcmTypedEntity } from '@app/models/entity';
 import { TypeName } from '@app/core/types';
+import { ConcernEventType } from '@app/models/concern/concern-reason';
 
 
 export const setPath = createAction('[Navigation] Set path', props<{ path: AdcmTypedEntity[] }>());
@@ -42,11 +43,15 @@ export const getNavigationPath = createSelector(
 );
 
 export function getEventEntityType(type: string): TypeName {
-  switch (<TypeName>type) {
+  switch (type) {
     case 'component':
       return 'servicecomponent';
-    case 'cluster-concerns':
+    case ConcernEventType.Cluster:
       return 'cluster';
+    case ConcernEventType.Service:
+      return 'service';
+    case ConcernEventType.ServiceComponent:
+      return 'servicecomponent';
   }
 }
 

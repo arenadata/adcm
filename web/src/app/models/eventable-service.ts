@@ -1,14 +1,14 @@
 import { Observable } from 'rxjs';
 
 import { EntityEvent, EventMessage } from '@app/core/store';
-import { TypeName } from '@app/core/types';
+import { ConcernEventType } from '@app/models/concern/concern-reason';
 
 export interface EventFilter {
   events?: EntityEvent[];
 }
 
 export interface ConcernEventFilter extends EventFilter {
-  types?: TypeName[];
+  types?: ConcernEventType[];
 }
 
 export interface EventableService {

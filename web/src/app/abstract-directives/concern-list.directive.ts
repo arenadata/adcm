@@ -8,14 +8,14 @@ import { ListService } from '../shared/components/list/list.service';
 import { SocketState } from '../core/store';
 import { ApiService } from '../core/api';
 import { ConcernService } from '../services/concern.service';
-import { TypeName } from '../core/types';
+import { ConcernEventType } from '../models/concern/concern-reason';
 
 @Directive({
   selector: '[appConcernList]',
 })
 export abstract class ConcernListDirective<T> extends AdwpListDirective<T> implements OnInit {
 
-  abstract eventTypes: TypeName[];
+  abstract eventTypes: ConcernEventType[];
 
   constructor(
     protected service: ListService,
@@ -31,11 +31,6 @@ export abstract class ConcernListDirective<T> extends AdwpListDirective<T> imple
 
   ngOnInit() {
     super.ngOnInit();
-
-    this.concernService.events()
-      .pipe(
-        this.takeUntil(),
-      ).subscribe(console.log);
 
     this.concernService.events({ types: this.eventTypes })
       .pipe(this.takeUntil())

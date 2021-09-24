@@ -1,15 +1,10 @@
 import { IColumns } from '@adwp-ui/widgets';
-import { Component, OnInit } from '@angular/core';
-import { Store } from '@ngrx/store';
-import { ActivatedRoute, Router } from '@angular/router';
-import { MatDialog } from '@angular/material/dialog';
+import { Component } from '@angular/core';
 
-import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
-import { ListService } from '@app/shared/components/list/list.service';
-import { SocketState } from '@app/core/store';
-import { ApiService } from '@app/core/api';
 import { TypeName } from '@app/core/types';
 import { ListFactory } from '@app/factories/list-factory';
+import { ConcernListDirective } from '@app/abstract-directives/concern-list.directive';
+import { ConcernEventType } from '@app/models/concern/concern-reason';
 
 @Component({
   selector: 'app-service-components',
@@ -31,9 +26,10 @@ import { ListFactory } from '@app/factories/list-factory';
     :host { flex: 1; }
   `],
 })
-export class ServiceComponentsComponent extends AdwpListDirective<any> implements OnInit {
+export class ServiceComponentsComponent extends ConcernListDirective<any> {
 
   type: TypeName = 'servicecomponent';
+  eventTypes = [ConcernEventType.ServiceComponent];
 
   listColumns = [
     ListFactory.nameColumn('display_name'),
@@ -42,20 +38,5 @@ export class ServiceComponentsComponent extends AdwpListDirective<any> implement
     ListFactory.actionsButton(),
     ListFactory.configColumn(this),
   ] as IColumns<any>;
-
-  constructor(
-    protected service: ListService,
-    protected store: Store<SocketState>,
-    public route: ActivatedRoute,
-    public router: Router,
-    public dialog: MatDialog,
-    protected api: ApiService,
-  ) {
-    super(service, store, route, router, dialog, api);
-  }
-
-  ngOnInit() {
-    super.ngOnInit();
-  }
 
 }
