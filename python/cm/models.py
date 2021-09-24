@@ -547,6 +547,14 @@ class Host(ADCMEntity):
             result['issue']['provider'] = provider_issue
         return result if result['issue'] else {}
 
+    @transaction.atomic()
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if not self.cluster:
+            groupconfig = GroupConfig.objects.filter(hosts=self.id)
+            for item in groupconfig:
+                self.group_config.remove(item)
+
 
 class ClusterObject(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
