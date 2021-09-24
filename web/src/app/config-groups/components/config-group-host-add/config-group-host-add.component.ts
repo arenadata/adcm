@@ -20,22 +20,21 @@ import { ConfigGroupHostAddService } from '../../service';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ListResult } from '@app/models/list-result';
 import { PageEvent } from '@angular/material/paginator';
-import { FormControl, Validators } from '@angular/forms';
 
 @Component({
   selector: 'app-config-group-host-add',
   template: `
-    <ng-container [formGroup]="form" *ngIf="list$ | async as list">
-      <mat-selection-list #selectionList formControlName="hosts" (selectionChange)="selectAll($event)">
+    <ng-container *ngIf="list$ | async as list">
+      <mat-selection-list #selectionList (selectionChange)="selectAll($event)">
         <mat-list-option *ngIf="list.count">All</mat-list-option>
-        <mat-list-option *ngFor="let host of list.results" [value]="host">
+        <mat-list-option [selected]="selected[host.id]" *ngFor="let host of list.results" [value]="host">
           {{ host.fqdn }}
         </mat-list-option>
       </mat-selection-list>
       <mat-paginator *ngIf="list.count" [length]="list.count" [pageSizeOptions]="[10, 25, 50, 100]"
                      [pageIndex]="pageIndex" [pageSize]="pageSize"
                      (page)="pageHandler($event)"></mat-paginator>
-      <app-add-controls *ngIf="list.count; else not" [title]="'Add'" [disabled]="!form.valid" (cancel)="onCancel()"
+      <app-add-controls *ngIf="list.count; else not" [title]="'Add'" [disabled]="disabled" (cancel)="onCancel()"
                         (save)="save()"></app-add-controls>
     </ng-container>
     <ng-template #not>
@@ -50,6 +49,12 @@ import { FormControl, Validators } from '@angular/forms';
 })
 export class AddHostToConfigGroupComponent extends BaseFormDirective implements OnInit {
 
+  selected: { [key: number]: boolean } = {};
+
+  get disabled() {
+    return !Object.keys(this.selected).length;
+  }
+
   pageIndex = 0;
   pageSize = 10;
 
@@ -59,8 +64,6 @@ export class AddHostToConfigGroupComponent extends BaseFormDirective implements 
 
   constructor(service: ConfigGroupHostAddService, dialog: MatDialog, private cluster: ClusterService) {
     super(service, dialog);
-
-    this.form.addControl('hosts', new FormControl(null, [Validators.required]));
   }
 
   ngOnInit(): void {
@@ -68,16 +71,36 @@ export class AddHostToConfigGroupComponent extends BaseFormDirective implements 
   }
 
   selectAll(e: MatSelectionListChange): void {
-    if (!e.option.value) {
-      if (e.option.selected) this.list.selectAll();
-      else this.list.deselectAll();
+    const value = e.option.value;
+    if (!value) {
+      if (e.option.selected) {
+        this.list.selectAll();
+        this.list.options.filter((o) => !!o.value).forEach((o) => {
+          this.selected[o.value.id] = true;
+        });
+
+      } else {
+        this.list.deselectAll();
+
+        this.list.options.filter((o) => !!o.value).forEach((o) => {
+          if (this.selected[o.value.id]) {
+            delete this.selected[o.value.id];
+          }
+        });
+      }
+    } else {
+      if (this.selected[value.id]) {
+        delete this.selected[value.id];
+      } else {
+        this.selected[value.id] = true;
+      }
     }
   }
 
   save(): void {
     const groupId = this.service.Current.id;
-    const result = this.form.get('hosts')?.value?.filter(Boolean).map(v => ({
-      host: +v.id,
+    const result = Object.entries(this.selected).map(([id]) => ({
+      host: +id,
       group: groupId
     }));
 

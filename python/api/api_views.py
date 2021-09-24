@@ -32,7 +32,7 @@ from adcm.settings import REST_FRAMEWORK
 import cm.upgrade
 from cm import config
 from cm.errors import AdcmEx
-from cm.models import Action, ADCMEntity, PrototypeConfig
+from cm.models import Action, ADCMEntity, PrototypeConfig, ConcernType
 
 
 def check_obj(model, req, error=None):
@@ -66,7 +66,7 @@ def update(serializer, **kwargs):
 
 def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
     """Filter out actions that are not allowed to run on object at that moment"""
-    if obj.locked:
+    if obj.concerns.filter(type=ConcernType.Lock).exists():
         return []
 
     allowed = []

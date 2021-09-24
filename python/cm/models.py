@@ -824,7 +824,7 @@ class AbstractAction(ADCMModel):
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
 
-    multi_state_available = models.JSONField(default=list)
+    multi_state_available = models.JSONField(default='any')
     multi_state_unavailable = models.JSONField(default=list)
     multi_state_on_success_set = models.JSONField(default=list)
     multi_state_on_success_unset = models.JSONField(default=list)
@@ -884,21 +884,21 @@ class Action(AbstractAction):
         ):
             return False
 
-        allowed = False
-
+        state_allowed = False
         if self.state_available == 'any':
-            allowed = True
+            state_allowed = True
         elif isinstance(self.state_available, list) and obj.state in self.state_available:
-            allowed = True
+            state_allowed = True
 
+        multi_state_allowed = False
         if self.multi_state_available == 'any':
-            allowed = True
+            multi_state_allowed = True
         elif isinstance(self.multi_state_available, list) and obj.has_multi_state_intersection(
             self.multi_state_available
         ):
-            allowed = True
+            multi_state_allowed = True
 
-        return allowed
+        return state_allowed and multi_state_allowed
 
 
 class SubAction(ADCMModel):

@@ -10,17 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-ancestors
+import os
 from collections import UserDict
 from contextlib import contextmanager
 from typing import Callable, TypeVar, Any, Union, Optional, Dict, Tuple, Sized
 
 import allure
+import requests
+
 from adcm_client.objects import ADCMClient, Cluster
 from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 
+from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.configuration import Configuration
 
 ValueType = TypeVar('ValueType')
@@ -137,7 +142,7 @@ def check_rows_amount(page, expected_amount: int, table_page_num: int):
     :param table_page_num: Number of the current page (for assertion error message)
     """
     assert (
-        row_count := page.table.row_count
+        row_count := page.locators.row_count
     ) == expected_amount, f'Page #{table_page_num} should contain {expected_amount}, not {row_count}'
 
 
@@ -240,6 +245,33 @@ def assert_enough_rows(required_row_num: int, row_count: int):
     assert (
         required_row_num + 1 <= row_count
     ), f"Table has only {row_count} rows when row #{required_row_num} was requested"
+
+
+@allure.step('Wait file {filename} was downloaded to {dirname} or directly to selenium')
+def wait_file_is_presented(
+    filename: str,
+    app_fs: ADCMTest,
+    dirname: os.PathLike,
+    timeout: Union[int, float] = 30,
+    period: Union[int, float] = 1,
+):
+    """Checks if file is presented in directory"""
+    if app_fs.selenoid['host']:
+        dir_url = f'http://{app_fs.selenoid["host"]}:{app_fs.selenoid["port"]}/download/{app_fs.driver.session_id}'
+        file_url = f'{dir_url}/{filename}'
+
+        def check_file_is_presented():
+            response = requests.get(file_url)
+            assert (
+                response.status_code < 400
+            ), f'Request for file ended with {response.status_code}, file request text: {response.text}.'
+
+    else:
+
+        def check_file_is_presented():
+            assert filename in os.listdir(dirname), f'File {filename} not found in {dirname}'
+
+    wait_until_step_succeeds(check_file_is_presented, timeout=timeout, period=period)
 
 
 @allure.step('Check that all fields and groups invisible')
