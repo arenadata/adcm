@@ -3,27 +3,25 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 
-import { IssueMessageService } from '../../app/services/issue-message.service';
-import { IssueMessageComponent } from '../../app/components/issue-message/issue-message.component';
-import { IssueMessageItemComponent } from '../../app/components/issue-message/issue-message-item/issue-message-item.component';
+import { ConcernService } from '../../app/services/concern.service';
+import { ConcernComponent } from '../../app/components/concern/concern.component';
+import { ConcernItemComponent } from '../../app/components/concern/concern-item/concern-item.component';
 import { IssueMessagePlaceholderPipe } from '../../app/pipes/issue-message-placeholder.pipe';
-import { IssueMessageRefComponent } from '../../app/components/issue-message/issue-message-ref/issue-message-ref.component';
-import { IssueMessageListComponent } from '../../app/components/issue-message/issue-message-list/issue-message-list.component';
+import { ConcernListComponent } from '../../app/components/concern/concern-list/concern-list.component';
 import { ISSUE_MESSAGES_LIST_MOCK } from './mock';
 
 export default {
-  title: 'ADCM/Issue messages',
+  title: 'ADCM/Concern',
   decorators: [
     moduleMetadata({
       providers: [
-        IssueMessageService,
+        ConcernService,
       ],
       declarations: [
-        IssueMessageComponent,
-        IssueMessageItemComponent,
+        ConcernComponent,
+        ConcernItemComponent,
         IssueMessagePlaceholderPipe,
-        IssueMessageRefComponent,
-        IssueMessageListComponent,
+        ConcernListComponent,
       ],
       imports: [
         CommonModule,
@@ -32,9 +30,9 @@ export default {
       ],
     }),
   ],
-  component: IssueMessageListComponent,
+  component: ConcernListComponent,
   argTypes: {
-    messages: {
+    concerns: {
       control: { type: 'object' }
     },
   },
@@ -47,7 +45,7 @@ export default {
 
 const Template: Story = (args) => ({
   props: args,
-  template: `<app-issue-message-list [messages]="messages"></app-issue-message-list>`,
+  template: `<app-concern-list [concerns]="concerns"></app-concern-list>`,
 });
 
 export const ListOfMessages = Template.bind({});

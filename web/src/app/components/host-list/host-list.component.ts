@@ -2,11 +2,12 @@ import { Component, ComponentRef } from '@angular/core';
 import { IColumns } from '@adwp-ui/widgets';
 
 import { TypeName } from '@app/core/types';
-import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { IHost } from '@app/models/host';
 import { ListFactory } from '@app/factories/list-factory';
 import { AddClusterEventData, ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
 import { UniversalAdcmEventData } from '@app/models/universal-adcm-event-data';
+import { ConcernListDirective } from '@app/abstract-directives/concern-list.directive';
+import { ConcernEventType } from '@app/models/concern/concern-reason';
 
 @Component({
   selector: 'app-host-list',
@@ -31,9 +32,10 @@ import { UniversalAdcmEventData } from '@app/models/universal-adcm-event-data';
   `,
   styles: [':host { flex: 1; }'],
 })
-export class HostListComponent extends AdwpListDirective<IHost> {
+export class HostListComponent extends ConcernListDirective<IHost> {
 
   type: TypeName = 'host';
+  eventTypes = [ConcernEventType.Host];
 
   listColumns = [
     ListFactory.fqdnColumn(),
@@ -68,7 +70,7 @@ export class HostListComponent extends AdwpListDirective<IHost> {
     },
     ListFactory.stateColumn(),
     ListFactory.statusColumn(this),
-    ListFactory.actionsColumn(),
+    ListFactory.actionsButton(),
     ListFactory.configColumn(this),
     ListFactory.deleteColumn(this),
   ] as IColumns<IHost>;

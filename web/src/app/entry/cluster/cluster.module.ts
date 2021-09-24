@@ -21,7 +21,7 @@ import { SharedModule } from '@app/shared/shared.module';
 
 import { ClusterListComponent } from './cluster.component';
 import { HcmapComponent } from '@app/components/cluster/hcmap/hcmap.component';
-import { HostComponent } from '@app/components/cluster/host/host.component';
+import { ClusterHostComponent } from '../../components/cluster/host/cluster-host.component';
 import { ServicesComponent } from '@app/components/cluster/services/services.component';
 import { AuthGuard } from '../../core/auth/auth.guard';
 import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
@@ -50,7 +50,7 @@ const clusterRoutes: Routes = [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
       { path: 'service', component: ServicesComponent },
-      { path: 'host', component: HostComponent },
+      { path: 'host', component: ClusterHostComponent },
       { path: 'host_component', component: HcmapComponent },
       { path: 'config', component: ConfigComponent },
       { path: 'group_config', component: ConfigGroupListComponent },
@@ -157,7 +157,7 @@ export class ClusterRoutingModule {
 
 @NgModule({
   imports: [CommonModule, SharedModule, RouterModule, ConfigGroupModule, ClusterRoutingModule],
-  declarations: [ClusterListComponent, ServicesComponent, HostComponent, HcmapComponent],
+  declarations: [ClusterListComponent, ServicesComponent, ClusterHostComponent, HcmapComponent],
   providers: [
     {
       provide: CONFIG_GROUP_LIST_SERVICE,

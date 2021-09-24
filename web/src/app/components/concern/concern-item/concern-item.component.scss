@@ -1,3 +1,5 @@
+@import "~@angular/material/_theming";
+
 .action-link {
   color: #1ee564;
   cursor: pointer;
@@ -11,4 +13,9 @@
 
 a {
   cursor: pointer;
+  color: mat-color($mat-blue, 200) !important;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
