@@ -16,6 +16,7 @@ import json
 from django.core.exceptions import MultipleObjectsReturned
 from django.db import transaction
 from django.utils import timezone
+from django.contrib.contenttypes.models import ContentType
 
 import cm.issue
 import cm.status_api
@@ -566,8 +567,25 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
     return host_comp_list
 
 
-def save_hc(cluster, host_comp_list):
+def get_list_of_continue_existed_hc(cluster, host_comp_list):
+    result = []
+    for (service, host, comp) in host_comp_list:
+        try:
+            still_existed_hc = HostComponent.objects.get(
+                cluster=cluster,
+                service=service,
+                host=host,
+                component=comp
+            )
+            result.append(still_existed_hc)
+        except HostComponent.DoesNotExist:
+            continue
+    return result
+
+
+def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     hc_queryset = HostComponent.objects.filter(cluster=cluster)
+    new_hc_list = get_list_of_continue_existed_hc(cluster, host_comp_list)
     old_hosts = {i.host for i in hc_queryset.select_related('host').all()}
     new_hosts = {i[1] for i in host_comp_list}
     for removed_host in old_hosts.difference(new_hosts):
@@ -575,6 +593,15 @@ def save_hc(cluster, host_comp_list):
     for added_host in new_hosts.difference(old_hosts):
         added_host.add_to_concerns(ctx.lock)
 
+    for removed_hc in list(set(hc_queryset) - set(new_hc_list)):
+        groupconfigs = GroupConfig.objects.filter(hosts=removed_hc.host)
+        cluster_group = GroupConfig.objects.filter(
+            object_type=ContentType.objects.get_for_model(Cluster)
+        )
+        for gc in groupconfigs:
+            if gc not in cluster_group:
+                if gc.object_id in [removed_hc.component.id, removed_hc.service.id]:
+                    removed_hc.host.group_config.remove(gc)
     hc_queryset.delete()
     result = []
     for (proto, host, comp) in host_comp_list:
