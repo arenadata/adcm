@@ -22,6 +22,7 @@ from tests.ui_tests.app.helpers.locator import (
 class CommonTable:
     """Common table locators (eg, cluster list page table)."""
 
+    visible_row = Locator(By.CSS_SELECTOR, "mat-row[adwphover]", "Visible table row")
     header = Locator(By.CSS_SELECTOR, "mat-header-cell>div", "Table header")
     row = Locator(By.CSS_SELECTOR, "mat-row[adwphover]", "Table row")
 
