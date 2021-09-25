@@ -18,4 +18,5 @@ urlpatterns = [
     path('', RBACRoot.as_view(), name='rbac-root'),
     path('user/', include('rbac.user.urls')),
     path('group/', include('rbac.group.urls')),
+    path('role/', include('rbac.role.urls')),
 ]

@@ -9,18 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Arenadata RBAC root view"""
-
-from rest_framework import permissions, routers
-
-
-class RBACRoot(routers.APIRootView):
-    """Arenadata RBAC Root"""
-
-    permission_classes = (permissions.AllowAny,)
-    api_root_dict = {
-        'user': 'rbac-user-list',
-        'group': 'rbac_group:group-list',
-        'role': 'rbac_role:role-list',
-    }

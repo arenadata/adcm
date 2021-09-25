@@ -10,17 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Arenadata RBAC root view"""
+from rest_framework import viewsets
 
-from rest_framework import permissions, routers
+from rbac.models import Role
+
+from .serializers import RoleSerializer
 
 
-class RBACRoot(routers.APIRootView):
-    """Arenadata RBAC Root"""
+# pylint: disable=too-many-ancestors
+class RoleViewSet(viewsets.ModelViewSet):
+    """Role View Set"""
 
-    permission_classes = (permissions.AllowAny,)
-    api_root_dict = {
-        'user': 'rbac-user-list',
-        'group': 'rbac_group:group-list',
-        'role': 'rbac_role:role-list',
-    }
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
+    lookup_field = 'id'
+    filterset_fields = ['id', 'name']
+    ordering_fields = ['id', 'name']

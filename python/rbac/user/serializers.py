@@ -12,10 +12,11 @@
 
 from django.db import models
 from django.db.transaction import atomic
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User, Group, Permission
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
+from rest_framework.reverse import reverse
 from rest_framework.authtoken.models import Token
 from rest_framework.utils import model_meta
 
@@ -27,13 +28,32 @@ class PasswordField(serializers.CharField):
         return '******'
 
 
+def get_group_url(self, obj):
+    kwargs = {'id': self.context['user'].id, 'group_id': obj.id}
+    return reverse('rbac-user-group-detail', kwargs=kwargs, request=self.context['request'])
+
+
 class GroupSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+    get_url = get_group_url
+    
     class Meta:
         model = Group
         fields = (
             'id',
             'name',
+            'url',
         )
+        
+
+class PermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Permission
+        fields = (
+            'name',
+            'codename',
+        )
+
 
 
 class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSerializer):
@@ -41,6 +61,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
 
     password = PasswordField()
     groups = serializers.SerializerMethodField()
+    permissions = serializers.SerializerMethodField()
     add_group = serializers.HyperlinkedIdentityField(
         view_name='rbac-user-group-list', lookup_field= 'id'
     )
@@ -56,6 +77,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
             'email',
             'is_superuser',
             'groups',
+            'permissions',
             'url',
             'add_group'
         )
@@ -68,7 +90,13 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
 
     def get_groups(self, obj):
         groups = obj.groups.all()
-        return GroupSerializer(groups, many=True, context=self.context).data
+        context = self.context
+        context['user'] = obj        
+        return GroupSerializer(groups, many=True, context=context).data
+
+    def get_permissions(self, obj):
+        perms = obj.user_permissions.all()
+        return PermissionSerializer(perms, many=True, context=self.context).data
 
     def create(self, validated_data):
         extra_fields = {}
@@ -120,13 +148,15 @@ class UserGroupSerializer(serializers.ModelSerializer):
     """Serializer for user's groups"""
 
     id = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all())
-
+    url = serializers.SerializerMethodField()
+    get_url = get_group_url
+    
     class Meta:
         model = Group
         fields = (
             'id',
             'name',
-            #'url',
+            'url',
         )
         read_only_fields = ('name',)
 
