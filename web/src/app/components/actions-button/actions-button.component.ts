@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { BaseDirective, EventHelper } from '@adwp-ui/widgets';
 
 import { BaseEntity } from '@app/core/types';
@@ -13,6 +13,8 @@ export class ActionsButtonComponent<T extends BaseEntity> extends BaseDirective 
   EventHelper = EventHelper;
 
   @Input() row: T;
+
+  @Output() onMouseenter = new EventEmitter<T>();
 
   getClusterData(row: any) {
     const { id, hostcomponent } = row.cluster || row;
