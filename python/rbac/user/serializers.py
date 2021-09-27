@@ -36,7 +36,7 @@ def get_group_url(self, obj):
 class GroupSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
     get_url = get_group_url
-    
+
     class Meta:
         model = Group
         fields = (
@@ -44,16 +44,26 @@ class GroupSerializer(serializers.ModelSerializer):
             'name',
             'url',
         )
-        
+
 
 class PermissionSerializer(serializers.ModelSerializer):
+    app_label = serializers.SerializerMethodField()
+    model = serializers.SerializerMethodField()
+
     class Meta:
         model = Permission
         fields = (
             'name',
             'codename',
+            'app_label',
+            'model',
         )
 
+    def get_app_label(self, obj):
+        return obj.content_type.app_label
+
+    def get_model(self, obj):
+        return obj.content_type.model
 
 
 class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSerializer):
@@ -63,7 +73,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
     groups = serializers.SerializerMethodField()
     permissions = serializers.SerializerMethodField()
     add_group = serializers.HyperlinkedIdentityField(
-        view_name='rbac-user-group-list', lookup_field= 'id'
+        view_name='rbac-user-group-list', lookup_field='id'
     )
 
     class Meta:
@@ -79,7 +89,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
             'groups',
             'permissions',
             'url',
-            'add_group'
+            'add_group',
         )
         extra_kwargs = {
             #'url': {'view_name': 'rbac_user:user-detail', 'lookup_field': 'id'},
@@ -91,7 +101,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
     def get_groups(self, obj):
         groups = obj.groups.all()
         context = self.context
-        context['user'] = obj        
+        context['user'] = obj
         return GroupSerializer(groups, many=True, context=context).data
 
     def get_permissions(self, obj):
@@ -150,7 +160,7 @@ class UserGroupSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all())
     url = serializers.SerializerMethodField()
     get_url = get_group_url
-    
+
     class Meta:
         model = Group
         fields = (

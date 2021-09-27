@@ -26,6 +26,28 @@ class Role(models.Model):
     user = models.ManyToManyField(User, blank=True, related_name='rbac_role_user')
     group = models.ManyToManyField(Group, blank=True, related_name='rbac_role_group')
 
+    def get_permissions(self):
+        role_list = []
+        perm_list = []
+
+        def get_perm(role, perm_list, role_list):
+            if role in role_list:
+                return
+            role_list.append(role)
+            for p in role.permissions.all():
+                if p not in perm_list:
+                    perm_list.append(p)
+            for child in role.childs.all():
+                get_perm(child, perm_list, role_list)
+
+        get_perm(self, perm_list, role_list)
+        return perm_list
+
+
+class RoleMigration(models.Model):
+    version = models.PositiveIntegerField(primary_key=True)
+    date = models.DateTimeField(auto_now=True)
+
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)

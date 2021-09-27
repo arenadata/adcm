@@ -10,17 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import ruyaml
+from os.path import dirname
 
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import Permission
 
-import cm.api
+from adwp_base.errors import raise_AdwpEx as err
+
 import cm.checker
-from cm import config
-from cm.logger import log
-from cm.errors import raise_AdcmEx as err
-from cm.models import Role, RoleMigration
+from rbac import log
+from rbac.models import Role, RoleMigration
+
+
+BASE_DIR = dirname(dirname(dirname(os.path.abspath(__file__))))
+CODE_DIR = os.path.join(BASE_DIR, 'python')
+ROLE_SPEC = os.path.join(CODE_DIR, 'rbac', 'role_spec.yaml')
+ROLE_SCHEMA = os.path.join(CODE_DIR, 'rbac', 'role_schema.yaml')
 
 
 def upgrade(data):
@@ -39,7 +46,7 @@ def upgrade(data):
         role_obj.save()
 
     for role in new_roles.values():
-        perm_list = cm.api.get_role_permissions(role)
+        perm_list = role.get_permissions()
         for user in role.user.all():
             user.user_permissions.clear()
             for perm in perm_list:
@@ -90,6 +97,7 @@ def upgrade_role(role, data):
         new_role.permissions.clear()
     except Role.DoesNotExist:
         new_role = Role(name=role['name'])
+        new_role.save()
     if 'description' in role:
         new_role.description = role['description']
     for perm in perm_list:
@@ -100,14 +108,14 @@ def upgrade_role(role, data):
 
 def get_role_spec():
     try:
-        with open(config.ROLE_SPEC, encoding='utf_8') as fd:
+        with open(ROLE_SPEC, encoding='utf_8') as fd:
             data = ruyaml.round_trip_load(fd)
     except FileNotFoundError:
-        err('INVALID_ROLE_SPEC', f'Can not open role file "{config.ROLE_SPEC}"')
+        err('INVALID_ROLE_SPEC', f'Can not open role file "{ROLE_SPEC}"')
     except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
-        err('INVALID_ROLE_SPEC', f'YAML decode "{config.ROLE_SPEC}" error: {e}')
+        err('INVALID_ROLE_SPEC', f'YAML decode "{ROLE_SPEC}" error: {e}')
 
-    with open(config.ROLE_SCHEMA, encoding='utf_8') as fd:
+    with open(ROLE_SCHEMA, encoding='utf_8') as fd:
         rules = ruyaml.round_trip_load(fd)
 
     try:
@@ -119,7 +127,7 @@ def get_role_spec():
                 if 'Input data for' in ee.message:
                     continue
                 args += f'line {ee.line}: {ee}\n'
-        err('INVALID_ROLE_SPEC', f'"{config.ROLE_SPEC}" line {e.line} error: {e}', args)
+        err('INVALID_ROLE_SPEC', f'"{ROLE_SPEC}" line {e.line} error: {e}', args)
 
     return data
 
@@ -128,7 +136,7 @@ def init_roles():
     role_data = get_role_spec()
     check_roles_childs(role_data)
 
-    rm = RoleMigration.obj.last()
+    rm = RoleMigration.objects.last()
     if rm is None:
         rm = RoleMigration(version=0)
     if role_data['version'] > rm.version:

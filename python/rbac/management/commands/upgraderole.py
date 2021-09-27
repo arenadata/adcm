@@ -12,8 +12,8 @@
 
 from django.core.management.base import BaseCommand, CommandError
 
-from cm.role import init_roles
-from cm.errors import AdcmEx
+from rbac.upgrade_role import init_roles
+from adwp_base.errors import AdwpEx
 
 
 class Command(BaseCommand):
@@ -31,5 +31,5 @@ class Command(BaseCommand):
         try:
             msg = init_roles()
             self.stdout.write(self.style.SUCCESS(msg))
-        except AdcmEx as e:
-            raise CommandError(e.msg)
+        except AdwpEx as e:
+            raise CommandError(e.msg) from None

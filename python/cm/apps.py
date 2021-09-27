@@ -105,7 +105,7 @@ class CmConfig(AppConfig):
     m2m_change = partial(m2m_change, filter_out=filter_out_event)
 
     def ready(self):
-        post_migrate.connect(fill_role, sender=self)
+        # post_migrate.connect(fill_role, sender=self)
         post_save.connect(self.model_change, dispatch_uid='model_change')
         post_delete.connect(self.model_delete, dispatch_uid='model_delete')
         m2m_changed.connect(self.m2m_change, dispatch_uid='m2m_change')
