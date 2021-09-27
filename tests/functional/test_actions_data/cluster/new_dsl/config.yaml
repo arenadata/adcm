@@ -14,65 +14,44 @@
   name: Dummy cluster
   version: 1.5
   actions:
+    some_action:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+      masking:
+        state:
+          available: any
+
+    some_action_state_created:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+      masking:
+        state:
+          available:
+            - created
+
+    some_action_state_installed:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+      masking:
+        state:
+          available:
+            - installed
+
+    some_action_unavailable:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+
     switch_cluster_state:
       type: job
       script: dummy_action.yaml
       script_type: ansible
-      states:
-        available:
-          - created
-        on_success: installed
-
-- type: service
-  name: First service
-  version: 1.5
-  components:
-    first:
-    second:
-  actions:
-    action_on_host:
-      type: job
-      script: dummy_action.yaml
-      script_type: ansible
-      host_action: true
-      states:
+      masking:
+        state:
           available:
             - created
-
-    action_on_host_state_installed:
-      type: job
-      script: dummy_action.yaml
-      script_type: ansible
-      host_action: true
-      states:
-          available:
-            - installed
-
-    action_on_host_multijob:
-      type: task
-      scripts:
-        - name: part1
-          script_type: ansible
-          script: dummy_action.yaml
-        - name: part2
-          script_type: ansible
-          script: dummy_action.yaml
-      host_action: true
-      states:
-        available:
-          - created
-
-    switch_service_state:
-      type: job
-      script: dummy_action.yaml
-      script_type: ansible
-      states:
-          available:
-            - created
-          on_success: installed
-
-- type: service
-  name: Second service
-  version: 1.5
-  components:
-    first:
+      on_success:
+        state: installed
