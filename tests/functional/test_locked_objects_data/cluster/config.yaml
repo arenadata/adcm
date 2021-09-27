@@ -30,6 +30,24 @@
             available: any
             on_success: created
             on_fail: failed
+        lock_multijob:
+          type: task
+          scripts:
+            - name: part1
+              script_type: ansible
+              script: ansible/lock.yaml
+            - name: part2
+              script_type: ansible
+              script: ansible/lock.yaml
+          config:
+            duration:
+              default: 5
+              type: integer
+              required: false
+          states:
+            available: any
+            on_success: created
+            on_fail: failed
         dummy:
           type: job
           script: ansible/dummy.yaml

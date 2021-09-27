@@ -1,0 +1,8 @@
+<ng-container *ngFor="let item of preparedMessage">
+  <app-concern-item
+    *ngIf="item.charAt(0) === '$'; else regularString"
+    [item]="item | issueMessagePlaceholder"
+    [placeholder]="concern.reason.placeholder[item | issueMessagePlaceholder]"
+  ></app-concern-item>
+  <ng-template #regularString><span>{{item}}</span></ng-template>
+</ng-container>

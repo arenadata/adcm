@@ -4,8 +4,8 @@ import { filter } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 import { IListResult } from '@adwp-ui/widgets';
 
-import { EventMessage, EntityEvent, selectMessage, SocketState } from '@app/core/store';
-import { EventableService } from '@app/models/eventable-service';
+import { EventMessage, selectMessage, SocketState } from '@app/core/store';
+import { EventableService, EventFilter } from '@app/models/eventable-service';
 import { Task } from '@app/core/types';
 import { ApiService } from '@app/core/api';
 import { EntityService } from '@app/abstract/entity-service';
@@ -28,11 +28,11 @@ export class TaskService extends EntityService<Task> implements EventableService
     return this.api.get(`api/v1/task/`, params);
   }
 
-  events(events: EntityEvent[]): Observable<EventMessage> {
+  events(eventFilter?: EventFilter): Observable<EventMessage> {
     return this.store.pipe(
       selectMessage,
       filter(event => event?.object?.type === 'task'),
-      filter(event => !events || events.includes(event?.event)),
+      filter(event => !eventFilter?.events || eventFilter.events.includes(event?.event)),
     );
   }
 

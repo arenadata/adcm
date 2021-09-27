@@ -1,6 +1,6 @@
-import { ApiBase } from '@app/core/types';
+import { BaseEntity } from '@app/core/types';
 
-export interface ICluster extends ApiBase {
+export interface ICluster extends BaseEntity {
   bind: string;
   edition: string;
   host: string;

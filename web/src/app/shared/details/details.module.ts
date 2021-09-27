@@ -27,7 +27,6 @@ import { NavigationService } from './navigation.service';
 import { SubtitleComponent } from './subtitle.component';
 import { TopComponent } from './top/top.component';
 import { NavigationComponent } from '@app/components/navigation/navigation.component';
-import { ActionsColumnComponent } from '@app/components/columns/actions-column/actions-column.component';
 import { ActionsButtonComponent } from '@app/components/actions-button/actions-button.component';
 
 import { NavItemPipe } from '@app/pipes/nav-item.pipe';
@@ -54,7 +53,6 @@ import { TaskObjectsComponent } from '@app/components/columns/task-objects/task-
   ],
   exports: [
     DetailComponent,
-    ActionsColumnComponent,
     ActionsButtonComponent,
     ObjectLinkColumnPipe,
     SortObjectsPipe,
@@ -67,7 +65,6 @@ import { TaskObjectsComponent } from '@app/components/columns/task-objects/task-
     LeftComponent,
     TopComponent,
     NavigationComponent,
-    ActionsColumnComponent,
     ActionsButtonComponent,
 
     NavItemPipe,

@@ -3,11 +3,10 @@ import { ComponentRef } from '@angular/core';
 
 import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';
 import { StatusColumnComponent, StatusData } from '@app/components/columns/status-column/status-column.component';
-import { ActionsColumnComponent } from '@app/components/columns/actions-column/actions-column.component';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { UpgradeComponent } from '@app/shared/components';
 import { ActionsButtonComponent } from '@app/components/actions-button/actions-button.component';
-import { IssueType } from '@app/models/issue';
+import { BaseEntity } from '@app/core/types';
 
 export class ListFactory {
 
@@ -63,26 +62,13 @@ export class ListFactory {
     };
   }
 
-  static actionsColumn(): IComponentColumn<any> {
-    return {
-      label: 'Actions',
-      type: 'component',
-      className: 'list-control',
-      headerClassName: 'list-control',
-      component: ActionsColumnComponent,
-    };
-  }
-
-  static actionsButton<T>(type: IssueType): IComponentColumn<T> {
+  static actionsButton<T extends BaseEntity>(): IComponentColumn<T> {
     return {
       label: 'Actions',
       type: 'component',
       className: 'list-control',
       headerClassName: 'list-control',
       component: ActionsButtonComponent,
-      instanceTaken: (componentRef: ComponentRef<ActionsButtonComponent<T>>) => {
-        componentRef.instance.issueType = type;
-      }
     };
   }
 

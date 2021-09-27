@@ -92,6 +92,7 @@ export abstract class ListDirective extends BaseDirective implements OnInit, OnD
 
   ngOnDestroy(): void {
     this.baseListDirective.destroy();
+    super.ngOnDestroy();
   }
 
   delete($event: MouseEvent, row: any): void {
