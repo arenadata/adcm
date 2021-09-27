@@ -1,24 +1,35 @@
 import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { filter, tap } from 'rxjs/operators';
 
-import { EntityEvent, EventMessage, selectMessage, SocketState } from '../core/store';
+import { ConcernEventFilter, EventableService } from '@app/models/eventable-service';
+import { EventMessage, selectMessage, SocketState } from '@app/core/store';
 
-@Injectable({
-  providedIn: 'root'
-})
-export class ConcernService {
+@Injectable()
+export class ConcernService implements EventableService {
 
   constructor(
     private store: Store<SocketState>,
   ) { }
 
-  events(events?: EntityEvent[]): Observable<EventMessage> {
+  parse(issueMessage: string): string[] {
+    let result = [];
+    for (const item of issueMessage.matchAll(/(.*?)(\$\{.+?\})|(.+$)/g)) {
+      if (item.length) {
+        result = [ ...result, ...item.slice(1, item.length) ];
+      }
+    }
+
+    return result.filter(item => !!item);
+  }
+
+  events(eventFilter?: ConcernEventFilter): Observable<EventMessage> {
     return this.store.pipe(
       selectMessage,
-      filter(event => event?.object?.type === 'cluster-concerns'),
-      filter(event => !events || events.includes(event?.event)),
+      filter(event => !!event),
+      filter(event => !eventFilter?.events || eventFilter.events.includes(event.event)),
+      filter(event => !eventFilter?.types || eventFilter.types.includes(event.object?.type as any)),
     );
   }
 

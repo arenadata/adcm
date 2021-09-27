@@ -16,6 +16,7 @@ import { Job, Task } from './task-job';
 import { AdcmEntity } from '@app/models/entity';
 import { IIssues } from '@app/models/issue';
 import { ICluster } from '@app/models/cluster';
+import { Concern } from '@app/models/concern/concern';
 
 export type TypeName =
   'bundle' |
@@ -35,8 +36,7 @@ export type TypeName =
   'servicecomponent' |
   'component' |
   'group_config' |
-  'group_config_hosts' |
-  'cluster-concerns';
+  'group_config_hosts';
 export type Entities = ICluster | Service | Host | Provider | Job | Task | Bundle;
 
 /**
@@ -50,7 +50,7 @@ export interface IRoot {
   [key: string]: string;
 }
 
-export interface ApiBase extends AdcmEntity {
+export interface BaseEntity extends AdcmEntity {
   typeName: TypeName;
   description?: string;
   url: string;
@@ -65,6 +65,7 @@ export interface ApiBase extends AdcmEntity {
   prototype_version?: string;
   bundle_id?: number;
   status?: number | string;
+  concerns: Concern[];
 }
 
 export interface ApiFlat {
@@ -74,11 +75,11 @@ export interface ApiFlat {
   url: string;
 }
 
-export interface Provider extends ApiBase {
+export interface Provider extends BaseEntity {
   host: string;
 }
 
-export interface Host extends ApiBase {
+export interface Host extends BaseEntity {
   fqdn: string;
   provider_id: number;
   cluster: string;
@@ -86,7 +87,7 @@ export interface Host extends ApiBase {
   cluster_name?: string;
 }
 
-export interface Service extends ApiBase {
+export interface Service extends BaseEntity {
   components: IComponent[];
   status: number;
   hostcomponent: string;
@@ -106,6 +107,6 @@ export interface License {
   text: string;
 }
 
-export interface Bundle extends ApiBase, CanLicensed {
+export interface Bundle extends BaseEntity, CanLicensed {
   [key: string]: any;
 }

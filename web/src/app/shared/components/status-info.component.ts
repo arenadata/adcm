@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
-import { ApiBase } from '@app/core/types/api';
+import { BaseEntity } from '@app/core/types/api';
 import { Observable, of } from 'rxjs';
 import { switchMap, tap, map } from 'rxjs/operators';
 
@@ -39,7 +39,7 @@ import { ICluster } from '@app/models/cluster';
 export class StatusInfoComponent implements OnInit {
   path: string;
   cluster: ICluster;
-  current: ApiBase;
+  current: BaseEntity;
   statusInfo$: Observable<any>;
 
   constructor(private service: StatusService, private componentData: ComponentData) {}

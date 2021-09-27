@@ -16,7 +16,7 @@ import { exhaustMap, filter, map, withLatestFrom } from 'rxjs/operators';
 
 import { ApiService } from '../api';
 import { State } from '../store';
-import { ApiBase } from '../types';
+import { BaseEntity } from '../types';
 import { IIssues } from '@app/models/issue';
 
 export interface IssueState {
@@ -45,7 +45,7 @@ export class IssueEffect {
       ofType(loadIssue),
       withLatestFrom(this.store, (action, state) => state.issue.url),
       filter(url => !!url),
-      exhaustMap(url => this.api.get<ApiBase>(url).pipe(map(o => fillIssue({ value: o.issue, url: o.url }))))
+      exhaustMap(url => this.api.get<BaseEntity>(url).pipe(map(o => fillIssue({ value: o.issue, url: o.url }))))
     )
   );
 
