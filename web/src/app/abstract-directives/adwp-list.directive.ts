@@ -26,13 +26,17 @@ export abstract class AdwpListDirective<T> extends ListDirective implements OnIn
     this.data$.next(data as any);
   }
 
-  ngOnInit() {
+  initBaseListDirective() {
     this.baseListDirective = new AdwpBaseListDirective(this, this.service, this.store, this.api);
     this.baseListDirective.typeName = this.type;
     this.baseListDirective.reload = this.reload.bind(this);
     (this.baseListDirective as AdwpBaseListDirective).paging = this.paging;
     (this.baseListDirective as AdwpBaseListDirective).sorting = this.sorting;
     this.baseListDirective.init();
+  }
+
+  ngOnInit() {
+    this.initBaseListDirective();
   }
 
   clickRow(data: RowEventData) {
@@ -71,6 +75,14 @@ export abstract class AdwpListDirective<T> extends ListDirective implements OnIn
 
   getSort(): Sort {
     return this.sorting.value;
+  }
+
+  rewriteRow(row: Entities) {
+    this.service.checkItem(row).subscribe((item) => Object.keys(row).map((a) => (row[a] = item[a])));
+  }
+
+  findRow(id: number): Entities {
+    return this.data.data.find((item) => item.id === id);
   }
 
 }

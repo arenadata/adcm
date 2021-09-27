@@ -11,7 +11,7 @@
 // limitations under the License.
 import { Component, Input } from '@angular/core';
 
-import { ApiBase } from '@app/core/types';
+import { BaseEntity } from '@app/core/types';
 import { NavigationService, INavItem } from '../navigation.service';
 import { IIssues } from '@app/models/issue';
 
@@ -49,7 +49,7 @@ import { IIssues } from '@app/models/issue';
 })
 export class LeftComponent {
   items: INavItem[] = [];
-  @Input() set current(c: Partial<ApiBase>) {
+  @Input() set current(c: Partial<BaseEntity>) {
     if (c) this.items = this.navigation.getLeft(c);
   }
 

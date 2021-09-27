@@ -3,25 +3,23 @@ import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 
-import { IssueMessageComponent } from '../../app/components/issue-message/issue-message.component';
-import { IssueMessageService } from '../../app/services/issue-message.service';
-import { IssueMessageItemComponent } from '../../app/components/issue-message/issue-message-item/issue-message-item.component';
+import { ConcernComponent } from '../../app/components/concern/concern.component';
+import { ConcernService } from '../../app/services/concern.service';
+import { ConcernItemComponent } from '../../app/components/concern/concern-item/concern-item.component';
 import { IssueMessagePlaceholderPipe } from '../../app/pipes/issue-message-placeholder.pipe';
-import { IssueMessageRefComponent } from '../../app/components/issue-message/issue-message-ref/issue-message-ref.component';
 import { ISSUE_MESSAGES_DEFAULT_MOCK, ISSUE_MESSAGES_VERY_LONG_MOCK } from './mock';
 
 export default {
-  title: 'ADCM/Issue messages',
+  title: 'ADCM/Concern',
   decorators: [
     moduleMetadata({
       providers: [
-        IssueMessageService,
+        ConcernService,
       ],
       declarations: [
-        IssueMessageComponent,
-        IssueMessageItemComponent,
+        ConcernComponent,
+        ConcernItemComponent,
         IssueMessagePlaceholderPipe,
-        IssueMessageRefComponent,
       ],
       imports: [
         CommonModule,
@@ -30,9 +28,9 @@ export default {
       ],
     }),
   ],
-  component: IssueMessageComponent,
+  component: ConcernComponent,
   argTypes: {
-    message: {
+    concern: {
       control: { type: 'object' }
     },
   },
