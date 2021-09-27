@@ -61,7 +61,7 @@ def test_when_cluster_has_issue_than_upgrade_locked(sdk_client_fs: ADCMClient):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             cluster.upgrade().do()
     with allure.step("Check if cluster has issues"):
-        UPGRADE_ERROR.equal(e, "cluster ", " has issue: ")
+        UPGRADE_ERROR.equal(e, "cluster ", " has blocking concerns ")
 
 
 def test_when_hostprovider_has_issue_than_upgrade_locked(sdk_client_fs: ADCMClient):

@@ -13,8 +13,11 @@
 import allure
 import coreapi
 import pytest
+from _pytest.outcomes import Failed
+
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin import utils
+from adcm_pytest_plugin.utils import catch_failed
 
 from tests.library import errorcodes as err
 
@@ -158,23 +161,46 @@ state_cases = [
     ("provider", "on_fail", "was_dict"),
     ("provider", "on_fail", "was_list"),
     ("provider", "on_fail", "was_sequence"),
-    ("host", "on_success", "was_dict"),
-    ("host", "on_success", "was_list"),
-    ("host", "on_success", "was_sequence"),
-    ("host", "on_fail", "was_dict"),
-    ("host", "on_fail", "was_list"),
-    ("host", "on_fail", "was_sequence"),
+    ("cluster", "on_success", "was_dict_new_dsl"),
+    ("cluster", "on_success", "was_list_new_dsl"),
+    ("cluster", "on_success", "was_sequence_new_dsl"),
+    ("cluster", "on_fail", "was_dict_new_dsl"),
+    ("cluster", "on_fail", "was_list_new_dsl"),
+    ("cluster", "on_fail", "was_sequence_new_dsl"),
 ]
 
 
 @pytest.mark.parametrize(("entity", "state", "case"), state_cases)
-def test_load_should_fail_when(sdk_client_fs: ADCMClient, entity, state, case):
+def test_load_should_fail_on_wrong_states(sdk_client_fs: ADCMClient, entity, state, case):
     with allure.step(f"Upload {entity} bundle with {case}"):
         bundle_path = utils.get_data_dir(__file__, "states", entity, state, case)
-        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-            sdk_client_fs.upload_from_fs(bundle_path)
-    with allure.step(f"Check if state is {state}"):
-        err.INVALID_OBJECT_DEFINITION.equal(e, state, "should be a <class 'str'>")
+        with catch_failed(Failed, "Bundle was loaded but should fail to load"):
+            with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+                sdk_client_fs.upload_from_fs(bundle_path)
+    with allure.step("Assert that error message is correct"):
+        # validation messages in new DSL are a bit messy so we check only error code and type
+        if "new_dsl" in case:
+            err.INVALID_OBJECT_DEFINITION.equal(e)
+        else:
+            err.INVALID_OBJECT_DEFINITION.equal(e, state)
+
+
+invalid_dsl_cases = [
+    ("cluster", "on_fail_without_masking"),
+    ("cluster", "on_success_without_masking"),
+    ("cluster", "states_and_masking"),
+]
+
+
+@pytest.mark.parametrize(("entity", "case"), invalid_dsl_cases)
+def test_load_should_fail_on_wrong_dsl(sdk_client_fs: ADCMClient, entity, case):
+    with allure.step(f"Upload {entity} bundle with {case}"):
+        bundle_path = utils.get_data_dir(__file__, "states", entity, case)
+        with catch_failed(Failed, "Bundle was loaded but should fail to load"):
+            with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+                sdk_client_fs.upload_from_fs(bundle_path)
+    with allure.step("Assert that error message is correct"):
+        err.INVALID_OBJECT_DEFINITION.equal(e)
 
 
 @allure.link("https://jira.arenadata.io/browse/ADCM-580")

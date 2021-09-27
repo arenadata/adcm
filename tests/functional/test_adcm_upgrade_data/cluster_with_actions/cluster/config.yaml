@@ -11,68 +11,47 @@
 # limitations under the License.
 
 - type: cluster
-  name: Dummy cluster
+  name: old_action
   version: 1.5
+
   actions:
-    switch_cluster_state:
+    no_states-unavailable:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+    single_state-available:
       type: job
       script: dummy_action.yaml
       script_type: ansible
       states:
         available:
           - created
-        on_success: installed
-
-- type: service
-  name: First service
-  version: 1.5
-  components:
-    first:
-    second:
-  actions:
-    action_on_host:
+    single_state-unavailable:
       type: job
       script: dummy_action.yaml
       script_type: ansible
-      host_action: true
       states:
-          available:
-            - created
-
-    action_on_host_state_installed:
+        available:
+          - some_other_state
+    state_list-available:
       type: job
       script: dummy_action.yaml
       script_type: ansible
-      host_action: true
-      states:
-          available:
-            - installed
-
-    action_on_host_multijob:
-      type: task
-      scripts:
-        - name: part1
-          script_type: ansible
-          script: dummy_action.yaml
-        - name: part2
-          script_type: ansible
-          script: dummy_action.yaml
-      host_action: true
       states:
         available:
           - created
-
-    switch_service_state:
+          - installed
+    state_list-unavailable:
       type: job
       script: dummy_action.yaml
       script_type: ansible
       states:
-          available:
-            - created
-          on_success: installed
-
-- type: service
-  name: Second service
-  version: 1.5
-  components:
-    first:
+        available:
+          - some_other_state
+          - yet_another_state
+    state_any-available:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+      states:
+        available: any
