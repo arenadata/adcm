@@ -427,7 +427,7 @@ def ui_config(obj, cl):
         if flat_group_keys:
             if spec[key].type == 'group':
                 item['group'] = any((v for k, v in flat_group_keys.items() if k.startswith(key)))
-            else:
+            elif spec[key].group_customization:
                 item['group'] = flat_group_keys[key]
         conf.append(item)
     return conf
