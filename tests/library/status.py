@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-from typing import Collection, Tuple
+from typing import Collection, Tuple, Union
 
 import requests
 
@@ -20,7 +20,10 @@ from adcm_pytest_plugin.docker_utils import ADCM
 from tests.library.utils import RequestFailedException, get_json_or_text
 
 POSITIVE_STATUS = 0
+DEFAULT_NEGATIVE_STATUS = 16
 _PATH_TO_ADCM_SECRETS = '/adcm/data/var/secrets.json'
+
+HostComponentTuple = Tuple[Host, Component]
 
 
 class ADCMObjectStatusChanger:
@@ -58,27 +61,47 @@ class ADCMObjectStatusChanger:
                 self._set_host_status(host_id, POSITIVE_STATUS)
                 hosts.add(host_id)
 
-    def set_host_positive_status(self, hosts: Collection[Host]) -> None:
-        """Make hosts "working" by setting status to 0"""
-        for host in hosts:
+    def set_host_positive_status(self, host: Union[Host, Collection[Host]]) -> None:
+        """Make host(s) "working" by setting status to 0"""
+        if isinstance(host, Host):
             self._set_host_status(host.id, POSITIVE_STATUS)
+        else:
+            for host_to_change in host:
+                self._set_host_status(host_to_change.id, POSITIVE_STATUS)
 
-    def set_host_negative_status(self, hosts: Collection[Host], status: int = 16) -> None:
-        """Make hosts "not working" by setting status != 0"""
-        for host in hosts:
+    def set_host_negative_status(
+        self, host: Union[Host, Collection[Host]], status: int = DEFAULT_NEGATIVE_STATUS
+    ) -> None:
+        """Make host(s) "not working" by setting status != 0"""
+        if isinstance(host, Host):
             self._set_host_status(host.id, status)
+        else:
+            for host_to_change in host:
+                self._set_host_status(host_to_change.id, status)
 
-    def set_component_positive_status(self, host_components: Collection[Tuple[Host, Component]]) -> None:
-        """Make components "working" by setting status to 0"""
-        for host, component in host_components:
-            self._set_status(self.host_url_template.format(host.id, component.id), POSITIVE_STATUS)
+    def set_component_positive_status(
+        self, host_component: Union[HostComponentTuple, Collection[HostComponentTuple]]
+    ) -> None:
+        """Make component(s) "working" by setting status to 0"""
+        if isinstance(host_component, tuple) and len(host_component) == 2:
+            host, component = host_component
+            self._set_component_status(host.id, component.id, POSITIVE_STATUS)
+        else:
+            for host, component in host_component:
+                self._set_component_status(host.id, component.id, POSITIVE_STATUS)
 
     def set_component_negative_status(
-        self, host_components: Collection[Tuple[Host, Component]], status: int = 16
+        self,
+        host_component: Union[HostComponentTuple, Collection[HostComponentTuple]],
+        status: int = DEFAULT_NEGATIVE_STATUS,
     ) -> None:
-        """Make components "not working" by settings status != 0"""
-        for host, component in host_components:
-            self._set_status(self.host_url_template.format(host.id, component.id), status)
+        """Make component(s) "not working" by settings status != 0"""
+        if isinstance(host_component, tuple) and len(host_component) == 2:
+            host, component = host_component
+            self._set_component_status(host.id, component.id, status)
+        else:
+            for host, component in host_component:
+                self._set_component_status(host.id, component.id, status)
 
     def _set_host_status(self, host_id: int, status: int) -> None:
         """Set host status by id"""
