@@ -133,6 +133,6 @@ def test_actions_availability_after_upgrade(
 
     _assert_available_actions(cluster)
 
-    _upgrade_adcm(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+    upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
 
     _assert_available_actions(cluster)
