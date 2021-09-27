@@ -11,14 +11,18 @@
 # limitations under the License.
 
 # pylint:disable=redefined-outer-name
+
+import os
 import json
 import tempfile
+
 from typing import Generator
 
 import requests
 import allure
 import pytest
 
+from _pytest.fixtures import SubRequest
 from adcm_client.wrappers.docker import ADCM
 from selenium.common.exceptions import WebDriverException
 
@@ -26,6 +30,9 @@ from tests.ui_tests.app.api import ADCMDirectAPIClient
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage
+
+
+SELENOID_DOWNLOADS_PATH = '/home/selenium/Downloads'
 
 
 @allure.title("Additional ADCM init config")
@@ -46,13 +53,44 @@ def additional_adcm_init_config(request) -> dict:
 
 
 @pytest.fixture(scope="session")
-def web_driver(browser):
+def downloads_directory(tmpdir_factory: pytest.TempdirFactory):
+    """
+    Folder in which browser downloads will be stored
+    If SELENOID_HOST env variable is provided, then no directory is created
+    and path to selenoid downloads returned as string
+    """
+    if os.environ.get("SELENOID_HOST"):
+        return SELENOID_DOWNLOADS_PATH
+    downloads_dirname = 'browser-downloads'
+    return tmpdir_factory.mktemp(downloads_dirname)
+
+
+@pytest.fixture()
+def clean_downloads_fs(request: SubRequest, downloads_directory):
+    """Clean downloads directory before use"""
+    if downloads_directory == SELENOID_DOWNLOADS_PATH:
+        yield
+        return
+    for item in downloads_directory.listdir():
+        item.remove()
+    yield
+    if request.node.rep_setup.passed and request.node.rep_call.failed:
+        allure.attach(
+            '\n'.join(str(doc) for doc in downloads_directory.listdir()),
+            name='Files in "Downloads" directory',
+            attachment_type=allure.attachment_type.TEXT,
+        )
+
+
+@pytest.fixture(scope="session")
+def web_driver(browser, downloads_directory):
     """
     Create ADCMTest object and initialize web driver session
     Destroy session after test is done
     :param browser: browser name from pytest_generate_tests hook
+    :param downloads_directory: directory to store browser downloads
     """
-    driver = ADCMTest(browser)
+    driver = ADCMTest(browser, downloads_directory)
     driver.create_driver()
     yield driver
     try:

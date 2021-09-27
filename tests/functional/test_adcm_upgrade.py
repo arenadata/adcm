@@ -23,6 +23,17 @@ from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
 from version_utils import rpm
 
+from tests.functional.plugin_utils import AnyADCMObject
+from .conftest import only_clean_adcm
+
+pytestmark = [only_clean_adcm]
+
+AVAILABLE_ACTIONS = {
+    "single_state-available",
+    "state_list-available",
+    "state_any-available",
+}
+
 
 @pytest.fixture(scope="session")
 def upgrade_target(cmd_opts) -> Tuple[str, str]:
@@ -60,6 +71,15 @@ def _create_host(sdk_client_fs: ADCMClient, bundle_dir: str = "hostprovider") ->
     return provider.host_create(fqdn=f"test_host_{random_string()}")
 
 
+@allure.step("Check actions availability")
+def _assert_available_actions(obj: AnyADCMObject):
+    obj.reread()
+    actions = {action.name for action in obj.action_list()}
+    assert (
+        actions == AVAILABLE_ACTIONS
+    ), f"Unexpected list of available actions!\nExpected: {AVAILABLE_ACTIONS}\nActual:{actions}"
+
+
 @allure.step("Check that previously created cluster exists")
 def _check_that_cluster_exists(sdk_client_fs: ADCMClient, cluster: Cluster) -> None:
     assert len(sdk_client_fs.cluster_list()) == 1, "Only one cluster expected to be"
@@ -80,7 +100,7 @@ def _check_encryption(obj: Union[Cluster, Service]) -> None:
 
 
 @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
-@pytest.mark.parametrize("image", old_adcm_images(), ids=repr)
+@pytest.mark.parametrize("image", old_adcm_images(), ids=repr, indirect=True)
 def test_upgrade_adcm(
     adcm_fs: ADCM,
     sdk_client_fs: ADCMClient,
@@ -99,7 +119,7 @@ def test_upgrade_adcm(
 
 
 @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
-@pytest.mark.parametrize("image", old_adcm_images(), ids=repr)
+@pytest.mark.parametrize("image", old_adcm_images(), ids=repr, indirect=True)
 def test_pass_in_config_encryption_after_upgrade(
     adcm_fs: ADCM,
     sdk_client_fs: ADCMClient,
@@ -118,3 +138,21 @@ def test_pass_in_config_encryption_after_upgrade(
 
     _check_encryption(cluster)
     _check_encryption(service)
+
+
+@pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
+@pytest.mark.parametrize("image", [["hub.arenadata.io/adcm/adcm", "2021.06.17.06"]], ids=repr, indirect=True)
+def test_actions_availability_after_upgrade(
+    adcm_fs: ADCM,
+    sdk_client_fs: ADCMClient,
+    adcm_api_credentials: dict,
+    upgrade_target: Tuple[str, str],
+) -> None:
+    """Test that actions availability from old DSL remains the same after update"""
+    cluster = _create_cluster(sdk_client_fs, "cluster_with_actions")
+
+    _assert_available_actions(cluster)
+
+    _upgrade_adcm(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+
+    _assert_available_actions(cluster)

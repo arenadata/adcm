@@ -26,8 +26,7 @@ from background_task import background
 from django.db import transaction
 from django.utils import timezone
 
-from cm import config
-from cm import api, inventory, adcm_config, variant
+from cm import api, inventory, adcm_config, variant, config
 from cm.adcm_config import obj_ref, process_file_type
 from cm.api_context import ctx
 from cm.errors import raise_AdcmEx as err
@@ -41,6 +40,8 @@ from cm.models import (
     CheckLog,
     Cluster,
     ClusterObject,
+    ConcernType,
+    ConfigLog,
     DummyData,
     GroupCheckLog,
     Host,
@@ -51,9 +52,8 @@ from cm.models import (
     ServiceComponent,
     SubAction,
     TaskLog,
-    ConfigLog,
-    get_object_cluster,
     get_model_by_type,
+    get_object_cluster,
 )
 from cm.status_api import post_event
 
@@ -98,6 +98,8 @@ def prepare_task(
     cluster = get_object_cluster(obj)
     check_action_state(action, obj, cluster)
     _, spec = check_action_config(action, obj, conf, attr)
+    if conf and not spec:
+        err("CONFIG_VALUE_ERROR", "Absent config in action prototype")
     host_map, delta = check_hostcomponentmap(cluster, action, hc)
     check_action_hosts(action, obj, cluster, hosts)
     old_hc = api.get_hc(cluster)
@@ -180,8 +182,11 @@ def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster
     else:
         obj = task_object
 
-    if obj.locked:
+    if obj.concerns.filter(type=ConcernType.Lock).exists():
         err('TASK_ERROR', 'object is locked')
+
+    if obj.concerns.filter(type=ConcernType.Issue).exists():
+        err('TASK_ERROR', 'object has issues')
 
     if action.allowed(obj):
         return

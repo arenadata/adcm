@@ -15,7 +15,10 @@
 
 import os
 
+from typing import Union, Optional
+
 import allure
+
 from adcm_client.wrappers.docker import ADCM
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
@@ -30,7 +33,7 @@ class ADCMTest:
 
     __slots__ = ("opts", "capabilities", "driver", "ui", "adcm", "selenoid")
 
-    def __init__(self, browser="Chrome"):
+    def __init__(self, browser="Chrome", downloads: Optional[Union[os.PathLike, str]] = None):
         self.opts = FirefoxOptions() if browser == "Firefox" else ChromeOptions()
         self.opts.headless = True
         self.opts.add_argument("--no-sandbox")
@@ -53,6 +56,7 @@ class ADCMTest:
             "host": os.environ.get("SELENOID_HOST"),
             "port": os.environ.get("SELENOID_PORT", "4444"),
         }
+        self._configure_downloads(browser, downloads)
         self.driver = None
         self.ui = None
         self.adcm = None
@@ -118,3 +122,19 @@ class ADCMTest:
 
     def destroy(self):
         self.driver.quit()
+
+    def _configure_downloads(self, browser: str, downloads_directory: Optional[Union[os.PathLike, str]]):
+        if downloads_directory is None:
+            return
+        if browser == "Chrome":
+            self.opts.add_experimental_option(
+                "prefs",
+                {"download.default_directory": str(downloads_directory)},
+            )
+        else:
+            if not self.selenoid['host']:
+                # do not use default download directory
+                self.opts.set_preference("browser.download.folderList", 2)
+                self.opts.set_preference("browser.download.dir", str(downloads_directory))
+            # allow documents to be saved without asking what to do
+            self.opts.set_preference("browser.helperApps.neverAsk.saveToDisk", "text/plain")

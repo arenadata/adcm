@@ -24,7 +24,7 @@
         on_success: installed
 
 - type: service
-  name: Dummy service
+  name: First service
   version: 1.5
   components:
     first:

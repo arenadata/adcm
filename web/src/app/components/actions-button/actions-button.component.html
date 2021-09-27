@@ -1,13 +1,9 @@
-<button
-  appPopover
-  mat-icon-button
-  color="warn"
-  *ngIf="!notIssue(row?.issue); else actions"
-  [component]="IssuesComponent"
-  [data]="{ row: row, issueType: issueType }"
->
-  <mat-icon>priority_hight</mat-icon>
-</button>
+<app-concern-list-ref
+  *ngIf="row?.concerns?.length; else actions"
+  [concerns]="row?.concerns"
+  (mouseenter)="onMouseenter.emit(row)"
+></app-concern-list-ref>
+
 <ng-template #actions>
   <app-action-list
     *ngIf="row"

@@ -128,7 +128,7 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
   }
 
   getChangeTaskObservable(): Observable<EventMessage> {
-    return this.taskService.events(['change_job_status']).pipe(this.takeUntil());
+    return this.taskService.events({ events: ['change_job_status'] }).pipe(this.takeUntil());
   }
 
   decRunningCount() {
