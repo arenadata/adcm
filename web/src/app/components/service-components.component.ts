@@ -35,7 +35,7 @@ export class ServiceComponentsComponent extends ConcernListDirective<any> {
     ListFactory.nameColumn('display_name'),
     ListFactory.stateColumn(),
     ListFactory.statusColumn(this),
-    ListFactory.actionsButton(),
+    ListFactory.actionsButton(this),
     ListFactory.configColumn(this),
   ] as IColumns<any>;
 

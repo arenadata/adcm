@@ -1,6 +1,7 @@
 <app-concern-list-ref
   *ngIf="row?.concerns?.length; else actions"
   [concerns]="row?.concerns"
+  (mouseenter)="onMouseenter.emit(row)"
 ></app-concern-list-ref>
 
 <ng-template #actions>
