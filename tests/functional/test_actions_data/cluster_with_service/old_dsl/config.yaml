@@ -29,38 +29,35 @@
   components:
     first:
     second:
-  actions:
-    action_on_host:
+
+  actions: &actions
+    some_action:
       type: job
       script: dummy_action.yaml
       script_type: ansible
-      host_action: true
+      states:
+        available: any
+
+    some_action_state_created:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
       states:
           available:
             - created
 
-    action_on_host_state_installed:
+    some_action_state_installed:
       type: job
       script: dummy_action.yaml
       script_type: ansible
-      host_action: true
       states:
           available:
             - installed
 
-    action_on_host_multijob:
-      type: task
-      scripts:
-        - name: part1
-          script_type: ansible
-          script: dummy_action.yaml
-        - name: part2
-          script_type: ansible
-          script: dummy_action.yaml
-      host_action: true
-      states:
-        available:
-          - created
+    some_action_unavailable:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
 
     switch_service_state:
       type: job
@@ -76,3 +73,5 @@
   version: 1.5
   components:
     first:
+
+  actions: *actions
