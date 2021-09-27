@@ -343,6 +343,19 @@ def save_sub_actions(proto, conf, action):
         sub_action.save()
 
 
+MASKING = 'masking'
+STATES = 'states'
+STATE = 'state'
+MULTI_STATE = 'multi_state'
+AVAILABLE = 'available'
+UNAVAILABLE = 'unavailable'
+ON_SUCCESS = 'on_success'
+ON_FAIL = 'on_fail'
+ANY = 'any'
+SET = 'set'
+UNSET = 'unset'
+
+
 def save_actions(proto, conf, bundle_hash):
     if not in_dict(conf, 'actions'):
         return
@@ -366,37 +379,47 @@ def save_actions(proto, conf, bundle_hash):
         fix_display_name(ac, action)
         check_action_hc(proto, ac, action_name)
         dict_to_obj(ac, 'hc_acl', action, 'hostcomponentmap')
-        if 'masking' in ac:
-            action.state_available = _deep_get(ac, 'masking', 'state', 'available', default='any')
-            action.state_unavailable = _deep_get(ac, 'masking', 'state', 'unavailable', default=[])
-            action.state_on_success = _deep_get(ac, 'on_success', 'state', default='')
-            action.state_on_fail = _deep_get(ac, 'on_fail', 'state', default='')
+        if MASKING in ac:
+            if STATES in ac:
+                err(
+                    'INVALID_OBJECT_DEFINITION',
+                    f'Action {action_name} uses both mutual excluding states "states" and "masking"',
+                )
+
+            action.state_available = _deep_get(ac, MASKING, STATE, AVAILABLE, default=ANY)
+            action.state_unavailable = _deep_get(ac, MASKING, STATE, UNAVAILABLE, default=[])
+            action.state_on_success = _deep_get(ac, ON_SUCCESS, STATE, default='')
+            action.state_on_fail = _deep_get(ac, ON_FAIL, STATE, default='')
 
             action.multi_state_available = _deep_get(
-                ac, 'masking', 'multi_state', 'available', default='any'
+                ac, MASKING, MULTI_STATE, AVAILABLE, default=ANY
             )
             action.multi_state_unavailable = _deep_get(
-                ac, 'masking', 'multi_state', 'unavailable', default=[]
+                ac, MASKING, MULTI_STATE, UNAVAILABLE, default=[]
             )
             action.multi_state_on_success_set = _deep_get(
-                ac, 'on_success', 'multi_state', 'set', default=[]
+                ac, ON_SUCCESS, MULTI_STATE, SET, default=[]
             )
             action.multi_state_on_success_unset = _deep_get(
-                ac, 'on_success', 'multi_state', 'unset', default=[]
+                ac, ON_SUCCESS, MULTI_STATE, UNSET, default=[]
             )
-            action.multi_state_on_fail_set = _deep_get(
-                ac, 'on_fail', 'multi_state', 'set', default=[]
-            )
+            action.multi_state_on_fail_set = _deep_get(ac, ON_FAIL, MULTI_STATE, SET, default=[])
             action.multi_state_on_fail_unset = _deep_get(
-                ac, 'on_fail', 'multi_state', 'unset', default=[]
+                ac, ON_FAIL, MULTI_STATE, UNSET, default=[]
             )
         else:
-            action.state_available = _deep_get(ac, 'states', 'available', default=[])
-            action.state_unavailable = []
-            action.state_on_success = _deep_get(ac, 'states', 'on_success', default='')
-            action.state_on_fail = _deep_get(ac, 'states', 'on_fail', default='')
+            if ON_SUCCESS in ac or ON_FAIL in ac:
+                err(
+                    'INVALID_OBJECT_DEFINITION',
+                    f'Action {action_name} uses "on_success/on_fail" states without "masking"',
+                )
 
-            action.multi_state_available = 'any'
+            action.state_available = _deep_get(ac, STATES, AVAILABLE, default=[])
+            action.state_unavailable = []
+            action.state_on_success = _deep_get(ac, STATES, ON_SUCCESS, default='')
+            action.state_on_fail = _deep_get(ac, STATES, ON_FAIL, default='')
+
+            action.multi_state_available = ANY
             action.multi_state_unavailable = []
             action.multi_state_on_success_set = []
             action.multi_state_on_success_unset = []
@@ -605,6 +628,6 @@ def _deep_get(deep_dict: dict, *nested_keys: str, default: Any) -> Any:
     for key in nested_keys:
         try:
             val = val[key]
-        except KeyError:
+        except (KeyError, TypeError):
             return default
     return val
