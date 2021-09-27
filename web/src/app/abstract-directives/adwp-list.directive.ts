@@ -6,7 +6,7 @@ import { PageEvent } from '@angular/material/paginator';
 
 import { ListDirective } from './list.directive';
 import { AdwpBaseListDirective } from './adwp-base-list.directive';
-import { Entities } from '@app/core/types';
+import { BaseEntity, Entities } from '@app/core/types';
 
 @Directive({
   selector: '[appAdwpList]',
@@ -77,11 +77,11 @@ export abstract class AdwpListDirective<T> extends ListDirective implements OnIn
     return this.sorting.value;
   }
 
-  rewriteRow(row: Entities) {
+  rewriteRow(row: BaseEntity) {
     this.service.checkItem(row).subscribe((item) => Object.keys(row).map((a) => (row[a] = item[a])));
   }
 
-  findRow(id: number): Entities {
+  findRow(id: number): BaseEntity {
     return this.data.data.find((item) => item.id === id);
   }
 
