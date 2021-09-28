@@ -12,7 +12,10 @@
 # pylint: disable=redefined-outer-name, unused-argument, duplicate-code, no-self-use
 
 from collections import OrderedDict
-from typing import Tuple
+from typing import (
+    Tuple,
+    Union,
+)
 
 import allure
 import pytest
@@ -24,6 +27,7 @@ from adcm_client.objects import (
     Service,
     Host,
     GroupConfig,
+    Component,
 )
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import get_data_dir
@@ -147,6 +151,13 @@ def assert_host_candidate_equal_expected(group: HostList, expected_hosts_names: 
         assert [g.fqdn for g in group] == expected_hosts_names, f"Should be available hosts '{expected_hosts_names}'"
 
 
+@allure.step("Create config group and add the first host")
+def _create_group_and_add_host(object: Union[Cluster, Service, Component, Provider], host: Host):
+    group = object.group_config_create(name=FIRST_GROUP)
+    group.host_add(host)
+    return group
+
+
 class TestGroupsIntersection:
     def test_that_groups_not_allowed_to_intersect_in_cluster(self, sdk_client_fs, cluster, create_two_hosts):
         """Test that groups are not allowed to intersect in cluster"""
@@ -154,9 +165,7 @@ class TestGroupsIntersection:
         test_host_1, test_host_2 = create_two_hosts
         cluster.host_add(test_host_1)
         cluster.host_add(test_host_2)
-        with allure.step("Create config group for cluster and add the first host"):
-            cluster_group = cluster.group_config_create(name=FIRST_GROUP)
-            cluster_group.host_add(test_host_1)
+        _create_group_and_add_host(cluster, test_host_1)
         with allure.step("Create the second group for cluster and check that not allowed to add the first host to it"):
             cluster_group_2 = cluster.group_config_create(name=SECOND_GROUP)
             assert_that_host_add_is_unavailable(cluster_group_2, test_host_1)
@@ -166,9 +175,7 @@ class TestGroupsIntersection:
         """Test that groups are not allowed to intersect in provider"""
 
         test_host_1, _ = create_two_hosts
-        with allure.step("Create config group for provider and add the first host"):
-            provider_group = provider.group_config_create(name=FIRST_GROUP)
-            provider_group.host_add(test_host_1)
+        _create_group_and_add_host(provider, test_host_1)
         with allure.step("Create the second group for provider and check that not allowed to add the first host to it"):
             provider_group_2 = provider.group_config_create(name=SECOND_GROUP)
             assert_that_host_add_is_unavailable(provider_group_2, test_host_1)
@@ -178,9 +185,7 @@ class TestGroupsIntersection:
         """Test that groups are not allowed to intersect in service"""
 
         service, test_host_1, _ = cluster_with_components
-        with allure.step("Create group for service and add the first host"):
-            service_group = service.group_config_create(name=FIRST_GROUP)
-            service_group.host_add(test_host_1)
+        _create_group_and_add_host(service, test_host_1)
         with allure.step("Create the second group for service and check that not allowed to add the first host to it"):
             service_group_2 = service.group_config_create(name=SECOND_GROUP)
             assert_that_host_add_is_unavailable(service_group_2, test_host_1)
@@ -190,9 +195,7 @@ class TestGroupsIntersection:
         """Test that groups are not allowed to intersect"""
 
         service, test_host_1, _ = cluster_with_components
-        with allure.step("Create config group for component and add the first host"):
-            component_group = service.component(name=FIRST_COMPONENT_NAME).group_config_create(name=FIRST_GROUP)
-            component_group.host_add(test_host_1)
+        _create_group_and_add_host(service.component(name=FIRST_COMPONENT_NAME), test_host_1)
         with allure.step(
             "Create the second group for component and check that not allowed to add the first host to it"
         ):
@@ -281,10 +284,8 @@ class TestDeleteHostInGroups:
 
         test_host = provider.host_create(fqdn=FIRST_HOST)
         cluster.host_add(test_host)
-        with allure.step("Create config group for cluster and add the host"):
-            cluster_group = cluster.group_config_create(name=FIRST_GROUP)
-            cluster_group.host_add(test_host)
-            assert_host_is_in_group(cluster_group, test_host)
+        cluster_group = _create_group_and_add_host(cluster, test_host)
+        assert_host_is_in_group(cluster_group, test_host)
         cluster.host_delete(test_host)
         self.check_no_hosts_in_group(cluster_group)
         with allure.step("Check that there are no hosts available to add in cluster group"):
@@ -296,10 +297,8 @@ class TestDeleteHostInGroups:
         """Test that host removed from conf group after removing from service"""
 
         service, test_host_1, test_host_2 = cluster_with_components_on_first_host
-        with allure.step("Create group for service and add the host"):
-            service_group = service.group_config_create(name=FIRST_GROUP)
-            service_group.host_add(test_host_1)
-            assert_host_is_in_group(service_group, test_host_1)
+        service_group = _create_group_and_add_host(service, test_host_1)
+        assert_host_is_in_group(service_group, test_host_1)
         with allure.step("Change host in service"):
             cluster.host_add(test_host_2)
             cluster.hostcomponent_set(
@@ -314,10 +313,8 @@ class TestDeleteHostInGroups:
         """Test that host removed from conf group after removing from component"""
 
         service, test_host_1, test_host_2 = cluster_with_components_on_first_host
-        with allure.step("Create config group for component and add the first host"):
-            component_group = service.component(name=FIRST_COMPONENT_NAME).group_config_create(name=FIRST_GROUP)
-            component_group.host_add(test_host_1)
-            assert_host_is_in_group(component_group, test_host_1)
+        component_group = _create_group_and_add_host(service.component(name=FIRST_COMPONENT_NAME), test_host_1)
+        assert_host_is_in_group(component_group, test_host_1)
         with allure.step("Change host in component"):
             cluster.host_add(test_host_2)
             cluster.hostcomponent_set(
@@ -329,11 +326,9 @@ class TestDeleteHostInGroups:
     def test_delete_host_from_group_after_it_deleted(self, sdk_client_fs, provider):
         """Test that host removed from provider conf group after deleting"""
 
-        with allure.step("Create config group for provider and add host"):
-            test_host = provider.host_create(fqdn=FIRST_HOST)
-            provider_group = provider.group_config_create(name=FIRST_GROUP)
-            provider_group.host_add(test_host)
-            assert_host_is_in_group(provider_group, test_host)
+        test_host = provider.host_create(fqdn=FIRST_HOST)
+        provider_group = _create_group_and_add_host(provider, test_host)
+        assert_host_is_in_group(provider_group, test_host)
         with allure.step("Delete host"):
             test_host.delete()
         self.check_no_hosts_in_group(provider_group)
@@ -397,10 +392,8 @@ class TestChangeGroupsConfig:
         """Test that groups in service are allowed change with group_customization: true"""
 
         service, test_host_1, _ = cluster_with_components
-        with allure.step("Create group for service and add the first host"):
-            service_group = service.group_config_create(name=FIRST_GROUP)
-            service_group.host_add(test_host_1)
-            config_before = service_group.config()
+        service_group = _create_group_and_add_host(service, test_host_1)
+        config_before = service_group.config()
         config_after = service_group.config_set_diff(self.PARAMS_TO_CHANGE)['config']
         self._check_changed_values_in_group(config_after, config_before)
 
@@ -413,10 +406,8 @@ class TestChangeGroupsConfig:
         """Test that groups in component are allowed change with group_customization: true"""
 
         service, test_host_1, _ = cluster_with_components
-        with allure.step("Create config group for component and add the first host"):
-            component_group = service.component(name=FIRST_COMPONENT_NAME).group_config_create(name=FIRST_GROUP)
-            component_group.host_add(test_host_1)
-            config_before = component_group.config()
+        component_group = _create_group_and_add_host(service.component(name=FIRST_COMPONENT_NAME), test_host_1)
+        config_before = component_group.config()
         config_after = component_group.config_set_diff(self.PARAMS_TO_CHANGE)['config']
         self._check_changed_values_in_group(config_after, config_before)
 
@@ -429,10 +420,7 @@ class TestChangeGroupsConfig:
         """Test that groups in provider are allowed change with group_customization: true"""
 
         provider = provider_bundle.provider_create(name=utils.random_string())
-        test_host = provider.host_create(fqdn=FIRST_HOST)
-        with allure.step("Create config group for provider and add the first host"):
-            provider_group = provider.group_config_create(name=FIRST_GROUP)
-            provider_group.host_add(test_host)
-            config_before = provider_group.config()
+        provider_group = _create_group_and_add_host(provider, provider.host_create(fqdn=FIRST_HOST))
+        config_before = provider_group.config()
         config_after = provider_group.config_set_diff(self.PARAMS_TO_CHANGE)['config']
         self._check_changed_values_in_group(config_after, config_before)
