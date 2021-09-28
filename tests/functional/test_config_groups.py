@@ -41,7 +41,7 @@ from tests.library.errorcodes import (
 CLUSTER_BUNDLE_PATH = get_data_dir(__file__, "cluster_simple")
 CLUSTER_BUNDLE_WITH_GROUP_PATH = get_data_dir(__file__, "cluster_with_group_all_params")
 PROVIDER_BUNDLE_PATH = get_data_dir(__file__, "hostprovider_bundle")
-
+PROVIDER_BUNDLE_WITH_GROUP_PATH = get_data_dir(__file__, "provider_group_with_all_params")
 HOST_ERROR_MESSAGE = (
     "host is not available for this object, or host already is a member of another group of this object"
 )
@@ -413,7 +413,7 @@ class TestChangeGroupsConfig:
 
     @pytest.mark.parametrize(
         "provider_bundle",
-        [pytest.param(get_data_dir(__file__, "provider_group_with_all_params"), id="provider_with_group")],
+        [pytest.param(get_data_dir(__file__, PROVIDER_BUNDLE_WITH_GROUP_PATH), id="provider_with_group")],
         indirect=True,
     )
     def test_change_group_in_provider(self, sdk_client_fs, provider_bundle):
