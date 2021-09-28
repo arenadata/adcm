@@ -151,8 +151,8 @@ def assert_host_candidate_equal_expected(group: HostList, expected_hosts_names: 
         assert [g.fqdn for g in group] == expected_hosts_names, f"Should be available hosts '{expected_hosts_names}'"
 
 
-@allure.step("Create config group and add the first host")
-def _create_group_and_add_host(object: Union[Cluster, Service, Component, Provider], host: Host):
+@allure.step("Create config group and add host")
+def _create_group_and_add_host(object: Union[Cluster, Service, Component, Provider], host: Host) -> GroupConfig:
     group = object.group_config_create(name=FIRST_GROUP)
     group.host_add(host)
     return group
