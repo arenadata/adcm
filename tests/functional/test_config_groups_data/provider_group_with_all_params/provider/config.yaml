@@ -84,6 +84,7 @@
       type: structure
       required: false
       yspec: ./schema.yaml
+      group_customization: true
       default:
         - code: 1
           country: Test1

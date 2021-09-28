@@ -87,6 +87,7 @@
       type: structure
       required: false
       yspec: ./schema.yaml
+      group_customization: true
       default:
         - code: 1
           country: Test1
@@ -174,6 +175,7 @@
     - name: structure
       type: structure
       required: false
+      group_customization: true
       yspec: ./schema.yaml
       default:
         - code: 1
@@ -262,6 +264,7 @@
           type: structure
           required: false
           yspec: ./schema.yaml
+          group_customization: true
           default:
             - code: 1
               country: Test1
