@@ -78,6 +78,7 @@ def test_upgrade_adcm(
         login_page.login_user(**credentials)
         intro_page = AdminIntroPage(login_page.driver, login_page.base_url)
         intro_page.wait_page_is_opened()
+        intro_page.wait_config_loaded()
     with allure.step('Start ADCM upgrade with client'):
         upgrade_thread = threading.Thread(
             target=upgrade_adcm_version, args=(app_fs.adcm, sdk_client_fs, adcm_api_credentials, adcm_image_tags)

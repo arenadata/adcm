@@ -108,6 +108,12 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
     Collect logs on failure and close browser tab after test is done
     """
     web_driver.attache_adcm(adcm_fs)
+    try:
+        web_driver.new_tab()
+    except WebDriverException:
+        # this exception could be raised in case
+        # when driver was crashed for some reason
+        web_driver.create_driver()
     yield web_driver
     try:
         if request.node.rep_setup.failed or request.node.rep_call.failed:
@@ -155,12 +161,6 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
     except AttributeError:
         # rep_setup and rep_call attributes are generated in runtime and can be absent
         pass
-    try:
-        web_driver.new_tab()
-    except WebDriverException:
-        # this exception could be raised in case
-        # when driver was crashed for some reason
-        web_driver.create_driver()
 
 
 @pytest.fixture(scope='session')
