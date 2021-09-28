@@ -36,11 +36,14 @@ class ComponentSerializer(serializers.Serializer):
     cluster_id = serializers.IntegerField(read_only=True)
     service_id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(read_only=True)
-    display_name = serializers.CharField(read_only=True)
+    display_name = serializers.SerializerMethodField()
     description = serializers.CharField(read_only=True)
     state = serializers.CharField(read_only=True)
     prototype_id = serializers.IntegerField(required=True, help_text='id of component prototype')
     url = ComponentObjectUrlField(read_only=True, view_name='component-details')
+
+    def get_display_name(self, obj):
+        return obj.prototype.display_name
 
 
 class ComponentDetailSerializer(ComponentSerializer):

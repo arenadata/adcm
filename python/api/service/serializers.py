@@ -34,7 +34,7 @@ class ServiceSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     cluster_id = serializers.IntegerField(required=True)
     name = serializers.CharField(read_only=True)
-    display_name = serializers.CharField(read_only=True)
+    display_name = serializers.SerializerMethodField()
     state = serializers.CharField(read_only=True)
     prototype_id = serializers.IntegerField(required=True, help_text='id of service prototype')
     url = ObjectURL(read_only=True, view_name='service-details')
@@ -44,6 +44,9 @@ class ServiceSerializer(serializers.Serializer):
             Prototype, {'id': prototype_id, 'type': 'service'}, 'PROTOTYPE_NOT_FOUND'
         )
         return prototype
+
+    def get_display_name(self, obj):
+        return obj.prototype.display_name
 
     def create(self, validated_data):
         try:
