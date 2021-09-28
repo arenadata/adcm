@@ -12,7 +12,7 @@
 
 from django.urls import path, include
 
-from .views import UserViewSet, UserGroupViewSet
+from .views import UserViewSet, UserGroupViewSet, UserRoleViewSet
 
 
 urlpatterns = [
@@ -41,6 +41,23 @@ urlpatterns = [
                                 '<int:group_id>/',
                                 UserGroupViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}),
                                 name='rbac-user-group-detail',
+                            ),
+                        ]
+                    ),
+                ),
+                path(
+                    'role/',
+                    include(
+                        [
+                            path(
+                                '',
+                                UserRoleViewSet.as_view({'get': 'list', 'post': 'create'}),
+                                name='rbac-user-role-list',
+                            ),
+                            path(
+                                '<int:role_id>/',
+                                UserRoleViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}),
+                                name='rbac-user-role-detail',
                             ),
                         ]
                     ),

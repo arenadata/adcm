@@ -13,7 +13,10 @@
 # limitations under the License.
 
 from django.contrib.auth.models import User, Group, Permission
+from django.db import transaction
 from django.db import models
+
+from adwp_base.errors import raise_AdwpEx as err
 
 
 class Role(models.Model):
@@ -26,9 +29,11 @@ class Role(models.Model):
     user = models.ManyToManyField(User, blank=True, related_name='rbac_role_user')
     group = models.ManyToManyField(Group, blank=True, related_name='rbac_role_group')
 
-    def get_permissions(self):
+    def get_permissions(self, role=None):
         role_list = []
         perm_list = []
+        if role is None:
+            role = self
 
         def get_perm(role, perm_list, role_list):
             if role in role_list:
@@ -40,8 +45,39 @@ class Role(models.Model):
             for child in role.childs.all():
                 get_perm(child, perm_list, role_list)
 
-        get_perm(self, perm_list, role_list)
+        get_perm(role, perm_list, role_list)
         return perm_list
+
+    def get_permissions_without_role(self, role_list):
+        perm_list = {}
+        for r in role_list:
+            if r == self:
+                continue
+            for perm in self.get_permissions(r):
+                perm_list[perm.codename] = True
+        return perm_list
+
+    def add_user(self, user):
+        if self in user.role_set.all():
+            err('ROLE_ERROR', f'User "{user.username}" already has role "{self.name}"')
+        with transaction.atomic():
+            self.user.add(user)
+            self.save()
+            for perm in self.get_permissions():
+                user.user_permissions.add(perm)
+        return self
+
+    def remove_user(self, user):
+        user_roles = user.rbac_role_user.all()
+        if self not in user_roles:
+            err('ROLE_ERROR', f'User "{user.username}" does not has role "{self.name}"')
+        perm_list = self.get_permissions_without_role(user_roles)
+        with transaction.atomic():
+            self.user.remove(user)
+            self.save()
+            for perm in self.get_permissions():
+                if perm.codename not in perm_list:
+                    user.user_permissions.remove(perm)
 
 
 class RoleMigration(models.Model):

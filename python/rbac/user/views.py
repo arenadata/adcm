@@ -21,7 +21,8 @@ from rest_framework.mixins import (
 )
 from rest_framework.response import Response
 
-from .serializers import UserSerializer, UserGroupSerializer
+from rbac.models import Role
+from .serializers import UserSerializer, UserGroupSerializer, UserRoleSerializer
 
 
 # pylint: disable=too-many-ancestors
@@ -50,6 +51,35 @@ class UserGroupViewSet(
         user = User.objects.get(id=self.kwargs.get('id'))
         group = self.get_object()
         user.groups.remove(group)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def get_queryset(self):
+        return self.queryset.filter(user__id=self.kwargs.get('id'))
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        user_id = self.kwargs.get('id')
+        if user_id is not None:
+            user = User.objects.get(id=user_id)
+            context.update({'user': user})
+        return context
+
+
+class UserRoleViewSet(
+    ListModelMixin,
+    CreateModelMixin,
+    RetrieveModelMixin,
+    DestroyModelMixin,
+    viewsets.GenericViewSet,
+):  # pylint: disable=too-many-ancestors
+    queryset = Role.objects.all()
+    serializer_class = UserRoleSerializer
+    lookup_url_kwarg = 'role_id'
+
+    def destroy(self, request, *args, **kwargs):
+        user = User.objects.get(id=self.kwargs.get('id'))
+        role = self.get_object()
+        role.remove_user(user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_queryset(self):

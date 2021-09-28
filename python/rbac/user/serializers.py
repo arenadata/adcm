@@ -20,6 +20,8 @@ from rest_framework.reverse import reverse
 from rest_framework.authtoken.models import Token
 from rest_framework.utils import model_meta
 
+from rbac.models import Role
+
 
 class PasswordField(serializers.CharField):
     """Password serializer field"""
@@ -33,6 +35,11 @@ def get_group_url(self, obj):
     return reverse('rbac-user-group-detail', kwargs=kwargs, request=self.context['request'])
 
 
+def get_role_url(self, obj):
+    kwargs = {'id': self.context['user'].id, 'role_id': obj.id}
+    return reverse('rbac-user-role-detail', kwargs=kwargs, request=self.context['request'])
+
+
 class GroupSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
     get_url = get_group_url
@@ -44,6 +51,21 @@ class GroupSerializer(serializers.ModelSerializer):
             'name',
             'url',
         )
+
+
+class RoleSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSerializer):
+    """Role serializer"""
+
+    class Meta:
+        model = Role
+        fields = (
+            'id',
+            'name',
+            'url',
+        )
+        extra_kwargs = {
+            'url': {'view_name': 'rbac_role:role-detail', 'lookup_field': 'id'},
+        }
 
 
 class PermissionSerializer(serializers.ModelSerializer):
@@ -71,7 +93,9 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
 
     password = PasswordField()
     groups = serializers.SerializerMethodField()
-    permissions = serializers.SerializerMethodField()
+    # roles =  RoleSerializer(many=True, source='role_set')
+    roles = RoleSerializer(many=True, source='rbac_role_user')
+    permissions = PermissionSerializer(many=True, source='user_permissions')
     add_group = serializers.HyperlinkedIdentityField(
         view_name='rbac-user-group-list', lookup_field='id'
     )
@@ -87,6 +111,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
             'email',
             'is_superuser',
             'groups',
+            'roles',
             'permissions',
             'url',
             'add_group',
@@ -103,10 +128,6 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
         context = self.context
         context['user'] = obj
         return GroupSerializer(groups, many=True, context=context).data
-
-    def get_permissions(self, obj):
-        perms = obj.user_permissions.all()
-        return PermissionSerializer(perms, many=True, context=self.context).data
 
     def create(self, validated_data):
         extra_fields = {}
@@ -175,3 +196,26 @@ class UserGroupSerializer(serializers.ModelSerializer):
         group = validated_data['id']
         user.groups.add(group)
         return group
+
+
+class UserRoleSerializer(serializers.ModelSerializer):
+    """Serializer for user's roles"""
+
+    id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
+    url = serializers.SerializerMethodField()
+    get_url = get_role_url
+
+    class Meta:
+        model = Group
+        fields = (
+            'id',
+            'name',
+            'url',
+        )
+        read_only_fields = ('name',)
+
+    def create(self, validated_data):
+        user = self.context.get('user')
+        role = validated_data['id']
+        role.add_user(user)
+        return role

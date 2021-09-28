@@ -19,20 +19,22 @@ from rbac.user.serializers import PermissionSerializer
 class RoleSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSerializer):
     """Role serializer"""
 
-    permissions = serializers.SerializerMethodField()
+    permissions = PermissionSerializer(many=True)
+    childs = serializers.SerializerMethodField()
 
     class Meta:
         model = Role
         fields = (
             'id',
             'name',
+            'description',
             'permissions',
+            'childs',
             'url',
         )
         extra_kwargs = {
             'url': {'view_name': 'rbac_role:role-detail', 'lookup_field': 'id'},
         }
 
-    def get_permissions(self, obj):
-        perms = obj.permissions.all()
-        return PermissionSerializer(perms, many=True, context=self.context).data
+    def get_childs(self, obj):
+        return RoleSerializer(obj.childs.all(), many=True, context=self.context).data
