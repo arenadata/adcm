@@ -152,8 +152,10 @@ def assert_host_candidate_equal_expected(group: HostList, expected_hosts_names: 
 
 
 @allure.step("Create config group and add host")
-def _create_group_and_add_host(object: Union[Cluster, Service, Component, Provider], host: Host) -> GroupConfig:
-    group = object.group_config_create(name=FIRST_GROUP)
+def _create_group_and_add_host(
+    object_with_group: Union[Cluster, Service, Component, Provider], host: Host
+) -> GroupConfig:
+    group = object_with_group.group_config_create(name=FIRST_GROUP)
     group.host_add(host)
     return group
 
