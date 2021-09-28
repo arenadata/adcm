@@ -28,6 +28,10 @@ from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.asserts import assert_state
 from adcm_pytest_plugin.utils import random_string
 
+from tests.functional.plugin_utils import AnyADCMObject
+
+LOCK_ACTION_NAMES = ["lock", "lock_multijob"]
+
 
 @pytest.fixture()
 def cluster(sdk_client_fs: ADCMClient) -> Cluster:
@@ -64,26 +68,27 @@ def cluster_with_two_hosts(cluster: Cluster, host_provider: Provider) -> Tuple[C
     return cluster, hosts
 
 
+@pytest.mark.parametrize("lock_action", LOCK_ACTION_NAMES)
 class TestClusterLock:
-    def test_lock_unlock(self, cluster: Cluster, host: Host):
+    def test_lock_unlock(self, cluster: Cluster, host: Host, lock_action):
         """
         Test that cluster locked when action running and unlocked when action ends
         """
         cluster.host_add(host)
         is_free(cluster)
-        task = _lock_obj(cluster)
+        task = _lock_obj(cluster, lock_action)
         is_locked(cluster)
         task.wait()
         is_free(cluster)
 
-    def test_down_lock(self, complete_cluster: Cluster, sdk_client_fs: ADCMClient):
+    def test_down_lock(self, complete_cluster: Cluster, sdk_client_fs: ADCMClient, lock_action):
         """
         Test that cluster lock also locks:
             - all cluster services
             - all service components
             - all hosts with components
         """
-        task = _lock_obj(complete_cluster)
+        task = _lock_obj(complete_cluster, lock_action)
         for service in complete_cluster.service_list():
             is_locked(service)
             for component in service.component_list():
@@ -98,46 +103,47 @@ class TestClusterLock:
         for hc_map in complete_cluster.hostcomponent():
             is_free(sdk_client_fs.host(id=hc_map["host_id"]))
 
-    def test_no_horizontal_lock(self, cluster: Cluster):
+    def test_no_horizontal_lock(self, cluster: Cluster, lock_action):
         """
         Test that no horizontal lock when cluster locked
         """
         second_cluster = cluster.prototype().cluster_create(name=random_string())
-        _lock_obj(cluster)
+        _lock_obj(cluster, lock_action)
         is_free(second_cluster)
 
 
+@pytest.mark.parametrize("lock_action", LOCK_ACTION_NAMES)
 class TestServiceLock:
-    def test_lock_unlock(self, cluster: Cluster, host: Host):
+    def test_lock_unlock(self, cluster: Cluster, host: Host, lock_action):
         """
         Test that service locked when action running and unlocked when action ends
         """
         cluster.host_add(host)
         service = cluster.service_add(name="first_service")
         is_free(service)
-        task = _lock_obj(service)
+        task = _lock_obj(service, lock_action)
         is_locked(service)
         task.wait()
         is_free(service)
 
-    def test_up_lock(self, complete_cluster: Cluster):
+    def test_up_lock(self, complete_cluster: Cluster, lock_action):
         """
         Test that service lock also locks parent objects:
             - Cluster
         """
-        task = _lock_obj(complete_cluster.service(name="first_service"))
+        task = _lock_obj(complete_cluster.service(name="first_service"), lock_action)
         is_locked(complete_cluster)
         task.wait()
         is_free(complete_cluster)
 
-    def test_down_lock(self, complete_cluster: Cluster, host: Host):
+    def test_down_lock(self, complete_cluster: Cluster, host: Host, lock_action):
         """
         Test that service lock also locks child objects:
             - Components
             - Hosts
         """
         service = complete_cluster.service(name="first_service")
-        task = _lock_obj(service)
+        task = _lock_obj(service, lock_action)
         for component in service.component_list():
             is_locked(component)
         is_locked(host)
@@ -146,17 +152,18 @@ class TestServiceLock:
             is_free(component)
         is_free(host)
 
-    def test_no_horizontal_lock(self, complete_cluster: Cluster):
+    def test_no_horizontal_lock(self, complete_cluster: Cluster, lock_action):
         """
         Test that no horizontal lock when service locked
         """
         second_service = complete_cluster.service_add(name="second_service")
-        _lock_obj(complete_cluster.service(name="first_service"))
+        _lock_obj(complete_cluster.service(name="first_service"), lock_action)
         is_free(second_service)
 
 
+@pytest.mark.parametrize("lock_action", LOCK_ACTION_NAMES)
 class TestComponentLock:
-    def test_lock_unlock(self, complete_cluster: Cluster):
+    def test_lock_unlock(self, complete_cluster: Cluster, lock_action):
         """
         Test that component locked when action running and unlocked when action ends
         """
@@ -164,55 +171,58 @@ class TestComponentLock:
         component = service.component(name="first_service_component_1")
 
         is_free(component)
-        task = _lock_obj(component)
+        task = _lock_obj(component, lock_action)
         task.wait()
         is_free(service)
 
-    def test_up_lock(self, complete_cluster: Cluster):
+    def test_up_lock(self, complete_cluster: Cluster, lock_action):
         """
         Test that component lock also locks parent objects:
             - Service
             - Cluster
         """
         service = complete_cluster.service(name="first_service")
-        task = _lock_obj(service.component(name="first_service_component_1"))
+        task = _lock_obj(service.component(name="first_service_component_1"), lock_action)
         is_locked(service)
         is_locked(complete_cluster)
         task.wait()
         is_free(service)
         is_free(complete_cluster)
 
-    def test_down_lock(self, complete_cluster: Cluster, host: Host):
+    def test_down_lock(self, complete_cluster: Cluster, host: Host, lock_action):
         """
         Test that component lock also locks child objects:
             - Host
         """
-        task = _lock_obj(complete_cluster.service(name="first_service").component(name="first_service_component_1"))
+        task = _lock_obj(
+            complete_cluster.service(name="first_service").component(name="first_service_component_1"), lock_action
+        )
         is_locked(host)
         task.wait()
         is_free(host)
 
-    def test_no_horizontal_lock(self, complete_cluster: Cluster):
+    def test_no_horizontal_lock(self, complete_cluster: Cluster, lock_action):
         """
         Test that no horizontal lock when component locked
         """
         service = complete_cluster.service(name="first_service")
-        _lock_obj(service.component(name="first_service_component_1"))
+        _lock_obj(service.component(name="first_service_component_1"), lock_action)
         is_free(service.component(name="first_service_component_2"))
 
 
+@pytest.mark.parametrize("lock_action", LOCK_ACTION_NAMES)
 class TestHostLock:
-    def test_lock_unlock(self, host: Host):
+    def test_lock_unlock(self, host: Host, lock_action):
         """
         Test that host locked when action running and unlocked when action ends
         """
         is_free(host)
-        task = _lock_obj(host)
+        task = _lock_obj(host, lock_action)
         is_locked(host)
         task.wait()
         is_free(host)
 
-    def test_up_lock(self, complete_cluster: Cluster, host: Host):
+    def test_up_lock(self, complete_cluster: Cluster, host: Host, lock_action):
         """
         Test that host lock also locks parent objects:
             - Component
@@ -221,7 +231,7 @@ class TestHostLock:
         """
         service = complete_cluster.service(name="first_service")
         component = service.component(name="first_service_component_1")
-        task = _lock_obj(host)
+        task = _lock_obj(host, lock_action)
         is_locked(component)
         is_locked(service)
         is_locked(complete_cluster)
@@ -230,42 +240,43 @@ class TestHostLock:
         is_free(service)
         is_free(complete_cluster)
 
-    def test_no_horizontal_lock(self, host_provider: Provider, host: Host):
+    def test_no_horizontal_lock(self, host_provider: Provider, host: Host, lock_action):
         """
         Test that no horizontal lock when host locked
         """
         second_host = host_provider.host_create(fqdn=random_string())
-        _lock_obj(host)
+        _lock_obj(host, lock_action)
         is_free(second_host)
 
 
+@pytest.mark.parametrize("lock_action", LOCK_ACTION_NAMES)
 class TestHostProviderLock:
-    def test_lock_unlock(self, host_provider: Provider):
+    def test_lock_unlock(self, host_provider: Provider, lock_action):
         """
         Test that host provider locked when action running and unlocked when action ends
         """
         is_free(host_provider)
-        task = _lock_obj(host_provider)
+        task = _lock_obj(host_provider, lock_action)
         is_locked(host_provider)
         task.wait()
         is_free(host_provider)
 
-    def test_down_lock(self, host_provider: Provider, host: Host):
+    def test_down_lock(self, host_provider: Provider, host: Host, lock_action):
         """
         Test that provider lock also locks child objects:
             - Host
         """
-        task = _lock_obj(host_provider)
+        task = _lock_obj(host_provider, lock_action)
         is_locked(host)
         task.wait()
         is_free(host)
 
-    def test_no_horizontal_lock(self, host_provider: Provider):
+    def test_no_horizontal_lock(self, host_provider: Provider, lock_action):
         """
         Test that no horizontal lock when host locked
         """
         second_provider = host_provider.prototype().provider_create(name=random_string())
-        _lock_obj(host_provider)
+        _lock_obj(host_provider, lock_action)
         is_free(second_provider)
 
 
@@ -543,12 +554,12 @@ def _cluster_with_components(cluster: Cluster, hosts: List[Host]):
     return first_service_component, second_service_component
 
 
-def _lock_obj(obj: Union[Cluster, Service, Component, Provider, Host]) -> Task:
+def _lock_obj(obj: AnyADCMObject, lock_action: str = "lock") -> Task:
     """
     Run action lock on object
     """
-    with allure.step(f"Lock {obj.__class__.__name__}"):
-        return obj.action(name="lock").run()
+    with allure.step(f"Lock {obj.__class__.__name__} with action '{lock_action}'"):
+        return obj.action(name=lock_action).run()
 
 
 def is_locked(obj: Union[Cluster, Service, Component, Provider, Host]):

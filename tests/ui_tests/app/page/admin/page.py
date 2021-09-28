@@ -14,6 +14,7 @@ from typing import List
 import allure
 
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.common.exceptions import TimeoutException
 
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.admin.locators import (
@@ -86,17 +87,24 @@ class AdminUsersPage(GeneralAdminPage):
         self.footer = PageFooter(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url)
 
+    def get_all_user_rows(self) -> List[WebElement]:
+        """Get all user rows (locator differs from self.table.get_all_rows())"""
+        try:
+            return self.find_elements(AdminUsersLocators.user_row, timeout=5)
+        except TimeoutException:
+            return []
+
     @allure.step('Get user row where username is {username}')
     def get_user_row_by_username(self, username: str) -> WebElement:
         """Search for user row by username and return it"""
-        for row in self.find_elements(AdminUsersLocators.user_row):
+        for row in self.get_all_user_rows():
             if self.find_child(row, AdminUsersLocators.Row.username).text == username:
                 return row
         raise AssertionError(f'User row with username "{username}" was not found')
 
     def is_user_presented(self, username: str) -> bool:
         """Check if user is presented in users list"""
-        for row in self.find_elements(AdminUsersLocators.user_row):
+        for row in self.get_all_user_rows():
             if self.find_child(row, AdminUsersLocators.Row.username).text == username:
                 return True
         return False

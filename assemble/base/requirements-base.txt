@@ -11,7 +11,9 @@ drf-extensions
 django-background-tasks
 social-auth-app-django
 git+git://github.com/arenadata/django-generate-secret-key.git
-jinja2
+# TODO jinja2 and markupsafe should be unpinned after https://arenadata.atlassian.net/browse/ADCM-2089 fixup
+Jinja2==2.11.3
+MarkupSafe==1.1.1
 markdown
 mitogen
 pyyaml

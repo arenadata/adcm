@@ -11,9 +11,10 @@
 # limitations under the License.
 from dataclasses import dataclass
 from enum import Enum
-from typing import TypeVar, Union
+from typing import TypeVar, Union, List
 
 import allure
+
 from selenium.webdriver.remote.webelement import WebElement
 
 from tests.ui_tests.app.helpers.locator import Locator
@@ -49,6 +50,14 @@ class TableTaskInfo(PopupTaskInfo):
     invoker_objects: str
     start_date: str
     finish_date: str
+
+
+@dataclass
+class SubTaskJobInfo:
+    """Information about job in task's list of jobs"""
+
+    name: str
+    status: JobStatus
 
 
 TaskInfo = TypeVar('TaskInfo', bound=Union[PopupTaskInfo, TableTaskInfo])
@@ -92,6 +101,43 @@ class JobListPage(BasePageObject):
             action_name=self.find_child(job, popup_locators.JobRow.job_name).text,
             status=self._get_status_from_class_string(self.find_child(job, popup_locators.JobRow.job_status)),
         )
+
+    def get_all_jobs_info(self) -> List[SubTaskJobInfo]:
+        """
+        Returns information about all jobs
+        from expanded first task's jobs list
+        """
+        expand_task_locators = TaskListLocators.Table.ExpandedTask
+        job_rows = self.find_elements(expand_task_locators.row)
+        return [
+            SubTaskJobInfo(
+                name=self.find_child(job, expand_task_locators.Row.job_name).text,
+                status=self._get_status_from_class_string(self.find_child(job, expand_task_locators.Row.job_status)),
+            )
+            for job in job_rows
+        ]
+
+    @allure.step('Expand task in row {row_num}')
+    def expand_task_in_row(self, row_num: int = 0):
+        """Click on expand jobs button"""
+        table_locators = TaskListLocators.Table
+        row = self.table.get_row(row_num)
+        self.find_child(row, table_locators.Row.expand_task).click()
+        self.wait_element_visible(table_locators.ExpandedTask.block)
+
+    @allure.step("Click on job in task's job list")
+    def click_on_job(self, job_num: int = 0):
+        """Click on job in expanded first task's job list"""
+        expand_task_locators = TaskListLocators.Table.ExpandedTask
+        job_rows = self.find_elements(expand_task_locators.row)
+        assert job_num < len(job_rows), 'Not enough jobs in this task'
+        self.find_child(job_rows[job_num], expand_task_locators.Row.job_name).click()
+
+    @allure.step('Click on action name')
+    def click_on_action_name_in_row(self, row: WebElement):
+        """Click on action name in row"""
+        locator = TaskListLocators.Table.Row.action_name
+        row.find_element(locator.by, locator.value).click()
 
     @allure.step('Select the "All" filter tab')
     def select_filter_all_tab(self):

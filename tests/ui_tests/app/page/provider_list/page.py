@@ -87,8 +87,8 @@ class ProviderListPage(BasePageObject):
     @allure.step("Run action {action_name} for provider")
     def run_action_in_provider_row(self, row: WebElement, action_name: str):
         self.click_action_btn_in_row(row)
-        self.wait_element_visible(self.table.table.ActionPopup.block)
-        self.find_and_click(self.table.table.ActionPopup.button(action_name))
+        self.wait_element_visible(self.table.locators.ActionPopup.block)
+        self.find_and_click(self.table.locators.ActionPopup.button(action_name))
         self.wait_element_visible(ActionDialog.body)
         self.find_and_click(ActionDialog.run)
 

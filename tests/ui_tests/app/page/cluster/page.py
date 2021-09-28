@@ -196,8 +196,8 @@ class ClusterServicesPage(ClusterPageMixin):
     @allure.step("Run action {action_name} for service")
     def run_action_in_service_row(self, row: WebElement, action_name: str):
         self.click_action_btn_in_row(row)
-        self.wait_element_visible(self.table.table.ActionPopup.block)
-        self.find_and_click(self.table.table.ActionPopup.button(action_name))
+        self.wait_element_visible(self.table.locators.ActionPopup.block)
+        self.find_and_click(self.table.locators.ActionPopup.button(action_name))
         self.wait_element_visible(ActionDialog.body)
         self.find_and_click(ActionDialog.run)
 
@@ -361,8 +361,8 @@ class ClusterHostPage(ClusterPageMixin):
     @allure.step("Run action {action_name} for host")
     def run_action_in_host_row(self, row: WebElement, action_name: str):
         self.click_on_action_btn_in_host_row(row)
-        self.wait_element_visible(self.table.table.ActionPopup.block)
-        self.find_and_click(self.table.table.ActionPopup.button(action_name))
+        self.wait_element_visible(self.table.locators.ActionPopup.block)
+        self.find_and_click(self.table.locators.ActionPopup.button(action_name))
         self.wait_element_visible(ActionDialog.body)
         self.find_and_click(ActionDialog.run)
 

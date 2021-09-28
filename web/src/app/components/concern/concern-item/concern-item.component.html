@@ -1,0 +1,49 @@
+<ng-container [ngSwitch]="placeholder.type">
+  <ng-container *ngSwitchCase="IMPlaceholderItemType.ComponentActionRun">
+    <button
+      mat-button
+      color="accent"
+      matTooltip="Run action"
+      class="action-button"
+      (click)="runAction()"
+    >
+      <mat-icon>play_circle_outline</mat-icon> {{placeholder.name}}
+    </button>
+  </ng-container>
+  <a
+    *ngSwitchCase="IMPlaceholderItemType.Cluster"
+    [routerLink]="['/cluster', placeholder.ids.cluster, 'main']"
+    class="issue"
+  >
+    {{placeholder.name}}
+  </a>
+  <a
+    *ngSwitchCase="IMPlaceholderItemType.Service"
+    [routerLink]="['/cluster', placeholder.ids.cluster, 'service', placeholder.ids.service, 'main']"
+    class="issue"
+  >
+    {{placeholder.name}}
+  </a>
+  <a
+    *ngSwitchCase="IMPlaceholderItemType.Component"
+    [routerLink]="['/cluster', placeholder.ids.cluster, 'service', placeholder.ids.service, 'component', placeholder.ids.component, 'main']"
+    class="issue"
+  >
+    {{placeholder.name}}
+  </a>
+  <a
+    *ngSwitchCase="IMPlaceholderItemType.HostProvider"
+    [routerLink]="['/provider', placeholder.ids.provider, 'main']"
+    class="issue"
+  >
+    {{placeholder.name}}
+  </a>
+  <a
+    *ngSwitchCase="IMPlaceholderItemType.Host"
+    [routerLink]="['/host', placeholder.ids.host, 'main']"
+    class="issue"
+  >
+    {{placeholder.name}}
+  </a>
+  <a *ngSwitchDefault routerLink="/" class="issue">{{placeholder.name}}</a>
+</ng-container>

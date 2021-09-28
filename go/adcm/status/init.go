@@ -96,6 +96,10 @@ func startHTTP(httpPort string, hub Hub) {
 	router.GET("/api/v1/cluster/", authWrap(hub, clusterList))
 	router.GET("/api/v1/cluster/:clusterid/", authWrap(hub, showCluster))
 	router.GET("/api/v1/cluster/:clusterid/service/:serviceid/", authWrap(hub, showService))
+	router.GET(
+		"/api/v1/cluster/:clusterid/service/:serviceid/component/:compid/",
+		authWrap(hub, showComp),
+	)
 
 	router.GET("/api/v1/servicemap/", authWrap(hub, showServiceMap))
 	router.POST("/api/v1/servicemap/", authWrap(hub, postServiceMap))

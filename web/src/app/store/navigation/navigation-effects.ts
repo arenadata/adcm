@@ -4,8 +4,8 @@ import { concatMap, filter, map, switchMap, take } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 import { AdcmEntity, AdcmTypedEntity } from '@app/models/entity';
 import { TypeName } from '@app/core/types';
-
 import { Action, Store } from '@ngrx/store';
+
 import { ApiService } from '@app/core/api';
 import { ServiceComponentService } from '@app/services/service-component.service';
 import { ClusterService } from '@app/core/services/cluster.service';
@@ -20,6 +20,7 @@ import {
 import { EventMessage, socketResponse } from '@app/core/store/sockets/socket.reducer';
 import { IClusterService } from '@app/models/cluster-service';
 import { ConfigGroupListService } from '@app/config-groups/service/config-group-list.service';
+import { ConcernEventType } from '@app/models/concern/concern-reason';
 
 @Injectable()
 export class NavigationEffects {
@@ -45,7 +46,9 @@ export class NavigationEffects {
 
   changePathOfEvent$ = createEffect(() => this.actions$.pipe(
     ofType(socketResponse),
-    filter(action => ['raise_issue', 'clear_issue'].includes(action.message.event)),
+    filter(action =>
+      [ConcernEventType.Service, ConcernEventType.Cluster, ConcernEventType.Host, ConcernEventType.HostProvider, ConcernEventType.ServiceComponent].includes(action.message.object.type as any)
+    ),
     concatMap((event: { message: EventMessage }) => {
       return new Observable<Action>(subscriber => {
         this.store.select(getNavigationPath).pipe(take(1)).subscribe((path) => {
