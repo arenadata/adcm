@@ -581,6 +581,10 @@ class ClusterObject(ADCMEntity):
         return self.prototype.name
 
     @property
+    def display_name(self):
+        return self.prototype.display_name
+
+    @property
     def description(self):
         return self.prototype.description
 
@@ -617,6 +621,10 @@ class ServiceComponent(ADCMEntity):
     @property
     def name(self):
         return self.prototype.name
+
+    @property
+    def display_name(self):
+        return self.prototype.display_name
 
     @property
     def description(self):
