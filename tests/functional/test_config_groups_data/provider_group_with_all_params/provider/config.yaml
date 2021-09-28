@@ -1,0 +1,103 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+---
+- type: provider
+  name: provider_sample
+  version: "0.3"
+  config:
+    - name: float
+      type: float
+      required: false
+      group_customization: true
+    - name: boolean
+      type: boolean
+      required: true
+      default: true
+      group_customization: true
+    - name: integer
+      type: integer
+      required: false
+      default: 16
+      group_customization: true
+    - name: password
+      type: password
+      required: false
+      default: password
+      group_customization: true
+    - name: string
+      type: string
+      required: true
+      default: string
+      group_customization: true
+    - name: list
+      type: list
+      required: false
+      group_customization: true
+      default:
+        - /dev/rdisk0s1
+        - /dev/rdisk0s2
+        - /dev/rdisk0s3
+    - name: file
+      type: file
+      required: false
+      default: ./cluster_file
+      group_customization: true
+    - name: option
+      type: option
+      required: false
+      option:
+        DAILY: DAILY
+        WEEKLY: WEEKLY
+      default: DAILY
+      group_customization: true
+    - name: text
+      type: text
+      required: false
+      default: text
+      group_customization: true
+    - name: activatable_group
+      type: group
+      activatable: True
+      subs:
+        - name: readonly-key
+          type: string
+          default: value
+          read_only: any
+        - name: writable-key
+          type: string
+          default: value
+          writable: any
+        - name: required
+          type: integer
+          required: true
+          default: 15
+    - name: structure
+      type: structure
+      required: false
+      yspec: ./schema.yaml
+      default:
+        - code: 1
+          country: Test1
+        - code: 2
+          country: Test2
+    - name: map
+      type: map
+      required: false
+      group_customization: true
+      default:
+        age: '24'
+        name: Joe
+        sex: m
+
+- type: host
+  name: host_from_provider
+  version: "1.01"
