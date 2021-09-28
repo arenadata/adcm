@@ -361,11 +361,16 @@ class TestChangeGroupsConfig:
         },
     }
 
-    def _check_changed_values_in_group(self, values_after: OrderedDict, values_before: OrderedDict):
+    @allure.step("Check group config has been changed")
+    def _check_changed_values_in_group(
+        self, values_after: OrderedDict, values_before: OrderedDict, expected_values: dict = PARAMS_TO_CHANGE["config"]
+    ):
+        """Checks that params in config group are equal to expected and password has been changed"""
+
         for item in self.ASSERT_TYPE:
             assert (
-                values_after[item] == self.PARAMS_TO_CHANGE["config"][item]
-            ), f'Value is "{values_after[item]}", but should be {self.PARAMS_TO_CHANGE["config"][item]}'
+                values_after[item] == expected_values[item]
+            ), f'Value is "{values_after[item]}", but should be {expected_values[item]}'
             assert values_after["password"] != values_before["password"], "Password has not changed"
 
     @pytest.mark.parametrize(
@@ -374,15 +379,14 @@ class TestChangeGroupsConfig:
         indirect=True,
     )
     def test_change_group_in_cluster(self, cluster_bundle, sdk_client_fs):
-        """Test that groups in cluster are allowed chenge with group_customization: true"""
+        """Test that groups in cluster are allowed change with group_customization: true"""
 
         cluster = cluster_bundle.cluster_create(name=utils.random_string())
         with allure.step("Create config group for cluster"):
             cluster_group = cluster.group_config_create(name=FIRST_GROUP)
             config_before = cluster_group.config()
         config_after = cluster_group.config_set_diff(self.PARAMS_TO_CHANGE)['config']
-        with allure.step("Check group config"):
-            self._check_changed_values_in_group(config_after, config_before)
+        self._check_changed_values_in_group(config_after, config_before)
 
     @pytest.mark.parametrize(
         "cluster_bundle",
@@ -390,7 +394,7 @@ class TestChangeGroupsConfig:
         indirect=True,
     )
     def test_change_group_in_service(self, cluster_bundle, sdk_client_fs, cluster_with_components):
-        """Test that groups in service are allowed chenge with group_customization: true"""
+        """Test that groups in service are allowed change with group_customization: true"""
 
         service, test_host_1, _ = cluster_with_components
         with allure.step("Create group for service and add the first host"):
@@ -398,8 +402,7 @@ class TestChangeGroupsConfig:
             service_group.host_add(test_host_1)
             config_before = service_group.config()
         config_after = service_group.config_set_diff(self.PARAMS_TO_CHANGE)['config']
-        with allure.step("Check group config"):
-            self._check_changed_values_in_group(config_after, config_before)
+        self._check_changed_values_in_group(config_after, config_before)
 
     @pytest.mark.parametrize(
         "cluster_bundle",
@@ -407,7 +410,7 @@ class TestChangeGroupsConfig:
         indirect=True,
     )
     def test_change_group_in_component(self, cluster_bundle, sdk_client_fs, cluster_with_components):
-        """Test that groups in component are allowed chenge with group_customization: true"""
+        """Test that groups in component are allowed change with group_customization: true"""
 
         service, test_host_1, _ = cluster_with_components
         with allure.step("Create config group for component and add the first host"):
@@ -415,8 +418,7 @@ class TestChangeGroupsConfig:
             component_group.host_add(test_host_1)
             config_before = component_group.config()
         config_after = component_group.config_set_diff(self.PARAMS_TO_CHANGE)['config']
-        with allure.step("Check group config"):
-            self._check_changed_values_in_group(config_after, config_before)
+        self._check_changed_values_in_group(config_after, config_before)
 
     @pytest.mark.parametrize(
         "provider_bundle",
@@ -424,13 +426,13 @@ class TestChangeGroupsConfig:
         indirect=True,
     )
     def test_change_group_in_provider(self, sdk_client_fs, provider_bundle):
-        """Test that groups in provider are allowed chenge with group_customization: true"""
+        """Test that groups in provider are allowed change with group_customization: true"""
 
-        test_host_1, _ = create_two_hosts
+        provider = provider_bundle.provider_create(name=utils.random_string())
+        test_host = provider.host_create(fqdn=FIRST_HOST)
         with allure.step("Create config group for provider and add the first host"):
             provider_group = provider.group_config_create(name=FIRST_GROUP)
-            provider_group.host_add(test_host_1)
-        with allure.step("Create the second group for provider and check that not allowed to add the first host to it"):
-            provider_group_2 = provider.group_config_create(name=SECOND_GROUP)
-            assert_that_host_add_is_unavailable(provider_group_2, test_host_1)
-            assert_host_candidate_equal_expected(provider_group_2.host_candidate(), [SECOND_HOST])
+            provider_group.host_add(test_host)
+            config_before = provider_group.config()
+        config_after = provider_group.config_set_diff(self.PARAMS_TO_CHANGE)['config']
+        self._check_changed_values_in_group(config_after, config_before)

@@ -49,7 +49,7 @@
     - name: file
       type: file
       required: false
-      default: ./cluster_file
+      default: ./provider_file
       group_customization: true
     - name: option
       type: option
