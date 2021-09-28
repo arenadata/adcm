@@ -49,7 +49,7 @@ export class HostproviderComponent extends ConcernListDirective<any> {
     ListFactory.nameColumn(),
     ListFactory.bundleColumn(),
     ListFactory.stateColumn(),
-    ListFactory.actionsButton(),
+    ListFactory.actionsButton(this),
     ListFactory.updateColumn(),
     ListFactory.configColumn(this),
     ListFactory.deleteColumn(this),
