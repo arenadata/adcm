@@ -15,7 +15,7 @@ from functools import partial
 
 from adwp_events.signals import model_change, model_delete, m2m_change
 from django.apps import AppConfig
-from django.db.models.signals import post_save, post_delete, post_migrate, m2m_changed
+from django.db.models.signals import post_save, post_delete, m2m_changed
 
 
 _watched_m2m_links = (

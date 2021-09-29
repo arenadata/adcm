@@ -22,7 +22,6 @@ from enum import Enum
 from itertools import chain
 from typing import Dict, Iterable, List, Optional
 
-from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
