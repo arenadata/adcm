@@ -67,8 +67,8 @@ def provider_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
     return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
 
 
-@pytest.fixture()
 @allure.title("Create provider")
+@pytest.fixture()
 def upload_and_create_provider(provider_bundle) -> Tuple[Bundle, Provider]:
     """Create provider"""
     provider = provider_bundle.provider_create(PROVIDER_NAME)

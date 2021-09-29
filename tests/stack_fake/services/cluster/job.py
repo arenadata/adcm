@@ -11,7 +11,7 @@
 # limitations under the License.
 
 # Since this module is beyond QA responsibility we will not fix docstrings here
-# pylint: disable=missing-function-docstring, missing-class-docstring
+# pylint: disable=missing-function-docstring, missing-class-docstring, missing-module-docstring
 # pylint: disable=import-error
 
 from cm.logger import log

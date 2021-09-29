@@ -14,6 +14,8 @@
 # Since this module is beyond QA responsibility we will not fix docstrings here
 # pylint: disable=missing-function-docstring, missing-class-docstring
 
+"""Unit-like status API tests"""
+
 import json
 import unittest
 import requests
