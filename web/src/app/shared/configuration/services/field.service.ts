@@ -201,15 +201,22 @@ export class FieldService {
   }
 
   toGroupsFormGroup(config: IConfigAttr): FormGroup {
-    const buildFormGroup = (group_keys) => this.fb.group(Object.entries(group_keys).map(([key, value]) => [key, value]).reduce((acc, [key, value]: [string, boolean]) => {
-      if (!findAttrValue(config.custom_group_keys, key)) { // if value for this key in "custom_group_keys" === false then skip
-        return { ...acc };
-      } else if (isBoolean(value) || isEmptyObject(value)) {
-        return { ...acc, [key]: value };
-      } else if (!isEmptyObject(value)) {
-        return { ...acc, [key]: buildFormGroup(value) };
-      }
-    }, {}));
+
+    const buildFormGroup = (group_keys) => {
+      const data = Object.entries(group_keys).map(([key, value]) => [key, value]).reduce((acc, [key, value]: [string, boolean]) => {
+
+        const disabled = !findAttrValue(config.custom_group_keys, key); // value for this key in "custom_group_keys" === false then disabled
+
+        if (isBoolean(value) || isEmptyObject(value)) {
+          return { ...acc, [key]: [{ value, disabled }, { test: 'sss' }] };
+        } else if (!isEmptyObject(value)) {
+          return { ...acc, [key]: buildFormGroup(value) };
+        }
+
+      }, {});
+
+      return this.fb.group(data);
+    };
 
     return buildFormGroup(config.group_keys ?? {});
   }
