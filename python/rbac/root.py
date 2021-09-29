@@ -23,4 +23,6 @@ class RBACRoot(routers.APIRootView):
         'user': 'rbac-user-list',
         'group': 'rbac_group:group-list',
         'role': 'rbac_role:role-list',
+        'logout': 'rbac-logout',
+        'token': 'rbac-token',
     }

@@ -10,18 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path, include
+import django.contrib.auth
 
-from .root import RBACRoot
-from .logout.views import LogOut
-from .token.views import GetAuthToken
+from rest_framework import status
+from rest_framework.generics import GenericAPIView
+from rest_framework.response import Response
+from rest_framework import serializers
 
 
-urlpatterns = [
-    path('', RBACRoot.as_view(), name='rbac-root'),
-    path('user/', include('rbac.user.urls')),
-    path('group/', include('rbac.group.urls')),
-    path('role/', include('rbac.role.urls')),
-    path('logout/', LogOut.as_view(), name='rbac-logout'),
-    path('token/', GetAuthToken.as_view(), name='rbac-token'),
-]
+class LogOutSerializer(serializers.Serializer):
+    pass
+
+
+class LogOut(GenericAPIView):
+    serializer_class = LogOutSerializer
+
+    def post(self, request, *args, **kwargs):
+        """
+        Logout user from Django session
+        """
+        django.contrib.auth.logout(request)
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -10,16 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import django.contrib.auth
 import rest_framework
-from rest_framework import routers, status
+from rest_framework import routers
 from rest_framework import viewsets
-from rest_framework.authtoken.models import Token
-from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-import api.serializers
 import cm.api
 import cm.job
 import cm.stack
@@ -50,7 +46,7 @@ class APIRoot(routers.APIRootView):
         'task': 'task',
         'token': 'token',
         'logout': 'logout',
-        'user': 'user-list',
+        'rbac': 'rbac-root',
         'info': 'adcm-info',
         'concern': 'concern',
     }
@@ -64,40 +60,6 @@ class NameConverter:
 
     def to_url(self, value):
         return value
-
-
-class GetAuthToken(GenericAPIView):
-    authentication_classes = (rest_framework.authentication.TokenAuthentication,)
-    permission_classes = (rest_framework.permissions.AllowAny,)
-    serializer_class = api.serializers.AuthSerializer
-
-    def post(self, request, *args, **kwargs):
-        """
-        Provide authentication token
-
-        HTTP header for authorization:
-
-        ```Authorization: Token XXXXX```
-        """
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-        token, _created = Token.objects.get_or_create(user=user)
-        django.contrib.auth.login(
-            request, user, backend='django.contrib.auth.backends.ModelBackend'
-        )
-        return Response({'token': token.key})
-
-
-class LogOut(GenericAPIView):
-    serializer_class = api.serializers.LogOutSerializer
-
-    def post(self, request, *args, **kwargs):
-        """
-        Logout user from Django session
-        """
-        django.contrib.auth.logout(request)
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ADCMInfo(APIView):

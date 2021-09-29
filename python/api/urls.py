@@ -23,8 +23,6 @@ schema_view = get_schema_view(title='ArenaData Chapel API')
 urlpatterns = [
     path('info/', views.ADCMInfo.as_view(), name='adcm-info'),
     path('stats/', include('api.stats.urls')),
-    path('token/', views.GetAuthToken.as_view(), name='token'),
-    path('logout/', views.LogOut.as_view(), name='logout'),
     path('rbac/', include('rbac.urls')),
     path('stack/', include('api.stack.urls')),
     path('cluster/', include('api.cluster.urls')),

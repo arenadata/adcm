@@ -10,18 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path, include
+import logging
 
-from .root import RBACRoot
-from .logout.views import LogOut
-from .token.views import GetAuthToken
-
-
-urlpatterns = [
-    path('', RBACRoot.as_view(), name='rbac-root'),
-    path('user/', include('rbac.user.urls')),
-    path('group/', include('rbac.group.urls')),
-    path('role/', include('rbac.role.urls')),
-    path('logout/', LogOut.as_view(), name='rbac-logout'),
-    path('token/', GetAuthToken.as_view(), name='rbac-token'),
-]
+log = logging.getLogger('adwp.rbac')

@@ -104,7 +104,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         if self.token is not None:
             return
         response = requests.post(
-            self.url + '/token/',
+            self.url + '/rbac/token/',
             data=json.dumps({'username': 'admin', 'password': 'admin'}),
             headers={'Content-Type': 'application/json'},
         )
