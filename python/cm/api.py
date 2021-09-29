@@ -48,7 +48,6 @@ from cm.models import (
     Prototype,
     PrototypeExport,
     PrototypeImport,
-    Role,
     ServiceComponent,
 )
 from cm.upgrade import check_license, version_in
@@ -385,88 +384,6 @@ def add_components_to_service(cluster, service):
         sc = ServiceComponent(cluster=cluster, service=service, prototype=comp, config=obj_conf)
         sc.save()
         cm.issue.update_hierarchy_issues(sc)
-
-
-def get_role_permissions(role):
-    role_list = []
-    perm_list = []
-
-    def get_perm(role, perm_list, role_list):
-        if role in role_list:
-            return
-        role_list.append(role)
-        for p in role.permissions.all():
-            if p not in perm_list:
-                perm_list.append(p)
-        for child in role.childs.all():
-            get_perm(child, perm_list, role_list)
-
-    get_perm(role, perm_list, role_list)
-    return perm_list
-
-
-def add_user_role(user, role):
-    if Role.objects.filter(id=role.id, user=user):
-        err('ROLE_ERROR', f'User "{user.username}" already has role "{role.name}"')
-    with transaction.atomic():
-        role.user.add(user)
-        role.save()
-        for perm in get_role_permissions(role):
-            user.user_permissions.add(perm)
-    log.info('Add role "%s" to user "%s"', role.name, user.username)
-    role.role_id = role.id
-    return role
-
-
-def add_group_role(group, role):
-    if Role.objects.filter(id=role.id, group=group):
-        err('ROLE_ERROR', f'Group "{group.name}" already has role "{role.name}"')
-    with transaction.atomic():
-        role.group.add(group)
-        role.save()
-        for perm in get_role_permissions(role):
-            group.permissions.add(perm)
-    log.info('Add role "%s" to group "%s"', role.name, group.name)
-    role.role_id = role.id
-    return role
-
-
-def get_user_other_roles_perm_dict(role, role_list):
-    perm_list = {}
-    for r in role_list:
-        if r == role:
-            continue
-        for perm in get_role_permissions(r):
-            perm_list[perm.codename] = True
-    return perm_list
-
-
-def remove_user_role(user, role):
-    user_roles = Role.objects.filter(user=user)
-    if role not in user_roles:
-        err('ROLE_ERROR', f'User "{user.username}" does not has role "{role.name}"')
-    perm_list = get_user_other_roles_perm_dict(role, user_roles)
-    with transaction.atomic():
-        role.user.remove(user)
-        role.save()
-        for perm in get_role_permissions(role):
-            if perm.codename not in perm_list:
-                user.user_permissions.remove(perm)
-    log.info('Remove role "%s" from user "%s"', role.name, user.username)
-
-
-def remove_group_role(group, role):
-    group_roles = Role.objects.filter(group=group)
-    if role not in group_roles:
-        err('ROLE_ERROR', f'Group "{group.name}" does not has role "{role.name}"')
-    perm_list = get_user_other_roles_perm_dict(role, group_roles)
-    with transaction.atomic():
-        role.group.remove(group)
-        role.save()
-        for perm in get_role_permissions(role):
-            if perm.codename not in perm_list:
-                group.permissions.remove(perm)
-    log.info('Remove role "%s" from group "%s"', role.name, group.name)
 
 
 def get_bundle_proto(bundle):

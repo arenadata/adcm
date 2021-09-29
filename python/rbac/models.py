@@ -23,11 +23,9 @@ class Role(models.Model):
     name = models.CharField(max_length=32, unique=True)
     description = models.TextField(blank=True)
     childs = models.ManyToManyField("self", symmetrical=False, blank=True)
-    permissions = models.ManyToManyField(
-        Permission, blank=True, related_name='rbac_role_permissions'
-    )
-    user = models.ManyToManyField(User, blank=True, related_name='rbac_role_user')
-    group = models.ManyToManyField(Group, blank=True, related_name='rbac_role_group')
+    permissions = models.ManyToManyField(Permission, blank=True)
+    user = models.ManyToManyField(User, blank=True)
+    group = models.ManyToManyField(Group, blank=True)
 
     def get_permissions(self, role=None):
         role_list = []
@@ -68,7 +66,7 @@ class Role(models.Model):
         return self
 
     def remove_user(self, user):
-        user_roles = user.rbac_role_user.all()
+        user_roles = user.role_set.all()
         if self not in user_roles:
             err('ROLE_ERROR', f'User "{user.username}" does not has role "{self.name}"')
         perm_list = self.get_permissions_without_role(user_roles)

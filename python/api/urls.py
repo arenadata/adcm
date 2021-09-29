@@ -25,11 +25,7 @@ urlpatterns = [
     path('stats/', include('api.stats.urls')),
     path('token/', views.GetAuthToken.as_view(), name='token'),
     path('logout/', views.LogOut.as_view(), name='logout'),
-
-    path('user/', include('api.user.urls')),
     path('rbac/', include('rbac.urls')),
-
-    path('profile/', include('api.user.profile_urls')),
     path('stack/', include('api.stack.urls')),
     path('cluster/', include('api.cluster.urls')),
     path('service/', include('api.service.urls')),

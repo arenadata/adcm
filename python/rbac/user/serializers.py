@@ -88,15 +88,12 @@ class PermissionSerializer(serializers.ModelSerializer):
         return obj.content_type.model
 
 
-
 class ProfileField(serializers.JSONField):
-
     def get_attribute(self, instance):
         if hasattr(instance, 'userprofile'):
             return instance.userprofile.profile
         else:
             return None
-
 
 
 class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSerializer):
@@ -105,8 +102,8 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
     password = PasswordField()
     profile = ProfileField(required=False)
     groups = serializers.SerializerMethodField(read_only=True)
-    # roles =  RoleSerializer(many=True, source='role_set')
-    roles = RoleSerializer(many=True, source='rbac_role_user', read_only=True)
+    roles = RoleSerializer(many=True, source='role_set', read_only=True)
+    # roles = RoleSerializer(many=True, source='rbac_role_user', read_only=True)
     permissions = PermissionSerializer(many=True, source='user_permissions', read_only=True)
     add_group = serializers.HyperlinkedIdentityField(
         view_name='rbac-user-group-list', lookup_field='id'

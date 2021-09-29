@@ -1015,20 +1015,6 @@ class UserProfile(ADCMModel):
     profile = models.JSONField(default=str)
 
 
-class Role(ADCMModel):
-    name = models.CharField(max_length=32, unique=True)
-    description = models.TextField(blank=True)
-    childs = models.ManyToManyField("self", symmetrical=False, blank=True)
-    permissions = models.ManyToManyField(Permission, blank=True)
-    user = models.ManyToManyField(User, blank=True)
-    group = models.ManyToManyField(Group, blank=True)
-
-
-class RoleMigration(ADCMModel):
-    version = models.PositiveIntegerField(primary_key=True)
-    date = models.DateTimeField(auto_now=True)
-
-
 class TaskLog(ADCMModel):
     object_id = models.PositiveIntegerField()
     object_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)
