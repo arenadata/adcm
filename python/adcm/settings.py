@@ -252,7 +252,7 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
-        'adwp.events': {
+        'adwp': {
             'handlers': ['adwp_file'],
             'level': 'DEBUG',
             'propagate': True,

@@ -20,7 +20,7 @@ from rest_framework.reverse import reverse
 from rest_framework.authtoken.models import Token
 from rest_framework.utils import model_meta
 
-from rbac.models import Role
+from rbac.models import Role, UserProfile
 
 
 class PasswordField(serializers.CharField):
@@ -88,16 +88,31 @@ class PermissionSerializer(serializers.ModelSerializer):
         return obj.content_type.model
 
 
+
+class ProfileField(serializers.JSONField):
+
+    def get_attribute(self, instance):
+        if hasattr(instance, 'userprofile'):
+            return instance.userprofile.profile
+        else:
+            return None
+
+
+
 class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSerializer):
     """User serializer"""
 
     password = PasswordField()
-    groups = serializers.SerializerMethodField()
+    profile = ProfileField(required=False)
+    groups = serializers.SerializerMethodField(read_only=True)
     # roles =  RoleSerializer(many=True, source='role_set')
-    roles = RoleSerializer(many=True, source='rbac_role_user')
-    permissions = PermissionSerializer(many=True, source='user_permissions')
+    roles = RoleSerializer(many=True, source='rbac_role_user', read_only=True)
+    permissions = PermissionSerializer(many=True, source='user_permissions', read_only=True)
     add_group = serializers.HyperlinkedIdentityField(
         view_name='rbac-user-group-list', lookup_field='id'
+    )
+    add_role = serializers.HyperlinkedIdentityField(
+        view_name='rbac-user-role-list', lookup_field='id'
     )
 
     class Meta:
@@ -113,8 +128,10 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
             'groups',
             'roles',
             'permissions',
+            'profile',
             'url',
             'add_group',
+            'add_role',
         )
         extra_kwargs = {
             #'url': {'view_name': 'rbac_user:user-detail', 'lookup_field': 'id'},
@@ -136,16 +153,18 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
             if name in validated_data:
                 extra_fields[name] = validated_data[name]
 
-        for name in ('first_name', 'last_name', 'profile'):
+        for name in ('first_name', 'last_name'):
             set_extra(name)
 
-        return User.objects.create_user(
+        user = User.objects.create_user(
             validated_data.get('username'),
             password=validated_data.get('password'),
             is_superuser=validated_data.get('is_superuser', True),
             email=validated_data.get('email', None),
             **extra_fields,
         )
+        UserProfile.objects.create(user=user, profile=validated_data.get('profile', {}))
+        return user
 
     @atomic
     def update(self, instance, validated_data):
@@ -159,6 +178,10 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
             token.key = token.generate_key()
             token.user = instance
             token.save()
+        if 'profile' in validated_data:
+            user_profile = instance.userprofile
+            user_profile.profile = validated_data['profile']
+            user_profile.save()
 
         return super().update(instance, validated_data)
 
