@@ -90,10 +90,7 @@ class PermissionSerializer(serializers.ModelSerializer):
 
 class ProfileField(serializers.JSONField):
     def get_attribute(self, instance):
-        if hasattr(instance, 'userprofile'):
-            return instance.userprofile.profile
-        else:
-            return None
+        return instance.userprofile.profile
 
 
 class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSerializer):
@@ -103,7 +100,6 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
     profile = ProfileField(required=False)
     groups = serializers.SerializerMethodField(read_only=True)
     roles = RoleSerializer(many=True, source='role_set', read_only=True)
-    # roles = RoleSerializer(many=True, source='rbac_role_user', read_only=True)
     permissions = PermissionSerializer(many=True, source='user_permissions', read_only=True)
     add_group = serializers.HyperlinkedIdentityField(
         view_name='rbac-user-group-list', lookup_field='id'
@@ -131,10 +127,8 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
             'add_role',
         )
         extra_kwargs = {
-            #'url': {'view_name': 'rbac_user:user-detail', 'lookup_field': 'id'},
             'url': {'view_name': 'rbac-user-detail', 'lookup_field': 'id'},
             'is_superuser': {'required': False},
-            'profile': {'required': False},
         }
 
     def get_groups(self, obj):
@@ -143,6 +137,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
         context['user'] = obj
         return GroupSerializer(groups, many=True, context=context).data
 
+    @atomic
     def create(self, validated_data):
         extra_fields = {}
 
@@ -160,7 +155,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
             email=validated_data.get('email', None),
             **extra_fields,
         )
-        UserProfile.objects.create(user=user, profile=validated_data.get('profile', {}))
+        UserProfile.objects.create(user=user, profile=validated_data.get('profile', ""))
         return user
 
     @atomic
