@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Host page PageObjects classes"""
+
 from typing import Optional
 from typing import Set
 
@@ -19,7 +22,7 @@ from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
-from tests.ui_tests.app.page.common.dialogs import ActionDialog
+from tests.ui_tests.app.page.common.dialogs_locators import ActionDialog
 from tests.ui_tests.app.page.host.locators import HostLocators, HostActionsLocators
 
 
@@ -57,12 +60,12 @@ class HostPageMixin(BasePageObject):
     def check_fqdn_equal_to(self, fqdn: str):
         """Check if fqdn on page is equal to given one"""
 
-        def check(element):
+        def _check(element):
             real_fqdn = element.text
             assert real_fqdn == fqdn, f'Expected FQDN is {fqdn}, but FQDN in menu is {real_fqdn}'
 
         fqdn_element = self.find_element(ObjectPageLocators.title)
-        wait_until_step_succeeds(check, timeout=5, period=0.1, element=fqdn_element)
+        wait_until_step_succeeds(_check, timeout=5, period=0.1, element=fqdn_element)
 
     def get_bundle_label(self) -> str:
         """Get text from label below FQDN"""
@@ -70,6 +73,7 @@ class HostPageMixin(BasePageObject):
 
     @allure.step('Open "Main" menu')
     def open_main_menu(self) -> 'HostMainPage':
+        """Open 'Main' menu"""
         self.find_and_click(HostLocators.MenuNavigation.main_tab)
         page = HostMainPage(self.driver, self.base_url, self.host_id, None)
         page.wait_page_is_opened()
@@ -77,6 +81,7 @@ class HostPageMixin(BasePageObject):
 
     @allure.step('Open "Configuration" menu')
     def open_config_menu(self) -> 'HostConfigPage':
+        """Open 'Configuration' menu"""
         self.find_and_click(HostLocators.MenuNavigation.config_tab)
         page = HostConfigPage(self.driver, self.base_url, self.host_id, None)
         page.wait_page_is_opened()
@@ -84,6 +89,7 @@ class HostPageMixin(BasePageObject):
 
     @allure.step('Open "Status" menu')
     def open_status_menu(self) -> 'HostStatusPage':
+        """Open 'Status' menu"""
         self.find_and_click(HostLocators.MenuNavigation.status_tab)
         page = HostStatusPage(self.driver, self.base_url, self.host_id, None)
         page.wait_page_is_opened()
@@ -91,6 +97,7 @@ class HostPageMixin(BasePageObject):
 
     @allure.step('Open "Actions" menu')
     def open_action_menu(self) -> 'HostActionsPage':
+        """Open 'Actions' menu"""
         self.find_and_click(HostLocators.MenuNavigation.actions_tab)
         page = HostActionsPage(self.driver, self.base_url, self.host_id, None)
         page.wait_page_is_opened()
@@ -130,9 +137,12 @@ class HostActionsPage(HostPageMixin):
     MENU_SUFFIX = 'action'
 
     def get_action_names(self) -> Set[str]:
+        """Get action names"""
         return {element.text for element in self.find_elements(HostActionsLocators.action_name)}
 
+    @allure.step("Run action from actions menu")
     def run_action_from_menu(self, action_name: str):
+        """Run action from actions menu"""
         self.find_and_click(HostActionsLocators.action_btn(action_name))
         self.wait_element_visible(ActionDialog.body)
         self.find_and_click(ActionDialog.run)

@@ -62,7 +62,7 @@ def test_check_header_links_in_login_page_unauthorised(app_fs):
     login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
     login_page.header.click_arenadata_logo_in_header()
     login_page.check_error_message(params["error_text"])
-    login_page.header.click_cluster_tab_in_header()
+    login_page.header.click_clusters_tab_in_header()
     login_page.check_error_message(params["error_text"])
     login_page.header.click_hostproviders_tab_in_header()
     login_page.check_error_message(params["error_text"])

@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Bundle List page PageObjects classes"""
+
 import allure
 
 from dataclasses import dataclass
@@ -20,7 +23,7 @@ from tests.ui_tests.app.page.common.base_page import (
     PageHeader,
     PageFooter,
 )
-from tests.ui_tests.app.page.common.dialogs import DeleteDialog
+from tests.ui_tests.app.page.common.dialogs_locators import DeleteDialog
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 
 
@@ -35,6 +38,7 @@ class BundleInfo:
 
 
 class BundleListPage(BasePageObject):
+    """Bundle List Page class"""
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/bundle")
         self.header = PageHeader(self.driver, self.base_url)

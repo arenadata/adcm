@@ -48,7 +48,7 @@ class TestHeader:
         intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
         header.wait_url_contains_path(intro_page.path)
 
-        header.click_cluster_tab_in_header()
+        header.click_clusters_tab_in_header()
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url)
         header.wait_url_contains_path(cluster_page.path)
 
@@ -112,7 +112,7 @@ class TestHeader:
         add_dummy_objects_to_adcm(sdk_client_fs)
         with allure.step("Check back button for cluster page header link"):
             intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
-            intro_page.header.click_cluster_tab_in_header()
+            intro_page.header.click_clusters_tab_in_header()
             cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url)
             cluster_page.wait_page_is_opened()
             cluster_page.click_back_button_in_browser()

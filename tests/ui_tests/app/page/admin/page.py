@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Admin pages PageObjects classes"""
+
 from typing import List
 
 import allure
@@ -24,7 +27,7 @@ from tests.ui_tests.app.page.admin.locators import (
 )
 from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
-from tests.ui_tests.app.page.common.dialogs import DeleteDialog
+from tests.ui_tests.app.page.common.dialogs_locators import DeleteDialog
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
@@ -34,28 +37,34 @@ from tests.ui_tests.app.page.common.base_page import (
 
 
 class GeneralAdminPage(BasePageObject):
+    """Base class for admin pages"""
     MAIN_ELEMENTS: List[Locator]
 
-    @allure.step("Check all main elements on the page are presented")
+    @allure.step("Assert that all main elements are presented on the page")
     def check_all_elements(self):
+        """Assert presence of the MAIN_ELEMENTS"""
         if len(self.MAIN_ELEMENTS) == 0:
             raise AttributeError('MAIN_ELEMENTS should contain at least 1 element')
         self.assert_displayed_elements(self.MAIN_ELEMENTS)
 
-    @allure.step('Open Admin Intro menu')
+    @allure.step('Open Admin Intro page by left menu item click')
     def open_intro_menu(self):
+        """Open Admin Intro page by menu object click"""
         self.find_and_click(ObjectPageMenuLocators.intro_tab)
 
-    @allure.step('Open Admin Settings menu')
+    @allure.step('Open Admin Settings page by left menu item click')
     def open_settings_menu(self):
+        """Open Admin Settings page by menu object click"""
         self.find_and_click(ObjectPageMenuLocators.settings_tab)
 
-    @allure.step('Open Admin Users menu')
+    @allure.step('Open Admin Users page by left menu item click')
     def open_users_menu(self):
+        """Open Admin Users page by menu object click"""
         self.find_and_click(ObjectPageMenuLocators.users_tab)
 
 
 class AdminIntroPage(GeneralAdminPage):
+    """Admin Intro Page class"""
     MAIN_ELEMENTS = [AdminIntroLocators.intro_title, AdminIntroLocators.intro_text]
 
     def __init__(self, driver, base_url):
@@ -65,6 +74,7 @@ class AdminIntroPage(GeneralAdminPage):
 
 
 class AdminSettingsPage(GeneralAdminPage):
+    """Admin Settings Page class"""
     MAIN_ELEMENTS = [
         AdminSettingsLocators.save_btn,
         AdminSettingsLocators.search_input,
@@ -79,6 +89,7 @@ class AdminSettingsPage(GeneralAdminPage):
 
 
 class AdminUsersPage(GeneralAdminPage):
+    """Admin Users Page class"""
     MAIN_ELEMENTS = [AdminUsersLocators.add_user_btn, AdminUsersLocators.user_row]
 
     def __init__(self, driver, base_url):

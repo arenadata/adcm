@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Provider page PageObjects classes"""
+
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Optional
@@ -22,7 +25,7 @@ from tests.ui_tests.app.page.common.base_page import (
     PageHeader,
     PageFooter,
 )
-from tests.ui_tests.app.page.common.dialogs import (
+from tests.ui_tests.app.page.common.dialogs_locators import (
     ActionDialog,
     DeleteDialog,
 )
@@ -43,6 +46,7 @@ class ProviderRowInfo:
 
 
 class ProviderListPage(BasePageObject):
+    """Provider List Page class"""
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/provider")
         self.header = PageHeader(self.driver, self.base_url)
@@ -51,8 +55,9 @@ class ProviderListPage(BasePageObject):
         self.table = CommonTableObj(self.driver, self.base_url, HostListLocators.HostTable)
         self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
 
-    @allure.step("Create provider from bundle")
+    @allure.step("Create provider")
     def create_provider(self, bundle: str, name: Optional[str] = None, description: Optional[str] = None):
+        """Create provider"""
         self.find_and_click(ProviderListLocators.Tooltip.add_btn)
         popup = ProviderListLocators.CreateProviderPopup
         self.wait_element_visible(popup.block)
@@ -63,8 +68,8 @@ class ProviderListPage(BasePageObject):
             self.send_text_to_element(popup.description_input, description)
         self.find_and_click(popup.create_btn)
 
-    @allure.step("Get provider info from row")
     def get_provider_info_from_row(self, row: WebElement) -> ProviderRowInfo:
+        """Get provider info from row"""
         row_elements = ProviderListLocators.ProviderTable.ProviderRow
         return ProviderRowInfo(
             name=self.find_child(row, row_elements.name).text,
@@ -72,20 +77,24 @@ class ProviderListPage(BasePageObject):
             state=self.find_child(row, row_elements.state).text,
         )
 
-    @allure.step("Click action in row")
+    @allure.step("Click action button in row")
     def click_action_btn_in_row(self, row: WebElement):
+        """Click Action button in row"""
         self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.actions).click()
 
-    @allure.step("Click config in row")
+    @allure.step("Click config button in row")
     def click_config_btn_in_row(self, row: WebElement):
+        """Click Config button in row"""
         self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.config).click()
 
     @allure.step("Click name in row")
     def click_name_in_row(self, row: WebElement):
+        """Click name in row"""
         self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.name).click()
 
-    @allure.step("Run action {action_name} for provider")
+    @allure.step("Run action {action_name} for provider from row")
     def run_action_in_provider_row(self, row: WebElement, action_name: str):
+        """Run action for provider from row"""
         self.click_action_btn_in_row(row)
         self.wait_element_visible(self.table.locators.ActionPopup.block)
         self.find_and_click(self.table.locators.ActionPopup.button(action_name))
@@ -94,18 +103,20 @@ class ProviderListPage(BasePageObject):
 
     @contextmanager
     def wait_provider_state_change(self, row: WebElement):
+        """Wait for provider state change"""
         state_before = self.get_provider_info_from_row(row).state
         yield
 
-        def wait_state():
+        def _wait_state():
             state_after = self.get_provider_info_from_row(row).state
             assert state_after != state_before
             assert state_after != self.table.LOADING_STATE_TEXT
 
-        wait_until_step_succeeds(wait_state, period=1, timeout=self.default_loc_timeout)
+        wait_until_step_succeeds(_wait_state, period=1, timeout=self.default_loc_timeout)
 
-    @allure.step("Delete host")
+    @allure.step("Delete host by button from row")
     def delete_provider_in_row(self, row: WebElement):
+        """Delete host by button from row"""
         self.find_child(row, ProviderListLocators.ProviderTable.ProviderRow.delete_btn).click()
         self.wait_element_visible(DeleteDialog.body)
         self.find_and_click(DeleteDialog.yes)

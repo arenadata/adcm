@@ -9,6 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""DEPRECATED! Base page objects."""
+
+# Since this module is deprecated we will not fix docstrings here
+# pylint: disable=missing-function-docstring, missing-class-docstring
+
 from time import sleep
 
 import allure
@@ -42,9 +48,8 @@ def element_text(element):
 
 @deprecated("Use BasePageObj")
 class BasePage:
-    ignored_exceptions = (NoSuchElementException, StaleElementReferenceException)
-
     """That is base page object for all ADCM's pages"""
+    ignored_exceptions = (NoSuchElementException, StaleElementReferenceException)
 
     def __init__(self, driver):
         self.driver = driver

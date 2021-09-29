@@ -9,16 +9,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Footer locators"""
+
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator
 
 
-class DeleteDialog:
-    body = Locator(By.CSS_SELECTOR, "mat-dialog-container", "Dialog with choices")
-    yes = Locator(By.XPATH, "//button//span[contains(text(), 'Yes')]", "Yes button in delete dialog")
+class CommonFooterLocators:
+    """ADCM footer locators"""
 
-
-class ActionDialog:
-    body = Locator(By.CSS_SELECTOR, "mat-dialog-container", "Dialog with choices")
-    run = Locator(By.CSS_SELECTOR, "app-dialog button[color='accent']", "Run button in action dialog")
+    version_link = Locator(By.CSS_SELECTOR, "footer a[href*='docs']", "Link to version doc page")
+    logo = Locator(By.XPATH, "//footer//*[contains(text(), 'ARENADATA ©')]", "Footer logo")

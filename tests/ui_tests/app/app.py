@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Created by a1wen at 27.02.19
+"""Tools for ADCM UI over selenium interactions"""
 
+# Created by a1wen at 27.02.19
 
 import os
 
@@ -30,6 +31,7 @@ from tests.ui_tests.app.pages import Ui, ClustersList
 
 
 class ADCMTest:
+    """Wrapper class for ADCM UI interactions using Selenium"""
 
     __slots__ = ("opts", "capabilities", "driver", "ui", "adcm", "selenoid")
 
@@ -63,6 +65,7 @@ class ADCMTest:
 
     @allure.step("Init driver")
     def create_driver(self):
+        """Init selenium driver based on the object properties"""
         if self.selenoid["host"]:
             self.driver = webdriver.Remote(
                 command_executor=f"http://{self.selenoid['host']}:{self.selenoid['port']}/wd/hub",
@@ -80,32 +83,29 @@ class ADCMTest:
 
     @allure.step("Attache ADCM")
     def attache_adcm(self, adcm: ADCM):
+        """Attache ADCM instance to the driver wrapper"""
         self.adcm = adcm
 
-    @allure.step("Get Clusters List")
-    def clusters_page(self):
-        return ClustersList(self)
-
     def wait_for(self, condition: EC, locator: tuple, timer=5):
-        def get_element(element):
+        """Wait for condition"""
+        def _get_element(element):
             return WDW(self.driver, timer).until(condition(element))
 
-        return get_element(locator)
+        return _get_element(locator)
 
     @allure.step("Wait for element displayed")
     def wait_element_present(self, locator: tuple):
+        """Wait for element displayed"""
         return self.wait_for(EC.presence_of_element_located, locator)
 
-    @allure.step("Wait for contains url: {url}")
+    @allure.step("Wait for adress string to contain: {url}")
     def contains_url(self, url: str, timer=5):
+        """Wait for adress string to contain given URL"""
         return WDW(self.driver, timer).until(EC.url_contains(url))
-
-    @allure.step("Open base page")
-    def base_page(self):
-        self.driver.get(self.adcm.url)
 
     @allure.step("Open a new tab")
     def new_tab(self):
+        """Open a new tab"""
         self.driver.execute_script("window.open('');")
         # close all tabs
         for tab in self.driver.window_handles[:-1]:
@@ -120,7 +120,9 @@ class ADCMTest:
             # we skip JS error here since we have no simple way to detect localStorage availability
             pass
 
+    @allure.step("Destroy selenium driver")
     def destroy(self):
+        """Destroy selenium driver"""
         self.driver.quit()
 
     def _configure_downloads(self, browser: str, downloads_directory: Optional[Union[os.PathLike, str]]):
