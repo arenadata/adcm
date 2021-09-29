@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Test UI options for config groups"""
+
 import os
 import time
 
@@ -39,7 +41,7 @@ INVISIBLE_GROUPS = [
 
 
 @pytest.fixture()
-@allure.step('Upload bundle, create cluster and add service')
+@allure.title('Upload bundle, create cluster and add service')
 def service(sdk_client_fs):
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='group_ui_options_test')
@@ -50,11 +52,14 @@ def service(sdk_client_fs):
 @pytest.fixture()
 @allure.title('Open Configuration page')
 def ui_config(app_fs, service, login_to_adcm_over_api):  # pylint: disable=unused-argument
+    """Open Configuration page"""
     return Configuration.from_service(app_fs, service)
 
 
 @pytest.fixture(params=[(False, 3), (True, 6)], ids=['advanced_disabled', 'advanced'])
+@allure.title('Get group elements. Enable required if necessary')
 def group_elements(ui_config, request):
+    """Get group elements. Enable required if necessary'"""
     enable_advanced, expected_elements = request.param
     if enable_advanced:
         ui_config.show_advanced()
@@ -63,7 +68,9 @@ def group_elements(ui_config, request):
 
 
 @pytest.fixture()
+@allure.title('Get activatable with not filled required fields')
 def activatable_with_not_filled_required_fields(ui_config):
+    """Get activatable with not filled required fields"""
     config_groups = ui_config.driver.find_elements(*Common.mat_expansion_panel)
     group_for_edition = ""
     for group in config_groups:
@@ -81,6 +88,7 @@ def activatable_with_not_filled_required_fields(ui_config):
 
 
 def test_group_elements_count(group_elements):
+    """Test that group elements count is correct"""
     elements, expected_elements = group_elements
     with allure.step('Check group elements count'):
         assert len(elements) == expected_elements, "Group elements count doesn't equal expected"
@@ -88,6 +96,7 @@ def test_group_elements_count(group_elements):
 
 @pytest.mark.usefixtures("group_elements")
 def test_save_groups(ui_config, sdk_client_fs: ADCMClient):
+    """Test save config with groups"""
     app_fields = ui_config.get_app_fields()
     for textbox in app_fields:
         if "field_for_group_without_options:" in textbox.text:
@@ -129,5 +138,6 @@ def test_activatable_group_status(config_name, activatable, ui_config):
 
 
 def test_activatable_with_not_filled_required_fields(activatable_with_not_filled_required_fields):
-    with allure.step('Check that can save config if we have ' 'disabed activatable group with empty required fields'):
+    """Test that we can save config if we have disabled activatable group with empty required fields"""
+    with allure.step('Check that can save config if we have disabled activatable group with empty required fields'):
         assert activatable_with_not_filled_required_fields

@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO Remove this module?
+
 # pylint:disable=redefined-outer-name
 import os
 import time
@@ -53,7 +55,7 @@ REQUIRED_FIELDS = [
 
 
 @pytest.fixture()
-@allure.step('Upload bundle, create cluster and add service')
+@allure.title('Upload bundle, create cluster and add service')
 def service(sdk_client_fs):
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='my cluster')
@@ -62,7 +64,7 @@ def service(sdk_client_fs):
 
 
 @pytest.fixture()
-@allure.step("Open ADCM tab Configuration")
+@allure.title("Open ADCM tab Configuration")
 def ui_config(app_fs, service, login_to_adcm_over_api):  # pylint: disable=unused-argument
     return Configuration.from_service(app_fs, service)
 
