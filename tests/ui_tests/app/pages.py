@@ -49,6 +49,7 @@ class BasePage:
     def __init__(self, driver):
         self.driver = driver
 
+    @allure.step("Navigate to {url}")
     def get(self, url, url_path=None, timeout=5):
         if self.driver.current_url != url:
             self.driver.get(url)
