@@ -11,6 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Since this module is beyond QA responsibility we will not fix docstrings here
+# pylint: disable=missing-function-docstring, missing-class-docstring
+
 import os
 import sys
 import json

@@ -278,6 +278,7 @@ def _get_default_props_list() -> list:
     prop_types=_get_default_props_list(),
 )
 def test_cluster_configuration_save_button(bundle_content, cluster_config_page):
+    """Test cluster configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
         cluster_config_page,
@@ -293,6 +294,7 @@ def test_cluster_configuration_save_button(bundle_content, cluster_config_page):
     prop_types=_get_default_props_list(),
 )
 def test_service_configuration_save_button(bundle_content, service_config_page):
+    """Test service configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
         service_config_page,
@@ -308,6 +310,7 @@ def test_service_configuration_save_button(bundle_content, service_config_page):
     prop_types=_get_default_props_list(),
 )
 def test_provider_configuration_save_button(bundle_content, provider_config_page):
+    """Test provider configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
         provider_config_page,
@@ -323,6 +326,7 @@ def test_provider_configuration_save_button(bundle_content, provider_config_page
     prop_types=_get_default_props_list(),
 )
 def test_host_configuration_save_button(bundle_content, host_config_page):
+    """Test host configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
         host_config_page,

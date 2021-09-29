@@ -27,7 +27,7 @@ from selenium.webdriver import ChromeOptions, FirefoxOptions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 
-from tests.ui_tests.app.pages import Ui, ClustersList
+from tests.ui_tests.app.pages import Ui
 
 
 class ADCMTest:

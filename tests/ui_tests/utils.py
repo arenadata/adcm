@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Utils for UI ADCM tests"""
+
 # pylint: disable=too-many-ancestors
 import os
 from collections import UserDict

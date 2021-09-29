@@ -43,6 +43,7 @@ INVISIBLE_GROUPS = [
 @pytest.fixture()
 @allure.title('Upload bundle, create cluster and add service')
 def service(sdk_client_fs):
+    """Upload bundle, create cluster and add service"""
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='group_ui_options_test')
     cluster.service_add(name='group_ui_options_test')

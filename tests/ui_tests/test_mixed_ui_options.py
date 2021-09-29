@@ -97,6 +97,7 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app_fs):
 
 @parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_true_field_advanced_true_invisible_true")
 def test_all_true(sdk_client_fs: ADCMClient, path, app_fs):
+    """Check group and field ui options when advanced and invisible is true"""
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     groups = config.get_field_groups()
     for group in groups:
@@ -154,6 +155,7 @@ def test_group_advanced_false_invisible_false_field_advanced_false_invisible_tru
 def test_group_advanced_false_invisible_false_field_advanced_true_invisible_false(
     sdk_client_fs: ADCMClient, path, app_fs
 ):
+    """Invisible and advanced for groups false for fields advanced true and invisible false"""
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     fields = config.get_field_groups()
     for field in fields:
@@ -212,6 +214,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_fals
 def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true(
     sdk_client_fs: ADCMClient, path, app_fs
 ):
+    """Invisible=false and advanced=true for groups advanced=false and invisible=true for fields"""
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     fields = config.get_field_groups()
     for field in fields:
@@ -232,6 +235,7 @@ def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true
 def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true(
     sdk_client_fs: ADCMClient, path, app_fs
 ):
+    """Invisible=false and advanced=true for groups advanced=true and invisible=true for fields"""
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
 
     fields = config.get_field_groups()
