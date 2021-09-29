@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for actions"""
+
 # pylint: disable=redefined-outer-name, no-self-use
 import allure
 import pytest
@@ -64,6 +66,7 @@ SWITCH_PROVIDER_STATE = "switch_provider_state"
 @allure.title("Create cluster")
 @fixture_parametrized_by_data_subdirs(__file__, 'cluster')
 def cluster(sdk_client_fs: ADCMClient, request) -> Cluster:
+    """Create cluster"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
     return bundle.cluster_prototype().cluster_create(name="Cluster")
 
@@ -71,6 +74,7 @@ def cluster(sdk_client_fs: ADCMClient, request) -> Cluster:
 @allure.title("Create a cluster with service")
 @fixture_parametrized_by_data_subdirs(__file__, 'cluster_with_service')
 def cluster_with_service(sdk_client_fs: ADCMClient, request) -> Cluster:
+    """Create cluster with service"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
     cluster = bundle.cluster_prototype().cluster_create(name="Cluster with services")
     return cluster
@@ -79,6 +83,7 @@ def cluster_with_service(sdk_client_fs: ADCMClient, request) -> Cluster:
 @allure.title("Create a cluster with service and components")
 @fixture_parametrized_by_data_subdirs(__file__, 'cluster_with_components')
 def cluster_with_components(sdk_client_fs: ADCMClient, request) -> Cluster:
+    """Create cluster with components"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
     cluster = bundle.cluster_prototype().cluster_create(name="Cluster with components")
     return cluster
@@ -87,6 +92,7 @@ def cluster_with_components(sdk_client_fs: ADCMClient, request) -> Cluster:
 @allure.title("Create provider")
 @fixture_parametrized_by_data_subdirs(__file__, 'provider')
 def provider(sdk_client_fs: ADCMClient, request) -> Provider:
+    """Create provider"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
     return bundle.provider_prototype().provider_create("Some provider")
 
@@ -225,6 +231,7 @@ UNAVAILABLE_ACTIONS_SPECIAL_CASE_INSTALLED = [
 @allure.title("Create cluster")
 @pytest.fixture()
 def cluster_special(sdk_client_fs: ADCMClient) -> Cluster:
+    """Create special cluster"""
     bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "cluster_special_new_dsl"))
     return bundle.cluster_prototype().cluster_create(name="Cluster")
 

@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Test actions on host"""
+
 # pylint: disable=redefined-outer-name, no-self-use
 import allure
 import pytest
@@ -42,6 +44,7 @@ ACTION_ON_HOST_STATE_REQUIRED = "action_on_host_state_installed"
 @allure.title("Create cluster")
 @pytest.fixture()
 def cluster(sdk_client_fs) -> Cluster:
+    """Create cluster"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster"))
     return bundle.cluster_prototype().cluster_create(name="Cluster")
 
@@ -49,6 +52,7 @@ def cluster(sdk_client_fs) -> Cluster:
 @allure.title("Create a cluster with service")
 @pytest.fixture()
 def cluster_with_service(sdk_client_fs) -> Cluster:
+    """Create cluster with service"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_with_service"))
     cluster = bundle.cluster_prototype().cluster_create(name="Cluster with services")
     return cluster
@@ -57,6 +61,7 @@ def cluster_with_service(sdk_client_fs) -> Cluster:
 @allure.title("Create a cluster with service and components")
 @pytest.fixture()
 def cluster_with_components(sdk_client_fs) -> Cluster:
+    """Create cluster with component"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_with_components"))
     cluster = bundle.cluster_prototype().cluster_create(name="Cluster with components")
     return cluster
@@ -65,6 +70,7 @@ def cluster_with_components(sdk_client_fs) -> Cluster:
 @allure.title("Create a cluster with target group action")
 @pytest.fixture()
 def cluster_with_target_group_action(sdk_client_fs) -> Cluster:
+    """Create cluster with target group action"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_target_group"))
     cluster = bundle.cluster_prototype().cluster_create(name="Target group test")
     return cluster
@@ -73,11 +79,13 @@ def cluster_with_target_group_action(sdk_client_fs) -> Cluster:
 @allure.title("Create provider")
 @pytest.fixture()
 def provider(sdk_client_fs) -> Provider:
+    """Create provider"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
     return bundle.provider_prototype().provider_create("Some provider")
 
 
 class TestClusterActionsOnHost:
+    """Tests for cluster actions on host"""
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
     def test_availability(self, cluster: Cluster, provider: Provider, action_name):
         """
@@ -133,6 +141,7 @@ class TestClusterActionsOnHost:
 
 
 class TestServiceActionOnHost:
+    """Tests for service actions on host"""
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
     def test_availability(self, cluster_with_service: Cluster, provider: Provider, action_name):
         """
@@ -226,6 +235,7 @@ class TestServiceActionOnHost:
 
 
 class TestComponentActionOnHost:
+    """Tests for component actions on host"""
     @allure.issue(
         url="https://arenadata.atlassian.net/browse/ADCM-1948", name="Infinite host action on ADCM with pre-filled data"
     )
