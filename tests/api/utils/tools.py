@@ -25,7 +25,7 @@ from requests_toolbelt.utils import dump
 
 class NotSet:  # pylint: disable=too-few-public-methods
     """Dummy class for no field value"""
-    pass
+    ...
 
 
 not_set = NotSet()
