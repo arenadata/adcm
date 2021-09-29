@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""UI Tests for /login page"""
+
 import allure
 import pytest
 
@@ -18,6 +21,7 @@ from tests.ui_tests.app.page.login.page import LoginPage
 
 @pytest.mark.smoke()
 def test_check_login_to_adcm(app_fs, adcm_credentials):
+    """Test basic success UI login"""
     login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
     login_page.check_all_elements()
     login_page.login_user(**adcm_credentials)
@@ -31,6 +35,7 @@ def test_check_login_to_adcm(app_fs, adcm_credentials):
 
 @pytest.mark.parametrize(("name", "password"), [("", "admin"), ("admin", "")], ids=("no_name", "no_password"))
 def test_check_login_button_unavailable(app_fs, name, password):
+    """Test that login button is unavailable for given conditions"""
     login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
     login_page.fill_login_user_form(name, password)
     login_page.check_check_login_button_unavailable()
@@ -43,6 +48,7 @@ def test_check_login_button_unavailable(app_fs, name, password):
     ids=("wrong_name", "wrong_pass"),
 )
 def test_check_error_in_login(app_fs, name, password):
+    """Test basic UI login with invalid credentials"""
     params = {"error_text": "Incorrect password or user."}
     login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
     login_page.login_user(name, password)
@@ -51,6 +57,7 @@ def test_check_error_in_login(app_fs, name, password):
 
 @pytest.mark.smoke()
 def test_check_header_links_in_login_page_unauthorised(app_fs):
+    """Test header for unauthorised user"""
     params = {"error_text": "User is not authorized!"}
     login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
     login_page.header.click_arenadata_logo_in_header()

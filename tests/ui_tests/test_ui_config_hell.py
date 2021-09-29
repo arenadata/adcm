@@ -26,6 +26,7 @@ BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 @pytest.fixture()
 @allure.step('Upload bundle, create cluster and add service')
 def ui_hell_fs(sdk_client_fs):
+    """Upload bundle, create cluster and add service"""
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='my cluster')
     cluster.service_add(name='ui_config_hell')
@@ -34,15 +35,18 @@ def ui_hell_fs(sdk_client_fs):
 
 
 @pytest.fixture()
+@allure.title("Prepare prototype display names")
 def prototype_display_names(ui_hell_fs):
+    """Prepare prototype display names"""
     display_header_name = ui_hell_fs.display_name
     display_names = {config['display_name'] for config in ui_hell_fs.prototype().config}
     return display_header_name, display_names
 
 
 @pytest.fixture()
-@allure.title('Open Configuration page')
+@allure.title('Get display names from service config page')
 def ui_display_names(app_fs, ui_hell_fs, login_to_adcm_over_api):  # pylint: disable=unused-argument
+    """Get display names from service config page"""
     ui_config = Configuration.from_service(app_fs, ui_hell_fs)
     return ui_config.get_display_names()
 

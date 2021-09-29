@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""UI tests for /jobs page"""
+
 from dataclasses import asdict
 from typing import Union, List
 
@@ -63,20 +66,24 @@ COMPONENT_NAME = 'test_component'
 
 
 @pytest.fixture()
+@allure.title("Open /task page")
 # pylint: disable-next=unused-argument
 def page(app_fs: ADCMTest, login_to_adcm_over_api) -> JobListPage:
+    """Open /task page"""
     return JobListPage(app_fs.driver, app_fs.adcm.url).open()
 
 
 @allure.title("Upload cluster bundle")
 @pytest.fixture()
 def cluster_bundle(sdk_client_fs: ADCMClient) -> Bundle:
+    """Upload cluster bundle"""
     return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "cluster"))
 
 
 @allure.title("Upload provider bundle")
 @pytest.fixture()
 def provider_bundle(sdk_client_fs: ADCMClient) -> Bundle:
+    """Upload provider bundle"""
     return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "provider"))
 
 
@@ -92,17 +99,18 @@ def cluster(cluster_bundle: Bundle) -> Cluster:
 @allure.title("Create provider")
 @pytest.fixture()
 def provider(provider_bundle: Bundle) -> Provider:
+    """Create provider"""
     return provider_bundle.provider_create('Awesome Provider')
 
 
 @pytest.fixture()
+@allure.title("Create 11 hosts for 'parallel' actions execution")
 def created_hosts(provider: Provider) -> List[Host]:
     """Create 11 hosts for "parallel" actions execution"""
     return [provider.host_create(f'host-{i}') for i in range(11)]
 
 
 # !===== TESTS =====!
-@pytest.mark.smoke()
 class TestTaskPage:
     @pytest.mark.smoke()
     def test_cluster_action_job(self, cluster: Cluster, page: JobListPage):
@@ -384,12 +392,12 @@ class TestTaskHeaderPopup:
             cluster_page.header.get_failed_job_amount_from_header() == job_info['failed_jobs']
         ), f"Failed job amount should be {job_info['failed_jobs']}"
 
-        def wait_for_background():
+        def _wait_for_background():
             assert (
                 job_info['background'] in cluster_page.header.get_jobs_circle_color()
             ), "Bell circle should be colored"
 
-        wait_until_step_succeeds(wait_for_background, period=0.3, timeout=5)
+        wait_until_step_succeeds(_wait_for_background, period=0.3, timeout=5)
 
     def test_on_tasks_in_header_popup(self, cluster: Cluster, page: JobListPage, app_fs):
         """Run action and click on it in header popup"""
@@ -531,7 +539,7 @@ def _check_link_to_invoker_object(expected_link: str, page: JobListPage, action:
 def _wait_and_get_action_on_host(host: Host, display_name: str) -> Action:
     """Wait until action is presented on host (wait for host action)"""
 
-    def wait_for_action_to_be_presented():
+    def _wait_for_action_to_be_presented():
         try:
             host.action(display_name=display_name)
         except ObjectNotFound:
@@ -539,5 +547,5 @@ def _wait_and_get_action_on_host(host: Host, display_name: str) -> Action:
                 False
             ), f'Action "{display_name}" is not presented on host {host.fqdn}. Actions: {host.action_list()}'
 
-    utils.wait_until_step_succeeds(wait_for_action_to_be_presented, period=0.1, timeout=10)
+    utils.wait_until_step_succeeds(_wait_for_action_to_be_presented, period=0.1, timeout=10)
     return host.action(display_name=display_name)

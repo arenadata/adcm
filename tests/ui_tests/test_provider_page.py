@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""UI tests for /provider page"""
+
 import os
 
 import allure
@@ -40,12 +42,14 @@ PROVIDER_NAME = 'test_provider'
 @pytest.fixture(params=["provider"])
 @allure.title("Upload provider bundle")
 def bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
+    """Upload provider bundle"""
     return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
 
 
 @pytest.fixture()
 @allure.title("Create provider from uploaded bundle")
 def upload_and_create_test_provider(bundle) -> Provider:
+    """Create provider from uploaded bundle"""
     return bundle.provider_create(PROVIDER_NAME)
 
 
@@ -269,7 +273,7 @@ class TestProviderConfigPage:
 
     @pytest.mark.parametrize("bundle", ["provider_required_fields"], indirect=True)
     def test_field_validation_on_provider_config_page(
-        self, app_fs, sdk_client_fs, bundle, upload_and_create_test_provider
+        self, app_fs, bundle, upload_and_create_test_provider
     ):
         params = {
             'pass_name': 'Test password',
