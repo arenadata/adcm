@@ -20,7 +20,7 @@ from collections.abc import Mapping
 from copy import deepcopy
 from enum import Enum
 from itertools import chain
-from typing import Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional
 
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -688,8 +688,8 @@ class GroupConfig(ADCMModel):
     def create_group_keys(
         self,
         config_spec: dict,
-        group_keys: dict[str, bool] = None,
-        custom_group_keys: dict[str, bool] = None,
+        group_keys: Dict[str, bool] = None,
+        custom_group_keys: Dict[str, bool] = None,
     ):
         """
         Returns a map of fields that are included in a group,
