@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Job page locators"""
+
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator
@@ -26,6 +29,8 @@ class JobPageLocators(ObjectPageLocators):
     duration = Locator(By.CSS_SELECTOR, ".time-info>div:nth-child(2)>span", "Task duration")
 
     class Menu:
+        """Locators for detailed job page menu"""
+
         # keep stdout(-err) prefix in naming
         stdout_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_1']", "Job stdout tab")
         stdout_download_btn = Locator(

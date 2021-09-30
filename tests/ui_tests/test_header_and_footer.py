@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""UI tests for ADCM header and footer"""
+
 import allure
 import pytest
 from adcm_pytest_plugin.common import add_dummy_objects_to_adcm
@@ -38,14 +40,17 @@ pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
 
 
 class TestHeader:
-    def test_check_header_tabs_for_authorised_user(self, app_fs):
+    """UI Tests for header"""
+
+    def test_header_tabs_for_authorised_user(self, app_fs):
+        """Test header buttons for authorised user"""
         header = PageHeader(app_fs.driver, app_fs.adcm.url)
 
         header.click_arenadata_logo_in_header()
         intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
         header.wait_url_contains_path(intro_page.path)
 
-        header.click_cluster_tab_in_header()
+        header.click_clusters_tab_in_header()
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url)
         header.wait_url_contains_path(cluster_page.path)
 
@@ -70,7 +75,8 @@ class TestHeader:
         header.wait_url_contains_path(job_page.path)
         header.check_job_popup()
 
-    def test_check_header_help_links_for_authorised_user(self, app_fs):
+    def test_header_help_links_for_authorised_user(self, app_fs):
+        """Test header help links for authorised user"""
         params = {"help_link": "t.me/joinchat/", "docs_link": "docs.arenadata.io/adcm/"}
         header = PageHeader(app_fs.driver, app_fs.adcm.url)
         header.click_help_button_in_header()
@@ -87,6 +93,7 @@ class TestHeader:
             BasePageObject(app_fs.driver, app_fs.adcm.url).wait_url_contains_path(params["docs_link"])
 
     def test_check_header_user_settings_for_authorised_user(self, app_fs):
+        """Test header user settings buttons for authorised user"""
         header = PageHeader(app_fs.driver, app_fs.adcm.url)
         header.click_account_button_in_header()
         header.check_account_popup()
@@ -103,10 +110,11 @@ class TestHeader:
 
     @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2054")
     def test_check_back_button_in_browser_for_header_links(self, app_fs, sdk_client_fs):
+        """Test browser back button after following header links"""
         add_dummy_objects_to_adcm(sdk_client_fs)
         with allure.step("Check back button for cluster page header link"):
             intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
-            intro_page.header.click_cluster_tab_in_header()
+            intro_page.header.click_clusters_tab_in_header()
             cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url)
             cluster_page.wait_page_is_opened()
             cluster_page.click_back_button_in_browser()
@@ -142,7 +150,10 @@ class TestHeader:
 
 
 class TestFooter:
+    """UI Tests for footer"""
+
     def test_check_footer_for_authorised_user(self, app_fs):
+        """Test footer for authorised user"""
         params = {"docs": "docs.arenadata.io/adcm/notes"}
         footer = PageFooter(app_fs.driver, app_fs.adcm.url)
         footer.check_all_elements()

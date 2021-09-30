@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Bundle page PageObjects classes"""
+
 import allure
 
 from tests.ui_tests.app.page.bundle.locators import BundleLocators, BundleMainMenuLocators
@@ -31,8 +34,9 @@ class BundlePage(BasePageObject):
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.bundle_id = bundle_id
 
-    @allure.step('Open "Main" menu')
+    @allure.step('Click on the "Main" menu item')
     def open_main_menu(self) -> 'BundlePage':
+        """Click on the 'Main' menu item"""
         self.find_and_click(BundleLocators.MenuNavigation.main)
         self.wait_page_is_opened()
         return self

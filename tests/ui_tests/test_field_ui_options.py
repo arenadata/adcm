@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Test UI options for config fields"""
 
 import allure
 import pytest
@@ -23,26 +24,29 @@ pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
 
 @parametrize_by_data_subdirs(__file__, "invisible_true", 'advanced_true')
 def test_ui_option_invisible_true_advanced_true(sdk_client_fs: ADCMClient, path, app_fs):
+    """Test field visualisation with invisible=true advanced=true"""
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     groups = config.get_field_groups()
-    with allure.step('Check that we havent invisible fields on UI'):
+    with allure.step("Check that we haven't invisible fields on UI"):
         for group in groups:
             assert not group.is_displayed(), group.get_attribute("class")
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_true", 'advanced_false')
 def test_ui_option_invisible_true_advanced_false(sdk_client_fs: ADCMClient, path, app_fs):
+    """Test field visualisation with invisible=true advanced=false"""
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     config.show_advanced()
     assert config.advanced
     groups = config.get_field_groups()
-    with allure.step('Check that we havent invisible fields on UI if advanced field enabled'):
+    with allure.step("Check that we haven't invisible fields on UI if advanced field enabled"):
         for group in groups:
             assert not group.is_displayed(), group.get_attribute("class")
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_false", 'advanced_true')
 def test_ui_option_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app_fs):
+    """Test field visualisation with invisible=false advanced=true"""
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     groups = config.get_field_groups()
     config.hide_advanced()
@@ -59,6 +63,7 @@ def test_ui_option_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path
 
 @parametrize_by_data_subdirs(__file__, "invisible_false", 'advanced_false')
 def test_ui_option_invisible_false_advanced_false(sdk_client_fs: ADCMClient, path, app_fs):
+    """Test field visualisation with invisible=false advanced=false"""
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     groups = config.get_field_groups()
     for group in groups:

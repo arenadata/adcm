@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Test adcm_plugin_multi_sate set/unset"""
+
 from typing import Tuple, List, Callable
 
 import pytest
