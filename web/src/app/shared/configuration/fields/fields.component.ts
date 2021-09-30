@@ -29,7 +29,6 @@ import { Attributes } from '@app/shared/configuration/services/attribute.service
           <ng-container *ngIf="!item.hidden">
             <div class="group-checkbox d-flex" style="padding: 5px">
               <app-config-group-checkbox appTooltip="Not available for this parameter"
-                                         [control]="item.configGroup"
                                          [disabled]="item.read_only"></app-config-group-checkbox>
             </div>
             <app-field class="w100" [form]="form" [options]="item"
