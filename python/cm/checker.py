@@ -175,7 +175,7 @@ def process_rule(data, rules, name, path=None, parent=None):
         raise SchemaError(f"There is no mandatory match attr in rule {rule} in schema.")
     match = rule['match']
     if match not in MATCH:
-        raise SchemaError(f"Unknown match {match} from schema. Donno how to handle that.")
+        raise SchemaError(f"Unknown match {match} from schema. Impossible to handle that.")
 
     # print(f'process_rule: {MATCH[match].__name__} "{name}" data: {data}')
     MATCH[match](data, rules, name, path=path, parent=parent)

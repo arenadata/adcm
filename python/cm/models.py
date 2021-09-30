@@ -363,13 +363,6 @@ class ADCMEntity(ADCMModel):
         for issue in self.concerns.filter(type=ConcernType.Issue, name=issue_name):
             return issue
 
-    @property
-    def display_name(self):
-        """Unified `display name` for object's string representation"""
-        own_name = getattr(self, 'name', None)
-        fqdn = getattr(self, 'fqdn', None)
-        return own_name or fqdn or self.prototype.display_name or self.prototype.name
-
     def __str__(self):
         own_name = getattr(self, 'name', None)
         fqdn = getattr(self, 'fqdn', None)
@@ -437,6 +430,10 @@ class ADCM(ADCMEntity):
         return self.prototype.bundle_id
 
     @property
+    def display_name(self):
+        return self.name
+
+    @property
     def serialized_issue(self):
         result = {
             'id': self.id,
@@ -469,6 +466,10 @@ class Cluster(ADCMEntity):
     @property
     def license(self):
         return self.prototype.bundle.license
+
+    @property
+    def display_name(self):
+        return self.name
 
     def __str__(self):
         return f'{self.name} ({self.id})'
@@ -507,6 +508,10 @@ class HostProvider(ADCMEntity):
     def license(self):
         return self.prototype.bundle.license
 
+    @property
+    def display_name(self):
+        return self.name
+
     def __str__(self):
         return str(self.name)
 
@@ -535,6 +540,10 @@ class Host(ADCMEntity):
     @property
     def monitoring(self):
         return self.prototype.monitoring
+
+    @property
+    def display_name(self):
+        return self.fqdn
 
     def __str__(self):
         return f"{self.fqdn}"
@@ -581,6 +590,10 @@ class ClusterObject(ADCMEntity):
         return self.prototype.name
 
     @property
+    def display_name(self):
+        return self.prototype.display_name
+
+    @property
     def description(self):
         return self.prototype.description
 
@@ -617,6 +630,10 @@ class ServiceComponent(ADCMEntity):
     @property
     def name(self):
         return self.prototype.name
+
+    @property
+    def display_name(self):
+        return self.prototype.display_name
 
     @property
     def description(self):
@@ -824,7 +841,7 @@ class AbstractAction(ADCMModel):
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
 
-    multi_state_available = models.JSONField(default='any')
+    multi_state_available = models.JSONField(default=lambda: 'any')
     multi_state_unavailable = models.JSONField(default=list)
     multi_state_on_success_set = models.JSONField(default=list)
     multi_state_on_success_unset = models.JSONField(default=list)
@@ -876,6 +893,9 @@ class Action(AbstractAction):
 
     def allowed(self, obj: ADCMEntity) -> bool:
         """Check if action is allowed to be run on object"""
+        if self.state_unavailable == 'any' or self.multi_state_unavailable == 'any':
+            return False
+
         if isinstance(self.state_unavailable, list) and obj.state in self.state_unavailable:
             return False
 
