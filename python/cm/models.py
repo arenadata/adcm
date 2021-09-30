@@ -1396,3 +1396,9 @@ class ConcernItem(ADCMModel):
             self.hostprovider_entities.all(),
             self.host_entities.all(),
         )
+
+    def delete(self, using=None, keep_parents=False):
+        """Explicit remove many-to-many references before deletion in order to emit signals"""
+        for entity in self.related_objects:
+            entity.remove_from_concerns(self)
+        return super().delete(using, keep_parents)
