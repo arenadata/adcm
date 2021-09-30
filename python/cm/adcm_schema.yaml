@@ -663,7 +663,7 @@ common_action: &common_action
     host_action: boolean
     log_files: list_of_string
     states: action_states_dict
-    masking: action_masking
+    masking: action_masking_or_none
     on_fail: post_action
     on_success: post_action
     hc_acl: action_hc_acl_list
@@ -743,17 +743,29 @@ action_states_dict:
   required_items:
     - available
 
+action_masking_or_none:
+  match: one_of
+  variants:
+    - action_masking
+    - none
+
 action_masking:
   match: dict
   items:
-    state: availability_set
-    multi_state: availability_set
+    state: availability_set_or_none
+    multi_state: availability_set_or_none
+
+availability_set_or_none:
+  match: one_of
+  variants:
+    - availability_set
+    - none
 
 availability_set:
   match: dict
   items:
     available: any_or_list
-    unavailable: list_of_string
+    unavailable: any_or_list
 
 post_action:
   match: dict
