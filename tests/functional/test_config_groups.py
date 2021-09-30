@@ -29,7 +29,6 @@ from adcm_client.objects import (
     Host,
     GroupConfig,
     Component,
-    Task,
 )
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import (
@@ -434,55 +433,6 @@ class TestChangeGroupsConfig:
         if values_after["file"]:
             assert values_after["file"] == expected_values["file"], "File has not changed"
 
-    @allure.step("Get group config values from logs in task")
-    def _get_host_config_from_log(self, log, host_name) -> dict:
-        """Create dict with group config values from logs in task"""
-
-        config_string = log.split(f"[{host_name}]")[1].split("msg: \'")[1].split("\n")[0]
-        config_list = config_string.replace("''", "'").split(";")
-        config_list[0] = float(config_list[0])
-        config_list[1] = bool(config_list[1] is True or config_list[1] == "True")
-        config_list[2] = int(config_list[2])
-        config_list[4] = (
-            config_list[4]
-            if isinstance(config_list[4], list)
-            else config_list[4].replace(" ", "").replace("'", "").replace("]", "").replace("[", "").split(",")
-        )
-        config_list[7] = eval(config_list[7])
-        config_list[8] = [
-            {
-                "code": int(config_list[8].split("code':")[1].split(',')[0]),
-                "country": config_list[8].split("country': '")[1].split("'}")[0],
-            },
-            {
-                "code": int(config_list[8].split("code':")[2].split(',')[0]),
-                "country": config_list[8].split("country': '")[2].split("'}")[0],
-            },
-        ]
-        config_list[9] = eval(config_list[9][:-1])
-        config_list.append(None)
-        config_list.append(None)
-        return self.add_values_to_group_config_template(config_list)
-
-    def check_group_config_from_action_log(
-        self,
-        task: Task,
-        test_host_1: Host,
-        test_host_2: Host,
-        config_expected: dict,
-        config_before: Optional[OrderedDict] = None,
-    ):
-        with allure.step("Check that first host config has been changed"):
-            test_host_1_task_log = self._get_host_config_from_log(
-                log=task.job().log_list().data[0].content, host_name=test_host_1.fqdn
-            )
-            self._check_values_in_group(test_host_1_task_log['config'], config_expected['config'], config_before)
-        with allure.step("Check that second host config has not been changed"):
-            test_host_2_task_log = self._get_host_config_from_log(
-                log=task.job().log_list().data[0].content, host_name=test_host_2.fqdn
-            )
-            self._check_values_in_group(values_after=test_host_2_task_log['config'], expected_values=config_before)
-
     @pytest.mark.parametrize(
         "cluster_bundle",
         [pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group")],
@@ -500,8 +450,8 @@ class TestChangeGroupsConfig:
         self._check_values_in_group(
             values_after=config_after['config'], expected_values=config_expected['config'], values_before=config_before
         )
-        task = run_cluster_action_and_assert_result(cluster, action="test_action")
-        self.check_group_config_from_action_log(task, test_host_1, test_host_2, config_expected, config_before)
+        config = {"map": {test_host_1.fqdn: config_expected['config'], test_host_2.fqdn: dict(config_before)}}
+        run_cluster_action_and_assert_result(cluster, action="test_action", config=config)
 
     @pytest.mark.parametrize(
         "cluster_bundle",
@@ -520,8 +470,8 @@ class TestChangeGroupsConfig:
         self._check_values_in_group(
             values_after=config_after['config'], expected_values=config_expected['config'], values_before=config_before
         )
-        task = run_service_action_and_assert_result(service, action="test_action")
-        self.check_group_config_from_action_log(task, test_host_1, test_host_2, config_expected, config_before)
+        config = {"map": {test_host_1.fqdn: config_expected['config'], test_host_2.fqdn: dict(config_before)}}
+        run_service_action_and_assert_result(service, action="test_action", config=config)
 
     @pytest.mark.parametrize(
         "cluster_bundle",
@@ -541,8 +491,8 @@ class TestChangeGroupsConfig:
         self._check_values_in_group(
             values_after=config_after['config'], expected_values=config_expected['config'], values_before=config_before
         )
-        task = run_component_action_and_assert_result(component, action="test_action")
-        self.check_group_config_from_action_log(task, test_host_1, test_host_2, config_expected, config_before)
+        config = {"map": {test_host_1.fqdn: config_expected['config'], test_host_2.fqdn: dict(config_before)}}
+        run_component_action_and_assert_result(component, action="test_action", config=config)
 
     @pytest.mark.parametrize(
         "provider_bundle",
@@ -561,5 +511,5 @@ class TestChangeGroupsConfig:
         self._check_values_in_group(
             values_after=config_after['config'], expected_values=config_expected['config'], values_before=config_before
         )
-        task = run_provider_action_and_assert_result(provider, action="test_action")
-        self.check_group_config_from_action_log(task, test_host_1, test_host_2, config_expected, config_before)
+        config = {"map": {test_host_1.fqdn: config_expected['config'], test_host_2.fqdn: dict(config_before)}}
+        run_provider_action_and_assert_result(provider, action="test_action", config=config)

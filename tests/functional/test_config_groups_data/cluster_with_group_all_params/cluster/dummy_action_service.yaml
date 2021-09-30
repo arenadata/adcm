@@ -16,6 +16,15 @@
   gather_facts: no
 
   tasks:
-    - name: Dummy?
-      debug:
-        msg: "{{services.test_service_1.config.float}};{{services.test_service_1.config.boolean}};{{services.test_service_1.config.integer}};{{services.test_service_1.config.string}};{{services.test_service_1.config.list}};{{services.test_service_1.config.option}};{{services.test_service_1.config.text}};{{services.test_service_1.config.group}};{{services.test_service_1.config.structure}};{{services.test_service_1.config.map}}"
+    - name: Assert config
+      assert:
+        that:
+          - job.config.map[inventory_hostname].float == services.test_service_1.config.float
+          - job.config.map[inventory_hostname].boolean == services.test_service_1.config.boolean
+          - job.config.map[inventory_hostname].integer == services.test_service_1.config.integer
+          - job.config.map[inventory_hostname].string == services.test_service_1.config.string
+          - job.config.map[inventory_hostname].list == services.test_service_1.config.list
+          - job.config.map[inventory_hostname].text == services.test_service_1.config.text
+          - job.config.map[inventory_hostname].group == services.test_service_1.config.group
+          - job.config.map[inventory_hostname].structure == services.test_service_1.config.structure
+          - job.config.map[inventory_hostname].map == services.test_service_1.config.map

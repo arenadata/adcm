@@ -21,9 +21,10 @@
       script: ./dummy_action_cluster.yaml
       script_type: ansible
       states:
-        available:
-          - created
-        on_success: installed
+        available: any
+      config:
+        - name: map
+          type: json
   config:
     - name: float
       type: float
@@ -123,6 +124,9 @@
       script_type: ansible
       states:
         available: any
+      config:
+        - name: map
+          type: json
   config:
     - name: float
       type: float
@@ -220,9 +224,11 @@
           script: ./dummy_action_component.yaml
           script_type: ansible
           states:
-            available:
-              - created
-            on_success: installed
+            available: any
+          config:
+            - name: map
+              type: json
+
       config:
         - name: float
           type: float

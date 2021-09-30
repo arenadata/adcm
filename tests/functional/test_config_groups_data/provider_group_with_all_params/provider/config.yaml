@@ -19,9 +19,10 @@
       script: ./dummy_action_provider.yaml
       script_type: ansible
       states:
-        available:
-          - created
-        on_success: installed
+        available: any
+      config:
+        - name: map
+          type: json
   config:
     - name: float
       type: float

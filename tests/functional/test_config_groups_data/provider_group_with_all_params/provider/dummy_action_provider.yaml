@@ -16,6 +16,15 @@
   gather_facts: no
 
   tasks:
-    - name: Dummy?
-      debug:
-        msg: "{{provider.config.float}};{{provider.config.boolean}};{{provider.config.integer}};{{provider.config.string}};{{provider.config.list}};{{provider.config.option}};{{provider.config.text}};{{provider.config.group}};{{provider.config.structure}};{{provider.config.map}}"
+    - name: Assert config
+      assert:
+        that:
+          - job.config.map[inventory_hostname].float == provider.config.float
+          - job.config.map[inventory_hostname].boolean == provider.config.boolean
+          - job.config.map[inventory_hostname].integer == provider.config.integer
+          - job.config.map[inventory_hostname].string == provider.config.string
+          - job.config.map[inventory_hostname].list == provider.config.list
+          - job.config.map[inventory_hostname].text == provider.config.text
+          - job.config.map[inventory_hostname].group == provider.config.group
+          - job.config.map[inventory_hostname].structure == provider.config.structure
+          - job.config.map[inventory_hostname].map == provider.config.map
