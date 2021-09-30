@@ -86,9 +86,9 @@ object_id           integer null    False    True             True              
 object_type         string  null    False    True             True               False              Object type (`cluster`, `service`, `component`, `provider`)
 name                string  null    False    True             True               True               Name of object.
 description         text    null    False    False            True               True               Extended information provided by user.
-hosts               M2M     null    False    False            False              False              M2M link to Host objects.
+hosts               link    null    False    False            False              False              Reference to list `Host` objects.
 host_candidate      link    null    False    False            False              False              Reference to list host candidate for adding to a group
-config              FK      null    False    False            False              False              FK field on ObjectConfig object
+config              link    null    True     False            False              False              Reference to `ObjectConfig` object
 config_id           integer null    False    False            False              False              Additional information about config. Read Only.
 url                 link    null    False    False            False              False              Reference to this object
 =================== ======= ======= ======== ================ ================== ================== ===========

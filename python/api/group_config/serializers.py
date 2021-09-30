@@ -102,7 +102,6 @@ class GroupConfigSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializ
         lookup_field='config_id',
         lookup_url_kwarg='pk',
         source='*',
-        read_only=True,
     )
     host_candidate = serializers.HyperlinkedRelatedField(
         view_name='group-config-host-candidate-list',
