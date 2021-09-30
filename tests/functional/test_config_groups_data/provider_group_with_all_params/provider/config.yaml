@@ -81,18 +81,24 @@
       active: True
       group_customization: true
       subs:
-        - name: readonly-key
-          type: string
-          default: value
-          read_only: any
-        - name: writable-key
-          type: string
-          default: value
-          writable: any
-        - name: required
+        - name: port
+          display_name: HTTP port
+          description: Exposes the JSON-over-HTTP interface used by all clients.
           type: integer
-          required: true
-          default: 15
+          min: 1024
+          max: 65536
+          default: 9200
+          required: yes
+          group_customization: false
+        - name: transport_port
+          display_name: Transport port
+          description: Used for communication between nodes in the cluster, by the Java Transport client.
+          type: integer
+          min: 1024
+          max: 65536
+          default: 9300
+          required: yes
+          group_customization: true
     - name: structure
       type: structure
       required: false

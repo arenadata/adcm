@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=redefined-outer-name, unused-argument, duplicate-code, no-self-use
+# pylint: disable=redefined-outer-name, unused-argument, duplicate-code, no-self-use, dangerous-default-value
 
 from collections import OrderedDict
 from typing import (
@@ -179,7 +179,7 @@ class TestGroupsIntersection:
     def test_that_groups_not_allowed_to_intersect_in_cluster(self, sdk_client_fs, cluster_with_two_hosts_on_it):
         """Test that groups are not allowed to intersect in cluster"""
 
-        test_host_1, test_host_2, cluster = cluster_with_two_hosts_on_it
+        test_host_1, _, cluster = cluster_with_two_hosts_on_it
         _create_group_and_add_host(cluster, test_host_1)
         with allure.step("Create the second group for cluster and check that not allowed to add the first host to it"):
             cluster_group_2 = cluster.group_config_create(name=SECOND_GROUP)
@@ -362,7 +362,7 @@ class TestChangeGroupsConfig:
         ["/dev/rdisk0s4", "/dev/rdisk0s5", "/dev/rdisk0s6"],
         "WEEKLY",
         "testtext",
-        {"readonly-key": "value", "writable-key": "value test 2", "required": 0},
+        OrderedDict([('port', 9100), ('transport_port', 9200)]),
         [{"code": 3, "country": "Test1"}, {"code": 4, "country": "Test2"}],
         {"age": "20", "name": "Chloe", "sex": "f"},
         "123",
@@ -380,7 +380,7 @@ class TestChangeGroupsConfig:
             text,
             group,
             structure,
-            map,
+            map_value,
             password,
             file,
         ) = params
@@ -388,7 +388,7 @@ class TestChangeGroupsConfig:
             "attr": {
                 "group": {"active": True},
                 "group_keys": {
-                    "group": {"readonly-key": True, "writable-key": True, "required": True},
+                    "group": {"port": True, "transport_port": True},
                     "float": True,
                     "boolean": True,
                     "integer": True,
@@ -414,7 +414,7 @@ class TestChangeGroupsConfig:
                 "text": text,
                 "group": group,
                 "structure": structure,
-                "map": map,
+                "map": map_value,
             },
         }
 
