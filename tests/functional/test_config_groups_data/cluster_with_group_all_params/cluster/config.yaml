@@ -261,7 +261,7 @@
           type: password
           required: false
           default: password
-          group_customization: true: group
+          group_customization: true
         - name: string
           type: string
           required: true
