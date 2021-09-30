@@ -13,7 +13,7 @@
 Common functions and helpers for testing plugins (state, multi_state, config)
 """
 
-from typing import Union, Callable, TypeVar, Collection, Type, Optional, List, Tuple, Dict, Set
+from typing import Callable, TypeVar, Collection, Type, Optional, List, Tuple, Dict, Set
 from contextlib import contextmanager
 from operator import methodcaller
 
@@ -32,11 +32,16 @@ from adcm_pytest_plugin.steps.actions import (
     run_host_action_and_assert_result,
 )
 
-ADCMObjects = (Cluster, Service, Component, Provider, Host)
+from tests.functional.tools import (
+    get_objects_via_pagination,
+    ClusterRelatedObject,
+    ProviderRelatedObject,
+    AnyADCMObject,
+    ADCMObjects,
+)
 
-ClusterRelatedObject = Union[Cluster, Service, Component]
-ProviderRelatedObject = Union[Provider, Host]
-AnyADCMObject = Union[ClusterRelatedObject, ProviderRelatedObject]
+
+# value of object's field (e.g. "created" as value for state)
 ADCMObjectField = TypeVar('ADCMObjectField')
 
 DEFAULT_OBJECT_NAMES = ('first', 'second')
@@ -249,11 +254,12 @@ def compose_name(adcm_object: AnyADCMObject) -> str:
 def build_objects_comparator(
     field_name: str,
     get_compare_value: Callable[[AnyADCMObject], ADCMObjectField],
+    name_composer: Callable[[AnyADCMObject], str] = compose_name,
 ) -> Callable[[AnyADCMObject, ADCMObjectField], None]:
     """Get function to compare value of ADCM object's field with expected one"""
 
     def compare(adcm_object: AnyADCMObject, expected_value: ADCMObjectField):
-        adcm_object_name = compose_name(adcm_object)
+        adcm_object_name = name_composer(adcm_object)
         adcm_object.reread()
         with allure.step(f"Assert that {adcm_object_name} has {expected_value} in {field_name.lower()} value"):
             assert (
@@ -354,11 +360,11 @@ def freeze_objects_attribute(
         freeze(cluster)
         for service in cluster.service_list():
             freeze(service)
-            for component in service.component_list():
+            for component in get_objects_via_pagination(service.component_list):
                 freeze(component)
     for provider in adcm_client.provider_list():
         freeze(provider)
-        for host in provider.host_list():
+        for host in get_objects_via_pagination(provider.host_list):
             freeze(host)
     return frozen_objects
 
@@ -392,7 +398,7 @@ def __check_components(
     """Check components config is intact since .component is not implemented"""
     component_ids = components.keys()
     for service in (adcm_client.service(id=sid) for sid in service_ids):
-        for component in service.component_list():
+        for component in get_objects_via_pagination(service.component_list):
             if (component_id := component.id) in component_ids:
                 comparator(component, components[component_id])
 

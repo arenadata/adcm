@@ -12,15 +12,56 @@
 """
 Common functions and helpers for testing ADCM
 """
-from typing import List, Tuple
+from typing import List, Tuple, Callable, Union
 
 import allure
 import pytest
+
 from _pytest.outcomes import Failed
-from adcm_client.base import ObjectNotFound
-from adcm_client.objects import Host
+from coreapi.exceptions import ErrorMessage
+from adcm_client.base import ObjectNotFound, PagingEnds
+from adcm_client.objects import Host, Task, Job, Cluster, Service, Component, Provider
 from adcm_pytest_plugin.utils import catch_failed
-from tests.functional.plugin_utils import AnyADCMObject
+
+
+ADCMObjects = (Cluster, Service, Component, Provider, Host)
+
+ClusterRelatedObject = Union[Cluster, Service, Component]
+ProviderRelatedObject = Union[Provider, Host]
+AnyADCMObject = Union[ClusterRelatedObject, ProviderRelatedObject]
+
+
+def get_config(adcm_object: AnyADCMObject):
+    """Get config or empty tuple (if config not defined)"""
+    try:
+        return adcm_object.config()
+    except ErrorMessage:
+        return ()
+
+
+def get_objects_via_pagination(
+    object_list_method: Callable, pagination_step: int = 20
+) -> List[Union[AnyADCMObject, Job, Task]]:
+    """Get all objects as a flat list using pagination"""
+
+    def ignore_paging_ends(paging: dict) -> list:
+        try:
+            return list(object_list_method(paging=paging))
+        except PagingEnds:
+            # if previous request returned amount of objects equal to pagination_step
+            # then request of new objects raises PagingEnds
+            return []
+
+    pagination = {'offset': 0, 'limit': pagination_step}
+    objects = ignore_paging_ends(pagination)
+    while len(objects) == pagination_step:
+        pagination['offset'] += pagination_step
+        pagination['limit'] += pagination_step
+        objects_on_next_page = ignore_paging_ends(pagination)
+        if not objects_on_next_page:
+            return objects
+        objects.extend(objects_on_next_page)
+    return objects
 
 
 def action_in_object_is_present(action: str, obj: AnyADCMObject):
