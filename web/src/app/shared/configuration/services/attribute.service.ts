@@ -30,14 +30,14 @@ export class AttributeService {
     ConfigAttributeNames.GROUP_KEYS
   ];
 
-  readonly _attributes: Attributes;
+  readonly attributes: Attributes;
 
   constructor(json: IConfigAttr) {
-    this._attributes = this._buildAttributes(json);
+    this.attributes = this._buildAttributes(json);
   }
 
   getByName(name: ConfigAttributeNames): ConfigAttribute {
-    return this._attributes.has(name) ? this._attributes.get(name) : undefined;
+    return this.attributes.has(name) ? this.attributes.get(name) : undefined;
   }
 
   private _buildAttributes(json: IConfigAttr): Attributes {

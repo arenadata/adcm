@@ -11,7 +11,7 @@
 // limitations under the License.
 
 import { Injectable } from '@angular/core';
-import { AbstractControl, FormBuilder, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { isBoolean, isEmptyObject } from '@app/core/types';
 
 import { ISearchParam } from '../main/main.service';
@@ -97,17 +97,17 @@ export const getValidator = (required: boolean, min: number, max: number, type: 
 });
 
 
-export const getGroupControl = (item: IFieldStack, group: FormGroup): FormControl | null => {
-  if (!Object.keys(group.controls)) return null;
+// export const getGroupControl = (item: IFieldStack, group: FormGroup): FormControl | null => {
+//   if (!Object.keys(group.controls)) return null;
+//
+//   if (item.subname) {
+//     return group.get(item.name)?.get(item.subname) as FormControl;
+//   }
+//
+//   return group.get(item.name) as FormControl;
+// };
 
-  if (item.subname) {
-    return group.get(item.name)?.get(item.subname) as FormControl;
-  }
-
-  return group.get(item.name) as FormControl;
-};
-
-const getField = (item: IFieldStack, group?: FormGroup): IFieldOptions => {
+const getField = (item: IFieldStack): IFieldOptions => {
   return {
     ...item,
     key: getKey(item.name, item.subname),
@@ -116,24 +116,24 @@ const getField = (item: IFieldStack, group?: FormGroup): IFieldOptions => {
     controlType: getControlType(item.type),
     hidden: item.name === '__main_info' || isHidden(item),
     compare: [],
-    configGroup: getGroupControl(item, group)
+    // configGroup: getGroupControl(item, group)
   };
 };
 
 const fo = (n: string) => (b: IFieldStack) => b.type !== 'group' && b.subname && b.name === n;
 const isActive = (a: IConfigAttr, n: string) => a[n]?.active;
-export const getOptions = (a: IFieldStack, d: IConfig, group?: FormGroup) =>
+export const getOptions = (a: IFieldStack, d: IConfig) =>
   d.config
     .filter(fo(a.name))
-    .map((f) => getField(f, group))
+    .map((f) => getField(f))
     // switch off validation for field if !(activatable: true && active: false) - line: 146
     .map((c) => ({ ...c, name: c.subname, activatable: a.activatable && !isActive(d.attr, a.name) }));
 
-const getPanel = (a: IFieldStack, d: IConfig, group?: FormGroup): IPanelOptions => ({
+const getPanel = (a: IFieldStack, d: IConfig): IPanelOptions => ({
   ...a,
   hidden: isHidden(a),
   active: a.activatable ? isActive(d.attr, a.name) : true,
-  options: getOptions(a, d, group),
+  options: getOptions(a, d),
 });
 
 const handleTree = (c: ISearchParam): ((a: TFormOptions) => TFormOptions) => (a: TFormOptions): TFormOptions => {
@@ -168,13 +168,13 @@ export class FieldService {
   /**
    * Parse and prepare source data from backend
    */
-  public getPanels(data: IConfig, group?: FormGroup): TFormOptions[] {
+  public getPanels(data: IConfig): TFormOptions[] {
     return data?.config
       ?.filter((a) => a.name !== '__main_info')
       .reduce((p, c) => {
         if (c.subname) return p;
-        if (c.type !== 'group') return [...p, getField(c, group)];
-        else return [...p, getPanel(c, data, group)];
+        if (c.type !== 'group') return [...p, getField(c)];
+        else return [...p, getPanel(c, data)];
       }, []);
   }
 
@@ -186,10 +186,10 @@ export class FieldService {
     const check = (a: TFormOptions): boolean =>
       'options' in a
         ? a.activatable
-        ? isVisibleField(a) // if group.activatable - only visible
-        : isVisibleField(a) && !a.read_only // else visible an not read_only
-          ? a.options.some((b) => check(b)) // check inner fields
-          : false
+          ? isVisibleField(a) // if group.activatable - only visible
+          : isVisibleField(a) && !a.read_only // else visible an not read_only
+            ? a.options.some((b) => check(b)) // check inner fields
+            : false
         : isVisibleField(a) && !a.read_only; // for fields in group
 
     return this.fb.group(

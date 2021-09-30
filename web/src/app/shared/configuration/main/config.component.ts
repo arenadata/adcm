@@ -34,6 +34,7 @@ import { IConfig } from '../types';
 import { historyAnime, ISearchParam, MainService } from './main.service';
 import { WorkerInstance } from '@app/core/services/cluster.service';
 import { ActivatedRoute } from '@angular/router';
+import { Attributes } from '@app/shared/configuration/services/attribute.service';
 
 @Component({
   selector: 'app-config-form',
@@ -46,6 +47,7 @@ import { ActivatedRoute } from '@angular/router';
 export class ConfigComponent extends SocketListenerDirective implements OnChanges, OnInit {
   loadingStatus = 'Loading...';
   rawConfig = new BehaviorSubject<IConfig>(null);
+  attributes: Attributes;
   saveFlag = false;
   historyShow = false;
   isLock = false;
@@ -144,7 +146,6 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
         config,
         attr: {
           ...this.fields.attr,
-          group_keys: { ...this.fields.groupsForm.value }
         },
         description: this.tools.description.value,
         obj_ref: this.rawConfig.value.obj_ref
@@ -192,7 +193,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   private _getConfig(url: string): Observable<IConfig> {
     this.isLoading = true;
     return this.service.getConfig(url).pipe(
-      tap((c) => this.service.initAttributes(c.attr)),
+      tap((c) => this.attributes = this.service.initAttributes(c.attr)),
       tap((c) => this.rawConfig.next(c)),
       finalize(() => this.isLoading = false),
       catchError(() => {

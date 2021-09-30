@@ -17,7 +17,7 @@ import { CompareConfig, IConfigAttr, IFieldOptions, IFieldStack } from '../types
 import { ConfigService, IConfigService } from '@app/shared/configuration/services/config.service';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ConfigGroupService } from '@app/config-groups/service/config-group.service';
-import { AttributeService } from '@app/shared/configuration/services/attribute.service';
+import { Attributes, AttributeService } from '@app/shared/configuration/services/attribute.service';
 
 /**
  *```
@@ -155,13 +155,13 @@ export class MainService {
     }
   }
 
-  initAttributes(json: IConfigAttr | undefined): void {
+  initAttributes(json: IConfigAttr | undefined): Attributes {
     if (!json) {
       return;
     }
 
     this.attributesService = new AttributeService(json);
-
+    return this.attributesService.attributes;
   }
 
 }
