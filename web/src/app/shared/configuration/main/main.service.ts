@@ -50,7 +50,6 @@ export const historyAnime = [
 })
 export class MainService {
   configService: IConfigService;
-  attributesService: AttributeService;
 
   constructor(private fields: FieldService,
               public cluster: ClusterService,
@@ -160,8 +159,8 @@ export class MainService {
       return;
     }
 
-    this.attributesService = new AttributeService(json);
-    return this.attributesService.attributes;
+    this.fields.attributesService = new AttributeService(json);
+    return this.fields.attributesService.attributes;
   }
 
 }

@@ -28,6 +28,7 @@ import {
   TNBase,
   TNForm
 } from '../types';
+import { Attributes, AttributeService } from '@app/shared/configuration/services/attribute.service';
 
 export type TFormOptions = IFieldOptions | IPanelOptions;
 
@@ -96,18 +97,7 @@ export const getValidator = (required: boolean, min: number, max: number, type: 
   pattern: getPattern(type),
 });
 
-
-// export const getGroupControl = (item: IFieldStack, group: FormGroup): FormControl | null => {
-//   if (!Object.keys(group.controls)) return null;
-//
-//   if (item.subname) {
-//     return group.get(item.name)?.get(item.subname) as FormControl;
-//   }
-//
-//   return group.get(item.name) as FormControl;
-// };
-
-const getField = (item: IFieldStack): IFieldOptions => {
+const getField = (item: IFieldStack, attributes: Attributes): IFieldOptions => {
   return {
     ...item,
     key: getKey(item.name, item.subname),
@@ -116,24 +106,24 @@ const getField = (item: IFieldStack): IFieldOptions => {
     controlType: getControlType(item.type),
     hidden: item.name === '__main_info' || isHidden(item),
     compare: [],
-    // configGroup: getGroupControl(item, group)
+    attributes: attributes
   };
 };
 
 const fo = (n: string) => (b: IFieldStack) => b.type !== 'group' && b.subname && b.name === n;
 const isActive = (a: IConfigAttr, n: string) => a[n]?.active;
-export const getOptions = (a: IFieldStack, d: IConfig) =>
+export const getOptions = (a: IFieldStack, d: IConfig, attributes: Attributes) =>
   d.config
     .filter(fo(a.name))
-    .map((f) => getField(f))
+    .map((f) => getField(f, attributes))
     // switch off validation for field if !(activatable: true && active: false) - line: 146
     .map((c) => ({ ...c, name: c.subname, activatable: a.activatable && !isActive(d.attr, a.name) }));
 
-const getPanel = (a: IFieldStack, d: IConfig): IPanelOptions => ({
+const getPanel = (a: IFieldStack, d: IConfig, attributes: Attributes): IPanelOptions => ({
   ...a,
   hidden: isHidden(a),
   active: a.activatable ? isActive(d.attr, a.name) : true,
-  options: getOptions(a, d),
+  options: getOptions(a, d, attributes),
 });
 
 const handleTree = (c: ISearchParam): ((a: TFormOptions) => TFormOptions) => (a: TFormOptions): TFormOptions => {
@@ -163,6 +153,8 @@ const findAttrValue = <T extends object>(obj: T, key: string): boolean => {
 
 @Injectable()
 export class FieldService {
+  attributesService: AttributeService | undefined;
+
   constructor(public fb: FormBuilder) {}
 
   /**
@@ -173,8 +165,8 @@ export class FieldService {
       ?.filter((a) => a.name !== '__main_info')
       .reduce((p, c) => {
         if (c.subname) return p;
-        if (c.type !== 'group') return [...p, getField(c)];
-        else return [...p, getPanel(c, data)];
+        if (c.type !== 'group') return [...p, getField(c, this.attributesService.attributes)];
+        else return [...p, getPanel(c, data, this.attributesService.attributes)];
       }, []);
   }
 

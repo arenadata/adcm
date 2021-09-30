@@ -17,7 +17,6 @@ import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
 import { IConfig, IPanelOptions } from '../types';
 import { BaseDirective } from '@adwp-ui/widgets';
-import { Attributes } from '@app/shared/configuration/services/attribute.service';
 
 @Component({
   selector: 'app-config-fields',
@@ -53,7 +52,6 @@ export class ConfigFieldsComponent extends BaseDirective {
 
   @Input() dataOptions: TFormOptions[] = [];
   @Input() form = this.service.toFormGroup();
-  @Input() attributes: Attributes;
   @Output()
   event = new EventEmitter<{ name: string; data?: any }>();
 
@@ -68,6 +66,7 @@ export class ConfigFieldsComponent extends BaseDirective {
     if (!data) return;
     this.rawConfig = data;
     this.dataOptions = this.service.getPanels(data);
+    console.log('data-options: ', this.dataOptions);
     this.form = this.service.toFormGroup(this.dataOptions);
     this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
     this.shapshot = { ...this.form.value };
