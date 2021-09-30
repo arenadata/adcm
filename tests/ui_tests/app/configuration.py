@@ -54,7 +54,7 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
         field_editable = self.editable_element(field)
         assert field_editable == editable
 
-    @allure.step('Assert field: {filed} to have value: {expected_value}')
+    @allure.step('Assert field: {field} to have value: {expected_value}')
     def assert_field_content_equal(self, field_type, field, expected_value):
         """Assert field value based on field type and name"""
         current_value = self.get_field_value_by_type(field, field_type)
@@ -210,7 +210,7 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
 
     @allure.step('Get app fields')
     def get_app_fields(self):
-        """Get app filed elements"""
+        """Get app field elements"""
         return self.driver.find_elements(*ConfigurationLocators.app_field)
 
     @allure.step('Find element by name: {name}')
