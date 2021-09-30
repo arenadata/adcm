@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Tests for actions inventory"""
+
 import json
 
 import allure
@@ -22,6 +25,7 @@ pytestmark = [only_clean_adcm]
 
 
 def test_check_inventories_file(adcm_fs, sdk_client_fs):
+    """Assert inventory file contents for the action"""
     bundledir = utils.get_data_dir(__file__, 'cluster_inventory_tests')
     cluster_bundle = sdk_client_fs.upload_from_fs(bundledir)
     with allure.step('Create cluster'):

@@ -9,15 +9,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Tools for ADCM errors handling in tests"""
+
 from delayed_assert import expect, assert_expectations
 
 
 class ADCMError:  # pylint: disable=too-few-public-methods
+    """
+    ADCM error wrapper
+    Used for error assertions
+    """
+
     def __init__(self, title, code):
         self.title = title
         self.code = code
 
     def equal(self, e, *args):
+        """Assert error properties"""
         error = e.value.error if hasattr(e, 'value') else e.error
         title = error.title
         code = error.get("code", "")

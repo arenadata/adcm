@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Utils for UI ADCM tests"""
+
 # pylint: disable=too-many-ancestors
 import os
 from collections import UserDict
@@ -32,7 +34,7 @@ ValueType = TypeVar('ValueType')
 FuncType = TypeVar('FuncType')
 
 
-def prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
+def _prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
     bundle = sdk_client.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-1:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
@@ -41,12 +43,15 @@ def prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
 
 @allure.step("Prepare cluster and get config")
 def prepare_cluster_and_get_config(sdk_client: ADCMClient, path, app):
-    cluster = prepare_cluster(sdk_client, path)
+    """Upload bundle, create cluster and get config"""
+    cluster = _prepare_cluster(sdk_client, path)
     config = Configuration(app.driver, f"{app.adcm.url}/cluster/{cluster.cluster_id}/config")
     return cluster, config
 
 
 class BundleObjectDefinition(UserDict):
+    """Data class for ADCM object"""
+
     def __init__(self, obj_type=None, name=None, version=None):
         super().__init__()
         self["type"] = obj_type
@@ -60,10 +65,12 @@ class BundleObjectDefinition(UserDict):
         self["ui_options"][option] = value
 
     def set_advanced(self, value):
+        """set advanced property value"""
         self._set_ui_option("advanced", value)
 
     @classmethod
     def to_dict(cls, obj) -> dict:
+        """Represent object as dict"""
         if isinstance(obj, cls):
             obj = cls.to_dict(obj.data)
         elif isinstance(obj, list):
@@ -76,38 +83,52 @@ class BundleObjectDefinition(UserDict):
 
 
 class ClusterDefinition(BundleObjectDefinition):
+    """Data class for cluster"""
+
     def __init__(self, name=None, version=None):
+        """Data class for cluster"""
         super().__init__(obj_type="cluster", name=name, version=version)
 
 
 class ServiceDefinition(BundleObjectDefinition):
+    """Data class for service"""
+
     def __init__(self, name=None, version=None):
         super().__init__(obj_type="service", name=name, version=version)
 
 
 class ProviderDefinition(BundleObjectDefinition):
+    """Data class for provider"""
+
     def __init__(self, name=None, version=None):
         super().__init__(obj_type="provider", name=name, version=version)
 
 
 class HostDefinition(BundleObjectDefinition):
+    """Data class for host"""
+
     def __init__(self, name=None, version=None):
         super().__init__(obj_type="host", name=name, version=version)
 
 
 class GroupDefinition(BundleObjectDefinition):
+    """Data class for group"""
+
     def __init__(self, name=None):
         super().__init__(obj_type="group", name=name)
         self["activatable"] = True
         self["subs"] = []
 
     def add_fields(self, *fields):
+        """Add fields to the object"""
         for field in fields:
             self["subs"].append(field)
         return self
 
 
 class FieldDefinition(BundleObjectDefinition):
+    """Data class for field"""
+
     def __init__(self, prop_type, prop_name=None):
         super().__init__(obj_type=prop_type, name=prop_name)
         self["required"] = False
@@ -202,7 +223,7 @@ def wait_and_assert_ui_info(
     ui_info_classname = info.__class__.__name__
     human_key_names = {k: k.replace("_", " ").capitalize() for k in expected_values.keys()}
 
-    def check_info_from_ui():
+    def _check_info_from_ui():
         ui_info: FuncType = get_info_func(**get_info_kwargs)
         for key, value in expected_values.items():
             actual_value = ui_info[key] if isinstance(ui_info, dict) else getattr(ui_info, key)
@@ -226,7 +247,7 @@ def wait_and_assert_ui_info(
             )
 
     with allure.step('Check information is correct on UI'):
-        wait_until_step_succeeds(check_info_from_ui, timeout=timeout, period=period)
+        wait_until_step_succeeds(_check_info_from_ui, timeout=timeout, period=period)
 
 
 def check_host_value(key: str, actual_value, expected_value):
@@ -260,7 +281,7 @@ def wait_file_is_presented(
         dir_url = f'http://{app_fs.selenoid["host"]}:{app_fs.selenoid["port"]}/download/{app_fs.driver.session_id}'
         file_url = f'{dir_url}/{filename}'
 
-        def check_file_is_presented():
+        def _check_file_is_presented():
             response = requests.get(file_url)
             assert (
                 response.status_code < 400
@@ -268,10 +289,10 @@ def wait_file_is_presented(
 
     else:
 
-        def check_file_is_presented():
+        def _check_file_is_presented():
             assert filename in os.listdir(dirname), f'File {filename} not found in {dirname}'
 
-    wait_until_step_succeeds(check_file_is_presented, timeout=timeout, period=period)
+    wait_until_step_succeeds(_check_file_is_presented, timeout=timeout, period=period)
 
 
 @allure.step('Check that all fields and groups invisible')
@@ -303,7 +324,7 @@ def expect_rows_amount_change(get_all_rows: Callable[[], Sized]):
 
     yield
 
-    def check_rows_amount_is_changed():
+    def _check_rows_amount_is_changed():
         assert len(get_all_rows()) != current_amount, "Amount of rows on the page hasn't changed"
 
-    wait_until_step_succeeds(check_rows_amount_is_changed, period=1, timeout=10)
+    wait_until_step_succeeds(_check_rows_amount_is_changed, period=1, timeout=10)

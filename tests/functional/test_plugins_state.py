@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for adcm_state plugin"""
+
 # pylint:disable=redefined-outer-name, duplicate-code
 from typing import Tuple
 

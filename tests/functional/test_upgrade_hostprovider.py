@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Tests for hostprovider update"""
+
 import allure
 import coreapi
 import pytest
@@ -20,6 +23,7 @@ from tests.library.errorcodes import UPGRADE_ERROR
 
 @allure.step('Create host')
 def create_host(hostprovider):
+    """Create host"""
     return hostprovider.host_create('localhost')
 
 
@@ -85,10 +89,7 @@ def test_upgrade_with_two_hostproviders(sdk_client_fs: ADCMClient):
 
 
 def test_check_prototype(sdk_client_fs: ADCMClient):
-    """Check prototype for provider and host after upgrade
-    :param sdk_client_fs:
-    :return:
-    """
+    """Check prototype for provider and host after upgrade"""
     with allure.step('Create upgradable hostprovider and get id'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider'))
@@ -113,9 +114,7 @@ def test_check_prototype(sdk_client_fs: ADCMClient):
 
 
 def test_check_config(sdk_client_fs: ADCMClient):
-    """Check default host and hostprovider config fields after upgrade
-    :return:
-    """
+    """Check default host and hostprovider config fields after upgrade"""
     with allure.step('Create hostprovider'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider'))
@@ -141,9 +140,7 @@ def test_check_config(sdk_client_fs: ADCMClient):
 
 
 def test_with_new_default_values(sdk_client_fs: ADCMClient):
-    """Upgrade hostprovider with new default fields. Old and new config values should be presented
-    :return:
-    """
+    """Upgrade hostprovider with new default fields. Old and new config values should be presented"""
     with allure.step('Create upgradable hostprovider with new default values'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
         upgr_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider_new_default_values'))
@@ -162,9 +159,9 @@ def test_with_new_default_values(sdk_client_fs: ADCMClient):
 
 
 def test_with_new_default_variables(sdk_client_fs: ADCMClient):
-    """Upgrade hostprovider with new default fields.
-     Old and new config variables should be presented
-    :return:
+    """
+    Upgrade hostprovider with new default fields.
+    Old and new config variables should be presented
     """
     with allure.step('Create upgradable hostprovider new default variables'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
@@ -211,11 +208,7 @@ def test_decrase_config(sdk_client_fs: ADCMClient):
 
 
 def test_changed_variable_type(sdk_client_fs: ADCMClient):
-    """Change config variable type for upgrade
-
-    :param sdk_client_fs:
-    :return:
-    """
+    """Change config variable type for upgrade"""
     with allure.step('Create upgradable hostprovider with change variable type'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider_change_variable_type'))
@@ -239,10 +232,7 @@ def test_changed_variable_type(sdk_client_fs: ADCMClient):
 
 
 def test_multiple_upgrade_bundles(sdk_client_fs: ADCMClient):
-    """Upgrade hostprovider multiple time from version to another
-
-    :return:
-    """
+    """Upgrade hostprovider multiple time from version to another"""
     with allure.step('Create upgradable hostprovider'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider'))
@@ -290,11 +280,7 @@ def test_change_config(sdk_client_fs: ADCMClient):
 
 
 def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient):
-    """Upgrade hostprovider from unsupported state
-
-    :param sdk_client_fs:
-    :return:
-    """
+    """Upgrade hostprovider from unsupported state"""
     with allure.step('Create hostprovider with unsupported state'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_hostprovider_unsupported_state'))

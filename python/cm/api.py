@@ -474,25 +474,35 @@ def accept_license(bundle):
 
 
 def update_obj_config(obj_conf, conf, attr, desc=''):
+    is_group_config = False
     if not isinstance(attr, dict):
         err('INVALID_CONFIG_UPDATE', 'attr should be a map')
     obj = obj_conf.object
     if obj is None:
         err('INVALID_CONFIG_UPDATE', f'unknown object type "{obj_conf}"')
     if isinstance(obj, GroupConfig):
-        obj = obj.object
+        group_config = obj
+        obj = group_config.object
+        is_group_config = True
     proto = obj.prototype
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
     if not attr:
         if old_conf.attr:
             attr = old_conf.attr
-    new_conf = check_json_config(proto, obj, conf, old_conf.config, attr)
+    new_conf = check_json_config(
+        proto, obj, conf, old_conf.config, attr, is_group_config=is_group_config
+    )
     with transaction.atomic():
         cl = save_obj_config(obj_conf, new_conf, attr, desc)
         cm.issue.update_hierarchy_issues(obj)
     if hasattr(obj_conf, 'adcm'):
         prepare_social_auth(new_conf)
-    cm.status_api.post_event('change_config', proto.type, obj.id, 'version', str(cl.id))
+    if is_group_config:
+        cm.status_api.post_event(
+            'change_config', 'group-config', group_config.id, 'version', str(cl.id)
+        )
+    else:
+        cm.status_api.post_event('change_config', proto.type, obj.id, 'version', str(cl.id))
     return cl
 
 
@@ -572,10 +582,7 @@ def get_list_of_continue_existed_hc(cluster, host_comp_list):
     for (service, host, comp) in host_comp_list:
         try:
             still_existed_hc = HostComponent.objects.get(
-                cluster=cluster,
-                service=service,
-                host=host,
-                component=comp
+                cluster=cluster, service=service, host=host, component=comp
             )
             result.append(still_existed_hc)
         except HostComponent.DoesNotExist:

@@ -493,9 +493,9 @@ def restore_read_only(obj, spec, conf, old_conf):
     return conf
 
 
-def check_json_config(proto, obj, new_conf, old_conf=None, attr=None):
+def check_json_config(proto, obj, new_conf, old_conf=None, attr=None, is_group_config=False):
     spec, flat_spec, _, _ = get_prototype_config(proto)
-    check_attr(proto, attr, flat_spec)
+    check_attr(proto, attr, flat_spec, is_group_config=is_group_config)
     cm.variant.process_variant(obj, spec, new_conf)
     return check_config_spec(proto, obj, spec, flat_spec, new_conf, old_conf, attr)
 
@@ -527,19 +527,31 @@ def check_custom_group_keys_attr(proto, custom_group_keys, spec):
             err('ATTRIBUTE_ERROR', msg)
 
 
-def check_attr(proto, attr, spec):
+def check_attr(proto, attr, spec, is_group_config=False):  # pylint: disable=too-many-branches
+    # TODO: refactor this func
     if not attr:
         return
     ref = proto_ref(proto)
     allowed_key = ('active',)
     if not isinstance(attr, dict):
         err('ATTRIBUTE_ERROR', 'Attr should be a map')
+    if is_group_config:
+        if 'group_keys' not in attr or 'custom_group_keys' not in attr:
+            err('ATTRIBUTE_ERROR', "Attr must contain 'group_keys' and 'custom_group_keys' keys")
     for key, value in attr.items():
         if key == 'group_keys':
-            check_structure_for_group_attr(value, spec, key)
+            if is_group_config:
+                check_structure_for_group_attr(value, spec, key)
+            else:
+                msg = 'Not allowed key "{}" for object ({})'
+                err('ATTRIBUTE_ERROR', msg.format(key, ref))
             continue
         if key == 'custom_group_keys':
-            check_custom_group_keys_attr(proto, value, spec)
+            if is_group_config:
+                check_custom_group_keys_attr(proto, value, spec)
+            else:
+                msg = 'Not allowed key "{}" for object ({})'
+                err('ATTRIBUTE_ERROR', msg.format(key, ref))
             continue
         if key + '/' not in spec:
             msg = 'There isn\'t group "{}" in config ({})'

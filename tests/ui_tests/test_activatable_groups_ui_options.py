@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for activatable groups"""
 
 import allure
 import pytest
@@ -108,7 +109,7 @@ def _check_that_all_field_is_visible_if_advanced_and_activatable_true(sdk_client
 
 @allure.step('Check that field invisible')
 def _check_that_all_field_is_invisible(sdk_client: ADCMClient, path, app):
-    """Check that field invisible."""
+    """Check that field invisible"""
 
     _, config = prepare_cluster_and_get_config(sdk_client, path, app)
     group_name = path.split("/")[-1]
