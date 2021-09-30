@@ -138,6 +138,7 @@ def _assert_host_candidate_equal_expected(group: HostList, expected_hosts_names:
 
 class TestGroupsIntersection:
     """Tests for config groups intersections"""
+
     @pytest.fixture()
     def cluster_with_components(
         self, create_two_hosts, cluster: Cluster, provider: Provider
@@ -297,9 +298,7 @@ class TestDeleteHostInGroups:
         with allure.step("Check that there are no hosts available to add in cluster group"):
             _assert_host_candidate_equal_expected(cluster_group.host_candidate(), [])
 
-    def test_delete_host_from_group_after_deleting_in_service(
-        self, cluster, cluster_with_components_on_first_host
-    ):
+    def test_delete_host_from_group_after_deleting_in_service(self, cluster, cluster_with_components_on_first_host):
         """Test that host removed from conf group after removing from service"""
 
         service, test_host_1, test_host_2 = cluster_with_components_on_first_host
@@ -315,9 +314,7 @@ class TestDeleteHostInGroups:
             )
         self._check_no_hosts_in_group(service_group)
 
-    def test_delete_host_from_group_after_delete_in_component(
-        self, cluster, cluster_with_components_on_first_host
-    ):
+    def test_delete_host_from_group_after_delete_in_component(self, cluster, cluster_with_components_on_first_host):
         """Test that host removed from conf group after removing from component"""
 
         service, test_host_1, test_host_2 = cluster_with_components_on_first_host

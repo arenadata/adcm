@@ -25,6 +25,7 @@ from tests.ui_tests.app.page.login.locators import LoginPageLocators
 
 class LoginPage(BasePageObject):
     """Login Page class"""
+
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/login")
         self.header = PageHeader(self.driver, self.base_url)
@@ -47,6 +48,7 @@ class LoginPage(BasePageObject):
     @allure.step('Get warning text on login page')
     def get_login_warning_text(self, timeout: int = None) -> str:
         """Get warning text on login page"""
+
         def _get_text():
             assert self.find_element(LoginPageLocators.login_warning).text != ""
 

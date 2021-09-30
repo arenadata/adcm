@@ -20,8 +20,10 @@ from tests.ui_tests.app.page.common.table.locator import CommonTable
 
 class TaskListLocators:
     """Task List page elements locators"""
+
     class Filter:
         """Task List page filter elements locators"""
+
         all = Locator(By.CSS_SELECTOR, "mat-button-toggle[value=''] button", "All jobs filter button")
         running = Locator(By.CSS_SELECTOR, "mat-button-toggle[value='running'] button", "Running filter button")
         success = Locator(By.CSS_SELECTOR, "mat-button-toggle[value='success'] button", "Success filter button")
@@ -30,8 +32,10 @@ class TaskListLocators:
 
     class Table(CommonTable):
         """Task List page table elements locators"""
+
         class Row:
             """Task List page row elements locators"""
+
             action_name = Locator(By.CSS_SELECTOR, "app-task-name a", "Action name in row")
             invoker_objects = Locator(By.CSS_SELECTOR, "app-task-objects a", "Object that invoked action in row")
             start_date = Locator(By.CSS_SELECTOR, "mat-cell.action_date:nth-child(4)", "Start date in row")
@@ -44,11 +48,13 @@ class TaskListLocators:
 
         class ExpandedTask:
             """Task List page expanded task elements locators"""
+
             block = Locator(By.CSS_SELECTOR, "app-jobs", "Expanded task block")
             row = Locator(By.CSS_SELECTOR, "app-jobs mat-row", "Job row in expanded Task")
 
             class Row:
                 """Task List page row elements locators"""
+
                 job_name = Locator(By.CSS_SELECTOR, "app-job-name a", "Job name")
                 job_start_date = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Job start date")
                 job_finish_date = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(3)", "Job finish date")

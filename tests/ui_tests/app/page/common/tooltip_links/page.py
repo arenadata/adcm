@@ -23,6 +23,7 @@ from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLo
 
 class CommonToolbar(BasePageObject):
     """Common Toolbar class"""
+
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url)
 

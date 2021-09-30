@@ -41,6 +41,7 @@ pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
 
 class TestHeader:
     """UI Tests for header"""
+
     def test_header_tabs_for_authorised_user(self, app_fs):
         """Test header buttons for authorised user"""
         header = PageHeader(app_fs.driver, app_fs.adcm.url)
@@ -150,6 +151,7 @@ class TestHeader:
 
 class TestFooter:
     """UI Tests for footer"""
+
     def test_check_footer_for_authorised_user(self, app_fs):
         """Test footer for authorised user"""
         params = {"docs": "docs.arenadata.io/adcm/notes"}

@@ -63,6 +63,7 @@ def _check_hosts(actual: Host, expected: Host):
 
 class TestCluster:
     """Tests for cluster functions"""
+
     def test_get_cluster_list(self, cluster_bundle: Bundle):
         """Test get cluster list"""
         actual, expected = [], []
@@ -104,6 +105,7 @@ class TestCluster:
 
 class TestClusterHost:
     """Test cluster and host functions"""
+
     def test_adding_host_to_cluster(self, cluster: Cluster, provider: Provider):
         """Test add host to cluster"""
         host = provider.host_create(utils.random_string())
@@ -162,6 +164,7 @@ class TestClusterHost:
 
 class TestClusterService:
     """Test cluster ans service functions"""
+
     def test_cluster_service_create(self, cluster: Cluster):
         """Test create service"""
         expected = cluster.service_add(name="ZOOKEEPER")

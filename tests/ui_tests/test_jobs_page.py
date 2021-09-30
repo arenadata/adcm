@@ -113,6 +113,7 @@ def created_hosts(provider: Provider) -> List[Host]:
 # !===== TESTS =====!
 class TestTaskPage:
     """Tests for Task page"""
+
     @pytest.mark.smoke()
     def test_cluster_action_job(self, cluster: Cluster, page: JobListPage):
         """Run action on cluster and validate job in table and popup"""
@@ -281,6 +282,7 @@ class TestTaskPage:
 
 class TestTaskHeaderPopup:
     """Tests for Task page header popup"""
+
     @pytest.mark.smoke()
     @pytest.mark.parametrize(
         ('job_link', 'job_filter'),

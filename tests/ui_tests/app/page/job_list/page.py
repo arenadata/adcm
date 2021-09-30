@@ -34,6 +34,7 @@ from tests.ui_tests.app.page.job_list.locators import TaskListLocators
 
 class JobStatus(Enum):
     """Available job statuses"""
+
     RUNNING = 'running'
     SUCCESS = 'success'
     FAILED = 'failed'
@@ -69,6 +70,7 @@ TaskInfo = TypeVar('TaskInfo', bound=Union[PopupTaskInfo, TableTaskInfo])
 
 class JobListPage(BasePageObject):
     """Job List Page class"""
+
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/task")
         self.header = PageHeader(self.driver, self.base_url)

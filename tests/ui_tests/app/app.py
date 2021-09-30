@@ -88,6 +88,7 @@ class ADCMTest:
 
     def wait_for(self, condition: EC, locator: tuple, timer=5):
         """Wait for condition"""
+
         def _get_element(element):
             return WDW(self.driver, timer).until(condition(element))
 

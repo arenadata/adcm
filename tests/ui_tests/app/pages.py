@@ -49,6 +49,7 @@ def element_text(element):
 @deprecated("Use BasePageObj")
 class BasePage:
     """That is base page object for all ADCM's pages"""
+
     ignored_exceptions = (NoSuchElementException, StaleElementReferenceException)
 
     def __init__(self, driver):

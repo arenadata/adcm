@@ -57,4 +57,5 @@ class CommonActionLocators:
 
     class ActionCard:
         """Common action page action card elements locators"""
+
         play_btn = Locator(By.CSS_SELECTOR, "button", "Action run button")

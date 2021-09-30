@@ -47,6 +47,7 @@ class ProviderRowInfo:
 
 class ProviderListPage(BasePageObject):
     """Provider List Page class"""
+
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/provider")
         self.header = PageHeader(self.driver, self.base_url)

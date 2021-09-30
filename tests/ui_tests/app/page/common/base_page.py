@@ -537,6 +537,7 @@ class PageHeader(BasePageObject):
 
     def wait_success_job_amount_from_header(self, expected_job_amount: int):
         """Wait for success job amount to be as expected"""
+
         def _wait_job():
             assert (
                 int(self.get_success_job_amount_from_header()) == expected_job_amount

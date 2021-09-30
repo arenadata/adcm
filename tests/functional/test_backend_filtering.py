@@ -192,6 +192,7 @@ def one_host_provider_id_attr(one_host: Host):
 )
 def test_coreapi_schema(sdk_client_fs: ADCMClient, tested_class: Type[BaseAPIObject]):
     """Test coreapi schema"""
+
     def _get_params(link):
         result = {}
         for field in link.fields:

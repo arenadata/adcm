@@ -159,6 +159,7 @@ def check_components_host_info(host_info: ComponentsHostRowInfo, name: str, comp
 
 class TestClusterListPage:
     """Tests for the /cluster page"""
+
     @pytest.mark.smoke()
     @pytest.mark.parametrize(
         "bundle_archive",
@@ -327,6 +328,7 @@ class TestClusterMainPage:
 
 class TestClusterServicePage:
     """Tests for the /cluster/{}/service page"""
+
     @pytest.mark.smoke()
     def test_check_cluster_service_page_open_by_tab(self, app_fs, create_community_cluster):
         """Test open /cluter/{}/service page from left menu"""
@@ -415,6 +417,7 @@ class TestClusterServicePage:
 
 class TestClusterHostPage:
     """Tests for the /cluster/{}/host page"""
+
     @pytest.mark.smoke()
     def test_required_fields_from_cluster_host_page(self, app_fs, create_community_cluster_with_service):
         """Test fields on cluster/{}/host page"""
@@ -560,6 +563,7 @@ class TestClusterHostPage:
 
 class TestClusterComponentsPage:
     """Tests for the /cluster/{}/component page"""
+
     @pytest.mark.smoke()
     def test_check_cluster_components_page_open_by_tab(self, app_fs, create_community_cluster):
         """Test open /cluter/{}/component page from left menu"""
@@ -679,6 +683,7 @@ class TestClusterComponentsPage:
 
 class TestClusterConfigPage:
     """Tests for the /cluster/{}/config page"""
+
     def test_cluster_config_page_open_by_tab(self, app_fs, create_community_cluster):
         """Test open /cluster/{}/config from left menu"""
         cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
@@ -762,6 +767,7 @@ class TestClusterConfigPage:
 
 class TestClusterStatusPage:
     """Tests for the /cluster/{}/status page"""
+
     def test_open_by_tab_cluster_status_page(self, app_fs, create_community_cluster):
         """Test open /cluster/{}/config from left menu"""
         cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
@@ -798,6 +804,7 @@ class TestClusterStatusPage:
 
 class TestClusterImportPage:
     """Tests for the /cluster/{}/import page"""
+
     def test_open_by_tab_cluster_import_page(self, app_fs, create_community_cluster):
         """Test open /cluster/{}/config from left menu"""
         cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
@@ -826,6 +833,7 @@ class TestClusterImportPage:
 
 class TestClusterActionPage:
     """Tests for the /cluster/{}/action page"""
+
     def test_open_by_tab_cluster_action_page(self, app_fs, create_community_cluster):
         """Test open /cluster/{}/config from left menu"""
         cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()

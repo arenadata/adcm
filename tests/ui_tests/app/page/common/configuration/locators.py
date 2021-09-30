@@ -54,6 +54,7 @@ class CommonConfigMenu:
 
     class ConfigRow:
         """Configuration menu configuration row locators"""
+
         name = Locator(By.CSS_SELECTOR, "label", "Row name")
         value = Locator(By.CSS_SELECTOR, "input", "Row value")
         password = Locator(
@@ -71,11 +72,13 @@ class CommonConfigMenu:
 
     class ConfigGroup:
         """Configuration menu configuration group locators"""
+
         name = Locator(By.CSS_SELECTOR, "mat-panel-title>span", "Group name")
         expansion_btn = Locator(By.CSS_SELECTOR, "mat-expansion-panel-header", "Expansion button")
 
     class HistoryRow:
         """Configuration menu history row locators"""
+
         history_select = Locator(By.CSS_SELECTOR, "mat-select[placeholder='History']", "History select")
         compare_select = Locator(By.CSS_SELECTOR, "mat-select[placeholder='Compare to']", "Compare select")
         option = Locator(By.CSS_SELECTOR, "mat-option", "Option in select")

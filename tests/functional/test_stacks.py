@@ -173,7 +173,7 @@ def test_when_config_has_two_identical_service_proto(sdk_client_fs: ADCMClient):
 
 @pytest.mark.parametrize("entity", ["host", "provider"])
 def test_config_has_one_definition_and_two_diff_types(sdk_client_fs: ADCMClient, entity):
-    """Test upload bundle with dsl and type mismatch """
+    """Test upload bundle with dsl and type mismatch"""
     name = "cluster_has_a_" + entity + "_definition"
     stack_dir = utils.get_data_dir(__file__, name)
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:

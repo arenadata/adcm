@@ -273,6 +273,7 @@ class CommonConfigMenuObj(BasePageObject):
     @allure.step("Wait row with history value {value}")
     def wait_history_row_with_value(self, row: WebElement, value: str):
         """Wait for value in History row"""
+
         def _assert_value():
             assert self.get_history_in_row(row)[0] == value, "History row should contain old value"
 

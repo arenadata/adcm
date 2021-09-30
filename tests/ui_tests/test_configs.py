@@ -70,6 +70,7 @@ DEFAULT_VALUE = {
 
 class ListWithoutRepr(list):
     """Custom list without direct repr"""
+
     def __repr__(self):
         return f'<{self.__class__.__name__} instance at {id(self):#x}>'
 

@@ -39,6 +39,7 @@ class BundleInfo:
 
 class BundleListPage(BasePageObject):
     """Bundle List Page class"""
+
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/bundle")
         self.header = PageHeader(self.driver, self.base_url)

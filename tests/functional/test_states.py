@@ -50,6 +50,7 @@ def cluster_and_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Clus
 
 class TestClusterRelatedObjects:
     """Tests for cluster-related objects states"""
+
     def test_cluster_state_after_action(self, sdk_client_fs: ADCMClient, cluster_and_states_checker):
         """Test cluster state after action"""
         cluster_obj, check_objects_state_changed = cluster_and_states_checker
@@ -111,6 +112,7 @@ def provider_and_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Pro
 
 class TestProviderRelatedObjects:
     """Tests for provider-related objects states"""
+
     def test_provider_state_after_action(self, sdk_client_fs: ADCMClient, provider_and_states_checker):
         """Test provider state after action"""
         provider_obj, check_objects_state_changed = provider_and_states_checker

@@ -51,6 +51,7 @@ def prepare_cluster_and_get_config(sdk_client: ADCMClient, path, app):
 
 class BundleObjectDefinition(UserDict):
     """Data class for ADCM object"""
+
     def __init__(self, obj_type=None, name=None, version=None):
         super().__init__()
         self["type"] = obj_type
@@ -83,6 +84,7 @@ class BundleObjectDefinition(UserDict):
 
 class ClusterDefinition(BundleObjectDefinition):
     """Data class for cluster"""
+
     def __init__(self, name=None, version=None):
         """Data class for cluster"""
         super().__init__(obj_type="cluster", name=name, version=version)
@@ -90,24 +92,28 @@ class ClusterDefinition(BundleObjectDefinition):
 
 class ServiceDefinition(BundleObjectDefinition):
     """Data class for service"""
+
     def __init__(self, name=None, version=None):
         super().__init__(obj_type="service", name=name, version=version)
 
 
 class ProviderDefinition(BundleObjectDefinition):
     """Data class for provider"""
+
     def __init__(self, name=None, version=None):
         super().__init__(obj_type="provider", name=name, version=version)
 
 
 class HostDefinition(BundleObjectDefinition):
     """Data class for host"""
+
     def __init__(self, name=None, version=None):
         super().__init__(obj_type="host", name=name, version=version)
 
 
 class GroupDefinition(BundleObjectDefinition):
     """Data class for group"""
+
     def __init__(self, name=None):
         super().__init__(obj_type="group", name=name)
         self["activatable"] = True
@@ -122,6 +128,7 @@ class GroupDefinition(BundleObjectDefinition):
 
 class FieldDefinition(BundleObjectDefinition):
     """Data class for field"""
+
     def __init__(self, prop_type, prop_name=None):
         super().__init__(obj_type=prop_type, name=prop_name)
         self["required"] = False

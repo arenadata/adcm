@@ -38,6 +38,7 @@ from tests.ui_tests.app.page.common.base_page import (
 
 class GeneralAdminPage(BasePageObject):
     """Base class for admin pages"""
+
     MAIN_ELEMENTS: List[Locator]
 
     @allure.step("Assert that all main elements are presented on the page")
@@ -65,6 +66,7 @@ class GeneralAdminPage(BasePageObject):
 
 class AdminIntroPage(GeneralAdminPage):
     """Admin Intro Page class"""
+
     MAIN_ELEMENTS = [AdminIntroLocators.intro_title, AdminIntroLocators.intro_text]
 
     def __init__(self, driver, base_url):
@@ -75,6 +77,7 @@ class AdminIntroPage(GeneralAdminPage):
 
 class AdminSettingsPage(GeneralAdminPage):
     """Admin Settings Page class"""
+
     MAIN_ELEMENTS = [
         AdminSettingsLocators.save_btn,
         AdminSettingsLocators.search_input,
@@ -90,6 +93,7 @@ class AdminSettingsPage(GeneralAdminPage):
 
 class AdminUsersPage(GeneralAdminPage):
     """Admin Users Page class"""
+
     MAIN_ELEMENTS = [AdminUsersLocators.add_user_btn, AdminUsersLocators.user_row]
 
     def __init__(self, driver, base_url):

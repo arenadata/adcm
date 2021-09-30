@@ -49,6 +49,7 @@ class HostRowInfo:
 
 class HostListPage(BasePageObject):
     """Host List Page class"""
+
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/host")
         self.header = PageHeader(self.driver, self.base_url)
@@ -59,6 +60,7 @@ class HostListPage(BasePageObject):
     @allure.step('Get host information from row #{row_num}')
     def get_host_row(self, row_num: int = 0) -> WebElement:
         """Get host information from row"""
+
         def _table_has_enough_rows():
             assert_enough_rows(row_num, self.table.row_count)
 
@@ -156,6 +158,7 @@ class HostListPage(BasePageObject):
     @allure.step('Assert host in row {row_num} is assigned to cluster {cluster_name}')
     def assert_host_bonded_to_cluster(self, row_num: int, cluster_name: str):
         """Assert host in row is assigned to cluster"""
+
         def _check_host_cluster(page: HostListPage, row: WebElement):
             real_cluster = page.find_child(row, HostListLocators.HostTable.HostRow.cluster).text
             assert real_cluster == cluster_name
@@ -166,6 +169,7 @@ class HostListPage(BasePageObject):
     @allure.step('Assert host in row {row_num} has state "{state}"')
     def assert_host_state(self, row_num: int, state: str):
         """Assert host in row has state  given state"""
+
         def _check_host_state(page: HostListPage, row: WebElement):
             real_state = page.find_child(row, HostListLocators.HostTable.HostRow.state).text
             assert real_state == state

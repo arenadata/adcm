@@ -524,7 +524,7 @@ class ClusterStatusPage(ClusterPageMixin):
         return [r for r in self.find_elements(ClusterStatusLocators.group_row) if r.is_displayed()]
 
     def get_config_group_info(self, row: WebElement):
-        """"Get group info by row"""
+        """ "Get group info by row"""
         components_items = list()
         self.wait_group_opened(row)
         for item in self.find_children(row, ClusterStatusLocators.GroupRow.service_group):

@@ -55,6 +55,7 @@ def upload_and_create_test_provider(bundle) -> Provider:
 
 class TestProviderListPage:
     """Tests for provider list page"""
+
     @pytest.mark.smoke()
     @pytest.mark.parametrize(
         "bundle_archive", [pytest.param(utils.get_data_dir(__file__, "provider"), id="provider")], indirect=True
@@ -185,6 +186,7 @@ class TestProviderListPage:
 
 class TestProviderMainPage:
     """Tests for provider main page"""
+
     @pytest.mark.smoke()
     def test_open_by_tab_provider_main_page(self, app_fs, upload_and_create_test_provider):
         """Test provider main page from left menu"""
@@ -216,6 +218,7 @@ class TestProviderMainPage:
 
 class TestProviderConfigPage:
     """Tests for provider config page"""
+
     @pytest.mark.smoke()
     def test_open_by_tab_provider_config_page(self, app_fs, upload_and_create_test_provider):
         """Test provider config page from left menu"""
@@ -290,9 +293,7 @@ class TestProviderConfigPage:
         )
 
     @pytest.mark.parametrize("bundle", ["provider_required_fields"], indirect=True)
-    def test_field_validation_on_provider_config_page(
-        self, app_fs, bundle, upload_and_create_test_provider
-    ):
+    def test_field_validation_on_provider_config_page(self, app_fs, bundle, upload_and_create_test_provider):
         """Test config field validation on provider config page"""
         params = {
             'pass_name': 'Test password',
@@ -312,6 +313,7 @@ class TestProviderConfigPage:
 
 class TestProviderActionPage:
     """Tests for provider actions page"""
+
     @pytest.mark.smoke()
     def test_open_by_tab_provider_action_page(self, app_fs, upload_and_create_test_provider):
         """Test open actions page from left menu"""

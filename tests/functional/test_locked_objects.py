@@ -79,6 +79,7 @@ def cluster_with_two_hosts(cluster: Cluster, host_provider: Provider) -> Tuple[C
 @pytest.mark.parametrize("lock_action", LOCK_ACTION_NAMES)
 class TestClusterLock:
     """Tests for cluster locks"""
+
     def test_lock_unlock(self, cluster: Cluster, host: Host, lock_action):
         """
         Test that cluster locked when action running and unlocked when action ends
@@ -124,6 +125,7 @@ class TestClusterLock:
 @pytest.mark.parametrize("lock_action", LOCK_ACTION_NAMES)
 class TestServiceLock:
     """Tests for service locks"""
+
     def test_lock_unlock(self, cluster: Cluster, host: Host, lock_action):
         """
         Test that service locked when action running and unlocked when action ends
@@ -174,6 +176,7 @@ class TestServiceLock:
 @pytest.mark.parametrize("lock_action", LOCK_ACTION_NAMES)
 class TestComponentLock:
     """Tests for component locks"""
+
     def test_lock_unlock(self, complete_cluster: Cluster, lock_action):
         """
         Test that component locked when action running and unlocked when action ends
@@ -224,6 +227,7 @@ class TestComponentLock:
 @pytest.mark.parametrize("lock_action", LOCK_ACTION_NAMES)
 class TestHostLock:
     """Tests for host locks"""
+
     def test_lock_unlock(self, host: Host, lock_action):
         """
         Test that host locked when action running and unlocked when action ends
@@ -264,6 +268,7 @@ class TestHostLock:
 @pytest.mark.parametrize("lock_action", LOCK_ACTION_NAMES)
 class TestHostProviderLock:
     """Tests for provider locks"""
+
     def test_lock_unlock(self, host_provider: Provider, lock_action):
         """
         Test that host provider locked when action running and unlocked when action ends

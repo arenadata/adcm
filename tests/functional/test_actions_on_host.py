@@ -86,6 +86,7 @@ def provider(sdk_client_fs) -> Provider:
 
 class TestClusterActionsOnHost:
     """Tests for cluster actions on host"""
+
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
     def test_availability(self, cluster: Cluster, provider: Provider, action_name):
         """
@@ -142,6 +143,7 @@ class TestClusterActionsOnHost:
 
 class TestServiceActionOnHost:
     """Tests for service actions on host"""
+
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
     def test_availability(self, cluster_with_service: Cluster, provider: Provider, action_name):
         """
@@ -236,6 +238,7 @@ class TestServiceActionOnHost:
 
 class TestComponentActionOnHost:
     """Tests for component actions on host"""
+
     @allure.issue(
         url="https://arenadata.atlassian.net/browse/ADCM-1948", name="Infinite host action on ADCM with pre-filled data"
     )

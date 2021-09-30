@@ -78,6 +78,7 @@ def _get_config_history(obj: BaseAPIObject):
 
 class TestClusterServiceConfig:
     """Tests for service config"""
+
     def test_create_cluster_service_config(self, cluster_with_service: Tuple[Cluster, Service]):
         """Test service config"""
         cfg_json = {
@@ -301,6 +302,7 @@ class TestClusterServiceConfig:
 
 class TestClusterServiceConfigHistory:  # pylint: disable=too-few-public-methods
     """Tests for service config history"""
+
     def test_get_config_from_nonexistent_cluster_service(self, cluster_with_service: Tuple[Cluster, Service]):
         """Test get config for nonexistent cluster"""
         _, service = cluster_with_service
@@ -314,6 +316,7 @@ class TestClusterServiceConfigHistory:  # pylint: disable=too-few-public-methods
 
 class TestClusterConfig:
     """Tests for cluster config"""
+
     def test_read_default_cluster_config(self, cluster: Cluster):
         """Validate default cluster config by schema"""
         config = cluster.config(full=True)

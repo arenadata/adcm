@@ -19,6 +19,7 @@ from tests.ui_tests.app.helpers.locator import Locator
 
 class ProfileLocators:
     """Profile page elements locators"""
+
     username = Locator(By.XPATH, "//p[contains(text(), 'You are authorized as')]/b", "Authorized user name")
     password = Locator(By.CSS_SELECTOR, "input[formcontrolname='password']", "New password input field")
     confirm_password = Locator(By.CSS_SELECTOR, "input[formcontrolname='cpassword']", "New password confirmation field")

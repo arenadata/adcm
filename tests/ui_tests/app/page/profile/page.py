@@ -26,6 +26,7 @@ from tests.ui_tests.app.page.profile.locators import ProfileLocators
 
 class ProfilePage(BasePageObject):
     """Profile Page class"""
+
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/profile")
         self.header = PageHeader(self.driver, self.base_url)

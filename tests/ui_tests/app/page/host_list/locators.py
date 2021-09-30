@@ -26,17 +26,20 @@ class HostListLocators:
 
     class Tooltip:
         """Host List page tooltip elements locators"""
+
         apps_btn = Locator(By.XPATH, "//a[.//mat-icon[text()='apps']]", "Apps button")
         host_add_btn = Locator(By.CSS_SELECTOR, "button[adcm_test='create-btn']", "Host add button")
 
     class HostTable(CommonTable):
         """Host List page host table elements locators"""
+
         cluster_option = TemplateLocator(
             By.XPATH, "//mat-option//span[contains(text(), '{}')]", "Table dropdown option"
         )
 
         class HostRow:
             """Host List page host row elements locators"""
+
             fqdn = Locator(By.CSS_SELECTOR, "mat-cell:first-child", "Host FQDN in row")
             provider = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Host provider in row")
             cluster = Locator(By.CSS_SELECTOR, "app-cluster-column", "Host cluster in row")

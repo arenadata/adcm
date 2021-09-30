@@ -51,6 +51,7 @@ class CommonTableObj(BasePageObject):
 
     def get_row(self, row_num: int = 0) -> WebElement:
         """Get row from the table"""
+
         def _table_has_enough_rows():
             assert_enough_rows(row_num, self.row_count)
 

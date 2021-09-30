@@ -25,10 +25,12 @@ class ProviderListLocators:
 
     class Tooltip:
         """Provider List page tooltip elements locators"""
+
         add_btn = Locator(By.CSS_SELECTOR, "button[adcm_test='create-btn']", "Provider add button")
 
     class CreateProviderPopup:
         """Provider List page create provider elements locators"""
+
         block = Locator(By.CSS_SELECTOR, "mat-dialog-container", "Popup block")
         bundle_select_btn = Locator(By.CSS_SELECTOR, "mat-select[placeholder='Bundle']", "Select bundle")
         version_select_btn = Locator(
@@ -47,8 +49,10 @@ class ProviderListLocators:
 
     class ProviderTable(CommonTable):
         """Provider List page provider table elements locators"""
+
         class ProviderRow:
             """Provider List page provider row elements locators"""
+
             name = Locator(By.CSS_SELECTOR, "mat-cell:first-child", "Provider name in row")
             bundle = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Provider bundle in row")
             state = Locator(By.CSS_SELECTOR, "app-state-column", "Provider state in row")

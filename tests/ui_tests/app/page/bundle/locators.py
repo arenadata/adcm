@@ -23,6 +23,7 @@ class BundleLocators:
 
     class MenuNavigation:
         """Bundle main menu navigation elements locators"""
+
         main = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_main']", "Main link in side menu")
 
 

@@ -19,11 +19,13 @@ from tests.ui_tests.app.helpers.locator import Locator
 
 class DeleteDialog:
     """Delete Dialog class"""
+
     body = Locator(By.CSS_SELECTOR, "mat-dialog-container", "Dialog with choices")
     yes = Locator(By.XPATH, "//button//span[contains(text(), 'Yes')]", "Yes button in delete dialog")
 
 
 class ActionDialog:
     """Action Dialog class"""
+
     body = Locator(By.CSS_SELECTOR, "mat-dialog-container", "Dialog with choices")
     run = Locator(By.CSS_SELECTOR, "app-dialog button[color='accent']", "Run button in action dialog")

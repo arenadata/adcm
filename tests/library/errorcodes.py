@@ -20,6 +20,7 @@ class ADCMError:  # pylint: disable=too-few-public-methods
     ADCM error wrapper
     Used for error assertions
     """
+
     def __init__(self, title, code):
         self.title = title
         self.code = code

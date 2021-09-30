@@ -25,6 +25,7 @@ class HostLocators:
 
     class MenuNavigation(ObjectPageMenuLocators):
         """Host main page main navigation elements locators"""
+
         ...
 
 

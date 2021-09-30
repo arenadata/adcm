@@ -68,6 +68,7 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
 
         class JobRow:
             """ADCM header popup job row with jobs"""
+
             job_status = Locator(By.CSS_SELECTOR, "mat-icon", "Job status in job row")
             job_name = Locator(By.CSS_SELECTOR, "a", "Job row name in popup list")
 

@@ -15,11 +15,13 @@
 
 class States:  # pylint: disable=too-few-public-methods
     """Possible states dataclass"""
+
     failed = 'failed'
     success = 'success'
 
 
 class MessageStates:  # pylint: disable=too-few-public-methods
     """Possible states messages dataclass"""
+
     fail_msg = 'fail_msg'
     success_msg = 'success_msg'

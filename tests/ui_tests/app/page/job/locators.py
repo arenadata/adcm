@@ -30,6 +30,7 @@ class JobPageLocators(ObjectPageLocators):
 
     class Menu:
         """Locators for detailed job page menu"""
+
         # keep stdout(-err) prefix in naming
         stdout_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_1']", "Job stdout tab")
         stdout_download_btn = Locator(
