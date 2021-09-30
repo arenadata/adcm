@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { FormControl } from '@angular/forms';
 
 @Component({
@@ -6,14 +6,10 @@ import { FormControl } from '@angular/forms';
   templateUrl: './config-group-checkbox.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ConfigGroupCheckboxComponent implements OnInit {
+export class ConfigGroupCheckboxComponent {
 
   @Input() control: FormControl;
 
   @Input() disabled: boolean;
-
-  ngOnInit(): void {
-    console.log('sss', this.control);
-  }
 
 }
