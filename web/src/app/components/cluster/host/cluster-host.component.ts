@@ -4,8 +4,8 @@ import { IColumns } from '@adwp-ui/widgets';
 import { TypeName } from '@app/core/types';
 import { IHost } from '@app/models/host';
 import { ListFactory } from '@app/factories/list-factory';
-import { ConcernListDirective } from '../../../abstract-directives/concern-list.directive';
-import { ConcernEventType } from '../../../models/concern/concern-reason';
+import { ConcernListDirective } from '@app/abstract-directives/concern-list.directive';
+import { ConcernEventType } from '@app/models/concern/concern-reason';
 
 @Component({
   selector: 'app-cluster-host',
@@ -37,7 +37,7 @@ export class ClusterHostComponent extends ConcernListDirective<IHost> {
     ListFactory.providerColumn(),
     ListFactory.stateColumn(),
     ListFactory.statusColumn(this),
-    ListFactory.actionsButton(),
+    ListFactory.actionsButton(this),
     ListFactory.configColumn(this),
     {
       type: 'buttons',

@@ -57,7 +57,7 @@ export class ClusterListComponent extends ConcernListDirective<ICluster> {
     ListFactory.descriptionColumn(),
     ListFactory.stateColumn(),
     ListFactory.statusColumn(this),
-    ListFactory.actionsButton(),
+    ListFactory.actionsButton(this),
     ListFactory.importColumn(this),
     ListFactory.updateColumn(),
     ListFactory.configColumn(this),

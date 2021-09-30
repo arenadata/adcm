@@ -816,7 +816,7 @@ class AbstractAction(ADCMModel):
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
 
-    multi_state_available = models.JSONField(default='any')
+    multi_state_available = models.JSONField(default=lambda: 'any')
     multi_state_unavailable = models.JSONField(default=list)
     multi_state_on_success_set = models.JSONField(default=list)
     multi_state_on_success_unset = models.JSONField(default=list)
@@ -868,6 +868,9 @@ class Action(AbstractAction):
 
     def allowed(self, obj: ADCMEntity) -> bool:
         """Check if action is allowed to be run on object"""
+        if self.state_unavailable == 'any' or self.multi_state_unavailable == 'any':
+            return False
+
         if isinstance(self.state_unavailable, list) and obj.state in self.state_unavailable:
             return False
 
