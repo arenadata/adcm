@@ -79,6 +79,7 @@ def _get_config_history(obj: BaseAPIObject):
 class TestClusterServiceConfig:
     """Tests for service config"""
     def test_create_cluster_service_config(self, cluster_with_service: Tuple[Cluster, Service]):
+        """Test service config"""
         cfg_json = {
             "ssh-key": "TItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA",
             "zoo.cfg": {"autopurge.purgeInterval": 30, "dataDir": "/dev/0", "port": 80},
@@ -298,7 +299,7 @@ class TestClusterServiceConfig:
             err.CONFIG_NOT_FOUND.equal(e, "ConfigLog", "does not exist")
 
 
-class TestClusterServiceConfigHistory:
+class TestClusterServiceConfigHistory:  # pylint: disable=too-few-public-methods
     """Tests for service config history"""
     def test_get_config_from_nonexistent_cluster_service(self, cluster_with_service: Tuple[Cluster, Service]):
         """Test get config for nonexistent cluster"""
