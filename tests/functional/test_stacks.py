@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for /stack related objects ans stuff"""
+
 import json
 from typing import Tuple, List
 
@@ -28,6 +30,7 @@ SCHEMAS = utils.get_data_dir(__file__, "schemas/")
 
 
 def test_service_wo_name(sdk_client_fs: ADCMClient):
+    """Test upload service without name"""
     stack_dir = utils.get_data_dir(__file__, "service_wo_name")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
@@ -36,6 +39,7 @@ def test_service_wo_name(sdk_client_fs: ADCMClient):
 
 
 def test_service_wo_version(sdk_client_fs: ADCMClient):
+    """Test upload service without version"""
     stack_dir = utils.get_data_dir(__file__, "service_wo_version")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
@@ -44,6 +48,7 @@ def test_service_wo_version(sdk_client_fs: ADCMClient):
 
 
 def test_service_wo_actions(sdk_client_fs: ADCMClient):
+    """Test upload service without action"""
     stack_dir = utils.get_data_dir(__file__, "service_wo_action")
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Get service without actions"):
@@ -55,6 +60,7 @@ def test_service_wo_actions(sdk_client_fs: ADCMClient):
 
 
 def test_cluster_proto_wo_actions(sdk_client_fs: ADCMClient):
+    """Test validate cluster proto without action"""
     stack_dir = utils.get_data_dir(__file__, "cluster_proto_wo_actions")
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Get cluster without actions"):
@@ -66,6 +72,7 @@ def test_cluster_proto_wo_actions(sdk_client_fs: ADCMClient):
 
 
 def test_host_proto_wo_actions(sdk_client_fs: ADCMClient):
+    """Test validate host proto without action"""
     stack_dir = utils.get_data_dir(__file__, "host_proto_wo_action")
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Get host without actions"):
@@ -77,6 +84,7 @@ def test_host_proto_wo_actions(sdk_client_fs: ADCMClient):
 
 
 def test_service_wo_type(sdk_client_fs: ADCMClient):
+    """Test upload service without type"""
     stack_dir = utils.get_data_dir(__file__, "service_wo_type")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
@@ -85,6 +93,7 @@ def test_service_wo_type(sdk_client_fs: ADCMClient):
 
 
 def test_service_unknown_type(sdk_client_fs: ADCMClient):
+    """Test upload service with unknown type"""
     stack_dir = utils.get_data_dir(__file__, "service_unknown_type")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
@@ -93,6 +102,7 @@ def test_service_unknown_type(sdk_client_fs: ADCMClient):
 
 
 def test_stack_hasnt_script_mandatory_key(sdk_client_fs: ADCMClient):
+    """Test upload bundle with action without script field"""
     stack_dir = utils.get_data_dir(__file__, "script_mandatory_key")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
@@ -101,6 +111,7 @@ def test_stack_hasnt_script_mandatory_key(sdk_client_fs: ADCMClient):
 
 
 def test_stack_hasnt_scripttype_mandatory_key(sdk_client_fs: ADCMClient):
+    """Test upload bundle with action without script_type field"""
     stack_dir = utils.get_data_dir(__file__, "scripttype_mandatory_key")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
@@ -109,6 +120,7 @@ def test_stack_hasnt_scripttype_mandatory_key(sdk_client_fs: ADCMClient):
 
 
 def test_playbook_path(sdk_client_fs: ADCMClient):
+    """Test upload bundle with action with playbook path"""
     stack_dir = utils.get_data_dir(__file__, "playbook_path_test")
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check service prototype list"):
@@ -116,6 +128,7 @@ def test_playbook_path(sdk_client_fs: ADCMClient):
 
 
 def test_empty_default_config_value(sdk_client_fs: ADCMClient):
+    """Test upload bundle with empty default config value"""
     stack_dir = utils.get_data_dir(__file__, "empty_default_config_value")
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check service prototype list"):
@@ -123,6 +136,7 @@ def test_empty_default_config_value(sdk_client_fs: ADCMClient):
 
 
 def test_load_stack_w_empty_config_field(sdk_client_fs: ADCMClient):
+    """Test upload bundle with empty config field"""
     stack_dir = utils.get_data_dir(__file__, "empty_config_field")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
@@ -131,6 +145,7 @@ def test_load_stack_w_empty_config_field(sdk_client_fs: ADCMClient):
 
 
 def test_shouldn_load_config_with_wrong_name(sdk_client_fs: ADCMClient):
+    """Test should not load bundle with wrong config name"""
     stack_dir = utils.get_data_dir(__file__, "parsing_scalar_wrong_name")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
@@ -139,6 +154,7 @@ def test_shouldn_load_config_with_wrong_name(sdk_client_fs: ADCMClient):
 
 
 def test_load_stack_wo_type_in_config_key(sdk_client_fs: ADCMClient):
+    """Test upload bundle without type field"""
     stack_dir = utils.get_data_dir(__file__, "no_type_in_config_key")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
@@ -147,6 +163,7 @@ def test_load_stack_wo_type_in_config_key(sdk_client_fs: ADCMClient):
 
 
 def test_when_config_has_two_identical_service_proto(sdk_client_fs: ADCMClient):
+    """Test upload bundle without two identical services"""
     stack_dir = utils.get_data_dir(__file__, "two_identical_services")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
@@ -156,6 +173,7 @@ def test_when_config_has_two_identical_service_proto(sdk_client_fs: ADCMClient):
 
 @pytest.mark.parametrize("entity", ["host", "provider"])
 def test_config_has_one_definition_and_two_diff_types(sdk_client_fs: ADCMClient, entity):
+    """Test upload bundle with dsl and type mismatch """
     name = "cluster_has_a_" + entity + "_definition"
     stack_dir = utils.get_data_dir(__file__, name)
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
@@ -165,6 +183,7 @@ def test_config_has_one_definition_and_two_diff_types(sdk_client_fs: ADCMClient,
 
 
 def test_check_cluster_bundle_versions_as_a_string(sdk_client_fs: ADCMClient):
+    """Test upload cluster bundle with versions"""
     stack_dir = utils.get_data_dir(__file__, "cluster_service_versions_as_a_string")
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check bundle versions"):
@@ -173,6 +192,7 @@ def test_check_cluster_bundle_versions_as_a_string(sdk_client_fs: ADCMClient):
 
 
 def test_check_host_bundle_versions_as_a_string(sdk_client_fs: ADCMClient):
+    """Test upload hostprovider bundle with versions"""
     stack_dir = utils.get_data_dir(__file__, "host_version_as_a_string")
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check host versions"):
@@ -181,6 +201,7 @@ def test_check_host_bundle_versions_as_a_string(sdk_client_fs: ADCMClient):
 
 
 def test_cluster_bundle_can_be_on_any_level(sdk_client_fs: ADCMClient):
+    """Test upload cluster bundle lower that in directory root"""
     stack_dir = utils.get_data_dir(__file__, "cluster_bundle_on_any_level")
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check cluster bundle"):
@@ -189,6 +210,7 @@ def test_cluster_bundle_can_be_on_any_level(sdk_client_fs: ADCMClient):
 
 
 def test_host_bundle_can_be_on_any_level(sdk_client_fs: ADCMClient):
+    """Test upload hostprovider bundle lower that in directory root"""
     stack_dir = utils.get_data_dir(__file__, "host_bundle_on_any_level")
     sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Check host bundle"):
@@ -197,6 +219,7 @@ def test_host_bundle_can_be_on_any_level(sdk_client_fs: ADCMClient):
 
 @allure.issue("https://jira.arenadata.io/browse/ADCM-184")
 def test_cluster_config_without_required_parent_key(sdk_client_fs: ADCMClient):
+    """Test some config related stuff"""
     stack_dir = utils.get_data_dir(__file__, "cluster_config_without_required_parent_key")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(name=utils.random_string())
@@ -208,6 +231,7 @@ def test_cluster_config_without_required_parent_key(sdk_client_fs: ADCMClient):
 
 
 def test_cluster_bundle_definition_shouldnt_contain_host(sdk_client_fs: ADCMClient):
+    """Test cluster bundle definition should not contain host"""
     stack_dir = utils.get_data_dir(__file__, "cluster_bundle_with_host_definition")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
@@ -216,6 +240,7 @@ def test_cluster_bundle_definition_shouldnt_contain_host(sdk_client_fs: ADCMClie
 
 
 def test_when_cluster_config_must_contains_some_subkeys(sdk_client_fs: ADCMClient):
+    """Test cluster config subkeys should not be empty"""
     stack_dir = utils.get_data_dir(__file__, "cluster_config_with_empty_subkeys")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     bad_config = {"str-key": "bluh", "subkeys": {}}
@@ -228,6 +253,7 @@ def test_when_cluster_config_must_contains_some_subkeys(sdk_client_fs: ADCMClien
 
 
 def test_when_host_config_must_contains_some_subkeys(sdk_client_fs: ADCMClient):
+    """Test hostprovider config subkeys should not be empty"""
     stack_dir = utils.get_data_dir(__file__, "host_config_with_empty_subkeys")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     with allure.step("Create provider"):
@@ -243,6 +269,7 @@ def test_when_host_config_must_contains_some_subkeys(sdk_client_fs: ADCMClient):
 
 
 def test_host_bundle_shouldnt_contains_service_definition(sdk_client_fs: ADCMClient):
+    """Test hostprovider bundle should not contain cluster definition"""
     stack_dir = utils.get_data_dir(__file__, "host_bundle_with_service_definition")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
@@ -251,6 +278,7 @@ def test_host_bundle_shouldnt_contains_service_definition(sdk_client_fs: ADCMCli
 
 
 def test_service_job_should_run_success(sdk_client_fs: ADCMClient):
+    """Test run service action success"""
     stack_dir = utils.get_data_dir(__file__, "job_should_run_success")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(name=utils.random_string())
@@ -264,6 +292,7 @@ def test_service_job_should_run_success(sdk_client_fs: ADCMClient):
 
 
 def test_service_job_should_run_failed(sdk_client_fs: ADCMClient):
+    """Test run service action fail"""
     stack_dir = utils.get_data_dir(__file__, "job_should_run_failed")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(name=utils.random_string())
@@ -277,6 +306,7 @@ def test_service_job_should_run_failed(sdk_client_fs: ADCMClient):
 
 
 def test_cluster_action_run_should_be_success(sdk_client_fs: ADCMClient):
+    """Test run cluster action success"""
     stack_dir = utils.get_data_dir(__file__, "cluster_action_run_should_be_success")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(name=utils.random_string())
@@ -288,6 +318,7 @@ def test_cluster_action_run_should_be_success(sdk_client_fs: ADCMClient):
 
 
 def test_cluster_action_run_should_be_failed(sdk_client_fs: ADCMClient):
+    """Test run cluster action fail"""
     stack_dir = utils.get_data_dir(__file__, "cluster_action_run_should_be_success")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(name=utils.random_string())
@@ -299,6 +330,7 @@ def test_cluster_action_run_should_be_failed(sdk_client_fs: ADCMClient):
 
 
 def test_should_return_job_log_files(sdk_client_fs: ADCMClient):
+    """Test job log files"""
     stack_dir = utils.get_data_dir(__file__, "return_job_log_files")
     bundle = sdk_client_fs.upload_from_fs(stack_dir)
     cluster = bundle.cluster_create(name=utils.random_string())
@@ -316,6 +348,7 @@ def test_should_return_job_log_files(sdk_client_fs: ADCMClient):
 
 
 def test_load_bundle_with_undefined_config_parameter(sdk_client_fs: ADCMClient):
+    """Test upload bundle with unknown param"""
     stack_dir = utils.get_data_dir(__file__, "param_not_defined")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(stack_dir)
@@ -326,6 +359,7 @@ def test_load_bundle_with_undefined_config_parameter(sdk_client_fs: ADCMClient):
 def test_when_import_has_unknown_config_parameter_shouldnt_be_loaded(
     sdk_client_fs: ADCMClient,
 ):
+    """Test upload bundle with unknown import param"""
     bundledir = utils.get_data_dir(__file__, "import_has_unknown_parameter")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(bundledir)
@@ -334,6 +368,7 @@ def test_when_import_has_unknown_config_parameter_shouldnt_be_loaded(
 
 
 def test_when_bundle_hasnt_only_host_definition(sdk_client_fs: ADCMClient):
+    """Test upload bundle without cluster or provider definition"""
     bundledir = utils.get_data_dir(__file__, "host_wo_provider")
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(bundledir)
@@ -342,33 +377,33 @@ def test_when_bundle_hasnt_only_host_definition(sdk_client_fs: ADCMClient):
 
 
 def _get_invalid_bundle_config_params() -> List[ParameterSet]:
-    def get_pytest_param(bundle_name, adcm_err: ADCMError, msg: str):
+    def _get_pytest_param(bundle_name, adcm_err: ADCMError, msg: str):
         return pytest.param(utils.get_data_dir(__file__, bundle_name), (adcm_err, msg), id=bundle_name)
 
     return [
-        get_pytest_param(
+        _get_pytest_param(
             "did_not_load",
             errorcodes.STACK_LOAD_ERROR,
             "no config files in stack directory",
         ),
-        get_pytest_param("yaml_parser_error", errorcodes.STACK_LOAD_ERROR, "YAML decode"),
-        get_pytest_param(
+        _get_pytest_param("yaml_parser_error", errorcodes.STACK_LOAD_ERROR, "YAML decode"),
+        _get_pytest_param(
             "yaml_decode_duplicate_anchor",
             errorcodes.STACK_LOAD_ERROR,
             "found duplicate anchor",
         ),
-        get_pytest_param("expected_colon", errorcodes.STACK_LOAD_ERROR, "could not find expected ':'"),
-        get_pytest_param(
+        _get_pytest_param("expected_colon", errorcodes.STACK_LOAD_ERROR, "could not find expected ':'"),
+        _get_pytest_param(
             "missed_whitespace",
             errorcodes.STACK_LOAD_ERROR,
             "mapping values are not allowed here",
         ),
-        get_pytest_param(
+        _get_pytest_param(
             "expected_block_end",
             errorcodes.STACK_LOAD_ERROR,
             "expected <block end>, but found '-'",
         ),
-        get_pytest_param(
+        _get_pytest_param(
             "incorrect_option_definition",
             errorcodes.INVALID_OBJECT_DEFINITION,
             "Value of map key \"required\" should be a <class 'bool'>",
@@ -382,6 +417,7 @@ def _get_invalid_bundle_config_params() -> List[ParameterSet]:
     indirect=["bundle_archive"],
 )
 def test_invalid_bundle_config(sdk_client_fs: ADCMClient, bundle_archive, expected_error: Tuple[ADCMError, str]):
+    """Test upload bundle with invalid config"""
     (adcm_error, expected_msg) = expected_error
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         sdk_client_fs.upload_from_fs(bundle_archive)
