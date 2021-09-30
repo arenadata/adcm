@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""RBAC models"""
+
 from django.contrib.auth.models import User, Group, Permission
 from django.db import transaction
 from django.db import models
@@ -20,6 +22,12 @@ from adwp_base.errors import raise_AdwpEx as err
 
 
 class Role(models.Model):
+    """
+    Role is a list of Django permissions.
+    Role can be assigned to user or to group of users
+    Also Role can have childs and so produce acyclic graph of linked roles
+    """
+
     name = models.CharField(max_length=32, unique=True)
     description = models.TextField(blank=True)
     childs = models.ManyToManyField("self", symmetrical=False, blank=True)
@@ -28,6 +36,7 @@ class Role(models.Model):
     group = models.ManyToManyField(Group, blank=True)
 
     def get_permissions(self, role=None):
+        """Recursively get permissions of role and all her childs"""
         role_list = []
         perm_list = []
         if role is None:
@@ -47,6 +56,7 @@ class Role(models.Model):
         return perm_list
 
     def get_permissions_without_role(self, role_list):
+        """Get all permissions of user except specified role permissions"""
         perm_list = {}
         for r in role_list:
             if r == self:
@@ -56,6 +66,7 @@ class Role(models.Model):
         return perm_list
 
     def add_user(self, user):
+        """Add role and appropriate permissions to user"""
         if self in user.role_set.all():
             err('ROLE_ERROR', f'User "{user.username}" already has role "{self.name}"')
         with transaction.atomic():
@@ -66,6 +77,7 @@ class Role(models.Model):
         return self
 
     def remove_user(self, user):
+        """Remove role and appropriate permissions from user"""
         user_roles = user.role_set.all()
         if self not in user_roles:
             err('ROLE_ERROR', f'User "{user.username}" does not has role "{self.name}"')
@@ -79,10 +91,14 @@ class Role(models.Model):
 
 
 class RoleMigration(models.Model):
+    """Keep version of last role upgrade"""
+
     version = models.PositiveIntegerField(primary_key=True)
     date = models.DateTimeField(auto_now=True)
 
 
 class UserProfile(models.Model):
+    """Arbitrary information about user for frontend"""
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     profile = models.JSONField(default=str)

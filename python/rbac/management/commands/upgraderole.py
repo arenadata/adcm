@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""UpgradeRole command for Django manage.py"""
+
 from django.core.management.base import BaseCommand, CommandError
 
 from rbac.upgrade_role import init_roles

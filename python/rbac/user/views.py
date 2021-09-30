@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""User view sets"""
+
 from django.contrib.auth.models import User, Group
 from rest_framework import status
 from rest_framework import viewsets
@@ -27,7 +29,7 @@ from .serializers import UserSerializer, UserGroupSerializer, UserRoleSerializer
 
 # pylint: disable=too-many-ancestors
 class UserViewSet(viewsets.ModelViewSet):
-    """User View Set"""
+    """User view set"""
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -43,6 +45,8 @@ class UserGroupViewSet(
     DestroyModelMixin,
     viewsets.GenericViewSet,
 ):  # pylint: disable=too-many-ancestors
+    """User group view set"""
+
     queryset = Group.objects.all()
     serializer_class = UserGroupSerializer
     lookup_url_kwarg = 'group_id'
@@ -54,6 +58,7 @@ class UserGroupViewSet(
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_queryset(self):
+        """Filter user's groups"""
         return self.queryset.filter(user__id=self.kwargs.get('id'))
 
     def get_serializer_context(self):
@@ -72,6 +77,8 @@ class UserRoleViewSet(
     DestroyModelMixin,
     viewsets.GenericViewSet,
 ):  # pylint: disable=too-many-ancestors
+    """User group view set"""
+
     queryset = Role.objects.all()
     serializer_class = UserRoleSerializer
     lookup_url_kwarg = 'role_id'
@@ -83,6 +90,7 @@ class UserRoleViewSet(
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_queryset(self):
+        """Filter user's roles"""
         return self.queryset.filter(user__id=self.kwargs.get('id'))
 
     def get_serializer_context(self):

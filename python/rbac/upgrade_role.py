@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Init or upgrade RBAC roles and permissions"""
+
 import os
 import ruyaml
 from os.path import dirname
@@ -31,6 +33,7 @@ ROLE_SCHEMA = os.path.join(CODE_DIR, 'rbac', 'role_schema.yaml')
 
 
 def upgrade(data):
+    """Upgrade roles and user permissions"""
     new_roles = {}
     for role in data['roles']:
         new_roles[role['name']] = upgrade_role(role, data)
@@ -55,6 +58,7 @@ def upgrade(data):
 
 
 def find_role(name, roles):
+    """search role in role list by name"""
     for role in roles:
         if role['name'] == name:
             return role
@@ -62,6 +66,7 @@ def find_role(name, roles):
 
 
 def check_roles_childs(data):
+    """Check if role childs name are exist in specification file"""
     for role in data['roles']:
         if 'childs' in role:
             for child in role['childs']:
@@ -69,6 +74,7 @@ def check_roles_childs(data):
 
 
 def get_role_permissions(role, data):
+    """Retrieve all role's permissions"""
     all_perm = []
     if 'apps' not in role:
         return []
@@ -91,6 +97,7 @@ def get_role_permissions(role, data):
 
 
 def upgrade_role(role, data):
+    """Upgrade single role"""
     perm_list = get_role_permissions(role, data['roles'])
     try:
         new_role = Role.objects.get(name=role['name'])
@@ -107,6 +114,11 @@ def upgrade_role(role, data):
 
 
 def get_role_spec():
+    """
+    Read and parse roles specification from role_spec.yaml file.
+    Specification file structure is checked against role_schema.yaml file.
+    (see https://github.com/arenadata/yspec for details about schema syntaxis)
+    """
     try:
         with open(ROLE_SPEC, encoding='utf_8') as fd:
             data = ruyaml.round_trip_load(fd)
@@ -133,6 +145,11 @@ def get_role_spec():
 
 
 def init_roles():
+    """
+    Init or upgrade roles and permissions in DB
+    To run upgrade call
+    manage.py upgarderole
+    """
     role_data = get_role_spec()
     check_roles_childs(role_data)
 

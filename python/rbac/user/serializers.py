@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""User serializers"""
+
 from django.db import models
 from django.db.transaction import atomic
 from django.contrib.auth.models import User, Group, Permission
@@ -31,16 +33,20 @@ class PasswordField(serializers.CharField):
 
 
 def get_group_url(self, obj):
+    """get group URL rbac/user/1/group/1/"""
     kwargs = {'id': self.context['user'].id, 'group_id': obj.id}
     return reverse('rbac-user-group-detail', kwargs=kwargs, request=self.context['request'])
 
 
 def get_role_url(self, obj):
+    """get role URL rbac/user/1/role/1/"""
     kwargs = {'id': self.context['user'].id, 'role_id': obj.id}
     return reverse('rbac-user-role-detail', kwargs=kwargs, request=self.context['request'])
 
 
 class GroupSerializer(serializers.ModelSerializer):
+    """Group serializer"""
+
     url = serializers.SerializerMethodField()
     get_url = get_group_url
 
@@ -69,6 +75,8 @@ class RoleSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
 
 
 class PermissionSerializer(serializers.ModelSerializer):
+    """Permission serializer"""
+
     app_label = serializers.SerializerMethodField()
     model = serializers.SerializerMethodField()
 
@@ -89,6 +97,8 @@ class PermissionSerializer(serializers.ModelSerializer):
 
 
 class ProfileField(serializers.JSONField):
+    """Get profile field from one to one model UserProfile"""
+
     def get_attribute(self, instance):
         return instance.userprofile.profile
 
@@ -139,6 +149,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
 
     @atomic
     def create(self, validated_data):
+        """Create User and UserProile"""
         extra_fields = {}
 
         def set_extra(name):

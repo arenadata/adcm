@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""View and serializer for Authentication token"""
+
 import django.contrib.auth
 
 import rest_framework
@@ -22,6 +24,8 @@ from adwp_base.errors import AdwpEx
 
 
 class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
+    """Authentication token serializer"""
+
     def validate(self, attrs):
         user = django.contrib.auth.authenticate(
             username=attrs.get('username'), password=attrs.get('password')
@@ -33,6 +37,8 @@ class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
 
 
 class GetAuthToken(GenericAPIView):
+    """Authentication token view"""
+
     authentication_classes = (rest_framework.authentication.TokenAuthentication,)
     permission_classes = (rest_framework.permissions.AllowAny,)
     serializer_class = AuthSerializer

@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""RBAC root URLs"""
+
 from django.urls import path, include
 
 from .root import RBACRoot

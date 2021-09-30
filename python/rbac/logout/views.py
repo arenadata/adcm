@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Logout view and serializer"""
+
 import django.contrib.auth
 
 from rest_framework import status
@@ -19,10 +21,12 @@ from rest_framework import serializers
 
 
 class LogOutSerializer(serializers.Serializer):
-    pass
+    """Logout serializer (because DRF need one)"""
 
 
 class LogOut(GenericAPIView):
+    """Logout view"""
+
     serializer_class = LogOutSerializer
 
     def post(self, request, *args, **kwargs):
