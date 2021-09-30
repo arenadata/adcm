@@ -759,12 +759,17 @@ availability_set_or_none:
   match: one_of
   variants:
     - availability_set
+    - unavailability_set
     - none
 
 availability_set:
   match: dict
   items:
     available: any_or_list
+
+unavailability_set:
+  match: dict
+  items:
     unavailable: any_or_list
 
 post_action:
