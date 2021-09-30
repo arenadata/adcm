@@ -118,7 +118,6 @@ class GroupConfigTest(TestCase):
     def test_create_group_keys(self):
         """Test create_group_keys() method"""
         group = self.create_group('group', self.cluster.id, 'cluster')
-        config = {'level1_1': 'str', 'level1_2': 1, 'level1_3': {'level2_1': [1, 2, 3]}}
         utils.gen_prototype_config(
             prototype=self.cluster.prototype,
             name='level1_1',
@@ -144,13 +143,21 @@ class GroupConfigTest(TestCase):
             field_type='list',
             group_customization=True,
         )
-        test_group_keys = {'level1_1': False, 'level1_2': False, 'level1_3': {'level2_1': False}}
+        test_group_keys = {
+            'activatable_group': {'integer': False},
+            'group': {'string': False},
+            'level1_1': False,
+            'level1_2': False,
+            'level1_3': {'level2_1': False},
+        }
         test_custom_group_keys = {
+            'activatable_group': {'integer': False},
+            'group': {'string': False},
             'level1_1': True,
             'level1_2': False,
             'level1_3': {'level2_1': True},
         }
-        group_keys, custom_group_keys = group.create_group_keys(config, group.get_config_spec())
+        group_keys, custom_group_keys = group.create_group_keys(group.get_config_spec())
         self.assertDictEqual(test_group_keys, group_keys)
         self.assertDictEqual(test_custom_group_keys, custom_group_keys)
 
