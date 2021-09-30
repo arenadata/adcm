@@ -15,11 +15,20 @@
   version: 1.5
   edition: community
   config_group_customization: true
-
+  actions:
+    test_action:
+      type: job
+      script: ./dummy_action_cluster.yaml
+      script_type: ansible
+      states:
+        available:
+          - created
+        on_success: installed
   config:
     - name: float
       type: float
       required: false
+      default: 0.1
       group_customization: true
     - name: boolean
       type: boolean
@@ -67,9 +76,11 @@
       required: false
       default: text
       group_customization: true
-    - name: activatable_group
+    - name: group
       type: group
       activatable: True
+      active: True
+      group_customization: true
       subs:
         - name: readonly-key
           type: string
@@ -105,10 +116,18 @@
 - name: test_service_1
   type: service
   version: '1.0'
+  actions:
+    test_action:
+      type: job
+      script: ./dummy_action_service.yaml
+      script_type: ansible
+      states:
+        available: any
   config:
     - name: float
       type: float
       required: false
+      default: 0.1
       group_customization: true
     - name: boolean
       type: boolean
@@ -156,9 +175,11 @@
       required: false
       default: text
       group_customization: true
-    - name: activatable_group
+    - name: group
       type: group
       activatable: True
+      active: True
+      group_customization: true
       subs:
         - name: readonly-key
           type: string
@@ -175,8 +196,8 @@
     - name: structure
       type: structure
       required: false
-      group_customization: true
       yspec: ./schema.yaml
+      group_customization: true
       default:
         - code: 1
           country: Test1
@@ -193,10 +214,20 @@
   components:
     first:
       constraint: [1,+]
+      actions:
+        test_action:
+          type: job
+          script: ./dummy_action_component.yaml
+          script_type: ansible
+          states:
+            available:
+              - created
+            on_success: installed
       config:
         - name: float
           type: float
           required: false
+          default: 0.1
           group_customization: true
         - name: boolean
           type: boolean
@@ -244,9 +275,11 @@
           required: false
           default: text
           group_customization: true
-        - name: activatable_group
+        - name: group
           type: group
           activatable: True
+          active: True
+          group_customization: true
           subs:
             - name: readonly-key
               type: string

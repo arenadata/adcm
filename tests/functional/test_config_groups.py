@@ -15,6 +15,7 @@ from collections import OrderedDict
 from typing import (
     Tuple,
     Union,
+    Optional,
 )
 
 import allure
@@ -28,8 +29,15 @@ from adcm_client.objects import (
     Host,
     GroupConfig,
     Component,
+    Task,
 )
 from adcm_pytest_plugin import utils
+from adcm_pytest_plugin.steps.actions import (
+    run_cluster_action_and_assert_result,
+    run_service_action_and_assert_result,
+    run_component_action_and_assert_result,
+    run_provider_action_and_assert_result,
+)
 from adcm_pytest_plugin.utils import get_data_dir
 from coreapi.exceptions import ErrorMessage
 
@@ -86,13 +94,21 @@ def create_two_hosts(provider) -> Tuple[Host, Host]:
 
 
 @pytest.fixture()
-def cluster_with_components(create_two_hosts, cluster: Cluster, provider: Provider) -> Tuple[Service, Host, Host]:
+def cluster_with_two_hosts_on_it(create_two_hosts, cluster: Cluster, provider: Provider) -> Tuple[Host, Host, Cluster]:
     """Add service, two hosts and create components to check intersection in config groups"""
 
-    service = cluster.service_add(name='test_service_1')
     test_host_1, test_host_2 = create_two_hosts
     cluster.host_add(test_host_1)
     cluster.host_add(test_host_2)
+    return test_host_1, test_host_2, cluster
+
+
+@pytest.fixture()
+def cluster_with_components(cluster_with_two_hosts_on_it) -> Tuple[Service, Host, Host]:
+    """Add service, two hosts and create components to check intersection in config groups"""
+
+    test_host_1, test_host_2, cluster = cluster_with_two_hosts_on_it
+    service = cluster.service_add(name='test_service_1')
     cluster.hostcomponent_set(
         (test_host_1, service.component(name=FIRST_COMPONENT_NAME)),
         (test_host_2, service.component(name=FIRST_COMPONENT_NAME)),
@@ -161,12 +177,10 @@ def _create_group_and_add_host(
 
 
 class TestGroupsIntersection:
-    def test_that_groups_not_allowed_to_intersect_in_cluster(self, sdk_client_fs, cluster, create_two_hosts):
+    def test_that_groups_not_allowed_to_intersect_in_cluster(self, sdk_client_fs, cluster_with_two_hosts_on_it):
         """Test that groups are not allowed to intersect in cluster"""
 
-        test_host_1, test_host_2 = create_two_hosts
-        cluster.host_add(test_host_1)
-        cluster.host_add(test_host_2)
+        test_host_1, test_host_2, cluster = cluster_with_two_hosts_on_it
         _create_group_and_add_host(cluster, test_host_1)
         with allure.step("Create the second group for cluster and check that not allowed to add the first host to it"):
             cluster_group_2 = cluster.group_config_create(name=SECOND_GROUP)
@@ -339,28 +353,75 @@ class TestDeleteHostInGroups:
 class TestChangeGroupsConfig:
     """Tests for changing group config"""
 
-    ASSERT_TYPE = ["float", "boolean", "integer", "string", "list", "file", "option", "text", "structure", "map"]
+    ASSERT_TYPE = ["float", "boolean", "integer", "string", "list", "option", "text", "group", "structure", "map"]
 
-    PARAMS_TO_CHANGE = {
-        "attr": {},
-        "config": {
-            "float": 1.1,
-            "boolean": False,
-            "integer": 0,
-            "password": "123",
-            "string": "string2",
-            "list": ["/dev/rdisk0s4", "/dev/rdisk0s5", "/dev/rdisk0s6"],
-            "file": "file content test",
-            "option": "WEEKLY",
-            "text": "testtext",
-            "structure": [{"code": 3, "country": "Test1"}, {"code": 4, "country": "Test2"}],
-            "map": {"age": "20", "name": "Chloe", "sex": "f"},
-        },
-    }
+    PARAMS_TO_CHANGE = [
+        1.1,
+        False,
+        0,
+        "string2",
+        ["/dev/rdisk0s4", "/dev/rdisk0s5", "/dev/rdisk0s6"],
+        "WEEKLY",
+        "testtext",
+        {"readonly-key": "value", "writable-key": "value test 2", "required": 0},
+        [{"code": 3, "country": "Test1"}, {"code": 4, "country": "Test2"}],
+        {"age": "20", "name": "Chloe", "sex": "f"},
+        "123",
+        "file content test",
+    ]
 
-    @allure.step("Check group config has been changed")
-    def _check_changed_values_in_group(
-        self, values_after: OrderedDict, values_before: OrderedDict, expected_values: dict = PARAMS_TO_CHANGE["config"]
+    def add_values_to_group_config_template(self, params: list = PARAMS_TO_CHANGE) -> dict:
+        (
+            float_value,
+            boolean_value,
+            integer_value,
+            string_value,
+            list_value,
+            option,
+            text,
+            group,
+            structure,
+            map,
+            password,
+            file,
+        ) = params
+        return {
+            "attr": {
+                "group": {"active": True},
+                "group_keys": {
+                    "group": {"readonly-key": True, "writable-key": True, "required": True},
+                    "float": True,
+                    "boolean": True,
+                    "integer": True,
+                    "password": True,
+                    "string": True,
+                    "list": True,
+                    "file": True,
+                    "option": True,
+                    "text": True,
+                    "structure": True,
+                    "map": True,
+                },
+            },
+            "config": {
+                "float": float_value,
+                "boolean": boolean_value,
+                "integer": integer_value,
+                "password": password,
+                "string": string_value,
+                "list": list_value,
+                "file": file,
+                "option": option,
+                "text": text,
+                "group": group,
+                "structure": structure,
+                "map": map,
+            },
+        }
+
+    @allure.step("Check group config values are equal expected")
+    def _check_values_in_group(
+        self, values_after: Union[OrderedDict, dict], expected_values: dict, values_before: Optional[OrderedDict] = None
     ):
         """Checks that params in config group are equal to expected and password has been changed"""
 
@@ -368,22 +429,79 @@ class TestChangeGroupsConfig:
             assert (
                 values_after[item] == expected_values[item]
             ), f'Value is "{values_after[item]}", but should be {expected_values[item]}'
+        if values_before:
             assert values_after["password"] != values_before["password"], "Password has not changed"
+        if values_after["file"]:
+            assert values_after["file"] == expected_values["file"], "File has not changed"
+
+    @allure.step("Get group config values from logs in task")
+    def _get_host_config_from_log(self, log, host_name) -> dict:
+        """Create dict with group config values from logs in task"""
+
+        config_string = log.split(f"[{host_name}]")[1].split("msg: \'")[1].split("\n")[0]
+        config_list = config_string.replace("''", "'").split(";")
+        config_list[0] = float(config_list[0])
+        config_list[1] = bool(config_list[1] is True or config_list[1] == "True")
+        config_list[2] = int(config_list[2])
+        config_list[4] = (
+            config_list[4]
+            if isinstance(config_list[4], list)
+            else config_list[4].replace(" ", "").replace("'", "").replace("]", "").replace("[", "").split(",")
+        )
+        config_list[7] = eval(config_list[7])
+        config_list[8] = [
+            {
+                "code": int(config_list[8].split("code':")[1].split(',')[0]),
+                "country": config_list[8].split("country': '")[1].split("'}")[0],
+            },
+            {
+                "code": int(config_list[8].split("code':")[2].split(',')[0]),
+                "country": config_list[8].split("country': '")[2].split("'}")[0],
+            },
+        ]
+        config_list[9] = eval(config_list[9][:-1])
+        config_list.append(None)
+        config_list.append(None)
+        return self.add_values_to_group_config_template(config_list)
+
+    def check_group_config_from_action_log(
+        self,
+        task: Task,
+        test_host_1: Host,
+        test_host_2: Host,
+        config_expected: dict,
+        config_before: Optional[OrderedDict] = None,
+    ):
+        with allure.step("Check that first host config has been changed"):
+            test_host_1_task_log = self._get_host_config_from_log(
+                log=task.job().log_list().data[0].content, host_name=test_host_1.fqdn
+            )
+            self._check_values_in_group(test_host_1_task_log['config'], config_expected['config'], config_before)
+        with allure.step("Check that second host config has not been changed"):
+            test_host_2_task_log = self._get_host_config_from_log(
+                log=task.job().log_list().data[0].content, host_name=test_host_2.fqdn
+            )
+            self._check_values_in_group(values_after=test_host_2_task_log['config'], expected_values=config_before)
 
     @pytest.mark.parametrize(
         "cluster_bundle",
         [pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group")],
         indirect=True,
     )
-    def test_change_group_in_cluster(self, cluster_bundle, sdk_client_fs):
+    def test_change_group_in_cluster(self, cluster_bundle, cluster_with_two_hosts_on_it):
         """Test that groups in cluster are allowed change with group_customization: true"""
 
-        cluster = cluster_bundle.cluster_create(name=utils.random_string())
-        with allure.step("Create config group for cluster"):
-            cluster_group = cluster.group_config_create(name=FIRST_GROUP)
+        test_host_1, test_host_2, cluster = cluster_with_two_hosts_on_it
+        with allure.step("Create config group for cluster and add first host"):
+            cluster_group = _create_group_and_add_host(cluster, test_host_1)
             config_before = cluster_group.config()
-        config_after = cluster_group.config_set_diff(self.PARAMS_TO_CHANGE)['config']
-        self._check_changed_values_in_group(config_after, config_before)
+        config_expected = self.add_values_to_group_config_template()
+        config_after = cluster_group.config_set_diff(config_expected)
+        self._check_values_in_group(
+            values_after=config_after['config'], expected_values=config_expected['config'], values_before=config_before
+        )
+        task = run_cluster_action_and_assert_result(cluster, action="test_action")
+        self.check_group_config_from_action_log(task, test_host_1, test_host_2, config_expected, config_before)
 
     @pytest.mark.parametrize(
         "cluster_bundle",
@@ -393,11 +511,17 @@ class TestChangeGroupsConfig:
     def test_change_group_in_service(self, cluster_bundle, sdk_client_fs, cluster_with_components):
         """Test that groups in service are allowed change with group_customization: true"""
 
-        service, test_host_1, _ = cluster_with_components
-        service_group = _create_group_and_add_host(service, test_host_1)
-        config_before = service_group.config()
-        config_after = service_group.config_set_diff(self.PARAMS_TO_CHANGE)['config']
-        self._check_changed_values_in_group(config_after, config_before)
+        service, test_host_1, test_host_2 = cluster_with_components
+        with allure.step("Create config group for service and add first host"):
+            service_group = _create_group_and_add_host(service, test_host_1)
+            config_before = service_group.config()
+        config_expected = self.add_values_to_group_config_template()
+        config_after = service_group.config_set_diff(config_expected)
+        self._check_values_in_group(
+            values_after=config_after['config'], expected_values=config_expected['config'], values_before=config_before
+        )
+        task = run_service_action_and_assert_result(service, action="test_action")
+        self.check_group_config_from_action_log(task, test_host_1, test_host_2, config_expected, config_before)
 
     @pytest.mark.parametrize(
         "cluster_bundle",
@@ -407,22 +531,35 @@ class TestChangeGroupsConfig:
     def test_change_group_in_component(self, cluster_bundle, sdk_client_fs, cluster_with_components):
         """Test that groups in component are allowed change with group_customization: true"""
 
-        service, test_host_1, _ = cluster_with_components
-        component_group = _create_group_and_add_host(service.component(name=FIRST_COMPONENT_NAME), test_host_1)
-        config_before = component_group.config()
-        config_after = component_group.config_set_diff(self.PARAMS_TO_CHANGE)['config']
-        self._check_changed_values_in_group(config_after, config_before)
+        service, test_host_1, test_host_2 = cluster_with_components
+        component = service.component(name=FIRST_COMPONENT_NAME)
+        with allure.step("Create config group for components and add first host"):
+            component_group = _create_group_and_add_host(component, test_host_1)
+            config_before = component_group.config()
+        config_expected = self.add_values_to_group_config_template()
+        config_after = component_group.config_set_diff(config_expected)
+        self._check_values_in_group(
+            values_after=config_after['config'], expected_values=config_expected['config'], values_before=config_before
+        )
+        task = run_component_action_and_assert_result(component, action="test_action")
+        self.check_group_config_from_action_log(task, test_host_1, test_host_2, config_expected, config_before)
 
     @pytest.mark.parametrize(
         "provider_bundle",
         [pytest.param(get_data_dir(__file__, PROVIDER_BUNDLE_WITH_GROUP_PATH), id="provider_with_group")],
         indirect=True,
     )
-    def test_change_group_in_provider(self, sdk_client_fs, provider_bundle):
+    def test_change_group_in_provider(self, sdk_client_fs, provider_bundle, provider, create_two_hosts):
         """Test that groups in provider are allowed change with group_customization: true"""
 
-        provider = provider_bundle.provider_create(name=utils.random_string())
-        provider_group = _create_group_and_add_host(provider, provider.host_create(fqdn=FIRST_HOST))
-        config_before = provider_group.config()
-        config_after = provider_group.config_set_diff(self.PARAMS_TO_CHANGE)['config']
-        self._check_changed_values_in_group(config_after, config_before)
+        test_host_1, test_host_2 = create_two_hosts
+        with allure.step("Create config group for provider and add first host"):
+            provider_group = _create_group_and_add_host(provider, test_host_1)
+            config_before = provider_group.config()
+        config_expected = self.add_values_to_group_config_template()
+        config_after = provider_group.config_set_diff(config_expected)
+        self._check_values_in_group(
+            values_after=config_after['config'], expected_values=config_expected['config'], values_before=config_before
+        )
+        task = run_provider_action_and_assert_result(provider, action="test_action")
+        self.check_group_config_from_action_log(task, test_host_1, test_host_2, config_expected, config_before)

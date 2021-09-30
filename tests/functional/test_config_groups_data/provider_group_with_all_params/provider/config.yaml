@@ -13,10 +13,20 @@
 - type: provider
   name: provider_sample
   version: "0.3"
+  actions:
+    test_action:
+      type: job
+      script: ./dummy_action_provider.yaml
+      script_type: ansible
+      states:
+        available:
+          - created
+        on_success: installed
   config:
     - name: float
       type: float
       required: false
+      default: 0.1
       group_customization: true
     - name: boolean
       type: boolean
@@ -64,9 +74,11 @@
       required: false
       default: text
       group_customization: true
-    - name: activatable_group
+    - name: group
       type: group
       activatable: True
+      active: True
+      group_customization: true
       subs:
         - name: readonly-key
           type: string
