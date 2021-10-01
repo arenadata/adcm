@@ -180,6 +180,13 @@
                 on_fail: created
             params:
                 qwe: 42
+        set_multi_states:
+          type: job
+          script: ansible/set_multi.yaml
+          script_type: ansible
+          states:
+            available:
+              - created
         run:
             type: job
             script: ansible/run.yaml
