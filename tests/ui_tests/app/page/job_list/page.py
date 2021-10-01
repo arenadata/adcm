@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Job List page PageObjects classes"""
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import TypeVar, Union, List
@@ -23,13 +26,15 @@ from tests.ui_tests.app.page.common.base_page import (
     PageHeader,
     PageFooter,
 )
-from tests.ui_tests.app.page.common.header import AuthorizedHeaderLocators
+from tests.ui_tests.app.page.common.header_locators import AuthorizedHeaderLocators
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.app.page.job_list.locators import TaskListLocators
 
 
 class JobStatus(Enum):
+    """Available job statuses"""
+
     RUNNING = 'running'
     SUCCESS = 'success'
     FAILED = 'failed'
@@ -64,6 +69,8 @@ TaskInfo = TypeVar('TaskInfo', bound=Union[PopupTaskInfo, TableTaskInfo])
 
 
 class JobListPage(BasePageObject):
+    """Job List Page class"""
+
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/task")
         self.header = PageHeader(self.driver, self.base_url)
@@ -175,6 +182,7 @@ class JobListPage(BasePageObject):
         raise KeyError('Job status not found in class string: %s' % str(class_string))
 
     def get_selected_filter(self):
+        """Get selected filter text"""
         for filter_element in self.find_elements(TaskListLocators.Filter.filter_btn):
             if filter_element.get_attribute("aria-pressed") == "true":
                 return filter_element.text

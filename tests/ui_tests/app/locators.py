@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Locator constants"""
+
 # Created by a1wen at 05.03.19
 from deprecated import deprecated
 

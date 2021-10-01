@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Common fixtures and methods for ADCM UI tests"""
+
 # pylint:disable=redefined-outer-name
 
 import os
