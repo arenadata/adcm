@@ -26,8 +26,8 @@ import { FormGroup } from '@angular/forms';
       <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form" [showCheckbox]="showCheckbox"
                         [groupForm]="groupsForm"></app-group-fields>
       <ng-template #one>
-        <div class="field-row row d-flex">
-          <ng-container *ngIf="!item.hidden">
+        <ng-container *ngIf="!item.hidden">
+          <div class="field-row row d-flex">
             <ng-container *ngIf="showCheckbox">
               <div class="group-checkbox d-flex" style="padding: 5px">
                 <app-config-group-checkbox appTooltip="Not available for this parameter"
@@ -37,9 +37,8 @@ import { FormGroup } from '@angular/forms';
             </ng-container>
             <app-field class="w100" [form]="form" [options]="item"
                        [ngClass]="{ 'read-only': item.read_only }"></app-field>
-          </ng-container>
-
-        </div>
+          </div>
+        </ng-container>
       </ng-template>
     </ng-container>
   `,
