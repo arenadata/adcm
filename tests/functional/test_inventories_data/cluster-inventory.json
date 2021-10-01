@@ -19,17 +19,19 @@
                      "writable-when-installed": null,
                      "read-only-when-runned": null
                   },
-                  "name": "new_",
+                  "name": "dumMxpQA",
                   "id": 1,
                   "version": "1.001",
                   "edition": "community",
-                  "state": "created"
+                  "state": "created",
+                  "multi_state": []
                },
                "services": {
                   "zookeeper": {
                      "id": 1,
                      "version": "3.4.10",
                      "state": "created",
+                     "multi_state": [],
                      "config": {
                         "dirs": {
                            "data": "/var/lib/zookeeper"
@@ -43,11 +45,39 @@
                      },
                      "ZOOKEEPER_CLIENT": {
                         "component_id": 1,
-                        "config": {}
+                        "config": {
+                           "sc-required": 10111,
+                           "sc-str-key": "value",
+                           "sc-int_key": 130,
+                           "sc-float_key": 154.7,
+                           "sc-bool": true,
+                           "sc-option": null,
+                           "sc-json": [
+                              {
+                                 "test": 1
+                              }
+                           ],
+                           "sc-text-type": "lorem ipsum sum",
+                           "sc-file-type": null
+                        },
+                        "state": "created",
+                        "multi_state": []
                      },
                      "ZOOKEEPER_SERVER": {
                         "component_id": 2,
-                        "config": {}
+                        "config": {
+                           "required": 10,
+                           "str-key": "value",
+                           "int_key": 150,
+                           "float_key": 34.7,
+                           "bool": false,
+                           "option": null,
+                           "json": {},
+                           "text-type": "lorem ipsum",
+                           "file-type": null
+                        },
+                        "state": "created",
+                        "multi_state": []
                      }
                   }
                }
