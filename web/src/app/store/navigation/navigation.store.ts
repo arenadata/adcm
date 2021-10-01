@@ -52,6 +52,10 @@ export function getEventEntityType(type: string): TypeName {
       return 'service';
     case ConcernEventType.ServiceComponent:
       return 'servicecomponent';
+    case ConcernEventType.Host:
+      return 'host';
+    case ConcernEventType.HostProvider:
+      return 'provider';
   }
 }
 
