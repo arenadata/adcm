@@ -437,6 +437,7 @@ def copy_stage_actons(stage_actions, prototype):
             'script',
             'script_type',
             'state_available',
+            'state_unavailable',
             'state_on_success',
             'state_on_fail',
             'multi_state_available',

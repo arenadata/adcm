@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for ADCM ansible plugins"""
+
 import allure
 import pytest
 from adcm_client.objects import ADCMClient

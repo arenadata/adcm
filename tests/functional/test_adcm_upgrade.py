@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for ADCM upgrade"""
+
 # pylint:disable=redefined-outer-name
 from typing import Tuple, Union
 
@@ -37,12 +39,14 @@ AVAILABLE_ACTIONS = {
 
 @pytest.fixture(scope="session")
 def upgrade_target(cmd_opts) -> Tuple[str, str]:
+    """Actual ADCM version"""
     if not cmd_opts.adcm_image:
         pytest.fail("CLI parameter adcm_image should be provided")
     return tuple(cmd_opts.adcm_image.split(":", maxsplit=2))  # type: ignore
 
 
 def old_adcm_images():
+    """A list of old ADCM images"""
     return parametrized_by_adcm_version(adcm_min_version="2019.10.08")[0]
 
 

@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""UI tests for number type config fields"""
+
 import allure
 import pytest
 from adcm_client.objects import ADCMClient
@@ -58,6 +60,7 @@ def test_number_validation(sdk_client_fs: ADCMClient, path, app_fs):
 
 @pytest.mark.parametrize(("number_type", "value"), RANGE_VALUES)
 def test_number_in_range_values(sdk_client_fs: ADCMClient, value, app_fs, number_type):
+    """Test save button is active for valid number values"""
     path = get_data_dir(__file__) + f"/bundles/{number_type}-positive_and_negative"
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     fields = config.get_app_fields()
@@ -68,6 +71,7 @@ def test_number_in_range_values(sdk_client_fs: ADCMClient, value, app_fs, number
 
 
 def test_float_in_integer_field(sdk_client_fs: ADCMClient, app_fs):
+    """Test set float value for integer field"""
     path = get_data_dir(__file__) + "/bundles/integer-positive_and_negative"
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     fields = config.get_app_fields()

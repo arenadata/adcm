@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Cluster page locators"""
 
 from selenium.webdriver.common.by import By
 
@@ -63,6 +64,8 @@ class ClusterImportLocators:
     import_item_block = Locator(By.CSS_SELECTOR, ".items div[class*='group']", "Import item block")
 
     class ImportItem:
+        """Cluster import page import item elements locators"""
+
         name = Locator(By.CSS_SELECTOR, "h3", "Import item name")
         import_chbx = Locator(By.CSS_SELECTOR, "mat-checkbox", "Import checkbox")
         description = Locator(By.CSS_SELECTOR, "app-exports>div>div", "Description text")
@@ -74,6 +77,8 @@ class ClusterHostLocators:
     add_host_btn = Locator(By.CSS_SELECTOR, "button[adcm_test='create-btn']", "Add host button")
 
     class HostTable(HostListLocators.HostTable):
+        """Cluster host page host table elements locators"""
+
         ...
 
 
@@ -98,11 +103,15 @@ class ClusterComponentsLocators:
     )
 
     class Row:
+        """Cluster components page row elements locators"""
+
         name = Locator(By.XPATH, ".//button[@mat-button]/span/span[not(contains(@class, 'warn'))]", "Item name")
         number = Locator(By.CSS_SELECTOR, "button[mat-raised-button] span:first-of-type", "Amount of links")
         relations_row = Locator(By.CSS_SELECTOR, "div[class*='relations-list']", "Row with relations")
 
         class RelationsRow:
+            """Cluster components page relations row elements locators"""
+
             name = Locator(By.CSS_SELECTOR, "div>span", "Related item name")
             delete_btn = Locator(By.CSS_SELECTOR, "button", "Delete item button")
 
@@ -114,9 +123,13 @@ class ClusterStatusLocators:
     group_row = Locator(By.CSS_SELECTOR, "mat-expansion-panel", "Group row")
 
     class GroupRow:
+        """Cluster status page group row elements locators"""
+
         service_group = Locator(By.CSS_SELECTOR, "div[class*='mat-expansion-panel-content']", "Service group")
 
         class ServiceGroupRow:
+            """Cluster status page service group row elements locators"""
+
             service_name = Locator(By.XPATH, ".//div[not(contains(@class, 'component'))]/span", "Service name")
             host_name = Locator(By.CSS_SELECTOR, "div[class*='component']>span>span", "Host name")
 
@@ -128,4 +141,6 @@ class ClusterActionLocators:
     info_text = Locator(By.CSS_SELECTOR, "app-action-card p", "Text on action page")
 
     class ActionCard:
+        """Cluster action page action card elements locators"""
+
         play_btn = Locator(By.CSS_SELECTOR, "button", "Action run button")

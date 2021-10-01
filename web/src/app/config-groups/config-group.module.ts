@@ -12,6 +12,8 @@ import { LIST_SERVICE_PROVIDER } from '../shared/components/list/list-service-to
 import { ConfigGroupHostListComponent } from './pages';
 import { AddHostToConfigGroupComponent } from './components';
 import { MatPaginatorModule } from '@angular/material/paginator';
+import { ConfigGroupCheckboxComponent } from './components/config-group-checkbox/config-group-checkbox.component';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 
 @NgModule({
@@ -19,7 +21,8 @@ import { MatPaginatorModule } from '@angular/material/paginator';
     ConfigGroupListComponent,
     AddConfigGroupComponent,
     ConfigGroupHostListComponent,
-    AddHostToConfigGroupComponent
+    AddHostToConfigGroupComponent,
+    ConfigGroupCheckboxComponent
   ],
   imports: [
     CommonModule,
@@ -28,10 +31,12 @@ import { MatPaginatorModule } from '@angular/material/paginator';
     MatListModule,
     AddingModule,
     FormElementsModule,
-    MatPaginatorModule
+    MatPaginatorModule,
+    MatCheckboxModule
   ],
   exports: [
     AddConfigGroupComponent,
+    ConfigGroupCheckboxComponent,
   ],
   providers: [
     {

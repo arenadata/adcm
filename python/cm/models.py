@@ -300,9 +300,7 @@ class ConfigLog(ADCMModel):
                 update(config, diff)
                 group_config.config = config
                 attr = deepcopy(self.attr)
-                group_keys, custom_group_keys = cg.create_group_keys(
-                    self.config, cg.get_config_spec()
-                )
+                group_keys, custom_group_keys = cg.create_group_keys(cg.get_config_spec())
                 attr.update({'group_keys': group_keys, 'custom_group_keys': custom_group_keys})
                 update(attr, current_group_config.attr)
                 group_config.attr = attr
@@ -315,7 +313,7 @@ class ConfigLog(ADCMModel):
             # `custom_group_keys` read only field in attr,
             # needs to be replaced when creating an object with ORM
             # for api it is checked in /cm/adcm_config.py:check_custom_group_keys_attr()
-            _, custom_group_keys = obj.create_group_keys(self.config, obj.get_config_spec())
+            _, custom_group_keys = obj.create_group_keys(obj.get_config_spec())
             self.attr.update({'custom_group_keys': custom_group_keys})
 
         super().save(*args, **kwargs)
@@ -361,13 +359,6 @@ class ADCMEntity(ADCMModel):
         issue_name = issue_type.gen_issue_name(self)
         for issue in self.concerns.filter(type=ConcernType.Issue, name=issue_name):
             return issue
-
-    @property
-    def display_name(self):
-        """Unified `display name` for object's string representation"""
-        own_name = getattr(self, 'name', None)
-        fqdn = getattr(self, 'fqdn', None)
-        return own_name or fqdn or self.prototype.display_name or self.prototype.name
 
     def __str__(self):
         own_name = getattr(self, 'name', None)
@@ -436,6 +427,10 @@ class ADCM(ADCMEntity):
         return self.prototype.bundle_id
 
     @property
+    def display_name(self):
+        return self.name
+
+    @property
     def serialized_issue(self):
         result = {
             'id': self.id,
@@ -468,6 +463,10 @@ class Cluster(ADCMEntity):
     @property
     def license(self):
         return self.prototype.bundle.license
+
+    @property
+    def display_name(self):
+        return self.name
 
     def __str__(self):
         return f'{self.name} ({self.id})'
@@ -506,6 +505,10 @@ class HostProvider(ADCMEntity):
     def license(self):
         return self.prototype.bundle.license
 
+    @property
+    def display_name(self):
+        return self.name
+
     def __str__(self):
         return str(self.name)
 
@@ -534,6 +537,10 @@ class Host(ADCMEntity):
     @property
     def monitoring(self):
         return self.prototype.monitoring
+
+    @property
+    def display_name(self):
+        return self.fqdn
 
     def __str__(self):
         return f"{self.fqdn}"
@@ -580,6 +587,10 @@ class ClusterObject(ADCMEntity):
         return self.prototype.name
 
     @property
+    def display_name(self):
+        return self.prototype.display_name
+
+    @property
     def description(self):
         return self.prototype.description
 
@@ -616,6 +627,10 @@ class ServiceComponent(ADCMEntity):
     @property
     def name(self):
         return self.prototype.name
+
+    @property
+    def display_name(self):
+        return self.prototype.display_name
 
     @property
     def description(self):
@@ -658,7 +673,7 @@ class GroupConfig(ADCMModel):
     description = models.TextField(blank=True)
     hosts = models.ManyToManyField(Host, blank=True, related_name='group_config')
     config = models.OneToOneField(
-        ObjectConfig, on_delete=models.CASCADE, null=False, related_name='group_config'
+        ObjectConfig, on_delete=models.CASCADE, null=True, related_name='group_config'
     )
 
     __error_code__ = 'GROUP_CONFIG_NOT_FOUND'
@@ -688,7 +703,6 @@ class GroupConfig(ADCMModel):
 
     def create_group_keys(
         self,
-        config: dict,
         config_spec: dict,
         group_keys: Dict[str, bool] = None,
         custom_group_keys: Dict[str, bool] = None,
@@ -701,16 +715,14 @@ class GroupConfig(ADCMModel):
             group_keys = {}
         if custom_group_keys is None:
             custom_group_keys = {}
-        for k in config.keys():
-            if config_spec[k]['type'] == 'group':
+        for k, v in config_spec.items():
+            if v['type'] == 'group':
                 group_keys.setdefault(k, {})
                 custom_group_keys.setdefault(k, {})
-                self.create_group_keys(
-                    config.get(k, {}), config_spec[k]['fields'], group_keys[k], custom_group_keys[k]
-                )
+                self.create_group_keys(v['fields'], group_keys[k], custom_group_keys[k])
             else:
                 group_keys[k] = False
-                custom_group_keys[k] = config_spec[k]['group_customization']
+                custom_group_keys[k] = v['group_customization']
         return group_keys, custom_group_keys
 
     def get_group_config(self):
@@ -765,10 +777,7 @@ class GroupConfig(ADCMModel):
                 config_log.obj_ref = self.config
                 config_log.config = deepcopy(parent_config_log.config)
                 attr = deepcopy(parent_config_log.attr)
-                config_spec = self.get_config_spec()
-                group_keys, custom_group_keys = self.create_group_keys(
-                    config_log.config, config_spec
-                )
+                group_keys, custom_group_keys = self.create_group_keys(self.get_config_spec())
                 attr.update({'group_keys': group_keys, 'custom_group_keys': custom_group_keys})
                 config_log.attr = attr
                 config_log.description = parent_config_log.description
@@ -823,7 +832,7 @@ class AbstractAction(ADCMModel):
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
 
-    multi_state_available = models.JSONField(default='any')
+    multi_state_available = models.JSONField(default=lambda: 'any')
     multi_state_unavailable = models.JSONField(default=list)
     multi_state_on_success_set = models.JSONField(default=list)
     multi_state_on_success_unset = models.JSONField(default=list)
@@ -875,6 +884,9 @@ class Action(AbstractAction):
 
     def allowed(self, obj: ADCMEntity) -> bool:
         """Check if action is allowed to be run on object"""
+        if self.state_unavailable == 'any' or self.multi_state_unavailable == 'any':
+            return False
+
         if isinstance(self.state_unavailable, list) and obj.state in self.state_unavailable:
             return False
 
@@ -1375,3 +1387,9 @@ class ConcernItem(ADCMModel):
             self.hostprovider_entities.all(),
             self.host_entities.all(),
         )
+
+    def delete(self, using=None, keep_parents=False):
+        """Explicit remove many-to-many references before deletion in order to emit signals"""
+        for entity in self.related_objects:
+            entity.remove_from_concerns(self)
+        return super().delete(using, keep_parents)

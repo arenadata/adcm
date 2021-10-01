@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Service page PageObjects classes"""
+
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
     PageHeader,
@@ -72,4 +75,5 @@ class ServiceImportPage(ServicePageMixin):
     MENU_SUFFIX = 'import'
 
     def get_import_items(self):
+        """Get import items"""
         return self.find_elements(ServiceImportLocators.import_item_block)

@@ -26,15 +26,19 @@ import { FormGroup } from '@angular/forms';
       <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form" [showCheckbox]="showCheckbox"
                         [groupForm]="groupsForm"></app-group-fields>
       <ng-template #one>
-        <div class="field-row row d-flex">
-          <ng-container *ngIf="showCheckbox && item.configGroup as ConfigGroupControl">
-            <div class="group-checkbox d-flex" style="padding: 5px">
-              <mat-checkbox [formControl]="ConfigGroupControl" [disabled]="item.read_only"></mat-checkbox>
-            </div>
-          </ng-container>
-          <app-field class="w100" *ngIf="!item.hidden" [form]="form" [options]="item"
-                     [ngClass]="{ 'read-only': item.read_only }"></app-field>
-        </div>
+        <ng-container *ngIf="!item.hidden">
+          <div class="field-row row d-flex">
+            <ng-container *ngIf="showCheckbox">
+              <div class="group-checkbox d-flex" style="padding: 5px">
+                <app-config-group-checkbox appTooltip="Not available for this parameter"
+                                           [control]="item.configGroup"
+                                           [disabled]="item.read_only"></app-config-group-checkbox>
+              </div>
+            </ng-container>
+            <app-field class="w100" [form]="form" [options]="item"
+                       [ngClass]="{ 'read-only': item.read_only }"></app-field>
+          </div>
+        </ng-container>
       </ng-template>
     </ng-container>
   `,

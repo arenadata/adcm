@@ -10,13 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for adcm_config plugin"""
+
 from typing import Tuple, Callable
 
 import allure
 import pytest
 
 from coreapi.exceptions import ErrorMessage
-from adcm_client.objects import ADCMClient, Cluster, Provider
+from adcm_client.objects import ADCMClient, Cluster, Provider, Host, Component, Service
 from adcm_pytest_plugin.steps.actions import (
     run_provider_action_and_assert_result,
     run_cluster_action_and_assert_result,
@@ -35,6 +37,7 @@ from tests.functional.plugin_utils import (
     get_provider_related_object,
     create_two_clusters,
     create_two_providers,
+    TestImmediateChange,
 )
 
 # pylint:disable=redefined-outer-name, duplicate-code
@@ -219,6 +222,21 @@ def test_from_host_actions(
             f'Check change {compose_name(obj)} config from host action'
         ):
             run_host_action_and_assert_result(host, f'change_{classname}_host')
+
+
+class TestImmediateConfigChange(TestImmediateChange):
+    """Test that config changed immediately"""
+
+    _file = __file__
+
+    @allure.issue(url='https://arenadata.atlassian.net/browse/ADCM-2116')
+    def test_immediate_config_change(
+        self,
+        provider_host: Tuple[Provider, Host],
+        cluster_service_component: Tuple[Cluster, Service, Component],
+    ):
+        """Test that config is changed right after adcm_config step in multijob action"""
+        self.run_immediate_change_test(provider_host, cluster_service_component)
 
 
 def _test_successful_config_change(

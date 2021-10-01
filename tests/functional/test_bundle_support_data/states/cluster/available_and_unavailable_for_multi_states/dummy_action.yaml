@@ -9,18 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import pytest
-from adcm_client.objects import ADCMClient
-from adcm_pytest_plugin.utils import get_data_subdirs_as_parameters
+---
+- name: Dummy action
+  hosts: all
+  connection: local
+  gather_facts: no
 
-cases, ids = get_data_subdirs_as_parameters(__file__, "correct")
-
-
-@pytest.mark.parametrize("bundle", cases, ids=ids)
-def test_upload_one(sdk_client_fs: ADCMClient, bundle):
-    sdk_client_fs.upload_from_fs(bundle)
-
-
-def test_upload_all(sdk_client_fs: ADCMClient):
-    for case in cases:
-        sdk_client_fs.upload_from_fs(case)
+  tasks:
+    - name: Dummy?
+      debug:
+        msg: "Some message"
