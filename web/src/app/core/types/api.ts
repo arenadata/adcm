@@ -66,6 +66,7 @@ export interface BaseEntity extends AdcmEntity {
   bundle_id?: number;
   status?: number | string;
   concerns: Concern[];
+  locked: boolean;
 }
 
 export interface ApiFlat {

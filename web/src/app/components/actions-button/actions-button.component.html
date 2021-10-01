@@ -1,5 +1,5 @@
 <app-concern-list-ref
-  *ngIf="row?.concerns?.length; else actions"
+  *ngIf="row?.locked; else actions"
   [concerns]="row?.concerns"
   (mouseenter)="onMouseenter.emit(row)"
 ></app-concern-list-ref>

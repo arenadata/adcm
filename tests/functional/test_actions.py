@@ -203,7 +203,6 @@ AVAILABLE_ACTIONS_SPECIAL_CASE_CREATED = [
     "action_available_any_3",
     "action_available_state_created",
     "action_available_state_created_and_installed",
-    "action_available_state_created_unavailable_state_installed",
     "action_unavailable_state_installed",
 ]
 
@@ -223,7 +222,6 @@ UNAVAILABLE_ACTIONS_SPECIAL_CASE_INSTALLED = [
     "action_unavailable",
     "action_unavailable_state_installed_and_created",
     "action_available_state_created",
-    "action_available_state_created_unavailable_state_installed",
     "action_unavailable_state_installed",
 ]
 
