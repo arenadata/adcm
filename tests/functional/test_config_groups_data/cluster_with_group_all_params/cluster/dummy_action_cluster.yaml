@@ -21,9 +21,11 @@
           - job.config.map[inventory_hostname].float == cluster.config.float
           - job.config.map[inventory_hostname].boolean == cluster.config.boolean
           - job.config.map[inventory_hostname].integer == cluster.config.integer
+          - job.config.map[inventory_hostname].password == cluster.config.password
           - job.config.map[inventory_hostname].string == cluster.config.string
           - job.config.map[inventory_hostname].list == cluster.config.list
           - job.config.map[inventory_hostname].text == cluster.config.text
           - job.config.map[inventory_hostname].group == cluster.config.group
           - job.config.map[inventory_hostname].structure == cluster.config.structure
           - job.config.map[inventory_hostname].map == cluster.config.map
+          - job.config.map[inventory_hostname].file == lookup('file', cluster.config.file)

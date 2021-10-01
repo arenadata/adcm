@@ -15,13 +15,10 @@
 
 from collections import OrderedDict
 from typing import (
-    Tuple,
     Union,
     Optional,
+    Tuple,
 )
-
-
-from typing import Tuple
 
 import allure
 import pytest
@@ -105,7 +102,6 @@ def create_two_hosts(provider) -> Tuple[Host, Host]:
 @pytest.fixture()
 def cluster_with_two_hosts_on_it(create_two_hosts, cluster: Cluster, provider: Provider) -> Tuple[Host, Host, Cluster]:
     """Add service, two hosts and create components to check intersection in config groups"""
-
     test_host_1, test_host_2 = create_two_hosts
     cluster.host_add(test_host_1)
     cluster.host_add(test_host_2)
@@ -115,7 +111,6 @@ def cluster_with_two_hosts_on_it(create_two_hosts, cluster: Cluster, provider: P
 @pytest.fixture()
 def cluster_with_components(cluster_with_two_hosts_on_it) -> Tuple[Service, Host, Host]:
     """Add service, two hosts and create components to check intersection in config groups"""
-
     test_host_1, test_host_2, cluster = cluster_with_two_hosts_on_it
     service = cluster.service_add(name='test_service_1')
     cluster.hostcomponent_set(
@@ -131,7 +126,6 @@ def cluster_with_components_on_first_host(
     create_two_hosts, cluster: Cluster, provider: Provider
 ) -> Tuple[Service, Host, Host]:
     """Add service, two hosts and create components to check config groups"""
-
     service = cluster.service_add(name='test_service_1')
     test_host_1, test_host_2 = create_two_hosts
     cluster.host_add(test_host_1)
@@ -381,7 +375,7 @@ class TestChangeGroupsConfig:
         "file content test",
     ]
 
-    def add_values_to_group_config_template(self, params: list = PARAMS_TO_CHANGE) -> dict:
+    def _add_values_to_group_config_template(self, params: list = PARAMS_TO_CHANGE) -> dict:
         (
             float_value,
             boolean_value,
@@ -445,6 +439,13 @@ class TestChangeGroupsConfig:
         if values_after["file"]:
             assert values_after["file"] == expected_values["file"], "File has not changed"
 
+    def _get_config_from_group(self, cluster_group: GroupConfig):
+        """Get config from group and add custom values to password and file"""
+        config_group = cluster_group.config()
+        config_group["password"] = "password"
+        config_group["file"] = config_group["file"].replace("\n", "")
+        return config_group
+
     @pytest.mark.parametrize(
         "cluster_bundle",
         [pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group")],
@@ -456,8 +457,8 @@ class TestChangeGroupsConfig:
         test_host_1, test_host_2, cluster = cluster_with_two_hosts_on_it
         with allure.step("Create config group for cluster and add first host"):
             cluster_group = _create_group_and_add_host(cluster, test_host_1)
-            config_before = cluster_group.config()
-        config_expected = self.add_values_to_group_config_template()
+            config_before = self._get_config_from_group(cluster_group)
+        config_expected = self._add_values_to_group_config_template()
         config_after = cluster_group.config_set_diff(config_expected)
         self._check_values_in_group(
             values_after=config_after['config'], expected_values=config_expected['config'], values_before=config_before
@@ -476,8 +477,8 @@ class TestChangeGroupsConfig:
         service, test_host_1, test_host_2 = cluster_with_components
         with allure.step("Create config group for service and add first host"):
             service_group = _create_group_and_add_host(service, test_host_1)
-            config_before = service_group.config()
-        config_expected = self.add_values_to_group_config_template()
+            config_before = self._get_config_from_group(service_group)
+        config_expected = self._add_values_to_group_config_template()
         config_after = service_group.config_set_diff(config_expected)
         self._check_values_in_group(
             values_after=config_after['config'], expected_values=config_expected['config'], values_before=config_before
@@ -497,8 +498,8 @@ class TestChangeGroupsConfig:
         component = service.component(name=FIRST_COMPONENT_NAME)
         with allure.step("Create config group for components and add first host"):
             component_group = _create_group_and_add_host(component, test_host_1)
-            config_before = component_group.config()
-        config_expected = self.add_values_to_group_config_template()
+            config_before = self._get_config_from_group(component_group)
+        config_expected = self._add_values_to_group_config_template()
         config_after = component_group.config_set_diff(config_expected)
         self._check_values_in_group(
             values_after=config_after['config'], expected_values=config_expected['config'], values_before=config_before
@@ -517,8 +518,8 @@ class TestChangeGroupsConfig:
         test_host_1, test_host_2 = create_two_hosts
         with allure.step("Create config group for provider and add first host"):
             provider_group = _create_group_and_add_host(provider, test_host_1)
-            config_before = provider_group.config()
-        config_expected = self.add_values_to_group_config_template()
+            config_before = self._get_config_from_group(provider_group)
+        config_expected = self._add_values_to_group_config_template()
         config_after = provider_group.config_set_diff(config_expected)
         self._check_values_in_group(
             values_after=config_after['config'], expected_values=config_expected['config'], values_before=config_before
