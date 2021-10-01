@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""UI tests for save configuration button"""
+
 # pylint: disable=redefined-outer-name
 import itertools
 import os
@@ -105,7 +107,9 @@ def _generate_bundle_config(bundle_type, entity_type, prop_types):
 
 
 @pytest.fixture()
+@allure.title("Prepare bundle file")
 def bundle_content(request, tmp_path):
+    """Prepare bundle file for further upload"""
     struct_filename = "struct_conf.yaml"
     struct_path_src = os.path.join(get_data_dir(__file__), struct_filename)
     struct_path_dest = os.path.join(tmp_path, struct_filename)
@@ -132,6 +136,7 @@ def bundle_content(request, tmp_path):
 
 
 @pytest.fixture()
+@allure.title("Upload bundle")
 def bundle(bundle_content, sdk_client_fs: ADCMClient) -> Bundle:
     """Assume request.param to be path to the bundle"""
     _, bundle_path = bundle_content
@@ -139,36 +144,47 @@ def bundle(bundle_content, sdk_client_fs: ADCMClient) -> Bundle:
 
 
 @pytest.fixture()
+@allure.title("Create cluster")
 def cluster(bundle: Bundle) -> Cluster:
+    """Create cluster"""
     return bundle.cluster_create(name=CLUSTER_NAME)
 
 
 @pytest.fixture()
+@allure.title("Open cluster config page")
 def cluster_config_page(app_fs, cluster: Cluster, login_to_adcm_over_api):  # pylint: disable=unused-argument
+    """Open cluster config page"""
     return Configuration(app_fs.driver, f"{app_fs.adcm.url}/cluster/{cluster.cluster_id}/config")
 
 
 @pytest.fixture()
+@allure.title("Add service")
 def service(cluster: Cluster) -> Service:
+    """Add and return service"""
     cluster.service_add(name=SERVICE_NAME)
     return cluster.service(name=SERVICE_NAME)
 
 
 @pytest.fixture()
+@allure.title("Open service config page")
 # pylint: disable-next=unused-argument
 def service_config_page(app_fs, service: Service, login_to_adcm_over_api) -> Configuration:
+    """Open service config page"""
     return Configuration.from_service(app_fs, service)
 
 
 @pytest.fixture()
+@allure.title("Create provider")
 def provider(bundle: Bundle) -> Provider:
+    """Create provider"""
     return bundle.provider_create(name=PROVIDER_NAME + random_string())
 
 
 @pytest.fixture()
+@allure.title("Open provider config page")
 # pylint: disable-next=unused-argument
 def provider_config_page(app_fs, provider: Provider, login_to_adcm_over_api) -> Configuration:
-
+    """Open provider config page"""
     return Configuration(
         app_fs.driver,
         f"{app_fs.adcm.url}/provider/{provider.provider_id}/config",
@@ -176,13 +192,17 @@ def provider_config_page(app_fs, provider: Provider, login_to_adcm_over_api) -> 
 
 
 @pytest.fixture()
+@allure.title("Create host")
 def host(provider: Provider) -> Host:
+    """Create host"""
     return provider.host_create(fqdn=f"{HOST_NAME}_{random_string()}")
 
 
 @pytest.fixture()
+@allure.title("Open host config page")
 # pylint: disable-next=unused-argument
 def host_config_page(app_fs, host: Host, login_to_adcm_over_api) -> Configuration:
+    """Open host config page"""
     return Configuration(
         app_fs.driver,
         f"{app_fs.adcm.url}/host/{host.id}/config",
@@ -258,6 +278,7 @@ def _get_default_props_list() -> list:
     prop_types=_get_default_props_list(),
 )
 def test_cluster_configuration_save_button(bundle_content, cluster_config_page):
+    """Test cluster configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
         cluster_config_page,
@@ -273,6 +294,7 @@ def test_cluster_configuration_save_button(bundle_content, cluster_config_page):
     prop_types=_get_default_props_list(),
 )
 def test_service_configuration_save_button(bundle_content, service_config_page):
+    """Test service configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
         service_config_page,
@@ -288,6 +310,7 @@ def test_service_configuration_save_button(bundle_content, service_config_page):
     prop_types=_get_default_props_list(),
 )
 def test_provider_configuration_save_button(bundle_content, provider_config_page):
+    """Test provider configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
         provider_config_page,
@@ -303,6 +326,7 @@ def test_provider_configuration_save_button(bundle_content, provider_config_page
     prop_types=_get_default_props_list(),
 )
 def test_host_configuration_save_button(bundle_content, host_config_page):
+    """Test host configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
         host_config_page,

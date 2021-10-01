@@ -10,6 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=redefined-outer-name,no-self-use
+
+"""Tests for ADCM objects locks"""
+
 from typing import Union, Tuple, List
 
 import allure
@@ -35,23 +38,27 @@ LOCK_ACTION_NAMES = ["lock", "lock_multijob"]
 
 @pytest.fixture()
 def cluster(sdk_client_fs: ADCMClient) -> Cluster:
+    """Create cluster"""
     uploaded_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "cluster"))
     return uploaded_bundle.cluster_prototype().cluster_create(name=random_string())
 
 
 @pytest.fixture()
 def host_provider(sdk_client_fs: ADCMClient) -> Provider:
+    """Create hostprovider"""
     provider_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "provider"))
     return provider_bundle.provider_prototype().provider_create(random_string())
 
 
 @pytest.fixture()
 def host(host_provider: Provider) -> Host:
+    """Create host"""
     return host_provider.host_create(random_string())
 
 
 @pytest.fixture()
 def complete_cluster(cluster: Cluster, host: Host) -> Cluster:
+    """Add service, component and host to cluster"""
     cluster.host_add(host)
     service = cluster.service_add(name="first_service")
     cluster.hostcomponent_set((host, service.component(name="first_service_component_1")))
@@ -60,6 +67,7 @@ def complete_cluster(cluster: Cluster, host: Host) -> Cluster:
 
 @pytest.fixture()
 def cluster_with_two_hosts(cluster: Cluster, host_provider: Provider) -> Tuple[Cluster, List[Host]]:
+    """Add service, component and host to cluster twice"""
     hosts = []
     for i in range(2):
         host = host_provider.host_create(f"host_{i}")
@@ -70,6 +78,8 @@ def cluster_with_two_hosts(cluster: Cluster, host_provider: Provider) -> Tuple[C
 
 @pytest.mark.parametrize("lock_action", LOCK_ACTION_NAMES)
 class TestClusterLock:
+    """Tests for cluster locks"""
+
     def test_lock_unlock(self, cluster: Cluster, host: Host, lock_action):
         """
         Test that cluster locked when action running and unlocked when action ends
@@ -114,6 +124,8 @@ class TestClusterLock:
 
 @pytest.mark.parametrize("lock_action", LOCK_ACTION_NAMES)
 class TestServiceLock:
+    """Tests for service locks"""
+
     def test_lock_unlock(self, cluster: Cluster, host: Host, lock_action):
         """
         Test that service locked when action running and unlocked when action ends
@@ -163,6 +175,8 @@ class TestServiceLock:
 
 @pytest.mark.parametrize("lock_action", LOCK_ACTION_NAMES)
 class TestComponentLock:
+    """Tests for component locks"""
+
     def test_lock_unlock(self, complete_cluster: Cluster, lock_action):
         """
         Test that component locked when action running and unlocked when action ends
@@ -212,6 +226,8 @@ class TestComponentLock:
 
 @pytest.mark.parametrize("lock_action", LOCK_ACTION_NAMES)
 class TestHostLock:
+    """Tests for host locks"""
+
     def test_lock_unlock(self, host: Host, lock_action):
         """
         Test that host locked when action running and unlocked when action ends
@@ -251,6 +267,8 @@ class TestHostLock:
 
 @pytest.mark.parametrize("lock_action", LOCK_ACTION_NAMES)
 class TestHostProviderLock:
+    """Tests for provider locks"""
+
     def test_lock_unlock(self, host_provider: Provider, lock_action):
         """
         Test that host provider locked when action running and unlocked when action ends
@@ -281,6 +299,7 @@ class TestHostProviderLock:
 
 
 def test_cluster_should_be_unlocked_when_ansible_task_killed(cluster: Cluster):
+    """Test that cluster is unlocked if ansible task is killed"""
     with allure.step("Run cluster action: lock-terminate for cluster"):
         task = cluster.action(name="lock-terminate").run()
     is_locked(cluster)
@@ -289,6 +308,7 @@ def test_cluster_should_be_unlocked_when_ansible_task_killed(cluster: Cluster):
 
 
 def test_host_should_be_unlocked_when_ansible_task_killed(complete_cluster: Cluster, host: Host):
+    """Test that host is unlocked if ansible task is killed"""
     with allure.step("Run action: lock-terminate for cluster"):
         task = complete_cluster.action(name="lock-terminate").run()
 
@@ -298,6 +318,7 @@ def test_host_should_be_unlocked_when_ansible_task_killed(complete_cluster: Clus
 
 
 def test_service_should_be_unlocked_when_ansible_task_killed(complete_cluster: Cluster):
+    """Test that service is unlocked if ansible task is killed"""
     service = complete_cluster.service(name="first_service")
     with allure.step("Run action: lock-terminate for cluster"):
         task = complete_cluster.action(name="lock-terminate").run()
@@ -316,6 +337,7 @@ def test_host_should_be_unlocked_after_expand_action(
     adcm_object: str,
     expand_action: str,
 ):
+    """Test that host is unlocked after expand action"""
     action_args = {"obj_for_action": None}
     cluster, _ = cluster_with_two_hosts
     first_service = cluster.service_add(name="first_service")
@@ -339,6 +361,7 @@ def test_host_should_be_unlocked_after_shrink_action(
     adcm_object: str,
     shrink_action: str,
 ):
+    """Test that host is unlocked after shrink action"""
     action_args = {"obj_for_action": None}
     cluster, _ = cluster_with_two_hosts
     first_service = cluster.service_add(name="first_service")
@@ -376,6 +399,7 @@ def test_host_should_be_unlocked_after_service_action_with_ansible_plugin(
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
     action_with_ansible_plugin: str,
 ):
+    """Test that host is unlocked after service action in ansible plugin"""
     cluster, _ = cluster_with_two_hosts
     dummy_service = cluster.service_add(name="first_service")
     _test_object_action_with_ansible_plugin(
@@ -403,6 +427,7 @@ def test_host_should_be_unlocked_after_cluster_action_with_ansible_plugin(
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
     action_with_ansible_plugin: str,
 ):
+    """Test that host is unlocked after cluster action in ansible plugin"""
     cluster, _ = cluster_with_two_hosts
     _test_object_action_with_ansible_plugin(
         cluster_with_two_hosts, action_name=action_with_ansible_plugin, obj_for_action=cluster
@@ -434,6 +459,7 @@ def test_host_should_be_unlocked_after_host_action(
     host_action_postfix: str,
     run_on_host: str,
 ):
+    """Test that host is unlocked after host action"""
     action_name = f"{adcm_object}_{host_action_postfix}"
     first_service = cluster.service_add(name="first_service")
     second_service = cluster.service_add(name="second_service")

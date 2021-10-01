@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Configuration page locators"""
 
 from selenium.webdriver.common.by import By
 
@@ -52,6 +53,8 @@ class CommonConfigMenu:
     loading_text = Locator(By.XPATH, "//span[text()='Loading...']", "Loading text")
 
     class ConfigRow:
+        """Configuration menu configuration row locators"""
+
         name = Locator(By.CSS_SELECTOR, "label", "Row name")
         value = Locator(By.CSS_SELECTOR, "input", "Row value")
         password = Locator(
@@ -68,10 +71,14 @@ class CommonConfigMenu:
         reset_btn = Locator(By.CSS_SELECTOR, "button[mattooltip='Reset to default']", "Reset button")
 
     class ConfigGroup:
+        """Configuration menu configuration group locators"""
+
         name = Locator(By.CSS_SELECTOR, "mat-panel-title>span", "Group name")
         expansion_btn = Locator(By.CSS_SELECTOR, "mat-expansion-panel-header", "Expansion button")
 
     class HistoryRow:
+        """Configuration menu history row locators"""
+
         history_select = Locator(By.CSS_SELECTOR, "mat-select[placeholder='History']", "History select")
         compare_select = Locator(By.CSS_SELECTOR, "mat-select[placeholder='Compare to']", "Compare select")
         option = Locator(By.CSS_SELECTOR, "mat-option", "Option in select")

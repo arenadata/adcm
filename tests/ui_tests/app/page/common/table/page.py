@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Table page PageObjects classes"""
+
 from contextlib import contextmanager
 
 import allure
@@ -39,43 +42,50 @@ class CommonTableObj(BasePageObject):
         """Get amount of rows on page"""
         return len(self.get_all_rows())
 
-    @allure.step("Get all rows from the table")
     def get_all_rows(self) -> list:
+        """Get all rows from the table"""
         try:
             return self.find_elements(self.locators.visible_row, timeout=5)
         except TimeoutException:
             return []
 
     def get_row(self, row_num: int = 0) -> WebElement:
-        def table_has_enough_rows():
+        """Get row from the table"""
+
+        def _table_has_enough_rows():
             assert_enough_rows(row_num, self.row_count)
 
-        wait_until_step_succeeds(table_has_enough_rows, timeout=5, period=0.1)
+        wait_until_step_succeeds(_table_has_enough_rows, timeout=5, period=0.1)
         rows = self.get_all_rows()
         assert_enough_rows(row_num, len(rows))
         return rows[row_num]
 
+    @allure.step("Click on previous page")
     def click_previous_page(self):
+        """Click on previous page"""
         self.find_and_click(self.locators.Pagination.previous_page)
 
+    @allure.step("Click on previous page")
     def click_next_page(self):
+        """Click on next page"""
         self.find_and_click(self.locators.Pagination.next_page)
 
     @contextmanager
     def wait_rows_change(self):
-        """Wait changing rows amount."""
+        """Wait changing rows amount"""
 
         current_amount = len(self.get_all_rows())
         yield
 
-        def wait_scroll():
+        def _wait_scroll():
             assert len(self.get_all_rows()) != current_amount, "Amount of rows on the page hasn't changed"
 
         self.wait_element_hide(CommonToolbarLocators.progress_bar)
-        wait_until_step_succeeds(wait_scroll, period=1, timeout=10)
+        wait_until_step_succeeds(_wait_scroll, period=1, timeout=10)
 
     @allure.step("Click on page number {number}")
     def click_page_by_number(self, number: int):
+        """Click on page number"""
         page_loc = self.locators.Pagination.page_to_choose_btn
         WDW(self.driver, self.default_loc_timeout).until(
             EC.presence_of_element_located([page_loc.by, page_loc.value.format(number)]),
@@ -85,6 +95,7 @@ class CommonTableObj(BasePageObject):
 
     @allure.step("Check pagination")
     def check_pagination(self, second_page_item_amount: int):
+        """Check pagination"""
         params = {"fist_page_cluster_amount": 10}
         self.wait_element_hide(CommonToolbarLocators.progress_bar, timeout=30)
         with self.wait_rows_change():

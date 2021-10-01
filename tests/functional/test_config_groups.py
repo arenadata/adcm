@@ -11,12 +11,17 @@
 # limitations under the License.
 # pylint: disable=redefined-outer-name, unused-argument, duplicate-code, no-self-use, dangerous-default-value
 
+"""Tests for config groups"""
+
 from collections import OrderedDict
 from typing import (
     Tuple,
     Union,
     Optional,
 )
+
+
+from typing import Tuple
 
 import allure
 import pytest
@@ -63,28 +68,33 @@ SECOND_HOST = "test_host_2"
 
 @pytest.fixture()
 def provider_bundle(request, sdk_client_fs: ADCMClient):
+    """Upload provider bundle"""
     bundle_path = request.param if hasattr(request, "param") else PROVIDER_BUNDLE_PATH
     return sdk_client_fs.upload_from_fs(bundle_path)
 
 
 @pytest.fixture()
 def cluster_bundle(request, sdk_client_fs: ADCMClient):
+    """Upload cluster bundle"""
     bundle_path = request.param if hasattr(request, "param") else CLUSTER_BUNDLE_PATH
     return sdk_client_fs.upload_from_fs(bundle_path)
 
 
 @pytest.fixture()
 def cluster(cluster_bundle) -> Cluster:
+    """Create cluster"""
     return cluster_bundle.cluster_create(name=utils.random_string())
 
 
 @pytest.fixture()
 def provider(provider_bundle) -> Provider:
+    """Create provider"""
     return provider_bundle.provider_create(name=utils.random_string())
 
 
 @pytest.fixture()
 def create_two_hosts(provider) -> Tuple[Host, Host]:
+    """Create two hosts"""
     with allure.step("Create host for config groups"):
         test_host_1 = provider.host_create(fqdn=FIRST_HOST)
     with allure.step("Create host for host candidate check"):
@@ -133,7 +143,7 @@ def cluster_with_components_on_first_host(
 
 
 @allure.step('Check error')
-def assert_that_host_add_is_unavailable(service_group: GroupConfig, host: Host):
+def _assert_that_host_add_is_unavailable(service_group: GroupConfig, host: Host):
     with allure.step(f'Check that error is "{GROUP_CONFIG_HOST_ERROR.code}"'):
         with pytest.raises(ErrorMessage) as e:
             service_group.host_add(host)
@@ -143,7 +153,7 @@ def assert_that_host_add_is_unavailable(service_group: GroupConfig, host: Host):
 
 
 @allure.step('Check that host exists')
-def assert_that_host_exists(group: GroupConfig, host: Host):
+def _assert_that_host_exists(group: GroupConfig, host: Host):
     with allure.step(f'Check that error is "{GROUP_CONFIG_HOST_EXISTS.code}"'):
         with pytest.raises(ErrorMessage) as e:
             group.host_add(host)
@@ -153,12 +163,12 @@ def assert_that_host_exists(group: GroupConfig, host: Host):
 
 
 @allure.step('Check that host is in the group')
-def assert_host_is_in_group(group: GroupConfig, host: Host):
+def _assert_host_is_in_group(group: GroupConfig, host: Host):
     assert host.fqdn in [h.fqdn for h in group.hosts().data], f'Host "{host.fqdn}" should be in group "{group.name}"'
 
 
 @allure.step("Check that the only second host is present in candidates on second group")
-def assert_host_candidate_equal_expected(group: HostList, expected_hosts_names: [str]):
+def _assert_host_candidate_equal_expected(group: HostList, expected_hosts_names: [str]):
     expected_hosts_amount = len(expected_hosts_names)
     with allure.step(f"Check that {expected_hosts_amount} hosts are available in group"):
         assert len(group) == expected_hosts_amount, f"{expected_hosts_amount} hosts should be available in group"
@@ -176,37 +186,39 @@ def _create_group_and_add_host(
 
 
 class TestGroupsIntersection:
-    def test_that_groups_not_allowed_to_intersect_in_cluster(self, sdk_client_fs, cluster_with_two_hosts_on_it):
+    """Tests for config groups intersections"""
+
+    def test_that_groups_not_allowed_to_intersect_in_cluster(self, cluster, create_two_hosts):
         """Test that groups are not allowed to intersect in cluster"""
 
         test_host_1, _, cluster = cluster_with_two_hosts_on_it
         _create_group_and_add_host(cluster, test_host_1)
         with allure.step("Create the second group for cluster and check that not allowed to add the first host to it"):
             cluster_group_2 = cluster.group_config_create(name=SECOND_GROUP)
-            assert_that_host_add_is_unavailable(cluster_group_2, test_host_1)
-            assert_host_candidate_equal_expected(cluster_group_2.host_candidate(), [SECOND_HOST])
+            _assert_that_host_add_is_unavailable(cluster_group_2, test_host_1)
+            _assert_host_candidate_equal_expected(cluster_group_2.host_candidate(), [SECOND_HOST])
 
-    def test_that_groups_not_allowed_to_intersect_in_provider(self, sdk_client_fs, create_two_hosts, provider):
+    def test_that_groups_not_allowed_to_intersect_in_provider(self, create_two_hosts, provider):
         """Test that groups are not allowed to intersect in provider"""
 
         test_host_1, _ = create_two_hosts
         _create_group_and_add_host(provider, test_host_1)
         with allure.step("Create the second group for provider and check that not allowed to add the first host to it"):
             provider_group_2 = provider.group_config_create(name=SECOND_GROUP)
-            assert_that_host_add_is_unavailable(provider_group_2, test_host_1)
-            assert_host_candidate_equal_expected(provider_group_2.host_candidate(), [SECOND_HOST])
+            _assert_that_host_add_is_unavailable(provider_group_2, test_host_1)
+            _assert_host_candidate_equal_expected(provider_group_2.host_candidate(), [SECOND_HOST])
 
-    def test_that_groups_not_allowed_to_intersect_in_service(self, sdk_client_fs, cluster, cluster_with_components):
+    def test_that_groups_not_allowed_to_intersect_in_service(self, cluster_with_components):
         """Test that groups are not allowed to intersect in service"""
 
         service, test_host_1, _ = cluster_with_components
         _create_group_and_add_host(service, test_host_1)
         with allure.step("Create the second group for service and check that not allowed to add the first host to it"):
             service_group_2 = service.group_config_create(name=SECOND_GROUP)
-            assert_that_host_add_is_unavailable(service_group_2, test_host_1)
-            assert_host_candidate_equal_expected(service_group_2.host_candidate(), [SECOND_HOST])
+            _assert_that_host_add_is_unavailable(service_group_2, test_host_1)
+            _assert_host_candidate_equal_expected(service_group_2.host_candidate(), [SECOND_HOST])
 
-    def test_that_groups_not_allowed_to_intersect_in_component(self, sdk_client_fs, cluster_with_components):
+    def test_that_groups_not_allowed_to_intersect_in_component(self, cluster_with_components):
         """Test that groups are not allowed to intersect"""
 
         service, test_host_1, _ = cluster_with_components
@@ -215,14 +227,14 @@ class TestGroupsIntersection:
             "Create the second group for component and check that not allowed to add the first host to it"
         ):
             component_group_2 = service.component(name=FIRST_COMPONENT_NAME).group_config_create(name=SECOND_GROUP)
-        assert_that_host_add_is_unavailable(component_group_2, test_host_1)
-        assert_host_candidate_equal_expected(component_group_2.host_candidate(), [SECOND_HOST])
+        _assert_that_host_add_is_unavailable(component_group_2, test_host_1)
+        _assert_host_candidate_equal_expected(component_group_2.host_candidate(), [SECOND_HOST])
 
 
 class TestIncorrectHostInGroups:
     """Test for incorrect hosts in group caused errors like GROUP_CONFIG_HOST_ERROR or GROUP_CONFIG_HOST_EXISTS"""
 
-    def test_add_incorrect_host_to_provider_group(self, sdk_client_fs, provider_bundle, provider):
+    def test_add_incorrect_host_to_provider_group(self, provider_bundle, provider):
         """Test exception rise when we try to add incorrect host to provider group"""
         with allure.step("Create host from first provider"):
             correct_host = provider.host_create(fqdn=utils.random_string())
@@ -232,12 +244,12 @@ class TestIncorrectHostInGroups:
             incorrect_host = provider_2.host_create(fqdn=utils.random_string())
         with allure.step("Create config group for first provider and try to add the first host"):
             provider_group = provider.group_config_create(name=incorrect_host.fqdn)
-            assert_that_host_add_is_unavailable(provider_group, incorrect_host)
-            assert_host_candidate_equal_expected(provider_group.host_candidate(), [correct_host.fqdn])
+            _assert_that_host_add_is_unavailable(provider_group, incorrect_host)
+            _assert_host_candidate_equal_expected(provider_group.host_candidate(), [correct_host.fqdn])
         with allure.step("Add first host to provider group and check that second add is not available"):
             provider_group.host_add(correct_host)
-            assert_that_host_exists(provider_group, correct_host)
-            assert_host_candidate_equal_expected(provider_group.host_candidate(), [])
+            _assert_that_host_exists(provider_group, correct_host)
+            _assert_host_candidate_equal_expected(provider_group.host_candidate(), [])
 
     def test_add_incorrect_host_to_service_group(self, cluster_with_components_on_first_host):
         """Test exception rise when we try to add incorrect host to service group"""
@@ -246,12 +258,12 @@ class TestIncorrectHostInGroups:
         with allure.step("Create group for service"):
             service_group = service.group_config_create(name=FIRST_GROUP)
         with allure.step("Try to add the second host not from service and check group hosts list"):
-            assert_that_host_add_is_unavailable(service_group, test_host_2)
-            assert_host_candidate_equal_expected(service_group.host_candidate(), [FIRST_HOST])
+            _assert_that_host_add_is_unavailable(service_group, test_host_2)
+            _assert_host_candidate_equal_expected(service_group.host_candidate(), [FIRST_HOST])
         with allure.step("Add first host to service group and check that second add is not available"):
             service_group.host_add(test_host_1)
-            assert_that_host_exists(service_group, test_host_1)
-            assert_host_candidate_equal_expected(service_group.host_candidate(), [])
+            _assert_that_host_exists(service_group, test_host_1)
+            _assert_host_candidate_equal_expected(service_group.host_candidate(), [])
 
     def test_add_incorrect_host_to_cluster_group(self, cluster_bundle, cluster, create_two_hosts):
         """Test exception rise when we try to add incorrect host to cluster group"""
@@ -265,12 +277,12 @@ class TestIncorrectHostInGroups:
         with allure.step("Create group for first cluster"):
             cluster_group = cluster.group_config_create(name=FIRST_GROUP)
         with allure.step("Try to add host from second cluster to first cluster group"):
-            assert_that_host_add_is_unavailable(cluster_group, test_host_2)
-            assert_host_candidate_equal_expected(cluster_group.host_candidate(), [FIRST_HOST])
+            _assert_that_host_add_is_unavailable(cluster_group, test_host_2)
+            _assert_host_candidate_equal_expected(cluster_group.host_candidate(), [FIRST_HOST])
         with allure.step("Add first host to cluster group and check that second add is not available"):
             cluster_group.host_add(test_host_1)
-            assert_that_host_exists(cluster_group, test_host_1)
-            assert_host_candidate_equal_expected(cluster_group.host_candidate(), [])
+            _assert_that_host_exists(cluster_group, test_host_1)
+            _assert_host_candidate_equal_expected(cluster_group.host_candidate(), [])
 
     def test_add_incorrect_host_to_component_group(self, cluster_with_components_on_first_host):
         """Test exception rise when we try to add incorrect host to component group"""
@@ -279,74 +291,74 @@ class TestIncorrectHostInGroups:
         with allure.step("Create group for component"):
             component_group = service.component(name=FIRST_COMPONENT_NAME).group_config_create(name=FIRST_GROUP)
         with allure.step("Try to add host not from cluster to component group"):
-            assert_that_host_add_is_unavailable(component_group, test_host_2)
-            assert_host_candidate_equal_expected(component_group.host_candidate(), [FIRST_HOST])
+            _assert_that_host_add_is_unavailable(component_group, test_host_2)
+            _assert_host_candidate_equal_expected(component_group.host_candidate(), [FIRST_HOST])
         with allure.step("Add first host to component group and check that second add is not available"):
             component_group.host_add(test_host_1)
-            assert_that_host_exists(component_group, test_host_1)
-            assert_host_candidate_equal_expected(component_group.host_candidate(), [])
+            _assert_that_host_exists(component_group, test_host_1)
+            _assert_host_candidate_equal_expected(component_group.host_candidate(), [])
 
 
 class TestDeleteHostInGroups:
     """Test deleting host related to conf group"""
 
     @allure.step("Check that there are no hosts in conf group")
-    def check_no_hosts_in_group(self, group: GroupConfig):
+    def _check_no_hosts_in_group(self, group: GroupConfig):
         assert len(group.hosts()) == 0, "Should not be any hosts in conf group"
 
-    def test_delete_host_from_group_after_deleting_in_cluster(self, sdk_client_fs, cluster, provider):
+    def test_delete_host_from_group_after_deleting_in_cluster(self, cluster, provider):
         """Test that host removed from conf group after removing from cluster"""
 
         test_host = provider.host_create(fqdn=FIRST_HOST)
         cluster.host_add(test_host)
-        cluster_group = _create_group_and_add_host(cluster, test_host)
-        assert_host_is_in_group(cluster_group, test_host)
+        with allure.step("Create config group for cluster and add the host"):
+            cluster_group = _create_group_and_add_host(cluster, test_host)
+            _assert_host_is_in_group(cluster_group, test_host)
         cluster.host_delete(test_host)
-        self.check_no_hosts_in_group(cluster_group)
+        self._check_no_hosts_in_group(cluster_group)
         with allure.step("Check that there are no hosts available to add in cluster group"):
-            assert_host_candidate_equal_expected(cluster_group.host_candidate(), [])
+            _assert_host_candidate_equal_expected(cluster_group.host_candidate(), [])
 
-    def test_delete_host_from_group_after_deleting_in_service(
-        self, cluster, sdk_client_fs, cluster_with_components_on_first_host
-    ):
+    def test_delete_host_from_group_after_deleting_in_service(self, cluster, cluster_with_components_on_first_host):
         """Test that host removed from conf group after removing from service"""
 
         service, test_host_1, test_host_2 = cluster_with_components_on_first_host
-        service_group = _create_group_and_add_host(service, test_host_1)
-        assert_host_is_in_group(service_group, test_host_1)
+        with allure.step("Create group for service and add the host"):
+            service_group = _create_group_and_add_host(service, test_host_1)
+            _assert_host_is_in_group(service_group, test_host_1)
         with allure.step("Change host in service"):
             cluster.host_add(test_host_2)
             cluster.hostcomponent_set(
                 (test_host_2, service.component(name=FIRST_COMPONENT_NAME)),
                 (test_host_2, service.component(name=SECOND_COMPONENT_NAME)),
             )
-        self.check_no_hosts_in_group(service_group)
+        self._check_no_hosts_in_group(service_group)
 
-    def test_delete_host_from_group_after_delete_in_component(
-        self, cluster, sdk_client_fs, cluster_with_components_on_first_host
-    ):
+    def test_delete_host_from_group_after_delete_in_component(self, cluster, cluster_with_components_on_first_host):
         """Test that host removed from conf group after removing from component"""
 
         service, test_host_1, test_host_2 = cluster_with_components_on_first_host
-        component_group = _create_group_and_add_host(service.component(name=FIRST_COMPONENT_NAME), test_host_1)
-        assert_host_is_in_group(component_group, test_host_1)
+        with allure.step("Create config group for component and add the first host"):
+            component_group = _create_group_and_add_host(service.component(name=FIRST_COMPONENT_NAME), test_host_1)
+            _assert_host_is_in_group(component_group, test_host_1)
         with allure.step("Change host in component"):
             cluster.host_add(test_host_2)
             cluster.hostcomponent_set(
                 (test_host_2, service.component(name=FIRST_COMPONENT_NAME)),
                 (test_host_2, service.component(name=SECOND_COMPONENT_NAME)),
             )
-        self.check_no_hosts_in_group(component_group)
+        self._check_no_hosts_in_group(component_group)
 
-    def test_delete_host_from_group_after_it_deleted(self, sdk_client_fs, provider):
+    def test_delete_host_from_group_after_it_deleted(self, provider):
         """Test that host removed from provider conf group after deleting"""
 
-        test_host = provider.host_create(fqdn=FIRST_HOST)
-        provider_group = _create_group_and_add_host(provider, test_host)
-        assert_host_is_in_group(provider_group, test_host)
+        with allure.step("Create config group for provider and add host"):
+            test_host = provider.host_create(fqdn=FIRST_HOST)
+            provider_group = _create_group_and_add_host(provider, test_host)
+        _assert_host_is_in_group(provider_group, test_host)
         with allure.step("Delete host"):
             test_host.delete()
-        self.check_no_hosts_in_group(provider_group)
+        self._check_no_hosts_in_group(provider_group)
 
 
 class TestChangeGroupsConfig:

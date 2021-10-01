@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for object issues"""
+
 import allure
 import coreapi
 import pytest
@@ -21,6 +23,7 @@ from tests.library.errorcodes import UPGRADE_ERROR
 
 
 def test_action_should_not_be_run_while_cluster_has_an_issue(sdk_client_fs: ADCMClient):
+    """Test action should not be run while cluster has an issue"""
     bundle_path = utils.get_data_dir(__file__, "cluster")
     bundle = sdk_client_fs.upload_from_fs(bundle_path)
     cluster = bundle.cluster_create(name=utils.random_string())
@@ -30,6 +33,7 @@ def test_action_should_not_be_run_while_cluster_has_an_issue(sdk_client_fs: ADCM
 
 
 def test_action_should_not_be_run_while_host_has_an_issue(sdk_client_fs: ADCMClient):
+    """Test action should not be run while host has an issue"""
     bundle_path = utils.get_data_dir(__file__, "host")
     bundle = sdk_client_fs.upload_from_fs(bundle_path)
     provider = bundle.provider_create(name=utils.random_string())
@@ -42,6 +46,7 @@ def test_action_should_not_be_run_while_host_has_an_issue(sdk_client_fs: ADCMCli
 def test_action_should_not_be_run_while_hostprovider_has_an_issue(
     sdk_client_fs: ADCMClient,
 ):
+    """Test action should not be run while hostprovider has an issue"""
     bundle_path = utils.get_data_dir(__file__, "provider")
     bundle = sdk_client_fs.upload_from_fs(bundle_path)
     provider = bundle.provider_create(name=utils.random_string())
@@ -51,6 +56,7 @@ def test_action_should_not_be_run_while_hostprovider_has_an_issue(
 
 
 def test_when_cluster_has_issue_than_upgrade_locked(sdk_client_fs: ADCMClient):
+    """Test upgrade should not be run while cluster has an issue"""
     with allure.step("Create cluster and upload new one bundle"):
         old_bundle_path = utils.get_data_dir(__file__, "cluster")
         new_bundle_path = utils.get_data_dir(__file__, "upgrade", "cluster")
@@ -65,6 +71,7 @@ def test_when_cluster_has_issue_than_upgrade_locked(sdk_client_fs: ADCMClient):
 
 
 def test_when_hostprovider_has_issue_than_upgrade_locked(sdk_client_fs: ADCMClient):
+    """Test upgrade should not be run while hostprovider has an issue"""
     with allure.step("Create hostprovider"):
         old_bundle_path = utils.get_data_dir(__file__, "provider")
         new_bundle_path = utils.get_data_dir(__file__, "upgrade", "provider")
@@ -82,6 +89,7 @@ def test_when_hostprovider_has_issue_than_upgrade_locked(sdk_client_fs: ADCMClie
 def test_when_component_has_no_constraint_then_cluster_doesnt_have_issues(
     sdk_client_fs: ADCMClient,
 ):
+    """Test no cluster issues if no constraints on components"""
     with allure.step("Create cluster (component has no constraint)"):
         bundle_path = utils.get_data_dir(__file__, "cluster_component_hasnt_constraint")
         bundle = sdk_client_fs.upload_from_fs(bundle_path)

@@ -290,10 +290,6 @@ def remove_issue(obj: ADCMEntity, issue_type: IssueType) -> None:
     issue = obj.get_own_issue(issue_type)
     if not issue:
         return
-
-    for entity in issue.related_objects:
-        entity.remove_from_concerns(issue)
-
     issue.delete()
 
 
