@@ -12,13 +12,10 @@
 
 """ADCM API helpers for UI tests"""
 
-import json
 import allure
 import requests
 
-
-class RequestFailedException(Exception):
-    """Request to ADCM API has status code >= 400"""
+from tests.library.utils import RequestFailedException, get_json_or_text
 
 
 class ADCMDirectAPIClient:
@@ -64,10 +61,6 @@ class ADCMDirectAPIClient:
     def _check_response(response: requests.Response):
         if (status_code := response.status_code) < 400:
             return
-        try:
-            response_content = response.json()
-        except json.JSONDecodeError:
-            response_content = response.text
         raise RequestFailedException(
-            f'Request finished with status {status_code} ' f'and json body: {response_content}',
+            f'Request finished with status {status_code} and message: {get_json_or_text(response)}',
         )
