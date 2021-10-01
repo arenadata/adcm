@@ -23,7 +23,14 @@ import pytest
 from _pytest.mark.structures import ParameterSet
 from adcm_client.objects import Cluster, Service, Component, Provider, Host, ADCMClient, Action
 from adcm_pytest_plugin import utils as plugin_utils
-from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
+from adcm_pytest_plugin.steps.actions import (
+    wait_for_task_and_assert_result,
+    run_cluster_action_and_assert_result,
+    run_service_action_and_assert_result,
+    run_component_action_and_assert_result,
+    run_provider_action_and_assert_result,
+    run_host_action_and_assert_result,
+)
 
 ADCMObjects = (Cluster, Service, Component, Provider, Host)
 
@@ -388,3 +395,56 @@ def __check_components(
         for component in service.component_list():
             if (component_id := component.id) in component_ids:
                 comparator(component, components[component_id])
+
+
+# !===== Common test classes =====!
+
+
+class TestImmediateChange:
+    """
+    Utility class to test that config/state/multi-state has changed immediately in playbook.
+    Value of _file will be passed to `get_data_dir` function as first argument.
+    """
+
+    _file = None
+    _action = "check_multijob"
+    _cluster_bundle_name = "immediate_change_cluster"
+    _provider_bundle_name = "immediate_change_provider"
+
+    @pytest.fixture()
+    def provider_host(self, sdk_client_fs: ADCMClient) -> Tuple[Provider, Host]:
+        """Get provider and host created for immediate change testing"""
+        uploaded_bundle = sdk_client_fs.upload_from_fs(
+            plugin_utils.get_data_dir(self._file, self._provider_bundle_name)
+        )
+        provider = uploaded_bundle.provider_create('Nicer')
+        return provider, provider.host_create('good-fqdn')
+
+    @pytest.fixture()
+    def cluster_service_component(
+        self, provider_host: Tuple[Provider, Host], sdk_client_fs: ADCMClient
+    ) -> Tuple[Cluster, Service, Component]:
+        """Get cluster, service and component with added service and host for immediate config change"""
+        uploaded_bundle = sdk_client_fs.upload_from_fs(plugin_utils.get_data_dir(self._file, self._cluster_bundle_name))
+        cluster = uploaded_bundle.cluster_create('Cooler')
+        _, host = provider_host
+        cluster.host_add(host)
+        service = cluster.service_add(name='test_service')
+        component = service.component()
+        cluster.hostcomponent_set((host, component))
+        return cluster, service, component
+
+    def run_immediate_change_test(
+        self, provider_host: Tuple[Provider, Host], cluster_service_component: Tuple[Cluster, Service, Component]
+    ):
+        """
+        Run the same action (self._action) for cluster, service, component, provider, host
+            and expect them to succeed
+        """
+        cluster, service, component = cluster_service_component
+        provider, host = provider_host
+        run_cluster_action_and_assert_result(cluster, self._action)
+        run_service_action_and_assert_result(service, self._action)
+        run_component_action_and_assert_result(component, self._action)
+        run_provider_action_and_assert_result(provider, self._action)
+        run_host_action_and_assert_result(host, self._action)

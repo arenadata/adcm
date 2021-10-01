@@ -24,7 +24,7 @@ from adcm_pytest_plugin.steps.actions import (
     run_host_action_and_assert_result,
     run_component_action_and_assert_result,
 )
-from adcm_client.objects import ADCMClient, Cluster, Provider
+from adcm_client.objects import ADCMClient, Cluster, Provider, Host, Service, Component
 
 from tests.functional.plugin_utils import (
     generate_cluster_success_params,
@@ -37,6 +37,7 @@ from tests.functional.plugin_utils import (
     create_two_clusters,
     create_two_providers,
     run_successful_task,
+    TestImmediateChange,
 )
 
 # pylint: disable=redefined-outer-name, duplicate-code
@@ -283,6 +284,24 @@ def test_multi_state_set_unset_from_different_objects(two_clusters: Tuple[Cluste
         f'Unset multi_state of {cluster_name} from {service_name}'
     ):
         run_service_action_and_assert_result(service, 'unset_cluster')
+
+
+class TestImmediateMultiStateChange(TestImmediateChange):
+    """Test that multi_state changed immediately (set-unset)"""
+
+    _file = __file__
+
+    @allure.issue(url='https://arenadata.atlassian.net/browse/ADCM-2116')
+    def test_immediate_multi_state_change(
+        self,
+        provider_host: Tuple[Provider, Host],
+        cluster_service_component: Tuple[Cluster, Service, Component],
+    ):
+        """
+        Test that multi_state is changed right after adcm_multi_state_set step in multijob action
+            and changed back after adcm_multi_state_unset
+        """
+        self.run_immediate_change_test(provider_host, cluster_service_component)
 
 
 def _test_successful_multi_state_set_unset(
