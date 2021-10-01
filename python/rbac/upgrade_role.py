@@ -12,9 +12,7 @@
 
 """Init or upgrade RBAC roles and permissions"""
 
-import os
 import ruyaml
-from os.path import dirname
 
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import Permission
@@ -22,14 +20,10 @@ from django.contrib.auth.models import Permission
 from adwp_base.errors import raise_AdwpEx as err
 
 import cm.checker
+
 from rbac import log
+from rbac.settings import api_settings
 from rbac.models import Role, RoleMigration
-
-
-BASE_DIR = dirname(dirname(dirname(os.path.abspath(__file__))))
-CODE_DIR = os.path.join(BASE_DIR, 'python')
-ROLE_SPEC = os.path.join(CODE_DIR, 'rbac', 'role_spec.yaml')
-ROLE_SCHEMA = os.path.join(CODE_DIR, 'rbac', 'role_schema.yaml')
 
 
 def upgrade(data):
@@ -113,21 +107,21 @@ def upgrade_role(role, data):
     return new_role
 
 
-def get_role_spec():
+def get_role_spec(data, schema):
     """
     Read and parse roles specification from role_spec.yaml file.
     Specification file structure is checked against role_schema.yaml file.
     (see https://github.com/arenadata/yspec for details about schema syntaxis)
     """
     try:
-        with open(ROLE_SPEC, encoding='utf_8') as fd:
+        with open(data, encoding='utf_8') as fd:
             data = ruyaml.round_trip_load(fd)
     except FileNotFoundError:
-        err('INVALID_ROLE_SPEC', f'Can not open role file "{ROLE_SPEC}"')
+        err('INVALID_ROLE_SPEC', f'Can not open role file "{data}"')
     except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
-        err('INVALID_ROLE_SPEC', f'YAML decode "{ROLE_SPEC}" error: {e}')
+        err('INVALID_ROLE_SPEC', f'YAML decode "{data}" error: {e}')
 
-    with open(ROLE_SCHEMA, encoding='utf_8') as fd:
+    with open(schema, encoding='utf_8') as fd:
         rules = ruyaml.round_trip_load(fd)
 
     try:
@@ -139,7 +133,7 @@ def get_role_spec():
                 if 'Input data for' in ee.message:
                     continue
                 args += f'line {ee.line}: {ee}\n'
-        err('INVALID_ROLE_SPEC', f'"{ROLE_SPEC}" line {e.line} error: {e}', args)
+        err('INVALID_ROLE_SPEC', f'"{data}" line {e.line} error: {e}', args)
 
     return data
 
@@ -150,7 +144,7 @@ def init_roles():
     To run upgrade call
     manage.py upgarderole
     """
-    role_data = get_role_spec()
+    role_data = get_role_spec(api_settings.ROLE_SPEC, api_settings.ROLE_SCHEMA)
     check_roles_childs(role_data)
 
     rm = RoleMigration.objects.last()
