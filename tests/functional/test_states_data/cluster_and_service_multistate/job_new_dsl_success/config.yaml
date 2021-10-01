@@ -1,0 +1,89 @@
+---
+
+- type: cluster
+  name: job_ok
+  version: 1
+
+  actions:
+    set_multistate:
+      type: job
+      script_type: ansible
+      script: set_multistate.yaml
+      masking:
+    state_changing_action:
+      type: job
+      script_type: ansible
+      script: fail.yaml
+      masking:
+      on_fail:
+        multi_state:
+          set:
+            - "job_fail"
+          unset:
+            - "unset_this"
+      on_success:
+        multi_state:
+          set:
+            - "job_ok"
+          unset:
+            - "unset_this"
+
+
+- type: service
+  name: first_srv
+  version: 1
+
+  actions:
+    set_multistate:
+      type: job
+      script_type: ansible
+      script: set_multistate.yaml
+      masking:
+    state_changing_action:
+      type: job
+      script_type: ansible
+      script: fail.yaml
+      masking:
+      on_fail:
+        multi_state:
+          set:
+            - "job_fail"
+          unset:
+            - "unset_this"
+      on_success:
+        multi_state:
+          set:
+            - "job_ok"
+          unset:
+            - "unset_this"
+
+  components:
+    first_cmp:
+      actions:
+        set_multistate:
+          type: job
+          script_type: ansible
+          script: set_multistate.yaml
+          masking:
+        state_changing_action:
+          type: job
+          script_type: ansible
+          script: fail.yaml
+          masking:
+          on_fail:
+            multi_state:
+              set:
+                - "job_fail"
+              unset:
+                - "unset_this"
+          on_success:
+            multi_state:
+              set:
+                - "job_ok"
+              unset:
+                - "unset_this"
+    second_cmp:
+
+- type: service
+  name: second_srv
+  version: 1
