@@ -197,6 +197,7 @@ class Endpoints(Enum):
     GroupConfigHostCandidates = Endpoint(
         path=f"{GroupConfig.path}/{{id}}/host-candidate",
         methods=[
+            Methods.GET,
             Methods.LIST,
         ],
         data_class=GroupConfigHostCandidatesFields,
