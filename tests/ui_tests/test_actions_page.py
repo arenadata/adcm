@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""UI tests for /action page elements"""
+
 import time
 
 import allure
@@ -29,19 +31,22 @@ from tests.ui_tests.app.actions_page import ActionPage
 @allure.step("Upload bundle and create cluster")
 @pytest.fixture()
 def cluster(sdk_client_fs: ADCMClient):
+    """Upload bundle and create cluster"""
     bundle_dir = utils.get_data_dir(__file__, "nothing_happens")
     bundle = sdk_client_fs.upload_from_fs(bundle_dir)
     return bundle.cluster_create(utils.random_string())
 
 
-@allure.step("Open ADCM tab Action")
+@allure.step("Open cluster/{}/action page")
 @pytest.fixture()
 def cluster_action_page(app_fs, cluster, login_to_adcm_over_api):  # pylint: disable=unused-argument
+    """Open ADCM tab Action"""
     return ActionPage(app_fs.driver, url=app_fs.adcm.url, cluster_id=cluster.cluster_id)
 
 
-@allure.step("Open ADCM tab Action")
+@allure.step("Wait for job object to be created")
 def wait_for_job_creation(cluster, interval=1, timeout=30):
+    """Wait for job object to be created"""
     start = time.time()
     while time.time() - start < timeout:
         try:
@@ -55,16 +60,19 @@ def wait_for_job_creation(cluster, interval=1, timeout=30):
 
 @allure.step("Check if verbosity is {verbose_state}")
 def check_verbosity(log, verbose_state):
+    """Assert action verbosity by log content"""
     assert ("verbosity: 4" in log.content) is verbose_state
 
 
 def test_check_verbose_checkbox_of_action_run_form_is_displayed(cluster_action_page):
+    """Test if verbose checkbox is displayed in popup from Action page"""
     with allure.step("Check if verbose checkbox is displayed in popup from Action page"):
         assert cluster_action_page.check_verbose_chbx_displayed(), "Verbose checkbox is not displayed in the popup"
 
 
 @pytest.mark.parametrize("verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"])
 def test_check_verbose_info_of_action_run_form(cluster_action_page, cluster, verbose_state):
+    """Test actual action verbosity by action log"""
     cluster_action_page.run_action(is_verbose=verbose_state)
     job = wait_for_job_creation(cluster)
     log = job.log(job_id=job.id, log_id=job.log_list()[0].id)

@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Header locators"""
+
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator
@@ -65,6 +67,8 @@ class AuthorizedHeaderLocators(CommonHeaderLocators):
         acknowledge_btn = Locator(By.CSS_SELECTOR, "a.acknowledge", "Acknowledge button")
 
         class JobRow:
+            """ADCM header popup job row with jobs"""
+
             job_status = Locator(By.CSS_SELECTOR, "mat-icon", "Job status in job row")
             job_name = Locator(By.CSS_SELECTOR, "a", "Job row name in popup list")
 

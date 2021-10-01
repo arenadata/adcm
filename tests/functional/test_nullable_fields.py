@@ -11,6 +11,9 @@
 # limitations under the License.
 
 # pylint:disable=redefined-outer-name
+
+"""Tests for nullable config fields"""
+
 import shutil
 from tempfile import mkdtemp
 
@@ -30,6 +33,7 @@ TEMPLATE = DATADIR + '/template.yaml'
 
 @allure.step('Read template file')
 def read_conf(template_file_name):
+    """Read template file"""
     try:
         with open(template_file_name, encoding='utf_8') as file:
             data = file.read()
@@ -40,12 +44,14 @@ def read_conf(template_file_name):
 
 @allure.step('Load template file')
 def render(template, context):
+    """Load template file"""
     tmpl = Template(template)
     return yaml.safe_load(tmpl.render(config_type=context))
 
 
 @allure.step('Save template')
 def save_conf(rendered_template, out_dir, out_file_name='/config.yaml'):
+    """Save template"""
     with open(out_dir + out_file_name, 'w', encoding='utf_8') as out:
         out.write(yaml.dump(rendered_template, default_flow_style=False))
 
@@ -55,7 +61,8 @@ types_list = ['integer', 'float', 'string', 'boolean', 'password', 'text', 'json
 
 
 @pytest.fixture(params=types_list)
-def data(sdk_client_fs: ADCMClient, request):
+def cluster_and_param(sdk_client_fs: ADCMClient, request):
+    """Create cluster"""
     out_dir = mkdtemp()
     conf = read_conf(TEMPLATE)
     save_conf(render(conf, request.param), out_dir)
@@ -65,9 +72,10 @@ def data(sdk_client_fs: ADCMClient, request):
     shutil.rmtree(out_dir)
 
 
-def test_null_value_shouldnt_be_for_required(data, val=None):
+def test_null_value_shouldnt_be_for_required(cluster_and_param, val=None):
+    """Test null value for required field"""
     with allure.step('Set configuration to cluster'):
-        cluster, case = data
+        cluster, case = cluster_and_param
         conf = {"required": val, "following": val}
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             cluster.config_set(conf)

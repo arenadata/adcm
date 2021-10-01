@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for actions config"""
+
 import pytest
 import allure
 
@@ -41,7 +43,7 @@ ACTION_MAP = {
 
 @pytest.fixture()
 def cluster(sdk_client_fs: ADCMClient) -> Cluster:
-    """Get cluster"""
+    """Create cluster"""
     uploaded_bundle = sdk_client_fs.upload_from_fs(plugin_utils.get_data_dir(__file__, "cluster"))
     cluster = uploaded_bundle.cluster_create('test_cluster')
     cluster.service_add(name='test_service')
@@ -50,7 +52,7 @@ def cluster(sdk_client_fs: ADCMClient) -> Cluster:
 
 @pytest.fixture()
 def provider(sdk_client_fs: ADCMClient) -> Provider:
-    """Get cluster"""
+    """Create provider"""
     uploaded_bundle = sdk_client_fs.upload_from_fs(plugin_utils.get_data_dir(__file__, "provider"))
     provider = uploaded_bundle.provider_create('test_cluster')
     provider.host_create(fqdn='test-host')

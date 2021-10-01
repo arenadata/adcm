@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Popup page PageObjects classes"""
+
 from typing import Optional
 
 import allure
@@ -62,12 +65,14 @@ class HostCreatePopupObj(BasePageObject):
 
     @allure.step("Select cluster '{cluster_name}' in popup")
     def choose_cluster_in_popup(self, cluster_name: str):
+        """Choose and click cluster in popup"""
         self.find_and_click(HostCreationLocators.Cluster.cluster_select)
         option = HostCreationLocators.Cluster.cluster_option
         self.wait_and_click_on_cluster_option(cluster_name, option)
         self.wait_element_hide(option)
 
     def wait_and_click_on_cluster_option(self, cluster_name: str, option_locator: Locator):
+        """Wait for cluster and click on it"""
         WDW(self.driver, self.default_loc_timeout).until(
             EC.presence_of_element_located([option_locator.by, option_locator.value.format(cluster_name)]),
             message=f"Can't find cluster with name {cluster_name} in dropdown "

@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Job page PageObjects classes"""
+
 from dataclasses import dataclass
 from typing import Literal
 
@@ -36,6 +38,7 @@ class DetailedPageJobInfo:
 
 
 class JobPageMixin(BasePageObject):
+    """Helpers for working with job page"""
 
     MAIN_ELEMENTS: list
     job_id: int
@@ -57,6 +60,7 @@ class JobPageMixin(BasePageObject):
 
     @allure.step("Check title on the page")
     def check_title(self, expected_title: str):
+        """Check title on the page"""
         self.wait_element_visible(ObjectPageLocators.title)
         current_title = self.find_element(ObjectPageLocators.title).text
         assert current_title == expected_title, f"Title should be '{expected_title}', but was {current_title}''"
@@ -99,6 +103,7 @@ class JobPageStdout(JobPageMixin):
 
     @allure.step("Check text on the page")
     def check_text(self, success_task: bool = True):
+        """Check text on the page"""
         task_result = 'Success' if success_task else 'Fail'
         headings = [
             "PLAY [SeeMeInAction]",

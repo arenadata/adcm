@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Tests for ADCM events"""
+
 import json
 import os
 import re
@@ -32,6 +35,7 @@ pytestmark = [only_clean_adcm]
 
 
 def repr_template(event_type, obj_type, obj_id, dtype=None, value=None):
+    """Get template repr"""
     return {
         'event': event_type,
         'object': {'type': obj_type, 'id': obj_id, 'details': {'type': dtype, 'value': value}},
@@ -39,10 +43,12 @@ def repr_template(event_type, obj_type, obj_id, dtype=None, value=None):
 
 
 def prep_url(url):
+    """Prepare URL"""
     return R_WWW_PREFIX.sub('', url).strip().strip('/')
 
 
 def assert_events(websocket_connection, *expected_events):
+    """Assert WS events"""
     expected_list = list(expected_events)
     count = 1
     try:
@@ -60,6 +66,7 @@ def assert_events(websocket_connection, *expected_events):
 
 @pytest.fixture()
 def websocket_connection(sdk_client_fs: ADCMClient, max_conn=10):
+    """Create WS connection"""
     last_error = None
     while max_conn:
         try:
@@ -78,6 +85,7 @@ def websocket_connection(sdk_client_fs: ADCMClient, max_conn=10):
 
 @pytest.fixture()
 def cluster_with_svc_and_host(sdk_client_fs):
+    """Create cluster, service and host"""
     cluster_instance = cluster(sdk_client_fs)
     svc = cluster_instance.service_add(name='zookeeper')
     hst = host(sdk_client_fs)
@@ -88,30 +96,37 @@ def cluster_with_svc_and_host(sdk_client_fs):
 
 
 def cluster_bundle(sdk_client_fs):
+    """Prepare cluster bundle path"""
     return sdk_client_fs.upload_from_fs(os.path.join(DATADIR, 'cluster_bundle'))
 
 
 def cluster(sdk_client_fs, name=utils.random_string()):
+    """Create cluster"""
     return cluster_bundle(sdk_client_fs).cluster_create(name=name)
 
 
 def provider(sdk_client_fs, name=utils.random_string()):
+    """Create provider"""
     return sdk_client_fs.upload_from_fs(os.path.join(DATADIR, 'hostprovider')).provider_create(name=name)
 
 
 def host(sdk_client_fs, fqdn=utils.random_string()):
+    """Create host"""
     return provider(sdk_client_fs).host_create(fqdn=fqdn)
 
 
 def service(sdk_client_fs, name='zookeeper'):
+    """Create service"""
     return cluster(sdk_client_fs).service_add(name=name)
 
 
 def cluster_action_run(sdk_client_fs, name, **kwargs):
+    """Run cluster action"""
     return cluster(sdk_client_fs).action(name=name).run(**kwargs)
 
 
 def expected_success_task(obj, job):
+    """Get list of tasks expected to succeed"""
     return (
         repr_template('change_job_status', 'task', obj.id, 'status', 'created'),
         repr_template('change_job_status', 'job', job.id, 'status', 'created'),
@@ -123,6 +138,7 @@ def expected_success_task(obj, job):
 
 
 def expected_failed_task(obj, job):
+    """Get list of tasks expected to fail"""
     return (
         repr_template('change_job_status', 'task', obj.id, 'status', 'created'),
         repr_template('change_job_status', 'job', job.id, 'status', 'created'),
@@ -152,6 +168,7 @@ svc_actions = [
 
 @pytest.mark.parametrize(('adcm_object', 'event_type', 'obj_type'), create_adcm_obj)
 def test_event_when_create_(obj_type, adcm_object, event_type, sdk_client_fs, websocket_connection):
+    """Test events on object creation"""
     with allure.step(f'Create {obj_type}'):
         obj = adcm_object(sdk_client_fs)
     with allure.step(f'Check created {obj_type}'):
@@ -159,6 +176,7 @@ def test_event_when_create_(obj_type, adcm_object, event_type, sdk_client_fs, we
 
 
 def test_event_when_create_host(sdk_client_fs, websocket_connection):
+    """Test events on host creation"""
     obj = host(sdk_client_fs, fqdn=utils.random_string())
     with allure.step('Check created host'):
         assert_events(
@@ -168,6 +186,7 @@ def test_event_when_create_host(sdk_client_fs, websocket_connection):
 
 
 def test_event_when_host_added_to_cluster(sdk_client_fs, websocket_connection):
+    """Test events on host addition to cluster"""
     cluster_instance = cluster(sdk_client_fs)
     hst = host(sdk_client_fs)
     cluster_instance.host_add(hst)
@@ -179,6 +198,7 @@ def test_event_when_host_added_to_cluster(sdk_client_fs, websocket_connection):
 
 
 def test_event_when_add_service(sdk_client_fs, websocket_connection):
+    """Test events on service add"""
     obj = service(sdk_client_fs)
     assert_events(
         websocket_connection,
@@ -188,6 +208,7 @@ def test_event_when_add_service(sdk_client_fs, websocket_connection):
 
 @pytest.mark.parametrize(('case', 'action_name', 'expected'), cluster_actions)
 def test_events_when_cluster_action_(case, action_name, expected, websocket_connection, cluster_with_svc_and_host):
+    """Test events on cluster actions run"""
     cluster, _, _ = cluster_with_svc_and_host
     job = cluster.action(name=action_name).run()
     with allure.step(f'Check {case}'):
@@ -196,6 +217,7 @@ def test_events_when_cluster_action_(case, action_name, expected, websocket_conn
 
 @pytest.mark.parametrize(('case', 'action_name', 'expected'), svc_actions)
 def test_events_when_service_(case, action_name, expected, websocket_connection, cluster_with_svc_and_host):
+    """Test events on service manipulations"""
     _, zookeeper, _ = cluster_with_svc_and_host
     job = zookeeper.action(name=action_name).run()
     with allure.step(f'Check {case}'):

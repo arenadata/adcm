@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""URL constants"""
+
 # Created by a1wen at 01.03.19
 
 CLUSTERS = '/cluster'
