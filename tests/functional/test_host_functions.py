@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for host functions"""
+
 import json
 import os
 import random
@@ -30,26 +32,31 @@ SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
 
 @pytest.fixture()
 def provider_bundle(sdk_client_fs: ADCMClient) -> Bundle:
+    """Path to provider bundle"""
     return sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider_bundle"))
 
 
 @pytest.fixture()
 def provider(provider_bundle: Bundle) -> Provider:
+    """Create provider"""
     return provider_bundle.provider_create(utils.random_string())
 
 
 @pytest.fixture()
 def host(provider: Provider) -> Host:
+    """Create host"""
     return provider.host_create(utils.random_string())
 
 
 @pytest.fixture()
 def cluster_bundle(sdk_client_fs: ADCMClient):
+    """Path to cluster bundle"""
     return sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_bundle"))
 
 
 @pytest.fixture()
 def cluster(cluster_bundle: Bundle) -> Cluster:
+    """Create cluster"""
     return cluster_bundle.cluster_create(utils.random_string())
 
 

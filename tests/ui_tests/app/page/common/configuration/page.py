@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Config page PageObjects classes"""
+
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import List, Collection, Optional
@@ -122,11 +124,11 @@ class CommonConfigMenuObj(BasePageObject):
         :param is_password: Is field password/confirmation
         """
 
-        def assert_value():
+        def _assert_value():
             input_value = self.get_input_value(row=self.get_config_row(display_name), is_password=is_password)
             assert expected_value == input_value, f'Expected value was {expected_value} but presented is {input_value}'
 
-        wait_until_step_succeeds(assert_value, timeout=4, period=0.5)
+        wait_until_step_succeeds(_assert_value, timeout=4, period=0.5)
 
     def reset_to_default(self, row: WebElement):
         """Click reset button"""
@@ -168,18 +170,18 @@ class CommonConfigMenuObj(BasePageObject):
     def click_on_group(self, title: str):
         """Click on group with given title"""
 
-        def is_group_expanded(group: WebElement):
+        def _is_group_expanded(group: WebElement):
             return "expanded" in group.get_attribute("class")
 
-        def click_group():
+        def _click_group():
             group = self.find_element(self.locators.group_btn(title))
-            is_expanded = is_group_expanded(group)
+            is_expanded = _is_group_expanded(group)
             group.click()
             assert (
-                is_group_expanded(self.find_element(self.locators.group_btn(title))) != is_expanded
-            ), f"Group should be{'' if is_group_expanded else ' not '}expanded"
+                _is_group_expanded(self.find_element(self.locators.group_btn(title))) != is_expanded
+            ), f"Group should be{'' if _is_group_expanded else ' not '}expanded"
 
-        wait_until_step_succeeds(click_group, period=1, timeout=10)
+        wait_until_step_succeeds(_click_group, period=1, timeout=10)
 
     @allure.step('Search for {keys}')
     def search(self, keys: str):
@@ -242,7 +244,7 @@ class CommonConfigMenuObj(BasePageObject):
         amount_before = len(self.get_all_config_rows())
         yield
 
-        def wait_changing_rows_amount():
+        def _wait_changing_rows_amount():
             amount_after = len(self.get_all_config_rows())
             assert amount_after != amount_before, "Amount of rows on the page hasn't changed"
             if expected_rows_amount:
@@ -250,25 +252,29 @@ class CommonConfigMenuObj(BasePageObject):
                     amount_after == expected_rows_amount
                 ), f"Amount of rows on the page should be {expected_rows_amount}"
 
-        wait_until_step_succeeds(wait_changing_rows_amount, period=1, timeout=10)
+        wait_until_step_succeeds(_wait_changing_rows_amount, period=1, timeout=10)
 
-    @allure.step("Get info by row")
     def get_config_row_info(self, row: WebElement):
+        """Get info by row"""
         return ConfigRowInfo(
             name=self.find_child(row, CommonConfigMenu.ConfigRow.name).text,
             value=self.find_child(row, CommonConfigMenu.ConfigRow.value).get_attribute('value'),
         )
 
+    @allure.step("Clear search input")
     def clear_search_input(self):
+        """Clear search input"""
         self.find_and_click(CommonConfigMenu.search_input_clear_btn)
 
-    @allure.step("Get row history")
     def get_history_in_row(self, row: WebElement):
+        """Get history roe"""
         return [h.text for h in self.find_children(row, CommonConfigMenu.ConfigRow.history)]
 
     @allure.step("Wait row with history value {value}")
     def wait_history_row_with_value(self, row: WebElement, value: str):
-        def assert_value():
+        """Wait for value in History row"""
+
+        def _assert_value():
             assert self.get_history_in_row(row)[0] == value, "History row should contain old value"
 
-        wait_until_step_succeeds(assert_value, timeout=4, period=0.5)
+        wait_until_step_succeeds(_assert_value, timeout=4, period=0.5)

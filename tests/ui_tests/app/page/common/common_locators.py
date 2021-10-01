@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Common locators"""
+
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator
@@ -54,4 +56,6 @@ class CommonActionLocators:
     info_text = Locator(By.CSS_SELECTOR, "app-action-card>p", "Text on action page")
 
     class ActionCard:
+        """Common action page action card elements locators"""
+
         play_btn = Locator(By.CSS_SELECTOR, "button", "Action run button")

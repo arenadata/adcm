@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Tests for hostprovider functions"""
+
 import json
 import os
 
@@ -28,12 +31,14 @@ SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
 
 
 def test_load_host_provider(sdk_client_fs: ADCMClient):
+    """Test load hostprovider bundle"""
     sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     with allure.step("Check bundle list"):
         assert "provider_sample" in [bundle.name for bundle in sdk_client_fs.bundle_list()]
 
 
 def test_validate_provider_prototype(sdk_client_fs: ADCMClient):
+    """Test validate hostprovider prototype"""
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     with allure.step("Load provider prototype"):
         provider_prototype = bundle.provider_prototype()._data
@@ -44,6 +49,7 @@ def test_validate_provider_prototype(sdk_client_fs: ADCMClient):
 
 
 def test_should_create_provider_wo_description(sdk_client_fs: ADCMClient):
+    """Test create provider without description"""
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     provider_name = utils.random_string()
     bundle.provider_create(name=provider_name)
@@ -52,6 +58,7 @@ def test_should_create_provider_wo_description(sdk_client_fs: ADCMClient):
 
 
 def test_should_create_provider_w_description(sdk_client_fs: ADCMClient):
+    """Test create provider with description"""
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     description = utils.random_string(140)
     provider = bundle.provider_create(name=utils.random_string(), description=description)
@@ -60,6 +67,7 @@ def test_should_create_provider_w_description(sdk_client_fs: ADCMClient):
 
 
 def test_get_provider_config(sdk_client_fs: ADCMClient):
+    """Test get provider config"""
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     provider = bundle.provider_create(name=utils.random_string())
     with allure.step("Check provider config"):
@@ -68,6 +76,7 @@ def test_get_provider_config(sdk_client_fs: ADCMClient):
 
 @allure.link("https://jira.arenadata.io/browse/ADCM-472")
 def test_provider_shouldnt_be_deleted_when_it_has_host(sdk_client_fs: ADCMClient):
+    """Test delete provider with host should fail"""
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     provider = bundle.provider_create(name=utils.random_string())
     provider.host_create(fqdn=utils.random_string())
@@ -79,6 +88,7 @@ def test_provider_shouldnt_be_deleted_when_it_has_host(sdk_client_fs: ADCMClient
 
 
 def test_shouldnt_create_host_with_unknown_prototype(sdk_client_fs):
+    """Test create host with unknown prototype should fail"""
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     provider = bundle.provider_create(name=utils.random_string())
     with allure.step("Delete provider"):

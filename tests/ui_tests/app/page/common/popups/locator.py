@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Popup page locators"""
+
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import (

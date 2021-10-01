@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""UI tests for password type config fields"""
+
 import allure
 import pytest
 from adcm_client.objects import ADCMClient
@@ -22,6 +24,7 @@ pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
 
 
 def test_password_noconfirm_false_required_false(sdk_client_fs: ADCMClient, app_fs):
+    """Test password field visualisation with noconfirm=false required=false"""
     path = get_data_dir(__file__) + "/password_no_confirm_false_required_false"
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     with allure.step('Check save button status for no password confirmation is false and required is false'):
@@ -29,6 +32,7 @@ def test_password_noconfirm_false_required_false(sdk_client_fs: ADCMClient, app_
 
 
 def test_password_noconfirm_false_required_true(sdk_client_fs: ADCMClient, app_fs):
+    """Test password field visualisation with noconfirm=false required=true"""
     path = get_data_dir(__file__) + "/password_no_confirm_false_required_true"
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     with allure.step('Check save button status for no password confirmation is true and required is false'):
@@ -42,6 +46,7 @@ def test_password_noconfirm_false_required_true(sdk_client_fs: ADCMClient, app_f
 
 
 def test_password_noconfirm_true_required_false(sdk_client_fs: ADCMClient, app_fs):
+    """Test password field visualisation with noconfirm=true required=false"""
     path = get_data_dir(__file__) + "/password_no_confirm_true_required_false"
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     with allure.step('Check save button status for no password confirmation is false and required is false'):
@@ -52,6 +57,7 @@ def test_password_noconfirm_true_required_false(sdk_client_fs: ADCMClient, app_f
 
 
 def test_password_noconfirm_true_required_true(sdk_client_fs: ADCMClient, app_fs):
+    """Test password field visualisation with noconfirm=false required=false"""
     path = get_data_dir(__file__) + "/password_no_confirm_true_required_true"
     _, config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
     with allure.step('Check save button status for no password confirmation is false and required is false'):

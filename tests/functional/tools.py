@@ -24,17 +24,20 @@ from tests.functional.plugin_utils import AnyADCMObject
 
 
 def action_in_object_is_present(action: str, obj: AnyADCMObject):
+    """Assert action in object is present"""
     with allure.step(f"Assert that action {action} is present in {_get_object_represent(obj)}"):
         with catch_failed(ObjectNotFound, f"Action {action} not found in object {obj}"):
             obj.action(name=action)
 
 
 def actions_in_objects_are_present(actions_to_obj: List[Tuple[str, AnyADCMObject]]):
+    """Assert actions in objects are present"""
     for pair in actions_to_obj:
         action_in_object_is_present(*pair)
 
 
 def action_in_object_is_absent(action: str, obj: AnyADCMObject):
+    """Assert action in object is absent"""
     with allure.step(f"Assert that action {action} is absent in {_get_object_represent(obj)}"):
         with catch_failed(Failed, f"Action {action} is present in {_get_object_represent(obj)}"):
             with pytest.raises(ObjectNotFound):
@@ -42,6 +45,7 @@ def action_in_object_is_absent(action: str, obj: AnyADCMObject):
 
 
 def actions_in_objects_are_absent(actions_to_obj: List[Tuple[str, AnyADCMObject]]):
+    """Assert actions in objects are absent"""
     for pair in actions_to_obj:
         action_in_object_is_absent(*pair)
 

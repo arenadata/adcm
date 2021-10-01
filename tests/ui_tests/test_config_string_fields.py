@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""UI tests for string type config fields"""
+
 # pylint:disable=redefined-outer-name
 import os
 import time
@@ -53,8 +55,9 @@ REQUIRED_FIELDS = [
 
 
 @pytest.fixture()
-@allure.step('Upload bundle, create cluster and add service')
+@allure.title('Upload bundle, create cluster and add service')
 def service(sdk_client_fs):
+    """Upload bundle, create cluster and add service"""
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='my cluster')
     cluster.service_add(name='string_fields_config_test')
@@ -62,8 +65,9 @@ def service(sdk_client_fs):
 
 
 @pytest.fixture()
-@allure.step("Open ADCM tab Configuration")
+@allure.title("Open service config page")
 def ui_config(app_fs, service, login_to_adcm_over_api):  # pylint: disable=unused-argument
+    """Open service config page"""
     return Configuration.from_service(app_fs, service)
 
 
@@ -91,6 +95,7 @@ def test_required_string_frontend_error(ui_config, required_field):
 
 @pytest.mark.parametrize("field", NO_REQUIRED_FIELDS)
 def test_empty_no_required_string(field, ui_config):
+    """Test UI behaviour of non-required empty field"""
     textboxes = ui_config.get_textboxes()
     with allure.step('Check that save button is active in case when no required field is empty'):
         for textbox in textboxes:
@@ -118,5 +123,6 @@ def test_search_field(ui_config, pattern):
 
 
 def test_save_configuration(ui_config):
+    """Test that we can click save configuration if no errors on page"""
     with allure.step('Check that we can click save configuration if no errors on page'):
         assert ui_config.save_button_status()

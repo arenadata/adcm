@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""UI tests for read only config fields"""
+
 import allure
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs

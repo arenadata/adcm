@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Host List page PageObjects classes"""
+
 from typing import Optional, ClassVar
 from dataclasses import dataclass
 
@@ -24,7 +27,7 @@ from tests.ui_tests.app.page.common.base_page import (
     PageHeader,
     PageFooter,
 )
-from tests.ui_tests.app.page.common.dialogs import DeleteDialog, ActionDialog
+from tests.ui_tests.app.page.common.dialogs_locators import DeleteDialog, ActionDialog
 from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
 from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
@@ -45,6 +48,8 @@ class HostRowInfo:
 
 
 class HostListPage(BasePageObject):
+    """Host List Page class"""
+
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/host")
         self.header = PageHeader(self.driver, self.base_url)
@@ -54,16 +59,19 @@ class HostListPage(BasePageObject):
 
     @allure.step('Get host information from row #{row_num}')
     def get_host_row(self, row_num: int = 0) -> WebElement:
-        def table_has_enough_rows():
+        """Get host information from row"""
+
+        def _table_has_enough_rows():
             assert_enough_rows(row_num, self.table.row_count)
 
-        wait_until_step_succeeds(table_has_enough_rows, timeout=5, period=0.1)
+        wait_until_step_succeeds(_table_has_enough_rows, timeout=5, period=0.1)
         rows = self.table.get_all_rows()
         assert_enough_rows(row_num, len(rows))
         return rows[row_num]
 
     @allure.step('Get host information from table row #{row_num}')
     def get_host_info_from_row(self, row_num: int = 0) -> HostRowInfo:
+        """Get host information from table row"""
         row = self.table.get_row(row_num)
         row_elements = HostListLocators.HostTable.HostRow
         cluster_value = self.find_child(row, row_elements.cluster).text
@@ -76,6 +84,7 @@ class HostListPage(BasePageObject):
 
     @allure.step('Click on cell {child_locator} (row #{row_num})')
     def click_on_row_child(self, row_num: int, child_locator: Locator):
+        """Click on row child"""
         row = self.table.get_row(row_num)
         self.find_child(row, child_locator).click()
 
@@ -124,6 +133,7 @@ class HostListPage(BasePageObject):
 
     @allure.step('Run action "{action_display_name}" on host in row {host_row_num}')
     def run_action(self, host_row_num: int, action_display_name: str):
+        """Run action from Host row"""
         host_row = HostListLocators.HostTable.HostRow
         self.click_on_row_child(host_row_num, host_row.actions)
         init_action = self.wait_element_visible(host_row.action_option(action_display_name))
@@ -147,24 +157,29 @@ class HostListPage(BasePageObject):
 
     @allure.step('Assert host in row {row_num} is assigned to cluster {cluster_name}')
     def assert_host_bonded_to_cluster(self, row_num: int, cluster_name: str):
-        def check_host_cluster(page: HostListPage, row: WebElement):
+        """Assert host in row is assigned to cluster"""
+
+        def _check_host_cluster(page: HostListPage, row: WebElement):
             real_cluster = page.find_child(row, HostListLocators.HostTable.HostRow.cluster).text
             assert real_cluster == cluster_name
 
         host_row = self.table.get_row(row_num)
-        wait_until_step_succeeds(check_host_cluster, timeout=5, period=0.1, page=self, row=host_row)
+        wait_until_step_succeeds(_check_host_cluster, timeout=5, period=0.1, page=self, row=host_row)
 
     @allure.step('Assert host in row {row_num} has state "{state}"')
     def assert_host_state(self, row_num: int, state: str):
-        def check_host_state(page: HostListPage, row: WebElement):
+        """Assert host in row has state  given state"""
+
+        def _check_host_state(page: HostListPage, row: WebElement):
             real_state = page.find_child(row, HostListLocators.HostTable.HostRow.state).text
             assert real_state == state
 
         host_row = self.table.get_row(row_num)
-        wait_until_step_succeeds(check_host_state, timeout=10, period=0.5, page=self, row=host_row)
+        wait_until_step_succeeds(_check_host_state, timeout=10, period=0.5, page=self, row=host_row)
 
     @allure.step('Open host creation popup')
     def open_host_creation_popup(self):
+        """Open host creation popup"""
         self.find_and_click(HostListLocators.Tooltip.host_add_btn)
         self.wait_element_visible(HostCreationLocators.block)
 

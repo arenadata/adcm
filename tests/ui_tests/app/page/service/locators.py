@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Service page locators"""
 
 from selenium.webdriver.common.by import By
 

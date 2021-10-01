@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""UI tests for /bundle page"""
+
 import os
 from typing import List
 
@@ -82,6 +85,7 @@ def _open_bundle_list_and_check_info(page: BundleListPage, expected_info: Bundle
 
 @allure.step('Check bundle info')
 def check_bundle_info_is_equal(actual_info: BundleInfo, expected_info: BundleInfo):
+    """Assert bundle attrs values"""
     for attr in ('name', 'description', 'version', 'edition'):
         _assert_bundle_info_value(attr, actual_info, expected_info)
 
@@ -93,9 +97,10 @@ def page(app_fs: ADCMTest, login_to_adcm_over_api) -> BundleListPage:
     return BundleListPage(app_fs.driver, app_fs.adcm.url).open()
 
 
-@allure.title("Upload bundle")
+@allure.title("Upload bundles")
 @pytest.fixture()
 def upload_bundles(create_bundle_archives: List[str], sdk_client_fs: ADCMClient) -> List[Bundle]:
+    """Upload bundles to ADCM"""
     return [sdk_client_fs.upload_from_fs(path) for path in create_bundle_archives]
 
 

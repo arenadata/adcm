@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for ADCM objects states and related stuff"""
+
 # todo add new DSL variant for job and multijob
 # todo add multistate tests for job and multijob
 
@@ -34,6 +36,7 @@ ACTION_NAME = 'state_changing_action'
 
 @fixture_parametrized_by_data_subdirs(__file__, 'cluster_and_service')
 def cluster_and_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Cluster, Callable]:
+    """Create cluster and states checker"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
     cluster = bundle.cluster_create(name=bundle.name)
     bundle.cluster_create(name=f"{bundle.name}_second")
@@ -46,7 +49,10 @@ def cluster_and_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Clus
 
 
 class TestClusterRelatedObjects:
+    """Tests for cluster-related objects states"""
+
     def test_cluster_state_after_action(self, sdk_client_fs: ADCMClient, cluster_and_states_checker):
+        """Test cluster state after action"""
         cluster_obj, check_objects_state_changed = cluster_and_states_checker
         object_to_be_changed = cluster_obj
         with check_objects_state_changed(sdk_client_fs, {object_to_be_changed}), allure.step(
@@ -59,6 +65,7 @@ class TestClusterRelatedObjects:
             )
 
     def test_service_state_after_action(self, sdk_client_fs: ADCMClient, cluster_and_states_checker):
+        """Test service state after action"""
         cluster_obj, check_objects_state_changed = cluster_and_states_checker
         cluster_obj.service_add(name='first_srv')
         object_to_be_changed = cluster_obj.service(name='first_srv')
@@ -73,6 +80,7 @@ class TestClusterRelatedObjects:
             )
 
     def test_component_state_after_action(self, sdk_client_fs: ADCMClient, cluster_and_states_checker):
+        """Test component state after action"""
         cluster_obj, check_objects_state_changed = cluster_and_states_checker
         cluster_obj.service_add(name='first_srv')
         object_to_be_changed = cluster_obj.service(name='first_srv').component(name='first_cmp')
@@ -88,6 +96,7 @@ class TestClusterRelatedObjects:
 
 @fixture_parametrized_by_data_subdirs(__file__, 'provider_and_host')
 def provider_and_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Provider, Callable]:
+    """Create provider and states checker"""
     bundle = sdk_client_fs.upload_from_fs(request.param)
     provider = bundle.provider_create(name=bundle.name)
     bundle.provider_create(name=f"{bundle.name}_second")
@@ -102,7 +111,10 @@ def provider_and_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Pro
 
 
 class TestProviderRelatedObjects:
+    """Tests for provider-related objects states"""
+
     def test_provider_state_after_action(self, sdk_client_fs: ADCMClient, provider_and_states_checker):
+        """Test provider state after action"""
         provider_obj, check_objects_state_changed = provider_and_states_checker
         object_to_be_changed = provider_obj
         with check_objects_state_changed(sdk_client_fs, {object_to_be_changed}), allure.step(
@@ -115,6 +127,7 @@ class TestProviderRelatedObjects:
             )
 
     def test_host_state_after_action(self, sdk_client_fs: ADCMClient, provider_and_states_checker):
+        """Test host state after action"""
         provider_obj, check_objects_state_changed = provider_and_states_checker
         object_to_be_changed = provider_obj.host(fqdn=provider_obj.name)
         with check_objects_state_changed(sdk_client_fs, {object_to_be_changed}), allure.step(
