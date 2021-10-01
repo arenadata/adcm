@@ -23,6 +23,7 @@ from adcm_pytest_plugin.docker_utils import ADCM
 
 @allure.step("Check that ADCM version has been changed")
 def check_adcm_version_changed(before: str, after: str) -> None:
+    """Check if 'after' version is more recent that 'before'"""
     if rpm.compare_versions(after, before) < 1:
         raise AssertionError("ADCM version after upgrade is older or equal to the version before")
 
