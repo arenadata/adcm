@@ -12,7 +12,6 @@
 
 """ADCM API helpers for UI tests"""
 
-import json
 import allure
 import requests
 
