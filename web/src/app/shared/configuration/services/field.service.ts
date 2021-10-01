@@ -28,7 +28,7 @@ import {
   TNBase,
   TNForm
 } from '../types';
-import { Attributes, AttributeService } from '@app/shared/configuration/services/attribute.service';
+import { Attributes, AttributeService } from '@app/shared/configuration/attribute-provider/attribute.service';
 
 export type TFormOptions = IFieldOptions | IPanelOptions;
 

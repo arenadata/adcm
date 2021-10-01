@@ -26,14 +26,11 @@ import { BaseDirective } from '@adwp-ui/widgets';
       <ng-template #one>
         <div class="field-row row d-flex">
           <ng-container *ngIf="!item.hidden">
-            <div class="group-checkbox d-flex" style="padding: 5px">
-              <app-config-group-checkbox appTooltip="Not available for this parameter"
-                                         [disabled]="item.read_only"></app-config-group-checkbox>
-            </div>
-            <app-field class="w100" [form]="form" [options]="item"
-                       [ngClass]="{ 'read-only': item.read_only }"></app-field>
+            <app-config-attribute-provider [options]="item">
+              <app-field appConfigAttribute *appConfigField class="w100" [form]="form" [options]="item"
+                         [ngClass]="{ 'read-only': item.read_only }"></app-field>
+            </app-config-attribute-provider>
           </ng-container>
-
         </div>
       </ng-template>
     </ng-container>
@@ -66,7 +63,6 @@ export class ConfigFieldsComponent extends BaseDirective {
     if (!data) return;
     this.rawConfig = data;
     this.dataOptions = this.service.getPanels(data);
-    console.log('data-options: ', this.dataOptions);
     this.form = this.service.toFormGroup(this.dataOptions);
     this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
     this.shapshot = { ...this.form.value };

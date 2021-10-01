@@ -11,7 +11,7 @@
 // limitations under the License.
 import { IYspec } from './yspec/yspec.service';
 import { TFormOptions } from './services/field.service';
-import { Attributes } from '@app/shared/configuration/services/attribute.service';
+import { Attributes } from '@app/shared/configuration/attribute-provider/attribute.service';
 
 export type stateType = 'created' | 'locked';
 

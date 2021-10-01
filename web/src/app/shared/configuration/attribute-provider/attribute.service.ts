@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { IConfigAttr } from '@app/shared/configuration/types';
+import { IConfigAttr } from '../types';
+import { GroupKeysWrapperComponent } from '@app/shared/configuration/attribute-provider/attributes/group-keys/group-keys-wrapper.component';
 
 export enum ConfigAttributeNames {
   CUSTOM_GROUP_KEYS = 'custom_group_keys',
@@ -66,16 +67,17 @@ export class ConfigAttributeFactory {
     return {
       name: ConfigAttributeNames.GROUP_KEYS,
       value,
+      meta: {
+        wrapper: GroupKeysWrapperComponent,
+        tooltipText: 'ConfigAttributeNames.CUSTOM_GROUP_KEYS tooltip text'
+      }
     };
   }
 
   private [ConfigAttributeNames.CUSTOM_GROUP_KEYS](value: ConfigAttributeValue): ConfigAttribute {
     return {
       name: ConfigAttributeNames.CUSTOM_GROUP_KEYS,
-      value,
-      meta: {
-        tooltipText: 'ConfigAttributeNames.CUSTOM_GROUP_KEYS tooltip text'
-      }
+      value
     };
   }
 }

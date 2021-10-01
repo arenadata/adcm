@@ -45,6 +45,9 @@ import { AdwpListModule } from '@adwp-ui/widgets';
 import { AddingModule } from '@app/shared/add-component/adding.module';
 import { ConfigService } from '@app/shared/configuration/services/config.service';
 import { ConfigGroupModule } from '@app/config-groups';
+import { AttributeProviderComponent } from './attribute-provider/attribute-provider.component';
+import { ConfigFieldMarker } from './attribute-provider/config-field.directive';
+import { GroupKeysWrapperComponent } from './attribute-provider/attributes/group-keys/group-keys-wrapper.component';
 
 const material = [
   MatIconModule,
@@ -74,6 +77,9 @@ const material = [
     SchemeComponent,
     RootComponent,
     ItemComponent,
+    AttributeProviderComponent,
+    ConfigFieldMarker,
+    GroupKeysWrapperComponent
   ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, StuffModule, FormElementsModule, ...material, AdwpListModule, AddingModule, ConfigGroupModule],
   exports: [ConfigComponent, ConfigFieldsComponent],

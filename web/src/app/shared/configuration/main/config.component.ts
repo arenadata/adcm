@@ -34,7 +34,7 @@ import { IConfig } from '../types';
 import { historyAnime, ISearchParam, MainService } from './main.service';
 import { WorkerInstance } from '@app/core/services/cluster.service';
 import { ActivatedRoute } from '@angular/router';
-import { Attributes } from '@app/shared/configuration/services/attribute.service';
+import { Attributes } from '@app/shared/configuration/attribute-provider/attribute.service';
 
 @Component({
   selector: 'app-config-form',
