@@ -759,12 +759,17 @@ availability_set_or_none:
   match: one_of
   variants:
     - availability_set
+    - unavailability_set
     - none
 
 availability_set:
   match: dict
   items:
     available: any_or_list
+
+unavailability_set:
+  match: dict
+  items:
     unavailable: any_or_list
 
 post_action:
@@ -776,7 +781,7 @@ post_action:
 multi_state_set:
   match: dict
   items:
-    set: string
+    set: list_of_string
     unset: list_of_string
 
 # Common types
