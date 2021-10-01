@@ -13,17 +13,16 @@
 """Host page PageObjects classes"""
 
 from typing import Optional
-from typing import Set
 
 import allure
+
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
-from tests.ui_tests.app.page.common.dialogs_locators import ActionDialog
-from tests.ui_tests.app.page.host.locators import HostLocators, HostActionsLocators
+from tests.ui_tests.app.page.host.locators import HostLocators
 
 
 class HostPageMixin(BasePageObject):
@@ -95,14 +94,6 @@ class HostPageMixin(BasePageObject):
         page.wait_page_is_opened()
         return page
 
-    @allure.step('Open "Actions" menu')
-    def open_action_menu(self) -> 'HostActionsPage':
-        """Open 'Actions' menu"""
-        self.find_and_click(HostLocators.MenuNavigation.actions_tab)
-        page = HostActionsPage(self.driver, self.base_url, self.host_id, None)
-        page.wait_page_is_opened()
-        return page
-
     def active_menu_is(self, menu_locator: Locator) -> bool:
         """
         Check that menu item is active
@@ -129,20 +120,3 @@ class HostStatusPage(HostPageMixin):
     """Host page status menu"""
 
     MENU_SUFFIX = 'status'
-
-
-class HostActionsPage(HostPageMixin):
-    """Host page actions page"""
-
-    MENU_SUFFIX = 'action'
-
-    def get_action_names(self) -> Set[str]:
-        """Get action names"""
-        return {element.text for element in self.find_elements(HostActionsLocators.action_name)}
-
-    @allure.step("Run action from actions menu")
-    def run_action_from_menu(self, action_name: str):
-        """Run action from actions menu"""
-        self.find_and_click(HostActionsLocators.action_btn(action_name))
-        self.wait_element_visible(ActionDialog.body)
-        self.find_and_click(ActionDialog.run)

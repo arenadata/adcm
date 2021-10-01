@@ -195,15 +195,16 @@ def test_forbidden_multi_state_set_actions(sdk_client_fs: ADCMClient):
                 run_provider_action_and_assert_result(provider, forbidden_action, status='failed')
 
 
-@pytest.mark.usefixtures('two_providers', 'two_clusters')
-def test_missing_ok_multi_state_unset(sdk_client_fs: ADCMClient):
+def test_missing_ok_multi_state_unset(
+    two_providers: Tuple[Provider, Provider], two_clusters: Tuple[Cluster, Cluster], sdk_client_fs: ADCMClient
+):
     """
     Checking behaviour of flag "missing_ok":
         - Job fails when flag is "false" and state is not in multi_state
         - Job succeed when flag is "true" and state is not in multi_state
     """
-    host = (provider := sdk_client_fs.provider()).host()
-    component = (service := (cluster := sdk_client_fs.cluster()).service()).component()
+    host = (provider := two_providers[0]).host()
+    component = (service := (cluster := two_clusters[0]).service()).component()
     with allure.step('Check job fails with "missing_ok: false" and state not in multi_state'):
         for forbidden_action in ('unset_provider', 'unset_host'):
             with check_objects_multi_state_changed(sdk_client_fs):

@@ -35,7 +35,6 @@ from tests.ui_tests.app.page.cluster.page import (
     ComponentsHostRowInfo,
     ClusterStatusPage,
     ImportItemInfo,
-    ClusterActionPage,
 )
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.host.page import (
@@ -829,26 +828,3 @@ class TestClusterImportPage:
         with allure.step("Check that import is saved"):
             assert import_page.get_info_popup_text() == params["message"], "No message about success"
             assert import_page.is_chxb_in_item_checked(import_item), "Checkbox with import should have been checked"
-
-
-class TestClusterActionPage:
-    """Tests for the /cluster/{}/action page"""
-
-    def test_open_by_tab_cluster_action_page(self, app_fs, create_community_cluster):
-        """Test open /cluster/{}/config from left menu"""
-        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        cluster_main_page.open_actions_tab()
-        cluster_action_page = ClusterActionPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
-        cluster_action_page.wait_page_is_opened()
-        cluster_action_page.check_all_elements()
-
-    def test_run_action_on_cluster_action_page(self, app_fs, create_community_cluster):
-        """Test run action from cluster/{}/action page"""
-        cluster_action_page = ClusterActionPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        cluster_action = cluster_action_page.get_all_actions()[0]
-        cluster_action_page.click_run_btn_in_action(cluster_action)
-        cluster_action_page.check_empty_page()
-        with allure.step("Check success cluster job"):
-            assert (
-                cluster_action_page.header.get_in_progress_job_amount_from_header() == "1"
-            ), "There should be 1 in progress cluster job in header"

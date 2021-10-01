@@ -15,9 +15,7 @@
 import os
 
 # pylint:disable=redefined-outer-name
-from typing import (
-    Tuple,
-)
+from typing import Tuple
 
 import allure
 import pytest
@@ -33,15 +31,8 @@ from adcm_pytest_plugin import utils
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
-from tests.ui_tests.app.page.host.locators import (
-    HostLocators,
-    HostActionsLocators,
-)
-from tests.ui_tests.app.page.host.page import (
-    HostMainPage,
-    HostActionsPage,
-    HostConfigPage,
-)
+from tests.ui_tests.app.page.host.locators import HostLocators
+from tests.ui_tests.app.page.host.page import HostMainPage, HostConfigPage
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 from tests.ui_tests.app.page.host_list.page import HostListPage
 from tests.ui_tests.utils import wait_and_assert_ui_info, expect_rows_amount_change
@@ -304,30 +295,6 @@ def test_run_action_on_new_host(
     page.assert_host_state(0, 'created')
     page.run_action(0, INIT_ACTION)
     page.assert_host_state(0, 'running')
-
-
-@pytest.mark.smoke()
-@pytest.mark.usefixtures('_create_host')
-def test_run_action_from_menu(
-    sdk_client_fs: ADCMClient,
-    page: HostListPage,
-):
-    """Run action from host actions menu"""
-    page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
-    host_main_page = HostMainPage(page.driver, page.base_url, 1, None)
-    actions_page: HostActionsPage = host_main_page.open_action_menu()
-    actions_before = actions_page.get_action_names()
-    assert INIT_ACTION in actions_before, f'Action {INIT_ACTION} should be listed in Actions menu'
-    with allure.step('Run action "Init" from host Actions menu'):
-        actions_page.open_action_menu()
-        actions_page.run_action_from_menu(INIT_ACTION)
-        actions_page.wait_element_hide(HostActionsLocators.action_btn(INIT_ACTION))
-        _check_job_name(sdk_client_fs, INIT_ACTION)
-        actions_page.wait_element_clickable(HostActionsLocators.action_run_btn, timeout=10)
-    actions_page.open_action_menu()
-    actions_after = actions_page.get_action_names()
-    with allure.step('Assert available actions set changed'):
-        assert actions_before != actions_after, 'Action set did not change after "Init" action'
 
 
 @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
