@@ -22,6 +22,10 @@ import { BaseDirective } from '@adwp-ui/widgets';
   selector: 'app-field',
   templateUrl: './field.component.html',
   styleUrls: ['./field.component.scss'],
+  host: {
+    class: 'field-row row d-flex',
+    'read-only': 'options.read_only'
+  }
 })
 export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
   @Input()

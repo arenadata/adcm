@@ -7,7 +7,9 @@
     padding: 0 20px;
 
     &.advanced {
-      label {border-bottom: dotted 1px #00e676 !important;}
+      label {
+        border-bottom: dotted 1px #00e676 !important;
+      }
     }
 
     & label {
@@ -20,14 +22,14 @@
       white-space: nowrap;
     }
 
-    & label+* {
+    & label + * {
       width: 100%;
       display: flex;
       align-items: center;
     }
   }
 
-  &>.read-only {
+  & > .read-only {
     background-color: #484848;
     font-style: italic;
     color: #a7a7a7;
@@ -46,7 +48,7 @@
     display: flex;
     align-items: center;
 
-    &>mat-icon {
+    & > mat-icon {
       margin-top: 3px;
     }
 
@@ -55,4 +57,7 @@
     }
   }
 
+  &.field-row:nth-child(odd) {
+    background-color: #4e4e4e;
+  }
 }

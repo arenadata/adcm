@@ -24,26 +24,10 @@ import { BaseDirective } from '@adwp-ui/widgets';
     <ng-container *ngFor="let item of dataOptions; trackBy: trackBy">
       <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form"></app-group-fields>
       <ng-template #one>
-        <div class="field-row row d-flex">
-          <ng-container *ngIf="!item.hidden">
-            <app-config-attribute-provider [options]="item">
-              <app-field appConfigAttribute *appConfigField class="w100" [form]="form" [options]="item"
-                         [ngClass]="{ 'read-only': item.read_only }"></app-field>
-            </app-config-attribute-provider>
-          </ng-container>
-        </div>
+        <app-field [form]="form" [options]="item"></app-field>
       </ng-template>
     </ng-container>
-  `,
-  styles: [
-    `.group-checkbox {
-      justify-content: center;
-      align-items: center
-    }`,
-    `.field-row:nth-child(odd) {
-      background-color: #4e4e4e;
-    }`
-  ]
+  `
 })
 export class ConfigFieldsComponent extends BaseDirective {
 
