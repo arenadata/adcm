@@ -182,7 +182,7 @@ def _create_group_and_add_host(
 class TestGroupsIntersection:
     """Tests for config groups intersections"""
 
-    def test_that_groups_not_allowed_to_intersect_in_cluster(self, cluster, create_two_hosts):
+    def test_that_groups_not_allowed_to_intersect_in_cluster(self, cluster_with_two_hosts_on_it):
         """Test that groups are not allowed to intersect in cluster"""
 
         test_host_1, _, cluster = cluster_with_two_hosts_on_it
