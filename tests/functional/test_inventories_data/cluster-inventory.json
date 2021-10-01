@@ -24,14 +24,18 @@
                   "version": "1.001",
                   "edition": "community",
                   "state": "created",
-                  "multi_state": []
+                  "multi_state": [
+                     "cluster_multi_state"
+                  ]
                },
                "services": {
                   "zookeeper": {
                      "id": 1,
                      "version": "3.4.10",
                      "state": "created",
-                     "multi_state": [],
+                     "multi_state": [
+                        "service_multi_state"
+                     ],
                      "config": {
                         "dirs": {
                            "data": "/var/lib/zookeeper"
@@ -77,7 +81,9 @@
                            "file-type": null
                         },
                         "state": "created",
-                        "multi_state": []
+                        "multi_state": [
+                           "component_multi_state"
+                        ]
                      }
                   }
                }
