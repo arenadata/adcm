@@ -13,7 +13,7 @@
 
 - type: cluster
   name: Plugins testing
-  version: 1
+  version: 2
 
   actions: &cluster_actions
     # cluster
@@ -21,7 +21,7 @@
     change_cluster: &cluster_action
       type: job
       script_type: ansible
-      script: cluster.yaml
+      script: ./cluster.yaml
       states:
         available: any
 
@@ -37,7 +37,7 @@
         - &cluster_multi_script
           name: cint
           script_type: ansible
-          script: cluster.yaml
+          script: ./cluster.yaml
           params:
             ansible_tags: int
         - <<: *cluster_multi_script
@@ -76,7 +76,7 @@
     change_service: &service_action
       type: job
       script_type: ansible
-      script: service.yaml
+      script: ./service.yaml
       states:
         available: any
 
@@ -86,7 +86,7 @@
         - &service_multi_script
           name: sint
           script_type: ansible
-          script: service.yaml
+          script: ./service.yaml
           params:
             ansible_tags: int
         - <<: *service_multi_script
@@ -122,10 +122,10 @@
 
     # first service
 
-    change_first_service: &first_service_action
+    change_first_service:
       type: job
       script_type: ansible
-      script: first_service.yaml
+      script: ./first_service.yaml
       states:
         available: any
 
@@ -135,7 +135,7 @@
         - &service_name_first_multi_script
           name: sint
           script_type: ansible
-          script: first_service.yaml
+          script: ./first_service.yaml
           params:
             ansible_tags: int
         - <<: *service_name_first_multi_script
@@ -174,7 +174,7 @@
     change_second_service: &second_service
       type: job
       script_type: ansible
-      script: second_service.yaml
+      script: ./second_service.yaml
       states:
         available: any
 
@@ -184,7 +184,7 @@
         - &service_name_second_multi_script
           name: sint
           script_type: ansible
-          script: second_service.yaml
+          script: ./second_service.yaml
           params:
             ansible_tags: int
         - <<: *service_name_second_multi_script
@@ -223,7 +223,7 @@
     change_component: &component_action
       type: job
       script_type: ansible
-      script: component.yaml
+      script: ./component.yaml
       states:
         available: any
 
@@ -233,7 +233,7 @@
         - &single_component_multitask
           name: sint
           script_type: ansible
-          script: component.yaml
+          script: ./component.yaml
           params:
             ansible_tags: int
         - <<: *single_component_multitask
@@ -272,7 +272,7 @@
     change_first_component:
       type: job
       script_type: ansible
-      script: component_first.yaml
+      script: ./component_first.yaml
       states:
         available: any
 
@@ -282,7 +282,7 @@
         - &component_multi_script
           name: cint
           script_type: ansible
-          script: component_first.yaml
+          script: ./component_first.yaml
           params:
             ansible_tags: int
         - <<: *component_multi_script
@@ -321,7 +321,7 @@
     change_second_component:
       type: job
       script_type: ansible
-      script: component_second.yaml
+      script: ./component_second.yaml
       states:
         available: any
 
@@ -331,7 +331,7 @@
         - &another_component_multitask
           name: sint
           script_type: ansible
-          script: component_second.yaml
+          script: ./component_second.yaml
           params:
             ansible_tags: int
         - <<: *another_component_multitask
@@ -370,7 +370,7 @@
     change_first_service_first_component:
       type: job
       script_type: ansible
-      script: component_first_service_first.yaml
+      script: ./component_first_service_first.yaml
       states:
         available: any
 
@@ -380,7 +380,7 @@
         - &cFscm
           name: sint
           script_type: ansible
-          script: component_first_service_first.yaml
+          script: ./component_first_service_first.yaml
           params:
             ansible_tags: int
         - <<: *cFscm
@@ -419,7 +419,7 @@
     change_second_service_second_component:
       type: job
       script_type: ansible
-      script: component_second_service_second.yaml
+      script: ./component_second_service_second.yaml
       states:
         available: any
 
@@ -429,7 +429,7 @@
         - &cSacm
           name: sint
           script_type: ansible
-          script: component_second_service_second.yaml
+          script: ./component_second_service_second.yaml
           params:
             ansible_tags: int
         - <<: *cSacm
@@ -484,7 +484,7 @@
 
     file:
       type: file
-      default: "file.txt"
+      default: "./file.txt"
       required: no
 
     string:
