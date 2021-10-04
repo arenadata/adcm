@@ -10,7 +10,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import {
-  ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   EventEmitter,
@@ -41,7 +40,6 @@ import { AttributeService } from '@app/shared/configuration/attributes/attribute
   templateUrl: './config.component.html',
   styleUrls: ['./config.component.scss'],
   animations: historyAnime,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [MainService]
 })
 export class ConfigComponent extends SocketListenerDirective implements OnChanges, OnInit {
@@ -102,6 +100,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     this.tools.isAdvanced = this.fields.isAdvanced;
     this.tools.description.setValue(this.rawConfig.value.description);
     this.filter(this.tools.filterParams);
+    this.cd.detectChanges();
 
     if (!this.isGroupConfig) {
       this.service.getHistoryList(this.configUrl, this.rawConfig.value.id).subscribe((h) => {
@@ -115,6 +114,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
 
   filter(c: ISearchParam): void {
     this.service.filterApply(this.fields.dataOptions, c);
+    this.cd.detectChanges();
   }
 
   socketListener(m: EventMessage): void {

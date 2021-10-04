@@ -24,9 +24,11 @@ import { BaseDirective } from '@adwp-ui/widgets';
     <ng-container *ngFor="let item of dataOptions; trackBy: trackBy">
       <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form"></app-group-fields>
       <ng-template #one>
-        <app-config-field-attribute-provider [form]="form">
-          <app-field *configField="item" [form]="form" [options]="item"></app-field>
-        </app-config-field-attribute-provider>
+        <ng-container *ngIf="!item.hidden">
+          <app-config-field-attribute-provider [form]="form" [options]="item">
+            <app-field *configField [form]="form" [options]="item"></app-field>
+          </app-config-field-attribute-provider>
+        </ng-container>
       </ng-template>
     </ng-container>
   `

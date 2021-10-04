@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input, OnInit, TemplateRef } from '@angular/core';
+import { Component, Input, OnInit, TemplateRef } from '@angular/core';
 import {
   AttributeService,
   AttributeWrapper,
@@ -22,7 +22,6 @@ import { BaseDirective } from '@adwp-ui/widgets';
     </div>
   `,
   styleUrls: ['group-keys-wrapper.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GroupKeysWrapperComponent extends BaseDirective implements AttributeWrapper, OnInit {
   tooltipText: string = '';

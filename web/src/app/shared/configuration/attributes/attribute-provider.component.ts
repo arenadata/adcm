@@ -1,6 +1,5 @@
 import {
   AfterViewInit,
-  ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   ComponentFactory,
@@ -15,11 +14,12 @@ import {
 import { ConfigFieldMarker } from '@app/shared/configuration/attributes/config-field.directive';
 import { AttributeService, AttributeWrapper } from '@app/shared/configuration/attributes/attribute.service';
 import { FormGroup } from '@angular/forms';
+import { IFieldOptions } from '@app/shared/configuration/types';
 
 @Component({
   selector: 'app-config-field-attribute-provider',
   template: `
-    <ng-container *ngIf="template">
+    <ng-container *ngIf="!attributesSrv?.attributes">
       <ng-container *ngTemplateOutlet="template"></ng-container>
     </ng-container>
 
@@ -32,7 +32,6 @@ import { FormGroup } from '@angular/forms';
       background-color: #4e4e4e;
     }`
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ConfigFieldAttributeProviderComponent implements AfterViewInit {
 
@@ -40,7 +39,11 @@ export class ConfigFieldAttributeProviderComponent implements AfterViewInit {
 
   containerRef: ComponentRef<AttributeWrapper>;
 
-  @Input('form') parametersForm: FormGroup;
+  @Input('form')
+  parametersForm: FormGroup;
+
+  @Input()
+  options: IFieldOptions;
 
   @ViewChild('container', { read: ViewContainerRef })
   container: ViewContainerRef;
@@ -49,28 +52,26 @@ export class ConfigFieldAttributeProviderComponent implements AfterViewInit {
   field: ConfigFieldMarker;
 
   constructor(private componentFactoryResolver: ComponentFactoryResolver,
-              private attributesSrv: AttributeService,
+              public attributesSrv: AttributeService,
               private _cdr: ChangeDetectorRef) {}
 
   ngAfterViewInit(): void {
     this.container.clear();
     if (this.attributesSrv.attributes) {
-
       this.attributesSrv.attributes.forEach((attribute) => {
         if (attribute.wrapper) {
           const factory: ComponentFactory<AttributeWrapper> = this.componentFactoryResolver.resolveComponentFactory(attribute.wrapper);
           this.containerRef = this.container.createComponent(factory);
           this.containerRef.instance.fieldTemplate = this.field.template;
           this.containerRef.instance.wrapperOptions = attribute.options;
-          this.containerRef.instance.fieldOptions = this.field.configField;
+          this.containerRef.instance.fieldOptions = this.options;
           this.containerRef.instance.attributeForm = attribute.form;
           this.containerRef.instance.parametersForm = this.parametersForm;
-          this.containerRef.changeDetectorRef.markForCheck();
         }
       });
+
     } else {
       this.template = this.field.template;
-      this._cdr.markForCheck();
     }
   }
 }
