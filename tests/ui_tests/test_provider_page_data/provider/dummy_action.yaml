@@ -17,7 +17,7 @@
 
   tasks:
     - name: Dummy?
-      pause:
-        minutes: 1
+      debug:
+        msg: "Some message"
       tags:
         - pause
