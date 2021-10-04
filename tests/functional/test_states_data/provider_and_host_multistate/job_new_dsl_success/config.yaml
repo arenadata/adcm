@@ -15,7 +15,7 @@
     state_changing_action:
       type: job
       script_type: ansible
-      script: fail.yaml
+      script: ok.yaml
       masking:
       on_fail:
         multi_state:
@@ -46,7 +46,7 @@
     state_changing_action:
       type: job
       script_type: ansible
-      script: fail.yaml
+      script: ok.yaml
       masking:
       on_fail:
         multi_state:

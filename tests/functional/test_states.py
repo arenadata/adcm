@@ -137,7 +137,7 @@ class TestClusterRelatedObjects:
             run_service_action_and_assert_result(
                 object_to_be_changed,
                 action=ACTION_NAME,
-                status="success" if "fail" not in object_to_be_changed.name else "failed",
+                status="success" if "fail" not in cluster_obj.name else "failed",
             )
 
     def test_component_multi_state_after_action(self, sdk_client_fs: ADCMClient, cluster_and_multi_states_checker):
@@ -185,7 +185,7 @@ def provider_and_multi_states_checker(sdk_client_fs: ADCMClient, request) -> Tup
     provider.host_create(fqdn=f"{bundle.name}_second")
     check_objects_state_changed = build_objects_checker(
         field_name='Multi state',
-        changed=bundle.name,
+        changed=[bundle.name],
         extractor=lambda obj: sorted(obj.multi_state),
     )
     return provider, check_objects_state_changed
