@@ -93,11 +93,14 @@ const material = [
         name: ConfigAttributeNames.GROUP_KEYS,
         wrapper: GroupKeysWrapperComponent,
         options: {
-          tooltipText: 'This parameter cannot be added to the group.'
+          tooltipText: 'Group parameter'
         }
       },
       custom_group_keys: {
-        name: ConfigAttributeNames.CUSTOM_GROUP_KEYS
+        name: ConfigAttributeNames.CUSTOM_GROUP_KEYS,
+        options: {
+          tooltipText: 'This parameter can not be added to config group'
+        }
       }
     })
   ],

@@ -21,7 +21,9 @@ export interface AttributeWrapper {
 }
 
 export enum ConfigAttributeNames {
+  // an attribute for adding config parameters to group
   GROUP_KEYS = 'group_keys',
+  // an attribute for config parameters that determines whether this parameter can be added to the config group
   CUSTOM_GROUP_KEYS = 'custom_group_keys'
 }
 
@@ -30,6 +32,8 @@ export interface ConfigAttributesJSON {
 }
 
 export interface ConfigAttributeOptions {
+  tooltipText?: string;
+
   [key: string]: any;
 }
 
@@ -69,27 +73,10 @@ export class AttributeService {
 
     return new Map(this._activeAttributes.map((attr) => [
       attr,
-      new ConfigAttributeFactory().create(attr, json[attr], configs[attr], this._createFormForAttribute(json, attr)),
+      new ConfigAttributeFactory(this._fb).create(attr, json[attr], configs[attr], json),
     ]));
   }
 
-  private _createFormForAttribute(json: ConfigAttributesJSON, attr: ConfigAttributeNames): FormGroup {
-    const buildFormGroup = (json: boolean | ConfigAttributesJSON) => {
-      const data = Object.entries(json).map(([key, value]) => [key, value]).reduce((acc, [key, value]: [string, boolean | ConfigAttributesJSON]) => {
-
-        if (isBoolean(value) || isEmptyObject(value)) {
-          return { ...acc, [key]: value };
-        } else if (!isEmptyObject(value)) {
-          return { ...acc, [key]: buildFormGroup(value) };
-        }
-
-      }, {});
-
-      return this._fb.group(data);
-    };
-
-    return buildFormGroup(json[attr]);
-  }
 
   rawAttributes() {
     let json = {};
@@ -106,26 +93,65 @@ export class AttributeService {
   }
 }
 
+export const createFormForAttribute = (fb: FormBuilder, json: ConfigAttributesJSON, attr: ConfigAttributeNames, disabled: boolean = false): FormGroup => {
+  const buildFormGroup = (json: boolean | ConfigAttributesJSON) => {
+    const data = Object.entries(json).map(([key, value]) => [key, value]).reduce((acc, [key, value]: [string, boolean | ConfigAttributesJSON]) => {
+
+      if (isBoolean(value) || isEmptyObject(value)) {
+        return {
+          ...acc,
+          [key]: { value, disabled }
+        };
+      } else if (!isEmptyObject(value)) {
+        return { ...acc, [key]: buildFormGroup(value) };
+      }
+
+    }, {});
+
+    return fb.group(data);
+  };
+
+  return buildFormGroup(json[attr]);
+};
+
+
 export class ConfigAttributeFactory {
 
-  create(name: ConfigAttributeNames, value: ConfigAttributesJSON, options: AttributeOptions, form: FormGroup): ConfigAttribute {
+  constructor(private fb: FormBuilder) {}
+
+  create(name: ConfigAttributeNames, value: ConfigAttributesJSON, options: AttributeOptions, json: ConfigAttributesJSON): ConfigAttribute {
     if (!this[name]) {
       return;
     }
 
-    return this[name](value, options, form);
+    return this[name](value, options, json);
   }
 
   [ConfigAttributeNames.GROUP_KEYS](value: ConfigAttributesJSON, {
     name,
     options,
     wrapper
-  }: AttributeOptions, form: FormGroup): ConfigAttribute {
-    return { name, value, wrapper, options, form };
+  }: AttributeOptions, json: ConfigAttributesJSON): ConfigAttribute {
+
+    const form = createFormForAttribute(this.fb, json, name);
+
+    return {
+      name,
+      value,
+      wrapper,
+      options,
+      form
+    };
   }
 
-  [ConfigAttributeNames.CUSTOM_GROUP_KEYS](value: ConfigAttributesJSON, { name }: AttributeOptions, form: FormGroup): ConfigAttribute {
-    return { name, value, form };
+  [ConfigAttributeNames.CUSTOM_GROUP_KEYS](value: ConfigAttributesJSON, {
+    name,
+    options
+  }: AttributeOptions, json: ConfigAttributesJSON): ConfigAttribute {
+
+    const form = createFormForAttribute(this.fb, json, name);
+
+    return { name, value, options, form };
   }
 
 }
