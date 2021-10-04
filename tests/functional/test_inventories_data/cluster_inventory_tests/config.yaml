@@ -48,8 +48,88 @@
   components:
     ZOOKEEPER_SERVER:
       constraint: [0,+]
+      config:
+        required:
+          type: integer
+          required: true
+          default: 10
+        str-key:
+          default: value
+          type: string
+          required: false
+        int_key:
+          type: integer
+          required: false
+          default: 150
+        float_key:
+          type: float
+          required: false
+          default: 34.7
+        bool:
+          type: boolean
+          required: false
+          default: false
+        option:
+          type: option
+          option:
+            http: 80
+            https: 443
+            ftp: 21
+          required: FALSE
+        json:
+          type: json
+          required: false
+          default: { }
+        text-type:
+          type: text
+          default: lorem ipsum
+          required: false
+        file-type:
+          type: file
+          required: false
+
     ZOOKEEPER_CLIENT:
       constraint: [0,+]
+      config:
+        sc-required:
+          type: integer
+          required: true
+          default: 10111
+        sc-str-key:
+          default: value
+          type: string
+          required: false
+        sc-int_key:
+          type: integer
+          required: false
+          default: 130
+        sc-float_key:
+          type: float
+          required: false
+          default: 154.7
+        sc-bool:
+          type: boolean
+          required: false
+          default: true
+        sc-option:
+          type: option
+          option:
+            http: 80
+            https: 443
+            ftp: 21
+          required: FALSE
+        sc-json:
+          type: json
+          required: false
+          default:
+            - test: 1
+        sc-text-type:
+          type: text
+          default: lorem ipsum sum
+          required: false
+        sc-file-type:
+          type: file
+          required: false
 
   actions:
     install:
@@ -100,6 +180,13 @@
                 on_fail: created
             params:
                 qwe: 42
+        set_multi_states:
+          type: job
+          script: ansible/set_multi.yaml
+          script_type: ansible
+          states:
+            available:
+              - created
         run:
             type: job
             script: ansible/run.yaml

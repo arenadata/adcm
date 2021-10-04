@@ -99,7 +99,6 @@ export class NavigationComponent extends BaseDirective {
   actionLink: string;
   actions: IAction[] = [];
   state: string;
-  disabled: boolean;
   cluster: { id: number; hostcomponent: string };
 
   private ownPath: Observable<AdcmTypedEntity[]>;
@@ -116,7 +115,6 @@ export class NavigationComponent extends BaseDirective {
         this.actionLink = (<any>last).action;
         this.actions = (<any>last).actions;
         this.state = (<any>last).state;
-        this.disabled = this.isIssue((<any>last).issue) || (<any>last).state === 'locked';
         const { id, hostcomponent } = <any>lPath[0];
         this.cluster = { id, hostcomponent };
       }

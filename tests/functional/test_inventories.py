@@ -17,7 +17,7 @@ import json
 import allure
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.docker_utils import get_file_from_container
-from adcm_pytest_plugin.utils import random_string
+from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 
 from tests.functional.conftest import only_clean_adcm
 
@@ -29,15 +29,15 @@ def test_check_inventories_file(adcm_fs, sdk_client_fs):
     bundledir = utils.get_data_dir(__file__, 'cluster_inventory_tests')
     cluster_bundle = sdk_client_fs.upload_from_fs(bundledir)
     with allure.step('Create cluster'):
-        cluster_name = random_string()
+        cluster_name = "dumMxpQA"
         cluster = cluster_bundle.cluster_prototype().cluster_create(cluster_name)
         cluster.service_add(name="zookeeper")
-        cluster.action(name="install").run().try_wait()
+        run_cluster_action_and_assert_result(cluster, "set_multi_states")
+        run_cluster_action_and_assert_result(cluster, "install")
     with allure.step('Get inventory file from container'):
-        text = get_file_from_container(adcm_fs, '/adcm/data/run/1/', 'inventory.json')
+        text = get_file_from_container(adcm_fs, '/adcm/data/run/2/', 'inventory.json')
         inventory = json.loads(text.read().decode('utf8'))
     with allure.step('Check inventory file'):
         with open(utils.get_data_dir(__file__, 'cluster-inventory.json'), 'rb') as template:
             expected = json.loads(template.read().decode('utf8'))
-            expected["all"]["children"]["CLUSTER"]["vars"]["cluster"]["name"] = cluster_name
             assert inventory == expected
