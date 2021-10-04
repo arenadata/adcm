@@ -201,6 +201,8 @@ invalid_dsl_cases = [
     ("cluster", "on_fail_without_masking"),
     ("cluster", "on_success_without_masking"),
     ("cluster", "states_and_masking"),
+    ("cluster", "available_and_unavailable_for_multi_states"),
+    ("cluster", "available_and_unavailable_for_states"),
 ]
 
 

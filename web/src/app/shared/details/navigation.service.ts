@@ -77,13 +77,12 @@ const all = [
   { id: 5, title: 'Configuration groups', url: 'group_config' },
   { id: 6, title: 'Status', url: 'status' },
   { id: 7, title: 'Import', url: 'import' },
-  { id: 8, title: 'Actions', url: 'action' },
   { id: 1, title: 'Services', url: 'service' },
   { id: 2, title: 'Hosts', url: 'host' },
   { id: 3, title: 'Hosts - Components', url: 'host_component' },
 ];
 
-const [main, license, config, group_config, m_status, m_import, actions, services, hosts, host_components] = all;
+const [main, license, config, group_config, m_status, m_import, services, hosts, host_components] = all;
 
 const components = {
   id: 8,
@@ -93,13 +92,13 @@ const components = {
 
 export const Config = {
   menu: {
-    cluster: [main, config, group_config, m_status, m_import, actions, services, hosts, host_components].sort((a, b) => a.id - b.id),
-    service: [main, components, config, group_config, m_status, m_import, actions],
+    cluster: [main, config, group_config, m_status, m_import, services, hosts, host_components].sort((a, b) => a.id - b.id),
+    service: [main, components, config, group_config, m_status, m_import],
     group_config: [hosts, config],
-    host: [main, config, m_status, actions],
-    provider: [main, config, group_config, actions],
+    host: [main, config, m_status],
+    provider: [main, config, group_config],
     bundle: [main, license],
-    servicecomponent: [main, config, group_config, m_status, actions],
+    servicecomponent: [main, config, group_config, m_status],
   },
 };
 

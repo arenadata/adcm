@@ -146,3 +146,37 @@ PUT           False
 PATCH         False
 DELETE        True
 ============= =======
+
+.. _object-group-config-host-candidate:
+
+Group Config Host Candidate
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Endpoint: */group-config/<id>/host-candidate/*
+
+=================== ======= ======= ======== ================ ================== ================== ===========
+Name                Type    Default Nullable :term:`Required` :term:`POSTable`   :term:`Changeable` Description
+=================== ======= ======= ======== ================ ================== ================== ===========
+id                  integer auto    False    True             True               False              Object ID.
+cluster_id          integer null    False    False            False              False              Cluster object ID
+prototype_id        integer null    False    False            False              False              Prototype object ID
+provider_id         integer null    False    False            False              False              Provider object ID
+fqdn                string  null    False    False            False              False              FQDN host
+description         string  null    False    False            False              False              Host description
+state               string  null    False    False            False              False              Host state
+url                 link    null    False    False            False              False              Reference to this object
+=================== ======= ======= ======== ================ ================== ================== ===========
+
+API Calls Allowed
+^^^^^^^^^^^^^^^^^
+
+============= =======
+Operation     Allowed
+============= =======
+GET           True
+LIST          True
+POST          False
+PUT           False
+PATCH         False
+DELETE        False
+============= =======
