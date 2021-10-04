@@ -13,16 +13,16 @@
 from django.urls import path, include
 from rest_framework.routers import SimpleRouter, Route
 
-from .views import RoleViewSet
+from .group import GroupViewSet
 
 
-class RoleRouter(SimpleRouter):
+class GroupRouter(SimpleRouter):
     """Router for User"""
 
     routes = [
         Route(
             url='^{prefix}$',
-            mapping={'get': 'list'},
+            mapping={'get': 'list', 'post': 'create'},
             name='{basename}-list',
             detail=False,
             initkwargs={'suffix': 'List'},
@@ -31,6 +31,9 @@ class RoleRouter(SimpleRouter):
             url='^{prefix}/{lookup}/$',
             mapping={
                 'get': 'retrieve',
+                'put': 'update',
+                'patch': 'partial_update',
+                'delete': 'destroy',
             },
             name='{basename}-detail',
             detail=True,
@@ -39,10 +42,10 @@ class RoleRouter(SimpleRouter):
     ]
 
 
-router = RoleRouter()
+router = GroupRouter()
 
-router.register('', RoleViewSet, basename='role')
+router.register('', GroupViewSet, basename='group')
 
 urlpatterns = [
-    path('', include((router.urls, 'rbac_role'))),
+    path('', include((router.urls, 'rbac_group'))),
 ]

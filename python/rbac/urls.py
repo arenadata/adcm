@@ -14,16 +14,14 @@
 
 from django.urls import path, include
 
-from .root import RBACRoot
-from .logout.views import LogOut
-from .token.views import GetAuthToken
+from .endpoints import logout, root, token
 
 
 urlpatterns = [
-    path('', RBACRoot.as_view(), name='rbac-root'),
-    path('user/', include('rbac.user.urls')),
-    path('group/', include('rbac.group.urls')),
-    path('role/', include('rbac.role.urls')),
-    path('logout/', LogOut.as_view(), name='rbac-logout'),
-    path('token/', GetAuthToken.as_view(), name='rbac-token'),
+    path('', root.RBACRoot.as_view(), name='rbac-root'),
+    path('user/', include('rbac.endpoints.user.urls')),
+    path('group/', include('rbac.endpoints.group_urls')),
+    path('role/', include('rbac.endpoints.role_urls')),
+    path('logout/', logout.LogOut.as_view(), name='rbac-logout'),
+    path('token/', token.GetAuthToken.as_view(), name='rbac-token'),
 ]

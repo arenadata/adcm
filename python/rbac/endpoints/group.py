@@ -9,9 +9,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""ViewSet and Serializers for Role"""
+
 from django.contrib.auth.models import Group
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers
+from rest_framework import serializers, viewsets
 
 
 class GroupSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSerializer):
@@ -27,3 +29,14 @@ class GroupSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSer
         extra_kwargs = {
             'url': {'view_name': 'rbac_group:group-detail', 'lookup_field': 'id'},
         }
+
+
+# pylint: disable=too-many-ancestors
+class GroupViewSet(viewsets.ModelViewSet):
+    """Group View Set"""
+
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+    lookup_field = 'id'
+    filterset_fields = ['id', 'name']
+    ordering_fields = ['id', 'name']

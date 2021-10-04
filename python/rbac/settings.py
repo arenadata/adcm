@@ -11,13 +11,12 @@
 # limitations under the License.
 
 """
-Settings for ADWP RBAC are all namespaced in the
-ADWP_RBAC setting.
+Settings for ADWP RBAC are all namespaced in the ADWP_RBAC setting.
 For example your project's `settings.py` file might look like this:
 
 ADWP_RBAC = {
-    'ROLE_SPEC': '/var/secrets.json',
-    'ROLE_SCHEMA': 'http://localhost:8000/api/v1',
+    'ROLE_SPEC': 'role_spec.yaml',
+    'ROLE_SCHEMA': 'role_schema.yaml',
 }
 
 This module provides the `api_setting` object, that is used to access
@@ -36,9 +35,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DEFAULTS = {
     # File with role specification
-    'ROLE_SPEC': os.path.join(BASE_DIR, 'role_spec.yaml'),
-    # Schema for role sspecification file
-    'ROLE_SCHEMA': os.path.join(BASE_DIR, 'role_schema.yaml'),
+    'ROLE_SPEC': os.path.join(BASE_DIR, 'upgrade', 'role_spec.yaml'),
+    # Schema for role specification file
+    'ROLE_SCHEMA': os.path.join(BASE_DIR, 'upgrade', 'role_schema.yaml'),
 }
 
 

@@ -9,11 +9,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""ViewSet and Serializers for Role"""
+
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers
+from rest_framework import serializers, viewsets
 
 from rbac.models import Role
-from rbac.user.serializers import PermissionSerializer
+from .user.serializers import PermissionSerializer
 
 
 class RoleSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSerializer):
@@ -38,3 +40,14 @@ class RoleSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
 
     def get_childs(self, obj):
         return RoleSerializer(obj.childs.all(), many=True, context=self.context).data
+
+
+# pylint: disable=too-many-ancestors
+class RoleViewSet(viewsets.ModelViewSet):
+    """Role View Set"""
+
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
+    lookup_field = 'id'
+    filterset_fields = ['id', 'name']
+    ordering_fields = ['id', 'name']

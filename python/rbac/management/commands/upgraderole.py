@@ -14,7 +14,7 @@
 
 from django.core.management.base import BaseCommand, CommandError
 
-from rbac.upgrade_role import init_roles
+from rbac.upgrade.upgrade_role import init_roles
 from adwp_base.errors import AdwpEx
 
 
