@@ -316,7 +316,7 @@ class TestClusterMainPage:
 
     def test_check_cluster_run_action_on_cluster_page_by_toolbar(self, app_fs, create_community_cluster):
         """Test run action from the /cluster/{}/main page toolbar"""
-        params = {"action_name": "test_action"}
+        params = {"action_name": "long_action"}
         cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         cluster_main_page.toolbar.run_action(CLUSTER_NAME, params["action_name"])
         with allure.step("Check success job"):
@@ -347,25 +347,25 @@ class TestClusterServicePage:
         service_row.click()
         ServiceMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id, 1).wait_page_is_opened()
 
-    def test_issues_from_cluster_list_page(self, sdk_client_fs: ADCMClient, app_fs):
-        """Test click on issue from cluster page"""
-        params = {"issue_name": "Configuration"}
+    def test_concerns_from_cluster_list_page(self, sdk_client_fs: ADCMClient, app_fs):
+        """Test click on concern from cluster list page"""
+        params = {"concern_object_name": CLUSTER_NAME}
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_REQUIRED_FIELDS)
         cluster = bundle.cluster_create(name=CLUSTER_NAME)
         cluster_list_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         row = cluster_list_page.table.get_all_rows()[0]
-        cluster_list_page.click_on_issue_by_name(row, params["issue_name"])
-        ClusterConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id).wait_page_is_opened()
+        cluster_list_page.click_on_concern_by_object_name(row, params["concern_object_name"])
+        ClusterMainPage(app_fs.driver, app_fs.adcm.url, cluster.id).wait_page_is_opened()
 
-    def test_issues_from_from_service_list_page(self, sdk_client_fs: ADCMClient, app_fs):
-        """Test click on issue from cluster/{}/service page"""
-        params = {"issue_name": "Configuration"}
+    def test_concerns_from_from_service_list_page(self, sdk_client_fs: ADCMClient, app_fs):
+        """Test click on concern from cluster/{}/service page"""
+        params = {"concern_object_name": SERVICE_NAME}
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_REQUIRED_FIELDS)
         cluster = bundle.cluster_create(name=CLUSTER_NAME).service_add(name=SERVICE_NAME)
         cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         row = cluster_service_page.table.get_all_rows()[0]
-        cluster_service_page.click_on_issue_by_name(row, params["issue_name"])
-        ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, 1).wait_page_is_opened()
+        cluster_service_page.click_on_concern_by_object_name(row, params["concern_object_name"])
+        ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, 1).wait_page_is_opened()
 
     @pytest.mark.smoke()
     def test_check_actions_from_service_list_page(self, app_fs, create_community_cluster_with_service):
@@ -489,15 +489,15 @@ class TestClusterHostPage:
             ), "No message about host duplication"
 
     @pytest.mark.parametrize('provider_bundle', [PROVIDER_WITH_ISSUE_NAME], indirect=True)
-    def test_open_host_issue_from_cluster_host_page(self, app_fs, create_community_cluster_with_host):
-        """Test open host issue from cluster/{}/host page"""
-        params = {"issue_name": "Configuration"}
+    def test_open_host_concern_from_cluster_host_page(self, app_fs, create_community_cluster_with_host):
+        """Test open host concern from cluster/{}/host page"""
         cluster, host = create_community_cluster_with_host
+        params = {"concern_object_name": host.fqdn}
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_host_page.wait_page_is_opened()
         row = cluster_host_page.table.get_all_rows()[0]
-        cluster_host_page.click_on_issue_by_name(row, params["issue_name"])
-        HostConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, host.id).wait_page_is_opened()
+        cluster_host_page.click_on_concern_by_object_name(row, params["concern_object_name"])
+        HostMainPage(app_fs.driver, app_fs.adcm.url, host.id).wait_page_is_opened()
 
     def test_host_action_run_from_cluster(self, app_fs, create_community_cluster_with_host):
         """Test host action run from cluster/{}/host page"""

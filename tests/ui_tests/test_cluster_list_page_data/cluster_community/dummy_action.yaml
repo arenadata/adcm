@@ -21,3 +21,8 @@
         minutes: 1
       tags:
         - pause
+    - name: Dummy?
+      debug:
+        msg: "Some message"
+      tags:
+        - dummy

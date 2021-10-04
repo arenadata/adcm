@@ -38,7 +38,7 @@ class HostPageMixin(BasePageObject):
 
     __ACTIVE_MENU_CLASS = 'active'
 
-    def __init__(self, driver, base_url, host_id: int, cluster_id: Optional[int]):
+    def __init__(self, driver, base_url, host_id: int, cluster_id: Optional[int] = None):
         if self.MENU_SUFFIX is None:
             raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
         super().__init__(

@@ -33,7 +33,7 @@ from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuOb
 from tests.ui_tests.app.page.common.dialogs_locators import ActionDialog, DeleteDialog
 from tests.ui_tests.app.page.common.popups.locator import HostAddPopupLocators
 from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
-from tests.ui_tests.app.page.common.popups.locator import PageIssuePopupLocators, ListIssuePopupLocators
+from tests.ui_tests.app.page.common.popups.locator import PageConcernPopupLocators, ListConcernPopupLocators
 from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
@@ -164,15 +164,16 @@ class ClusterServicesPage(ClusterPageMixin):
                 service_text.click()
         self.find_and_click(ClusterServicesLocators.AddServicePopup.create_btn)
 
-    def click_on_issue_by_name(self, row: WebElement, issue_name: str):
-        """Click on Issue button from the row"""
+    @allure.step("Click on service concern object name from the row")
+    def click_on_concern_by_object_name(self, row: WebElement, concern_object_name: str):
+        """Click on concern object link from the row"""
         self.hover_element(self.find_child(row, ClusterServicesLocators.ServiceTableRow.actions))
-        self.wait_element_visible(ListIssuePopupLocators.block)
-        for issue in self.find_elements(ListIssuePopupLocators.link_to_issue):
-            if issue.text == issue_name:
+        self.wait_element_visible(ListConcernPopupLocators.block)
+        for issue in self.find_elements(ListConcernPopupLocators.link_to_concern_object):
+            if concern_object_name in issue.text:
                 issue.click()
                 return
-        raise AssertionError(f"Issue name '{issue_name}' not found in issues")
+        raise AssertionError(f"Issue name '{concern_object_name}' not found in issues")
 
     def click_action_btn_in_row(self, row: WebElement):
         """Click on Action button from the row"""
@@ -338,16 +339,16 @@ class ClusterHostPage(ClusterPageMixin):
         """Click on Configuration button in the Host row"""
         self.find_child(row, ClusterHostLocators.HostTable.HostRow.config).click()
 
-    @allure.step("Click on issue '{issue_name}' in host issues")
-    def click_on_issue_by_name(self, row: WebElement, issue_name: str):
-        """Click on Issue in Host issues"""
+    @allure.step('Click on concern of "{concern_object_name}" in host concerns')
+    def click_on_concern_by_object_name(self, row: WebElement, concern_object_name: str):
+        """Click on concern link in Host concerns"""
         self.hover_element(self.find_child(row, ClusterHostLocators.HostTable.HostRow.actions))
-        self.wait_element_visible(PageIssuePopupLocators.block)
-        for issue in self.find_elements(PageIssuePopupLocators.link_to_issue):
-            if issue.text == issue_name:
-                issue.click()
+        self.wait_element_visible(PageConcernPopupLocators.block)
+        for concern in self.find_elements(PageConcernPopupLocators.link_to_concern_object):
+            if concern_object_name in concern.text:
+                concern.click()
                 return
-        raise AssertionError(f"Issue name '{issue_name}' not found in issues")
+        raise AssertionError(f'Concern name "{concern_object_name}" not found in concerns')
 
     def get_host_state_from_row(self, row: WebElement):
         """Get Host state from the row"""
