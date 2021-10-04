@@ -460,7 +460,7 @@ class TestChangeGroupsConfig:
         indirect=True,
     )
     def test_change_group_in_cluster(self, cluster_bundle, cluster_with_two_hosts_on_it):
-        """Test that groups in cluster are allowed change with group_customization: true"""
+        """Test that groups in cluster are allowed change"""
 
         test_host_1, test_host_2, cluster = cluster_with_two_hosts_on_it
         with allure.step("Create config group for cluster and add first host"):
@@ -486,7 +486,7 @@ class TestChangeGroupsConfig:
         indirect=True,
     )
     def test_change_group_in_service(self, cluster_bundle, sdk_client_fs, cluster_with_components):
-        """Test that groups in service are allowed change with group_customization: true"""
+        """Test that groups in service are allowed change"""
 
         service, test_host_1, test_host_2 = cluster_with_components
         with allure.step("Create config group for service and add first host"):
@@ -512,7 +512,7 @@ class TestChangeGroupsConfig:
         indirect=True,
     )
     def test_change_group_in_component(self, cluster_bundle, sdk_client_fs, cluster_with_components):
-        """Test that groups in component are allowed change with group_customization: true"""
+        """Test that groups in component are allowed change"""
 
         service, test_host_1, test_host_2 = cluster_with_components
         component = service.component(name=FIRST_COMPONENT_NAME)
@@ -541,7 +541,7 @@ class TestChangeGroupsConfig:
         indirect=True,
     )
     def test_change_group_in_provider(self, sdk_client_fs, provider_bundle, provider, create_two_hosts):
-        """Test that groups in provider are allowed change with group_customization: true"""
+        """Test that groups in provider are allowed change"""
 
         test_host_1, test_host_2 = create_two_hosts
         with allure.step("Create config group for provider and add first host"):
