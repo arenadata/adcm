@@ -52,7 +52,6 @@ from cm.models import (
     ServiceComponent,
     SubAction,
     TaskLog,
-    get_model_by_type,
     get_object_cluster,
 )
 from cm.status_api import post_event
@@ -623,14 +622,7 @@ def restore_hc(task, action, status):
 
 def finish_task(task, job, status):
     action = task.action
-    # GenericForeignKey does not work here (probably because of cashing)
-    # obj = task.task_object
-    model = get_model_by_type(task.action.prototype.type)
-    # In case object was deleted from ansible plugin in job
-    try:
-        obj = model.objects.get(id=task.object_id)
-    except model.DoesNotExist:
-        obj = None
+    obj = task.task_object
     state = get_state(action, job, status)
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
