@@ -54,17 +54,6 @@
             - created
             - installed
 
-    action_available_state_created_unavailable_state_installed:
-      type: job
-      script: dummy_action.yaml
-      script_type: ansible
-      masking:
-        state:
-          available:
-            - created
-          unavailable:
-            - installed
-
     action_unavailable_state_installed_and_created:
       type: job
       script: dummy_action.yaml

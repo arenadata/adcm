@@ -19,6 +19,8 @@ export class NavItemPipe implements PipeTransform {
         return 'components';
       case 'host':
         return 'hosts';
+      case 'provider':
+        return 'hostproviders';
     }
   }
 
@@ -39,11 +41,18 @@ export class NavItemPipe implements PipeTransform {
           `/${path[index - 2].typeName}/${path[index - 2].id}/service/${path[index - 1].id}/component/${path[index].id}`
         );
       case 'host':
-        return group ? (
-          `/${path[index - 1].typeName}/${path[index - 1].id}/host`
-        ) : (
-          `/${path[index - 1].typeName}/${path[index - 1].id}/host/${path[index].id}`
-        );
+        const cluster = path.find(item => item.typeName === 'cluster');
+        if (cluster) {
+          return group ? (
+            `/${cluster.typeName}/${cluster.id}/host`
+          ) : (
+            `/${cluster.typeName}/${cluster.id}/host/${path[index].id}`
+          );
+
+        }
+        return group ? `/${path[index].typeName}` : `/${path[index].typeName}/${path[index].id}`;
+      case 'provider':
+        return group ? `/${path[index].typeName}` : `/${path[index].typeName}/${path[index].id}`;
     }
   }
 
