@@ -7,12 +7,14 @@ import {
   ComponentFactoryResolver,
   ComponentRef,
   ContentChild,
+  Input,
   TemplateRef,
   ViewChild,
   ViewContainerRef
 } from '@angular/core';
 import { ConfigFieldMarker } from '@app/shared/configuration/attributes/config-field.directive';
 import { AttributeService, AttributeWrapper } from '@app/shared/configuration/attributes/attribute.service';
+import { FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'app-config-field-attribute-provider',
@@ -38,6 +40,8 @@ export class ConfigFieldAttributeProviderComponent implements AfterViewInit {
 
   containerRef: ComponentRef<AttributeWrapper>;
 
+  @Input('form') parametersForm: FormGroup;
+
   @ViewChild('container', { read: ViewContainerRef })
   container: ViewContainerRef;
 
@@ -50,7 +54,6 @@ export class ConfigFieldAttributeProviderComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.container.clear();
-
     if (this.attributesSrv.attributes) {
 
       this.attributesSrv.attributes.forEach((attribute) => {
@@ -61,6 +64,7 @@ export class ConfigFieldAttributeProviderComponent implements AfterViewInit {
           this.containerRef.instance.wrapperOptions = attribute.options;
           this.containerRef.instance.fieldOptions = this.field.configField;
           this.containerRef.instance.attributeForm = attribute.form;
+          this.containerRef.instance.parametersForm = this.parametersForm;
           this.containerRef.changeDetectorRef.markForCheck();
         }
       });

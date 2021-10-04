@@ -7,6 +7,7 @@ import {
 } from '@app/shared/configuration/attributes/attribute.service';
 import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { IFieldOptions } from '@app/shared/configuration/types';
+import { BaseDirective } from '@adwp-ui/widgets';
 
 @Component({
   selector: 'app-group-keys-wrapper',
@@ -23,9 +24,12 @@ import { IFieldOptions } from '@app/shared/configuration/types';
   styleUrls: ['group-keys-wrapper.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class GroupKeysWrapperComponent implements AttributeWrapper, OnInit {
+export class GroupKeysWrapperComponent extends BaseDirective implements AttributeWrapper, OnInit {
   tooltipText: string = '';
+
   groupControl: FormControl;
+
+  parameterControl: FormControl;
 
   @Input() fieldTemplate: TemplateRef<any>;
 
@@ -33,25 +37,33 @@ export class GroupKeysWrapperComponent implements AttributeWrapper, OnInit {
 
   @Input() attributeForm: FormGroup;
 
+  @Input() parametersForm: FormGroup;
+
   @Input() fieldOptions: IFieldOptions;
 
   constructor(private _attributeSrv: AttributeService) {
+    super();
   }
 
 
   ngOnInit(): void {
-    this.groupControl = this._resolveAndSetupControl(this.attributeForm, this.fieldOptions);
+    this._resolveAndSetupControls(this.attributeForm, this.parametersForm, this.fieldOptions);
   }
 
-  private _resolveAndSetupControl(attributeForm: FormGroup, fieldOptions: IFieldOptions): FormControl {
+  private _resolveAndSetupControls(attributeForm: FormGroup, parametersForm: FormGroup, fieldOptions: IFieldOptions): void {
     let attributeControl: AbstractControl = attributeForm;
+    let parameterControl: AbstractControl = parametersForm;
     let disabled = this._attributeSrv.attributes.get(ConfigAttributeNames.CUSTOM_GROUP_KEYS).value;
     let text = this._attributeSrv.attributes.get(ConfigAttributeNames.CUSTOM_GROUP_KEYS).options.tooltipText;
 
     fieldOptions.key?.split('/').reverse().forEach((key) => {
       attributeControl = attributeControl.get(key);
+      parameterControl = parameterControl.get(key);
       disabled = disabled[key];
     });
+
+    this.groupControl = attributeControl as FormControl;
+    this.parameterControl = parameterControl as FormControl;
 
     if (disabled) {
       attributeControl.disable();
@@ -61,6 +73,5 @@ export class GroupKeysWrapperComponent implements AttributeWrapper, OnInit {
       this.tooltipText = this.wrapperOptions.tooltipText;
     }
 
-    return attributeControl as FormControl;
   }
 }

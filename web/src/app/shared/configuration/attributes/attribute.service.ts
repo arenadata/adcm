@@ -18,6 +18,7 @@ export interface AttributeWrapper {
   wrapperOptions: ConfigAttributeOptions;
   fieldOptions: IFieldOptions;
   attributeForm: FormGroup;
+  parametersForm: FormGroup;
 }
 
 export enum ConfigAttributeNames {
