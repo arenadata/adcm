@@ -52,7 +52,7 @@ def wait_info_popup_contains(page: BasePage, text: str):
 @allure.step('Check tabs opens correctly')
 def open_different_tabs(page: AdminIntroPage):
     """Open different tabs (cluster list, bundle list, profile page)"""
-    page.header.click_cluster_tab_in_header()
+    page.header.click_clusters_tab_in_header()
     ClusterListPage(page.driver, page.base_url).wait_page_is_opened()
     page.header.click_bundles_tab_in_header()
     BundleListPage(page.driver, page.base_url).wait_page_is_opened()
