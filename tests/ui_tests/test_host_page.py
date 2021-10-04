@@ -275,7 +275,7 @@ def test_delete_bonded_host(page: HostListPage):
 
 
 @pytest.mark.smoke()
-@pytest.mark.parametrize('menu', ['main', 'config', 'status', 'action'])
+@pytest.mark.parametrize('menu', ['main', 'config', 'status'])
 @pytest.mark.usefixtures('_create_host')
 def test_open_menu(
     upload_and_create_provider: Tuple[Bundle, Provider],
