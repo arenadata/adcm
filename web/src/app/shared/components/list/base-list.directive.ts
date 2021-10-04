@@ -212,10 +212,6 @@ export class BaseListDirective {
 
   onLoad() {}
 
-  addCluster(id: number) {
-    if (id) this.service.addClusterToHost(id, this.row as AdcmHost);
-  }
-
   license() {
     const row = this.row as Bundle;
 
