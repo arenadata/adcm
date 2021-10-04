@@ -24,7 +24,6 @@ import { HcmapComponent } from '@app/components/cluster/hcmap/hcmap.component';
 import { ClusterHostComponent } from '../../components/cluster/host/cluster-host.component';
 import { ServicesComponent } from '@app/components/cluster/services/services.component';
 import { AuthGuard } from '../../core/auth/auth.guard';
-import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
 import {
   CONFIG_GROUP_LIST_SERVICE,
@@ -33,7 +32,6 @@ import {
   ConfigGroupListService,
   ConfigGroupModule
 } from '../../config-groups';
-
 
 const clusterRoutes: Routes = [
   {
@@ -56,7 +54,6 @@ const clusterRoutes: Routes = [
       { path: 'group_config', component: ConfigGroupListComponent },
       { path: 'status', component: StatusComponent },
       { path: 'import', component: ImportComponent },
-      { path: 'action', component: ActionCardComponent },
     ],
   },
   {
@@ -85,7 +82,6 @@ const clusterRoutes: Routes = [
       { path: 'group_config', component: ConfigGroupListComponent },
       { path: 'status', component: StatusComponent },
       { path: 'import', component: ImportComponent },
-      { path: 'action', component: ActionCardComponent },
       { path: 'component', component: ServiceComponentsComponent },
     ],
   },
@@ -114,7 +110,6 @@ const clusterRoutes: Routes = [
       { path: 'config', component: ConfigComponent },
       { path: 'group_config', component: ConfigGroupListComponent },
       { path: 'status', component: StatusComponent },
-      { path: 'action', component: ActionCardComponent },
     ],
   },
   {
@@ -141,7 +136,6 @@ const clusterRoutes: Routes = [
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
       { path: 'status', component: StatusComponent },
-      { path: 'action', component: ActionCardComponent },
     ],
   },
 ];

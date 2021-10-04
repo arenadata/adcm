@@ -10,7 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple, List, Callable
+"""Test adcm_plugin_multi_sate set/unset"""
+
+from typing import Tuple, Callable
 
 import pytest
 import allure
@@ -22,7 +24,7 @@ from adcm_pytest_plugin.steps.actions import (
     run_host_action_and_assert_result,
     run_component_action_and_assert_result,
 )
-from adcm_client.objects import ADCMClient, Cluster, Provider
+from adcm_client.objects import ADCMClient, Cluster, Provider, Host, Service, Component
 
 from tests.functional.plugin_utils import (
     generate_cluster_success_params,
@@ -35,6 +37,7 @@ from tests.functional.plugin_utils import (
     create_two_clusters,
     create_two_providers,
     run_successful_task,
+    TestImmediateChange,
 )
 
 # pylint: disable=redefined-outer-name, duplicate-code
@@ -47,16 +50,10 @@ UNSET_STEP_TITLE = 'Unset multi state'
 # Prepare common functions for working with ADCM objects state
 
 
-def _prepare_multi_state(multi_state: List[str]) -> List[str]:
-    """Ensures multi state is sorted"""
-    multi_state.sort()
-    return multi_state
-
-
 check_objects_multi_state_changed = build_objects_checker(
     field_name=FIELD_NAME,
     changed=['ifeelgood!'],
-    extractor=(_multi_state_extractor := lambda obj: _prepare_multi_state(obj.multi_state)),
+    extractor=(_multi_state_extractor := lambda obj: sorted(obj.multi_state)),
 )
 check_multi_state_was_unset = build_objects_checker(field_name=FIELD_NAME, changed=[], extractor=_multi_state_extractor)
 
@@ -136,7 +133,7 @@ def test_provider_related_objects(
 def test_double_call_to_multi_state_set(two_clusters: Tuple[Cluster, Cluster], sdk_client_fs: ADCMClient):
     """Test that double call to plugin from two files doesn't fail"""
     check_multi_state_after_set = build_objects_checker(
-        _prepare_multi_state(['much', 'better', 'actually']), extractor=_multi_state_extractor, field_name=FIELD_NAME
+        sorted(['much', 'better', 'actually']), extractor=_multi_state_extractor, field_name=FIELD_NAME
     )
     check_multi_state_after_unset = build_objects_checker(
         ['actually'], extractor=_multi_state_extractor, field_name=FIELD_NAME
@@ -281,6 +278,24 @@ def test_multi_state_set_unset_from_different_objects(two_clusters: Tuple[Cluste
         f'Unset multi_state of {cluster_name} from {service_name}'
     ):
         run_service_action_and_assert_result(service, 'unset_cluster')
+
+
+class TestImmediateMultiStateChange(TestImmediateChange):
+    """Test that multi_state changed immediately (set-unset)"""
+
+    _file = __file__
+
+    @allure.issue(url='https://arenadata.atlassian.net/browse/ADCM-2116')
+    def test_immediate_multi_state_change(
+        self,
+        provider_host: Tuple[Provider, Host],
+        cluster_service_component: Tuple[Cluster, Service, Component],
+    ):
+        """
+        Test that multi_state is changed right after adcm_multi_state_set step in multijob action
+            and changed back after adcm_multi_state_unset
+        """
+        self.run_immediate_change_test(provider_host, cluster_service_component)
 
 
 def _test_successful_multi_state_set_unset(

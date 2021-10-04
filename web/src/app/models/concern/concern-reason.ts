@@ -14,6 +14,7 @@ export enum IMPlaceholderItemType {
   Component = 'component',
   HostProvider = 'provider',
   Host = 'host',
+  Action = 'action',
 }
 
 export interface IMPlaceholderItem {
@@ -22,7 +23,7 @@ export interface IMPlaceholderItem {
   ids: { [id: string]: number };
 }
 
-export interface IMPlaceholderAction extends IMPlaceholderItem {
+export interface IMPlaceholderActionRun extends IMPlaceholderItem {
   type: IMPlaceholderItemType.ComponentActionRun;
   ids: {
     cluster: number;
@@ -77,6 +78,14 @@ export interface IMPlaceholderHost extends IMPlaceholderItem {
   ids: {
     host: number;
     provider: number;
+  };
+}
+
+export interface IMPlaceholderAction extends IMPlaceholderItem {
+  type: IMPlaceholderItemType.Action;
+  ids: {
+    action: number;
+    cluster: number;
   };
 }
 

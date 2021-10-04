@@ -32,8 +32,6 @@ export abstract class ConcernListDirective<T> extends AdwpListDirective<T> imple
   ngOnInit() {
     super.ngOnInit();
 
-    this.concernService.events().pipe(this.takeUntil()).subscribe();
-
     this.concernService.events({ types: this.eventTypes })
       .pipe(this.takeUntil())
       .subscribe(resp => {

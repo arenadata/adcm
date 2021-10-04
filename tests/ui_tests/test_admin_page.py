@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""UI tests for /admin page"""
+
 import allure
 import pytest
 
@@ -16,7 +19,6 @@ from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage, AdminUsersPage, AdminSettingsPage
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.utils import expect_rows_amount_change
-
 
 # pylint: disable=redefined-outer-name
 

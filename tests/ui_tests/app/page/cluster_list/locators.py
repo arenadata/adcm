@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Cluster List page locators"""
 
 from selenium.webdriver.common.by import By
 
@@ -21,9 +22,13 @@ class ClusterListLocators:
     """Cluster List page elements locators"""
 
     class Tooltip:
+        """Cluster List page tooltip elements locators"""
+
         cluster_add_btn = Locator(By.CSS_SELECTOR, "button[adcm_test='create-btn']", "Cluster add button")
 
     class CreateClusterPopup:
+        """Cluster List page create cluster popup elements locators"""
+
         block = Locator(By.CSS_SELECTOR, "mat-dialog-container", "Popup block")
         bundle_select_btn = Locator(By.CSS_SELECTOR, "mat-select[placeholder='Bundle']", "Select bundle")
         version_select_btn = Locator(
@@ -39,7 +44,11 @@ class ClusterListLocators:
         cancel_btn = Locator(By.CSS_SELECTOR, "app-add-controls button:first-child", "Cancel button")
 
     class ClusterTable(CommonTable):
+        """Cluster List page cluster table elements locators"""
+
         class ClusterRow:
+            """Cluster List page cluster row elements locators"""
+
             name = Locator(By.CSS_SELECTOR, "mat-cell:first-of-type", "Cluster name in row")
             bundle = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Cluster bundle in row")
             description = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(3)", "Cluster description in row")
@@ -52,5 +61,7 @@ class ClusterListLocators:
             delete_btn = Locator(By.CSS_SELECTOR, "mat-cell:last-of-type button", "Cluster delete button in row")
 
     class LicensePopup:
+        """Cluster List page licence popup elements locators"""
+
         block = Locator(By.XPATH, "//app-dialog[./h3[contains(text(), 'license')]]", "block with license agreement")
         agree_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Yes')]]", "Agree button")

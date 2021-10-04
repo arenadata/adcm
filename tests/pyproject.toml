@@ -33,9 +33,6 @@ min-similarity-lines=5
 
 [tool.pylint.message_control]
 disable=[
-    "missing-function-docstring",
-    "missing-module-docstring",
-    "missing-class-docstring",
     "fixme"
 ]
 

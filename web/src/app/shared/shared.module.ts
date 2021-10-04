@@ -27,7 +27,6 @@ import {
   StatusInfoComponent,
   UpgradeComponent,
 } from './components';
-import { ActionCardComponent } from './components/actions/action-card/action-card.component';
 import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
 import { MultiSortDirective } from './components/list/multi-sort.directive';
 import { ConfigurationModule } from './configuration/configuration.module';
@@ -83,7 +82,6 @@ import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
     ExportComponent,
     ActionMasterComponent,
     ActionMasterConfigComponent,
-    ActionCardComponent,
     StatusColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,
@@ -115,7 +113,6 @@ import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
     MainInfoComponent,
     ImportComponent,
     ExportComponent,
-    ActionCardComponent,
     StatusColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,

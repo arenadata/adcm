@@ -28,7 +28,6 @@ import {
 } from './directives';
 import { MaterialModule } from './material.module';
 import { MenuItemComponent } from './components/actions/action-list/menu-item/menu-item.component';
-import { CardItemComponent } from './components/actions/action-card/card-item/card-item.component';
 import { PopoverComponent } from '@app/components/popover/popover.component';
 import { KeysPipe } from '@app/pipes/keys.pipe';
 import { IsArrayPipe } from '@app/pipes/is-array.pipe';
@@ -55,7 +54,6 @@ import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
     ActionsDirective,
     ActionListComponent,
     MenuItemComponent,
-    CardItemComponent,
     PopoverDirective,
     PopoverComponent,
     ConcernComponent,
@@ -87,7 +85,6 @@ import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
     ActionsDirective,
     ActionListComponent,
     MenuItemComponent,
-    CardItemComponent,
     PopoverDirective,
     PopoverComponent,
     ConcernComponent,
@@ -104,5 +101,4 @@ import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
     ConcernService,
   ],
 })
-export class StuffModule {
-}
+export class StuffModule {}
