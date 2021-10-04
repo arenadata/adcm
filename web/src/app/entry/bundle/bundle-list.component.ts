@@ -25,7 +25,6 @@ import { TypeName } from '@app/core/types';
 import { IBundle } from '@app/models/bundle';
 import { ListFactory } from '@app/factories/list-factory';
 import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
-import { ApiService } from '@app/core/api';
 
 @Component({
   selector: 'app-bundle-list',
@@ -83,9 +82,8 @@ export class BundleListComponent extends AdwpListDirective<IBundle> {
     public route: ActivatedRoute,
     public router: Router,
     public dialog: MatDialog,
-    protected api: ApiService,
   ) {
-    super(service, store, route, router, dialog, api);
+    super(service, store, route, router, dialog);
   }
 
   upload(data: FormData[]) {

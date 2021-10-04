@@ -15,7 +15,6 @@ import { ListService } from '@app/shared/components/list/list.service';
 import { DialogComponent } from '@app/shared/components';
 import { StatusData } from '@app/components/columns/status-column/status-column.component';
 import { ICluster } from '@app/models/cluster';
-import { ApiService } from '@app/core/api';
 import { LIST_SERVICE_PROVIDER } from '@app/shared/components/list/list-service-token';
 
 enum Direction {
@@ -69,7 +68,6 @@ export abstract class ListDirective extends BaseDirective implements OnInit, OnD
     public route: ActivatedRoute,
     public router: Router,
     public dialog: MatDialog,
-    protected api: ApiService,
   ) {
     super();
   }
