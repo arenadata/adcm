@@ -1,5 +1,4 @@
 :host {
-  display: block;
 
   .field {
     display: flex;
@@ -55,9 +54,5 @@
     .icon-info {
       vertical-align: middle;
     }
-  }
-
-  &.field-row:nth-child(odd) {
-    background-color: #4e4e4e;
   }
 }

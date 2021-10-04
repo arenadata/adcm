@@ -45,9 +45,9 @@ import { AdwpListModule } from '@adwp-ui/widgets';
 import { AddingModule } from '@app/shared/add-component/adding.module';
 import { ConfigService } from '@app/shared/configuration/services/config.service';
 import { ConfigGroupModule } from '@app/config-groups';
-import { AttributeProviderComponent } from './attribute-provider/attribute-provider.component';
-import { ConfigFieldMarker } from './attribute-provider/config-field.directive';
-import { GroupKeysWrapperComponent } from './attribute-provider/attributes/group-keys/group-keys-wrapper.component';
+import { AttributesModule } from '@app/shared/configuration/attributes/attributes.module';
+import { ConfigAttributeNames } from '@app/shared/configuration/attributes/attribute.service';
+import { GroupKeysWrapperComponent } from '@app/shared/configuration/attributes/attributes/group-keys/group-keys-wrapper.component';
 
 const material = [
   MatIconModule,
@@ -77,11 +77,30 @@ const material = [
     SchemeComponent,
     RootComponent,
     ItemComponent,
-    AttributeProviderComponent,
-    ConfigFieldMarker,
-    GroupKeysWrapperComponent
   ],
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, StuffModule, FormElementsModule, ...material, AdwpListModule, AddingModule, ConfigGroupModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    StuffModule,
+    FormElementsModule,
+    ...material,
+    AdwpListModule,
+    AddingModule,
+    ConfigGroupModule,
+    AttributesModule.forRoot({
+      group_keys: {
+        name: ConfigAttributeNames.GROUP_KEYS,
+        wrapper: GroupKeysWrapperComponent,
+        options: {
+          tooltipText: 'This parameter cannot be added to the group.'
+        }
+      },
+      custom_group_keys: {
+        name: ConfigAttributeNames.CUSTOM_GROUP_KEYS
+      }
+    })
+  ],
   exports: [ConfigComponent, ConfigFieldsComponent],
   providers: [FieldService, YspecService, SchemeService, ConfigService],
 })

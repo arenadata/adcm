@@ -23,7 +23,7 @@ import { BaseDirective } from '@adwp-ui/widgets';
   templateUrl: './field.component.html',
   styleUrls: ['./field.component.scss'],
   host: {
-    class: 'field-row row d-flex',
+    class: 'field-row w100 d-flex ',
     'read-only': 'options.read_only'
   }
 })

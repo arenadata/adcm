@@ -30,7 +30,6 @@ import {
 import { ActionCardComponent } from './components/actions/action-card/action-card.component';
 import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
 import { MultiSortDirective } from './components/list/multi-sort.directive';
-import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { DetailsModule } from './details/details.module';
 import { DynamicDirective, HoverDirective } from './directives';
@@ -50,6 +49,7 @@ import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
 import { TranslateModule } from '@ngx-translate/core';
 import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
 import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
+import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
 
 @NgModule({
   imports: [
@@ -65,6 +65,7 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
     HostComponentsMapModule,
     DetailsModule,
     TranslateModule,
+    TooltipModule
   ],
   declarations: [
     DialogComponent,
@@ -74,7 +75,6 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
     ButtonSpinnerComponent,
     TagEscPipe,
     IssueInfoComponent,
-    SimpleTextComponent,
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
@@ -124,10 +124,12 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
     ToDataSourcePipe,
     PickKeysPipe,
     TranslateKeysPipe,
+    TooltipModule
   ],
   providers: [
     JobService,
     TaskService,
   ],
 })
-export class SharedModule {}
+export class SharedModule {
+}

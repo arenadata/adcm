@@ -13,11 +13,10 @@ import { animate, state, style, transition, trigger } from '@angular/animations'
 import { Injectable, InjectionToken, Injector } from '@angular/core';
 import { isObject, TypeName } from '@app/core/types';
 import { FieldService, IOutput, TFormOptions } from '../services/field.service';
-import { CompareConfig, IConfigAttr, IFieldOptions, IFieldStack } from '../types';
+import { CompareConfig, IFieldOptions, IFieldStack } from '../types';
 import { ConfigService, IConfigService } from '@app/shared/configuration/services/config.service';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ConfigGroupService } from '@app/config-groups/service/config-group.service';
-import { Attributes, AttributeService } from '@app/shared/configuration/attribute-provider/attribute.service';
 
 /**
  *```
@@ -29,9 +28,6 @@ export interface ISearchParam {
   advanced: boolean;
   search: string;
 }
-
-export const CONFIG_SERVICE = new InjectionToken<IConfigService>('ConfigService');
-
 
 export const historyAnime = [
   trigger('history', [
@@ -152,16 +148,6 @@ export class MainService {
       const { id, date, color } = { ...cc };
       return { id, date, color, value };
     }
-  }
-
-  initAttributes(json: IConfigAttr | undefined): Attributes {
-    if (!json) {
-      return;
-    }
-
-    this.fields.attributesService = new AttributeService(json);
-    console.log(this.fields.attributesService.attributes);
-    return this.fields.attributesService.attributes;
   }
 
 }

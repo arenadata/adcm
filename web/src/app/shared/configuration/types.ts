@@ -11,7 +11,6 @@
 // limitations under the License.
 import { IYspec } from './yspec/yspec.service';
 import { TFormOptions } from './services/field.service';
-import { Attributes } from '@app/shared/configuration/attribute-provider/attribute.service';
 
 export type stateType = 'created' | 'locked';
 
@@ -176,7 +175,6 @@ export interface IFieldOptions extends IFormOptions, ICanGroup {
   controlType: controlType;
   validator: IValidator;
   compare: ICompare[];
-  attributes: Attributes;
 }
 
 //#endregion
