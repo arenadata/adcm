@@ -49,8 +49,10 @@ from tests.library.errorcodes import (
 
 CLUSTER_BUNDLE_PATH = get_data_dir(__file__, "cluster_simple")
 CLUSTER_BUNDLE_WITH_GROUP_PATH = get_data_dir(__file__, "cluster_with_group_all_params")
+CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH = get_data_dir(__file__, "cluster_with_config_group_custom")
 PROVIDER_BUNDLE_PATH = get_data_dir(__file__, "hostprovider_bundle")
 PROVIDER_BUNDLE_WITH_GROUP_PATH = get_data_dir(__file__, "provider_group_with_all_params")
+PROVIDER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH = get_data_dir(__file__, "provider_group_with_config_group_custom")
 HOST_ERROR_MESSAGE = (
     "host is not available for this object, or host already is a member of another group of this object"
 )
@@ -448,7 +450,13 @@ class TestChangeGroupsConfig:
 
     @pytest.mark.parametrize(
         "cluster_bundle",
-        [pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group")],
+        [
+            pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group_customization"),
+            pytest.param(
+                get_data_dir(__file__, CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
+                id="cluster_with_config_group_customization",
+            ),
+        ],
         indirect=True,
     )
     def test_change_group_in_cluster(self, cluster_bundle, cluster_with_two_hosts_on_it):
@@ -468,7 +476,13 @@ class TestChangeGroupsConfig:
 
     @pytest.mark.parametrize(
         "cluster_bundle",
-        [pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group")],
+        [
+            pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group_customization"),
+            pytest.param(
+                get_data_dir(__file__, CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
+                id="cluster_with_config_group_customization",
+            ),
+        ],
         indirect=True,
     )
     def test_change_group_in_service(self, cluster_bundle, sdk_client_fs, cluster_with_components):
@@ -488,7 +502,13 @@ class TestChangeGroupsConfig:
 
     @pytest.mark.parametrize(
         "cluster_bundle",
-        [pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group")],
+        [
+            pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group_customization"),
+            pytest.param(
+                get_data_dir(__file__, CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
+                id="cluster_with_config_group_customization",
+            ),
+        ],
         indirect=True,
     )
     def test_change_group_in_component(self, cluster_bundle, sdk_client_fs, cluster_with_components):
@@ -509,7 +529,15 @@ class TestChangeGroupsConfig:
 
     @pytest.mark.parametrize(
         "provider_bundle",
-        [pytest.param(get_data_dir(__file__, PROVIDER_BUNDLE_WITH_GROUP_PATH), id="provider_with_group")],
+        [
+            pytest.param(
+                get_data_dir(__file__, PROVIDER_BUNDLE_WITH_GROUP_PATH), id="provider_with_group_customization"
+            ),
+            pytest.param(
+                get_data_dir(__file__, PROVIDER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
+                id="provider_with_config_group_customization",
+            ),
+        ],
         indirect=True,
     )
     def test_change_group_in_provider(self, sdk_client_fs, provider_bundle, provider, create_two_hosts):
