@@ -11,7 +11,6 @@ import { HostListComponent } from '@app/components/host-list/host-list.component
 import { DetailComponent } from '@app/shared/details/detail.component';
 import { MainInfoComponent, StatusComponent } from '@app/shared/components';
 import { ConfigComponent } from '@app/shared/configuration/main/config.component';
-import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
 import { HostproviderComponent } from '@app/components/hostprovider/hostprovider.component';
 import { CONFIG_GROUP_LIST_SERVICE, ConfigGroupHostListComponent, ConfigGroupListComponent } from '@app/config-groups';
 
@@ -46,7 +45,6 @@ const routes: Routes = [
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
       { path: 'status', component: StatusComponent },
-      { path: 'action', component: ActionCardComponent },
     ],
   },
   {
@@ -71,7 +69,6 @@ const routes: Routes = [
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
       { path: 'group_config', component: ConfigGroupListComponent },
-      { path: 'action', component: ActionCardComponent },
     ],
   },
   {

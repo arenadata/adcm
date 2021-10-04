@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
-import { filter, tap } from 'rxjs/operators';
+import { filter } from 'rxjs/operators';
 
 import { ConcernEventFilter, EventableService } from '@app/models/eventable-service';
 import { EventMessage, selectMessage, SocketState } from '@app/core/store';

@@ -2,7 +2,7 @@
 <mat-toolbar>
 
   <app-navigation
-    *ngIf="['servicecomponent', 'service', 'cluster'].includes(current?.typeName) || (current?.typeName === 'host' && current?.parent); else notServiceComponent"
+    *ngIf="['servicecomponent', 'service', 'cluster', 'host', 'provider'].includes(current?.typeName); else notServiceComponent"
     [path]="navigationPath"
     (refresh)="refresh($event)"
   ></app-navigation>

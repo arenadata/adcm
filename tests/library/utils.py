@@ -12,8 +12,14 @@
 
 """Common utils for ADCM tests"""
 
-import random
 import time
+import json
+import random
+import requests
+
+
+class RequestFailedException(Exception):
+    """Request to ADCM API has status code >= 400"""
 
 
 def get_action_by_name(client, cluster, name):
@@ -158,3 +164,14 @@ def wait_until(client, task, interval=1, timeout=30):
     while not (task['status'] == 'success' or task['status'] == 'failed') and time.time() - start < timeout:
         time.sleep(interval)
         task = client.task.read(task_id=task['id'])
+
+
+def get_json_or_text(response: requests.Response):
+    """
+    Try to get JSON or text if JSON can't be parsed from requests.Response.
+    Use this function to provide more info on ADCM API Error.
+    """
+    try:
+        return response.json()
+    except json.JSONDecodeError:
+        return response.text

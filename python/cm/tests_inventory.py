@@ -72,6 +72,7 @@ class TestInventory(TestCase):
                 'id': 1,
                 'version': '2.2',
                 'state': 'created',
+                'multi_state': [],
             },
             'services': {},
         }
@@ -98,6 +99,7 @@ class TestInventory(TestCase):
                 'id': 1,
                 'host_prototype_id': 1,
                 'state': 'created',
+                'multi_state': [],
             }
         }
         self.assertDictEqual(config, test_config)
@@ -173,6 +175,7 @@ class TestInventory(TestCase):
                         'id': 1,
                         'host_prototype_id': 1,
                         'state': 'created',
+                        'multi_state': [],
                     }
                 },
             }
@@ -204,7 +207,9 @@ class TestInventory(TestCase):
             'all': {
                 'children': {
                     'CLUSTER': {
-                        'hosts': {host2.fqdn: {'adcm_hostid': 2, 'state': 'created'}},
+                        'hosts': {
+                            host2.fqdn: {'adcm_hostid': 2, 'state': 'created', 'multi_state': []}
+                        },
                         'vars': {
                             'cluster': {
                                 'config': {},
@@ -213,6 +218,7 @@ class TestInventory(TestCase):
                                 'version': '2.2',
                                 'edition': 'community',
                                 'state': 'created',
+                                'multi_state': [],
                             },
                             'services': {},
                         },
@@ -224,7 +230,7 @@ class TestInventory(TestCase):
             'all': {
                 'children': {
                     'HOST': {
-                        'hosts': {'': {'adcm_hostid': 1, 'state': 'created'}},
+                        'hosts': {'': {'adcm_hostid': 1, 'state': 'created', 'multi_state': []}},
                         'vars': {
                             'provider': {
                                 'config': {},
@@ -232,6 +238,7 @@ class TestInventory(TestCase):
                                 'id': 1,
                                 'host_prototype_id': proto3.id,
                                 'state': 'created',
+                                'multi_state': [],
                             }
                         },
                     }
@@ -243,8 +250,8 @@ class TestInventory(TestCase):
                 'children': {
                     'PROVIDER': {
                         'hosts': {
-                            '': {'adcm_hostid': 1, 'state': 'created'},
-                            'h2': {'adcm_hostid': 2, 'state': 'created'},
+                            '': {'adcm_hostid': 1, 'state': 'created', 'multi_state': []},
+                            'h2': {'adcm_hostid': 2, 'state': 'created', 'multi_state': []},
                         }
                     }
                 },
@@ -255,6 +262,7 @@ class TestInventory(TestCase):
                         'id': 1,
                         'host_prototype_id': proto3.id,
                         'state': 'created',
+                        'multi_state': [],
                     }
                 },
             }
