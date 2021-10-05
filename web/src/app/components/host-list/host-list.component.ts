@@ -1,5 +1,8 @@
 import { Component, ComponentRef } from '@angular/core';
-import { IColumns } from '@adwp-ui/widgets';
+import { IColumns, IListResult } from '@adwp-ui/widgets';
+import { Store } from '@ngrx/store';
+import { ActivatedRoute, Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 
 import { TypeName } from '@app/core/types';
 import { IHost } from '@app/models/host';
@@ -8,6 +11,12 @@ import { AddClusterEventData, ClusterColumnComponent } from '@app/components/col
 import { UniversalAdcmEventData } from '@app/models/universal-adcm-event-data';
 import { ConcernListDirective } from '@app/abstract-directives/concern-list.directive';
 import { ConcernEventType } from '@app/models/concern/concern-reason';
+import { ICluster } from '@app/models/cluster';
+import { ListService } from '@app/shared/components/list/list.service';
+import { SocketState } from '@app/core/store';
+import { ConcernService } from '@app/services/concern.service';
+import { HostService } from '@app/services/host.service';
+import { ApiService } from '@app/core/api';
 
 @Component({
   selector: 'app-host-list',
@@ -64,7 +73,24 @@ export class HostListComponent extends ConcernListDirective<IHost> {
           .onAddCluster
           .pipe(this.takeUntil())
           .subscribe((data: AddClusterEventData) => {
-            this.clickCell(data.event, data.action, data.row, data.cluster);
+            if (data?.cluster) {
+              this.hostService.addToCluster(data.row.id, data.cluster as any as number)
+                .subscribe((host) => {
+                  if (this.data$?.value?.results) {
+                    this.api.getOne('cluster', host.cluster_id).subscribe((cluster: ICluster) => {
+                      const tableData = Object.assign({}, this.data$.value);
+                      const index = tableData.results.findIndex(item => item.id === host.id);
+                      const row = Object.assign({}, tableData.results[index]);
+
+                      row.cluster_id = cluster.id;
+                      row.cluster_name = cluster.name;
+
+                      tableData.results.splice(index, 1, row);
+                      this.reload(tableData as IListResult<any>);
+                    });
+                  }
+                });
+            }
           });
       }
     },
@@ -74,5 +100,18 @@ export class HostListComponent extends ConcernListDirective<IHost> {
     ListFactory.configColumn(this),
     ListFactory.deleteColumn(this),
   ] as IColumns<IHost>;
+
+  constructor(
+    protected service: ListService,
+    protected store: Store<SocketState>,
+    public route: ActivatedRoute,
+    public router: Router,
+    public dialog: MatDialog,
+    protected concernService: ConcernService,
+    protected hostService: HostService,
+    protected api: ApiService,
+  ) {
+    super(service, store, route, router, dialog, concernService);
+  }
 
 }

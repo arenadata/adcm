@@ -12,7 +12,7 @@
 
 """Test adcm_plugin_multi_sate set/unset"""
 
-from typing import Tuple, List, Callable
+from typing import Tuple, Callable
 
 import pytest
 import allure
@@ -50,16 +50,10 @@ UNSET_STEP_TITLE = 'Unset multi state'
 # Prepare common functions for working with ADCM objects state
 
 
-def _prepare_multi_state(multi_state: List[str]) -> List[str]:
-    """Ensures multi state is sorted"""
-    multi_state.sort()
-    return multi_state
-
-
 check_objects_multi_state_changed = build_objects_checker(
     field_name=FIELD_NAME,
     changed=['ifeelgood!'],
-    extractor=(_multi_state_extractor := lambda obj: _prepare_multi_state(obj.multi_state)),
+    extractor=(_multi_state_extractor := lambda obj: sorted(obj.multi_state)),
 )
 check_multi_state_was_unset = build_objects_checker(field_name=FIELD_NAME, changed=[], extractor=_multi_state_extractor)
 
@@ -139,7 +133,7 @@ def test_provider_related_objects(
 def test_double_call_to_multi_state_set(two_clusters: Tuple[Cluster, Cluster], sdk_client_fs: ADCMClient):
     """Test that double call to plugin from two files doesn't fail"""
     check_multi_state_after_set = build_objects_checker(
-        _prepare_multi_state(['much', 'better', 'actually']), extractor=_multi_state_extractor, field_name=FIELD_NAME
+        sorted(['much', 'better', 'actually']), extractor=_multi_state_extractor, field_name=FIELD_NAME
     )
     check_multi_state_after_unset = build_objects_checker(
         ['actually'], extractor=_multi_state_extractor, field_name=FIELD_NAME
