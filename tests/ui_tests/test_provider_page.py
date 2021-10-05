@@ -16,20 +16,13 @@ import os
 
 import allure
 import pytest
+
 from _pytest.fixtures import SubRequest
-from adcm_client.objects import (
-    ADCMClient,
-    Bundle,
-    Provider,
-)
+from adcm_client.objects import ADCMClient, Bundle, Provider
 from adcm_pytest_plugin import utils
 
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
-from tests.ui_tests.app.page.provider.page import (
-    ProviderMainPage,
-    ProviderConfigPage,
-    ProviderActionsPage,
-)
+from tests.ui_tests.app.page.provider.page import ProviderMainPage, ProviderConfigPage
 from tests.ui_tests.app.page.provider_list.page import ProviderListPage
 
 # pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-few-public-methods
@@ -309,29 +302,3 @@ class TestProviderConfigPage:
         config_row = provider_config_page.config.get_all_config_rows()[0]
         provider_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
         provider_config_page.config.check_field_is_invalid(params['not_req_name'])
-
-
-class TestProviderActionPage:
-    """Tests for provider actions page"""
-
-    @pytest.mark.smoke()
-    def test_open_by_tab_provider_action_page(self, app_fs, upload_and_create_test_provider):
-        """Test open actions page from left menu"""
-        provider_main_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).open()
-        provider_action_page = provider_main_page.open_actions_tab()
-        provider_action_page.wait_page_is_opened()
-        provider_action_page.check_all_elements()
-
-    @pytest.mark.smoke()
-    def test_run_action_on_provider_action_page(self, app_fs, upload_and_create_test_provider):
-        """Test run action from provider actions tab"""
-        provider_action_page = ProviderActionsPage(
-            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
-        ).open()
-        provider_action = provider_action_page.get_all_actions()[0]
-        provider_action_page.click_run_btn_in_action(provider_action)
-        provider_action_page.check_no_actions_presented()
-        with allure.step("Check success provider job"):
-            assert (
-                provider_action_page.header.get_in_progress_job_amount_from_header() == "1"
-            ), "There should be 1 in progress provider job in header"
