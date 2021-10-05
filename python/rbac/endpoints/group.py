@@ -13,7 +13,9 @@
 
 from django.contrib.auth.models import Group
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers, viewsets
+from rest_framework import serializers
+
+from rbac.viewsets import ModelPermViewSet
 
 
 class GroupSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSerializer):
@@ -32,7 +34,7 @@ class GroupSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSer
 
 
 # pylint: disable=too-many-ancestors
-class GroupViewSet(viewsets.ModelViewSet):
+class GroupViewSet(ModelPermViewSet):
     """Group View Set"""
 
     queryset = Group.objects.all()

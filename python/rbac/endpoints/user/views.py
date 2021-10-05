@@ -14,7 +14,6 @@
 
 from django.contrib.auth.models import User, Group
 from rest_framework import status
-from rest_framework import viewsets
 from rest_framework.mixins import (
     ListModelMixin,
     CreateModelMixin,
@@ -24,11 +23,11 @@ from rest_framework.mixins import (
 from rest_framework.response import Response
 
 from rbac.models import Role
+from rbac.viewsets import ModelPermViewSet, GenericPermViewSet
 from .serializers import UserSerializer, UserGroupSerializer, UserRoleSerializer
 
-
 # pylint: disable=too-many-ancestors
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(ModelPermViewSet):
     """User view set"""
 
     queryset = User.objects.all()
@@ -43,7 +42,7 @@ class UserGroupViewSet(
     CreateModelMixin,
     RetrieveModelMixin,
     DestroyModelMixin,
-    viewsets.GenericViewSet,
+    GenericPermViewSet,
 ):  # pylint: disable=too-many-ancestors
     """User group view set"""
 
@@ -75,7 +74,7 @@ class UserRoleViewSet(
     CreateModelMixin,
     RetrieveModelMixin,
     DestroyModelMixin,
-    viewsets.GenericViewSet,
+    GenericPermViewSet,
 ):  # pylint: disable=too-many-ancestors
     """User group view set"""
 

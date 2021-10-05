@@ -34,4 +34,4 @@ class Command(BaseCommand):
             msg = init_roles()
             self.stdout.write(self.style.SUCCESS(msg))
         except AdwpEx as e:
-            raise CommandError(e.msg) from None
+            raise CommandError(e.message) from None

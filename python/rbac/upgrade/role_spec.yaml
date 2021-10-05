@@ -1,8 +1,16 @@
 ---
 
-version: 1
+version: 3
 
 roles:
+    - name: base
+      apps:
+        - label: auth
+          models:
+            - name: user
+              codenames:
+                - view
+                - change
     - name: admin
       apps:
         - label: cm

@@ -12,9 +12,10 @@
 """ViewSet and Serializers for Role"""
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers, viewsets
+from rest_framework import serializers
 
 from rbac.models import Role
+from rbac.viewsets import ModelPermViewSet
 from .user.serializers import PermissionSerializer
 
 
@@ -43,7 +44,7 @@ class RoleSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
 
 
 # pylint: disable=too-many-ancestors
-class RoleViewSet(viewsets.ModelViewSet):
+class RoleViewSet(ModelPermViewSet):
     """Role View Set"""
 
     queryset = Role.objects.all()
