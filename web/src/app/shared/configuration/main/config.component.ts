@@ -34,8 +34,7 @@ import { historyAnime, ISearchParam, MainService } from './main.service';
 import { WorkerInstance } from '@app/core/services/cluster.service';
 import { ActivatedRoute } from '@angular/router';
 import { AttributeService } from '@app/shared/configuration/attributes/attribute.service';
-// @ts-ignore
-import deepmerge from 'deepmerge';
+import * as deepmerge from 'deepmerge';
 
 @Component({
   selector: 'app-config-form',
