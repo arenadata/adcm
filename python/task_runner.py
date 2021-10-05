@@ -119,7 +119,10 @@ def run_task(task_id, args=None):
         set_body_ansible(job)
         # For multi jobs task object state and/or config can be changed by adcm plugins
         if task.task_object is not None:
-            task.task_object.refresh_from_db()
+            try:
+                task.task_object.refresh_from_db()
+            except ObjectDoesNotExist:
+                task.task_object = None
         count += 1
         if res != 0:
             break
