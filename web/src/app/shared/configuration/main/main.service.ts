@@ -29,9 +29,6 @@ export interface ISearchParam {
   search: string;
 }
 
-export const CONFIG_SERVICE = new InjectionToken<IConfigService>('ConfigService');
-
-
 export const historyAnime = [
   trigger('history', [
     state('hide', style({ top: '70px' })),
