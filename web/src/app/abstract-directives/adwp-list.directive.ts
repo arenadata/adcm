@@ -27,7 +27,7 @@ export abstract class AdwpListDirective<T> extends ListDirective implements OnIn
   }
 
   initBaseListDirective() {
-    this.baseListDirective = new AdwpBaseListDirective(this, this.service, this.store, this.api);
+    this.baseListDirective = new AdwpBaseListDirective(this, this.service, this.store);
     this.baseListDirective.typeName = this.type;
     this.baseListDirective.reload = this.reload.bind(this);
     (this.baseListDirective as AdwpBaseListDirective).paging = this.paging;

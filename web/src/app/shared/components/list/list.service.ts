@@ -17,7 +17,7 @@ import { Observable } from 'rxjs';
 import { environment } from '@env/environment';
 import { ApiService } from '@app/core/api';
 import { ClusterService } from '@app/core/services/cluster.service';
-import { BaseEntity, Bundle, Entities, Host, IAction, Service, TypeName } from '@app/core/types';
+import { BaseEntity, Bundle, Entities, IAction, Service, TypeName } from '@app/core/types';
 import { IListService, ListInstance } from '@app/shared/components/list/list-service-token';
 import { ListResult } from '@app/models/list-result';
 import { ICluster } from '@app/models/cluster';
@@ -91,15 +91,6 @@ export class ListService implements IListService<Entities> {
     return this.api.root
       .pipe(switchMap((root) => this.api.getList<ICluster>(root.cluster, convertToParamMap(param))))
       .pipe(map((res) => res.results.map((a) => ({ id: a.id, title: a.name }))));
-  }
-
-  addClusterToHost(cluster_id: number, row: Host): Observable<Host> {
-    return this.api
-      .post<Host>(`${environment.apiRoot}cluster/${cluster_id}/host/`, { host_id: row.id })
-      .pipe(tap((host) => {
-        row.cluster_id = host.cluster_id;
-        row.cluster_name = host.cluster;
-      }));
   }
 
   checkItem<T>(item: BaseEntity) {

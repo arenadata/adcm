@@ -18,7 +18,11 @@ import { IIssues } from '@app/models/issue';
             <a routerLink="{{ item.url }}" [title]="item.title | uppercase">{{ item.title | uppercase }}</a>
           </div>
           <app-actions-button [row]="item?.entity"></app-actions-button>
-          <app-upgrade *ngIf="item?.entity?.typeName === 'cluster'" [row]="item?.entity" (refresh)="refresh.emit($event)"></app-upgrade>
+          <app-upgrade
+            *ngIf="['cluster', 'provider'].includes(item?.entity?.typeName)"
+            [row]="item?.entity"
+            (refresh)="refresh.emit($event)"
+          ></app-upgrade>
         </span>
         <span *ngIf="!isLast">&nbsp;/&nbsp;</span>
       </ng-container>
