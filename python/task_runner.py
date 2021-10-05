@@ -122,7 +122,8 @@ def run_task(task_id, args=None):
             try:
                 task.task_object.refresh_from_db()
             except ObjectDoesNotExist:
-                task.task_object = None
+                task.object_id = 0
+                task.object_type = None
         count += 1
         if res != 0:
             break
