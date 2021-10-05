@@ -45,6 +45,7 @@ from coreapi.exceptions import ErrorMessage
 from tests.library.errorcodes import (
     GROUP_CONFIG_HOST_ERROR,
     GROUP_CONFIG_HOST_EXISTS,
+    ATTRIBUTE_ERROR,
 )
 
 CLUSTER_BUNDLE_PATH = get_data_dir(__file__, "cluster_simple")
@@ -57,6 +58,7 @@ HOST_ERROR_MESSAGE = (
     "host is not available for this object, or host already is a member of another group of this object"
 )
 HOST_EXISTS_MESSAGE = "the host is already a member of this group"
+ATTRIBUTE_ERROR_MESSAGE = "field cannot be changed, read-only"
 FIRST_COMPONENT_NAME = "first"
 SECOND_COMPONENT_NAME = "second"
 FIRST_GROUP = "test_group"
@@ -362,69 +364,37 @@ class TestChangeGroupsConfig:
 
     ASSERT_TYPE = ["float", "boolean", "integer", "string", "list", "option", "text", "group", "structure", "map"]
 
-    PARAMS_TO_CHANGE = [
-        1.1,
-        False,
-        0,
-        "string2",
-        ["/dev/rdisk0s4", "/dev/rdisk0s5", "/dev/rdisk0s6"],
-        "WEEKLY",
-        "testtext",
-        OrderedDict([('port', 9100), ('transport_port', 9200)]),
-        [{"code": 3, "country": "Test1"}, {"code": 4, "country": "Test2"}],
-        {"age": "20", "name": "Chloe", "sex": "f"},
-        "123",
-        "file content test",
-    ]
+    PARAMS_TO_CHANGE = {
+        "float": 1.1,
+        "boolean": False,
+        "integer": 0,
+        "string": "string2",
+        "list": ["/dev/rdisk0s4", "/dev/rdisk0s5", "/dev/rdisk0s6"],
+        "option": "WEEKLY",
+        "text": "testtext",
+        "group": OrderedDict([('port', 9100), ('transport_port', 9200)]),
+        "structure": [{"code": 3, "country": "Test1"}, {"code": 4, "country": "Test2"}],
+        "map": {"age": "20", "name": "Chloe", "sex": "f"},
+        "password": "123",
+        "file": "file content test",
+    }
 
-    def _add_values_to_group_config_template(self, params: list = PARAMS_TO_CHANGE) -> dict:
-        (
-            float_value,
-            boolean_value,
-            integer_value,
-            string_value,
-            list_value,
-            option,
-            text,
-            group,
-            structure,
-            map_value,
-            password,
-            file,
-        ) = params
-        return {
-            "attr": {
-                "group": {"active": True},
-                "group_keys": {
-                    "group": {"port": True, "transport_port": True},
-                    "float": True,
-                    "boolean": True,
-                    "integer": True,
-                    "password": True,
-                    "string": True,
-                    "list": True,
-                    "file": True,
-                    "option": True,
-                    "text": True,
-                    "structure": True,
-                    "map": True,
-                },
-            },
-            "config": {
-                "float": float_value,
-                "boolean": boolean_value,
-                "integer": integer_value,
-                "password": password,
-                "string": string_value,
-                "list": list_value,
-                "file": file,
-                "option": option,
-                "text": text,
-                "group": group,
-                "structure": structure,
-                "map": map_value,
-            },
-        }
+    def _add_values_to_group_config_template(self, group_attr: dict = {}, config_attr: dict = PARAMS_TO_CHANGE) -> dict:
+        group_config_template = {"attr": {}, "config": {}}
+        if group_attr:
+            group_config_template["attr"]["custom_group_keys"] = {}
+            if "group" in group_attr.keys():
+                group_value = group_attr.pop("group")
+                group_config_template["attr"]["custom_group_keys"]["group"] = {
+                    "port": group_value,
+                    "transport_port": group_value,
+                }
+            for key in group_attr.keys():
+                group_config_template["attr"]["custom_group_keys"][key] = group_attr[key]
+        if config_attr:
+            for key in config_attr.keys():
+                group_config_template["config"][key] = config_attr[key]
+        return group_config_template
 
     @allure.step("Check group config values are equal expected")
     def _check_values_in_group(
@@ -447,6 +417,24 @@ class TestChangeGroupsConfig:
         config_group["password"] = "password"
         config_group["file"] = config_group["file"].replace("\n", "")
         return config_group
+
+    @allure.step('Check error that group config cant change')
+    def _check_error_with_adding_param_to_group(self, group: GroupConfig, params: dict):
+        with allure.step(f'Check that error is "{GROUP_CONFIG_HOST_EXISTS.code}"'):
+            with pytest.raises(ErrorMessage) as e:
+                group.config_set_diff(params)
+            ATTRIBUTE_ERROR.equal(e)
+        with allure.step(f'Check error message is "{HOST_EXISTS_MESSAGE}"'):
+            assert (
+                ATTRIBUTE_ERROR_MESSAGE in e.value.error['desc']
+            ), f"Should be error message '{ATTRIBUTE_ERROR_MESSAGE}'"
+
+    def _check_error_in_all_params_in_group(self, group: GroupConfig, config_before: dict):
+        for param in config_before.keys():
+            config_expected = self._add_values_to_group_config_template(
+                group_attr={param: False}, config_attr={param: self.PARAMS_TO_CHANGE[param]}
+            )
+            self._check_error_with_adding_param_to_group(group, config_expected)
 
     @pytest.mark.parametrize(
         "cluster_bundle",
@@ -554,3 +542,86 @@ class TestChangeGroupsConfig:
         )
         config = {"map": {test_host_1.fqdn: config_expected['config'], test_host_2.fqdn: dict(config_before)}}
         run_provider_action_and_assert_result(provider, action="test_action", config=config)
+
+    @pytest.mark.parametrize(
+        "cluster_bundle",
+        [
+            pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group_customization"),
+            pytest.param(
+                get_data_dir(__file__, CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
+                id="cluster_with_config_group_customization",
+            ),
+        ],
+        indirect=True,
+    )
+    def test_error_with_changing_params_in_cluster_group_without_group_customization(self, cluster_bundle, cluster):
+        """Test error with changing params in group without group_customization"""
+
+        with allure.step("Create config group for cluster"):
+            cluster_group = cluster.group_config_create(name=FIRST_GROUP)
+            config_before = self._get_config_from_group(cluster_group)
+        self._check_error_in_all_params_in_group(cluster_group, config_before)
+
+    @pytest.mark.parametrize(
+        "cluster_bundle",
+        [
+            pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group_customization"),
+            pytest.param(
+                get_data_dir(__file__, CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
+                id="cluster_with_config_group_customization",
+            ),
+        ],
+        indirect=True,
+    )
+    def test_error_with_changing_params_in_service_group_without_group_customization(self, cluster_bundle, cluster):
+        """Test error with changing params in group without group_customization"""
+
+        with allure.step("Create config group for service"):
+            service = cluster.service_add(name='test_service_1')
+            service_group = service.group_config_create(name=FIRST_GROUP)
+            config_before = self._get_config_from_group(service_group)
+        self._check_error_in_all_params_in_group(service_group, config_before)
+
+    @pytest.mark.parametrize(
+        "cluster_bundle",
+        [
+            pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group_customization"),
+            pytest.param(
+                get_data_dir(__file__, CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
+                id="cluster_with_config_group_customization",
+            ),
+        ],
+        indirect=True,
+    )
+    def test_error_with_changing_params_in_component_group_without_group_customization(
+        self, cluster_bundle, cluster_with_components
+    ):
+        """Test error with changing params in group without group_customization"""
+
+        service, _, _ = cluster_with_components
+        component = service.component(name=FIRST_COMPONENT_NAME)
+        with allure.step("Create config group for component"):
+            component_group = component.group_config_create(name=FIRST_GROUP)
+            config_before = self._get_config_from_group(component_group)
+        self._check_error_in_all_params_in_group(component_group, config_before)
+
+    @pytest.mark.parametrize(
+        "provider_bundle",
+        [
+            pytest.param(
+                get_data_dir(__file__, PROVIDER_BUNDLE_WITH_GROUP_PATH), id="provider_with_group_customization"
+            ),
+            pytest.param(
+                get_data_dir(__file__, PROVIDER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
+                id="provider_with_config_group_customization",
+            ),
+        ],
+        indirect=True,
+    )
+    def test_error_with_changing_params_in_provider_group_without_group_customization(self, provider_bundle, provider):
+        """Test error with changing params in group without group_customization"""
+
+        with allure.step("Create config group for provider and add first host"):
+            provider_group = provider.group_config_create(name=FIRST_GROUP)
+            config_before = self._get_config_from_group(provider_group)
+        self._check_error_in_all_params_in_group(provider_group, config_before)
