@@ -31,8 +31,6 @@ export class GroupFieldsComponent implements OnInit {
   active = true;
   @Input() panel: IPanelOptions;
   @Input() form: FormGroup;
-  @Input() groupForm: FormGroup;
-  @Input() showCheckbox: boolean = false;
   @ViewChild('ep') expanel: MatExpansionPanel;
 
   constructor(private service: FieldService) {}

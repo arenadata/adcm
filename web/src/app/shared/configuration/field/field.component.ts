@@ -22,6 +22,10 @@ import { BaseDirective } from '@adwp-ui/widgets';
   selector: 'app-field',
   templateUrl: './field.component.html',
   styleUrls: ['./field.component.scss'],
+  host: {
+    class: 'field-row w100 d-flex ',
+    'read-only': 'options.read_only'
+  }
 })
 export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
   @Input()
@@ -43,20 +47,6 @@ export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
   initCurrentGroup() {
     const [_, name] = this.options.key.split('/');
     this.currentFormGroup = name ? (this.form.controls[name] as FormGroup) : this.form;
-
-    if (this.options.configGroup) {
-      this.currentFormGroup.controls[this.options.name].valueChanges.pipe(this.takeUntil()).subscribe((value) => {
-        if (!!this.options.default !== !!value
-          && this.options.default !== value
-          && !this.options.configGroup.disabled
-        ) {
-          this.options.configGroup.setValue(true);
-        } else {
-          this.options.configGroup.setValue(false);
-        }
-      });
-    }
-
   }
 
   getTestName() {

@@ -11,7 +11,6 @@
 // limitations under the License.
 import { IYspec } from './yspec/yspec.service';
 import { TFormOptions } from './services/field.service';
-import { FormControl } from '@angular/forms';
 
 export type stateType = 'created' | 'locked';
 
@@ -176,7 +175,6 @@ export interface IFieldOptions extends IFormOptions, ICanGroup {
   controlType: controlType;
   validator: IValidator;
   compare: ICompare[];
-  configGroup?: FormControl;
 }
 
 //#endregion
