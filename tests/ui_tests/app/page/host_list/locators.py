@@ -45,7 +45,7 @@ class HostListLocators:
             cluster = Locator(By.CSS_SELECTOR, "app-cluster-column", "Host cluster in row")
             state = Locator(By.CSS_SELECTOR, "app-state-column", "Host state in row")
             status = Locator(By.CSS_SELECTOR, "app-status-column button", "Host status in row")
-            actions = Locator(By.CSS_SELECTOR, "app-actions-column button", "Host actions in row")
+            actions = Locator(By.CSS_SELECTOR, "app-actions-button button", "Host actions in row")
             config = Locator(By.XPATH, ".//button[.//mat-icon[text()='settings']]", "Host config in row")
             delete_btn = Locator(By.XPATH, ".//button[.//mat-icon[text()='delete']]", "Host delete button in row")
             link_off_btn = Locator(By.XPATH, ".//button[.//mat-icon[text()='link_off']]", "Host link off button in row")

@@ -397,11 +397,12 @@ class TestTaskHeaderPopup:
         ), f"Failed job amount should be {job_info['failed_jobs']}"
 
         def _wait_for_background():
-            assert (
-                job_info['background'] in cluster_page.header.get_jobs_circle_color()
-            ), "Bell circle should be colored"
+            assert job_info['background'] in (
+                circle_color := cluster_page.header.get_jobs_circle_color()
+            ), f"Bell circle should be colored, but actual color was: {circle_color}"
 
-        wait_until_step_succeeds(_wait_for_background, period=0.3, timeout=5)
+        with allure.step('Check that "bell" color is correct'):
+            wait_until_step_succeeds(_wait_for_background, period=0.3, timeout=10)
 
     def test_on_tasks_in_header_popup(self, cluster: Cluster, page: JobListPage, app_fs):
         """Run action and click on it in header popup"""

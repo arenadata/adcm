@@ -26,28 +26,14 @@ from tests.ui_tests.app.page.cluster.locators import (
     ClusterComponentsLocators,
     ClusterStatusLocators,
 )
-from tests.ui_tests.app.page.common.base_page import (
-    BasePageObject,
-    PageHeader,
-    PageFooter,
-)
-from tests.ui_tests.app.page.common.common_locators import (
-    ObjectPageLocators,
-    ObjectPageMenuLocators,
-    CommonActionLocators,
-)
+from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
+from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators, ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
-from tests.ui_tests.app.page.common.dialogs_locators import (
-    ActionDialog,
-    DeleteDialog,
-)
+from tests.ui_tests.app.page.common.dialogs_locators import ActionDialog, DeleteDialog
 from tests.ui_tests.app.page.common.popups.locator import HostAddPopupLocators
 from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
-from tests.ui_tests.app.page.common.popups.locator import (
-    PageIssuePopupLocators,
-    ListIssuePopupLocators,
-)
+from tests.ui_tests.app.page.common.popups.locator import PageConcernPopupLocators, ListConcernPopupLocators
 from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
@@ -93,8 +79,6 @@ class ClusterPageMixin(BasePageObject):
     table: CommonTableObj
     host_popup: HostCreatePopupObj
 
-    __ACTIVE_MENU_CLASS = 'active'
-
     def __init__(self, driver, base_url, cluster_id: int):
         if self.MENU_SUFFIX is None:
             raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
@@ -134,10 +118,6 @@ class ClusterPageMixin(BasePageObject):
     def open_import_tab(self):
         """Open Import tab by menu click"""
         self.find_and_click(ObjectPageMenuLocators.import_tab)
-
-    def open_actions_tab(self):
-        """Open Actions tab by menu click"""
-        self.find_and_click(ObjectPageMenuLocators.actions_tab)
 
     @allure.step("Assert that all main elements on the page are presented")
     def check_all_elements(self):
@@ -184,15 +164,16 @@ class ClusterServicesPage(ClusterPageMixin):
                 service_text.click()
         self.find_and_click(ClusterServicesLocators.AddServicePopup.create_btn)
 
-    def click_on_issue_by_name(self, row: WebElement, issue_name: str):
-        """Click on Issue button from the row"""
+    @allure.step("Click on service concern object name from the row")
+    def click_on_concern_by_object_name(self, row: WebElement, concern_object_name: str):
+        """Click on concern object link from the row"""
         self.hover_element(self.find_child(row, ClusterServicesLocators.ServiceTableRow.actions))
-        self.wait_element_visible(ListIssuePopupLocators.block)
-        for issue in self.find_elements(ListIssuePopupLocators.link_to_issue):
-            if issue.text == issue_name:
+        self.wait_element_visible(ListConcernPopupLocators.block)
+        for issue in self.find_elements(ListConcernPopupLocators.link_to_concern_object):
+            if concern_object_name in issue.text:
                 issue.click()
                 return
-        raise AssertionError(f"Issue name '{issue_name}' not found in issues")
+        raise AssertionError(f"Issue name '{concern_object_name}' not found in issues")
 
     def click_action_btn_in_row(self, row: WebElement):
         """Click on Action button from the row"""
@@ -358,16 +339,16 @@ class ClusterHostPage(ClusterPageMixin):
         """Click on Configuration button in the Host row"""
         self.find_child(row, ClusterHostLocators.HostTable.HostRow.config).click()
 
-    @allure.step("Click on issue '{issue_name}' in host issues")
-    def click_on_issue_by_name(self, row: WebElement, issue_name: str):
-        """Click on Issue in Host issues"""
+    @allure.step('Click on concern of "{concern_object_name}" in host concerns')
+    def click_on_concern_by_object_name(self, row: WebElement, concern_object_name: str):
+        """Click on concern link in Host concerns"""
         self.hover_element(self.find_child(row, ClusterHostLocators.HostTable.HostRow.actions))
-        self.wait_element_visible(PageIssuePopupLocators.block)
-        for issue in self.find_elements(PageIssuePopupLocators.link_to_issue):
-            if issue.text == issue_name:
-                issue.click()
+        self.wait_element_visible(PageConcernPopupLocators.block)
+        for concern in self.find_elements(PageConcernPopupLocators.link_to_concern_object):
+            if concern_object_name in concern.text:
+                concern.click()
                 return
-        raise AssertionError(f"Issue name '{issue_name}' not found in issues")
+        raise AssertionError(f'Concern name "{concern_object_name}" not found in concerns')
 
     def get_host_state_from_row(self, row: WebElement):
         """Get Host state from the row"""
@@ -525,7 +506,7 @@ class ClusterStatusPage(ClusterPageMixin):
 
     def get_config_group_info(self, row: WebElement):
         """ "Get group info by row"""
-        components_items = list()
+        components_items = []
         self.wait_group_opened(row)
         for item in self.find_children(row, ClusterStatusLocators.GroupRow.service_group):
             components_items.append(
@@ -560,29 +541,3 @@ class ClusterStatusPage(ClusterPageMixin):
             ).get_attribute("style"), "Group has not been hidden"
 
         wait_until_step_succeeds(_wait_hide, period=1, timeout=10)
-
-
-class ClusterActionPage(ClusterPageMixin):
-    """Cluster page action menu"""
-
-    MENU_SUFFIX = 'action'
-    MAIN_ELEMENTS = [
-        ObjectPageLocators.title,
-        ObjectPageLocators.subtitle,
-        CommonActionLocators.action_card,
-    ]
-
-    def get_all_actions(self):
-        """Get all action from Actions tab"""
-        return self.find_elements(CommonActionLocators.action_card)
-
-    @allure.step("Run action from Actions tab")
-    def click_run_btn_in_action(self, action: WebElement):
-        """Run Action from Actions tab"""
-        self.find_child(action, CommonActionLocators.ActionCard.play_btn).click()
-        self.wait_element_visible(ActionDialog.body)
-        self.find_and_click(ActionDialog.run)
-
-    def check_empty_page(self):
-        """Check that action page is empty"""
-        assert "Nothing to display." in self.find_element(CommonActionLocators.info_text).text
