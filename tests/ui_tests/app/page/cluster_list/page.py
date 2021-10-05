@@ -28,7 +28,7 @@ from tests.ui_tests.app.page.common.dialogs_locators import (
     ActionDialog,
     DeleteDialog,
 )
-from tests.ui_tests.app.page.common.popups.locator import ListIssuePopupLocators
+from tests.ui_tests.app.page.common.popups.locator import ListConcernPopupLocators
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 
 
@@ -139,13 +139,13 @@ class ClusterListPage(BasePageObject):
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
 
-    @allure.step("Click on cluster issue name from the row")
-    def click_on_issue_by_name(self, row: WebElement, issue_name: str):
-        """Click on Cluster Issue name from the row"""
+    @allure.step("Click on cluster concern object name from the row")
+    def click_on_concern_by_object_name(self, row: WebElement, concern_object_name: str):
+        """Click on Cluster Concern object name from the row"""
         self.hover_element(self.find_child(row, self.table.locators.ClusterRow.actions))
-        self.wait_element_visible(ListIssuePopupLocators.block)
-        for issue in self.find_elements(ListIssuePopupLocators.link_to_issue):
-            if issue.text == issue_name:
+        self.wait_element_visible(ListConcernPopupLocators.block)
+        for issue in self.find_elements(ListConcernPopupLocators.link_to_concern_object):
+            if concern_object_name in issue.text:
                 issue.click()
                 return
-        raise AssertionError(f"Issue name '{issue_name}' not found in row issues")
+        raise AssertionError(f"Issue name '{concern_object_name}' not found in row issues")
