@@ -15,6 +15,14 @@
   version: 1.5
   edition: community
   actions:
+    long_action:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+      states:
+        available: any
+      params:
+        ansible_tags: pause
     test_action:
       type: job
       script: dummy_action.yaml
@@ -23,6 +31,8 @@
         available:
           - created
         on_success: installed
+      params:
+        ansible_tags: dummy
   import:
      Pre-uploaded Dummy cluster to import:
           versions:
@@ -60,6 +70,8 @@
         available:
           - created
         on_success: installed
+      params:
+        ansible_tags: dummy
   config:
      core-site:
         param1:
@@ -84,3 +96,5 @@
               available:
                 - created
               on_success: installed
+          params:
+            ansible_tags: dummy
