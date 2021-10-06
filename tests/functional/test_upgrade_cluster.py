@@ -164,4 +164,3 @@ def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient):
             upgr.do()
     with allure.step('Check error: cluster state is not in available states list'):
         UPGRADE_ERROR.equal(e, 'cluster state', 'is not in available states list')
-

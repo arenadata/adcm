@@ -137,8 +137,10 @@ def _assert_configs(obj_type: str, actual_config: OrderedDict, expected_config: 
             name="Actual config",
             attachment_type=AttachmentType.JSON,
         )
-        raise AssertionError(f"Config of {obj_type} {'group config' if group_config else 'config'} "
-                             "is not as expected. See attachments for details")
+        raise AssertionError(
+            f"Config of {obj_type} {'group config' if group_config else 'config'} "
+            "is not as expected. See attachments for details"
+        )
 
 
 @allure.step("Assert that attrs has been updated for {obj_type}")
@@ -156,8 +158,10 @@ def _assert_attr(obj_type: str, actual_attr: OrderedDict, expected_attr: Ordered
             name="Actual attr",
             attachment_type=AttachmentType.JSON,
         )
-        raise AssertionError(f"Attr of {obj_type} {'group config' if group_config else 'config'} "
-                             "is not as expected. See attachments for details")
+        raise AssertionError(
+            f"Attr of {obj_type} {'group config' if group_config else 'config'} "
+            "is not as expected. See attachments for details"
+        )
 
 
 def _get_config_and_attr(obj: Union[GroupConfig, AnyADCMObject]):
@@ -278,9 +282,7 @@ class TestUpgradeWithConfigs:
         _assert_configs(
             obj_type=obj.__class__.__name__, actual_config=new_config, expected_config=ref_config, group_config=False
         )
-        _assert_attr(
-            obj_type=obj.__class__.__name__, actual_attr=new_attr, expected_attr=ref_attr, group_config=False
-        )
+        _assert_attr(obj_type=obj.__class__.__name__, actual_attr=new_attr, expected_attr=ref_attr, group_config=False)
 
 
 ###############################
