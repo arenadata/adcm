@@ -49,10 +49,11 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
         self._wait_element_present(ConfigurationLocators.load_marker, 30)
 
     @allure.step('Assert that we can edit field or not')
-    def assert_field_editable(self, field, editable=True):
+    def assert_field_is_editable(self, field_element, editable=True) -> None:
         """Assert that we can edit field or not"""
-        field_editable = self.editable_element(field)
-        assert field_editable == editable
+        assert (
+            self.is_element_editable(field_element) == editable
+        ), f"Field {field_element} should {'be editable' if editable else 'not be editable'}"
 
     @allure.step('Assert field: {field} to have value: {expected_value}')
     def assert_field_content_equal(self, field_type, field, expected_value):
@@ -350,21 +351,13 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
         return self.driver.find_elements(*Common.display_names)
 
     @staticmethod
-    def read_only_element(element):
-        """Get field read-only property"""
-        if 'read-only' in element.get_attribute("class"):
-            return True
-        return False
+    def is_element_read_only(element) -> bool:
+        """Check if app-field element is read-only by checking 'read-only' class presence"""
+        return bool('read-only' in element.get_attribute("class"))
 
-    @staticmethod
-    def editable_element(element):
-        """Get field editable property"""
-        el_class = element.get_attribute("class")
-        el_readonly_attr = element.get_attribute("readonly")
-        editable = True
-        if "field-disabled" in el_class or 'read-only' in el_class or el_readonly_attr == 'true':
-            editable = False
-        return editable
+    def is_element_editable(self, element) -> bool:
+        """Check if app-field element is editable (not read-only)"""
+        return not self.is_element_read_only(element)
 
     @allure.step('Check that fields and group are invisible')
     def check_that_fields_and_group_are_invisible(self):
