@@ -14,7 +14,7 @@
 
 from django.urls import path, include
 
-from .views import UserViewSet, UserGroupViewSet, UserRoleViewSet
+from .views import UserViewSet, UserGroupViewSet, UserRoleViewSet, ChangePassword
 
 
 urlpatterns = [
@@ -29,6 +29,9 @@ urlpatterns = [
                         {'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy'}
                     ),
                     name='rbac-user-detail',
+                ),
+                path(
+                    'change_password/', ChangePassword.as_view(), name='rbac-user-change-password'
                 ),
                 path(
                     'group/',

@@ -84,7 +84,8 @@ def get_role_permissions(role, data):
                 try:
                     perm = Permission.objects.get(content_type=ct, codename=codename)
                 except Permission.DoesNotExist:
-                    err('INVALID_ROLE_SPEC', f'permission with codename "{codename}" is not found')
+                    perm = Permission(content_type=ct, codename=codename)
+                    perm.save()
                 if perm not in all_perm:
                     all_perm.append(perm)
     return all_perm

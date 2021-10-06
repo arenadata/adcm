@@ -14,17 +14,57 @@
 
 from django.contrib.auth.models import User, Group
 from rest_framework import status
+from rest_framework import serializers
+from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import (
     ListModelMixin,
     CreateModelMixin,
     RetrieveModelMixin,
     DestroyModelMixin,
+    UpdateModelMixin,
 )
 from rest_framework.response import Response
 
 from rbac.models import Role
-from rbac.viewsets import ModelPermViewSet, GenericPermViewSet
+from rbac.viewsets import ModelPermViewSet, GenericPermViewSet, DjangoModelPerm
 from .serializers import UserSerializer, UserGroupSerializer, UserRoleSerializer
+
+
+class SelfChangePasswordPerm(DjangoModelPerm):
+    """
+    User self change password permissions class.
+    Use codename self_change_password to check permissions
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Replace PUT permissions from "change" to "self_change_password"""
+        super().__init__(*args, **kwargs)
+        self.perms_map['PUT'] = ['%(app_label)s.self_change_password_%(model_name)s']
+
+    def has_object_permission(self, request, view, obj):
+        """Check that user change his/her own password"""
+        if request.user != obj:
+            return False
+        return True
+
+
+class PasswordSerializer(UserSerializer):
+    """UserSerializer with only one changable field - password"""
+
+    username = serializers.CharField(read_only=True)
+
+
+class ChangePassword(GenericAPIView, UpdateModelMixin):
+    """User self change password view"""
+
+    queryset = User.objects.all()
+    serializer_class = PasswordSerializer
+    lookup_field = 'id'
+    permission_classes = (SelfChangePasswordPerm,)
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
 
 # pylint: disable=too-many-ancestors
 class UserViewSet(ModelPermViewSet):
@@ -51,6 +91,7 @@ class UserGroupViewSet(
     lookup_url_kwarg = 'group_id'
 
     def destroy(self, request, *args, **kwargs):
+        """Remove user"""
         user = User.objects.get(id=self.kwargs.get('id'))
         group = self.get_object()
         user.groups.remove(group)

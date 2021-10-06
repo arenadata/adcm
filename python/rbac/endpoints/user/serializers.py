@@ -22,6 +22,7 @@ from rest_framework.reverse import reverse
 from rest_framework.authtoken.models import Token
 from rest_framework.utils import model_meta
 
+from adwp_base.errors import raise_AdwpEx as err
 from rbac.models import Role, UserProfile
 
 
@@ -117,6 +118,9 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
     add_role = serializers.HyperlinkedIdentityField(
         view_name='rbac-user-role-list', lookup_field='id'
     )
+    change_password = serializers.HyperlinkedIdentityField(
+        view_name='rbac-user-change-password', lookup_field='id'
+    )
 
     class Meta:
         model = User
@@ -135,6 +139,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
             'url',
             'add_group',
             'add_role',
+            'change_password',
         )
         extra_kwargs = {
             'url': {'view_name': 'rbac-user-detail', 'lookup_field': 'id'},
@@ -172,6 +177,8 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
     @atomic
     def update(self, instance, validated_data):
         """Update user, use in PUT and PATCH methods"""
+        if 'username' in validated_data:
+            err('USER_UPDATE_ERROR', "Can't change user name")
         if 'password' in validated_data:
             password = validated_data.pop('password')
             instance.set_password(password)

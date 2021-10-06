@@ -1,53 +1,14 @@
 ---
 
-version: 3
+version: 1
 
 roles:
     - name: base
+      description: Base user role
       apps:
         - label: auth
           models:
             - name: user
               codenames:
                 - view
-                - change
-    - name: admin
-      apps:
-        - label: cm
-          models:
-            - name: cluster
-              codenames:
-                - view
-                - add
-        - label: auth
-          models:
-            - name: group
-              codenames:
-                - add
-    - name: ops
-      childs:
-        - admin
-        - devops
-    
-    - name: devops
-      description: Role for DevOps
-      apps:
-        - label: cm
-          models:
-            - name: clusterobject
-              codenames:
-                - view
-                - change
-            - name: host
-              codenames:
-                - add
-                - delete
-            - name: cluster
-              codenames:
-                - add
-                - delete
-
-          
-
- 
-        
+                - self_change_password
