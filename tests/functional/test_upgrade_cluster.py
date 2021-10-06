@@ -13,6 +13,7 @@
 """Tests for cluster upgrade"""
 import json
 from collections import OrderedDict
+from typing import Callable
 
 import allure
 import coreapi
@@ -303,16 +304,14 @@ def _update_config_and_attr_for_new_field_test(config: OrderedDict, attr: Ordere
     config["new_file"] = "other file content\n"
     config["new_option"] = "NOTTOBE"
     config["new_text"] = "text_new"
-    config["new_group"] = {}
-    config["new_group"]["new_port"] = 9201
+    config["new_group"] = {"new_port": 9201}
     config["new_structure"] = [
         OrderedDict({"name": "John", "surname": "Doe"}),
         OrderedDict({"name": "Allice", "surname": "Cooper"}),
     ]
     config["new_map"] = {"time": "12", "range": "super long"}
 
-    attr["new_group"] = {}
-    attr["new_group"]["active"] = True
+    attr["new_group"] = {"active": True}
 
     attr["group_keys"]["new_float"] = False
     attr["group_keys"]["new_boolean"] = False
@@ -322,8 +321,7 @@ def _update_config_and_attr_for_new_field_test(config: OrderedDict, attr: Ordere
     attr["group_keys"]["new_file"] = False
     attr["group_keys"]["new_option"] = False
     attr["group_keys"]["new_text"] = False
-    attr["group_keys"]["new_group"] = {}
-    attr["group_keys"]["new_group"]["new_port"] = False
+    attr["group_keys"]["new_group"] = {"new_port": False}
     attr["group_keys"]["new_structure"] = False
     attr["group_keys"]["new_map"] = False
 
@@ -335,8 +333,7 @@ def _update_config_and_attr_for_new_field_test(config: OrderedDict, attr: Ordere
     attr["custom_group_keys"]["new_file"] = True
     attr["custom_group_keys"]["new_option"] = True
     attr["custom_group_keys"]["new_text"] = True
-    attr["custom_group_keys"]["new_group"] = {}
-    attr["custom_group_keys"]["new_group"]["new_port"] = True
+    attr["custom_group_keys"]["new_group"] = {"new_port": True}
     attr["custom_group_keys"]["new_structure"] = True
     attr["custom_group_keys"]["new_map"] = True
     return config, attr
@@ -351,8 +348,7 @@ def _update_config_and_attr_for_new_default_value_test(config: OrderedDict, attr
     config["file"] = "other file content\n"
     config["option"] = "WEEKLY"
     config["text"] = "new_text"
-    config["group"]["port"] = 9201
-    config["group"]["transport_port"] = 9301
+    config["group"] = {"port": 9201, "transport_port": 9301}
     config["structure"] = [OrderedDict({"code": 1, "country": "Test1_new"})]
     config["map"] = {"age": "25", "name": "Jane", "sex": "f"}
     return config, attr
@@ -365,7 +361,7 @@ def _update_config_and_attr_for_removed_field_test(config: OrderedDict, attr: Or
     return config, attr
 
 
-class TestUpgradeWithGroupConfigs:  # pylint:disable=too-many-locals
+class TestUpgradeWithGroupConfigs:
     """Tests for cluster and provider upgrades with group configs"""
 
     @pytest.mark.parametrize(
@@ -391,43 +387,38 @@ class TestUpgradeWithGroupConfigs:  # pylint:disable=too-many-locals
         - Update cluster to the new version with new parameter/default value or removed parameter in config
         - Assert that new parameter/default value or removed parameter is presented/absent in all group configs
         """
-        with allure.step('Upload cluster bundle'):
-            cluster_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_group_configs'))
-        with allure.step('Create cluster and add service'):
+        with allure.step("Upload cluster bundle"):
+            cluster_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_with_group_configs"))
+        with allure.step("Create cluster and add service"):
             cluster = cluster_bundle.cluster_create("test")
             service = cluster.service_add(name="test_service")
             component = service.component(name="test_component")
         with allure.step("Create group configs for cluster, service, and component"):
             cluster_group_config = cluster.group_config_create(name="cluster_config_group")
-            cluster_gc_ref_config, cluster_gc_ref_attr = self._get_config_and_attr(cluster_group_config)
+            cluster_gc_ref_config_and_attr = self._get_config_and_attr(cluster_group_config)
             service_group_config = service.group_config_create(name="service_config_group")
-            service_gc_ref_config, service_gc_ref_attr = self._get_config_and_attr(service_group_config)
+            service_gc_ref_config_and_attr = self._get_config_and_attr(service_group_config)
             component_group_config = component.group_config_create(name="component_config_group")
-            component_gc_ref_config, component_gc_ref_attr = self._get_config_and_attr(component_group_config)
-        with allure.step('Upgrade cluster to new version with new fields in config'):
+            component_gc_ref_config_and_attr = self._get_config_and_attr(component_group_config)
+        with allure.step("Upgrade cluster to new version with new fields in config"):
             sdk_client_fs.upload_from_fs(get_data_dir(__file__, bundle_name))
-            upgrade = cluster.upgrade(name='upgrade to 1.6')
+            upgrade = cluster.upgrade(name="upgrade to 1.6")
             upgrade.do()
-        with allure.step('Assert that group configs have been updated'):
-            cluster_gc_ref_config, cluster_gc_ref_attr = update_func(cluster_gc_ref_config, cluster_gc_ref_attr)
-            cluster_gc_new_config, cluster_gc_new_attr = self._get_config_and_attr(cluster_group_config)
-            self._assert_configs(
-                obj_type="cluster", actual_config=cluster_gc_new_config, expected_config=cluster_gc_ref_config
+        with allure.step("Assert that group configs have been updated"):
+            self._update_and_assert_config(
+                update_func=update_func,
+                ref_config_and_attr=cluster_gc_ref_config_and_attr,
+                group_config=cluster_group_config,
             )
-            self._assert_attr(obj_type="cluster", actual_attr=cluster_gc_new_attr, expected_attr=cluster_gc_ref_attr)
-            service_gc_ref_config, service_gc_ref_attr = update_func(service_gc_ref_config, service_gc_ref_attr)
-            service_gc_new_config, service_gc_new_attr = self._get_config_and_attr(service_group_config)
-            self._assert_configs(
-                obj_type="service", actual_config=service_gc_new_config, expected_config=service_gc_ref_config
+            self._update_and_assert_config(
+                update_func=update_func,
+                ref_config_and_attr=service_gc_ref_config_and_attr,
+                group_config=service_group_config,
             )
-            self._assert_attr(obj_type="service", actual_attr=service_gc_new_attr, expected_attr=service_gc_ref_attr)
-            component_gc_ref_config, component_gc_ref_attr = update_func(component_gc_ref_config, component_gc_ref_attr)
-            component_gc_new_config, component_gc_new_attr = self._get_config_and_attr(component_group_config)
-            self._assert_configs(
-                obj_type="component", actual_config=component_gc_new_config, expected_config=component_gc_ref_config
-            )
-            self._assert_attr(
-                obj_type="component", actual_attr=component_gc_new_attr, expected_attr=component_gc_ref_attr
+            self._update_and_assert_config(
+                update_func=update_func,
+                ref_config_and_attr=component_gc_ref_config_and_attr,
+                group_config=component_group_config,
             )
 
     @pytest.mark.parametrize(
@@ -449,28 +440,27 @@ class TestUpgradeWithGroupConfigs:  # pylint:disable=too-many-locals
         Test upgrade provider with group configs enabled
         - Upload provider bundle
         - Create provider
-        - Create group configs for provider
-        - Update provider to the new version with new parameter in config
-        - Assert that new parameter is presented in all group configs
+        - Create group config for provider
+        - Update provider to the new version with new parameter/default value or removed parameter in config
+        - Assert that new parameter/default value or removed parameter is presented/absent in group config
         """
-        with allure.step('Upload provider bundle'):
-            provider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'provider_with_group_configs'))
-        with allure.step('Create provider'):
+        with allure.step("Upload provider bundle"):
+            provider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider_with_group_configs"))
+        with allure.step("Create provider"):
             provider = provider_bundle.provider_create("test")
         with allure.step("Create group config for provider"):
             provider_group_config = provider.group_config_create(name="provider_config_group")
-            provider_gc_ref_config, provider_gc_ref_attr = self._get_config_and_attr(provider_group_config)
-        with allure.step('Upgrade provider to new version with new fields in config'):
+            provider_gc_ref_config_and_attr = self._get_config_and_attr(provider_group_config)
+        with allure.step("Upgrade provider to new version with new fields in config"):
             sdk_client_fs.upload_from_fs(get_data_dir(__file__, bundle_name))
-            upgrade = provider.upgrade(name='upgrade to 1.6')
+            upgrade = provider.upgrade(name="upgrade to 1.6")
             upgrade.do()
-        with allure.step('Assert that group configs have been updated'):
-            provider_gc_ref_config, provider_gc_ref_attr = update_func(provider_gc_ref_config, provider_gc_ref_attr)
-            provider_gc_new_config, provider_gc_new_attr = self._get_config_and_attr(provider_group_config)
-            self._assert_configs(
-                obj_type="provider", actual_config=provider_gc_new_config, expected_config=provider_gc_ref_config
+        with allure.step("Assert that group configs have been updated"):
+            self._update_and_assert_config(
+                update_func=update_func,
+                ref_config_and_attr=provider_gc_ref_config_and_attr,
+                group_config=provider_group_config,
             )
-            self._assert_attr(obj_type="provider", actual_attr=provider_gc_new_attr, expected_attr=provider_gc_ref_attr)
 
     @staticmethod
     def _get_config_and_attr(obj: GroupConfig):
@@ -512,3 +502,9 @@ class TestUpgradeWithGroupConfigs:  # pylint:disable=too-many-locals
                 attachment_type=AttachmentType.JSON,
             )
             raise AssertionError(f"Attr for {obj_type} group is not as expected. See attachments for details")
+
+    def _update_and_assert_config(self, update_func: Callable, ref_config_and_attr, group_config: GroupConfig):
+        ref_config, ref_attr = update_func(*ref_config_and_attr)
+        new_config, new_attr = self._get_config_and_attr(group_config)
+        self._assert_configs(obj_type=group_config.object_type, actual_config=new_config, expected_config=ref_config)
+        self._assert_attr(obj_type=group_config.object_type, actual_attr=new_attr, expected_attr=ref_attr)
