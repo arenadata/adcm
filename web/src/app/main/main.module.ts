@@ -22,6 +22,7 @@ import { ProgressComponent } from './progress.component';
 import { PageNotFoundComponent, FatalErrorComponent, GatewayTimeoutComponent } from './server-status.component';
 import { BellComponent } from '@app/components/bell/bell.component';
 import { NotificationsComponent } from '@app/components/notifications/notifications.component';
+import { BellTaskLinkPipe } from '@app/pipes/bell-task-link.pipe';
 
 @NgModule({
   imports: [
@@ -40,6 +41,7 @@ import { NotificationsComponent } from '@app/components/notifications/notificati
     ProgressComponent,
     BellComponent,
     NotificationsComponent,
+    BellTaskLinkPipe,
   ],
   exports: [
     TopComponent,
