@@ -13,6 +13,7 @@
 - type: provider
   name: provider_sample
   version: "0.3"
+  config_group_customization: false
   actions:
     test_action:
       type: job
@@ -89,7 +90,7 @@
           max: 65536
           default: 9200
           required: yes
-          group_customization: false
+          group_customization: true
         - name: transport_port
           display_name: Transport port
           description: Used for communication between nodes in the cluster, by the Java Transport client.
