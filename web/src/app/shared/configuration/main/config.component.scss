@@ -1,6 +1,12 @@
 :host {
   flex: 1;
   position: relative;
+
+  ::ng-deep {
+    .mat-form-field-infix {
+      display: flex;
+    }
+  }
 }
 
 .na-hu {
