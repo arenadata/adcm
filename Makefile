@@ -64,6 +64,7 @@ pytest: ## Run functional tests
 	hub.adsw.io/library/functest:3.8.6.slim.buster-x64 /bin/sh -e \
 	./pytest.sh -m "not full" --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
 
+
 pytest_release: ## Run functional tests on release
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster.firefox-x64
 	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
