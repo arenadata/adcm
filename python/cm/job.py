@@ -21,13 +21,14 @@ import time
 from collections import defaultdict
 from configparser import ConfigParser
 from datetime import timedelta, datetime
+from typing import List, Tuple, Optional
 
 from background_task import background
 from django.db import transaction
 from django.utils import timezone
 
 from cm import api, inventory, adcm_config, variant, config
-from cm.adcm_config import obj_ref, process_file_type
+from cm.adcm_config import process_file_type
 from cm.api_context import ctx
 from cm.errors import raise_AdcmEx as err
 from cm.hierarchy import Tree
@@ -558,44 +559,66 @@ def create_job(action, sub_action, event, task):
     return job
 
 
-def get_state(action, job, status):
+def get_state(
+    action: Action, job: JobLog, status: str
+) -> Tuple[Optional[str], List[str], List[str]]:
     sub_action = None
     if job and job.sub_action:
         sub_action = job.sub_action
 
     if status == config.Job.SUCCESS:
-        if not action.state_on_success:
+        multi_state_set = action.multi_state_on_success_set
+        multi_state_unset = action.multi_state_on_success_unset
+        state = action.state_on_success
+        if not state:
             log.warning('action "%s" success state is not set', action.name)
-            state = None
-        else:
-            state = action.state_on_success
     elif status == config.Job.FAILED:
+        multi_state_set = action.multi_state_on_fail_set
+        multi_state_unset = action.multi_state_on_fail_unset
         if sub_action and sub_action.state_on_fail:
             state = sub_action.state_on_fail
-        elif action.state_on_fail:
-            state = action.state_on_fail
         else:
+            state = action.state_on_fail
+        if not state:
             log.warning('action "%s" fail state is not set', action.name)
-            state = None
     else:
         log.error('unknown task status: %s', status)
         state = None
-    return state
+        multi_state_set = []
+        multi_state_unset = []
+    return state, multi_state_set, multi_state_unset
 
 
 def set_action_state(
-    action, task, obj, state: str, multi_state_set: str = None, multi_state_unset: str = None
+    action: Action,
+    task: TaskLog,
+    obj: ADCMEntity,
+    state: str = None,
+    multi_state_set: List[str] = None,
+    multi_state_unset: List[str] = None,
 ):
     if not obj:
-        log.warning('empty object for action %s of task #%s', action.name, task.id)
+        log.warning('empty object for action %s of task #%s', action.name, task.pk)
         return
-    msg = 'action "%s" of task #%s will set %s state to "%s"'
-    log.info(msg, action.name, task.id, obj_ref(obj), state)
-    obj.set_state(state, ctx.event)
-    if multi_state_set:
-        obj.set_multi_state(multi_state_set, ctx.event)
-    if multi_state_unset:
-        obj.unset_multi_state(multi_state_unset, ctx.event)
+    log.info(
+        'action "%s" of task #%s will set %s state to "%s" '
+        'add to multi_states "%s" and remove from multi_states "%s"',
+        action.name,
+        task.pk,
+        obj,
+        state,
+        multi_state_set,
+        multi_state_unset,
+    )
+
+    if state:
+        obj.set_state(state, ctx.event)
+
+    for m_state in multi_state_set or []:
+        obj.set_multi_state(m_state, ctx.event)
+
+    for m_state in multi_state_unset or []:
+        obj.unset_multi_state(m_state, ctx.event)
 
 
 def restore_hc(task, action, status):
@@ -623,11 +646,10 @@ def restore_hc(task, action, status):
 def finish_task(task, job, status):
     action = task.action
     obj = task.task_object
-    state = get_state(action, job, status)
+    state, multi_state_set, multi_state_unset = get_state(action, job, status)
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
-        if state is not None:
-            set_action_state(action, task, obj, state)
+        set_action_state(action, task, obj, state, multi_state_set, multi_state_unset)
         restore_hc(task, action, status)
         task.unlock_affected()
         set_task_status(task, status, ctx.event)

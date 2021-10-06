@@ -271,13 +271,12 @@ _issue_type_name_map = {
 
 def create_issue(obj: ADCMEntity, issue_type: IssueType) -> None:
     """Create newly discovered issue and add it to linked objects concerns"""
-    if obj.get_own_issue(issue_type):
-        return
-
-    msg_name = _issue_type_name_map[issue_type]
-    reason = MsgTpl.get_message_from_template(msg_name.value, source=obj)
-    issue_name = issue_type.gen_issue_name(obj)
-    issue = ConcernItem.objects.create(type=ConcernType.Issue, name=issue_name, reason=reason)
+    issue = obj.get_own_issue(issue_type)
+    if issue is None:
+        msg_name = _issue_type_name_map[issue_type]
+        reason = MsgTpl.get_message_from_template(msg_name.value, source=obj)
+        issue_name = issue_type.gen_issue_name(obj)
+        issue = ConcernItem.objects.create(type=ConcernType.Issue, name=issue_name, reason=reason)
 
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(tree.built_from)
