@@ -353,7 +353,7 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
     @staticmethod
     def is_element_read_only(element) -> bool:
         """Check if app-field element is read-only by checking 'read-only' class presence"""
-        return bool('read-only' in element.get_attribute("class"))
+        return 'read-only' in str(element.get_attribute("class"))
 
     def is_element_editable(self, element) -> bool:
         """Check if app-field element is editable (not read-only)"""
