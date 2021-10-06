@@ -772,6 +772,8 @@ class GroupConfig(ADCMModel):
     def preparing_file_type_field(self):
         """Creating file for file type field"""
 
+        if self.config is None:
+            return
         config = ConfigLog.objects.get(id=self.config.current).config
         fields = PrototypeConfig.objects.filter(
             prototype=self.object.prototype, action__isnull=True, type='file'
