@@ -24,7 +24,7 @@ import { BaseDirective } from '@adwp-ui/widgets';
   styleUrls: ['./field.component.scss'],
   host: {
     class: 'field-row w100 d-flex ',
-    'read-only': 'options.read_only'
+    '[class.read-only]': 'options.read_only'
   }
 })
 export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
