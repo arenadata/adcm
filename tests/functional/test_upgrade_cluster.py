@@ -365,7 +365,7 @@ def _update_config_and_attr_for_removed_field_test(config: OrderedDict, attr: Or
     return config, attr
 
 
-class TestUpgradeWithGroupConfigs: # pylint:disable=too-many-locals
+class TestUpgradeWithGroupConfigs:  # pylint:disable=too-many-locals
     """Tests for cluster and provider upgrades with group configs"""
 
     @pytest.mark.parametrize(
