@@ -66,7 +66,6 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
 
     if (!disabled) {
       attributeControl.disable();
-      parameterControl.disable();
       this.tooltipText = text;
     } else {
       attributeControl.enable();
