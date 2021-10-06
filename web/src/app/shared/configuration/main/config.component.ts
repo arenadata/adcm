@@ -145,7 +145,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
       this.historyComponent.reset();
       const config = this.service.parseValue(this.fields.form.value, this.rawConfig.value.config);
       const send = {
-        config: deepmerge(this.fields.form.getRawValue(), config),
+        config,
         attr: deepmerge(this.rawConfig.getValue().attr, this.attributesSrv.rawAttributes()),
         description: this.tools.description.value,
         obj_ref: this.rawConfig.value.obj_ref
