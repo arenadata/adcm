@@ -11,7 +11,7 @@
 # limitations under the License.
 ---
 - name: Dummy action
-  hosts: all
+  hosts: "{{ job.config.hosts }}"
   connection: local
   gather_facts: no
   tasks:
