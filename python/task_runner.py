@@ -117,6 +117,13 @@ def run_task(task_id, args=None):
         job.save()
         res = run_job(task.id, job.id, err_file)
         set_body_ansible(job)
+        # For multi jobs task object state and/or config can be changed by adcm plugins
+        if task.task_object is not None:
+            try:
+                task.task_object.refresh_from_db()
+            except ObjectDoesNotExist:
+                task.object_id = 0
+                task.object_type = None
         count += 1
         if res != 0:
             break
