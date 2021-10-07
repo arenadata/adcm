@@ -68,7 +68,9 @@ export class AttributeService {
   }
 
   private _createAttributes(_activeAttributes: Partial<ConfigAttributeNames>[], json: ConfigAttributesJSON, configs: AttributesOptions): Attributes {
-    if (!Object.keys(json || {}).length) {
+    const isEmptyAttrs = !Object.keys(json || {}).length;
+    const isActiveAttrsPresent = !!Object.keys(json || {}).filter((x: ConfigAttributeNames) => this._activeAttributes.includes(x)).length;
+    if (isEmptyAttrs || !isActiveAttrsPresent) {
       return;
     }
 
