@@ -122,6 +122,20 @@ def _update_config_and_attr_for_removed_field_test(config: OrderedDict, attr: Or
     return config, attr
 
 
+def _update_config_and_attr_for_changed_group_customisation_test(
+    config: OrderedDict, attr: OrderedDict, group_config=False
+):
+    if group_config:
+        attr["custom_group_keys"]["boolean"] = False
+        attr["custom_group_keys"]["password"] = False
+        attr["custom_group_keys"]["list"] = False
+        attr["custom_group_keys"]["option"] = False
+        attr["custom_group_keys"]["group"] = {"port": False, "transport_port": False}
+        attr["custom_group_keys"]["map"] = False
+
+    return config, attr
+
+
 @allure.step("Assert that configs has been updated for {obj_type}")
 def _assert_configs(obj_type: str, actual_config: OrderedDict, expected_config: OrderedDict, group_config=False):
     actual_config = ordered_dict_to_dict(actual_config)
@@ -194,6 +208,7 @@ class TestUpgradeWithConfigs:
                 _update_config_and_attr_for_changed_types,
             ),
         ],
+        ids=["new_fields", "new_default_values", "removed_fields", "changed_types"],
     )
     def test_upgrade_cluster_with_ordinary_configs(self, sdk_client_fs, bundle_name, update_func):
         """
@@ -250,6 +265,7 @@ class TestUpgradeWithConfigs:
                 _update_config_and_attr_for_changed_types,
             ),
         ],
+        ids=["new_fields", "new_default_values", "removed_fields", "changed_types"],
     )
     def test_upgrade_provider_with_ordinary_configs(self, sdk_client_fs, bundle_name, update_func):
         """
@@ -309,7 +325,12 @@ class TestUpgradeWithGroupConfigs:
                 "cluster_for_upgrade_with_group_configs_with_changed_types",
                 _update_config_and_attr_for_changed_types,
             ),
+            (
+                "cluster_for_upgrade_with_group_configs_with_changed_group_customisation",
+                _update_config_and_attr_for_changed_group_customisation_test,
+            ),
         ],
+        ids=["new_fields", "new_default_values", "removed_fields", "changed_types", "changed_group_customisation"],
     )
     def test_upgrade_cluster_with_group_configs(self, sdk_client_fs, bundle_name, update_func):
         """
@@ -370,7 +391,12 @@ class TestUpgradeWithGroupConfigs:
                 "provider_for_upgrade_with_group_configs_with_changed_types",
                 _update_config_and_attr_for_changed_types,
             ),
+            (
+                "provider_for_upgrade_with_group_configs_with_changed_group_customisation",
+                _update_config_and_attr_for_changed_group_customisation_test,
+            ),
         ],
+        ids=["new_fields", "new_default_values", "removed_fields", "changed_types", "changed_group_customisation"],
     )
     def test_upgrade_provider_with_group_configs(self, sdk_client_fs, bundle_name, update_func):
         """

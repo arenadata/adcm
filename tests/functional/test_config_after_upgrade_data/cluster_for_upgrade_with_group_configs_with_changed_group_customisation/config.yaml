@@ -21,51 +21,55 @@
       description: New cool upgrade
       states:
         available: any
-  config_group_customization: true
   config:
-    - name: boolean
+    - name: float
       type: float
       required: false
       default: 0.1
-    - name: float
+      group_customization: true
+    - name: boolean
       type: boolean
       required: true
       default: true
-    - name: string
+    - name: integer
       type: integer
       required: false
       default: 16
+      group_customization: true
     - name: password
       type: password
       required: false
       default: password
-    - name: integer
+    - name: string
       type: string
       required: true
       default: string
-    - name: file
+      group_customization: true
+    - name: list
       type: list
       required: false
       default:
         - /dev/rdisk0s1
         - /dev/rdisk0s2
         - /dev/rdisk0s3
-    - name: list
+    - name: file
       type: file
       required: false
       default: ./some_file
-    - name: text
+      group_customization: true
+    - name: option
       type: option
       required: false
       option:
         DAILY: DAILY
         WEEKLY: WEEKLY
       default: DAILY
-    - name: option
+    - name: text
       type: text
       required: false
       default: text
-    - name: structure
+      group_customization: true
+    - name: group
       type: group
       activatable: true
       active: true
@@ -82,10 +86,11 @@
           max: 65536
           default: 9300
           required: true
-    - name: group
+    - name: structure
       type: structure
       required: false
       yspec: ./schema.yaml
+      group_customization: true
       default:
         - code: 1
           country: Test1
@@ -101,52 +106,56 @@
 
 - type: service
   name: test_service
-  version: 1.5
-  config_group_customization: true
+  version: 1.6
   config:
-    - name: boolean
+    - name: float
       type: float
       required: false
       default: 0.1
-    - name: float
+      group_customization: true
+    - name: boolean
       type: boolean
       required: true
       default: true
-    - name: string
+    - name: integer
       type: integer
       required: false
       default: 16
+      group_customization: true
     - name: password
       type: password
       required: false
       default: password
-    - name: integer
+    - name: string
       type: string
       required: true
       default: string
-    - name: file
+      group_customization: true
+    - name: list
       type: list
       required: false
       default:
         - /dev/rdisk0s1
         - /dev/rdisk0s2
         - /dev/rdisk0s3
-    - name: list
+    - name: file
       type: file
       required: false
       default: ./some_file
-    - name: text
+      group_customization: true
+    - name: option
       type: option
       required: false
       option:
         DAILY: DAILY
         WEEKLY: WEEKLY
       default: DAILY
-    - name: option
+    - name: text
       type: text
       required: false
       default: text
-    - name: structure
+      group_customization: true
+    - name: group
       type: group
       activatable: true
       active: true
@@ -163,10 +172,11 @@
           max: 65536
           default: 9300
           required: true
-    - name: group
+    - name: structure
       type: structure
       required: false
       yspec: ./schema.yaml
+      group_customization: true
       default:
         - code: 1
           country: Test1
@@ -182,51 +192,55 @@
 
   components:
     test_component:
-      config_group_customization: true
       config:
-        - name: boolean
+        - name: float
           type: float
           required: false
           default: 0.1
-        - name: float
+          group_customization: true
+        - name: boolean
           type: boolean
           required: true
           default: true
-        - name: string
+        - name: integer
           type: integer
           required: false
           default: 16
+          group_customization: true
         - name: password
           type: password
           required: false
           default: password
-        - name: integer
+        - name: string
           type: string
           required: true
           default: string
-        - name: file
+          group_customization: true
+        - name: list
           type: list
           required: false
           default:
             - /dev/rdisk0s1
             - /dev/rdisk0s2
             - /dev/rdisk0s3
-        - name: list
+        - name: file
           type: file
           required: false
           default: ./some_file
-        - name: text
+          group_customization: true
+        - name: option
           type: option
           required: false
           option:
             DAILY: DAILY
             WEEKLY: WEEKLY
           default: DAILY
-        - name: option
+        - name: text
           type: text
           required: false
           default: text
-        - name: structure
+          group_customization: true
+        - name: group
           type: group
           activatable: true
           active: true
@@ -243,10 +257,11 @@
               max: 65536
               default: 9300
               required: true
-        - name: group
+        - name: structure
           type: structure
           required: false
           yspec: ./schema.yaml
+          group_customization: true
           default:
             - code: 1
               country: Test1

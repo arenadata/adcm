@@ -26,26 +26,16 @@
       type: float
       required: false
       default: 0.1
-    - name: new_float
-      type: float
-      required: false
-      default: 0.3
+      group_customization: true
     - name: boolean
       type: boolean
       required: true
       default: true
-    - name: new_boolean
-      type: boolean
-      required: true
-      default: false
     - name: integer
       type: integer
       required: false
       default: 16
-    - name: new_integer
-      type: integer
-      required: false
-      default: 34
+      group_customization: true
     - name: password
       type: password
       required: false
@@ -54,10 +44,7 @@
       type: string
       required: true
       default: string
-    - name: new_string
-      type: string
-      required: true
-      default: string_new
+      group_customization: true
     - name: list
       type: list
       required: false
@@ -65,20 +52,11 @@
         - /dev/rdisk0s1
         - /dev/rdisk0s2
         - /dev/rdisk0s3
-    - name: new_list
-      type: list
-      required: false
-      default:
-        - /dev/sda
-        - /dev/rda
     - name: file
       type: file
       required: false
       default: ./some_file
-    - name: new_file
-      type: file
-      required: false
-      default: ./some_other_file
+      group_customization: true
     - name: option
       type: option
       required: false
@@ -86,21 +64,11 @@
         DAILY: DAILY
         WEEKLY: WEEKLY
       default: DAILY
-    - name: new_option
-      type: option
-      required: false
-      option:
-        TOBE: TOBE
-        NOTTOBE: NOTTOBE
-      default: NOTTOBE
     - name: text
       type: text
       required: false
       default: text
-    - name: new_text
-      type: text
-      required: false
-      default: text_new
+      group_customization: true
     - name: group
       type: group
       activatable: true
@@ -118,35 +86,16 @@
           max: 65536
           default: 9300
           required: true
-    - name: new_group
-      type: group
-      activatable: true
-      active: true
-      subs:
-        - name: new_port
-          type: integer
-          min: 1024
-          max: 65536
-          default: 9201
-          required: true
     - name: structure
       type: structure
       required: false
       yspec: ./schema.yaml
+      group_customization: true
       default:
         - code: 1
           country: Test1
         - code: 2
           country: Test2
-    - name: new_structure
-      type: structure
-      required: false
-      yspec: ./new_schema.yaml
-      default:
-        - name: John
-          surname: Doe
-        - name: Allice
-          surname: Cooper
     - name: map
       type: map
       required: false
@@ -154,12 +103,6 @@
         age: '24'
         name: Joe
         sex: m
-    - name: new_map
-      type: map
-      required: false
-      default:
-        time: '12'
-        range: 'super long'
 
 - type: host
   name: host_from_provider
