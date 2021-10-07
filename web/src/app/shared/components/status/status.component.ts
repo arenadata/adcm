@@ -67,13 +67,14 @@ export class StatusComponent extends SocketListenerDirective implements OnInit, 
       this.hcm = hcm;
       if (!hcm.length) this.loadString = 'Nothing to display.';
     };
-
     if (!this.details.Cluster) {
       if ('cluster_id' in this.details.Current && this.details.Current.cluster_id) {
         this.statusInfo$ = this.service.getClusterById(this.details.Current.cluster_id).pipe(
           switchMap((cluster) => this.service.getStatusInfo(cluster.id, cluster.hostcomponent).pipe(map((a) => this.service.fillStatus(a)))),
           tap<StatusInfo[]>(effect)
         );
+      } else {
+        effect([]);
       }
     } else {
       const { id, hostcomponent } = this.details.Cluster;
