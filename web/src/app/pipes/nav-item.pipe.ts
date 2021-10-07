@@ -62,9 +62,9 @@ export class NavItemPipe implements PipeTransform {
         const { object_type, object_id, id } = (path[index] as unknown as ApiFlat);
         if (object_type === 'service') {
           return group ? (
-            `${cluster.typeName}/${cluster.id}/${object_type}/${object_id}/group_config`
+            `/${cluster.typeName}/${cluster.id}/${object_type}/${object_id}/group_config`
           ) : (
-            `${cluster.typeName}/${cluster.id}/${object_type}/${object_id}/group_config/${id}`
+            `/${cluster.typeName}/${cluster.id}/${object_type}/${object_id}/group_config/${id}`
           );
         } else {
           return group ? (
