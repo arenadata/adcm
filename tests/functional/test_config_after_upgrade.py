@@ -13,7 +13,7 @@
 """Tests for cluster and provider configs after upgrade"""
 import json
 from collections import OrderedDict
-from typing import Callable, Union
+from typing import Callable, Union, Tuple
 
 import allure
 import pytest
@@ -28,7 +28,9 @@ from tests.functional.plugin_utils import AnyADCMObject
 ###############################
 
 
-def _update_config_and_attr_for_new_field_test(config: OrderedDict, attr: OrderedDict, group_config=False):
+def _update_config_and_attr_for_new_field_test(
+    config: OrderedDict, attr: OrderedDict, group_config=False
+) -> Tuple[dict, dict]:
     config["new_float"] = 0.3
     config["new_boolean"] = False
     config["new_integer"] = 34
@@ -73,7 +75,9 @@ def _update_config_and_attr_for_new_field_test(config: OrderedDict, attr: Ordere
     return config, attr
 
 
-def _update_config_and_attr_for_new_default_value_test(config: OrderedDict, attr: OrderedDict, group_config=False):
+def _update_config_and_attr_for_new_default_value_test(
+    config: OrderedDict, attr: OrderedDict, group_config=False
+) -> Tuple[dict, dict]:
     config["float"] = 0.2
     config["boolean"] = False
     config["integer"] = 25
@@ -89,7 +93,9 @@ def _update_config_and_attr_for_new_default_value_test(config: OrderedDict, attr
     return config, attr
 
 
-def _update_config_and_attr_for_changed_types(config: OrderedDict, attr: OrderedDict, group_config=False):
+def _update_config_and_attr_for_changed_types(
+    config: OrderedDict, attr: OrderedDict, group_config=False
+) -> Tuple[dict, dict]:
     config["boolean"] = 0.1
     config["float"] = True
     config["string"] = 16
@@ -114,7 +120,9 @@ def _update_config_and_attr_for_changed_types(config: OrderedDict, attr: Ordered
     return config, attr
 
 
-def _update_config_and_attr_for_removed_field_test(config: OrderedDict, attr: OrderedDict, group_config=False):
+def _update_config_and_attr_for_removed_field_test(
+    config: OrderedDict, attr: OrderedDict, group_config=False
+) -> Tuple[dict, dict]:
     _, _ = config, attr
     config = {"float": 0.1}
     if group_config:
@@ -124,7 +132,7 @@ def _update_config_and_attr_for_removed_field_test(config: OrderedDict, attr: Or
 
 def _update_config_and_attr_for_changed_group_customisation_test(
     config: OrderedDict, attr: OrderedDict, group_config=False
-):
+) -> Tuple[dict, dict]:
     if group_config:
         attr["custom_group_keys"]["boolean"] = False
         attr["custom_group_keys"]["password"] = False
@@ -183,9 +191,9 @@ def _get_config_and_attr(obj: Union[GroupConfig, AnyADCMObject]):
     return full_conf["config"], full_conf["attr"]
 
 
-###############################
+##################################
 # Upgrade with ordinary configs
-###############################
+##################################
 
 
 class TestUpgradeWithConfigs:
@@ -301,9 +309,9 @@ class TestUpgradeWithConfigs:
         _assert_attr(obj_type=obj.__class__.__name__, actual_attr=new_attr, expected_attr=ref_attr, group_config=False)
 
 
-###############################
+##################################
 # Upgrade with group configs
-###############################
+##################################
 
 
 class TestUpgradeWithGroupConfigs:
