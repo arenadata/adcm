@@ -16,16 +16,19 @@ from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 
 from rbac.viewsets import ModelPermViewSet
+from .user.serializers import PermissionSerializer
 
 
 class GroupSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSerializer):
     """Group serializer"""
-
+    
+    permissions = PermissionSerializer(many=True, read_only=True)
     class Meta:
         model = Group
         fields = (
             'id',
             'name',
+            'permissions',
             'url',
         )
         extra_kwargs = {
