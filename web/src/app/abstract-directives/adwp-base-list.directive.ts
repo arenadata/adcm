@@ -1,7 +1,7 @@
 import { BehaviorSubject } from 'rxjs';
 import { Paging } from '@adwp-ui/widgets';
 import { Sort } from '@angular/material/sort';
-import { convertToParamMap, ParamMap } from '@angular/router';
+import { ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
 
 import { BaseListDirective } from '@app/shared/components/list/base-list.directive';
@@ -39,7 +39,7 @@ export class AdwpBaseListDirective extends BaseListDirective {
       this.sorting.next({ direction, active });
     }
 
-    this.listParams = convertToParamMap({ ...params, page, limit });
+    this.listParams = params;
     this.refresh();
   }
 
