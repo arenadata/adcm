@@ -9,7 +9,7 @@ import { environment } from '@env/environment';
 
 const newConfigGroupForm = (): FormGroup =>
   new FormGroup({
-    name: new FormControl('', Validators.required),
+    name: new FormControl('', [Validators.required, Validators.maxLength(30)]),
     description: new FormControl(),
   });
 
