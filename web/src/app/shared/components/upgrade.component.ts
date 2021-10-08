@@ -72,7 +72,7 @@ export interface Upgrade {
     </ng-container>
   `
 })
-export class UpgradeComponent extends BaseDirective implements OnChanges {
+export class UpgradeComponent extends BaseDirective {
   EventHelper = EventHelper;
 
   list$: Observable<Upgrade[]>;
@@ -83,6 +83,9 @@ export class UpgradeComponent extends BaseDirective implements OnChanges {
   @Input()
   set row(row: UpgradeItem) {
     this.pRow = row;
+    if (this.pRow?.upgradable) {
+      this.list$ = this.getUpgrades(this.pRow.upgrade);
+    }
   }
 
   @Output()
@@ -90,12 +93,6 @@ export class UpgradeComponent extends BaseDirective implements OnChanges {
 
   constructor(private api: ApiService, private dialog: MatDialog) {
     super();
-  }
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes.row && changes.row.currentValue.upgradable) {
-      this.list$ = this.getUpgrades(changes.row.currentValue.upgrade);
-    }
   }
 
   checkIssue() {
