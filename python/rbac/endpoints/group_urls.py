@@ -13,7 +13,7 @@
 from django.urls import path, include
 from rest_framework.routers import SimpleRouter, Route
 
-from .group import GroupViewSet
+from .group import GroupViewSet, GroupRoleViewSet
 
 
 class GroupRouter(SimpleRouter):
@@ -48,4 +48,14 @@ router.register('', GroupViewSet, basename='group')
 
 urlpatterns = [
     path('', include((router.urls, 'rbac_group'))),
+    path(
+        '<int:id>/role/',
+        GroupRoleViewSet.as_view({'get': 'list', 'post': 'create'}),
+        name='rbac-group-role-list',
+    ),
+    path(
+        '<int:id>/role/<int:role_id>/',
+        GroupRoleViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}),
+        name='rbac-group-role-detail',
+    ),
 ]

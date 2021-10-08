@@ -147,6 +147,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
         }
 
     def get_groups(self, obj):
+        """Get all user's groups"""
         groups = obj.groups.all()
         context = self.context
         context['user'] = obj
@@ -225,6 +226,7 @@ class UserGroupSerializer(serializers.ModelSerializer):
         read_only_fields = ('name',)
 
     def create(self, validated_data):
+        """Add user to group"""
         user = self.context.get('user')
         group = validated_data['id']
         user.groups.add(group)
@@ -248,6 +250,7 @@ class UserRoleSerializer(serializers.ModelSerializer):
         read_only_fields = ('name',)
 
     def create(self, validated_data):
+        """Add role to user"""
         user = self.context.get('user')
         role = validated_data['id']
         role.add_user(user)

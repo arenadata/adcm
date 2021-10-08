@@ -13,22 +13,61 @@
 
 from django.contrib.auth.models import Group
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers
+from rest_framework import serializers, status
+from rest_framework.reverse import reverse
+from rest_framework.response import Response
+from rest_framework.mixins import (
+    ListModelMixin,
+    CreateModelMixin,
+    RetrieveModelMixin,
+    DestroyModelMixin,
+)
 
-from rbac.viewsets import ModelPermViewSet
+from rbac.models import Role
+from rbac.viewsets import ModelPermViewSet, GenericPermViewSet
 from .user.serializers import PermissionSerializer
 
 
-class GroupSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSerializer):
-    """Group serializer"""
+class GroupRoleSerializer(serializers.ModelSerializer):
+    """Serializer for group's roles"""
 
-    permissions = PermissionSerializer(many=True, read_only=True)
+    id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
+    url = serializers.SerializerMethodField()
 
     class Meta:
         model = Group
         fields = (
             'id',
             'name',
+            'url',
+        )
+        read_only_fields = ('name',)
+
+    def get_url(self, obj):
+        """get role URL rbac/group/1/role/1/"""
+        kwargs = {'id': self.context['group'].id, 'role_id': obj.id}
+        return reverse('rbac-group-role-detail', kwargs=kwargs, request=self.context['request'])
+
+    def create(self, validated_data):
+        """Add role to group"""
+        group = self.context.get('group')
+        role = validated_data['id']
+        role.add_group(group)
+        return role
+
+
+class GroupSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSerializer):
+    """Group serializer"""
+
+    permissions = PermissionSerializer(many=True, read_only=True)
+    roles = GroupRoleSerializer(many=True, source='role_set', read_only=True)
+
+    class Meta:
+        model = Group
+        fields = (
+            'id',
+            'name',
+            'roles',
             'permissions',
             'url',
         )
@@ -46,3 +85,47 @@ class GroupViewSet(ModelPermViewSet):
     lookup_field = 'id'
     filterset_fields = ['id', 'name']
     ordering_fields = ['id', 'name']
+
+    def get_serializer_context(self):
+        """Add group to context"""
+        context = super().get_serializer_context()
+        group_id = self.kwargs.get('id')
+        if group_id is not None:
+            group = Group.objects.get(id=group_id)
+            context.update({'group': group})
+        return context
+
+
+# pylint: disable=too-many-ancestors
+class GroupRoleViewSet(
+    ListModelMixin,
+    CreateModelMixin,
+    RetrieveModelMixin,
+    DestroyModelMixin,
+    GenericPermViewSet,
+):
+    """Group role view set"""
+
+    queryset = Role.objects.all()
+    serializer_class = GroupRoleSerializer
+    lookup_url_kwarg = 'role_id'
+
+    def destroy(self, request, *args, **kwargs):
+        """Remove role from group"""
+        group = Group.objects.get(id=self.kwargs.get('id'))
+        role = self.get_object()
+        role.remove_group(group)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def get_queryset(self):
+        """Filter user's roles"""
+        return self.queryset.filter(group__id=self.kwargs.get('id'))
+
+    def get_serializer_context(self):
+        """Add group to context"""
+        context = super().get_serializer_context()
+        group_id = self.kwargs.get('id')
+        if group_id is not None:
+            group = Group.objects.get(id=group_id)
+            context.update({'group': group})
+        return context

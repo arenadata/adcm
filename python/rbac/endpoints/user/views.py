@@ -13,9 +13,9 @@
 """User view sets"""
 
 from django.contrib.auth.models import User, Group
-from rest_framework import status
-from rest_framework import serializers
+from rest_framework import serializers, status
 from rest_framework.generics import GenericAPIView
+from rest_framework.response import Response
 from rest_framework.mixins import (
     ListModelMixin,
     CreateModelMixin,
@@ -23,7 +23,6 @@ from rest_framework.mixins import (
     DestroyModelMixin,
     UpdateModelMixin,
 )
-from rest_framework.response import Response
 
 from rbac.models import Role
 from rbac.viewsets import ModelPermViewSet, GenericPermViewSet, DjangoModelPerm
@@ -63,6 +62,7 @@ class ChangePassword(GenericAPIView, UpdateModelMixin):
     permission_classes = (SelfChangePasswordPerm,)
 
     def put(self, request, *args, **kwargs):
+        """Update password"""
         return self.update(request, *args, **kwargs)
 
 
@@ -102,6 +102,7 @@ class UserGroupViewSet(
         return self.queryset.filter(user__id=self.kwargs.get('id'))
 
     def get_serializer_context(self):
+        """Add user to context"""
         context = super().get_serializer_context()
         user_id = self.kwargs.get('id')
         if user_id is not None:
@@ -117,13 +118,14 @@ class UserRoleViewSet(
     DestroyModelMixin,
     GenericPermViewSet,
 ):  # pylint: disable=too-many-ancestors
-    """User group view set"""
+    """User role view set"""
 
     queryset = Role.objects.all()
     serializer_class = UserRoleSerializer
     lookup_url_kwarg = 'role_id'
 
     def destroy(self, request, *args, **kwargs):
+        """Remove role from user"""
         user = User.objects.get(id=self.kwargs.get('id'))
         role = self.get_object()
         role.remove_user(user)
@@ -134,6 +136,7 @@ class UserRoleViewSet(
         return self.queryset.filter(user__id=self.kwargs.get('id'))
 
     def get_serializer_context(self):
+        """Add user to context"""
         context = super().get_serializer_context()
         user_id = self.kwargs.get('id')
         if user_id is not None:

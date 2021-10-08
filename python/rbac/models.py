@@ -89,6 +89,30 @@ class Role(models.Model):
                 if perm.codename not in perm_list:
                     user.user_permissions.remove(perm)
 
+    def add_group(self, group):
+        """Add role and appropriate permissions to group"""
+        if self in group.role_set.all():
+            err('ROLE_ERROR', f'Group "{group.name}" already has role "{self.name}"')
+        with transaction.atomic():
+            self.group.add(group)
+            self.save()
+            for perm in self.get_permissions():
+                group.permissions.add(perm)
+        return self
+
+    def remove_group(self, group):
+        """Remove role and appropriate permissions from group"""
+        group_roles = group.role_set.all()
+        if self not in group_roles:
+            err('ROLE_ERROR', f'Group "{group.name}" does not has role "{self.name}"')
+        perm_list = self.get_permissions_without_role(group_roles)
+        with transaction.atomic():
+            self.group.remove(group)
+            self.save()
+            for perm in self.get_permissions():
+                if perm.codename not in perm_list:
+                    group.permissions.remove(perm)
+
 
 class RoleMigration(models.Model):
     """Keep version of last role upgrade"""
