@@ -32,12 +32,17 @@ from cm.models import (
     Prototype,
     PrototypeImport,
     get_object_cluster,
+    GroupConfig,
 )
 
 
 def process_config_and_attr(obj, conf, attr=None, spec=None):
     if not spec:
-        spec, _, _, _ = get_prototype_config(obj.prototype)
+        if isinstance(obj, GroupConfig):
+            prototype = obj.object.prototype
+        else:
+            prototype = obj.prototype
+        spec, _, _, _ = get_prototype_config(prototype)
     new_conf = process_config(obj, spec, conf)
     if attr:
         for key, val in attr.items():
@@ -112,7 +117,7 @@ def get_host_vars(host: Host, obj):
     variables = {}
     for group in groups:
         # TODO: What to do with activatable group in attr ???
-        group_config = process_config_and_attr(group.object, group.get_group_config())
+        group_config = process_config_and_attr(group, group.get_group_config())
         if isinstance(group.object, Cluster):
             variables.update({'cluster': {'config': group_config}})
         elif isinstance(group.object, ClusterObject):
