@@ -112,7 +112,7 @@ export class NavigationComponent extends BaseDirective {
   @Input() set path(path: Observable<AdcmTypedEntity[]>) {
     this.ownPath = path;
     this.ownPath.pipe(this.takeUntil()).subscribe((lPath) => {
-      if (lPath) {
+      if (lPath && !!lPath.length) {
         const last = lPath[lPath.length - 1];
         const exclude = ['bundle', 'job'];
         this.actionFlag = !exclude.includes(last.typeName);
@@ -124,6 +124,7 @@ export class NavigationComponent extends BaseDirective {
       }
     });
   }
+
   get path(): Observable<AdcmTypedEntity[]> {
     return this.ownPath;
   }

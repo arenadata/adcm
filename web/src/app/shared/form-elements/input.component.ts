@@ -20,6 +20,8 @@ import { BaseDirective } from '../directives';
       <mat-form-field class="full-width">
         <input matInput [placeholder]="label" formControlName="{{ controlName }}" [required]="isRequired" />
         <mat-error *ngIf="isError(controlName)">
+          <mat-error *ngIf="hasError(controlName, 'maxlength')">Ensure this field has no more than 30 characters.
+          </mat-error>
           <mat-error *ngIf="hasError(controlName, 'required')">{{ label }} is required.</mat-error>
           <mat-error *ngIf="hasError(controlName, 'pattern')">{{ label }} is not correct.</mat-error>
         </mat-error>

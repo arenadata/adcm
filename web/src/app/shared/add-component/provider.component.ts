@@ -10,10 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnInit, EventEmitter, Output, OnDestroy } from '@angular/core';
-import { clearEmptyField, Provider } from '@app/core/types';
-
-import { BaseFormDirective } from './base-form.directive';
 import { Subscription } from 'rxjs';
+
+import { clearEmptyField, Provider, StackBase } from '@app/core/types';
+import { BaseFormDirective } from './base-form.directive';
 
 export enum DisplayMode {
   default,
@@ -25,7 +25,7 @@ export enum DisplayMode {
   selector: 'app-add-provider',
   template: `
     <ng-container [formGroup]="form">
-      <app-bundles [form]="form" [typeName]="'provider'"></app-bundles>
+      <app-bundles [form]="form" [typeName]="'provider'" (prototypeChanged)="prototypeChanged($event)"></app-bundles>
       <ng-container *ngIf="displayMode === 0; else asHost">
         <app-input [form]="form" [label]="'Hostprovider name'" [controlName]="'name'" [isRequired]="true"></app-input>
         <app-input [form]="form" [label]="'Description'" [controlName]="'description'"></app-input>
@@ -48,6 +48,7 @@ export enum DisplayMode {
 })
 export class ProviderComponent extends BaseFormDirective implements OnInit, OnDestroy {
   sgn: Subscription;
+  private prototype: StackBase;
   @Input() displayMode: DisplayMode = DisplayMode.default;
   @Output() cancel = new EventEmitter();
 
@@ -60,10 +61,14 @@ export class ProviderComponent extends BaseFormDirective implements OnInit, OnDe
     this.sgn.unsubscribe();
   }
 
+  prototypeChanged(event: StackBase) {
+    this.prototype = event;
+  }
+
   save() {
     const data = clearEmptyField(this.form.value);
     this.service
-      .add<Provider>(data, 'provider')
+      .add<Provider>(data, 'provider', this.prototype)
       .pipe(this.takeUntil())
       .subscribe((x) => {
         if (this.displayMode === 0) this.onCancel();
