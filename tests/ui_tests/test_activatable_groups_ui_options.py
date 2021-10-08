@@ -17,7 +17,7 @@ import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
 
-from .utils import prepare_cluster_and_get_config, check_that_all_fields_and_groups_invisible
+from tests.ui_tests.utils import prepare_cluster_and_get_config, check_that_all_fields_and_groups_invisible
 
 pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
 
