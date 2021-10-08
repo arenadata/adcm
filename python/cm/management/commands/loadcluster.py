@@ -24,6 +24,7 @@ from django.db.utils import IntegrityError
 from cm import models
 from cm.errors import AdcmEx
 from cm.config import FILE_DIR
+from cm.adcm_config import save_file_type
 
 
 def deserializer_datetime_fields(obj, fields=None):
@@ -121,24 +122,31 @@ def create_provider(provider):
         same_name_provider = models.HostProvider.objects.get(name=provider['name'])
         if same_name_provider.prototype.bundle.hash != bundle_hash:
             raise IntegrityError('Name of provider already in use in another bundle')
+        create_needed_file(same_name_provider, provider['config'])
         return ex_id, same_name_provider
     except models.HostProvider.DoesNotExist:
         prototype = get_prototype(bundle_hash=bundle_hash, type='provider')
-        config = create_config(provider.pop('config'))
+        config = provider.pop('config')
         provider = models.HostProvider.objects.create(
-            prototype=prototype, config=config, **provider
+            prototype=prototype, config=create_config(config), **provider
         )
+        create_needed_file(provider, config)
         return ex_id, provider
 
 
-def create_private_key_file(host, config):
-    if config is not None:
-        current_config = config['current']
-        if "ansible_ssh_private_key_file" in current_config["config"]:
-            with open(os.path.join(
-                    FILE_DIR, f'host.{host.id}.ansible_ssh_private_key_file.'),
-                    'w', encoding='utf-8') as f:
-                f.write(current_config["config"]["ansible_ssh_private_key_file"])
+def create_needed_file(obj, config):
+    conf = config["current"]["config"]
+    proto = obj.prototype
+    for key, value in conf.items():
+        if isinstance(value, dict):
+            for subkey, subvalue in value.items():
+                pconf = models.PrototypeConfig.objects.get(prototype=proto, name=key, subname=subkey)
+                if pconf.type == 'file':
+                    save_file_type(obj, key, subkey, subvalue)
+        else:
+            pconf = models.PrototypeConfig.objects.get(prototype=proto, name=key)
+            if pconf.type == 'file':
+                save_file_type(obj, key, '', value)
 
 
 def create_host(host, cluster):
@@ -170,7 +178,7 @@ def create_host(host, cluster):
             cluster=cluster,
             **host,
         )
-        create_private_key_file(new_host, config)
+        create_needed_file(new_host, config)
         return ex_id, new_host
 
 
