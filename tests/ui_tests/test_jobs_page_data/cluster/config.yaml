@@ -75,5 +75,10 @@
           display_name: "Component host action"
           params:
             ansible_tags: success
+        long_action:
+          <<: *job
+          display_name: "Long action"
+          params:
+            ansible_tags: pause
 
   actions: *actions
