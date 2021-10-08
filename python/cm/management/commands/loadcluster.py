@@ -13,6 +13,7 @@
 # pylint: disable=too-many-locals
 
 import json
+import os
 from datetime import datetime
 
 from django.conf import settings
@@ -22,6 +23,7 @@ from django.db.utils import IntegrityError
 
 from cm import models
 from cm.errors import AdcmEx
+from cm.config import FILE_DIR
 
 
 def deserializer_datetime_fields(obj, fields=None):
@@ -129,6 +131,15 @@ def create_provider(provider):
         return ex_id, provider
 
 
+def create_private_key_file(host, config):
+    if config is not None:
+        current_config = config['current']
+        if "ansible_ssh_private_key_file" in current_config["config"]:
+            with open(os.path.join(
+                    FILE_DIR, f'host.{host.id}.ansible_ssh_private_key.'), 'w', encoding='utf-8') as f:
+                f.write(current_config["config"]["ansible_ssh_private_key_file"])
+
+
 def create_host(host, cluster):
     """
     Creating Host object
@@ -141,7 +152,6 @@ def create_host(host, cluster):
     :rtype: models.Host
     """
     host.pop('provider')
-    config = create_config(host.pop('config'))
     provider = models.HostProvider.objects.get(name=host.pop('provider__name'))
     try:
         models.Host.objects.get(fqdn=host['fqdn'])
@@ -151,14 +161,16 @@ def create_host(host, cluster):
     except models.Host.DoesNotExist:
         prototype = get_prototype(bundle_hash=host.pop('bundle_hash'), type='host')
         ex_id = host.pop('id')
-        host = models.Host.objects.create(
+        config = host.pop('config')
+        new_host = models.Host.objects.create(
             prototype=prototype,
             provider=provider,
-            config=config,
+            config=create_config(config),
             cluster=cluster,
             **host,
         )
-        return ex_id, host
+        create_private_key_file(new_host, config)
+        return ex_id, new_host
 
 
 def create_service(service, cluster):
@@ -272,7 +284,7 @@ def load(file_path):
         with open(file_path, 'r', encoding='utf_8') as f:
             data = json.load(f)
     except FileNotFoundError as err:
-        raise AdcmEx('DUMP_LOAD_CLUSTER_ERROR') from err
+        raise AdcmEx('DUMP_LOAD_CLUSTER_ERROR', msg='Loaded file not found') from err
 
     check(data)
 

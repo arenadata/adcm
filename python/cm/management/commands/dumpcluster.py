@@ -128,8 +128,6 @@ def get_cluster(cluster_id):
         'description',
         'config',
         'state',
-        'stack',
-        'issue',
         'prototype',
     )
     cluster = get_object(models.Cluster, cluster_id, fields)
@@ -155,8 +153,6 @@ def get_provider(provider_id):
         'description',
         'config',
         'state',
-        'stack',
-        'issue',
     )
     provider = get_object(models.HostProvider, provider_id, fields)
     provider['config'] = get_config(provider['config'])
@@ -183,8 +179,6 @@ def get_host(host_id):
         'provider__name',
         'config',
         'state',
-        'stack',
-        'issue',
     )
     host = get_object(models.Host, host_id, fields)
     host['config'] = get_config(host['config'])
@@ -208,8 +202,6 @@ def get_service(service_id):
         # 'service',  # TODO: you need to remove the field from the ClusterObject model
         'config',
         'state',
-        'stack',
-        'issue',
     )
     service = get_object(models.ClusterObject, service_id, fields)
     service['config'] = get_config(service['config'])
@@ -233,8 +225,6 @@ def get_component(component_id):
         'service',
         'config',
         'state',
-        'stack',
-        'issue',
     )
     component = get_object(models.ServiceComponent, component_id, fields)
     component['config'] = get_config(component['config'])
