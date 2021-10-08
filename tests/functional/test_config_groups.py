@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=redefined-outer-name, unused-argument, duplicate-code, no-self-use, dangerous-default-value
+# pylint: disable=redefined-outer-name, unused-argument, duplicate-code, no-self-use
 
 """Tests for config groups"""
 
@@ -397,6 +397,19 @@ class TestChangeGroupsConfig:
     def _add_values_to_group_config_template(
         self, custom_group_keys: dict = {}, group_keys: dict = {}, config_attr: dict = PARAMS_TO_CHANGE
     ) -> dict:
+    CLUSTER_HOSTS_VARIANTS = [
+        "all",
+        "CLUSTER",
+        "test_service_1",
+        "test_service_1.first",
+        "test_service_1.second",
+        FIRST_HOST,
+        SECOND_HOST,
+    ]
+
+    def _add_values_to_group_config_template(
+        self, custom_group_keys: dict = {}, group_keys: dict = {}, config_attr: dict = PARAMS_TO_CHANGE
+    ) -> dict:
         group_config_template = {"attr": {}, "config": {}}
         if custom_group_keys:
             group_config_template["attr"]["custom_group_keys"] = {}
@@ -406,15 +419,15 @@ class TestChangeGroupsConfig:
                     "port": group_value,
                     "transport_port": group_value,
                 }
-            for key in custom_group_keys.keys():
-                group_config_template["attr"]["custom_group_keys"][key] = custom_group_keys[key]
+            for key, value in custom_group_keys:
+                group_config_template["attr"]["custom_group_keys"][key] = value
         if group_keys:
             group_config_template["attr"]["group_keys"] = {}
-            for key in group_keys.keys():
-                group_config_template["attr"]["group_keys"][key] = group_keys[key]
+            for key, value in group_keys:
+                group_config_template["attr"]["group_keys"][key] = value
         if config_attr:
-            for key in config_attr.keys():
-                group_config_template["config"][key] = config_attr[key]
+            for key, value in config_attr:
+                group_config_template["config"][key] = value
         return group_config_template
 
     @allure.step("Check group config values are equal expected")
@@ -441,7 +454,7 @@ class TestChangeGroupsConfig:
 
     @allure.step('Check error that group config cant change')
     def _check_error_with_adding_param_to_group(self, group: GroupConfig, params: dict):
-        with allure.step(f'Check that error is "{GROUP_CONFIG_HOST_EXISTS.code}"'):
+        with allure.step(f'Check that error is "{ATTRIBUTE_ERROR.code}"'):
             with pytest.raises(ErrorMessage) as e:
                 group.config_set_diff(params)
             ATTRIBUTE_ERROR.equal(e)
@@ -454,24 +467,33 @@ class TestChangeGroupsConfig:
         self, group: GroupConfig, config_before: dict, custom_group_keys: bool = False
     ):
         for param in config_before.keys():
-            config_expected = self._add_values_to_group_config_template(
-                custom_group_keys={param: custom_group_keys},
-                group_keys=self.GROUP_KEYS_TO_CHANGE,
-                config_attr={param: self.PARAMS_TO_CHANGE[param]},
-            )
-            self._check_error_with_adding_param_to_group(group, config_expected)
+            with allure.step(f"Assert that can't change read-only {param} custom_group_keys parameter"):
+                invalid_config = {
+                    "attr": {"custom_group_keys": {param: False}},
+                    "config": {param: self.PARAMS_TO_CHANGE[param]},
+                }
+                self._check_error_with_adding_param_to_group(group, invalid_config)
 
-    @pytest.mark.parametrize(
-        "cluster_bundle",
-        [
-            pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group_customization"),
-            pytest.param(
-                get_data_dir(__file__, CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
-                id="cluster_with_config_group_customization",
-            ),
-        ],
-        indirect=True,
+    @pytest.fixture(
+        params=[
+            pytest.param(CLUSTER_BUNDLE_WITH_GROUP_PATH, id="cluster_with_group_customization"),
+            pytest.param(CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH, id="cluster_with_config_group_customization"),
+        ]
     )
+    def cluster_bundle(self, request, sdk_client_fs):
+        """Cluster bundle fixture"""
+        return sdk_client_fs.upload_from_fs(request.param)
+
+    @pytest.fixture(
+        params=[
+            pytest.param(PROVIDER_BUNDLE_WITH_GROUP_PATH, id="provider_with_group_customization"),
+            pytest.param(PROVIDER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH, id="provider_with_config_group_customization"),
+        ]
+    )
+    def provider_bundle(self, request, sdk_client_fs):
+        """Provider bundle fixture"""
+        return sdk_client_fs.upload_from_fs(request.param)
+
     def test_change_group_in_cluster(self, cluster_bundle, cluster_with_two_hosts_on_it):
         """Test that groups in cluster are allowed change"""
 
@@ -504,21 +526,24 @@ class TestChangeGroupsConfig:
             }
             run_cluster_action_and_assert_result(cluster, action="test_action", config=config_updated)
 
-    @pytest.mark.parametrize(
-        "cluster_bundle",
-        [
-            pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group_customization"),
-            pytest.param(
-                get_data_dir(__file__, CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
-                id="cluster_with_config_group_customization",
-            ),
-        ],
-        indirect=True,
-    )
-    def test_change_group_in_service(self, cluster_bundle, sdk_client_fs, cluster_with_components):
+    def test_change_group_in_service(self, cluster_bundle, cluster_with_components):
         """Test that groups in service are allowed change"""
 
         service, test_host_1, test_host_2 = cluster_with_components
+        service_group = _create_group_and_add_host(service, test_host_1)
+
+        config_before = self._get_config_from_group(service_group)
+        config_expected = self._add_values_to_group_config_template()
+        config_after = service_group.config_set_diff(config_expected)
+        self._check_values_in_group(
+            values_after=config_after['config'], expected_values=config_expected['config'], values_before=config_before
+        )
+
+        config = {"map": {test_host_1.fqdn: config_expected['config'], test_host_2.fqdn: dict(config_before)}}
+        for hosts in self.CLUSTER_HOSTS_VARIANTS:
+            config["hosts"] = hosts
+            with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
+                run_service_action_and_assert_result(service, action="test_action", config=config)
         with allure.step("Create config group for service and add first host"):
             service_group = _create_group_and_add_host(service, test_host_1)
             config_before = self._get_config_from_group(service_group)
@@ -547,18 +572,7 @@ class TestChangeGroupsConfig:
             }
             run_service_action_and_assert_result(service, action="test_action", config=config_updated)
 
-    @pytest.mark.parametrize(
-        "cluster_bundle",
-        [
-            pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group_customization"),
-            pytest.param(
-                get_data_dir(__file__, CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
-                id="cluster_with_config_group_customization",
-            ),
-        ],
-        indirect=True,
-    )
-    def test_change_group_in_component(self, cluster_bundle, sdk_client_fs, cluster_with_components):
+    def test_change_group_in_component(self, cluster_bundle, cluster_with_components):
         """Test that groups in component are allowed change"""
 
         service, test_host_1, test_host_2 = cluster_with_components
@@ -591,20 +605,7 @@ class TestChangeGroupsConfig:
             }
             run_component_action_and_assert_result(component, action="test_action", config=config_updated)
 
-    @pytest.mark.parametrize(
-        "provider_bundle",
-        [
-            pytest.param(
-                get_data_dir(__file__, PROVIDER_BUNDLE_WITH_GROUP_PATH), id="provider_with_group_customization"
-            ),
-            pytest.param(
-                get_data_dir(__file__, PROVIDER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
-                id="provider_with_config_group_customization",
-            ),
-        ],
-        indirect=True,
-    )
-    def test_change_group_in_provider(self, sdk_client_fs, provider_bundle, provider, create_two_hosts):
+    def test_change_group_in_provider(self, provider_bundle, provider, create_two_hosts):
         """Test that groups in provider are allowed change"""
 
         test_host_1, test_host_2 = create_two_hosts
@@ -636,37 +637,16 @@ class TestChangeGroupsConfig:
             }
             run_provider_action_and_assert_result(provider, action="test_action", config=config_updated)
 
-    @pytest.mark.parametrize(
-        "cluster_bundle",
-        [
-            pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group_customization"),
-            pytest.param(
-                get_data_dir(__file__, CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
-                id="cluster_with_config_group_customization",
-            ),
-        ],
-        indirect=True,
-    )
-    def test_error_with_changing_custom_group_keys_in_cluster_group(self, cluster_bundle, cluster):
-        """Test error with changing group_customization"""
+
+    def test_error_with_changing_params_in_cluster_group_without_group_customization(self, cluster_bundle, cluster):
+        """Test error with changing params in group without group_customization"""
 
         with allure.step("Create config group for cluster"):
             cluster_group = cluster.group_config_create(name=FIRST_GROUP)
             config_before = self._get_config_from_group(cluster_group)
         self._check_error_in_all_params_in_group(cluster_group, config_before)
 
-    @pytest.mark.parametrize(
-        "cluster_bundle",
-        [
-            pytest.param(
-                get_data_dir(__file__, "cluster_with_all_group_keys_false"), id="cluster_with_all_group_keys_false"
-            )
-        ],
-        indirect=True,
-    )
-    def test_change_params_in_cluster_group_without_group_customization(
-        self, cluster_bundle, cluster_with_two_hosts_on_it
-    ):
+    def test_error_with_changing_params_in_service_group_without_group_customization(self, cluster_bundle, cluster):
         """Test changing params in group without group_customization"""
 
         test_host_1, test_host_2, cluster = cluster_with_two_hosts_on_it
@@ -704,6 +684,10 @@ class TestChangeGroupsConfig:
             config_before = self._get_config_from_group(service_group)
         self._check_error_in_all_params_in_group(service_group, config_before)
 
+    def test_error_with_changing_params_in_component_group_without_group_customization(
+        self, cluster_bundle, cluster_with_components
+    ):
+        """Test error with changing params in group without group_customization"""
     @pytest.mark.parametrize(
         "cluster_bundle",
         [
@@ -798,6 +782,8 @@ class TestChangeGroupsConfig:
     )
     def test_error_with_changing_custom_group_keys_in_provider_group(self, provider_bundle, provider):
         """Test changing params in provider group without group_customization"""
+    def test_error_with_changing_params_in_provider_group_without_group_customization(self, provider_bundle, provider):
+        """Test error with changing params in group without group_customization"""
 
         with allure.step("Create config group for provider and add first host"):
             provider_group = provider.group_config_create(name=FIRST_GROUP)
