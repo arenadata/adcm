@@ -136,7 +136,8 @@ def create_private_key_file(host, config):
         current_config = config['current']
         if "ansible_ssh_private_key_file" in current_config["config"]:
             with open(os.path.join(
-                    FILE_DIR, f'host.{host.id}.ansible_ssh_private_key_file.'), 'w', encoding='utf-8') as f:
+                    FILE_DIR, f'host.{host.id}.ansible_ssh_private_key_file.'),
+                    'w', encoding='utf-8') as f:
                 f.write(current_config["config"]["ansible_ssh_private_key_file"])
 
 
