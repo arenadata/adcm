@@ -53,7 +53,9 @@ export class AddFormComponent implements DynamicComponent {
   @ViewChild('cc') container: BaseFormDirective;
 
   onEnterKey(): void {
-    if (this.container.form.valid) this.container.save();
+    if (this.container) {
+      if (this.container.form.valid) this.container.save();
+    }
   }
 
   message(m: string): void {

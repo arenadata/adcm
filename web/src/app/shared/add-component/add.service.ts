@@ -103,11 +103,12 @@ export class AddService implements IAddService {
       });
   }
 
-  add<T>(data: Partial<T>, name: TypeName) {
-    if (this.currentPrototype && this.currentPrototype.license === 'unaccepted') {
+  add<T>(data: Partial<T>, name: TypeName, prototype?: StackBase) {
+    const currentPrototype = prototype || this.currentPrototype;
+    if (currentPrototype?.license === 'unaccepted') {
       return this.api.root.pipe(
         switchMap((root) =>
-          this.api.get<{ text: string }>(`${root.stack}bundle/${this.currentPrototype.bundle_id}/license/`).pipe(
+          this.api.get<{ text: string }>(`${root.stack}bundle/${currentPrototype.bundle_id}/license/`).pipe(
             switchMap((info) =>
               this.dialog
                 .open(DialogComponent, {
@@ -121,7 +122,7 @@ export class AddService implements IAddService {
                 .pipe(
                   filter((yes) => yes),
                   switchMap(() =>
-                    this.api.put(`${root.stack}bundle/${this.currentPrototype.bundle_id}/license/accept/`, {}).pipe(switchMap(() => this.api.post<T>(root[name], data)))
+                    this.api.put(`${root.stack}bundle/${currentPrototype.bundle_id}/license/accept/`, {}).pipe(switchMap(() => this.api.post<T>(root[name], data)))
                   )
                 )
             )

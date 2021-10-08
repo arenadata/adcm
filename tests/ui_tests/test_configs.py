@@ -369,7 +369,7 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs):
             fields = ui_config.get_app_fields()
             assert fields, 'No config fields, expected yes'
             for field in fields:
-                ui_config.assert_field_editable(field, expected['editable'])
+                ui_config.assert_field_is_editable(field, expected['editable'])
             if expected['content']:
                 ui_config.assert_field_content_equal(field_type, fields[0], config['config'][0]['default'])
             if expected['alerts']:
@@ -437,7 +437,7 @@ def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, a
             assert groups, "Groups not presented, expected yes"
             assert fields, "Fields not presented, expected yes"
             for field in fields:
-                ui_config.assert_field_editable(field, expected['editable'])
+                ui_config.assert_field_is_editable(field, expected['editable'])
             if expected['content']:
                 default_value = config['config'][0]['subs'][0]['default']
                 ui_config.assert_field_content_equal(field_type, fields[0], default_value)
