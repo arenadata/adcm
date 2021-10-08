@@ -205,7 +205,7 @@ def check_action_config(action, obj, conf, attr):
     if obj.config:
         cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
         obj_conf = cl.config
-    adcm_config.check_attr(proto, attr, flat_spec)
+    adcm_config.check_attr(proto, action, attr, flat_spec)
     variant.process_variant(obj, spec, obj_conf)
     new_conf = adcm_config.check_config_spec(proto, action, spec, flat_spec, conf, None, attr)
     return new_conf, spec

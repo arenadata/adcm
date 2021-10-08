@@ -49,10 +49,8 @@ def test_all_false(sdk_client_fs: ADCMClient, path, app_fs):
             assert group.is_displayed(), group.get_attribute("class")
     with allure.step('Check that we cannot edit field'):
         fields = config.get_app_fields()
-        assert len(fields) == 1
-        assert config.read_only_element(fields[0])
-        for field in fields:
-            config.assert_field_editable(field, False)
+        assert len(fields) == 1, "There should be exactly one field"
+        assert config.is_element_read_only(fields[0]), "Field should be read only"
     assert not config.save_button_status()
 
 
@@ -109,10 +107,8 @@ def test_invisible_false_advanced_true(sdk_client_fs: ADCMClient, path, app_fs):
     assert not config.save_button_status()
     fields = config.get_app_fields()
     with allure.step('Check that we cannot edit field'):
-        assert len(fields) == 1
-        assert config.read_only_element(fields[0])
-        for field in fields:
-            config.assert_field_editable(field, False)
+        assert len(fields) == 1, "There should be exactly one field"
+        assert config.is_element_read_only(fields[0]), "Field should be read only"
 
 
 @parametrize_by_data_subdirs(__file__, "invisible_true_advanced_false")
