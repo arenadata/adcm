@@ -8,10 +8,14 @@ import { TaskRaw } from '@app/core/types';
 export class BellTaskLinkPipe implements PipeTransform {
 
   transform(task: TaskRaw): (string | number)[] {
-    if (task.status === 'failed' && task?.jobs?.length > 1) {
-      const failedJob = task.jobs.find(job => job.status === 'failed');
-      if (failedJob) {
-        return ['job', failedJob.id, 'main'];
+    if (task?.jobs?.length > 0) {
+      if (task.status === 'failed') {
+        const failedJob = task.jobs.find(job => job.status === 'failed');
+        if (failedJob) {
+          return ['job', failedJob.id, 'main'];
+        }
+      } else {
+        return ['job', task.jobs[0].id, 'main'];
       }
     }
 
