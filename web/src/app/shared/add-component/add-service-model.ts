@@ -1,7 +1,7 @@
 import { EventEmitter, InjectionToken, Type } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { Observable, Subscription } from 'rxjs';
-import { Host, Service, TypeName } from '@app/core/types';
+import { Host, Service, StackBase, TypeName } from '@app/core/types';
 import { Params } from '@angular/router';
 import { BaseFormDirective } from '@app/shared/add-component/base-form.directive';
 import { ICluster } from '@app/models/cluster';
@@ -24,7 +24,7 @@ export interface IAddService {
 
   Current: any;
 
-  add?<T>(data: any, name?: TypeName): Observable<T>;
+  add?<T>(data: any, name?: TypeName, prototype?: StackBase): Observable<T>;
 
   getList?<T>(type: TypeName, param: Params): Observable<T[]>;
 
