@@ -13,10 +13,12 @@
 from cm.logger import log
 from cm.errors import AdcmEx
 from cm.errors import raise_AdcmEx as err
-from cm.models import Prototype, ClusterObject, ServiceComponent, HostComponent, Host
+from cm.models import Prototype, ClusterObject, ServiceComponent, HostComponent, Host, GroupConfig
 
 
 def get_cluster(obj):
+    if isinstance(obj, GroupConfig):
+        obj = obj.object
     if obj.prototype.type == 'service':
         cluster = obj.cluster
     elif obj.prototype.type == 'host':

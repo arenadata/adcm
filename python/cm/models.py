@@ -16,6 +16,7 @@
 
 from __future__ import unicode_literals
 
+import os.path
 from collections.abc import Mapping
 from copy import deepcopy
 from enum import Enum
@@ -32,6 +33,7 @@ from django.dispatch import receiver
 
 from cm.errors import AdcmEx
 from cm.logger import log
+from cm.config import FILE_DIR
 
 
 class PrototypeEnum(Enum):
@@ -767,6 +769,41 @@ class GroupConfig(ADCMModel):
         if host not in self.host_candidate():
             raise AdcmEx('GROUP_CONFIG_HOST_ERROR')
 
+    def preparing_file_type_field(self):
+        """Creating file for file type field"""
+
+        if self.config is None:
+            return
+        config = ConfigLog.objects.get(id=self.config.current).config
+        fields = PrototypeConfig.objects.filter(
+            prototype=self.object.prototype, action__isnull=True, type='file'
+        ).order_by('id')
+        for field in fields:
+            if field.subname:
+                value = config[field.name][field.subname]
+            else:
+                value = config[field.name]
+            if value is not None:
+                # See cm.adcm_config.py:313
+                if field.name == 'ansible_ssh_private_key_file':
+                    if value != '':
+                        if value[-1] == '-':
+                            value += '\n'
+                filename = '.'.join(
+                    [
+                        self.object.prototype.type,
+                        str(self.object.id),
+                        'group',
+                        str(self.id),
+                        field.name,
+                        field.subname,
+                    ]
+                )
+                filepath = os.path.join(FILE_DIR, filename)
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(value)
+                os.chmod(filepath, 0o0600)
+
     @transaction.atomic()
     def save(self, *args, **kwargs):
         obj = self.object_type.model_class().obj.get(id=self.object_id)
@@ -786,6 +823,7 @@ class GroupConfig(ADCMModel):
                 self.config.current = config_log.pk
                 self.config.save()
         super().save(*args, **kwargs)
+        self.preparing_file_type_field()
 
 
 @receiver(m2m_changed, sender=GroupConfig.hosts.through)

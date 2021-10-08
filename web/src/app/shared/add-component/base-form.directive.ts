@@ -12,8 +12,8 @@
 import { Directive, Inject } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
+import { BaseDirective } from '@adwp-ui/widgets';
 
-import { BaseDirective } from '@app/shared/directives';
 import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add-service-model';
 
 @Directive({
@@ -22,7 +22,10 @@ import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add
 export class BaseFormDirective extends BaseDirective {
   form = new FormGroup({});
 
-  constructor(@Inject(ADD_SERVICE_PROVIDER) public service: IAddService, public dialog: MatDialog) {
+  constructor(
+    @Inject(ADD_SERVICE_PROVIDER) public service: IAddService,
+    public dialog: MatDialog,
+  ) {
     super();
   }
 
