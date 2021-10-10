@@ -793,4 +793,6 @@ class TestChangeGroupsConfig:
                 values_before=config_before,
             )
             config = {"map": {test_host_1.fqdn: config_before, test_host_2.fqdn: config_before}}
-            run_provider_action_and_assert_result(provider, action="test_action", config=config)
+            for hosts in [FIRST_HOST, SECOND_HOST]:
+                config["hosts"] = hosts
+                run_provider_action_and_assert_result(provider, action="test_action", config=config)
