@@ -394,9 +394,6 @@ class TestChangeGroupsConfig:
         "map": True,
     }
 
-    def _add_values_to_group_config_template(
-        self, custom_group_keys: dict = {}, group_keys: dict = {}, config_attr: dict = PARAMS_TO_CHANGE
-    ) -> dict:
     CLUSTER_HOSTS_VARIANTS = [
         "all",
         "CLUSTER",
@@ -419,14 +416,14 @@ class TestChangeGroupsConfig:
                     "port": group_value,
                     "transport_port": group_value,
                 }
-            for key, value in custom_group_keys:
+            for key, value in custom_group_keys.items():
                 group_config_template["attr"]["custom_group_keys"][key] = value
         if group_keys:
             group_config_template["attr"]["group_keys"] = {}
-            for key, value in group_keys:
+            for key, value in group_keys.items():
                 group_config_template["attr"]["group_keys"][key] = value
         if config_attr:
-            for key, value in config_attr:
+            for key, value in config_attr.items():
                 group_config_template["config"][key] = value
         return group_config_template
 
@@ -510,7 +507,10 @@ class TestChangeGroupsConfig:
                 values_before=config_before,
             )
             config_previous = {"map": {test_host_1.fqdn: dict(config_before), test_host_2.fqdn: dict(config_before)}}
-            run_cluster_action_and_assert_result(cluster, action="test_action", config=config_previous)
+            for hosts in self.CLUSTER_HOSTS_VARIANTS:
+                config_previous["hosts"] = hosts
+                with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
+                    run_cluster_action_and_assert_result(cluster, action="test_action", config=config_previous)
         with allure.step("Check that with cluster group keys values are saved in cluster group"):
             config_expected_with_groups = self._add_values_to_group_config_template(
                 group_keys=self.GROUP_KEYS_TO_CHANGE
@@ -524,26 +524,15 @@ class TestChangeGroupsConfig:
             config_updated = {
                 "map": {test_host_1.fqdn: config_expected_with_groups['config'], test_host_2.fqdn: dict(config_before)}
             }
-            run_cluster_action_and_assert_result(cluster, action="test_action", config=config_updated)
+            for hosts in self.CLUSTER_HOSTS_VARIANTS:
+                config_updated["hosts"] = hosts
+                with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
+                    run_cluster_action_and_assert_result(cluster, action="test_action", config=config_updated)
 
     def test_change_group_in_service(self, cluster_bundle, cluster_with_components):
         """Test that groups in service are allowed change"""
 
         service, test_host_1, test_host_2 = cluster_with_components
-        service_group = _create_group_and_add_host(service, test_host_1)
-
-        config_before = self._get_config_from_group(service_group)
-        config_expected = self._add_values_to_group_config_template()
-        config_after = service_group.config_set_diff(config_expected)
-        self._check_values_in_group(
-            values_after=config_after['config'], expected_values=config_expected['config'], values_before=config_before
-        )
-
-        config = {"map": {test_host_1.fqdn: config_expected['config'], test_host_2.fqdn: dict(config_before)}}
-        for hosts in self.CLUSTER_HOSTS_VARIANTS:
-            config["hosts"] = hosts
-            with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
-                run_service_action_and_assert_result(service, action="test_action", config=config)
         with allure.step("Create config group for service and add first host"):
             service_group = _create_group_and_add_host(service, test_host_1)
             config_before = self._get_config_from_group(service_group)
@@ -556,7 +545,10 @@ class TestChangeGroupsConfig:
                 values_before=config_before,
             )
             config_previous = {"map": {test_host_1.fqdn: dict(config_before), test_host_2.fqdn: dict(config_before)}}
-            run_service_action_and_assert_result(service, action="test_action", config=config_previous)
+            for hosts in self.CLUSTER_HOSTS_VARIANTS:
+                config_previous["hosts"] = hosts
+                with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
+                    run_service_action_and_assert_result(service, action="test_action", config=config_previous)
         with allure.step("Check that with group keys values are saved in service group"):
             config_expected_with_groups = self._add_values_to_group_config_template(
                 group_keys=self.GROUP_KEYS_TO_CHANGE
@@ -570,7 +562,10 @@ class TestChangeGroupsConfig:
             config_updated = {
                 "map": {test_host_1.fqdn: config_expected_with_groups['config'], test_host_2.fqdn: dict(config_before)}
             }
-            run_service_action_and_assert_result(service, action="test_action", config=config_updated)
+            for hosts in self.CLUSTER_HOSTS_VARIANTS:
+                config_updated["hosts"] = hosts
+                with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
+                    run_service_action_and_assert_result(service, action="test_action", config=config_updated)
 
     def test_change_group_in_component(self, cluster_bundle, cluster_with_components):
         """Test that groups in component are allowed change"""
@@ -589,7 +584,10 @@ class TestChangeGroupsConfig:
                 values_before=config_before,
             )
             config_previous = {"map": {test_host_1.fqdn: dict(config_before), test_host_2.fqdn: dict(config_before)}}
-            run_component_action_and_assert_result(component, action="test_action", config=config_previous)
+            for hosts in self.CLUSTER_HOSTS_VARIANTS:
+                config_previous["hosts"] = hosts
+                with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
+                    run_component_action_and_assert_result(component, action="test_action", config=config_previous)
         with allure.step("Check that with group keys values are saved in component group"):
             config_expected_with_groups = self._add_values_to_group_config_template(
                 group_keys=self.GROUP_KEYS_TO_CHANGE
@@ -603,7 +601,10 @@ class TestChangeGroupsConfig:
             config_updated = {
                 "map": {test_host_1.fqdn: config_expected_with_groups['config'], test_host_2.fqdn: dict(config_before)}
             }
-            run_component_action_and_assert_result(component, action="test_action", config=config_updated)
+            for hosts in self.CLUSTER_HOSTS_VARIANTS:
+                config_updated["hosts"] = hosts
+                with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
+                    run_component_action_and_assert_result(component, action="test_action", config=config_updated)
 
     def test_change_group_in_provider(self, provider_bundle, provider, create_two_hosts):
         """Test that groups in provider are allowed change"""
@@ -621,7 +622,10 @@ class TestChangeGroupsConfig:
                 values_before=config_before,
             )
             config_previous = {"map": {test_host_1.fqdn: dict(config_before), test_host_2.fqdn: dict(config_before)}}
-            run_provider_action_and_assert_result(provider, action="test_action", config=config_previous)
+            for hosts in self.CLUSTER_HOSTS_VARIANTS:
+                config_previous["hosts"] = hosts
+                with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
+                    run_provider_action_and_assert_result(provider, action="test_action", config=config_previous)
         with allure.step("Check that with group keys values are saved in provider group"):
             config_expected_with_groups = self._add_values_to_group_config_template(
                 group_keys=self.GROUP_KEYS_TO_CHANGE
@@ -635,19 +639,32 @@ class TestChangeGroupsConfig:
             config_updated = {
                 "map": {test_host_1.fqdn: config_expected_with_groups['config'], test_host_2.fqdn: dict(config_before)}
             }
-            run_provider_action_and_assert_result(provider, action="test_action", config=config_updated)
+            for hosts in self.CLUSTER_HOSTS_VARIANTS:
+                config_updated["hosts"] = hosts
+                with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
+                    run_provider_action_and_assert_result(provider, action="test_action", config=config_updated)
 
-
-    def test_error_with_changing_params_in_cluster_group_without_group_customization(self, cluster_bundle, cluster):
-        """Test error with changing params in group without group_customization"""
+    def test_error_with_changing_custom_group_keys_in_cluster_group(self, cluster_bundle, cluster):
+        """Test error with changing group_customization in cluster group"""
 
         with allure.step("Create config group for cluster"):
             cluster_group = cluster.group_config_create(name=FIRST_GROUP)
             config_before = self._get_config_from_group(cluster_group)
         self._check_error_in_all_params_in_group(cluster_group, config_before)
 
-    def test_error_with_changing_params_in_service_group_without_group_customization(self, cluster_bundle, cluster):
-        """Test changing params in group without group_customization"""
+    @pytest.mark.parametrize(
+        "cluster_bundle",
+        [
+            pytest.param(
+                get_data_dir(__file__, "cluster_with_all_group_keys_false"), id="cluster_with_all_group_keys_false"
+            )
+        ],
+        indirect=True,
+    )
+    def test_changing_params_in_cluster_group_without_group_customization(
+        self, cluster_bundle, cluster_with_two_hosts_on_it
+    ):
+        """Test changing params in cluster group without group_customization"""
 
         test_host_1, test_host_2, cluster = cluster_with_two_hosts_on_it
         with allure.step("Create config group for cluster"):
@@ -664,17 +681,6 @@ class TestChangeGroupsConfig:
             config = {"map": {test_host_1.fqdn: dict(config_before), test_host_2.fqdn: dict(config_before)}}
             run_cluster_action_and_assert_result(cluster, action="test_action", config=config)
 
-    @pytest.mark.parametrize(
-        "cluster_bundle",
-        [
-            pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group_customization"),
-            pytest.param(
-                get_data_dir(__file__, CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
-                id="cluster_with_config_group_customization",
-            ),
-        ],
-        indirect=True,
-    )
     def test_error_with_changing_custom_group_keys_in_service_group(self, cluster_bundle, cluster):
         """Test error with changing group_customization"""
 
@@ -684,10 +690,6 @@ class TestChangeGroupsConfig:
             config_before = self._get_config_from_group(service_group)
         self._check_error_in_all_params_in_group(service_group, config_before)
 
-    def test_error_with_changing_params_in_component_group_without_group_customization(
-        self, cluster_bundle, cluster_with_components
-    ):
-        """Test error with changing params in group without group_customization"""
     @pytest.mark.parametrize(
         "cluster_bundle",
         [
@@ -715,17 +717,6 @@ class TestChangeGroupsConfig:
             config = {"map": {test_host_1.fqdn: dict(config_before), test_host_2.fqdn: dict(config_before)}}
             run_service_action_and_assert_result(service, action="test_action", config=config)
 
-    @pytest.mark.parametrize(
-        "cluster_bundle",
-        [
-            pytest.param(get_data_dir(__file__, CLUSTER_BUNDLE_WITH_GROUP_PATH), id="cluster_with_group_customization"),
-            pytest.param(
-                get_data_dir(__file__, CLUSTER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
-                id="cluster_with_config_group_customization",
-            ),
-        ],
-        indirect=True,
-    )
     def test_error_with_changing_custom_group_keys_in_component_group(self, cluster_bundle, cluster_with_components):
         """Test changing params in component group without group_customization"""
 
@@ -754,7 +745,6 @@ class TestChangeGroupsConfig:
         component = service.component(name=FIRST_COMPONENT_NAME)
         with allure.step("Create config group for components and add first host"):
             component_group = _create_group_and_add_host(component, test_host_1)
-            component_group.host_add(test_host_2)
             config_before = self._get_config_from_group(component_group)
         with allure.step("Check that without group keys values are not saved in component group"):
             config_expected = self._add_values_to_group_config_template(group_keys=self.GROUP_KEYS_TO_CHANGE)
@@ -767,25 +757,40 @@ class TestChangeGroupsConfig:
             config = {"map": {test_host_1.fqdn: config_before, test_host_2.fqdn: config_before}}
             run_component_action_and_assert_result(component, action="test_action", config=config)
 
-    @pytest.mark.parametrize(
-        "provider_bundle",
-        [
-            pytest.param(
-                get_data_dir(__file__, PROVIDER_BUNDLE_WITH_GROUP_PATH), id="provider_with_group_customization"
-            ),
-            pytest.param(
-                get_data_dir(__file__, PROVIDER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH),
-                id="provider_with_config_group_customization",
-            ),
-        ],
-        indirect=True,
-    )
     def test_error_with_changing_custom_group_keys_in_provider_group(self, provider_bundle, provider):
         """Test changing params in provider group without group_customization"""
-    def test_error_with_changing_params_in_provider_group_without_group_customization(self, provider_bundle, provider):
-        """Test error with changing params in group without group_customization"""
 
         with allure.step("Create config group for provider and add first host"):
             provider_group = provider.group_config_create(name=FIRST_GROUP)
             config_before = self._get_config_from_group(provider_group)
         self._check_error_in_all_params_in_group(provider_group, config_before)
+
+    @pytest.mark.parametrize(
+        "provider_bundle",
+        [
+            pytest.param(
+                get_data_dir(__file__, "provider_group_with_all_group_keys_false"),
+                id="provider_with_all_group_keys_false",
+            )
+        ],
+        indirect=True,
+    )
+    def test_change_params_in_provider_group_without_group_customization(
+        self, provider_bundle, provider, create_two_hosts
+    ):
+        """Test changing params in provider group without group_customization"""
+
+        test_host_1, test_host_2 = create_two_hosts
+        with allure.step("Create config group for provider and add first host"):
+            provider_group = _create_group_and_add_host(provider, test_host_1)
+            config_before = self._get_config_from_group(provider_group)
+        with allure.step("Check that without group keys values are not saved in provider group"):
+            config_expected = self._add_values_to_group_config_template(group_keys=self.GROUP_KEYS_TO_CHANGE)
+            config_after = provider_group.config_set_diff(config_expected)
+            self._check_values_in_group(
+                values_after=config_after['config'],
+                expected_values=config_expected['config'],
+                values_before=config_before,
+            )
+            config = {"map": {test_host_1.fqdn: config_before, test_host_2.fqdn: config_before}}
+            run_provider_action_and_assert_result(provider, action="test_action", config=config)
