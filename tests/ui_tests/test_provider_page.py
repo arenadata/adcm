@@ -10,24 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""UI tests for /provider page"""
+
 import os
 
 import allure
 import pytest
+
 from _pytest.fixtures import SubRequest
-from adcm_client.objects import (
-    ADCMClient,
-    Bundle,
-    Provider,
-)
+from adcm_client.objects import ADCMClient, Bundle, Provider
 from adcm_pytest_plugin import utils
 
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
-from tests.ui_tests.app.page.provider.page import (
-    ProviderMainPage,
-    ProviderConfigPage,
-    ProviderActionsPage,
-)
+from tests.ui_tests.app.page.provider.page import ProviderMainPage, ProviderConfigPage
 from tests.ui_tests.app.page.provider_list.page import ProviderListPage
 
 # pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-few-public-methods
@@ -40,21 +35,26 @@ PROVIDER_NAME = 'test_provider'
 @pytest.fixture(params=["provider"])
 @allure.title("Upload provider bundle")
 def bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
+    """Upload provider bundle"""
     return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
 
 
 @pytest.fixture()
 @allure.title("Create provider from uploaded bundle")
 def upload_and_create_test_provider(bundle) -> Provider:
+    """Create provider from uploaded bundle"""
     return bundle.provider_create(PROVIDER_NAME)
 
 
 class TestProviderListPage:
+    """Tests for provider list page"""
+
     @pytest.mark.smoke()
     @pytest.mark.parametrize(
         "bundle_archive", [pytest.param(utils.get_data_dir(__file__, "provider"), id="provider")], indirect=True
     )
     def test_create_provider_on_provider_list_page(self, app_fs, bundle_archive):
+        """Tests create provider from provider list page"""
         provider_params = {
             "bundle": "test_provider 2.15 community",
             "state": "created",
@@ -79,6 +79,7 @@ class TestProviderListPage:
         "bundle_archive", [pytest.param(utils.get_data_dir(__file__, "provider"), id="provider")], indirect=True
     )
     def test_create_custom_provider_on_provider_list_page(self, app_fs, bundle_archive):
+        """Tests create provider from provider list page with custom params"""
         provider_params = {
             "name": "Test Provider",
             "description": "Test",
@@ -101,6 +102,7 @@ class TestProviderListPage:
             ), f"Provider name should be {provider_params['name']} and not {uploaded_provider.name}"
 
     def test_check_provider_list_page_pagination(self, bundle, app_fs):
+        """Tests provider list pagination"""
         with allure.step("Create 11 providers"):
             for i in range(11):
                 bundle.provider_create(name=f"Test provider {i}")
@@ -111,6 +113,7 @@ class TestProviderListPage:
     @pytest.mark.smoke()
     @pytest.mark.usefixtures("upload_and_create_test_provider")
     def test_run_action_on_provider_list_page(self, app_fs):
+        """Tests run action from provider list page"""
         params = {"action_name": "test_action", "expected_state": "installed"}
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         row = provider_page.table.get_all_rows()[0]
@@ -127,6 +130,7 @@ class TestProviderListPage:
 
     @pytest.mark.smoke()
     def test_open_config_from_provider_list_page(self, app_fs, upload_and_create_test_provider):
+        """Tests open provider config from provider list page"""
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         row = provider_page.table.get_all_rows()[0]
         provider_page.click_config_btn_in_row(row)
@@ -134,6 +138,7 @@ class TestProviderListPage:
 
     @pytest.mark.smoke()
     def test_open_main_from_provider_list_page(self, app_fs, upload_and_create_test_provider):
+        """Tests open provider main page from provider list page"""
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         row = provider_page.table.get_all_rows()[0]
         provider_page.click_name_in_row(row)
@@ -142,6 +147,7 @@ class TestProviderListPage:
     @pytest.mark.smoke()
     @pytest.mark.usefixtures("upload_and_create_test_provider")
     def test_delete_provider_from_provider_list_page(self, app_fs):
+        """Tests delete provider from provider list page"""
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         row = provider_page.table.get_all_rows()[0]
         with provider_page.table.wait_rows_change():
@@ -151,6 +157,7 @@ class TestProviderListPage:
 
     @pytest.mark.smoke()
     def test_get_error_from_delete_provider_from_provider_list_page(self, app_fs, upload_and_create_test_provider):
+        """Tests delete provider error from provider list page"""
         params = {
             "message": '[ CONFLICT ] PROVIDER_CONFLICT -- '
             'There is host #1 "test_host" of host provider #1 "test_provider"'
@@ -164,14 +171,18 @@ class TestProviderListPage:
 
     @pytest.mark.usefixtures("upload_and_create_test_provider")
     def test_open_admin_page_by_toolbar_from_provider_list_page(self, app_fs):
+        """Tests open admin page from provider list page"""
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
         provider_page.toolbar.click_admin_link()
         AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
 
 
 class TestProviderMainPage:
+    """Tests for provider main page"""
+
     @pytest.mark.smoke()
     def test_open_by_tab_provider_main_page(self, app_fs, upload_and_create_test_provider):
+        """Test provider main page from left menu"""
         provider_config_page = ProviderConfigPage(
             app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
         ).open()
@@ -181,6 +192,7 @@ class TestProviderMainPage:
 
     @pytest.mark.smoke()
     def test_run_upgrade_on_provider_page_by_toolbar(self, app_fs, sdk_client_fs, upload_and_create_test_provider):
+        """Test provider upgrade from toolbar"""
         params = {"state": "upgradated"}
         with allure.step("Create provider to export"):
             provider_export = sdk_client_fs.upload_from_fs(
@@ -198,8 +210,11 @@ class TestProviderMainPage:
 
 
 class TestProviderConfigPage:
+    """Tests for provider config page"""
+
     @pytest.mark.smoke()
     def test_open_by_tab_provider_config_page(self, app_fs, upload_and_create_test_provider):
+        """Test provider config page from left menu"""
         provider_main_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).open()
         provider_config_page = provider_main_page.open_config_tab()
         provider_config_page.wait_page_is_opened()
@@ -207,6 +222,7 @@ class TestProviderConfigPage:
 
     @pytest.mark.smoke()
     def test_filter_config_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
+        """Test config filter on provider config page"""
         params = {"search_param": "str_param", "group_name": "core-site"}
         provider_config_page = ProviderConfigPage(
             app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
@@ -228,6 +244,7 @@ class TestProviderConfigPage:
 
     @pytest.mark.smoke()
     def test_save_custom_config_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
+        """Test save config on provider config page"""
         params = {
             "row_value_new": "test",
             "row_value_old": "0000",
@@ -248,6 +265,7 @@ class TestProviderConfigPage:
             provider_config_page.config.wait_history_row_with_value(row_with_history, params["row_value_old"])
 
     def test_reset_config_in_row_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
+        """Test config reset on provider config page"""
         params = {
             "row_name": "str_param",
             "row_value_new": "test",
@@ -268,9 +286,8 @@ class TestProviderConfigPage:
         )
 
     @pytest.mark.parametrize("bundle", ["provider_required_fields"], indirect=True)
-    def test_field_validation_on_provider_config_page(
-        self, app_fs, sdk_client_fs, bundle, upload_and_create_test_provider
-    ):
+    def test_field_validation_on_provider_config_page(self, app_fs, bundle, upload_and_create_test_provider):
+        """Test config field validation on provider config page"""
         params = {
             'pass_name': 'Test password',
             'req_name': 'Test Required item',
@@ -285,25 +302,3 @@ class TestProviderConfigPage:
         config_row = provider_config_page.config.get_all_config_rows()[0]
         provider_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
         provider_config_page.config.check_field_is_invalid(params['not_req_name'])
-
-
-class TestProviderActionPage:
-    @pytest.mark.smoke()
-    def test_open_by_tab_provider_action_page(self, app_fs, upload_and_create_test_provider):
-        provider_main_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).open()
-        provider_action_page = provider_main_page.open_actions_tab()
-        provider_action_page.wait_page_is_opened()
-        provider_action_page.check_all_elements()
-
-    @pytest.mark.smoke()
-    def test_run_action_on_provider_action_page(self, app_fs, upload_and_create_test_provider):
-        provider_action_page = ProviderActionsPage(
-            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
-        ).open()
-        provider_action = provider_action_page.get_all_actions()[0]
-        provider_action_page.click_run_btn_in_action(provider_action)
-        provider_action_page.check_no_actions_presented()
-        with allure.step("Check success provider job"):
-            assert (
-                provider_action_page.header.get_in_progress_job_amount_from_header() == "1"
-            ), "There should be 1 in progress provider job in header"

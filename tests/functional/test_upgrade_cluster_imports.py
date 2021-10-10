@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Tests for upgrade cluster with imports"""
+
 import allure
 import coreapi
 import pytest
@@ -20,6 +23,7 @@ from tests.library import errorcodes as err
 
 @allure.step('Bind service and cluster')
 def bind_service_and_cluster(cluster_import, service, cluster):
+    """Bind service and cluster"""
     cluster_import.bind(service)
     cluster_import.bind(cluster)
 

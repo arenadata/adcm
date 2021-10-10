@@ -86,7 +86,6 @@ export class NavigationEffects {
       } as AdcmTypedEntity))
     );
 
-
     if (EntityNames.includes(type)) {
       if (type === 'bundle') {
         return entityToTypedEntity(

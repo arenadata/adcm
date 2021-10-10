@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Popup page locators"""
+
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import (
@@ -66,15 +68,15 @@ class HostAddPopupLocators:
     )
 
 
-class ListIssuePopupLocators:
-    """ADCM popup locators for issues in list pages"""
+class ListConcernPopupLocators:
+    """ADCM popup locators for concerns in list pages"""
 
     block = Locator(By.CSS_SELECTOR, "app-popover", "list pages popup block")
-    link_to_issue = Locator(By.CSS_SELECTOR, "app-popover a", "Link to issue")
+    link_to_concern_object = Locator(By.CSS_SELECTOR, "app-popover a", "Link to concern")
 
 
-class PageIssuePopupLocators:
-    """ADCM popup locators for issues in common pages"""
+class PageConcernPopupLocators:
+    """ADCM popup locators for concerns in common pages"""
 
-    block = Locator(By.CSS_SELECTOR, "app-issue-info", "common pages popup block")
-    link_to_issue = Locator(By.CSS_SELECTOR, "app-issue-info a", "Link to issue")
+    block = Locator(By.CSS_SELECTOR, "app-popover", "common pages popup block")
+    link_to_concern_object = Locator(By.CSS_SELECTOR, "app-concern-item a", "Link to concern")

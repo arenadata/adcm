@@ -11,6 +11,9 @@
 # limitations under the License.
 
 # pylint:disable=redefined-outer-name
+
+"""Tests for config"""
+
 import os
 import allure
 import yaml
@@ -28,6 +31,7 @@ from tests.library.errorcodes import CONFIG_KEY_ERROR, ADCMError, CONFIG_NOT_FOU
 
 
 def get_value(path, entity, value_type):
+    """Get bundle path"""
     if isinstance(entity, Cluster):
         file_name = os.path.join(path, 'cluster', 'cluster_action.yaml')
     elif isinstance(entity, Service):
@@ -46,6 +50,7 @@ def get_value(path, entity, value_type):
 
 
 def processing_data(sdk_client_fs, request, variant):
+    """Process data for test"""
     path = request.param
     config_type = os.path.split(path)[1]
     cluster_bundle = sdk_client_fs.upload_from_fs(os.path.join(path, 'cluster'))
@@ -61,12 +66,14 @@ def processing_data(sdk_client_fs, request, variant):
 
 
 def assert_config_value_error(entity, sent_data):
+    """Assert error is CONFIG_VALUE_ERROR"""
     with pytest.raises(coreapi.exceptions.ErrorMessage) as error:
         entity.config_set(sent_data)
     assert error.value.error['code'] == 'CONFIG_VALUE_ERROR'
 
 
 def assert_action_has_issues(entity):
+    """Assert action has issues"""
     with pytest.raises(ActionHasIssues):
         entity.action(name='job').run().wait()
 
@@ -401,16 +408,19 @@ def assert_config_type(path, config_type, entities, is_required, is_default, sen
 
 @fixture_parametrized_by_data_subdirs(__file__, 'not_required', 'with_default', 'sent_correct_value')
 def nr_wd_cv(sdk_client_fs: ADCMClient, request):
+    """Process data for not_required_with_default_sent_correct_value"""
     return processing_data(sdk_client_fs, request, 'not_required_with_default_sent_correct_value')
 
 
 @fixture_parametrized_by_data_subdirs(__file__, 'not_required', 'with_default', 'sent_empty_value')
 def nr_wd_ev(sdk_client_fs: ADCMClient, request):
+    """Process data for not_required_with_default_sent_empty_value"""
     return processing_data(sdk_client_fs, request, 'not_required_with_default_sent_empty_value')
 
 
 @fixture_parametrized_by_data_subdirs(__file__, 'not_required', 'with_default', 'sent_null_value')
 def nr_wd_nv(sdk_client_fs: ADCMClient, request):
+    """Process data for not_required_with_default_sent_null_value"""
     return processing_data(sdk_client_fs, request, 'not_required_with_default_sent_null_value')
 
 
@@ -467,16 +477,19 @@ def test_not_required_with_default_sent_null_value(nr_wd_nv):
 
 @fixture_parametrized_by_data_subdirs(__file__, 'not_required', 'without_default', 'sent_correct_value')
 def nr_wod_cv(sdk_client_fs: ADCMClient, request):
+    """Process data for not_required_without_default_sent_correct_value"""
     return processing_data(sdk_client_fs, request, 'not_required_without_default_sent_correct_value')
 
 
 @fixture_parametrized_by_data_subdirs(__file__, 'not_required', 'without_default', 'sent_empty_value')
 def nr_wod_ev(sdk_client_fs: ADCMClient, request):
+    """Process data for not_required_without_default_sent_empty_value"""
     return processing_data(sdk_client_fs, request, 'not_required_without_default_sent_empty_value')
 
 
 @fixture_parametrized_by_data_subdirs(__file__, 'not_required', 'without_default', 'sent_null_value')
 def nr_wod_nv(sdk_client_fs: ADCMClient, request):
+    """Process data for not_required_without_default_sent_null_value"""
     return processing_data(sdk_client_fs, request, 'not_required_without_default_sent_null_value')
 
 
@@ -533,16 +546,19 @@ def test_not_required_without_default_sent_null_value(nr_wod_nv):
 
 @fixture_parametrized_by_data_subdirs(__file__, 'required', 'with_default', 'sent_correct_value')
 def r_wd_cv(sdk_client_fs: ADCMClient, request):
+    """Process data for required_with_default_sent_correct_value"""
     return processing_data(sdk_client_fs, request, 'required_with_default_sent_correct_value')
 
 
 @fixture_parametrized_by_data_subdirs(__file__, 'required', 'with_default', 'sent_empty_value')
 def r_wd_ev(sdk_client_fs: ADCMClient, request):
+    """Process data for required_with_default_sent_empty_value"""
     return processing_data(sdk_client_fs, request, 'required_with_default_sent_empty_value')
 
 
 @fixture_parametrized_by_data_subdirs(__file__, 'required', 'with_default', 'sent_null_value')
 def r_wd_nv(sdk_client_fs: ADCMClient, request):
+    """Process data for required_with_default_sent_null_value"""
     return processing_data(sdk_client_fs, request, 'required_with_default_sent_null_value')
 
 
@@ -599,16 +615,19 @@ def test_required_with_default_sent_null_value(r_wd_nv):
 
 @fixture_parametrized_by_data_subdirs(__file__, 'required', 'without_default', 'sent_correct_value')
 def r_wod_cv(sdk_client_fs: ADCMClient, request):
+    """Process data for required_without_default_sent_correct_value"""
     return processing_data(sdk_client_fs, request, 'required_without_default_sent_correct_value')
 
 
 @fixture_parametrized_by_data_subdirs(__file__, 'required', 'without_default', 'sent_empty_value')
 def r_wod_ev(sdk_client_fs: ADCMClient, request):
+    """Process data for required_without_default_sent_empty_value"""
     return processing_data(sdk_client_fs, request, 'required_without_default_sent_empty_value')
 
 
 @fixture_parametrized_by_data_subdirs(__file__, 'required', 'without_default', 'sent_null_value')
 def r_wod_nv(sdk_client_fs: ADCMClient, request):
+    """Process data for required_without_default_sent_null_value"""
     return processing_data(sdk_client_fs, request, 'required_without_default_sent_null_value')
 
 

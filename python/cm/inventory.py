@@ -32,12 +32,17 @@ from cm.models import (
     Prototype,
     PrototypeImport,
     get_object_cluster,
+    GroupConfig,
 )
 
 
 def process_config_and_attr(obj, conf, attr=None, spec=None):
     if not spec:
-        spec, _, _, _ = get_prototype_config(obj.prototype)
+        if isinstance(obj, GroupConfig):
+            prototype = obj.object.prototype
+        else:
+            prototype = obj.prototype
+        spec, _, _, _ = get_prototype_config(prototype)
     new_conf = process_config(obj, spec, conf)
     if attr:
         for key, val in attr.items():
@@ -112,7 +117,7 @@ def get_host_vars(host: Host, obj):
     variables = {}
     for group in groups:
         # TODO: What to do with activatable group in attr ???
-        group_config = process_config_and_attr(group.object, group.get_group_config())
+        group_config = process_config_and_attr(group, group.get_group_config())
         if isinstance(group.object, Cluster):
             variables.update({'cluster': {'config': group_config}})
         elif isinstance(group.object, ClusterObject):
@@ -141,6 +146,7 @@ def get_cluster_config(cluster):
             'version': cluster.prototype.version,
             'edition': cluster.prototype.bundle.edition,
             'state': cluster.state,
+            'multi_state': cluster.multi_state,
         },
         'services': {},
     }
@@ -152,12 +158,15 @@ def get_cluster_config(cluster):
             'id': service.id,
             'version': service.prototype.version,
             'state': service.state,
+            'multi_state': service.multi_state,
             'config': get_obj_config(service),
         }
         for component in ServiceComponent.objects.filter(cluster=cluster, service=service):
             res['services'][service.prototype.name][component.prototype.name] = {
                 'component_id': component.id,
                 'config': get_obj_config(component),
+                'state': component.state,
+                'multi_state': component.multi_state,
             }
     return res
 
@@ -172,6 +181,7 @@ def get_provider_config(provider_id):
             'id': provider.id,
             'host_prototype_id': host_proto.id,
             'state': provider.state,
+            'multi_state': provider.multi_state,
         }
     }
 
@@ -216,6 +226,7 @@ def get_hosts(host_list, obj, action_host=None):
         group[host.fqdn] = get_obj_config(host)
         group[host.fqdn]['adcm_hostid'] = host.id
         group[host.fqdn]['state'] = host.state
+        group[host.fqdn]['multi_state'] = host.multi_state
         if not isinstance(obj, Host):
             group[host.fqdn].update(get_host_vars(host, obj))
     return group

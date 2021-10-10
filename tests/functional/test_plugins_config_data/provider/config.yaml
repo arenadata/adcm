@@ -35,7 +35,7 @@
 
     file:
       type: file
-      default: "file.txt"
+      default: "./file.txt"
       required: no
 
     string:
@@ -72,7 +72,7 @@
 
   actions: &actions
 
-    change_provider_multijob: &provider_multijob
+    change_provider_multijob:
       type: task
       states:
         available: any
@@ -80,7 +80,7 @@
         - &provider_multi_script
           name: pint
           script_type: ansible
-          script: provider.yaml
+          script: ./provider.yaml
           params:
             ansible_tags: int
         - <<: *provider_multi_script
@@ -118,17 +118,17 @@
           params:
             ansible_tags: map
 
-    change_provider: &provider_action
+    change_provider:
       type: job
       script_type: ansible
-      script: provider.yaml
+      script: ./provider.yaml
       states:
         available: any
 
-    change_host: &host
+    change_host:
       type: job
       script_type: ansible
-      script: host.yaml
+      script: ./host.yaml
       states:
         available: any
 
@@ -140,7 +140,7 @@
         - &host_m_action
           name: hint
           script_type: ansible
-          script: host.yaml
+          script: ./host.yaml
           params:
             ansible_tags: int
         - <<: *host_m_action
@@ -176,7 +176,7 @@
     change_host_from_provider:
       type: job
       script_type: ansible
-      script: host_from_provider.yaml
+      script: ./host_from_provider.yaml
       states:
         available: any
       config:

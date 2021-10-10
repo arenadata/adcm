@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""UI tests for /host page"""
+
 import os
 
 # pylint:disable=redefined-outer-name
-from typing import (
-    List,
-    Tuple,
-)
+from typing import Tuple
 
 import allure
 import pytest
@@ -30,19 +29,10 @@ from adcm_client.objects import (
 from adcm_pytest_plugin import utils
 
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
-from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
-from tests.ui_tests.app.page.host.locators import (
-    HostLocators,
-    HostActionsLocators,
-)
-from tests.ui_tests.app.page.host.page import (
-    HostMainPage,
-    HostActionsPage,
-    HostConfigPage,
-)
+from tests.ui_tests.app.page.host.locators import HostLocators
+from tests.ui_tests.app.page.host.page import HostMainPage, HostConfigPage
 from tests.ui_tests.app.page.host_list.locators import HostListLocators
 from tests.ui_tests.app.page.host_list.page import HostListPage
 from tests.ui_tests.utils import wait_and_assert_ui_info, expect_rows_amount_change
@@ -64,12 +54,14 @@ ADVANCED_FIELD_NAME = 'Advanced option'
 @pytest.fixture(params=["provider"])
 @allure.title("Upload provider bundle")
 def provider_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
+    """Upload provider bundle"""
     return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
 
 
-@pytest.fixture()
 @allure.title("Create provider")
+@pytest.fixture()
 def upload_and_create_provider(provider_bundle) -> Tuple[Bundle, Provider]:
+    """Create provider"""
     provider = provider_bundle.provider_create(PROVIDER_NAME)
     return provider_bundle, provider
 
@@ -106,36 +98,34 @@ def _create_bonded_host(
 @pytest.fixture()
 @allure.title("Upload cluster bundle")
 def cluster_bundle(sdk_client_fs: ADCMClient) -> Bundle:
+    """Upload cluster bundle"""
     return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "cluster"))
 
 
 @pytest.fixture()
 @allure.title("Create cluster")
 def upload_and_create_cluster(cluster_bundle: Bundle) -> Tuple[Bundle, Cluster]:
+    """Create cluster"""
     cluster = cluster_bundle.cluster_prototype().cluster_create(CLUSTER_NAME)
     return cluster_bundle, cluster
 
 
 @pytest.fixture()
+@allure.title("Open /host page")
 # pylint: disable-next=unused-argument
 def page(app_fs: ADCMTest, login_to_adcm_over_api) -> HostListPage:
+    """Open host page"""
     return HostListPage(app_fs.driver, app_fs.adcm.url).open()
-
-
-@allure.step("Check elements aren't visible")
-def elements_should_be_hidden(page: BasePageObject, locators: List[Locator]):
-    # should be faster than alternatives to not is_visible and stuff
-    for loc in locators:
-        page.check_element_should_be_hidden(loc)
 
 
 @allure.step('Open host config menu from host list')
 def open_config(page) -> HostConfigPage:
+    """'Open host config menu from host list'"""
     page.click_on_row_child(0, HostListLocators.HostTable.HostRow.config)
     return HostConfigPage(page.driver, page.base_url, 1, None)
 
 
-def check_job_name(sdk: ADCMClient, action_display_name: str):
+def _check_job_name(sdk: ADCMClient, action_display_name: str):
     """Check job with correct name is launched"""
     jobs_display_names = {job.display_name for job in sdk.job_list()}
     assert action_display_name in jobs_display_names, (
@@ -285,7 +275,7 @@ def test_delete_bonded_host(page: HostListPage):
 
 
 @pytest.mark.smoke()
-@pytest.mark.parametrize('menu', ['main', 'config', 'status', 'action'])
+@pytest.mark.parametrize('menu', ['main', 'config', 'status'])
 @pytest.mark.usefixtures('_create_host')
 def test_open_menu(
     upload_and_create_provider: Tuple[Bundle, Provider],
@@ -305,30 +295,6 @@ def test_run_action_on_new_host(
     page.assert_host_state(0, 'created')
     page.run_action(0, INIT_ACTION)
     page.assert_host_state(0, 'running')
-
-
-@pytest.mark.smoke()
-@pytest.mark.usefixtures('_create_host')
-def test_run_action_from_menu(
-    sdk_client_fs: ADCMClient,
-    page: HostListPage,
-):
-    """Run action from host actions menu"""
-    page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
-    host_main_page = HostMainPage(page.driver, page.base_url, 1, None)
-    actions_page: HostActionsPage = host_main_page.open_action_menu()
-    actions_before = actions_page.get_action_names()
-    assert INIT_ACTION in actions_before, f'Action {INIT_ACTION} should be listed in Actions menu'
-    with allure.step('Run action "Init" from host Actions menu'):
-        actions_page.open_action_menu()
-        actions_page.run_action_from_menu(INIT_ACTION)
-        actions_page.wait_element_hide(HostActionsLocators.action_btn(INIT_ACTION))
-        check_job_name(sdk_client_fs, INIT_ACTION)
-        actions_page.wait_element_clickable(HostActionsLocators.action_run_btn, timeout=10)
-    actions_page.open_action_menu()
-    actions_after = actions_page.get_action_names()
-    with allure.step('Assert available actions set changed'):
-        assert actions_before != actions_after, 'Action set did not change after "Init" action'
 
 
 @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)

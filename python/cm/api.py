@@ -479,20 +479,27 @@ def update_obj_config(obj_conf, conf, attr, desc=''):
     obj = obj_conf.object
     if obj is None:
         err('INVALID_CONFIG_UPDATE', f'unknown object type "{obj_conf}"')
+    group = None
     if isinstance(obj, GroupConfig):
-        obj = obj.object
-    proto = obj.prototype
+        group = obj
+        obj = group.object
+        proto = obj.prototype
+    else:
+        proto = obj.prototype
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
     if not attr:
         if old_conf.attr:
             attr = old_conf.attr
-    new_conf = check_json_config(proto, obj, conf, old_conf.config, attr)
+    new_conf = check_json_config(proto, group or obj, conf, old_conf.config, attr)
     with transaction.atomic():
         cl = save_obj_config(obj_conf, new_conf, attr, desc)
         cm.issue.update_hierarchy_issues(obj)
     if hasattr(obj_conf, 'adcm'):
         prepare_social_auth(new_conf)
-    cm.status_api.post_event('change_config', proto.type, obj.id, 'version', str(cl.id))
+    if group is not None:
+        cm.status_api.post_event('change_config', 'group-config', group.id, 'version', str(cl.id))
+    else:
+        cm.status_api.post_event('change_config', proto.type, obj.id, 'version', str(cl.id))
     return cl
 
 
@@ -572,10 +579,7 @@ def get_list_of_continue_existed_hc(cluster, host_comp_list):
     for (service, host, comp) in host_comp_list:
         try:
             still_existed_hc = HostComponent.objects.get(
-                cluster=cluster,
-                service=service,
-                host=host,
-                component=comp
+                cluster=cluster, service=service, host=host, component=comp
             )
             result.append(still_existed_hc)
         except HostComponent.DoesNotExist:

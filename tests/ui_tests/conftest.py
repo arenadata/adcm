@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Common fixtures and methods for ADCM UI tests"""
+
 # pylint:disable=redefined-outer-name
 
 import os
@@ -99,6 +101,13 @@ def web_driver(browser, downloads_directory):
     # session will be closed automatically on driver side after timeout
     except WebDriverException:
         pass
+
+
+@pytest.fixture()
+def skip_firefox(browser: str):
+    """Skip one test on firefox"""
+    if browser == 'Firefox':
+        pytest.skip("This test shouldn't be launched on Firefox")
 
 
 @pytest.fixture()

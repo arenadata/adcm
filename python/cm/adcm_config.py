@@ -24,7 +24,7 @@ import cm.variant
 from cm import config
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
-from cm.models import ADCM, PrototypeConfig, ObjectConfig, ConfigLog
+from cm.models import ADCM, PrototypeConfig, ObjectConfig, ConfigLog, GroupConfig
 
 
 def proto_ref(proto):
@@ -288,11 +288,21 @@ def save_obj_config(obj_conf, conf, attr, desc=''):
     return cl
 
 
-def cook_file_type_name(obj, key, subkey):
-    obj_type = 'task'
+def cook_file_type_name(obj, key, sub_key):
     if hasattr(obj, 'prototype'):
-        obj_type = obj.prototype.type
-    return os.path.join(config.FILE_DIR, f'{obj_type}.{obj.id}.{key}.{subkey}')
+        filename = [obj.prototype.type, str(obj.id), key, sub_key]
+    elif isinstance(obj, GroupConfig):
+        filename = [
+            obj.object.prototype.type,
+            str(obj.object.id),
+            'group',
+            str(obj.id),
+            key,
+            sub_key,
+        ]
+    else:
+        filename = ['task', str(obj.id), key, sub_key]
+    return os.path.join(config.FILE_DIR, '.'.join(filename))
 
 
 def save_file_type(obj, key, subkey, value):
@@ -495,7 +505,7 @@ def restore_read_only(obj, spec, conf, old_conf):
 
 def check_json_config(proto, obj, new_conf, old_conf=None, attr=None):
     spec, flat_spec, _, _ = get_prototype_config(proto)
-    check_attr(proto, attr, flat_spec)
+    check_attr(proto, obj, attr, flat_spec)
     cm.variant.process_variant(obj, spec, new_conf)
     return check_config_spec(proto, obj, spec, flat_spec, new_conf, old_conf, attr)
 
@@ -527,19 +537,35 @@ def check_custom_group_keys_attr(proto, custom_group_keys, spec):
             err('ATTRIBUTE_ERROR', msg)
 
 
-def check_attr(proto, attr, spec):
+def check_attr(proto, obj, attr, spec):  # pylint: disable=too-many-branches
+    # TODO: refactor this func
     if not attr:
         return
+    is_group_config = False
+    if isinstance(obj, GroupConfig):
+        is_group_config = True
+
     ref = proto_ref(proto)
     allowed_key = ('active',)
     if not isinstance(attr, dict):
         err('ATTRIBUTE_ERROR', 'Attr should be a map')
+    if is_group_config:
+        if 'group_keys' not in attr or 'custom_group_keys' not in attr:
+            err('ATTRIBUTE_ERROR', "Attr must contain 'group_keys' and 'custom_group_keys' keys")
     for key, value in attr.items():
         if key == 'group_keys':
-            check_structure_for_group_attr(value, spec, key)
+            if is_group_config:
+                check_structure_for_group_attr(value, spec, key)
+            else:
+                msg = 'Not allowed key "{}" for object ({})'
+                err('ATTRIBUTE_ERROR', msg.format(key, ref))
             continue
         if key == 'custom_group_keys':
-            check_custom_group_keys_attr(proto, value, spec)
+            if is_group_config:
+                check_custom_group_keys_attr(proto, value, spec)
+            else:
+                msg = 'Not allowed key "{}" for object ({})'
+                err('ATTRIBUTE_ERROR', msg.format(key, ref))
             continue
         if key + '/' not in spec:
             msg = 'There isn\'t group "{}" in config ({})'
@@ -563,6 +589,10 @@ def check_attr(proto, attr, spec):
 def check_config_spec(
     proto, obj, spec, flat_spec, conf, old_conf=None, attr=None
 ):  # pylint: disable=too-many-branches,too-many-statements
+    group = None
+    if isinstance(obj, GroupConfig):
+        group = obj
+        obj = group.object
     ref = proto_ref(proto)
     if isinstance(conf, (float, int)):
         err('JSON_ERROR', 'config should not be just one int or float')
@@ -644,7 +674,7 @@ def check_config_spec(
     if old_conf:
         check_read_only(obj, flat_spec, conf, old_conf)
         restore_read_only(obj, spec, conf, old_conf)
-        process_file_type(obj, spec, conf)
+        process_file_type(group or obj, spec, conf)
     process_password(spec, conf)
     return conf
 

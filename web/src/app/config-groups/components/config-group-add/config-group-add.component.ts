@@ -22,7 +22,7 @@ import { take } from 'rxjs/operators';
   selector: 'app-config-group-add',
   template: `
     <ng-container [formGroup]="form">
-      <app-input [form]="form" [label]="'Name'" [controlName]="'name'" [isRequired]="true"></app-input>
+      <app-input [form]="form" [label]="'Name'" [controlName]="'name'"></app-input>
       <app-input [form]="form" [label]="'Description'" [controlName]="'description'"></app-input>
       <app-add-controls [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></app-add-controls>
     </ng-container>

@@ -11,7 +11,7 @@
 # limitations under the License.
 ---
 - name: Dummy action
-  hosts: all
+  hosts: localhost
   connection: local
   gather_facts: no
 
@@ -19,3 +19,5 @@
     - name: Dummy?
       debug:
         msg: "Some message"
+      tags:
+        - pause

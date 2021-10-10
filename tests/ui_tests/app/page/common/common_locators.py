@@ -10,9 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Common locators"""
+
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator
+
+# pylint: disable=too-few-public-methods
 
 
 class CommonLocators:
@@ -41,7 +45,6 @@ class ObjectPageMenuLocators:
     config_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_config']", "Tab config")
     status_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_status']", "Tab status")
     import_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_import']", "Tab import")
-    actions_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_action']", "Tab actions")
     intro_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_intro']", "Tab admin intro")
     settings_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_settings']", "Tab admin settings")
     users_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_users']", "Tab admin users")
@@ -54,4 +57,6 @@ class CommonActionLocators:
     info_text = Locator(By.CSS_SELECTOR, "app-action-card>p", "Text on action page")
 
     class ActionCard:
+        """Common action page action card elements locators"""
+
         play_btn = Locator(By.CSS_SELECTOR, "button", "Action run button")

@@ -2,7 +2,7 @@ import { Pipe, PipeTransform } from '@angular/core';
 
 import { AdcmTypedEntity } from '@app/models/entity';
 import { IStyledNavItem } from '@app/shared/details/navigation.service';
-import { TypeName } from '@app/core/types';
+import { ApiFlat, TypeName } from '@app/core/types';
 
 @Pipe({
   name: 'navItem'
@@ -19,10 +19,16 @@ export class NavItemPipe implements PipeTransform {
         return 'components';
       case 'host':
         return 'hosts';
+      case 'provider':
+        return 'hostproviders';
+      case 'group_config':
+        return 'groupconfigs';
     }
   }
 
   getLink(path: AdcmTypedEntity[], index: number, group: boolean): string {
+    let cluster: AdcmTypedEntity;
+
     switch (path[index].typeName) {
       case 'cluster':
         return group ? `/${path[index].typeName}` : `/${path[index].typeName}/${path[index].id}`;
@@ -39,11 +45,35 @@ export class NavItemPipe implements PipeTransform {
           `/${path[index - 2].typeName}/${path[index - 2].id}/service/${path[index - 1].id}/component/${path[index].id}`
         );
       case 'host':
-        return group ? (
-          `/${path[index - 1].typeName}/${path[index - 1].id}/host`
-        ) : (
-          `/${path[index - 1].typeName}/${path[index - 1].id}/host/${path[index].id}`
-        );
+        cluster = path.find(item => item.typeName === 'cluster');
+        if (cluster) {
+          return group ? (
+            `/${cluster.typeName}/${cluster.id}/host`
+          ) : (
+            `/${cluster.typeName}/${cluster.id}/host/${path[index].id}`
+          );
+
+        }
+        return group ? `/${path[index].typeName}` : `/${path[index].typeName}/${path[index].id}`;
+      case 'provider':
+        return group ? `/${path[index].typeName}` : `/${path[index].typeName}/${path[index].id}`;
+      case 'group_config':
+        cluster = path[0];
+        const { object_type, object_id, id } = (path[index] as unknown as ApiFlat);
+        if (object_type === 'service') {
+          return group ? (
+            `/${cluster.typeName}/${cluster.id}/${object_type}/${object_id}/group_config`
+          ) : (
+            `/${cluster.typeName}/${cluster.id}/${object_type}/${object_id}/group_config/${id}`
+          );
+        } else {
+          return group ? (
+            `/${object_type}/${object_id}/group_config`
+          ) : (
+            `/${object_type}/${object_id}/group_config/${id}`
+          );
+        }
+
     }
   }
 

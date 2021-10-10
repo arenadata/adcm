@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""UI tests for config page"""
 
 import os
 import tempfile
@@ -68,12 +69,15 @@ DEFAULT_VALUE = {
 
 
 class ListWithoutRepr(list):
+    """Custom list without direct repr"""
+
     def __repr__(self):
         return f'<{self.__class__.__name__} instance at {id(self):#x}>'
 
 
 @allure.step('Generate data set for groups')
 def generate_group_data() -> list:
+    """Generate data set for groups"""
     group_data = []
     for required, default, read_only in FIELDS:
         for activatable in PAIR:
@@ -114,6 +118,7 @@ def generate_group_data() -> list:
 
 @allure.step('Generate expected result for groups')
 def generate_group_expected_result(group_config) -> dict:
+    """Generate expected result for groups"""
     expected_result = {
         'group_visible': not group_config['ui_options']['invisible'],
         'editable': not group_config['read_only'],
@@ -130,7 +135,7 @@ def generate_group_expected_result(group_config) -> dict:
     field_invisible = group_config['field_ui_options']['invisible']
     expected_result['field_visible_advanced'] = field_advanced and not field_invisible
     expected_result['field_visible'] = not field_invisible
-    config_valid = validate_config(group_config['required'], group_config['default'], group_config['read_only'])
+    config_valid = _validate_config(group_config['required'], group_config['default'], group_config['read_only'])
     expected_result['config_valid'] = config_valid
     invisible = group_invisible or field_invisible
     if group_config['activatable']:
@@ -151,8 +156,7 @@ def generate_group_expected_result(group_config) -> dict:
     return expected_result
 
 
-@allure.step('Validate config')
-def validate_config(field_required, default_presented, field_ro) -> bool:
+def _validate_config(field_required, default_presented, field_ro) -> bool:
     if (field_required and not default_presented) or field_ro:
         return False
     return True
@@ -160,6 +164,7 @@ def validate_config(field_required, default_presented, field_ro) -> bool:
 
 @allure.step('Generate data set for configs without groups')
 def generate_config_data() -> list:
+    """Generate data set for configs without groups"""
     data = []
     for default, required, read_only in FIELDS:
         for ui_options in UI_OPTIONS_PAIRS:
@@ -176,6 +181,7 @@ def generate_config_data() -> list:
 
 @allure.step('Generate expected result for config')
 def generate_config_expected_result(config) -> dict:
+    """Generate expected result for config"""
     expected_result = {
         'visible': not config['ui_options']['invisible'],
         'editable': not config['read_only'],
@@ -200,6 +206,7 @@ def generate_config_expected_result(config) -> dict:
 
 @allure.step('Generate ADCM config dictionaries for groups')
 def generate_group_configs() -> list:
+    """Generate ADCM config dictionaries for groups"""
     group_config_data = generate_group_data()
     group_configs = []
     for _type in TYPES:
@@ -239,6 +246,7 @@ def generate_group_configs() -> list:
 
 @allure.step('Generate ADCM config dictionaries for fields')
 def generate_configs() -> list:
+    """Generate ADCM config dictionaries for fields"""
     config_data = generate_config_data()
     configs = []
     for _type in TYPES:
@@ -263,8 +271,7 @@ def generate_configs() -> list:
     return configs
 
 
-@allure.step('Prepare config')
-def prepare_config(config):
+def _prepare_config(config):
     read_only = bool('read_only' in config[0][0]['config'][0].keys())
     default = bool('default' in config[0][0]['config'][0].keys())
     templ = "type_{}_required_{}_ro_{}_content_{}_invisible_{}_advanced_{}"
@@ -288,8 +295,7 @@ def prepare_config(config):
     return config[0][0], config[1], d_name
 
 
-@allure.step('Prepare group config')
-def prepare_group_config(config):
+def _prepare_group_config(config):
     if "activatable" in config[0]['config'][0].keys():
         activatable = True
         active = config[0]['config'][0]['active']
@@ -337,7 +343,7 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs):
     5. Check save button status
     6. Check field configuration (depends on expected result dict and bundle configuration"""
 
-    data = prepare_config(config_dict)
+    data = _prepare_config(config_dict)
     config = data[0]
     expected = data[1]
     path = data[2]
@@ -363,7 +369,7 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs):
             fields = ui_config.get_app_fields()
             assert fields, 'No config fields, expected yes'
             for field in fields:
-                ui_config.assert_field_editable(field, expected['editable'])
+                ui_config.assert_field_is_editable(field, expected['editable'])
             if expected['content']:
                 ui_config.assert_field_content_equal(field_type, fields[0], config['config'][0]['default'])
             if expected['alerts']:
@@ -390,7 +396,7 @@ def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, a
     5. Check save button status
     6. Check field configuration (depends on expected result dict and bundle configuration)"""
 
-    config, path = prepare_group_config(config_dict)
+    config, path = _prepare_group_config(config_dict)
     allure.attach.file(
         "/".join([path, 'config.yaml']),
         attachment_type=allure.attachment_type.YAML,
@@ -431,7 +437,7 @@ def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, a
             assert groups, "Groups not presented, expected yes"
             assert fields, "Fields not presented, expected yes"
             for field in fields:
-                ui_config.assert_field_editable(field, expected['editable'])
+                ui_config.assert_field_is_editable(field, expected['editable'])
             if expected['content']:
                 default_value = config['config'][0]['subs'][0]['default']
                 ui_config.assert_field_content_equal(field_type, fields[0], default_value)

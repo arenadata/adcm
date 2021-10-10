@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""UI tests for /jobs page"""
+
 from dataclasses import asdict
 from typing import Union, List
 
@@ -63,20 +66,24 @@ COMPONENT_NAME = 'test_component'
 
 
 @pytest.fixture()
+@allure.title("Open /task page")
 # pylint: disable-next=unused-argument
 def page(app_fs: ADCMTest, login_to_adcm_over_api) -> JobListPage:
+    """Open /task page"""
     return JobListPage(app_fs.driver, app_fs.adcm.url).open()
 
 
 @allure.title("Upload cluster bundle")
 @pytest.fixture()
 def cluster_bundle(sdk_client_fs: ADCMClient) -> Bundle:
+    """Upload cluster bundle"""
     return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "cluster"))
 
 
 @allure.title("Upload provider bundle")
 @pytest.fixture()
 def provider_bundle(sdk_client_fs: ADCMClient) -> Bundle:
+    """Upload provider bundle"""
     return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), "provider"))
 
 
@@ -92,37 +99,49 @@ def cluster(cluster_bundle: Bundle) -> Cluster:
 @allure.title("Create provider")
 @pytest.fixture()
 def provider(provider_bundle: Bundle) -> Provider:
+    """Create provider"""
     return provider_bundle.provider_create('Awesome Provider')
 
 
 @pytest.fixture()
+@allure.title("Create 11 hosts for 'parallel' actions execution")
 def created_hosts(provider: Provider) -> List[Host]:
     """Create 11 hosts for "parallel" actions execution"""
     return [provider.host_create(f'host-{i}') for i in range(11)]
 
 
 # !===== TESTS =====!
-@pytest.mark.smoke()
 class TestTaskPage:
+    """Tests for Task page"""
+
     @pytest.mark.smoke()
     def test_cluster_action_job(self, cluster: Cluster, page: JobListPage):
         """Run action on cluster and validate job in table and popup"""
-        _test_run_action(page, cluster)
+        _test_run_action(page, cluster, cluster.name)
 
     @pytest.mark.smoke()
     def test_service_action_job(self, cluster: Cluster, page: JobListPage):
         """Run action on service and validate job in table and popup"""
-        _test_run_action(page, cluster.service_list()[0])
+        service = cluster.service_list()[0]
+        _test_run_action(page, service, f'{cluster.name}/{service.name}')
+
+    @pytest.mark.smoke()
+    def test_component_action_job(self, cluster: Cluster, page: JobListPage):
+        """Run action on component and validate job in table and popup"""
+        service = cluster.service_list()[0]
+        component = service.component()
+        _test_run_action(page, component, f'{cluster.name}/{service.name}/{component.name}')
 
     @pytest.mark.smoke()
     def test_provider_action_job(self, provider: Provider, page: JobListPage):
         """Run action on host provider and validate job in table and popup"""
-        _test_run_action(page, provider)
+        _test_run_action(page, provider, provider.name)
 
     @pytest.mark.smoke()
     def test_host_action_job(self, provider: Provider, page: JobListPage):
         """Run action on host and validate job in table and popup"""
-        _test_run_action(page, provider.host_create('some-fqdn'))
+        host = provider.host_create('some-fqdn')
+        _test_run_action(page, host, f'{provider.name}/{host.fqdn}')
 
     @pytest.mark.smoke()
     @pytest.mark.parametrize(
@@ -250,9 +269,9 @@ class TestTaskPage:
     def test_invoker_object_url(self, cluster: Cluster, provider: Provider, page: JobListPage):
         """Check link to object that invoked action is correct"""
         host_fqdn = 'run-on-me'
-        host_job_link = f'{host_fqdn}/{provider.name}'
-        component_link = f'{COMPONENT_NAME}/{SERVICE_NAME}/{CLUSTER_NAME}'
-        host_component_link = f'{host_fqdn}/{component_link}'
+        host_job_link = f'{provider.name}/{host_fqdn}'
+        component_link = f'{CLUSTER_NAME}/{SERVICE_NAME}/{COMPONENT_NAME}'
+        host_component_link = f'{component_link}/{host_fqdn}'
         with allure.step('Run action on component and check job link to it'):
             service: Service = cluster.service(name=SERVICE_NAME)
             component: Component = service.component(name=COMPONENT_NAME)
@@ -271,6 +290,8 @@ class TestTaskPage:
 
 
 class TestTaskHeaderPopup:
+    """Tests for Task page header popup"""
+
     @pytest.mark.smoke()
     @pytest.mark.parametrize(
         ('job_link', 'job_filter'),
@@ -346,8 +367,9 @@ class TestTaskHeaderPopup:
             {
                 'status': JobStatus.RUNNING,
                 'action_name': {
-                    SUCCESS_ACTION_DISPLAY_NAME: 'success',
+                    # Fail action after success will broke UI action run
                     FAIL_ACTION_DISPLAY_NAME: 'failed',
+                    SUCCESS_ACTION_DISPLAY_NAME: 'success',
                     LONG_ACTION_DISPLAY_NAME: '',
                 },
                 'success_jobs': "1",
@@ -360,10 +382,13 @@ class TestTaskHeaderPopup:
         ],
         ids=['success_job', 'failed_job', 'in_progress_job', 'three_job'],
     )
-    @pytest.mark.usefixtures('login_to_adcm_over_api')
+    @pytest.mark.usefixtures('skip_firefox', 'login_to_adcm_over_api')
     def test_job_has_correct_info_in_header_popup(self, job_info: dict, cluster: Cluster, app_fs):
         """Run action that finishes (success/failed) and check it in header popup"""
 
+        # Firefox disabled due to problems with running actions via client (lag of "bell" color)
+        # while running actions from UI is troublesome due to bug ADCM-2144.
+        # After this bug is fixed, rework test to run actions from UI / run all from client and enable FF
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         for action_name, expected_status in job_info['action_name'].items():
             if action_name == LONG_ACTION_DISPLAY_NAME:
@@ -384,12 +409,13 @@ class TestTaskHeaderPopup:
             cluster_page.header.get_failed_job_amount_from_header() == job_info['failed_jobs']
         ), f"Failed job amount should be {job_info['failed_jobs']}"
 
-        def wait_for_background():
-            assert (
-                job_info['background'] in cluster_page.header.get_jobs_circle_color()
-            ), "Bell circle should be colored"
+        def _wait_for_background():
+            assert job_info['background'] in (
+                circle_color := cluster_page.header.get_jobs_circle_color()
+            ), f"Bell circle should be colored, but actual color was: {circle_color}"
 
-        wait_until_step_succeeds(wait_for_background, period=0.3, timeout=5)
+        with allure.step('Check that "bell" color is correct'):
+            wait_until_step_succeeds(_wait_for_background, period=0.3, timeout=10)
 
     def test_on_tasks_in_header_popup(self, cluster: Cluster, page: JobListPage, app_fs):
         """Run action and click on it in header popup"""
@@ -442,7 +468,7 @@ class TestTaskHeaderPopup:
 # !==== HELPERS =====!
 
 
-def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Provider, Host]):
+def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Provider, Host], expected_link: str):
     """
     Run the "Long" action
     Check popup info
@@ -450,11 +476,10 @@ def _test_run_action(page: JobListPage, action_owner: Union[Cluster, Service, Pr
     Activate filter "Running"
     Check table info
     """
-    owner_name = action_owner.name if action_owner.__class__ != Host else action_owner.fqdn
     expected_info = {
         'status': JobStatus.RUNNING,
         'action_name': LONG_ACTION_DISPLAY_NAME,
-        'invoker_objects': owner_name,
+        'invoker_objects': expected_link,
     }
     with allure.step(
         f'Run action "{LONG_ACTION_DISPLAY_NAME}" on {action_owner.__class__}'
@@ -473,6 +498,7 @@ def _check_running_job_info_in_table(page: JobListPage, expected_info: dict):
     wait_and_assert_ui_info(
         {**expected_info, 'start_date': is_not_empty, 'finish_date': is_empty},
         page.get_task_info_from_table,
+        get_info_kwargs={'full_invoker_objects_link': True},
     )
 
 
@@ -531,7 +557,7 @@ def _check_link_to_invoker_object(expected_link: str, page: JobListPage, action:
 def _wait_and_get_action_on_host(host: Host, display_name: str) -> Action:
     """Wait until action is presented on host (wait for host action)"""
 
-    def wait_for_action_to_be_presented():
+    def _wait_for_action_to_be_presented():
         try:
             host.action(display_name=display_name)
         except ObjectNotFound:
@@ -539,5 +565,5 @@ def _wait_and_get_action_on_host(host: Host, display_name: str) -> Action:
                 False
             ), f'Action "{display_name}" is not presented on host {host.fqdn}. Actions: {host.action_list()}'
 
-    utils.wait_until_step_succeeds(wait_for_action_to_be_presented, period=0.1, timeout=10)
+    utils.wait_until_step_succeeds(_wait_for_action_to_be_presented, period=0.1, timeout=10)
     return host.action(display_name=display_name)

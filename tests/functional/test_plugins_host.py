@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for adcm_host plugin"""
+
 # pylint:disable=redefined-outer-name
 import adcm_client.base
 import allure
@@ -20,6 +22,7 @@ from adcm_pytest_plugin.utils import get_data_dir, wait_until_step_succeeds
 
 @pytest.fixture()
 def bundle(sdk_client_fs: ADCMClient) -> Bundle:
+    """Upload bundle and create 4 provider objects"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__))
     bundle.provider_create(name="first_p")
     bundle.provider_create(name="second_p")
@@ -30,21 +33,25 @@ def bundle(sdk_client_fs: ADCMClient) -> Bundle:
 
 @pytest.fixture()
 def first_p(bundle: Bundle):
+    """First provider"""
     return bundle.provider(name="first_p")
 
 
 @pytest.fixture()
 def second_p(bundle: Bundle):
+    """Second provider"""
     return bundle.provider(name="second_p")
 
 
 @pytest.fixture()
 def third_p(bundle: Bundle):
+    """Third provider"""
     return bundle.provider(name="third_p")
 
 
 @pytest.fixture()
 def forth_p(bundle: Bundle):
+    """Forth provider"""
     return bundle.provider(name="forth_p")
 
 

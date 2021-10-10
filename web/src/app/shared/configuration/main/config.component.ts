@@ -10,7 +10,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import {
-  ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   EventEmitter,
@@ -34,13 +33,14 @@ import { IConfig } from '../types';
 import { historyAnime, ISearchParam, MainService } from './main.service';
 import { WorkerInstance } from '@app/core/services/cluster.service';
 import { ActivatedRoute } from '@angular/router';
+import { AttributeService } from '@app/shared/configuration/attributes/attribute.service';
+import * as deepmerge from 'deepmerge';
 
 @Component({
   selector: 'app-config-form',
   templateUrl: './config.component.html',
   styleUrls: ['./config.component.scss'],
   animations: historyAnime,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [MainService]
 })
 export class ConfigComponent extends SocketListenerDirective implements OnChanges, OnInit {
@@ -69,7 +69,8 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
 
   constructor(
     private service: MainService,
-    public cd: ChangeDetectorRef,
+    private attributesSrv: AttributeService,
+    private cd: ChangeDetectorRef,
     socket: Store<SocketState>,
     route: ActivatedRoute,
   ) {
@@ -100,6 +101,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     this.tools.isAdvanced = this.fields.isAdvanced;
     this.tools.description.setValue(this.rawConfig.value.description);
     this.filter(this.tools.filterParams);
+    this.cd.detectChanges();
 
     if (!this.isGroupConfig) {
       this.service.getHistoryList(this.configUrl, this.rawConfig.value.id).subscribe((h) => {
@@ -113,6 +115,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
 
   filter(c: ISearchParam): void {
     this.service.filterApply(this.fields.dataOptions, c);
+    this.cd.detectChanges();
   }
 
   socketListener(m: EventMessage): void {
@@ -136,16 +139,14 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
 
   save(url: string): void {
     const form = this.fields.form;
+
     if (form.valid) {
       this.saveFlag = true;
       this.historyComponent.reset();
       const config = this.service.parseValue(this.fields.form.value, this.rawConfig.value.config);
       const send = {
         config,
-        attr: {
-          ...this.fields.attr,
-          group_keys: { ...this.fields.groupsForm.value }
-        },
+        attr: deepmerge(deepmerge(this.rawConfig.getValue().attr, this.fields.attr), this.attributesSrv.rawAttributes()),
         description: this.tools.description.value,
         obj_ref: this.rawConfig.value.obj_ref
       };
@@ -192,6 +193,9 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   private _getConfig(url: string): Observable<IConfig> {
     this.isLoading = true;
     return this.service.getConfig(url).pipe(
+      tap((c) => {
+        this.attributesSrv.init(c.attr);
+      }),
       tap((c) => this.rawConfig.next(c)),
       finalize(() => this.isLoading = false),
       catchError(() => {

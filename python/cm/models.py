@@ -16,6 +16,7 @@
 
 from __future__ import unicode_literals
 
+import os.path
 from collections.abc import Mapping
 from copy import deepcopy
 from enum import Enum
@@ -32,6 +33,7 @@ from django.dispatch import receiver
 
 from cm.errors import AdcmEx
 from cm.logger import log
+from cm.config import FILE_DIR
 
 
 class PrototypeEnum(Enum):
@@ -301,9 +303,7 @@ class ConfigLog(ADCMModel):
                 update(config, diff)
                 group_config.config = config
                 attr = deepcopy(self.attr)
-                group_keys, custom_group_keys = cg.create_group_keys(
-                    self.config, cg.get_config_spec()
-                )
+                group_keys, custom_group_keys = cg.create_group_keys(cg.get_config_spec())
                 attr.update({'group_keys': group_keys, 'custom_group_keys': custom_group_keys})
                 update(attr, current_group_config.attr)
                 group_config.attr = attr
@@ -316,7 +316,7 @@ class ConfigLog(ADCMModel):
             # `custom_group_keys` read only field in attr,
             # needs to be replaced when creating an object with ORM
             # for api it is checked in /cm/adcm_config.py:check_custom_group_keys_attr()
-            _, custom_group_keys = obj.create_group_keys(self.config, obj.get_config_spec())
+            _, custom_group_keys = obj.create_group_keys(obj.get_config_spec())
             self.attr.update({'custom_group_keys': custom_group_keys})
 
         super().save(*args, **kwargs)
@@ -362,13 +362,6 @@ class ADCMEntity(ADCMModel):
         issue_name = issue_type.gen_issue_name(self)
         for issue in self.concerns.filter(type=ConcernType.Issue, name=issue_name):
             return issue
-
-    @property
-    def display_name(self):
-        """Unified `display name` for object's string representation"""
-        own_name = getattr(self, 'name', None)
-        fqdn = getattr(self, 'fqdn', None)
-        return own_name or fqdn or self.prototype.display_name or self.prototype.name
 
     def __str__(self):
         own_name = getattr(self, 'name', None)
@@ -437,6 +430,10 @@ class ADCM(ADCMEntity):
         return self.prototype.bundle_id
 
     @property
+    def display_name(self):
+        return self.name
+
+    @property
     def serialized_issue(self):
         result = {
             'id': self.id,
@@ -469,6 +466,10 @@ class Cluster(ADCMEntity):
     @property
     def license(self):
         return self.prototype.bundle.license
+
+    @property
+    def display_name(self):
+        return self.name
 
     def __str__(self):
         return f'{self.name} ({self.id})'
@@ -507,6 +508,10 @@ class HostProvider(ADCMEntity):
     def license(self):
         return self.prototype.bundle.license
 
+    @property
+    def display_name(self):
+        return self.name
+
     def __str__(self):
         return str(self.name)
 
@@ -535,6 +540,10 @@ class Host(ADCMEntity):
     @property
     def monitoring(self):
         return self.prototype.monitoring
+
+    @property
+    def display_name(self):
+        return self.fqdn
 
     def __str__(self):
         return f"{self.fqdn}"
@@ -581,6 +590,10 @@ class ClusterObject(ADCMEntity):
         return self.prototype.name
 
     @property
+    def display_name(self):
+        return self.prototype.display_name
+
+    @property
     def description(self):
         return self.prototype.description
 
@@ -617,6 +630,10 @@ class ServiceComponent(ADCMEntity):
     @property
     def name(self):
         return self.prototype.name
+
+    @property
+    def display_name(self):
+        return self.prototype.display_name
 
     @property
     def description(self):
@@ -659,7 +676,7 @@ class GroupConfig(ADCMModel):
     description = models.TextField(blank=True)
     hosts = models.ManyToManyField(Host, blank=True, related_name='group_config')
     config = models.OneToOneField(
-        ObjectConfig, on_delete=models.CASCADE, null=False, related_name='group_config'
+        ObjectConfig, on_delete=models.CASCADE, null=True, related_name='group_config'
     )
 
     __error_code__ = 'GROUP_CONFIG_NOT_FOUND'
@@ -689,7 +706,6 @@ class GroupConfig(ADCMModel):
 
     def create_group_keys(
         self,
-        config: dict,
         config_spec: dict,
         group_keys: Dict[str, bool] = None,
         custom_group_keys: Dict[str, bool] = None,
@@ -702,16 +718,14 @@ class GroupConfig(ADCMModel):
             group_keys = {}
         if custom_group_keys is None:
             custom_group_keys = {}
-        for k in config.keys():
-            if config_spec[k]['type'] == 'group':
+        for k, v in config_spec.items():
+            if v['type'] == 'group':
                 group_keys.setdefault(k, {})
                 custom_group_keys.setdefault(k, {})
-                self.create_group_keys(
-                    config.get(k, {}), config_spec[k]['fields'], group_keys[k], custom_group_keys[k]
-                )
+                self.create_group_keys(v['fields'], group_keys[k], custom_group_keys[k])
             else:
                 group_keys[k] = False
-                custom_group_keys[k] = config_spec[k]['group_customization']
+                custom_group_keys[k] = v['group_customization']
         return group_keys, custom_group_keys
 
     def get_group_config(self):
@@ -755,6 +769,41 @@ class GroupConfig(ADCMModel):
         if host not in self.host_candidate():
             raise AdcmEx('GROUP_CONFIG_HOST_ERROR')
 
+    def preparing_file_type_field(self):
+        """Creating file for file type field"""
+
+        if self.config is None:
+            return
+        config = ConfigLog.objects.get(id=self.config.current).config
+        fields = PrototypeConfig.objects.filter(
+            prototype=self.object.prototype, action__isnull=True, type='file'
+        ).order_by('id')
+        for field in fields:
+            if field.subname:
+                value = config[field.name][field.subname]
+            else:
+                value = config[field.name]
+            if value is not None:
+                # See cm.adcm_config.py:313
+                if field.name == 'ansible_ssh_private_key_file':
+                    if value != '':
+                        if value[-1] == '-':
+                            value += '\n'
+                filename = '.'.join(
+                    [
+                        self.object.prototype.type,
+                        str(self.object.id),
+                        'group',
+                        str(self.id),
+                        field.name,
+                        field.subname,
+                    ]
+                )
+                filepath = os.path.join(FILE_DIR, filename)
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(value)
+                os.chmod(filepath, 0o0600)
+
     @transaction.atomic()
     def save(self, *args, **kwargs):
         obj = self.object_type.model_class().obj.get(id=self.object_id)
@@ -766,10 +815,7 @@ class GroupConfig(ADCMModel):
                 config_log.obj_ref = self.config
                 config_log.config = deepcopy(parent_config_log.config)
                 attr = deepcopy(parent_config_log.attr)
-                config_spec = self.get_config_spec()
-                group_keys, custom_group_keys = self.create_group_keys(
-                    config_log.config, config_spec
-                )
+                group_keys, custom_group_keys = self.create_group_keys(self.get_config_spec())
                 attr.update({'group_keys': group_keys, 'custom_group_keys': custom_group_keys})
                 config_log.attr = attr
                 config_log.description = parent_config_log.description
@@ -777,6 +823,7 @@ class GroupConfig(ADCMModel):
                 self.config.current = config_log.pk
                 self.config.save()
         super().save(*args, **kwargs)
+        self.preparing_file_type_field()
 
 
 @receiver(m2m_changed, sender=GroupConfig.hosts.through)
@@ -1387,3 +1434,9 @@ class ConcernItem(ADCMModel):
             self.hostprovider_entities.all(),
             self.host_entities.all(),
         )
+
+    def delete(self, using=None, keep_parents=False):
+        """Explicit remove many-to-many references before deletion in order to emit signals"""
+        for entity in self.related_objects:
+            entity.remove_from_concerns(self)
+        return super().delete(using, keep_parents)

@@ -17,48 +17,26 @@ import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
 import { IConfig, IPanelOptions } from '../types';
 import { BaseDirective } from '@adwp-ui/widgets';
-import { FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'app-config-fields',
   template: `
     <ng-container *ngFor="let item of dataOptions; trackBy: trackBy">
-      <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form" [showCheckbox]="showCheckbox"
-                        [groupForm]="groupsForm"></app-group-fields>
+      <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form"></app-group-fields>
       <ng-template #one>
-        <div class="field-row row d-flex">
-          <ng-container *ngIf="!item.hidden">
-            <ng-container *ngIf="showCheckbox">
-              <div class="group-checkbox d-flex" style="padding: 5px">
-                <app-config-group-checkbox matTooltip="test"
-                                           [control]="item.configGroup"
-                                           [disabled]="item.read_only"></app-config-group-checkbox>
-              </div>
-            </ng-container>
-            <app-field class="w100" [form]="form" [options]="item"
-                       [ngClass]="{ 'read-only': item.read_only }"></app-field>
-          </ng-container>
-
-        </div>
+        <ng-container *ngIf="!item.hidden">
+          <app-config-field-attribute-provider [form]="form" [options]="item">
+            <app-field *configField [form]="form" [options]="item"></app-field>
+          </app-config-field-attribute-provider>
+        </ng-container>
       </ng-template>
     </ng-container>
-  `,
-  styles: [
-    `.group-checkbox {
-      justify-content: center;
-      align-items: center
-    }`,
-    `.field-row:nth-child(odd) {
-      background-color: #4e4e4e;
-    }`
-  ]
+  `
 })
 export class ConfigFieldsComponent extends BaseDirective {
 
   @Input() dataOptions: TFormOptions[] = [];
   @Input() form = this.service.toFormGroup();
-  @Input() groupsForm: FormGroup;
-  @Input() showCheckbox: boolean = false;
   @Output()
   event = new EventEmitter<{ name: string; data?: any }>();
 
@@ -72,8 +50,7 @@ export class ConfigFieldsComponent extends BaseDirective {
   set model(data: IConfig) {
     if (!data) return;
     this.rawConfig = data;
-    this.groupsForm = this.service.toGroupsFormGroup(data.attr);
-    this.dataOptions = this.service.getPanels(data, this.groupsForm);
+    this.dataOptions = this.service.getPanels(data);
     this.form = this.service.toFormGroup(this.dataOptions);
     this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
     this.shapshot = { ...this.form.value };

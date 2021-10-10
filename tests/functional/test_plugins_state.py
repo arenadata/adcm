@@ -10,13 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for adcm_state plugin"""
+
 # pylint:disable=redefined-outer-name, duplicate-code
 from typing import Tuple
 
 import allure
 import pytest
 
-from adcm_client.objects import ADCMClient, Cluster, Provider
+from adcm_client.objects import ADCMClient, Cluster, Provider, Host, Service, Component
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
     run_service_action_and_assert_result,
@@ -34,6 +36,7 @@ from tests.functional.plugin_utils import (
     create_two_providers,
     create_two_clusters,
     run_successful_task,
+    TestImmediateChange,
 )
 
 
@@ -186,3 +189,18 @@ def test_state_set_from_host_actions(
             f'Check change {compose_name(obj)} state from host action'
         ):
             run_host_action_and_assert_result(host, f'set_{classname}_host_action')
+
+
+class TestImmediateStateChange(TestImmediateChange):
+    """Test that state changed immediately"""
+
+    _file = __file__
+
+    @allure.issue(url='https://arenadata.atlassian.net/browse/ADCM-2116')
+    def test_immediate_state_change(
+        self,
+        provider_host: Tuple[Provider, Host],
+        cluster_service_component: Tuple[Cluster, Service, Component],
+    ):
+        """Test that state is changed right after adcm_state step in multijob action"""
+        self.run_immediate_change_test(provider_host, cluster_service_component)
