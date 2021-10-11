@@ -117,7 +117,7 @@ export class ClusterService {
         switchMap((cluster) => {
           if (typeName === 'group_config') {
             return service.get(id);
-          } else if (cluster && typeName === 'servicecomponent') {
+          } else if (cluster && (typeName === 'servicecomponent' || typeName === 'component')) {
             return this.serviceComponentService.get(id);
           } else if (cluster && typeName !== 'cluster') {
             return this.api.get<Entities>(`${cluster[typeName]}${id}/`);
