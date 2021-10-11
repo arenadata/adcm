@@ -85,6 +85,23 @@ def create_config(config):
         return None
 
 
+def create_file_from_config(obj, config):
+    if config is not None:
+        conf = config["current"]["config"]
+        proto = obj.prototype
+        for key, value in conf.items():
+            if isinstance(value, dict):
+                for subkey, subvalue in value.items():
+                    if models.PrototypeConfig.objects.filter(
+                        prototype=proto, name=key, subname=subkey, type='file'
+                    ).exists():
+                        save_file_type(obj, key, subkey, subvalue)
+            else:
+                if models.PrototypeConfig.objects.filter(
+                        prototype=proto, name=key, type='file').exists():
+                    save_file_type(obj, key, '', value)
+
+
 def create_cluster(cluster):
     """
     Creating Cluster object
@@ -100,8 +117,9 @@ def create_cluster(cluster):
     except models.Cluster.DoesNotExist:
         prototype = get_prototype(bundle_hash=cluster.pop('bundle_hash'), type='cluster')
         ex_id = cluster.pop('id')
-        config = create_config(cluster.pop('config'))
-        cluster = models.Cluster.objects.create(prototype=prototype, config=config, **cluster)
+        config = cluster.pop('config')
+        cluster = models.Cluster.objects.create(prototype=prototype, config=create_config(config), **cluster)
+        create_file_from_config(cluster, config)
         return ex_id, cluster
 
 
@@ -120,7 +138,7 @@ def create_provider(provider):
         same_name_provider = models.HostProvider.objects.get(name=provider['name'])
         if same_name_provider.prototype.bundle.hash != bundle_hash:
             raise IntegrityError('Name of provider already in use in another bundle')
-        create_needed_file(same_name_provider, provider['config'])
+        create_file_from_config(same_name_provider, provider['config'])
         return ex_id, same_name_provider
     except models.HostProvider.DoesNotExist:
         prototype = get_prototype(bundle_hash=bundle_hash, type='provider')
@@ -128,25 +146,8 @@ def create_provider(provider):
         provider = models.HostProvider.objects.create(
             prototype=prototype, config=create_config(config), **provider
         )
-        create_needed_file(provider, config)
+        create_file_from_config(provider, config)
         return ex_id, provider
-
-
-def create_needed_file(obj, config):
-    conf = config["current"]["config"]
-    proto = obj.prototype
-    for key, value in conf.items():
-        if isinstance(value, dict):
-            for subkey, subvalue in value.items():
-                pconf = models.PrototypeConfig.objects.get(
-                    prototype=proto, name=key, subname=subkey
-                )
-                if pconf.type == 'file':
-                    save_file_type(obj, key, subkey, subvalue)
-        else:
-            pconf = models.PrototypeConfig.objects.get(prototype=proto, name=key)
-            if pconf.type == 'file':
-                save_file_type(obj, key, '', value)
 
 
 def create_host(host, cluster):
@@ -178,7 +179,7 @@ def create_host(host, cluster):
             cluster=cluster,
             **host,
         )
-        create_needed_file(new_host, config)
+        create_file_from_config(new_host, config)
         return ex_id, new_host
 
 
@@ -197,10 +198,11 @@ def create_service(service, cluster):
         bundle_hash=service.pop('bundle_hash'), type='service', name=service.pop('prototype__name')
     )
     ex_id = service.pop('id')
-    config = create_config(service.pop('config'))
+    config = service.pop('config')
     service = models.ClusterObject.objects.create(
-        prototype=prototype, cluster=cluster, config=config, **service
+        prototype=prototype, cluster=cluster, config=create_config(config), **service
     )
+    create_file_from_config(service, config)
     return ex_id, service
 
 
@@ -224,10 +226,15 @@ def create_component(component, cluster, service):
         parent=service.prototype,
     )
     ex_id = component.pop('id')
-    config = create_config(component.pop('config'))
+    config = component.pop('config')
     component = models.ServiceComponent.objects.create(
-        prototype=prototype, cluster=cluster, service=service, config=config, **component
+        prototype=prototype,
+        cluster=cluster,
+        service=service,
+        config=create_config(config),
+        **component
     )
+    create_file_from_config(component, config)
     return ex_id, component
 
 
