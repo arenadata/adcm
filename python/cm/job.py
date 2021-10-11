@@ -38,6 +38,7 @@ from cm.models import (
     ADCM,
     ADCMEntity,
     Action,
+    ActionType,
     CheckLog,
     Cluster,
     ClusterObject,
@@ -63,7 +64,7 @@ def start_task(action, obj, conf, attr, hc, hosts, verbose):
         msg = f'unknown type "{action.type}" for action: {action}, {action.context}: {obj.name}'
         err('WRONG_ACTION_TYPE', msg)
 
-    task = prepare_task(action, obj, conf, attr, hc, hosts, ctx.event, verbose)
+    task = prepare_task(action, obj, conf, attr, hc, hosts, verbose)
     ctx.event.send_state()
     run_task(task, ctx.event)
     ctx.event.send_state()
@@ -92,15 +93,13 @@ def check_action_hosts(action, obj, cluster, hosts):
             err('TASK_ERROR', f'host #{host_id} does not belong to host provider #{provider.id}')
 
 
-def prepare_task(
-    action, obj, conf, attr, hc, hosts, event, verbose
-):  # pylint: disable=too-many-locals
+def prepare_task(action, obj, conf, attr, hc, hosts, verbose):  # pylint: disable=too-many-locals
     cluster = get_object_cluster(obj)
     check_action_state(action, obj, cluster)
     _, spec = check_action_config(action, obj, conf, attr)
     if conf and not spec:
         err("CONFIG_VALUE_ERROR", "Absent config in action prototype")
-    host_map, delta = check_hostcomponentmap(cluster, action, hc)
+    host_map, _ = check_hostcomponentmap(cluster, action, hc)
     check_action_hosts(action, obj, cluster, hosts)
     old_hc = api.get_hc(cluster)
 
@@ -110,11 +109,7 @@ def prepare_task(
     with transaction.atomic():  # pylint: disable=too-many-locals
         DummyData.objects.filter(id=1).update(date=timezone.now())
 
-        if action.type == 'task':
-            task = create_task(action, obj, conf, attr, old_hc, delta, hosts, event, verbose)
-        else:
-            task = create_one_job_task(action, obj, conf, attr, old_hc, hosts, event, verbose)
-            create_job(action, None, event, task)
+        task = create_task(action, obj, conf, attr, old_hc, hosts, verbose)
 
         if host_map:
             api.save_hc(cluster, host_map)
@@ -512,15 +507,17 @@ def prepare_job_config(
     fd.close()
 
 
-def create_task(action, obj, conf, attr, hc, delta, hosts, event, verbose):
-    task = create_one_job_task(action, obj, conf, attr, hc, hosts, event, verbose)
-    for sub in SubAction.objects.filter(action=action):
-        _job = create_job(action, sub, event, task)
-    return task
-
-
-def create_one_job_task(action, obj, conf, attr, hc, hosts, event, verbose):
-    task = TaskLog(
+def create_task(
+    action: Action,
+    obj: ADCMEntity,
+    conf: dict,
+    attr: dict,
+    hc: List[HostComponent],
+    hosts: List[Host],
+    verbose: bool,
+) -> TaskLog:
+    """Create task and jobs and lock objects for action"""
+    task = TaskLog.objects.create(
         action=action,
         task_object=obj,
         config=conf,
@@ -532,31 +529,33 @@ def create_one_job_task(action, obj, conf, attr, hc, hosts, event, verbose):
         finish_date=timezone.now(),
         status=config.Job.CREATED,
     )
-    task.save()
+    set_task_status(task, config.Job.CREATED, ctx.event)
+
+    if action.type == ActionType.Job.value:
+        sub_actions = [None]
+    else:
+        sub_actions = SubAction.objects.filter(action=action).all()
+
+    for sub_action in sub_actions:
+        job = JobLog.obj.create(
+            task=task,
+            action=action,
+            sub_action=sub_action,
+            log_files=action.log_files,
+            start_date=timezone.now(),
+            finish_date=timezone.now(),
+            status=config.Job.CREATED,
+        )
+        LogStorage.objects.create(job=job, name='ansible', type='stdout', format='txt')
+        LogStorage.objects.create(job=job, name='ansible', type='stderr', format='txt')
+        set_job_status(job.id, config.Job.CREATED, ctx.event)
+        os.makedirs(os.path.join(config.RUN_DIR, f'{job.id}', 'tmp'), exist_ok=True)
+
     tree = Tree(obj)
     affected = (node.value for node in tree.get_all_affected(tree.built_from))
     task.lock_affected(affected)
-    set_task_status(task, config.Job.CREATED, event)
+
     return task
-
-
-def create_job(action, sub_action, event, task):
-    job = JobLog(
-        task=task,
-        action=action,
-        log_files=action.log_files,
-        start_date=timezone.now(),
-        finish_date=timezone.now(),
-        status=config.Job.CREATED,
-    )
-    if sub_action:
-        job.sub_action = sub_action
-    job.save()
-    LogStorage.objects.create(job=job, name='ansible', type='stdout', format='txt')
-    LogStorage.objects.create(job=job, name='ansible', type='stderr', format='txt')
-    set_job_status(job.id, config.Job.CREATED, event)
-    os.makedirs(os.path.join(config.RUN_DIR, f'{job.id}', 'tmp'), exist_ok=True)
-    return job
 
 
 def get_state(

@@ -844,10 +844,10 @@ def verify_host_candidate_for_group_config(sender, **kwargs):
             group_config.check_host_candidate(host)
 
 
-ACTION_TYPE = (
-    ('task', 'task'),
-    ('job', 'job'),
-)
+class ActionType(models.TextChoices):
+    Task = 'task', 'task'
+    Job = 'job', 'job'
+
 
 SCRIPT_TYPE = (
     ('ansible', 'ansible'),
@@ -865,7 +865,7 @@ class AbstractAction(ADCMModel):
     description = models.TextField(blank=True)
     ui_options = models.JSONField(default=dict)
 
-    type = models.CharField(max_length=16, choices=ACTION_TYPE)
+    type = models.CharField(max_length=16, choices=ActionType.choices)
     button = models.CharField(max_length=64, default=None, null=True)
 
     script = models.CharField(max_length=160)
@@ -1098,10 +1098,10 @@ class TaskLog(ADCMModel):
     def lock_affected(self, objects: Iterable[ADCMEntity]) -> None:
         if self.lock:
             return
-
+        first_job = JobLog.obj.filter(task=self).order_by('id').first()
         reason = MessageTemplate.get_message_from_template(
-            MessageTemplate.KnownNames.LockedByAction.value,
-            action=self.action,
+            MessageTemplate.KnownNames.LockedByJob.value,
+            job=first_job,
             target=self.task_object,
         )
         self.lock = ConcernItem.objects.create(
@@ -1311,7 +1311,7 @@ class MessageTemplate(ADCMModel):
     template = models.JSONField()
 
     class KnownNames(Enum):
-        LockedByAction = 'locked by action on target'  # kwargs=(action, target)
+        LockedByJob = 'locked by running job on target'  # kwargs=(job, target)
         ConfigIssue = 'object config issue'  # kwargs=(source, )
         RequiredServiceIssue = 'required service issue'  # kwargs=(source, )
         RequiredImportIssue = 'required import issue'  # kwargs=(source, )
@@ -1326,6 +1326,7 @@ class MessageTemplate(ADCMModel):
         Component = 'component'
         Provider = 'provider'
         Host = 'host'
+        Job = 'job'
 
     @classmethod
     def get_message_from_template(cls, name: str, **kwargs) -> dict:
@@ -1361,6 +1362,7 @@ class MessageTemplate(ADCMModel):
             cls.PlaceHolderType.Component.value: cls._adcm_entity_placeholder,
             cls.PlaceHolderType.Provider.value: cls._adcm_entity_placeholder,
             cls.PlaceHolderType.Host.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Job.value: cls._job_placeholder,
         }
         return type_map[ph_data['type']](ph_name, **ph_source_data)
 
@@ -1388,6 +1390,18 @@ class MessageTemplate(ADCMModel):
             'type': obj.prototype.type,
             'name': obj.display_name,
             'ids': obj.get_id_chain(),
+        }
+
+    @classmethod
+    def _job_placeholder(cls, _, **kwargs) -> dict:
+        job = kwargs.get('job')
+        assert job
+        action = job.sub_action or job.action
+
+        return {
+            'type': cls.PlaceHolderType.Job.value,
+            'name': action.display_name or action.name,
+            'ids': job.id,
         }
 
 
