@@ -409,7 +409,7 @@ class TestChangeGroupsConfig:
     ) -> dict:
         """
         Template for group configuration.
-        custom_group_keys and group_keys are required even if this dicts are empty.
+        attr and config are required even if this dicts are empty.
         """
         group_config_template = {"attr": {}, "config": {}}
         if custom_group_keys:
