@@ -124,6 +124,7 @@ def _update_config_and_attr_for_removed_field_test(
     config: OrderedDict, attr: OrderedDict, group_config=False
 ) -> Tuple[dict, dict]:
     _, _ = config, attr
+    attr = {}
     config = {"float": 0.1}
     if group_config:
         attr = {"group_keys": {"float": False}, "custom_group_keys": {"float": True}}
