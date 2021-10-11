@@ -118,7 +118,9 @@ def create_cluster(cluster):
         prototype = get_prototype(bundle_hash=cluster.pop('bundle_hash'), type='cluster')
         ex_id = cluster.pop('id')
         config = cluster.pop('config')
-        cluster = models.Cluster.objects.create(prototype=prototype, config=create_config(config), **cluster)
+        cluster = models.Cluster.objects.create(
+            prototype=prototype, config=create_config(config), **cluster
+        )
         create_file_from_config(cluster, config)
         return ex_id, cluster
 
