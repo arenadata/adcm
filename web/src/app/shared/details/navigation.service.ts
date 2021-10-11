@@ -99,6 +99,7 @@ export const Config = {
     provider: [main, config, group_config],
     bundle: [main, license],
     servicecomponent: [main, config, group_config, m_status],
+    component: [main, config, group_config, m_status],
   },
 };
 

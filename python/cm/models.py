@@ -312,6 +312,7 @@ class ConfigLog(ADCMModel):
                 cg.config.previous = cg.config.current
                 cg.config.current = group_config.id
                 cg.config.save()
+                cg.preparing_file_type_field()
         if isinstance(obj, GroupConfig):
             # `custom_group_keys` read only field in attr,
             # needs to be replaced when creating an object with ORM
@@ -779,6 +780,18 @@ class GroupConfig(ADCMModel):
             prototype=self.object.prototype, action__isnull=True, type='file'
         ).order_by('id')
         for field in fields:
+            filename = '.'.join(
+                [
+                    self.object.prototype.type,
+                    str(self.object.id),
+                    'group',
+                    str(self.id),
+                    field.name,
+                    field.subname,
+                ]
+            )
+            filepath = os.path.join(FILE_DIR, filename)
+
             if field.subname:
                 value = config[field.name][field.subname]
             else:
@@ -789,20 +802,12 @@ class GroupConfig(ADCMModel):
                     if value != '':
                         if value[-1] == '-':
                             value += '\n'
-                filename = '.'.join(
-                    [
-                        self.object.prototype.type,
-                        str(self.object.id),
-                        'group',
-                        str(self.id),
-                        field.name,
-                        field.subname,
-                    ]
-                )
-                filepath = os.path.join(FILE_DIR, filename)
                 with open(filepath, 'w', encoding='utf-8') as f:
                     f.write(value)
                 os.chmod(filepath, 0o0600)
+            else:
+                if os.path.exists(filename):
+                    os.remove(filename)
 
     @transaction.atomic()
     def save(self, *args, **kwargs):
