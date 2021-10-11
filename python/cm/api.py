@@ -384,6 +384,7 @@ def add_components_to_service(cluster, service):
         obj_conf = init_object_config(spec, conf, attr)
         sc = ServiceComponent(cluster=cluster, service=service, prototype=comp, config=obj_conf)
         sc.save()
+        process_file_type(sc, spec, conf)
         cm.issue.update_hierarchy_issues(sc)
 
 
