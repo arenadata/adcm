@@ -413,11 +413,7 @@ class TestChangeGroupsConfig:
         """
         group_config_template = {"attr": {}, "config": {}}
         if custom_group_keys:
-            group_config_template["attr"]["custom_group_keys"] = {}
-            if "group" in custom_group_keys.keys():
-                group_config_template["attr"]["custom_group_keys"]["group"] = custom_group_keys["group"].items()
-            for key, value in custom_group_keys.items():
-                group_config_template["attr"]["custom_group_keys"][key] = value
+            group_config_template["attr"]["custom_group_keys"] = {**custom_group_keys}
         if group_keys:
             group_config_template["attr"]["group_keys"] = {**group_keys}
         if config_attr:
