@@ -101,7 +101,7 @@
           max: 65536
           default: 9300
           required: yes
-          group_customization: true
+          group_customization: false
     - name: structure
       type: structure
       required: false
@@ -210,7 +210,7 @@
          max: 65536
          default: 9300
          required: yes
-         group_customization: true
+         group_customization: false
     - name: structure
       type: structure
       required: false
@@ -319,7 +319,7 @@
              max: 65536
              default: 9300
              required: yes
-             group_customization: true
+             group_customization: false
         - name: structure
           type: structure
           required: false

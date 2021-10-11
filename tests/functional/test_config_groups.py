@@ -405,26 +405,23 @@ class TestChangeGroupsConfig:
     ]
 
     def _add_values_to_group_config_template(
-        self, custom_group_keys: dict = {}, group_keys: dict = {}, config_attr: dict = PARAMS_TO_CHANGE
+        self, custom_group_keys: dict = None, group_keys: dict = None, config_attr: dict = PARAMS_TO_CHANGE
     ) -> dict:
+        """
+        Template for group configuration.
+        custom_group_keys and group_keys are required even if this dicts are empty.
+        """
         group_config_template = {"attr": {}, "config": {}}
         if custom_group_keys:
             group_config_template["attr"]["custom_group_keys"] = {}
             if "group" in custom_group_keys.keys():
-                group_value = custom_group_keys.pop("group")
-                group_config_template["attr"]["custom_group_keys"]["group"] = {
-                    "port": group_value,
-                    "transport_port": group_value,
-                }
+                group_config_template["attr"]["custom_group_keys"]["group"] = custom_group_keys["group"].items()
             for key, value in custom_group_keys.items():
                 group_config_template["attr"]["custom_group_keys"][key] = value
         if group_keys:
-            group_config_template["attr"]["group_keys"] = {}
-            for key, value in group_keys.items():
-                group_config_template["attr"]["group_keys"][key] = value
+            group_config_template["attr"]["group_keys"] = {**group_keys}
         if config_attr:
-            for key, value in config_attr.items():
-                group_config_template["config"][key] = value
+            group_config_template["config"] = {**config_attr}
         return group_config_template
 
     @allure.step("Check group config values are equal expected")
@@ -445,11 +442,13 @@ class TestChangeGroupsConfig:
     def _get_config_from_group(self, cluster_group: GroupConfig):
         """Get config from group and add custom values to password and file"""
         config_group = cluster_group.config()
-        config_group["password"] = "password"
-        config_group["file"] = config_group["file"].replace("\n", "")
+        if "password" in config_group:
+            config_group["password"] = "password"
+        if "file" in config_group:
+            config_group["file"] = config_group["file"].replace("\n", "")
         return config_group
 
-    @allure.step('Check error that group config cant change')
+    @allure.step("Check error that group config can't change")
     def _check_error_with_adding_param_to_group(self, group: GroupConfig, params: dict):
         with allure.step(f'Check that error is "{ATTRIBUTE_ERROR.code}"'):
             with pytest.raises(ErrorMessage) as e:
@@ -794,3 +793,34 @@ class TestChangeGroupsConfig:
             )
             config = {"map": {test_host_1.fqdn: config_before, test_host_2.fqdn: config_before}}
             run_provider_action_and_assert_result(provider, action="test_action", config=config)
+
+    @pytest.mark.parametrize(
+        "cluster_bundle",
+        [pytest.param(get_data_dir(__file__, "cluster_simple"), id="cluster_with_group_subs")],
+        indirect=True,
+    )
+    def test_changing_params_in_cluster_group_subs(self, cluster_bundle, cluster_with_two_hosts_on_it):
+        """Test changing params in cluster group subs with different group_customization"""
+
+        test_host_1, test_host_2, cluster = cluster_with_two_hosts_on_it
+        with allure.step("Create config group for cluster"):
+            cluster_group = cluster.group_config_create(name=FIRST_GROUP)
+            config_before = self._get_config_from_group(cluster_group)
+        with allure.step("Check changing sub with group_customization true"):
+            config_expected = self._add_values_to_group_config_template(
+                config_attr={"group": OrderedDict([('port', 9200), ('transport_port', 9100)])},
+                group_keys={"group": {"port": False, "transport_port": True}},
+                custom_group_keys={"group": {"port": False, "transport_port": True}},
+            )
+            cluster_group.config_set_diff(config_expected)
+            config_updated = {
+                "map": {test_host_1.fqdn: config_expected['config'], test_host_2.fqdn: dict(config_before)}
+            }
+            run_cluster_action_and_assert_result(cluster, action="test_action", config=config_updated)
+        with allure.step("Check changing sub with group_customization false"):
+            config_expected_wrong = self._add_values_to_group_config_template(
+                config_attr={"group": OrderedDict([('port', 9100), ('transport_port', 9300)])},
+            )
+            cluster_group.config_set_diff(config_expected_wrong)
+            config_updated_wrong = {"map": {test_host_1.fqdn: config_before, test_host_2.fqdn: config_before}}
+            run_cluster_action_and_assert_result(cluster, action="test_action", config=config_updated_wrong)
