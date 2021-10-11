@@ -13,7 +13,6 @@
 # pylint: disable=too-many-locals
 
 import json
-import os
 from datetime import datetime
 
 from django.conf import settings
@@ -23,7 +22,6 @@ from django.db.utils import IntegrityError
 
 from cm import models
 from cm.errors import AdcmEx
-from cm.config import FILE_DIR
 from cm.adcm_config import save_file_type
 
 
@@ -140,7 +138,9 @@ def create_needed_file(obj, config):
     for key, value in conf.items():
         if isinstance(value, dict):
             for subkey, subvalue in value.items():
-                pconf = models.PrototypeConfig.objects.get(prototype=proto, name=key, subname=subkey)
+                pconf = models.PrototypeConfig.objects.get(
+                    prototype=proto, name=key, subname=subkey
+                )
                 if pconf.type == 'file':
                     save_file_type(obj, key, subkey, subvalue)
         else:
