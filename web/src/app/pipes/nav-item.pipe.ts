@@ -17,6 +17,8 @@ export class NavItemPipe implements PipeTransform {
         return 'services';
       case 'servicecomponent':
         return 'components';
+      case 'component':
+        return 'components';
       case 'host':
         return 'hosts';
       case 'provider':
@@ -39,6 +41,7 @@ export class NavItemPipe implements PipeTransform {
           `/${path[index - 1].typeName}/${path[index - 1].id}/service/${path[index].id}`
         );
       case 'servicecomponent':
+      case 'component':
         return group ? (
           `/${path[index - 2].typeName}/${path[index - 2].id}/service/${path[index - 1].id}/component`
         ) : (
@@ -66,13 +69,20 @@ export class NavItemPipe implements PipeTransform {
           ) : (
             `/${cluster.typeName}/${cluster.id}/${object_type}/${object_id}/group_config/${id}`
           );
-        } else {
+        } else if (object_type === 'component') {
           return group ? (
-            `/${object_type}/${object_id}/group_config`
+            `/${path[index - 3].typeName}/${path[index - 3].id}/service/${path[index - 2].id}/component/${path[index-1].id}/group_config`
           ) : (
-            `/${object_type}/${object_id}/group_config/${id}`
+            `/${path[index - 3].typeName}/${path[index - 3].id}/service/${path[index - 2].id}/component/${path[index-1].id}/group_config/${id}`
           );
         }
+      {
+        return group ? (
+          `/${object_type}/${object_id}/group_config`
+        ) : (
+          `/${object_type}/${object_id}/group_config/${id}`
+        );
+      }
 
     }
   }
