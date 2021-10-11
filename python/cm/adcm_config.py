@@ -520,6 +520,11 @@ def check_structure_for_group_attr(group_attr, spec, key_name):
         if not isinstance(value, bool):
             msg = 'invalid type `{}` field in `{}`'
             err('ATTRIBUTE_ERROR', msg.format(key, key_name))
+    for key, value in spec.items():
+        if value.type != 'group':
+            if key not in flat_group_attr:
+                msg = f'there is no `{key}` field in `{key_name}`'
+                err('ATTRIBUTE_ERROR', msg)
     return flat_group_attr
 
 
@@ -537,6 +542,27 @@ def check_custom_group_keys_attr(proto, custom_group_keys, spec):
             err('ATTRIBUTE_ERROR', msg)
 
 
+def check_agreement_group_attr(group_keys, custom_group_keys, spec):
+    """Check agreement group_keys and custom_group_keys"""
+    flat_group_keys = to_flat_dict(group_keys, spec)
+    flat_custom_group_keys = to_flat_dict(custom_group_keys, spec)
+    for key, value in flat_custom_group_keys.items():
+        if not value and flat_group_keys[key]:
+            msg = f'the `{key}` parameter cannot be included in the group'
+            err('ATTRIBUTE_ERROR', msg)
+
+
+def check_group_keys_attr(attr, spec, proto):
+    """Check attr for group config"""
+    if 'group_keys' not in attr or 'custom_group_keys' not in attr:
+        err('ATTRIBUTE_ERROR', "Attr must contain 'group_keys' and 'custom_group_keys' keys")
+    group_keys = attr.get('group_keys')
+    custom_group_keys = attr.get('custom_group_keys')
+    check_structure_for_group_attr(group_keys, spec, 'group_keys')
+    check_custom_group_keys_attr(proto, custom_group_keys, spec)
+    check_agreement_group_attr(group_keys, custom_group_keys, spec)
+
+
 def check_attr(proto, obj, attr, spec):  # pylint: disable=too-many-branches
     # TODO: refactor this func
     if not attr:
@@ -550,20 +576,10 @@ def check_attr(proto, obj, attr, spec):  # pylint: disable=too-many-branches
     if not isinstance(attr, dict):
         err('ATTRIBUTE_ERROR', 'Attr should be a map')
     if is_group_config:
-        if 'group_keys' not in attr or 'custom_group_keys' not in attr:
-            err('ATTRIBUTE_ERROR', "Attr must contain 'group_keys' and 'custom_group_keys' keys")
+        check_group_keys_attr(attr, spec, proto)
     for key, value in attr.items():
-        if key == 'group_keys':
-            if is_group_config:
-                check_structure_for_group_attr(value, spec, key)
-            else:
-                msg = 'Not allowed key "{}" for object ({})'
-                err('ATTRIBUTE_ERROR', msg.format(key, ref))
-            continue
-        if key == 'custom_group_keys':
-            if is_group_config:
-                check_custom_group_keys_attr(proto, value, spec)
-            else:
+        if key in ['group_keys', 'custom_group_keys']:
+            if not is_group_config:
                 msg = 'Not allowed key "{}" for object ({})'
                 err('ATTRIBUTE_ERROR', msg.format(key, ref))
             continue
