@@ -17,6 +17,24 @@ from django.urls import path, include
 from .views import UserViewSet, UserGroupViewSet, UserRoleViewSet, ChangePassword
 
 
+role_urls = [
+    path('', UserRoleViewSet.as_view({'get': 'list', 'post': 'create'}), name='list'),
+    path(
+        '<int:role_id>/',
+        UserRoleViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}),
+        name='detail',
+    ),
+]
+
+group_urls = [
+    path('', UserGroupViewSet.as_view({'get': 'list', 'post': 'create'}), name='list'),
+    path(
+        '<int:group_id>/',
+        UserGroupViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}),
+        name='detail',
+    ),
+]
+
 urlpatterns = [
     path('', UserViewSet.as_view({'get': 'list', 'post': 'create'}), name='rbac-user-list'),
     path(
@@ -33,40 +51,8 @@ urlpatterns = [
                 path(
                     'change_password/', ChangePassword.as_view(), name='rbac-user-change-password'
                 ),
-                path(
-                    'group/',
-                    include(
-                        [
-                            path(
-                                '',
-                                UserGroupViewSet.as_view({'get': 'list', 'post': 'create'}),
-                                name='rbac-user-group-list',
-                            ),
-                            path(
-                                '<int:group_id>/',
-                                UserGroupViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}),
-                                name='rbac-user-group-detail',
-                            ),
-                        ]
-                    ),
-                ),
-                path(
-                    'role/',
-                    include(
-                        [
-                            path(
-                                '',
-                                UserRoleViewSet.as_view({'get': 'list', 'post': 'create'}),
-                                name='rbac-user-role-list',
-                            ),
-                            path(
-                                '<int:role_id>/',
-                                UserRoleViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}),
-                                name='rbac-user-role-detail',
-                            ),
-                        ]
-                    ),
-                ),
+                path('group/', include((group_urls, 'rbac_user_group'))),
+                path('role/', include((role_urls, 'rbac_user_role'))),
             ]
         ),
     ),
