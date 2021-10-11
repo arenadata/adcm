@@ -104,13 +104,61 @@ class ProfileField(serializers.JSONField):
         return instance.userprofile.profile
 
 
+class UserGroupSerializer(serializers.ModelSerializer):
+    """Serializer for user's groups"""
+
+    id = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all())
+    url = serializers.SerializerMethodField()
+    get_url = get_group_url
+
+    class Meta:
+        model = Group
+        fields = (
+            'id',
+            'name',
+            'url',
+        )
+        read_only_fields = ('name',)
+
+    def create(self, validated_data):
+        """Add user to group"""
+        user = self.context.get('user')
+        group = validated_data['id']
+        user.groups.add(group)
+        return group
+
+
+class UserRoleSerializer(serializers.ModelSerializer):
+    """Serializer for user's roles"""
+
+    id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
+    url = serializers.SerializerMethodField()
+    get_url = get_role_url
+
+    class Meta:
+        model = Group
+        fields = (
+            'id',
+            'name',
+            'url',
+        )
+        read_only_fields = ('name',)
+
+    def create(self, validated_data):
+        """Add role to user"""
+        user = self.context.get('user')
+        role = validated_data['id']
+        role.add_user(user)
+        return role
+
+
 class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSerializer):
     """User serializer"""
 
     password = PasswordField()
     profile = ProfileField(required=False)
     groups = serializers.SerializerMethodField(read_only=True)
-    roles = RoleSerializer(many=True, source='role_set', read_only=True)
+    roles = serializers.SerializerMethodField(read_only=True)
     permissions = PermissionSerializer(many=True, source='user_permissions', read_only=True)
     add_group = serializers.HyperlinkedIdentityField(
         view_name='rbac-user-group-list', lookup_field='id'
@@ -148,10 +196,13 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
 
     def get_groups(self, obj):
         """Get all user's groups"""
-        groups = obj.groups.all()
-        context = self.context
-        context['user'] = obj
-        return GroupSerializer(groups, many=True, context=context).data
+        self.context['user'] = obj
+        return GroupSerializer(obj.groups.all(), many=True, context=self.context).data
+
+    def get_roles(self, obj):
+        """Get all user's groups"""
+        self.context['user'] = obj
+        return UserRoleSerializer(obj.role_set.all(), many=True, context=self.context).data
 
     @atomic
     def create(self, validated_data):
@@ -207,51 +258,3 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
                     if isinstance(field, (models.JSONField, models.TextField)):
                         del fields[name]
         return fields
-
-
-class UserGroupSerializer(serializers.ModelSerializer):
-    """Serializer for user's groups"""
-
-    id = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all())
-    url = serializers.SerializerMethodField()
-    get_url = get_group_url
-
-    class Meta:
-        model = Group
-        fields = (
-            'id',
-            'name',
-            'url',
-        )
-        read_only_fields = ('name',)
-
-    def create(self, validated_data):
-        """Add user to group"""
-        user = self.context.get('user')
-        group = validated_data['id']
-        user.groups.add(group)
-        return group
-
-
-class UserRoleSerializer(serializers.ModelSerializer):
-    """Serializer for user's roles"""
-
-    id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
-    url = serializers.SerializerMethodField()
-    get_url = get_role_url
-
-    class Meta:
-        model = Group
-        fields = (
-            'id',
-            'name',
-            'url',
-        )
-        read_only_fields = ('name',)
-
-    def create(self, validated_data):
-        """Add role to user"""
-        user = self.context.get('user')
-        role = validated_data['id']
-        role.add_user(user)
-        return role
