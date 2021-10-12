@@ -16,7 +16,6 @@ import json
 from django.core.exceptions import MultipleObjectsReturned
 from django.db import transaction
 from django.utils import timezone
-from django.contrib.contenttypes.models import ContentType
 
 import cm.issue
 import cm.status_api
@@ -587,7 +586,8 @@ def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
         added_host.add_to_concerns(ctx.lock)
 
     # Remove hosts from group for components and services without hc map
-    hosts_for_remove_from_groups = list(old_hosts - new_hosts)
+    # TODO: refactoring remove hosts from group
+    hosts_for_remove_from_groups = list(old_hosts)
     group_configs = GroupConfig.objects.filter(
         object_type__model__in=['clusterobject', 'servicecomponent'],
         hosts__in=hosts_for_remove_from_groups,
