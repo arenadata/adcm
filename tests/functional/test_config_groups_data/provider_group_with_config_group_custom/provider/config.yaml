@@ -82,7 +82,6 @@
           max: 65536
           default: 9200
           required: yes
-          group_customization: false
         - name: transport_port
           display_name: Transport port
           description: Used for communication between nodes in the cluster, by the Java Transport client.
