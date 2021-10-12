@@ -11,7 +11,7 @@
 # limitations under the License.
 ---
 - name: Dummy action
-  hosts: "{{ job.config.hosts }}"
+  hosts: all
   connection: local
   gather_facts: no
 
@@ -29,4 +29,3 @@
           - job.config.map[inventory_hostname].group == services.test_service_1.first.config.group
           - job.config.map[inventory_hostname].structure == services.test_service_1.first.config.structure
           - job.config.map[inventory_hostname].map == services.test_service_1.first.config.map
-          - job.config.map[inventory_hostname].file == lookup('file', services.test_service_1.first.config.file)
