@@ -58,7 +58,7 @@ def test_field_validation(sdk_client_fs: ADCMClient, missed_field):
     ("name", "result"),
     [
         ("all_fields", ("Group success", "Task success", True, True)),
-        ("all_fields_fail", ("Group fail", "Task fail", False, False)),
+        # ("all_fields_fail", ("Group fail", "Task fail", False, False)),
     ],
 )
 def test_all_fields(sdk_client_fs: ADCMClient, name, result):
@@ -74,6 +74,11 @@ def test_all_fields(sdk_client_fs: ADCMClient, name, result):
         "content_title": "Check",
     }
     cluster = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, name)).cluster_create(utils.random_string())
+    provider = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "provider")).provider_create(utils.random_string())
+    for i in range(0, 50):
+        host = provider.host_create(i)
+        cluster.host_add(host)
+
     task = run_cluster_action_and_assert_result(cluster, action=params["action"], status=params["expected_state"])
     job = task.job()
     with allure.step("Check all fields after action execution"):
