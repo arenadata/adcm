@@ -24,38 +24,36 @@
       config:
         - name: map
           type: json
-        - name: hosts
-          type: string
   config:
     - name: float
       type: float
       required: false
       default: 0.1
-      group_customization: true
+      group_customization: false
     - name: boolean
       type: boolean
       required: true
       default: true
-      group_customization: true
+      group_customization: false
     - name: integer
       type: integer
       required: false
       default: 16
-      group_customization: true
+      group_customization: false
     - name: password
       type: password
       required: false
       default: password
-      group_customization: true
+      group_customization: false
     - name: string
       type: string
       required: true
       default: string
-      group_customization: true
+      group_customization: false
     - name: list
       type: list
       required: false
-      group_customization: true
+      group_customization: false
       default:
         - /dev/rdisk0s1
         - /dev/rdisk0s2
@@ -64,7 +62,7 @@
       type: file
       required: false
       default: ./provider_file
-      group_customization: true
+      group_customization: false
     - name: option
       type: option
       required: false
@@ -72,17 +70,17 @@
         DAILY: DAILY
         WEEKLY: WEEKLY
       default: DAILY
-      group_customization: true
+      group_customization: false
     - name: text
       type: text
       required: false
       default: text
-      group_customization: true
+      group_customization: false
     - name: group
       type: group
       activatable: True
       active: True
-      group_customization: true
+      group_customization: false
       subs:
         - name: port
           display_name: HTTP port
@@ -92,7 +90,7 @@
           max: 65536
           default: 9200
           required: yes
-          group_customization: true
+          group_customization: false
         - name: transport_port
           display_name: Transport port
           description: Used for communication between nodes in the cluster, by the Java Transport client.
@@ -101,12 +99,12 @@
           max: 65536
           default: 9300
           required: yes
-          group_customization: true
+          group_customization: false
     - name: structure
       type: structure
       required: false
       yspec: ./schema.yaml
-      group_customization: true
+      group_customization: false
       default:
         - code: 1
           country: Test1
@@ -115,7 +113,7 @@
     - name: map
       type: map
       required: false
-      group_customization: true
+      group_customization: false
       default:
         age: '24'
         name: Joe
