@@ -112,12 +112,10 @@
           max: 65536
           default: 9200
           required: true
-        - name: transport_port
-          type: integer
-          min: 1024
-          max: 65536
-          default: 9300
-          required: true
+        - name: new_text
+          type: text
+          required: false
+          default: text_new
     - name: new_group
       type: group
       activatable: true
@@ -255,12 +253,10 @@
           max: 65536
           default: 9200
           required: true
-        - name: transport_port
-          type: integer
-          min: 1024
-          max: 65536
-          default: 9300
-          required: true
+        - name: new_text
+          type: text
+          required: false
+          default: text_new
     - name: new_group
       type: group
       activatable: true
@@ -397,12 +393,10 @@
               max: 65536
               default: 9200
               required: true
-            - name: transport_port
-              type: integer
-              min: 1024
-              max: 65536
-              default: 9300
-              required: true
+            - name: new_text
+              type: text
+              required: false
+              default: text_new
         - name: new_group
           type: group
           activatable: true
