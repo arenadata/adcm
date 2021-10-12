@@ -26,7 +26,7 @@ from rbac.settings import api_settings
 from rbac.models import Role, RoleMigration
 
 
-def upgrade(data):
+def upgrade(data: dict):
     """Upgrade roles and user permissions"""
     new_roles = {}
     for role in data['roles']:
@@ -51,7 +51,7 @@ def upgrade(data):
             user.save()
 
 
-def find_role(name, roles):
+def find_role(name: str, roles: list):
     """search role in role list by name"""
     for role in roles:
         if role['name'] == name:
@@ -59,7 +59,7 @@ def find_role(name, roles):
     return err('INVALID_ROLE_SPEC', f'child role "{name}" is absent')
 
 
-def check_roles_childs(data):
+def check_roles_childs(data: dict):
     """Check if role childs name are exist in specification file"""
     for role in data['roles']:
         if 'childs' in role:
@@ -67,7 +67,7 @@ def check_roles_childs(data):
                 find_role(child, data['roles'])
 
 
-def get_role_permissions(role, data):
+def get_role_permissions(role: dict, data: dict) -> list[Permission]:
     """Retrieve all role's permissions"""
     all_perm = []
     if 'apps' not in role:
@@ -91,7 +91,7 @@ def get_role_permissions(role, data):
     return all_perm
 
 
-def upgrade_role(role, data):
+def upgrade_role(role: dict, data: dict) -> Role:
     """Upgrade single role"""
     perm_list = get_role_permissions(role, data['roles'])
     try:
@@ -108,7 +108,7 @@ def upgrade_role(role, data):
     return new_role
 
 
-def get_role_spec(data, schema):
+def get_role_spec(data: str, schema: str) -> dict:
     """
     Read and parse roles specification from role_spec.yaml file.
     Specification file structure is checked against role_schema.yaml file.
