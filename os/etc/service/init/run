@@ -41,6 +41,13 @@ if [ ! -f "${adcmvar}"/cluster.db ]; then
     "${adcmroot}"/python/manage.py generate_secret_key "${adcmsecretfile}"
 fi
 
+if [ ! \( -f "${adcmuserconf}/ssl/cert.pem" -a -f "${adcmuserconf}/ssl/key.pem" \) ]; then
+    mkdir -p "${adcmuserconf}/ssl"
+    cd "${adcmuserconf}/ssl"
+    openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 3650 -subj "/C=RU/ST=Moscow/L=Moscow/O=Arenadata Software LLC/OU=Release/CN=ADCM" -nodes
+
+fi
+
 "${adcmroot}"/python/manage.py migrate
 "${adcmroot}"/python/init_db.py
 "${adcmroot}"/python/backupdb.py
