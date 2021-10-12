@@ -25,6 +25,8 @@
       config:
         - name: map
           type: json
+        - name: hosts
+          type: string
   config:
     - name: float
       type: float
@@ -121,6 +123,8 @@
       config:
         - name: map
           type: json
+        - name: hosts
+          type: string
   config:
     - name: float
       type: float
@@ -215,6 +219,8 @@
           config:
             - name: map
               type: json
+            - name: hosts
+              type: string
 
       config:
         - name: float
