@@ -329,6 +329,8 @@ def remove_host_from_cluster(host):
     with transaction.atomic():
         host.cluster = None
         host.save()
+        for group in cluster.group_config.all():
+            group.hosts.remove(host)
         host.remove_from_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(cluster)
     ctx.event.send_state()
@@ -575,22 +577,8 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
     return host_comp_list
 
 
-def get_list_of_continue_existed_hc(cluster, host_comp_list):
-    result = []
-    for (service, host, comp) in host_comp_list:
-        try:
-            still_existed_hc = HostComponent.objects.get(
-                cluster=cluster, service=service, host=host, component=comp
-            )
-            result.append(still_existed_hc)
-        except HostComponent.DoesNotExist:
-            continue
-    return result
-
-
 def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     hc_queryset = HostComponent.objects.filter(cluster=cluster)
-    new_hc_list = get_list_of_continue_existed_hc(cluster, host_comp_list)
     old_hosts = {i.host for i in hc_queryset.select_related('host').all()}
     new_hosts = {i[1] for i in host_comp_list}
     for removed_host in old_hosts.difference(new_hosts):
@@ -598,15 +586,15 @@ def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     for added_host in new_hosts.difference(old_hosts):
         added_host.add_to_concerns(ctx.lock)
 
-    for removed_hc in list(set(hc_queryset) - set(new_hc_list)):
-        groupconfigs = GroupConfig.objects.filter(hosts=removed_hc.host)
-        cluster_group = GroupConfig.objects.filter(
-            object_type=ContentType.objects.get_for_model(Cluster)
-        )
-        for gc in groupconfigs:
-            if gc not in cluster_group:
-                if gc.object_id in [removed_hc.component.id, removed_hc.service.id]:
-                    removed_hc.host.group_config.remove(gc)
+    # Remove hosts from group for components and services without hc map
+    hosts_for_remove_from_groups = list(old_hosts - new_hosts)
+    group_configs = GroupConfig.objects.filter(
+        object_type__model__in=['clusterobject', 'servicecomponent'],
+        hosts__in=hosts_for_remove_from_groups,
+    )
+    for group in group_configs:
+        group.hosts.remove(*hosts_for_remove_from_groups)
+
     hc_queryset.delete()
     result = []
     for (proto, host, comp) in host_comp_list:
