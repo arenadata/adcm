@@ -53,6 +53,7 @@ def test_field_validation(sdk_client_fs: ADCMClient, missed_field):
             current_len == params["logs_amount"]
         ), f'Logs count not equal {params["logs_amount"]}, current log count {current_len}'
 
+
 # pylint: disable
 @pytest.mark.parametrize(
     ("name", "result"),
