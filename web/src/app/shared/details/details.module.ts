@@ -34,6 +34,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ObjectLinkColumnPipe } from '@app/pipes/object-link-column.pipe';
 import { SortObjectsPipe } from '@app/pipes/sort-objects.pipe';
 import { TaskObjectsComponent } from '@app/components/columns/task-objects/task-objects.component';
+import { HostDetailsComponent } from '@app/components/host/host-details/host-details.component';
+import { LeftMenuComponent } from './left-menu/left-menu.component';
+import { LabelMenuItemComponent } from './label-menu-item/label-menu-item.component';
+import { StatusMenuItemComponent } from './status-menu-item/status-menu-item.component';
 
 @NgModule({
   imports: [
@@ -61,6 +65,7 @@ import { TaskObjectsComponent } from '@app/components/columns/task-objects/task-
   ],
   declarations: [
     DetailComponent,
+    HostDetailsComponent,
     SubtitleComponent,
     LeftComponent,
     TopComponent,
@@ -72,6 +77,9 @@ import { TaskObjectsComponent } from '@app/components/columns/task-objects/task-
     ObjectLinkColumnPipe,
     SortObjectsPipe,
     TaskObjectsComponent,
+    LeftMenuComponent,
+    LabelMenuItemComponent,
+    StatusMenuItemComponent,
   ],
   providers: [
     NavigationService,

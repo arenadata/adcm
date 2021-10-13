@@ -7,12 +7,13 @@ import { LoginComponent } from '@app/main/login/login.component';
 import { ProfileComponent } from '@app/main/profile/profile.component';
 import { SupportComponent } from '@app/main/support/support.component';
 import { FatalErrorComponent, GatewayTimeoutComponent, PageNotFoundComponent } from '@app/main/server-status.component';
-import { HostListComponent } from '@app/components/host-list/host-list.component';
+import { HostListComponent } from '@app/components/host/host-list/host-list.component';
 import { DetailComponent } from '@app/shared/details/detail.component';
 import { MainInfoComponent, StatusComponent } from '@app/shared/components';
 import { ConfigComponent } from '@app/shared/configuration/main/config.component';
 import { HostproviderComponent } from '@app/components/hostprovider/hostprovider.component';
 import { CONFIG_GROUP_LIST_SERVICE, ConfigGroupHostListComponent, ConfigGroupListComponent } from '@app/config-groups';
+import { HostDetailsComponent } from '@app/components/host/host-details/host-details.component';
 
 const routes: Routes = [
   {
@@ -33,19 +34,23 @@ const routes: Routes = [
   },
   {
     path: 'host',
-    component: HostListComponent,
-    canActivate: [AuthGuard],
-  },
-  {
-    path: 'host/:host',
-    component: DetailComponent,
-    canActivate: [AuthGuard],
     children: [
-      { path: '', redirectTo: 'main', pathMatch: 'full' },
-      { path: 'main', component: MainInfoComponent },
-      { path: 'config', component: ConfigComponent },
-      { path: 'status', component: StatusComponent },
+      {
+        path: '',
+        pathMatch: 'full',
+        component: HostListComponent,
+      }, {
+        path: ':host',
+        component: HostDetailsComponent,
+        children: [
+          { path: '', redirectTo: 'main', pathMatch: 'full' },
+          { path: 'main', component: MainInfoComponent },
+          { path: 'config', component: ConfigComponent },
+          { path: 'status', component: StatusComponent },
+        ],
+      }
     ],
+    canActivate: [AuthGuard],
   },
   {
     path: 'cluster/:cluster/host/:host/provider/:provider',
