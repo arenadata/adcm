@@ -89,17 +89,11 @@ def create_file_from_config(obj, config):
     if config is not None:
         conf = config["current"]["config"]
         proto = obj.prototype
-        for key, value in conf.items():
-            if isinstance(value, dict):
-                for subkey, subvalue in value.items():
-                    if models.PrototypeConfig.objects.filter(
-                        prototype=proto, name=key, subname=subkey, type='file'
-                    ).exists():
-                        save_file_type(obj, key, subkey, subvalue)
-            else:
-                if models.PrototypeConfig.objects.filter(
-                        prototype=proto, name=key, type='file').exists():
-                    save_file_type(obj, key, '', value)
+        for pconf in models.PrototypeConfig.objects.filter(prototype=proto, type='file'):
+            if pconf.subname and conf[pconf.name].get(pconf.subname):
+                save_file_type(obj, pconf.name, pconf.subname, conf[pconf.name][pconf.subname])
+            elif conf.get(pconf.name):
+                save_file_type(obj, pconf.name, '', conf[pconf.name])
 
 
 def create_cluster(cluster):
