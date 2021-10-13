@@ -330,6 +330,7 @@ def remove_host_from_cluster(host):
         host.save()
         for group in cluster.group_config.all():
             group.hosts.remove(host)
+            cm.issue.update_hierarchy_issues(host)
         host.remove_from_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(cluster)
     ctx.event.send_state()
