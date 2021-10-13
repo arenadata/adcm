@@ -30,10 +30,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
+from django.utils import timezone
 
+from cm.config import FILE_DIR
 from cm.errors import AdcmEx
 from cm.logger import log
-from cm.config import FILE_DIR
 
 
 class PrototypeEnum(Enum):
@@ -291,6 +292,7 @@ class ConfigLog(ADCMModel):
                     origin[key] = value
             return origin
 
+        DummyData.objects.filter(id=1).update(date=timezone.now())
         obj = self.obj_ref.object
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
