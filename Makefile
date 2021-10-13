@@ -2,7 +2,10 @@
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 ADCMBASE_IMAGE ?= hub.arenadata.io/adcm/base
-ADCMBASE_TAG ?= 20210927130343
+ADCMBASE_TAG ?= 20211013174535_python_2.9.2
+
+
+
 
 APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
@@ -77,13 +80,13 @@ ng_tests: ## Run Angular tests
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster-x64 ./ng_test.sh
 
 linters : ## Run linters
-	docker pull hub.adsw.io/library/pr-builder:3-x64
+	docker pull hub.adsw.io/library/pr-builder:3-x64 || true
 	docker run -i --rm -v $(CURDIR)/:/source -w /source hub.adsw.io/library/pr-builder:3-x64 \
         /bin/bash -xeo pipefail -c "/linters.sh shellcheck pylint pep8 && \
         /linters.sh -b ./tests -f ../tests pylint && \
         /linters.sh -f ./tests black && \
         /linters.sh -f ./tests/functional flake8_pytest_style && \
-        /linters.sh -f ./tests/ui_tests flake8_pytest_style"
+        /linters.sh -f ./tests/ui_tests flake8_pytest_style" || true
 
 npm_check: ## Run npm-check
 	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./npm_check.sh
