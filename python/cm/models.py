@@ -30,10 +30,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
+from django.utils import timezone
 
+from cm.config import FILE_DIR
 from cm.errors import AdcmEx
 from cm.logger import log
-from cm.config import FILE_DIR
 
 
 class PrototypeEnum(Enum):
@@ -291,6 +292,7 @@ class ConfigLog(ADCMModel):
                     origin[key] = value
             return origin
 
+        DummyData.objects.filter(id=1).update(date=timezone.now())
         obj = self.obj_ref.object
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
@@ -855,6 +857,11 @@ SCRIPT_TYPE = (
 )
 
 
+def get_any():
+    """Get `any` literal for JSON field default value"""
+    return 'any'
+
+
 class AbstractAction(ADCMModel):
     """Abstract base class for both Action and StageAction"""
 
@@ -876,7 +883,7 @@ class AbstractAction(ADCMModel):
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
 
-    multi_state_available = models.JSONField(default=lambda: 'any')
+    multi_state_available = models.JSONField(default=get_any)
     multi_state_unavailable = models.JSONField(default=list)
     multi_state_on_success_set = models.JSONField(default=list)
     multi_state_on_success_unset = models.JSONField(default=list)
