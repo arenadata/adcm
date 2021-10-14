@@ -14,7 +14,7 @@ pytest-timeout
 pyyaml
 requests
 requests-toolbelt
-selenium
+selenium~=3.141.0
 multipledispatch
 rstr
 genson
