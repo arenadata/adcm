@@ -175,8 +175,11 @@ class DbFiller:
             if _data[related_field_name] == 1:
                 _data[related_field_name] = 2
             if field.name in ["config", "attr"]:
-                current_config_log = [data for data in get_endpoint_data(adcm=self.adcm, endpoint=endpoint)
-                                      if data[related_field_name] == _data[related_field_name]][-1]
+                current_config_log = [
+                    data
+                    for data in get_endpoint_data(adcm=self.adcm, endpoint=endpoint)
+                    if data[related_field_name] == _data[related_field_name]
+                ][-1]
                 field.f_type.schema = build_schema_by_json(current_config_log[field.name])
 
         else:
