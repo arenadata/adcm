@@ -17,7 +17,7 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
 import pytest
 
-from .utils import prepare_cluster_and_get_config
+from tests.ui_tests.utils import prepare_cluster_and_get_config
 
 pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
 

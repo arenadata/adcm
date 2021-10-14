@@ -16,7 +16,7 @@
 from abc import ABC
 from typing import List
 
-from .types import (
+from tests.api.utils.types import (
     Field,
     PositiveInt,
     String,
