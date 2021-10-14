@@ -15,9 +15,13 @@ export class PopoverDirective extends BaseDirective implements OnInit, OnDestroy
   factory: ComponentFactory<PopoverComponent>;
   leaveListener: () => void;
 
+  shown = false;
+  timeoutId: any;
+
   @Input() component: Type<PopoverContentDirective>;
   @Input() data: PopoverInput = {};
   @Input() event: PopoverEventFunc;
+  @Input() hideTimeout = 0;
 
   constructor(
     private elementRef: ElementRef,
@@ -32,17 +36,44 @@ export class PopoverDirective extends BaseDirective implements OnInit, OnDestroy
     this.factory = this.componentFactoryResolver.resolveComponentFactory(PopoverComponent);
   }
 
+  hideComponent() {
+    if (!this.timeoutId) {
+      this.timeoutId = setTimeout(() => {
+        this.clear();
+        this.shown = false;
+        this.timeoutId = undefined;
+      }, this.hideTimeout);
+    }
+  }
+
+  checkReEnter() {
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = undefined;
+    }
+  }
+
   @HostListener('mouseenter') mouseEnter() {
-    if (this.component) {
+    this.checkReEnter();
+    if (this.component && !this.shown) {
       this.containerRef = this.viewContainer.createComponent(this.factory);
       this.containerRef.instance.component = this.component;
       this.containerRef.instance.data = this.data;
       this.containerRef.instance.event = this.event;
+
       this.leaveListener = this.renderer.listen(
         this.elementRef.nativeElement.parentElement,
         'mouseleave',
-        () => this.clear(),
+        () => this.hideComponent(),
       );
+
+      this.renderer.listen(
+        this.containerRef.location.nativeElement,
+        'mouseenter',
+        () => this.checkReEnter(),
+      );
+
+      this.shown = true;
     }
   }
 

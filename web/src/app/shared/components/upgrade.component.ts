@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
 import { EmmitRow } from '@app/core/types';
@@ -50,29 +50,26 @@ export interface Upgrade {
 @Component({
   selector: 'app-upgrade',
   template: `
-    <ng-container *ngIf="(list$ | async) as upgrades">
-      <button *ngIf="!!upgrades.length"
-              mat-icon-button
-              matTooltip="There are a pending upgrades of object here"
-              [appForTest]="'upgrade_btn'"
-              color="warn"
-              [disabled]="!checkIssue()"
-              [matMenuTriggerFor]="menu"
-              (click)="EventHelper.stopPropagation($event)"
-      >
-        <mat-icon>sync_problem</mat-icon>
-      </button>
-      <mat-menu #menu="matMenu" [overlapTrigger]="false" [xPosition]="xPosition" yPosition="below">
-        <ng-template matMenuContent>
-          <button *ngFor="let item of upgrades" mat-menu-item (click)="runUpgrade(item)">
-            <span>{{ item.name || 'No name' }}</span>
-          </button>
-        </ng-template>
-      </mat-menu>
-    </ng-container>
+    <button mat-icon-button
+            matTooltip="There are a pending upgrades of object here"
+            [appForTest]="'upgrade_btn'"
+            color="warn"
+            [disabled]="!checkIssue()"
+            [matMenuTriggerFor]="menu"
+            (click)="EventHelper.stopPropagation($event)"
+    >
+      <mat-icon>sync_problem</mat-icon>
+    </button>
+    <mat-menu #menu="matMenu" [overlapTrigger]="false" [xPosition]="xPosition" yPosition="below">
+      <ng-template matMenuContent>
+        <button *ngFor="let item of list$ | async" mat-menu-item (click)="runUpgrade(item)">
+          <span>{{ item.name || 'No name' }}</span>
+        </button>
+      </ng-template>
+    </mat-menu>
   `
 })
-export class UpgradeComponent extends BaseDirective implements OnChanges {
+export class UpgradeComponent extends BaseDirective {
   EventHelper = EventHelper;
 
   list$: Observable<Upgrade[]>;
@@ -83,6 +80,7 @@ export class UpgradeComponent extends BaseDirective implements OnChanges {
   @Input()
   set row(row: UpgradeItem) {
     this.pRow = row;
+    this.list$ = this.getUpgrades(this.pRow.upgrade);
   }
 
   @Output()
@@ -90,12 +88,6 @@ export class UpgradeComponent extends BaseDirective implements OnChanges {
 
   constructor(private api: ApiService, private dialog: MatDialog) {
     super();
-  }
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes.row && changes.row.currentValue.upgradable) {
-      this.list$ = this.getUpgrades(changes.row.currentValue.upgrade);
-    }
   }
 
   checkIssue() {

@@ -55,21 +55,40 @@ def version_in(version, ver):
     return True
 
 
-def switch_service(co, new_proto):
-    log.info('upgrade switch from %s to %s', proto_ref(co.prototype), proto_ref(new_proto))
-    switch_config(co, new_proto, co.prototype)
-    co.prototype = new_proto
-    co.save()
+def switch_object(obj, new_prototype):
+    """Upgrade object"""
+    log.info('upgrade switch from %s to %s', proto_ref(obj.prototype), proto_ref(new_prototype))
+    old_prototype = obj.prototype
+    obj.prototype = new_prototype
+    obj.save()
+    switch_config(obj, new_prototype, old_prototype)
+
+
+def switch_services(upgrade, cluster):
+    """Upgrade services and component"""
+
+    for prototype in Prototype.objects.filter(bundle=upgrade.bundle, type='service'):
+        try:
+            co = ClusterObject.objects.get(cluster=cluster, prototype__name=prototype.name)
+            switch_object(co, prototype)
+            switch_components(cluster, co, prototype)
+        except ClusterObject.DoesNotExist:
+            # co.delete() ?!
+            pass
+    switch_hc(cluster, upgrade)
 
 
 def switch_components(cluster, co, new_co_proto):
+    """Upgrade components"""
     for sc in ServiceComponent.objects.filter(cluster=cluster, service=co):
         try:
-            comp = Prototype.objects.get(
+            new_sc_prototype = Prototype.objects.get(
                 parent=new_co_proto, type='component', name=sc.prototype.name
             )
-            sc.prototype = comp
+            old_sc_prototype = sc.prototype
+            sc.prototype = new_sc_prototype
             sc.save()
+            switch_config(sc, new_sc_prototype, old_sc_prototype)
         except Prototype.DoesNotExist:
             # sc.delete() ?!
             pass
@@ -79,6 +98,13 @@ def switch_components(cluster, co, new_co_proto):
         except ServiceComponent.DoesNotExist:
             sc = ServiceComponent(cluster=cluster, service=co, prototype=comp)
             sc.save()
+
+
+def switch_hosts(upgrade, provider):
+    """Upgrade hosts"""
+    for prototype in Prototype.objects.filter(bundle=upgrade.bundle, type='host'):
+        for host in Host.objects.filter(provider=provider, prototype__name=prototype.name):
+            switch_object(host, prototype)
 
 
 def check_upgrade_version(obj, upgrade):
@@ -296,19 +322,9 @@ def do_upgrade(obj, upgrade):
         switch_config(obj, new_proto, old_proto)
 
         if obj.prototype.type == 'cluster':
-            for p in Prototype.objects.filter(bundle=upgrade.bundle, type='service'):
-                try:
-                    co = ClusterObject.objects.get(cluster=obj, prototype__name=p.name)
-                    switch_service(co, p)
-                    switch_components(obj, co, p)
-                except ClusterObject.DoesNotExist:
-                    # co.delete() ?!
-                    pass
-            switch_hc(obj, upgrade)
+            switch_services(upgrade, obj)
         elif obj.prototype.type == 'provider':
-            for p in Prototype.objects.filter(bundle=upgrade.bundle, type='host'):
-                for host in Host.objects.filter(provider=obj, prototype__name=p.name):
-                    switch_service(host, p)
+            switch_hosts(upgrade, obj)
         cm.issue.update_hierarchy_issues(obj)
 
     log.info('upgrade %s OK to version %s', obj_ref(obj), obj.prototype.version)

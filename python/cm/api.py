@@ -384,6 +384,7 @@ def add_components_to_service(cluster, service):
         obj_conf = init_object_config(spec, conf, attr)
         sc = ServiceComponent(cluster=cluster, service=service, prototype=comp, config=obj_conf)
         sc.save()
+        process_file_type(sc, spec, conf)
         cm.issue.update_hierarchy_issues(sc)
 
 
@@ -474,33 +475,30 @@ def accept_license(bundle):
 
 
 def update_obj_config(obj_conf, conf, attr, desc=''):
-    is_group_config = False
     if not isinstance(attr, dict):
         err('INVALID_CONFIG_UPDATE', 'attr should be a map')
     obj = obj_conf.object
     if obj is None:
         err('INVALID_CONFIG_UPDATE', f'unknown object type "{obj_conf}"')
+    group = None
     if isinstance(obj, GroupConfig):
-        group_config = obj
-        obj = group_config.object
-        is_group_config = True
-    proto = obj.prototype
+        group = obj
+        obj = group.object
+        proto = obj.prototype
+    else:
+        proto = obj.prototype
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
     if not attr:
         if old_conf.attr:
             attr = old_conf.attr
-    new_conf = check_json_config(
-        proto, obj, conf, old_conf.config, attr, is_group_config=is_group_config
-    )
+    new_conf = check_json_config(proto, group or obj, conf, old_conf.config, attr)
     with transaction.atomic():
         cl = save_obj_config(obj_conf, new_conf, attr, desc)
         cm.issue.update_hierarchy_issues(obj)
     if hasattr(obj_conf, 'adcm'):
         prepare_social_auth(new_conf)
-    if is_group_config:
-        cm.status_api.post_event(
-            'change_config', 'group-config', group_config.id, 'version', str(cl.id)
-        )
+    if group is not None:
+        cm.status_api.post_event('change_config', 'group-config', group.id, 'version', str(cl.id))
     else:
         cm.status_api.post_event('change_config', proto.type, obj.id, 'version', str(cl.id))
     return cl

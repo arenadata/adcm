@@ -92,7 +92,7 @@ export class NavigationEffects {
           this.clusterService.one_bundle(id),
           type,
         );
-      } else if (type === 'servicecomponent') {
+      } else if (type === 'servicecomponent' || type === 'component') {
         return entityToTypedEntity(
           this.serviceComponentService.get(id),
           type,

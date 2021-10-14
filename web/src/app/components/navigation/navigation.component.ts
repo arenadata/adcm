@@ -17,7 +17,8 @@ import { IIssues } from '@app/models/issue';
           <div class="link">
             <a routerLink="{{ item.url }}" [title]="item.title | uppercase">{{ item.title | uppercase }}</a>
           </div>
-          <app-actions-button [row]="item?.entity"></app-actions-button>
+          <app-actions-button *ngIf="item?.entity?.typeName !== 'group_config'"
+                              [row]="item?.entity"></app-actions-button>
           <app-upgrade
             *ngIf="['cluster', 'provider'].includes(item?.entity?.typeName)"
             [row]="item?.entity"
@@ -62,7 +63,7 @@ import { IIssues } from '@app/models/issue';
     .mat-nav-list .entity {
       border: 1px solid #54646E;
       border-radius: 5px;
-      padding: 2px 0 2px 8px;
+      padding: 2px 8px;
       display: flex;
       align-items: center;
       justify-content: space-around;
@@ -85,7 +86,7 @@ import { IIssues } from '@app/models/issue';
     }
 
     .mat-nav-list .entity a {
-      line-height: normal;
+      line-height: 40px;
       text-overflow: ellipsis;
       overflow: hidden;
       display: block;

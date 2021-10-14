@@ -37,9 +37,9 @@ export class ConfigGroupListService extends EntityService<ConfigGroup> implement
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
       if (listParamStr) {
         const json = JSON.parse(listParamStr);
-        json['group_config'] = param;
+        json[`group_config_${current.typeName}`] = param;
         localStorage.setItem('list:param', JSON.stringify(json));
-      } else localStorage.setItem('list:param', JSON.stringify({ ['group_config']: param }));
+      } else localStorage.setItem('list:param', JSON.stringify({ [`group_config_${current.typeName}`]: param }));
     }
 
     return this.api.getList(current.group_config, p);
