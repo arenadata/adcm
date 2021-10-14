@@ -171,14 +171,12 @@ class DbFiller:
                 field.f_type.fk_link = Endpoints.get_by_path(_data[related_field_name]).data_class
 
         elif endpoint == Endpoints.ConfigLog:
+            # Skip initial ADCM object because ADCM config object has validation rules
+            if _data[related_field_name] == 1:
+                _data[related_field_name] = 2
             if field.name in ["config", "attr"]:
-                current_config_log = get_object_data(
-                    adcm=self.adcm,
-                    endpoint=endpoint,
-                    # In our case, we don't have truly config history for objects,
-                    # current config always first after obj_ref value
-                    object_id=_data[related_field_name] + 1,
-                )
+                current_config_log = [data for data in get_endpoint_data(adcm=self.adcm, endpoint=endpoint)
+                                      if data[related_field_name] == _data[related_field_name]][-1]
                 field.f_type.schema = build_schema_by_json(current_config_log[field.name])
 
         else:
