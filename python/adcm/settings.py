@@ -244,6 +244,12 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'data/log/adwp.log'),
         },
+        'sql_file': {
+            'level': 'DEBUG',
+            'formatter': 'adwp',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'data/log/sql.log'),
+        },
     },
     'loggers': {
         'django': {
@@ -256,6 +262,10 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'django.db.backends': {
+            'level': 'DEBUG',
+            'handlers': ['sql_file'],
+        }
     },
 }
 
