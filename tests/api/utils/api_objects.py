@@ -20,10 +20,10 @@ import allure
 import pytest
 from adcm_client.wrappers.api import ADCMApiWrapper
 
-from .endpoints import Endpoints
-from .methods import Methods
-from .tools import attach_request_log
-from ..steps.asserts import status_code_should_be, body_should_be, ExpectedBody
+from tests.api.utils.endpoints import Endpoints
+from tests.api.utils.methods import Methods
+from tests.api.utils.tools import attach_request_log
+from tests.api.steps.asserts import status_code_should_be, body_should_be, ExpectedBody
 
 
 @dataclass
