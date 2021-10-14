@@ -30,10 +30,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
+from django.utils import timezone
 
+from cm.config import FILE_DIR
 from cm.errors import AdcmEx
 from cm.logger import log
-from cm.config import FILE_DIR
 
 
 class PrototypeEnum(Enum):
@@ -291,6 +292,7 @@ class ConfigLog(ADCMModel):
                     origin[key] = value
             return origin
 
+        DummyData.objects.filter(id=1).update(date=timezone.now())
         obj = self.obj_ref.object
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
@@ -312,6 +314,7 @@ class ConfigLog(ADCMModel):
                 cg.config.previous = cg.config.current
                 cg.config.current = group_config.id
                 cg.config.save()
+                cg.preparing_file_type_field()
         if isinstance(obj, GroupConfig):
             # `custom_group_keys` read only field in attr,
             # needs to be replaced when creating an object with ORM
@@ -779,6 +782,18 @@ class GroupConfig(ADCMModel):
             prototype=self.object.prototype, action__isnull=True, type='file'
         ).order_by('id')
         for field in fields:
+            filename = '.'.join(
+                [
+                    self.object.prototype.type,
+                    str(self.object.id),
+                    'group',
+                    str(self.id),
+                    field.name,
+                    field.subname,
+                ]
+            )
+            filepath = os.path.join(FILE_DIR, filename)
+
             if field.subname:
                 value = config[field.name][field.subname]
             else:
@@ -789,20 +804,12 @@ class GroupConfig(ADCMModel):
                     if value != '':
                         if value[-1] == '-':
                             value += '\n'
-                filename = '.'.join(
-                    [
-                        self.object.prototype.type,
-                        str(self.object.id),
-                        'group',
-                        str(self.id),
-                        field.name,
-                        field.subname,
-                    ]
-                )
-                filepath = os.path.join(FILE_DIR, filename)
                 with open(filepath, 'w', encoding='utf-8') as f:
                     f.write(value)
                 os.chmod(filepath, 0o0600)
+            else:
+                if os.path.exists(filename):
+                    os.remove(filename)
 
     @transaction.atomic()
     def save(self, *args, **kwargs):
@@ -850,6 +857,11 @@ SCRIPT_TYPE = (
 )
 
 
+def get_any():
+    """Get `any` literal for JSON field default value"""
+    return 'any'
+
+
 class AbstractAction(ADCMModel):
     """Abstract base class for both Action and StageAction"""
 
@@ -871,7 +883,7 @@ class AbstractAction(ADCMModel):
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
 
-    multi_state_available = models.JSONField(default=lambda: 'any')
+    multi_state_available = models.JSONField(default=get_any)
     multi_state_unavailable = models.JSONField(default=list)
     multi_state_on_success_set = models.JSONField(default=list)
     multi_state_on_success_unset = models.JSONField(default=list)

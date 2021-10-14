@@ -70,7 +70,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   constructor(
     private service: MainService,
     private attributesSrv: AttributeService,
-    private cd: ChangeDetectorRef,
+    public cd: ChangeDetectorRef,
     socket: Store<SocketState>,
     route: ActivatedRoute,
   ) {
