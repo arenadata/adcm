@@ -77,7 +77,7 @@ class MessageTemplateTest(TestCase):
         self.assertIn('list', ex.exception.msg)
 
     def test_bad_template__bad_args(self):
-        name = models.MessageTemplate.KnownNames.LockedByAction.value
+        name = models.MessageTemplate.KnownNames.LockedByJob.value
         with self.assertRaises(AdcmEx) as ex:
             models.MessageTemplate.get_message_from_template(name)
         print(ex.exception)

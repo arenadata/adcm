@@ -164,6 +164,7 @@ def gen_task_log(obj: models.ADCMEntity, action: models.Action = None) -> models
 def gen_job_log(task) -> models.JobLog:
     return models.JobLog.objects.create(
         task=task,
+        action=task.action,
         status='CREATED',
         start_date=timezone.now(),
         finish_date=timezone.now(),
