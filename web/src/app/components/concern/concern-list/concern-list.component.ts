@@ -1,6 +1,5 @@
 import { Component, Input } from '@angular/core';
 
-import { ConcernReason } from '@app/models/concern/concern-reason';
 import { Concern } from '@app/models/concern/concern';
 
 @Component({

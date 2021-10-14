@@ -25,6 +25,7 @@ class TaskLogLockTest(TestCase):
     def test_lock_affected__lock_is_single(self):
         cluster = utils.gen_cluster()
         task = utils.gen_task_log(cluster)
+        utils.gen_job_log(task)
         task.lock = utils.gen_concern_item(models.ConcernType.Lock)
         task.save()
 
@@ -34,6 +35,7 @@ class TaskLogLockTest(TestCase):
     def test_lock_affected(self):
         cluster = utils.gen_cluster()
         task = utils.gen_task_log(cluster)
+        utils.gen_job_log(task)
 
         task.lock_affected([cluster])
         self.assertTrue(cluster.locked)
@@ -43,6 +45,7 @@ class TaskLogLockTest(TestCase):
     def test_unlock_affected(self):
         cluster = utils.gen_cluster()
         task = utils.gen_task_log(cluster)
+        utils.gen_job_log(task)
         task.lock_affected([cluster])
 
         task.unlock_affected()
