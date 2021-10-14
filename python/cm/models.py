@@ -849,6 +849,11 @@ SCRIPT_TYPE = (
 )
 
 
+def get_any():
+    """Get `any` literal for JSON field default value"""
+    return 'any'
+
+
 class AbstractAction(ADCMModel):
     """Abstract base class for both Action and StageAction"""
 
@@ -870,7 +875,7 @@ class AbstractAction(ADCMModel):
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
 
-    multi_state_available = models.JSONField(default=lambda: 'any')
+    multi_state_available = models.JSONField(default=get_any)
     multi_state_unavailable = models.JSONField(default=list)
     multi_state_on_success_set = models.JSONField(default=list)
     multi_state_on_success_unset = models.JSONField(default=list)

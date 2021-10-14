@@ -15,7 +15,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterTestingModule } from '@angular/router/testing';
 import { ChannelService } from '@app/core/services';
-import { ApiService } from '@app/core/api/api.service';
 import { AddService } from '@app/shared/add-component/add.service';
 import { SharedModule } from '@app/shared/shared.module';
 import { provideMockStore } from '@ngrx/store/testing';
@@ -25,6 +24,8 @@ import { TakeService } from '../take.service';
 import { ComponentFactory, HCFactory, HcmHost, HCmRequires } from '../test';
 import { IRawHosComponent } from '../types';
 import { ServiceHostComponent } from './service-host.component';
+import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
+import { ApiService } from '@app/core/api';
 
 function genData() {
   const _c = ComponentFactory(4, 1);
@@ -62,7 +63,7 @@ describe('Service Host Map Component', () => {
     fixture.detectChanges();
   };
 
-  beforeEach(async () => {
+  beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [NoopAnimationsModule, SharedModule, RouterTestingModule],
       declarations: [ServiceHostComponent, Much2ManyComponent],
@@ -71,15 +72,20 @@ describe('Service Host Map Component', () => {
         TakeService,
         ChannelService,
         provideMockStore({ initialState }),
-        { provide: ApiService, useValue: {} },
-        { provide: AddService, useValue: {} },
+        {
+          provide: ApiService,
+          useValue: {}
+        },
+        {
+          provide: ADD_SERVICE_PROVIDER,
+          useClass: AddService
+        },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
-  });
 
-  beforeEach(() => {
     fixture = TestBed.createComponent(ServiceHostComponent);
+
     component = fixture.componentInstance;
   });
 
@@ -189,7 +195,6 @@ describe('Service Host Map Component', () => {
     components.forEach((c, i) => {
       const title = c.querySelector('.m2m .title-container button.title') as HTMLElement;
       const star = title.querySelector('span.warn');
-      const last = title.querySelector('span:last-child');
       const d = data.component[i];
       if (d.constraint?.length) {
         expect(star).toBeDefined();
@@ -207,8 +212,6 @@ describe('Service Host Map Component', () => {
     components.forEach((c, i) => {
       const title = c.querySelector('.m2m .title-container button.title') as HTMLElement;
       const star = title.querySelector('span.warn');
-      const last = title.querySelector('span:last-child');
-      const d = data.component[i];
       if (i !== 0) {
         expect(star).toBeDefined();
         //expect(last.attributes.getNamedItem('ng-reflect-message').value).toBe('Must be installed at least 1 components.');
