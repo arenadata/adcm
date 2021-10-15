@@ -14,6 +14,7 @@
 
 import json
 import os
+import fcntl
 import shutil
 import signal
 import subprocess
@@ -723,7 +724,28 @@ def log_group_check(group: GroupCheckLog, fail_msg: str, success_msg: str):
     group.save()
 
 
+def job_lock(job_id):
+    fname = os.path.join(config.RUN_DIR, f'{job_id}/config.json')
+    fd = open(fname, 'r', encoding='utf_8')
+    try:
+        fcntl.flock(fd.fileno(), fcntl.LOCK_EX)  # pylint: disable=I1101
+        log.debug('lock #%s ok', job_id)
+        return fd
+    except IOError as e:
+        log.debug('lock #%s fail %s', job_id, e)
+        return None
+
+
+def job_unlock(fd):
+    fd.close()
+
+
 def log_check(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
+    lock = job_lock(job_id)
+    if lock is None:
+        log.debug('re run log_check() because of lock')
+        return log_check(job_id, group_data, check_data)
+
     job = JobLog.obj.get(id=job_id)
     if job.status != config.Job.RUNNING:
         err('JOB_NOT_FOUND', f'job #{job.pk} has status "{job.status}", not "running"')
@@ -755,6 +777,7 @@ def log_check(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
             'format': ls.format,
         },
     )
+    job_unlock(lock)
     return cl
 
 
