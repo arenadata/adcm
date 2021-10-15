@@ -19,7 +19,7 @@ import social_django.views
 from social_core.exceptions import AuthForbidden
 from rest_framework.authtoken.models import Token
 
-import cm.config as config
+from cm import config
 from cm.logger import log
 from cm.models import UserProfile
 
@@ -39,7 +39,7 @@ def complete(request, *args, **kwargs):
     except AuthForbidden as e:
         log.error("social AUTH_ERROR: %s", e)
         params = urlencode({'error_code': 'AUTH_ERROR', 'error_msg': e})
-        return redirect("/login/?{}".format(params))
+        return redirect(f"/login/?{params}")
 
 
 def get_token(strategy, user, response, *args, **kwargs):

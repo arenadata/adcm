@@ -48,6 +48,7 @@ service_object:
     components: components_dict
     required: boolean
     monitoring: monitoring
+    config_group_customization: boolean
 
 cluster_object:
   <<: *common_object
@@ -56,6 +57,7 @@ cluster_object:
     upgrade: upgrade_list
     import: import_dict
     export: export
+    config_group_customization: boolean
 
 host_object:
   <<: *common_object
@@ -67,6 +69,7 @@ provider_object:
   items:
     <<: *common_object_items
     upgrade: upgrade_list
+    config_group_customization: boolean
 
 adcm_object:
   <<: *common_object
@@ -109,6 +112,7 @@ component_dict:
     requires: comp_req_list
     config: config_obj
     actions: actions_dict
+    config_group_customization: boolean
 
 comp_req_list:
   match: list
@@ -238,6 +242,7 @@ config_dict_sub_common: &config_dict_sub_common
     display_name: string
     description: string_or_none
     ui_options: json
+    group_customization: boolean
   required_items: &config_dict_sub_required
     - type
 
@@ -658,6 +663,9 @@ common_action: &common_action
     host_action: boolean
     log_files: list_of_string
     states: action_states_dict
+    masking: action_masking_or_none
+    on_fail: post_action
+    on_success: post_action
     hc_acl: action_hc_acl_list
     config: config_obj
 
@@ -734,6 +742,47 @@ action_states_dict:
     available: any_or_list
   required_items:
     - available
+
+action_masking_or_none:
+  match: one_of
+  variants:
+    - action_masking
+    - none
+
+action_masking:
+  match: dict
+  items:
+    state: availability_set_or_none
+    multi_state: availability_set_or_none
+
+availability_set_or_none:
+  match: one_of
+  variants:
+    - availability_set
+    - unavailability_set
+    - none
+
+availability_set:
+  match: dict
+  items:
+    available: any_or_list
+
+unavailability_set:
+  match: dict
+  items:
+    unavailable: any_or_list
+
+post_action:
+  match: dict
+  items:
+    state: string
+    multi_state: multi_state_set
+
+multi_state_set:
+  match: dict
+  items:
+    set: list_of_string
+    unset: list_of_string
 
 # Common types
 list_of_string:

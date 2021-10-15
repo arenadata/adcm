@@ -5,7 +5,7 @@ import { filter, map, mergeMap, take, takeWhile } from 'rxjs/operators';
 
 import { TaskService } from '@app/services/task.service';
 import { ACKNOWLEDGE_EVENT, NotificationsComponent } from '@app/components/notifications/notifications.component';
-import { Task, TaskRaw } from '@app/core/types';
+import { JobStatus, Task, TaskRaw } from '@app/core/types';
 import { EventMessage, ProfileService } from '@app/core/store';
 import { Stats, StatsService } from '@app/services/stats.service';
 
@@ -128,12 +128,20 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
   }
 
   getChangeTaskObservable(): Observable<EventMessage> {
-    return this.taskService.events(['change_job_status']).pipe(this.takeUntil());
+    return this.taskService.events({ events: ['change_job_status'] }).pipe(this.takeUntil());
   }
 
   decRunningCount() {
     const runningCount = this.runningCount.value - 1;
     this.runningCount.next(runningCount < 0 ? 0 : runningCount);
+  }
+
+  updateTask(updatedTaskId: number, task: TaskRaw, status: JobStatus) {
+    const tasks: TaskRaw[] = this.tasks.value.slice();
+    const index = tasks.findIndex(item => item.id === updatedTaskId);
+    task.status = status;
+    tasks.splice(index, 1, task);
+    this.tasks.next(tasks);
   }
 
   listenToJobs() {
@@ -158,10 +166,11 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
       filter(event => event.object.details.value !== 'created'),
     ).subscribe((event) => {
       const tasks: TaskRaw[] = this.tasks.value.slice();
-      const index = tasks.findIndex(item => item.id === event.object.id);
+      const updatedTaskId = event.object.id;
+      const index = tasks.findIndex(item => item.id === updatedTaskId);
       if (index >= 0) {
         const task: TaskRaw = Object.assign({}, tasks[index]);
-        task.status = event.object.details.value;
+        this.taskService.get(updatedTaskId).subscribe((updatedTask) => this.updateTask(updatedTaskId, updatedTask, event.object.details.value));
         tasks.splice(index, 1, task);
         this.tasks.next(tasks);
       } else {

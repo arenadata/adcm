@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Host page locators"""
+
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
@@ -21,18 +24,18 @@ class HostLocators:
     """Host main page elements locators"""
 
     class MenuNavigation(ObjectPageMenuLocators):
+        """Host main page main navigation elements locators"""
+
         ...
 
 
 class HostActionsLocators(HostLocators):
     """Locators for Actions menu on host page"""
 
-    action_name = Locator(
-        By.XPATH, "//app-action-card//mat-card-title", "Action title in Actions menu"
-    )
+    action_name = Locator(By.CSS_SELECTOR, "app-action-card mat-card-title", "Action title in Actions menu")
     action_btn = TemplateLocator(
         By.XPATH,
         "//mat-card-title[text()='{}']/ancestor::mat-card-header//button",
         "Action in Actions menu",
     )
-    action_run_btn = Locator(By.XPATH, "//app-action-list/button", "Action run button")
+    action_run_btn = Locator(By.CSS_SELECTOR, "app-action-list>button", "Action run button")

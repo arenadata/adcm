@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for host functions"""
+
 import json
 import os
 import random
@@ -23,33 +25,38 @@ from adcm_pytest_plugin.utils import get_data_dir
 from adcm_pytest_plugin import utils
 from jsonschema import validate
 
-# pylint: disable=W0621,W0212
+# pylint: disable=no-self-use,redefined-outer-name
 
 SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
 
 
 @pytest.fixture()
 def provider_bundle(sdk_client_fs: ADCMClient) -> Bundle:
+    """Path to provider bundle"""
     return sdk_client_fs.upload_from_fs(get_data_dir(__file__, "hostprovider_bundle"))
 
 
 @pytest.fixture()
 def provider(provider_bundle: Bundle) -> Provider:
+    """Create provider"""
     return provider_bundle.provider_create(utils.random_string())
 
 
 @pytest.fixture()
 def host(provider: Provider) -> Host:
+    """Create host"""
     return provider.host_create(utils.random_string())
 
 
 @pytest.fixture()
 def cluster_bundle(sdk_client_fs: ADCMClient):
+    """Path to cluster bundle"""
     return sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_bundle"))
 
 
 @pytest.fixture()
 def cluster(cluster_bundle: Bundle) -> Cluster:
+    """Create cluster"""
     return cluster_bundle.cluster_create(utils.random_string())
 
 
@@ -63,8 +70,9 @@ class TestHost:
         """
         Validate provider object schema
         """
-        host_prototype = sdk_client_fs.host_prototype()._data
-        schema = json.load(open(SCHEMAS + "/stack_list_item_schema.json"))
+        host_prototype = sdk_client_fs.host_prototype()._data  # pylint:disable=protected-access
+        with open(SCHEMAS + "/stack_list_item_schema.json", encoding='utf_8') as file:
+            schema = json.load(file)
         with allure.step("Match prototype with schema"):
             assert validate(host_prototype, schema) is None
 
@@ -85,9 +93,7 @@ class TestHost:
         """
         Check that hostcomponent is set
         """
-        bundle = sdk_client_fs.upload_from_fs(
-            get_data_dir(__file__, "cluster_service_hostcomponent")
-        )
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_service_hostcomponent"))
         cluster = bundle.cluster_create(utils.random_string())
         host = provider.host_create(utils.random_string())
         cluster.host_add(host)
@@ -95,10 +101,10 @@ class TestHost:
         component = service.component(name="ZOOKEEPER_CLIENT")
         cluster.hostcomponent_set((host, component))
         with allure.step("Check host component map"):
-            hc = cluster.hostcomponent()
-            assert len(hc) == 1
-            assert hc[0]["host_id"] == host.id
-            assert hc[0]["component_id"] == component.id
+            hc_map = cluster.hostcomponent()
+            assert len(hc_map) == 1
+            assert hc_map[0]["host_id"] == host.id
+            assert hc_map[0]["component_id"] == component.id
 
     def test_get_hostcomponent_list(self, cluster: Cluster, provider: Provider):
         """

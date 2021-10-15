@@ -19,9 +19,8 @@ from django.test import TestCase
 from django.utils import timezone
 
 import cm
-import cm.config as config
+from cm import config
 import cm.job as job_module
-import cm.lock as lock_module
 from cm import models
 from cm.logger import log
 from cm.unit_tests import utils
@@ -70,50 +69,64 @@ class TestJob(TestCase):
         self.assertEqual(task.status, config.Job.RUNNING)
         event.set_task_status.assert_called_once_with(task.id, config.Job.RUNNING)
 
-    def test_get_state(self):
-        bundle = models.Bundle.objects.create()
-        prototype = models.Prototype.objects.create(bundle=bundle)
-        # cluster = models.Cluster.objects.create(prototype=prototype)
-        action = models.Action.objects.create(
-            prototype=prototype, state_on_success='create', state_on_fail='installed'
-        )
+    def test_get_state_single_job(self):
+        bundle = utils.gen_bundle()
+        cluster_proto = utils.gen_prototype(bundle, 'cluster')
+        cluster = utils.gen_cluster(prototype=cluster_proto)
+        action = utils.gen_action(prototype=cluster_proto)
+        action.state_on_success = 'success'
+        action.state_on_fail = 'fail'
+        action.multi_state_on_success_set = ['success']
+        action.multi_state_on_success_unset = ['success unset']
+        action.multi_state_on_fail_set = ['fail']
+        action.multi_state_on_fail_unset = ['fail unset']
+        action.save()
+        task = utils.gen_task_log(cluster, action)
+        job = utils.gen_job_log(task)
 
-        job = models.JobLog(
-            action=action,
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-        )
-
-        data = [
-            (config.Job.SUCCESS, False, 'create'),
-            (config.Job.SUCCESS, False, None),
-            (config.Job.FAILED, False, 'installed'),
-            (config.Job.FAILED, False, None),
-            (config.Job.FAILED, True, 'installed'),
-            (config.Job.ABORTED, False, None),
+        # status: expected state, expected multi_state set, expected multi_state unset
+        test_data = [
+            [config.Job.SUCCESS, 'success', ['success'], ['success unset']],
+            [config.Job.FAILED, 'fail', ['fail'], ['fail unset']],
+            [config.Job.ABORTED, None, [], []],
         ]
+        for status, exp_state, exp_m_state_set, exp_m_state_unset in test_data:
+            state, m_state_set, m_state_unset = job_module.get_state(action, job, status)
+            self.assertEqual(state, exp_state)
+            self.assertListEqual(m_state_set, exp_m_state_set)
+            self.assertListEqual(m_state_unset, exp_m_state_unset)
 
-        for status, create_sub_action, test_state in data:
-            with self.subTest(
-                status=status, create_sub_action=create_sub_action, test_state=test_state
-            ):
+    def test_get_state_multi_job(self):
+        bundle = utils.gen_bundle()
+        cluster_proto = utils.gen_prototype(bundle, 'cluster')
+        cluster = utils.gen_cluster(prototype=cluster_proto)
+        action = utils.gen_action(prototype=cluster_proto)
+        action.state_on_success = 'success'
+        action.state_on_fail = 'fail'
+        action.multi_state_on_success_set = ['success']
+        action.multi_state_on_success_unset = ['success unset']
+        action.multi_state_on_fail_set = ['fail']
+        action.multi_state_on_fail_unset = ['fail unset']
+        action.save()
+        task = utils.gen_task_log(cluster, action)
+        job = utils.gen_job_log(task)
+        job.sub_action = models.SubAction.objects.create(
+            action=action, state_on_fail='sub_action fail'
+        )
 
-                if create_sub_action:
-                    sub_action = models.SubAction.objects.create(
-                        action=action, state_on_fail='installed'
-                    )
-                    job.sub_action = sub_action
-                if status == config.Job.SUCCESS and test_state is None:
-                    action.state_on_success = ''
-                if status == config.Job.FAILED and test_state is None:
-                    action.state_on_fail = ''
+        # status: expected state, expected multi_state set, expected multi_state unset
+        test_data = [
+            [config.Job.SUCCESS, 'success', ['success'], ['success unset']],
+            [config.Job.FAILED, 'sub_action fail', ['fail'], ['fail unset']],
+            [config.Job.ABORTED, None, [], []],
+        ]
+        for status, exp_state, exp_m_state_set, exp_m_state_unset in test_data:
+            state, m_state_set, m_state_unset = job_module.get_state(action, job, status)
+            self.assertEqual(state, exp_state)
+            self.assertListEqual(m_state_set, exp_m_state_set)
+            self.assertListEqual(m_state_unset, exp_m_state_unset)
 
-                state = job_module.get_state(action, job, status)
-
-                self.assertEqual(state, test_state)
-
-    @patch('cm.api.push_obj')
-    def test_set_action_state(self, mock_push_obj):
+    def test_set_action_state(self):
         bundle = models.Bundle.objects.create()
         prototype = models.Prototype.objects.create(bundle=bundle)
         cluster = models.Cluster.objects.create(prototype=prototype)
@@ -125,55 +138,25 @@ class TestJob(TestCase):
         task = models.TaskLog.objects.create(
             action=action, object_id=1, start_date=timezone.now(), finish_date=timezone.now()
         )
+        to_set = 'to set'
+        to_unset = 'to unset'
+        for obj in (adcm, cluster, cluster_object, host_provider, host):
+            obj.set_multi_state(to_unset)
 
         data = [
-            (cluster_object, 'running'),
-            (cluster, 'removed'),
-            (host, None),
-            (host_provider, 'stopped'),
-            (adcm, 'initiated'),
+            (cluster_object, 'running', to_set, to_unset),
+            (cluster, 'removed', to_set, to_unset),
+            (host, None, to_set, to_unset),
+            (host_provider, 'stopped', to_set, to_unset),
+            (adcm, 'initiated', to_set, to_unset),
         ]
 
-        for obj, state in data:
+        for obj, state, ms_to_set, ms_to_unset in data:
             with self.subTest(obj=obj, state=state):
-
-                job_module.set_action_state(action, task, obj, state)
-
-                mock_push_obj.assert_called_with(obj, state)
-
-    def test_unlock_obj(self):
-        event = Mock()
-        obj1 = Mock(stack=['running'])
-        obj2 = Mock(stack=[])
-        obj3 = Mock(stack='')
-
-        data = [
-            (obj1, obj1.set_state.assert_called_once),
-            (obj2, obj2.set_state.assert_not_called),
-            (obj3, obj3.set_state.assert_not_called),
-        ]
-
-        for obj, check_assert in data:
-            with self.subTest(obj=obj):
-                lock_module._unlock_obj(obj, event)
-                check_assert()
-
-    @patch('cm.lock._unlock_obj')
-    def test_unlock_objects(self, mock_unlock_obj):
-        bundle = utils.gen_bundle()
-        cluster = utils.gen_cluster(bundle=bundle)
-        service = utils.gen_service(cluster, bundle=bundle)
-        component = utils.gen_component(service, bundle=bundle)
-        host_provider = utils.gen_provider(bundle=bundle)
-        host = utils.gen_host(provider=host_provider, cluster=cluster, bundle=bundle)
-        utils.gen_host_component(component, host)
-        event = Mock()
-
-        for obj in [cluster, service, component, host, host_provider]:
-            with self.subTest(obj=obj):
-                lock_module.unlock_objects(obj, event)
-                self.assertEqual(mock_unlock_obj.call_count, 5)
-                mock_unlock_obj.reset_mock()
+                job_module.set_action_state(action, task, obj, state, [ms_to_set], [ms_to_unset])
+                self.assertEqual(obj.state, state or 'created')
+                self.assertIn(to_set, obj.multi_state)
+                self.assertNotIn(to_unset, obj.multi_state)
 
     @patch('cm.job.api.save_hc')
     def test_restore_hc(self, mock_save_hc):
@@ -208,7 +191,6 @@ class TestJob(TestCase):
         )
 
         job_module.restore_hc(task, action, config.Job.FAILED)
-
         mock_save_hc.assert_called_once_with(cluster, [(cluster_object, host, service_component)])
 
     @patch('cm.job.err')
@@ -446,7 +428,7 @@ class TestJob(TestCase):
                     job_config['job']['hostgroup'] = '127.0.0.1'
 
                 mock_open.assert_called_with(
-                    '{}/{}/config.json'.format(config.RUN_DIR, job.id), 'w'
+                    f'{config.RUN_DIR}/{job.id}/config.json', 'w', encoding='utf_8'
                 )
                 mock_dump.assert_called_with(job_config, fd, indent=3, sort_keys=True)
                 mock_get_adcm_config.assert_called()

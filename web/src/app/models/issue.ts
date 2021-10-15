@@ -7,9 +7,9 @@ export interface IssueEntity extends AdcmEntity {
 }
 
 export interface IIssues {
-  config: boolean;
+  config?: boolean;
   required_import?: boolean;
-  host_component: false;
+  host_component?: false;
   cluster?: IssueEntity[];
   service?: IssueEntity[];
 }

@@ -23,7 +23,7 @@ from django.db import IntegrityError
 
 from adcm.settings import ADCM_VERSION
 from cm.logger import log
-import cm.config as config
+from cm import config
 import cm.stack
 import cm.status_api
 from cm.adcm_config import proto_ref, get_prototype_config, init_object_config, switch_config
@@ -121,14 +121,14 @@ def untar_safe(bundle_hash, path):
     try:
         dir_path = untar(bundle_hash, path)
     except tarfile.ReadError:
-        err('BUNDLE_ERROR', "Can\'t open bundle tar file: {}".format(path))
+        err('BUNDLE_ERROR', f"Can\'t open bundle tar file: {path}")
     return dir_path
 
 
 def untar(bundle_hash, bundle):
     path = os.path.join(config.BUNDLE_DIR, bundle_hash)
     if os.path.isdir(path):
-        err('BUNDLE_ERROR', 'bundle directory "{}" already exists'.format(path))
+        err('BUNDLE_ERROR', f'bundle directory "{path}" already exists')
     tar = tarfile.open(bundle)
     tar.extractall(path=path)
     tar.close()
@@ -139,9 +139,9 @@ def get_hash_safe(path):
     try:
         bundle_hash = get_hash(path)
     except FileNotFoundError:
-        err('BUNDLE_ERROR', "Can\'t find bundle file: {}".format(path))
+        err('BUNDLE_ERROR', f"Can\'t find bundle file: {path}")
     except PermissionError:
-        err('BUNDLE_ERROR', "Can\'t open bundle file: {}".format(path))
+        err('BUNDLE_ERROR', f"Can\'t open bundle file: {path}")
     return bundle_hash
 
 
@@ -224,7 +224,7 @@ def process_bundle(path, bundle_hash):
 def check_stage():
     def count(model):
         if model.objects.all().count():
-            err('BUNDLE_ERROR', 'Stage is not empty {}'.format(model))
+            err('BUNDLE_ERROR', f'Stage is not empty {model}')
 
     for model in STAGE:
         count(model)
@@ -247,7 +247,7 @@ def re_check_actions():
         if not act.hostcomponentmap:
             continue
         hc = act.hostcomponentmap
-        ref = 'in hc_acl of action "{}" of {}'.format(act.name, proto_ref(act.prototype))
+        ref = f'in hc_acl of action "{act.name}" of {proto_ref(act.prototype)}'
         for item in hc:
             sp = StagePrototype.objects.filter(type='service', name=item['service'])
             if not sp:
@@ -263,7 +263,7 @@ def re_check_actions():
 def check_component_requires(comp):
     if not comp.requires:
         return
-    ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.parent))
+    ref = f'in requires of component "{comp.name}" of {proto_ref(comp.parent)}'
     req_list = comp.requires
     for i, item in enumerate(req_list):
         if 'service' in item:
@@ -282,7 +282,7 @@ def check_component_requires(comp):
 def check_bound_component(comp):
     if not comp.bound_to:
         return
-    ref = 'in "bound_to" of component "{}" of {}'.format(comp.name, proto_ref(comp.parent))
+    ref = f'in "bound_to" of component "{comp.name}" of {proto_ref(comp.parent)}'
     bind = comp.bound_to
     service = StagePrototype.obj.get(name=bind['service'], type='service')
     bind_comp = StagePrototype.obj.get(name=bind['component'], type='component', parent=service)
@@ -386,6 +386,7 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 'display_name',
                 'description',
                 'adcm_min_version',
+                'config_group_customization',
             ),
         )
         p.bundle = bundle
@@ -435,9 +436,15 @@ def copy_stage_actons(stage_actions, prototype):
             'type',
             'script',
             'script_type',
+            'state_available',
+            'state_unavailable',
             'state_on_success',
             'state_on_fail',
-            'state_available',
+            'multi_state_available',
+            'multi_state_on_success_set',
+            'multi_state_on_success_unset',
+            'multi_state_on_fail_set',
+            'multi_state_on_fail_unset',
             'params',
             'log_files',
             'hostcomponentmap',
@@ -456,10 +463,19 @@ def copy_stage_actons(stage_actions, prototype):
 def copy_stage_sub_actons(bundle):
     sub_actions = []
     for ssubaction in StageSubAction.objects.all():
+        if ssubaction.action.prototype.type == 'component':
+            parent = Prototype.objects.get(
+                bundle=bundle,
+                type='service',
+                name=ssubaction.action.prototype.parent.name,
+            )
+        else:
+            parent = None
         action = Action.objects.get(
             prototype__bundle=bundle,
             prototype__type=ssubaction.action.prototype.type,
             prototype__name=ssubaction.action.prototype.name,
+            prototype__parent=parent,
             prototype__version=ssubaction.action.prototype.version,
             name=ssubaction.action.name,
         )
@@ -492,6 +508,7 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
                 'display_name',
                 'description',
                 'adcm_min_version',
+                'config_group_customization',
             ),
         )
         comp.bundle = bundle
@@ -539,6 +556,7 @@ def copy_stage_config(stage_config, prototype):
                 'limits',
                 'required',
                 'ui_options',
+                'group_customization',
             ),
         )
         if sc.action:
@@ -608,6 +626,7 @@ def update_bundle_from_stage(
             p.shared = sp.shared
             p.monitoring = sp.monitoring
             p.adcm_min_version = sp.adcm_min_version
+            p.config_group_customization = sp.config_group_customization
         except Prototype.DoesNotExist:
             p = copy_obj(
                 sp,
@@ -626,6 +645,7 @@ def update_bundle_from_stage(
                     'display_name',
                     'description',
                     'adcm_min_version',
+                    'config_group_customization',
                 ),
             )
             p.bundle = bundle
@@ -640,9 +660,14 @@ def update_bundle_from_stage(
                         'type',
                         'script',
                         'script_type',
+                        'state_available',
                         'state_on_success',
                         'state_on_fail',
-                        'state_available',
+                        'multi_state_available',
+                        'multi_state_on_success_set',
+                        'multi_state_on_success_unset',
+                        'multi_state_on_fail_set',
+                        'multi_state_on_fail_unset',
                         'params',
                         'log_files',
                         'hostcomponentmap',
@@ -664,9 +689,14 @@ def update_bundle_from_stage(
                         'type',
                         'script',
                         'script_type',
+                        'state_available',
                         'state_on_success',
                         'state_on_fail',
-                        'state_available',
+                        'multi_state_available',
+                        'multi_state_on_success_set',
+                        'multi_state_on_success_unset',
+                        'multi_state_on_fail_set',
+                        'multi_state_on_fail_unset',
                         'params',
                         'log_files',
                         'hostcomponentmap',
@@ -697,6 +727,7 @@ def update_bundle_from_stage(
                 'limits',
                 'required',
                 'ui_options',
+                'group_customization',
             )
             act = None
             if sc.action:

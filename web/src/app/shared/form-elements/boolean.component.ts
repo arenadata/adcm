@@ -20,8 +20,11 @@ const options = { clickAction: 'noop', color: 'accent' };
   selector: 'app-fields-boolean',
   template: `
     <ng-container [formGroup]="form">
-      <mat-checkbox [labelPosition]="'before'" [formControlName]="field.name" [indeterminate]="field.value === null" (click)="cbChange()"></mat-checkbox>
-      <mat-error *ngIf="!isValid"><app-error-info [field]="field" [control]="control"></app-error-info></mat-error>
+      <mat-checkbox [formControlName]="field.name" [indeterminate]="field.value === null"
+                    (click)="cbChange()"></mat-checkbox>
+      <mat-error *ngIf="!isValid">
+        <app-error-info [field]="field" [control]="control"></app-error-info>
+      </mat-error>
     </ng-container>
   `,
   styles: [':host {height: 58px;} mat-error { font-size: 0.75em; margin-left: 14px; }'],
@@ -29,9 +32,12 @@ const options = { clickAction: 'noop', color: 'accent' };
 })
 export class BooleanComponent extends FieldDirective {
   cbChange() {
-    if (this.field.read_only) return;
+    if (this.field.read_only || this.control.disabled) return;
     const tape = this.field.validator.required ? [true, false] : [null, true, false];
     this.field.value = tape[(tape.indexOf(this.field.value as boolean) + 1) % tape.length];
+    this.control.markAsDirty({
+      onlySelf: true
+    });
     this.control.setValue(this.field.value);
   }
 }

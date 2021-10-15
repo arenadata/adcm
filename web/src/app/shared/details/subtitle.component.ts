@@ -17,10 +17,7 @@ import { IDetails } from './navigation.service';
   template: `
     <ng-container *ngIf="cur">
       <ng-container *ngIf="cur.typeName === 'job'; else link">
-        <ng-container *ngFor="let o of cur.objects; index as i; last as lastElement">
-          <a [routerLink]="o | objectLinkSubtitle : cur.objects">{{ o.name }}</a>
-          <span *ngIf="!lastElement"> / </span>
-        </ng-container>
+        <app-task-objects [row]="cur"></app-task-objects>
       </ng-container>
       <ng-template #link>
         <a [routerLink]="['/', cur.provider_id ? 'provider' : 'bundle', cur.provider_id || cur.bundle_id || {}]">

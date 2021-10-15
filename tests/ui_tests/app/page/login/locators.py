@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Login page locators"""
+
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator
@@ -18,10 +20,10 @@ from tests.ui_tests.app.helpers.locator import Locator
 class LoginPageLocators:
     """Login page elements locators"""
 
-    login_form_block = Locator(By.XPATH, "//div[contains(@class, 'form-auth')]", "login block")
-    login_input = Locator(By.ID, "login", "login input")
-    password_input = Locator(By.ID, "password", "password input")
+    login_form_block = Locator(By.CSS_SELECTOR, "*.form-auth", "login block")
+    login_input = Locator(By.CSS_SELECTOR, "#login", "login input")
+    password_input = Locator(By.CSS_SELECTOR, "#password", "password input")
 
     login_btn = Locator(By.XPATH, "//button[./span[text()='Login']]", "button Login")
 
-    login_warning = Locator(By.CLASS_NAME, "warn", "warning on login page")
+    login_warning = Locator(By.CSS_SELECTOR, ".warn", "warning on login page")

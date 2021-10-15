@@ -13,7 +13,6 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { AdwpListModule } from '@adwp-ui/widgets';
 
 import { AddingModule } from './add-component/adding.module';
 import {
@@ -28,10 +27,8 @@ import {
   StatusInfoComponent,
   UpgradeComponent,
 } from './components';
-import { ActionCardComponent } from './components/actions/action-card/action-card.component';
 import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
 import { MultiSortDirective } from './components/list/multi-sort.directive';
-import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { DetailsModule } from './details/details.module';
 import { DynamicDirective, HoverDirective } from './directives';
@@ -51,6 +48,7 @@ import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
 import { TranslateModule } from '@ngx-translate/core';
 import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
 import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
+import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
 
 @NgModule({
   imports: [
@@ -66,9 +64,7 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
     HostComponentsMapModule,
     DetailsModule,
     TranslateModule,
-    AdwpListModule.forRoot({
-      itemsPerPage: [10, 25, 50, 100],
-    }),
+    TooltipModule
   ],
   declarations: [
     DialogComponent,
@@ -78,7 +74,6 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
     ButtonSpinnerComponent,
     TagEscPipe,
     IssueInfoComponent,
-    SimpleTextComponent,
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
@@ -87,7 +82,6 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
     ExportComponent,
     ActionMasterComponent,
     ActionMasterConfigComponent,
-    ActionCardComponent,
     StatusColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,
@@ -95,7 +89,7 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
     ServiceComponentsComponent,
     ToDataSourcePipe,
     PickKeysPipe,
-    TranslateKeysPipe
+    TranslateKeysPipe,
   ],
   exports: [
     FormsModule,
@@ -119,20 +113,20 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
     MainInfoComponent,
     ImportComponent,
     ExportComponent,
-    ActionCardComponent,
     StatusColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,
     ClusterColumnComponent,
     ServiceComponentsComponent,
-    AdwpListModule,
     ToDataSourcePipe,
     PickKeysPipe,
     TranslateKeysPipe,
+    TooltipModule
   ],
   providers: [
     JobService,
     TaskService,
   ],
 })
-export class SharedModule {}
+export class SharedModule {
+}

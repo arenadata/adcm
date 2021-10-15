@@ -20,15 +20,15 @@ from ansible.parsing.vault import VaultSecret, VaultAES256
 from django.conf import settings
 from django.db.utils import OperationalError
 
-import cm.config as config
 import cm.variant
+from cm import config
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
-from cm.models import ADCM, PrototypeConfig, ObjectConfig, ConfigLog
+from cm.models import ADCM, PrototypeConfig, ObjectConfig, ConfigLog, GroupConfig
 
 
 def proto_ref(proto):
-    return '{} "{}" {}'.format(proto.type, proto.name, proto.version)
+    return f'{proto.type} "{proto.name}" {proto.version}'
 
 
 def obj_ref(obj):
@@ -38,7 +38,7 @@ def obj_ref(obj):
         name = obj.fqdn
     else:
         name = obj.prototype.name
-    return '{} #{} "{}"'.format(obj.prototype.type, obj.id, name)
+    return f'{obj.prototype.type} #{obj.id} "{name}"'
 
 
 def obj_to_dict(obj, keys):
@@ -53,14 +53,14 @@ def to_flat_dict(conf, spec):
     flat = {}
     for c1 in conf:
         if isinstance(conf[c1], dict):
-            key = '{}/'.format(c1)
+            key = f'{c1}/'
             if key in spec and spec[key].type != 'group':
-                flat['{}/{}'.format(c1, '')] = conf[c1]
+                flat[f'{c1}/{""}'] = conf[c1]
             else:
                 for c2 in conf[c1]:
-                    flat['{}/{}'.format(c1, c2)] = conf[c1][c2]
+                    flat[f'{c1}/{c2}'] = conf[c1][c2]
         else:
-            flat['{}/{}'.format(c1, '')] = conf[c1]
+            flat[f'{c1}/{""}'] = conf[c1]
     return flat
 
 
@@ -103,7 +103,7 @@ def type_is_complex(conf_type):
 
 
 def read_file_type(proto, default, bundle_hash, name, subname):
-    msg = 'config key "{}/{}" default file'.format(name, subname)
+    msg = f'config key "{name}/{subname}" default file'
     return read_bundle_file(proto, default, bundle_hash, msg)
 
 
@@ -115,7 +115,7 @@ def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None):
     else:
         path = os.path.join(config.BUNDLE_DIR, bundle_hash, fname)
     try:
-        fd = open(path, 'r')
+        fd = open(path, 'r', encoding='utf_8')
     except FileNotFoundError:
         msg = '{} "{}" is not found ({})'
         err('CONFIG_TYPE_ERROR', msg.format(pattern, path, ref))
@@ -180,7 +180,7 @@ def get_prototype_config(proto, action=None):
             attr[c.name] = {'active': c.limits['active']}
 
     for c in PrototypeConfig.objects.filter(prototype=proto, action=action).order_by('id'):
-        flat_spec['{}/{}'.format(c.name, c.subname)] = c
+        flat_spec[f'{c.name}/{c.subname}'] = c
         if c.subname == '':
             if c.type != 'group':
                 spec[c.name] = obj_to_dict(c, flist)
@@ -248,24 +248,24 @@ def switch_config(
 
     # go from flat config to 2-level dictionary
     unflat_conf = {}
-    for key in new_conf:
+    for key, value in new_conf.items():
         k1, k2 = key.split('/')
         if k2 == '':
-            unflat_conf[k1] = new_conf[key]
+            unflat_conf[k1] = value
         else:
             if k1 not in unflat_conf:
                 unflat_conf[k1] = {}
-            unflat_conf[k1][k2] = new_conf[key]
+            unflat_conf[k1][k2] = value
 
-    # skip inactive groups and set attributes for new config
+    # set activatable groups attributes for new config
+    attr = {}
     for key in unflat_conf:
         if key in active_groups:
-            cl.attr[key] = {'active': True}
+            attr[key] = {'active': True}
         if key in inactive_groups:
-            unflat_conf[key] = None
-            cl.attr[key] = {'active': False}
+            attr[key] = {'active': False}
 
-    save_obj_config(obj.config, unflat_conf, cl.attr, 'upgrade')
+    save_obj_config(obj.config, unflat_conf, attr, 'upgrade')
     process_file_type(obj, new_unflat_spec, unflat_conf)
 
 
@@ -289,11 +289,21 @@ def save_obj_config(obj_conf, conf, attr, desc=''):
     return cl
 
 
-def cook_file_type_name(obj, key, subkey):
-    obj_type = 'task'
+def cook_file_type_name(obj, key, sub_key):
     if hasattr(obj, 'prototype'):
-        obj_type = obj.prototype.type
-    return os.path.join(config.FILE_DIR, '{}.{}.{}.{}'.format(obj_type, obj.id, key, subkey))
+        filename = [obj.prototype.type, str(obj.id), key, sub_key]
+    elif isinstance(obj, GroupConfig):
+        filename = [
+            obj.object.prototype.type,
+            str(obj.object.id),
+            'group',
+            str(obj.id),
+            key,
+            sub_key,
+        ]
+    else:
+        filename = ['task', str(obj.id), key, sub_key]
+    return os.path.join(config.FILE_DIR, '.'.join(filename))
 
 
 def save_file_type(obj, key, subkey, value):
@@ -313,7 +323,7 @@ def save_file_type(obj, key, subkey, value):
         if value != '':
             if value[-1] == '-':
                 value += '\n'
-    fd = open(filename, 'w')
+    fd = open(filename, 'w', encoding='utf_8')
     fd.write(value)
     fd.close()
     os.chmod(filename, 0o0600)
@@ -340,7 +350,7 @@ def ansible_encrypt(msg):
 
 def ansible_encrypt_and_format(msg):
     ciphertext = ansible_encrypt(msg)
-    return '{}\n{}'.format(config.ANSIBLE_VAULT_HEADER, str(ciphertext, 'utf-8'))
+    return f'{config.ANSIBLE_VAULT_HEADER}\n{str(ciphertext, "utf-8")}'
 
 
 def ansible_decrypt(msg):
@@ -404,7 +414,9 @@ def ui_config(obj, cl):
     conf = []
     _, spec, _, _ = get_prototype_config(obj.prototype)
     obj_conf = cl.config
+    obj_attr = cl.attr
     flat_conf = to_flat_dict(obj_conf, spec)
+    flat_group_keys = to_flat_dict(obj_attr.get('group_keys', {}), spec)
     slist = ('name', 'subname', 'type', 'description', 'display_name', 'required')
     for key in spec:
         item = obj_to_dict(spec[key], slist)
@@ -423,6 +435,11 @@ def ui_config(obj, cl):
             item['value'] = flat_conf[key]
         else:
             item['value'] = get_default(spec[key])
+        if flat_group_keys:
+            if spec[key].type == 'group':
+                item['group'] = any((v for k, v in flat_group_keys.items() if k.startswith(key)))
+            else:
+                item['group'] = flat_group_keys[key]
         conf.append(item)
     return conf
 
@@ -489,34 +506,99 @@ def restore_read_only(obj, spec, conf, old_conf):
 
 def check_json_config(proto, obj, new_conf, old_conf=None, attr=None):
     spec, flat_spec, _, _ = get_prototype_config(proto)
-    check_attr(proto, attr, flat_spec)
+    check_attr(proto, obj, attr, flat_spec)
     cm.variant.process_variant(obj, spec, new_conf)
     return check_config_spec(proto, obj, spec, flat_spec, new_conf, old_conf, attr)
 
 
-def check_attr(proto, attr, spec):
+def check_structure_for_group_attr(group_attr, spec, key_name):
+    """Check structure for `group_keys` and `custom_group_keys` field in attr"""
+    flat_group_attr = to_flat_dict(group_attr, spec)
+    for key, value in flat_group_attr.items():
+        if key not in spec:
+            msg = 'invalid field in `{}`'
+            err('ATTRIBUTE_ERROR', msg.format(key_name))
+        if not isinstance(value, bool):
+            msg = 'invalid type `{}` field in `{}`'
+            err('ATTRIBUTE_ERROR', msg.format(key, key_name))
+    for key, value in spec.items():
+        if value.type != 'group':
+            if key not in flat_group_attr:
+                msg = f'there is no `{key}` field in `{key_name}`'
+                err('ATTRIBUTE_ERROR', msg)
+    return flat_group_attr
+
+
+def check_custom_group_keys_attr(proto, custom_group_keys, spec):
+    """Check `custom_group_keys` field in attr"""
+    flat_custom_group_keys = check_structure_for_group_attr(
+        custom_group_keys, spec, 'custom_group_keys'
+    )
+    for key, value in flat_custom_group_keys.items():
+        group_customization = spec[key].group_customization
+        if group_customization is None:
+            group_customization = proto.config_group_customization
+        if value != group_customization:
+            msg = '`custom_group_keys` field cannot be changed, read-only'
+            err('ATTRIBUTE_ERROR', msg)
+
+
+def check_agreement_group_attr(group_keys, custom_group_keys, spec):
+    """Check agreement group_keys and custom_group_keys"""
+    flat_group_keys = to_flat_dict(group_keys, spec)
+    flat_custom_group_keys = to_flat_dict(custom_group_keys, spec)
+    for key, value in flat_custom_group_keys.items():
+        if not value and flat_group_keys[key]:
+            msg = f'the `{key}` parameter cannot be included in the group'
+            err('ATTRIBUTE_ERROR', msg)
+
+
+def check_group_keys_attr(attr, spec, proto):
+    """Check attr for group config"""
+    if 'group_keys' not in attr or 'custom_group_keys' not in attr:
+        err('ATTRIBUTE_ERROR', "Attr must contain 'group_keys' and 'custom_group_keys' keys")
+    group_keys = attr.get('group_keys')
+    custom_group_keys = attr.get('custom_group_keys')
+    check_structure_for_group_attr(group_keys, spec, 'group_keys')
+    check_custom_group_keys_attr(proto, custom_group_keys, spec)
+    check_agreement_group_attr(group_keys, custom_group_keys, spec)
+
+
+def check_attr(proto, obj, attr, spec):  # pylint: disable=too-many-branches
+    # TODO: refactor this func
     if not attr:
         return
+    is_group_config = False
+    if isinstance(obj, GroupConfig):
+        is_group_config = True
+
     ref = proto_ref(proto)
     allowed_key = ('active',)
     if not isinstance(attr, dict):
         err('ATTRIBUTE_ERROR', 'Attr should be a map')
-    for key in attr:
+    if is_group_config:
+        check_group_keys_attr(attr, spec, proto)
+    for key, value in attr.items():
+        if key in ['group_keys', 'custom_group_keys']:
+            if not is_group_config:
+                msg = 'Not allowed key "{}" for object ({})'
+                err('ATTRIBUTE_ERROR', msg.format(key, ref))
+            continue
         if key + '/' not in spec:
             msg = 'There isn\'t group "{}" in config ({})'
             err('ATTRIBUTE_ERROR', msg.format(key, ref))
         if spec[key + '/'].type != 'group':
             msg = 'Config key "{}" is not a group ({})'
             err('ATTRIBUTE_ERROR', msg.format(key, ref))
-        if not isinstance(attr[key], dict):
+        if not isinstance(value, dict):
             msg = 'Value of attribute "{}" should be a map ({})'
             err('ATTRIBUTE_ERROR', msg.format(key, ref))
-        for attr_key in attr[key]:
+        for attr_key in value:
             if attr_key not in allowed_key:
                 msg = 'Not allowed key "{}" of attribute "{}" ({})'
                 err('ATTRIBUTE_ERROR', msg.format(attr_key, key, ref))
-        if 'active' in attr[key]:
-            if not isinstance(attr[key]['active'], bool):
+        if 'active' in value:
+            if not isinstance(value['active'], bool):
                 msg = 'Value of key "{}" of attribute "{}" should be boolean ({})'
                 err('ATTRIBUTE_ERROR', msg.format('active', key, ref))
 
@@ -524,6 +606,10 @@ def check_attr(proto, attr, spec):
 def check_config_spec(
     proto, obj, spec, flat_spec, conf, old_conf=None, attr=None
 ):  # pylint: disable=too-many-branches,too-many-statements
+    group = None
+    if isinstance(obj, GroupConfig):
+        group = obj
+        obj = group.object
     ref = proto_ref(proto)
     if isinstance(conf, (float, int)):
         err('JSON_ERROR', 'config should not be just one int or float')
@@ -532,7 +618,7 @@ def check_config_spec(
         err('JSON_ERROR', 'config should not be just one string')
 
     def key_is_required(key, subkey, spec):
-        if config_is_ro(obj, '{}/{}'.format(key, subkey), spec.get('limits', '')):
+        if config_is_ro(obj, f'{key}/{subkey}', spec.get('limits', '')):
             return False
         if spec['required']:
             return True
@@ -605,7 +691,7 @@ def check_config_spec(
     if old_conf:
         check_read_only(obj, flat_spec, conf, old_conf)
         restore_read_only(obj, spec, conf, old_conf)
-        process_file_type(obj, spec, conf)
+        process_file_type(group or obj, spec, conf)
     process_password(spec, conf)
     return conf
 
@@ -644,12 +730,16 @@ def check_config_type(
     if spec['type'] == 'list':
         if not isinstance(value, list):
             err('CONFIG_VALUE_ERROR', tmpl1.format("should be an array"))
+        if 'required' in spec and spec['required'] and value == []:
+            err('CONFIG_VALUE_ERROR', tmpl1.format("should be not empty"))
         for idx, v in enumerate(value):
             check_str(idx, v)
 
     if spec['type'] == 'map':
         if not isinstance(value, dict):
             err('CONFIG_VALUE_ERROR', tmpl1.format("should be a map"))
+        if 'required' in spec and spec['required'] and value == {}:
+            err('CONFIG_VALUE_ERROR', tmpl1.format("should be not empty"))
         for k, v in value.items():
             check_str(k, v)
 
@@ -674,10 +764,10 @@ def check_config_type(
         try:
             yspec.checker.process_rule(value, schema, 'root')
         except yspec.checker.FormatError as e:
-            msg = tmpl1.format("yspec error: {} at block {}".format(str(e), e.data))
+            msg = tmpl1.format(f"yspec error: {str(e)} at block {e.data}")
             err('CONFIG_VALUE_ERROR', msg)
         except yspec.checker.SchemaError as e:
-            err('CONFIG_VALUE_ERROR', 'yspec error: {}'.format(str(e)))
+            err('CONFIG_VALUE_ERROR', f'yspec error: {str(e)}')
 
     if spec['type'] == 'boolean':
         if not isinstance(value, bool):
@@ -695,11 +785,11 @@ def check_config_type(
         limits = spec['limits']
         if 'min' in limits:
             if value < limits['min']:
-                msg = 'should be more than {}'.format(limits['min'])
+                msg = f'should be more than {limits["min"]}'
                 err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
         if 'max' in limits:
             if value > limits['max']:
-                msg = 'should be less than {}'.format(limits['max'])
+                msg = f'should be less than {limits["max"]}'
                 err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
 
     if spec['type'] == 'option':
@@ -710,7 +800,7 @@ def check_config_type(
                 check = True
                 break
         if not check:
-            msg = 'not in option list: "{}"'.format(option)
+            msg = f'not in option list: "{option}"'
             err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
 
     if spec['type'] == 'variant':
@@ -718,12 +808,12 @@ def check_config_type(
         if source['strict']:
             if source['type'] == 'inline':
                 if value not in source['value']:
-                    msg = 'not in variant list: "{}"'.format(source['value'])
+                    msg = f'not in variant list: "{source["value"]}"'
                     err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
             if not default:
                 if source['type'] in ('config', 'builtin'):
                     if value not in source['value']:
-                        msg = 'not in variant list: "{}"'.format(source['value'])
+                        msg = f'not in variant list: "{source["value"]}"'
                         err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
 
 

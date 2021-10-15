@@ -10,18 +10,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=line-too-long
+
 from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
 from ansible.utils.vars import merge_hash
 
 import cm
-import cm.config as config
-from cm.errors import raise_AdcmEx as err
-from cm.api import push_obj, add_hc, get_hc
+from cm.api import add_hc, get_hc
+from cm.api_context import ctx
 from cm.adcm_config import set_object_config
-from cm.models import Cluster, ClusterObject, ServiceComponent, HostProvider, Host
-from cm.models import Prototype, Action, JobLog
-
+from cm.errors import raise_AdcmEx as err
+from cm.models import (
+    ADCMEntity,
+    Cluster,
+    ClusterObject,
+    ServiceComponent,
+    HostProvider,
+    Host,
+    Prototype,
+    Action,
+    JobLog,
+)
 
 MSG_NO_CONFIG = (
     "There are no job related vars in inventory. It's mandatory for that module to have some"
@@ -37,7 +47,7 @@ MSG_WRONG_CONTEXT = 'Wrong context. Should be "{}", not "{}"'
 MSG_WRONG_CONTEXT_ID = 'Wrong context. There are no "{}" in context'
 MSG_NO_CLUSTER_CONTEXT = (
     "You are trying to change cluster state outside of cluster context. Cluster state can be "
-    "changed in cluster's or service's actions only. Bad Dobby!"
+    "changed in cluster's, service's or component's actions only. Bad Dobby!"
 )
 MSG_NO_CLUSTER_CONTEXT2 = (
     "You are trying to change service state outside of cluster context. Service state can be"
@@ -50,8 +60,11 @@ MSG_NO_SERVICE_CONTEXT = (
 )
 MSG_MANDATORY_ARGS = "Arguments {} are mandatory. Bad Dobby!"
 MSG_NO_ROUTE = "Incorrect combination of args. Bad Dobby!"
-MSG_WRONG_SERVICE = "Do not try to change one service from another."
 MSG_NO_SERVICE_NAME = "You must specify service name in arguments."
+MSG_NO_MULTI_STATE_TO_DELETE = (
+    "You try to delete absent multi_state. You should define missing_ok as True "
+    "or choose an existing multi_state"
+)
 
 
 def check_context_type(task_vars, *context_type, err_msg=None):
@@ -125,32 +138,28 @@ class ContextActionModule(ActionBase):
     def _do_component_by_name(self, task_vars, context):
         raise NotImplementedError
 
+    def _do_provider(self, task_vars, context):
+        raise NotImplementedError
+
+    def _do_host_from_provider(self, task_vars, context):
+        raise NotImplementedError
+
     def run(self, tmp=None, task_vars=None):  # pylint: disable=too-many-branches
         self._check_mandatory()
         obj_type = self._task.args["type"]
 
         if obj_type == 'cluster':
-            check_context_type(task_vars, 'cluster', 'service')
+            check_context_type(task_vars, 'cluster', 'service', 'component')
             res = self._do_cluster(
                 task_vars, {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
             )
         elif obj_type == "service" and "service_name" in self._task.args:
-            check_context_type(task_vars, 'cluster', 'service')
-            context = task_vars['context']
-            if context['type'] == 'service':
-                service = cm.models.ClusterObject.objects.get(pk=context["service_id"])
-                service_name = service.prototype.name
-                if service_name != self._task.args["service_name"]:
-                    # It is forbiden to change one service from another one.
-                    # But due to usage pattern it is common case when developers
-                    # use service_name in service playbooks to make them general
-                    # use (for cluster context and for service context)
-                    raise AnsibleError(MSG_WRONG_SERVICE)
+            check_context_type(task_vars, 'cluster', 'service', 'component')
             res = self._do_service_by_name(
                 task_vars, {'cluster_id': self._get_job_var(task_vars, 'cluster_id')}
             )
         elif obj_type == "service":
-            check_context_type(task_vars, 'service')
+            check_context_type(task_vars, 'service', 'component')
             res = self._do_service(
                 task_vars,
                 {
@@ -165,27 +174,29 @@ class ContextActionModule(ActionBase):
             check_context_type(task_vars, 'host')
             res = self._do_host(task_vars, {'host_id': self._get_job_var(task_vars, 'host_id')})
         elif obj_type == "provider":
-            check_context_type(task_vars, 'provider')
+            check_context_type(task_vars, 'provider', 'host')
             res = self._do_provider(
                 task_vars, {'provider_id': self._get_job_var(task_vars, 'provider_id')}
             )
         elif obj_type == "component" and "component_name" in self._task.args:
-            check_context_type(task_vars, 'cluster', 'service', 'component')
-            context = task_vars['context']
-            if context['type'] == 'component':
-                res = self._do_component(
-                    task_vars, {'component_id': self._get_job_var(task_vars, 'component_id')}
-                )
-            else:
-                check_context_type(task_vars, 'cluster', 'service')
-                if context['type'] != 'service':
-                    if 'service_name' not in self._task.args:
-                        raise AnsibleError(MSG_NO_SERVICE_NAME)
+            if "service_name" in self._task.args:
+                check_context_type(task_vars, 'cluster', 'service', 'component')
                 res = self._do_component_by_name(
                     task_vars,
                     {
                         'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
-                        'service_id': task_vars['job'].get('service_id', None),
+                        'service_id': None,
+                    },
+                )
+            else:
+                check_context_type(task_vars, 'cluster', 'service', 'component')
+                if task_vars['job'].get('service_id', None) is None:
+                    raise AnsibleError(MSG_NO_SERVICE_NAME)
+                res = self._do_component_by_name(
+                    task_vars,
+                    {
+                        'cluster_id': self._get_job_var(task_vars, 'cluster_id'),
+                        'service_id': self._get_job_var(task_vars, 'service_id'),
                     },
                 )
         elif obj_type == "component":
@@ -223,42 +234,88 @@ def get_service_by_name(cluster_id, service_name):
     return ClusterObject.obj.get(cluster=cluster, prototype=proto)
 
 
+def _set_object_state(obj: ADCMEntity, state: str) -> ADCMEntity:
+    obj.set_state(state, ctx.event)
+    ctx.event.send_state()
+    return obj
+
+
 def set_cluster_state(cluster_id, state):
-    cluster = Cluster.obj.get(id=cluster_id)
-    return push_obj(cluster, state)
+    obj = Cluster.obj.get(id=cluster_id)
+    return _set_object_state(obj, state)
 
 
 def set_host_state(host_id, state):
-    host = Host.obj.get(id=host_id)
-    return push_obj(host, state)
+    obj = Host.obj.get(id=host_id)
+    return _set_object_state(obj, state)
 
 
 def set_component_state(component_id, state):
-    comp = ServiceComponent.obj.get(id=component_id)
-    return push_obj(comp, state)
+    obj = ServiceComponent.obj.get(id=component_id)
+    return _set_object_state(obj, state)
 
 
 def set_component_state_by_name(cluster_id, service_id, component_name, service_name, state):
-    comp = get_component_by_name(cluster_id, service_id, component_name, service_name)
-    return push_obj(comp, state)
+    obj = get_component_by_name(cluster_id, service_id, component_name, service_name)
+    return _set_object_state(obj, state)
 
 
-def set_provider_state(provider_id, state, event):
-    provider = HostProvider.obj.get(id=provider_id)
-    if provider.state == config.Job.LOCKED:
-        return push_obj(provider, state)
-    else:
-        return provider.set_state(state, event)
+def set_provider_state(provider_id, state):
+    obj = HostProvider.obj.get(id=provider_id)
+    return _set_object_state(obj, state)
 
 
-def set_service_state(cluster_id, service_name, state):
+def set_service_state_by_name(cluster_id, service_name, state):
     obj = get_service_by_name(cluster_id, service_name)
-    return push_obj(obj, state)
+    return _set_object_state(obj, state)
 
 
-def set_service_state_by_id(cluster_id, service_id, state):
+def set_service_state(cluster_id, service_id, state):
     obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type='service')
-    return push_obj(obj, state)
+    return _set_object_state(obj, state)
+
+
+def _set_object_multi_state(obj: ADCMEntity, multi_state: str) -> ADCMEntity:
+    obj.set_multi_state(multi_state, ctx.event)
+    ctx.event.send_state()
+    return obj
+
+
+def set_cluster_multi_state(cluster_id, multi_state):
+    obj = Cluster.obj.get(id=cluster_id)
+    return _set_object_multi_state(obj, multi_state)
+
+
+def set_service_multi_state_by_name(cluster_id, service_name, multi_state):
+    obj = get_service_by_name(cluster_id, service_name)
+    return _set_object_multi_state(obj, multi_state)
+
+
+def set_service_multi_state(cluster_id, service_id, multi_state):
+    obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type='service')
+    return _set_object_multi_state(obj, multi_state)
+
+
+def set_component_multi_state_by_name(
+    cluster_id, service_id, component_name, service_name, multi_state
+):
+    obj = get_component_by_name(cluster_id, service_id, component_name, service_name)
+    return _set_object_multi_state(obj, multi_state)
+
+
+def set_component_multi_state(component_id, multi_state):
+    obj = ServiceComponent.obj.get(id=component_id)
+    return _set_object_multi_state(obj, multi_state)
+
+
+def set_provider_multi_state(provider_id, multi_state):
+    obj = HostProvider.obj.get(id=provider_id)
+    return _set_object_multi_state(obj, multi_state)
+
+
+def set_host_multi_state(host_id, multi_state):
+    obj = Host.obj.get(id=host_id)
+    return _set_object_multi_state(obj, multi_state)
 
 
 def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branches
@@ -296,7 +353,7 @@ def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branc
                 msg = 'There is no component "{}" on host "{}"'
                 err('COMPONENT_CONFLICT', msg.format(component.prototype.name, host.fqdn))
         else:
-            err('INVALID_INPUT', 'unknown hc action "{}"'.format(op['action']))
+            err('INVALID_INPUT', f'unknown hc action "{op["action"]}"')
 
     add_hc(cluster, hc)
 
@@ -316,12 +373,12 @@ def set_provider_config(provider_id, keys, value):
     return set_object_config(provider, keys, value)
 
 
-def set_service_config(cluster_id, service_name, keys, value):
+def set_service_config_by_name(cluster_id, service_name, keys, value):
     obj = get_service_by_name(cluster_id, service_name)
     return set_object_config(obj, keys, value)
 
 
-def set_service_config_by_id(cluster_id, service_id, keys, value):
+def set_service_config(cluster_id, service_id, keys, value):
     obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type='service')
     return set_object_config(obj, keys, value)
 
@@ -334,3 +391,53 @@ def set_component_config_by_name(cluster_id, service_id, component_name, service
 def set_component_config(component_id, keys, value):
     obj = ServiceComponent.obj.get(id=component_id)
     return set_object_config(obj, keys, value)
+
+
+def check_missing_ok(obj: ADCMEntity, multi_state: str, missing_ok):
+    if missing_ok is False:
+        if multi_state not in obj.multi_state:
+            raise AnsibleError(MSG_NO_MULTI_STATE_TO_DELETE)
+
+
+def _unset_object_multi_state(obj: ADCMEntity, multi_state: str, missing_ok) -> ADCMEntity:
+    check_missing_ok(obj, multi_state, missing_ok)
+    obj.unset_multi_state(multi_state, ctx.event)
+    ctx.event.send_state()
+    return obj
+
+
+def unset_cluster_multi_state(cluster_id, multi_state, missing_ok):
+    obj = Cluster.obj.get(id=cluster_id)
+    return _unset_object_multi_state(obj, multi_state, missing_ok)
+
+
+def unset_service_multi_state_by_name(cluster_id, service_name, multi_state, missing_ok):
+    obj = get_service_by_name(cluster_id, service_name)
+    return _unset_object_multi_state(obj, multi_state, missing_ok)
+
+
+def unset_service_multi_state(cluster_id, service_id, multi_state, missing_ok):
+    obj = ClusterObject.obj.get(id=service_id, cluster__id=cluster_id, prototype__type='service')
+    return _unset_object_multi_state(obj, multi_state, missing_ok)
+
+
+def unset_component_multi_state_by_name(
+    cluster_id, service_id, component_name, service_name, multi_state, missing_ok
+):
+    obj = get_component_by_name(cluster_id, service_id, component_name, service_name)
+    return _unset_object_multi_state(obj, multi_state, missing_ok)
+
+
+def unset_component_multi_state(component_id, multi_state, missing_ok):
+    obj = ServiceComponent.obj.get(id=component_id)
+    return _unset_object_multi_state(obj, multi_state, missing_ok)
+
+
+def unset_provider_multi_state(provider_id, multi_state, missing_ok):
+    obj = HostProvider.obj.get(id=provider_id)
+    return _unset_object_multi_state(obj, multi_state, missing_ok)
+
+
+def unset_host_multi_state(host_id, multi_state, missing_ok):
+    obj = Host.obj.get(id=host_id)
+    return _unset_object_multi_state(obj, multi_state, missing_ok)

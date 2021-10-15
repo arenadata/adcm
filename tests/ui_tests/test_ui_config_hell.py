@@ -1,10 +1,24 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""UI tests for super large config"""
+
+# pylint: disable=redefined-outer-name
 import os
 
 import allure
 import pytest
 from adcm_pytest_plugin.utils import get_data_dir
 
-# pylint: disable=W0611, W0621
 from tests.ui_tests.app.configuration import Configuration
 
 DATADIR = get_data_dir(__file__)
@@ -14,6 +28,7 @@ BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
 @pytest.fixture()
 @allure.step('Upload bundle, create cluster and add service')
 def ui_hell_fs(sdk_client_fs):
+    """Upload bundle, create cluster and add service"""
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='my cluster')
     cluster.service_add(name='ui_config_hell')
@@ -22,21 +37,19 @@ def ui_hell_fs(sdk_client_fs):
 
 
 @pytest.fixture()
+@allure.title("Prepare prototype display names")
 def prototype_display_names(ui_hell_fs):
+    """Prepare prototype display names"""
     display_header_name = ui_hell_fs.display_name
     display_names = {config['display_name'] for config in ui_hell_fs.prototype().config}
     return display_header_name, display_names
 
 
 @pytest.fixture()
-@allure.step('Open Configuration page')
-def ui_display_names(login_to_adcm_over_api, app_fs, ui_hell_fs):
-    ui_config = Configuration(
-        app_fs.driver,
-        "{}/cluster/{}/service/{}/config".format(
-            app_fs.adcm.url, ui_hell_fs.cluster_id, ui_hell_fs.service_id
-        ),
-    )
+@allure.title('Get display names from service config page')
+def ui_display_names(app_fs, ui_hell_fs, login_to_adcm_over_api):  # pylint: disable=unused-argument
+    """Get display names from service config page"""
+    ui_config = Configuration.from_service(app_fs, ui_hell_fs)
     return ui_config.get_display_names()
 
 

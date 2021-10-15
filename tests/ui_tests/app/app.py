@@ -10,13 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Created by a1wen at 27.02.19
+"""Tools for ADCM UI over selenium interactions"""
 
-# pylint: disable=E0401, E0611, W0611, W0621
+# Created by a1wen at 27.02.19
 
 import os
 
+from typing import Union, Optional
+
 import allure
+
 from adcm_client.wrappers.docker import ADCM
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
@@ -24,14 +27,15 @@ from selenium.webdriver import ChromeOptions, FirefoxOptions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 
-from tests.ui_tests.app.pages import Ui, ClustersList
+from tests.ui_tests.app.pages import Ui
 
 
 class ADCMTest:
+    """Wrapper class for ADCM UI interactions using Selenium"""
 
     __slots__ = ("opts", "capabilities", "driver", "ui", "adcm", "selenoid")
 
-    def __init__(self, browser="Chrome"):
+    def __init__(self, browser="Chrome", downloads: Optional[Union[os.PathLike, str]] = None):
         self.opts = FirefoxOptions() if browser == "Firefox" else ChromeOptions()
         self.opts.headless = True
         self.opts.add_argument("--no-sandbox")
@@ -54,12 +58,14 @@ class ADCMTest:
             "host": os.environ.get("SELENOID_HOST"),
             "port": os.environ.get("SELENOID_PORT", "4444"),
         }
+        self._configure_downloads(browser, downloads)
         self.driver = None
         self.ui = None
         self.adcm = None
 
     @allure.step("Init driver")
     def create_driver(self):
+        """Init selenium driver based on the object properties"""
         if self.selenoid["host"]:
             self.driver = webdriver.Remote(
                 command_executor=f"http://{self.selenoid['host']}:{self.selenoid['port']}/wd/hub",
@@ -77,36 +83,35 @@ class ADCMTest:
 
     @allure.step("Attache ADCM")
     def attache_adcm(self, adcm: ADCM):
+        """Attache ADCM instance to the driver wrapper"""
         self.adcm = adcm
 
-    @allure.step("Get Clusters List")
-    def clusters_page(self):
-        return ClustersList(self)
-
     def wait_for(self, condition: EC, locator: tuple, timer=5):
-        def get_element(el):
-            return WDW(self.driver, timer).until(condition(el))
+        """Wait for condition"""
 
-        return get_element(locator)
+        def _get_element(element):
+            return WDW(self.driver, timer).until(condition(element))
+
+        return _get_element(locator)
 
     @allure.step("Wait for element displayed")
     def wait_element_present(self, locator: tuple):
+        """Wait for element displayed"""
         return self.wait_for(EC.presence_of_element_located, locator)
 
-    @allure.step("Wait for contains url: {url}")
+    @allure.step("Wait for adress string to contain: {url}")
     def contains_url(self, url: str, timer=5):
+        """Wait for adress string to contain given URL"""
         return WDW(self.driver, timer).until(EC.url_contains(url))
 
-    @allure.step("Open base page")
-    def base_page(self):
-        self.driver.get(self.adcm.url)
-
-    @allure.step("Open new tab")
+    @allure.step("Open a new tab")
     def new_tab(self):
+        """Open a new tab"""
         self.driver.execute_script("window.open('');")
-        # close the *old* window
-        self.driver.switch_to.window(self.driver.window_handles[0])
-        self.driver.close()
+        # close all tabs
+        for tab in self.driver.window_handles[:-1]:
+            self.driver.switch_to.window(tab)
+            self.driver.close()
         # set focus to the newly created window
         self.driver.switch_to.window(self.driver.window_handles[-1])
         self.driver.delete_all_cookies()
@@ -116,5 +121,23 @@ class ADCMTest:
             # we skip JS error here since we have no simple way to detect localStorage availability
             pass
 
+    @allure.step("Destroy selenium driver")
     def destroy(self):
+        """Destroy selenium driver"""
         self.driver.quit()
+
+    def _configure_downloads(self, browser: str, downloads_directory: Optional[Union[os.PathLike, str]]):
+        if downloads_directory is None:
+            return
+        if browser == "Chrome":
+            self.opts.add_experimental_option(
+                "prefs",
+                {"download.default_directory": str(downloads_directory)},
+            )
+        else:
+            if not self.selenoid['host']:
+                # do not use default download directory
+                self.opts.set_preference("browser.download.folderList", 2)
+                self.opts.set_preference("browser.download.dir", str(downloads_directory))
+            # allow documents to be saved without asking what to do
+            self.opts.set_preference("browser.helperApps.neverAsk.saveToDisk", "text/plain")

@@ -11,13 +11,12 @@
 // limitations under the License.
 import { Component, EventEmitter, Input, Output, QueryList, ViewChildren } from '@angular/core';
 
-import { ChannelService } from '@app/core/services';
-import { FullyRenderedService } from '@app/core/services';
-import { keyChannelStrim } from '@app/core/services';
-import { FieldService, TFormOptions } from '../field.service';
+import { ChannelService, FullyRenderedService, keyChannelStrim } from '@app/core/services';
+import { FieldService, TFormOptions } from '../services/field.service';
 import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
 import { IConfig, IPanelOptions } from '../types';
+import { BaseDirective } from '@adwp-ui/widgets';
 
 @Component({
   selector: 'app-config-fields',
@@ -25,20 +24,27 @@ import { IConfig, IPanelOptions } from '../types';
     <ng-container *ngFor="let item of dataOptions; trackBy: trackBy">
       <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form"></app-group-fields>
       <ng-template #one>
-        <app-field *ngIf="!item.hidden" [form]="form" [options]="item" [ngClass]="{ 'read-only': item.read_only }"></app-field>
+        <ng-container *ngIf="!item.hidden">
+          <app-config-field-attribute-provider [form]="form" [options]="item">
+            <app-field *configField [form]="form" [options]="item"></app-field>
+          </app-config-field-attribute-provider>
+        </ng-container>
       </ng-template>
     </ng-container>
-  `,
+  `
 })
-export class ConfigFieldsComponent {
+export class ConfigFieldsComponent extends BaseDirective {
+
   @Input() dataOptions: TFormOptions[] = [];
   @Input() form = this.service.toFormGroup();
+  @Output()
+  event = new EventEmitter<{ name: string; data?: any }>();
+
+
   rawConfig: IConfig;
   shapshot: any;
   isAdvanced = false;
 
-  @Output()
-  event = new EventEmitter<{ name: string; data?: any }>();
 
   @Input()
   set model(data: IConfig) {
@@ -58,10 +64,15 @@ export class ConfigFieldsComponent {
   @ViewChildren(GroupFieldsComponent)
   groups: QueryList<GroupFieldsComponent>;
 
-  constructor(private service: FieldService, private fr: FullyRenderedService, private radio: ChannelService) {}
+  constructor(private service: FieldService,
+              private fr: FullyRenderedService,
+              private radio: ChannelService) {super();}
 
   get attr() {
-    return this.dataOptions.filter((a) => a.type === 'group' && (a as IPanelOptions).activatable).reduce((p, c: IPanelOptions) => ({ ...p, [c.name]: { active: c.active } }), {});
+    return this.dataOptions.filter((a) => a.type === 'group' && (a as IPanelOptions).activatable).reduce((p, c: IPanelOptions) => ({
+      ...p,
+      [c.name]: { active: c.active }
+    }), {});
   }
 
   isPanel(item: TFormOptions) {
@@ -76,7 +87,7 @@ export class ConfigFieldsComponent {
    * This method detects the moment rendering final of all fields and groups (with internal fields) on the page
    * it's need for test
    *
-   * @memberof ConfigFieldsComponent
+   * @member ConfigFieldsComponent
    */
   stableView() {
     this.fr.stableView(() => this.radio.next(keyChannelStrim.load_complete, 'Config has been loaded'));

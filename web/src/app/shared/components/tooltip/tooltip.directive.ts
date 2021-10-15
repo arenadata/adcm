@@ -12,14 +12,14 @@
 import { Directive, ElementRef, HostListener, Input } from '@angular/core';
 import { EventHelper } from '@adwp-ui/widgets';
 
-import { ApiBase } from '@app/core/types/api';
+import { BaseEntity } from '@app/core/types/api';
 import { ComponentName, PositionType, TooltipService } from '../tooltip/tooltip.service';
 
 @Directive({
   selector: '[appTooltip]',
 })
 export class TooltipDirective {
-  @Input() appTooltip: string | ApiBase;
+  @Input() appTooltip: string | BaseEntity;
   @Input() appTooltipPosition: PositionType = 'bottom';
   @Input() appTooltipComponent: ComponentName;
 

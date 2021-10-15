@@ -16,13 +16,18 @@ import { BaseMapListDirective } from '@app/shared/form-elements/map.component';
 
 import { SchemeComponent } from '../scheme/scheme.component';
 import { IFieldOptions } from '../types';
+import { BaseDirective } from '@adwp-ui/widgets';
 
 @Component({
   selector: 'app-field',
   templateUrl: './field.component.html',
   styleUrls: ['./field.component.scss'],
+  host: {
+    class: 'field-row w100 d-flex ',
+    '[class.read-only]': 'options.read_only'
+  }
 })
-export class FieldComponent implements OnInit, OnChanges {
+export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
   @Input()
   options: IFieldOptions;
   @Input()
@@ -59,7 +64,7 @@ export class FieldComponent implements OnInit, OnChanges {
 
   /**
    * TODO: should be own restore() for each fieldComponent   *
-   * @memberof FieldComponent
+   * @member FieldComponent
    */
   restore() {
     const field = this.currentFormGroup.controls[this.options.name];

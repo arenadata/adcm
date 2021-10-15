@@ -2,9 +2,10 @@ import { Component } from '@angular/core';
 import { IColumns } from '@adwp-ui/widgets';
 
 import { TypeName } from '@app/core/types';
-import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { ListFactory } from '@app/factories/list-factory';
 import { IClusterService } from '@app/models/cluster-service';
+import { ConcernListDirective } from '@app/abstract-directives/concern-list.directive';
+import { ConcernEventType } from '../../../models/concern/concern-reason';
 
 @Component({
   selector: 'app-services',
@@ -26,9 +27,10 @@ import { IClusterService } from '@app/models/cluster-service';
   `,
   styles: [':host { flex: 1; }', '.add-button {position:fixed; right: 20px;top:120px;}'],
 })
-export class ServicesComponent extends AdwpListDirective<IClusterService> {
+export class ServicesComponent extends ConcernListDirective<IClusterService> {
 
   type: TypeName = 'service2cluster';
+  eventTypes = [ConcernEventType.Service];
 
   listColumns = [
     ListFactory.nameColumn('display_name'),
@@ -38,7 +40,7 @@ export class ServicesComponent extends AdwpListDirective<IClusterService> {
     },
     ListFactory.stateColumn(),
     ListFactory.statusColumn(this),
-    ListFactory.actionsButton('service'),
+    ListFactory.actionsButton(this),
     ListFactory.importColumn(this),
     ListFactory.configColumn(this),
   ] as IColumns<IClusterService>;

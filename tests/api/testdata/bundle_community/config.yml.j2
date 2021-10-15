@@ -1,0 +1,65 @@
+- type: cluster
+  name: Dummy cluster
+  edition: {{ edition }}
+  version: 1.0
+
+  config: &default_config
+    - name: some_str
+      required: false
+      type: string
+
+    - name: some_str_with_default
+      type: string
+      default: default value
+
+- type: service
+  name: service_1
+  display_name: Service 1
+  version: "1.0"
+
+  config:
+    - name: some_int
+      required: false
+      type: integer
+
+  components:
+    component_1:
+      display_name: "Service 1 Component 1"
+      constraint: [1, +]
+    component_2:
+      display_name: "Service 1 Component 2"
+      constraint: [1, +]
+
+
+- type: service
+  name: service_2
+  display_name: Service 2
+  version: "1.0"
+
+  config:
+    - name: some_str
+      required: false
+      type: string
+
+  components:
+    component_1:
+      display_name: "Service 2 Component 1"
+      constraint: [1, +]
+    component_2:
+      display_name: "Service 2 Component 2"
+      constraint: [1, +]
+
+- type: service
+  name: service_3
+  display_name: Service 3
+  version: "1.0"
+
+  config: *default_config
+
+  components:
+    component_1:
+      display_name: "Service 3 Component 1"
+      constraint: [1, +]
+    component_2:
+      display_name: "Service 3 Component 2"
+      constraint: [1, +]

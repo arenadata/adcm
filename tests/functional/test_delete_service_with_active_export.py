@@ -9,7 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621
+
+# pylint:disable=redefined-outer-name
+
+"""Tests for delete service with active import"""
+
 import allure
 import coreapi
 import pytest
@@ -20,7 +24,8 @@ from tests.library import errorcodes as err
 
 
 @pytest.fixture()
-def cluster(sdk_client_fs: ADCMClient):
+def service(sdk_client_fs: ADCMClient):
+    """Create service"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_export'))
     bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_import'))
     cluster = bundle.cluster_create("test")
@@ -32,6 +37,7 @@ def cluster(sdk_client_fs: ADCMClient):
 
 @pytest.fixture()
 def service_import(sdk_client_fs: ADCMClient):
+    """Create service with import"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_export'))
     bundle_import = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_service_import'))
     cluster = bundle.cluster_create("test")
@@ -42,10 +48,8 @@ def service_import(sdk_client_fs: ADCMClient):
     return service
 
 
-def test_delete_service_with_with_active_export(cluster):
-    """If host has NO component, than we can simple remove it from cluster."""
-    with allure.step('Create cluster'):
-        service = cluster
+def test_delete_service_with_with_active_export(service):
+    """If host has NO component, than we can simple remove it from cluster"""
     with allure.step('Delete service'):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             service.delete()
@@ -54,12 +58,7 @@ def test_delete_service_with_with_active_export(cluster):
 
 
 def test_delete_service_with_active_export_for_service(service_import):
-    """Add test for bind service
-
-
-    :param service_import:
-    :return:
-    """
+    """Add test for bind service"""
     with allure.step('Delete imported to cluster service'):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             service_import.delete()

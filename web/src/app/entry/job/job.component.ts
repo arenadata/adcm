@@ -11,20 +11,32 @@
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { BaseDirective } from '@adwp-ui/widgets';
 
 import { ClusterService } from '@app/core/services/cluster.service';
-import { Job } from '@app/core/types';
 
 @Component({
   selector: 'app-main',
   template: '<app-job-info></app-job-info>',
 })
-export class MainComponent implements OnInit {
-  constructor(private details: ClusterService, private router: Router, private route: ActivatedRoute) {}
+export class MainComponent extends BaseDirective implements OnInit {
+
+  constructor(
+    private clusterService: ClusterService,
+    private router: Router,
+    private route: ActivatedRoute,
+  ) {
+    super();
+  }
 
   ngOnInit() {
-    const logs = (this.details.Current as Job).log_files;
-    const log = logs.find((a) => a.type === 'check') || logs[0];
-    if (log) this.router.navigate([`../${log.id}`], { relativeTo: this.route, replaceUrl: true });
+    this.route.parent.params.pipe(this.takeUntil()).subscribe(params => {
+      this.clusterService.one_job(params?.job).subscribe(job => {
+        const logs = job.log_files;
+        const log = logs.find((a) => a.type === 'check') || logs[0];
+        if (log) this.router.navigate([`../${log.id}`], { relativeTo: this.route, replaceUrl: true });
+      });
+    });
   }
+
 }

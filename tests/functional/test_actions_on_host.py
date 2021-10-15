@@ -9,13 +9,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=redefined-outer-name
-from typing import Union
 
+"""Test actions on host"""
+
+# pylint: disable=redefined-outer-name, no-self-use
 import allure
 import pytest
-from adcm_client.base import ObjectNotFound
-from adcm_client.objects import Cluster, Provider, Host, Service, Component
+
+from adcm_client.objects import Cluster, Provider
 from adcm_pytest_plugin.steps.actions import (
     run_host_action_and_assert_result,
     run_cluster_action_and_assert_result,
@@ -23,23 +24,27 @@ from adcm_pytest_plugin.steps.actions import (
     run_component_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import get_data_dir
+from tests.functional.tools import action_in_object_is_absent, action_in_object_is_present
+from tests.functional.test_actions import (
+    FIRST_SERVICE,
+    SECOND_SERVICE,
+    FIRST_COMPONENT,
+    SECOND_COMPONENT,
+    SWITCH_SERVICE_STATE,
+    SWITCH_CLUSTER_STATE,
+    SWITCH_HOST_STATE,
+    SWITCH_COMPONENT_STATE,
+)
 
 ACTION_ON_HOST = "action_on_host"
 ACTION_ON_HOST_MULTIJOB = "action_on_host_multijob"
 ACTION_ON_HOST_STATE_REQUIRED = "action_on_host_state_installed"
-FIRST_SERVICE = "Dummy service"
-SECOND_SERVICE = "Second service"
-FIRST_COMPONENT = "first"
-SECOND_COMPONENT = "second"
-SWITCH_SERVICE_STATE = "switch_service_state"
-SWITCH_CLUSTER_STATE = "switch_cluster_state"
-SWITCH_HOST_STATE = "switch_host_state"
-SWITCH_COMPONENT_STATE = "switch_component_state"
 
 
 @allure.title("Create cluster")
 @pytest.fixture()
 def cluster(sdk_client_fs) -> Cluster:
+    """Create cluster"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster"))
     return bundle.cluster_prototype().cluster_create(name="Cluster")
 
@@ -47,6 +52,7 @@ def cluster(sdk_client_fs) -> Cluster:
 @allure.title("Create a cluster with service")
 @pytest.fixture()
 def cluster_with_service(sdk_client_fs) -> Cluster:
+    """Create cluster with service"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_with_service"))
     cluster = bundle.cluster_prototype().cluster_create(name="Cluster with services")
     return cluster
@@ -55,6 +61,7 @@ def cluster_with_service(sdk_client_fs) -> Cluster:
 @allure.title("Create a cluster with service and components")
 @pytest.fixture()
 def cluster_with_components(sdk_client_fs) -> Cluster:
+    """Create cluster with component"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_with_components"))
     cluster = bundle.cluster_prototype().cluster_create(name="Cluster with components")
     return cluster
@@ -63,6 +70,7 @@ def cluster_with_components(sdk_client_fs) -> Cluster:
 @allure.title("Create a cluster with target group action")
 @pytest.fixture()
 def cluster_with_target_group_action(sdk_client_fs) -> Cluster:
+    """Create cluster with target group action"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_target_group"))
     cluster = bundle.cluster_prototype().cluster_create(name="Target group test")
     return cluster
@@ -71,11 +79,14 @@ def cluster_with_target_group_action(sdk_client_fs) -> Cluster:
 @allure.title("Create provider")
 @pytest.fixture()
 def provider(sdk_client_fs) -> Provider:
+    """Create provider"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
     return bundle.provider_prototype().provider_create("Some provider")
 
 
 class TestClusterActionsOnHost:
+    """Tests for cluster actions on host"""
+
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
     def test_availability(self, cluster: Cluster, provider: Provider, action_name):
         """
@@ -115,7 +126,7 @@ class TestClusterActionsOnHost:
 
     @allure.issue("https://arenadata.atlassian.net/browse/ADCM-1799")
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
-    def test_two_clusters(self, action_name, cluster: Cluster, provider: Provider, sdk_client_fs):
+    def test_two_clusters(self, action_name, cluster: Cluster, provider: Provider):
         """
         Test that cluster actions on host works fine on two clusters
         """
@@ -131,6 +142,8 @@ class TestClusterActionsOnHost:
 
 
 class TestServiceActionOnHost:
+    """Tests for service actions on host"""
+
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
     def test_availability(self, cluster_with_service: Cluster, provider: Provider, action_name):
         """
@@ -203,27 +216,19 @@ class TestServiceActionOnHost:
 
     @allure.issue("https://arenadata.atlassian.net/browse/ADCM-1799")
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
-    def test_two_clusters(
-        self, action_name, cluster_with_service: Cluster, provider: Provider, sdk_client_fs
-    ):
+    def test_two_clusters(self, action_name, cluster_with_service: Cluster, provider: Provider):
         """
         Test that service actions on host works fine on two clusters
         """
-        second_cluster = (
-            cluster_with_service.bundle().cluster_prototype().cluster_create(name="Second cluster")
-        )
+        second_cluster = cluster_with_service.bundle().cluster_prototype().cluster_create(name="Second cluster")
         service_on_first_cluster = cluster_with_service.service_add(name=FIRST_SERVICE)
         service_on_second_cluster = second_cluster.service_add(name=FIRST_SERVICE)
         first_host = provider.host_create("host_in_first_cluster")
         second_host = provider.host_create("host_in_second_cluster")
         cluster_with_service.host_add(first_host)
         second_cluster.host_add(second_host)
-        cluster_with_service.hostcomponent_set(
-            (first_host, service_on_first_cluster.component(name=FIRST_COMPONENT))
-        )
-        second_cluster.hostcomponent_set(
-            (second_host, service_on_second_cluster.component(name=FIRST_COMPONENT))
-        )
+        cluster_with_service.hostcomponent_set((first_host, service_on_first_cluster.component(name=FIRST_COMPONENT)))
+        second_cluster.hostcomponent_set((second_host, service_on_second_cluster.component(name=FIRST_COMPONENT)))
 
         action_in_object_is_present(action_name, first_host)
         action_in_object_is_present(action_name, second_host)
@@ -232,6 +237,11 @@ class TestServiceActionOnHost:
 
 
 class TestComponentActionOnHost:
+    """Tests for component actions on host"""
+
+    @allure.issue(
+        url="https://arenadata.atlassian.net/browse/ADCM-1948", name="Infinite host action on ADCM with pre-filled data"
+    )
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
     def test_availability(self, cluster_with_components: Cluster, provider: Provider, action_name):
         """
@@ -297,17 +307,11 @@ class TestComponentActionOnHost:
 
     @allure.issue("https://arenadata.atlassian.net/browse/ADCM-1799")
     @pytest.mark.parametrize("action_name", [ACTION_ON_HOST, ACTION_ON_HOST_MULTIJOB])
-    def test_two_clusters(
-        self, action_name, cluster_with_components: Cluster, provider: Provider, sdk_client_fs
-    ):
+    def test_two_clusters(self, action_name, cluster_with_components: Cluster, provider: Provider):
         """
         Test that component actions on host works fine on two clusters
         """
-        second_cluster = (
-            cluster_with_components.bundle()
-            .cluster_prototype()
-            .cluster_create(name="Second cluster")
-        )
+        second_cluster = cluster_with_components.bundle().cluster_prototype().cluster_create(name="Second cluster")
         service_on_first_cluster = cluster_with_components.service_add(name=FIRST_SERVICE)
         component_on_first_cluster = service_on_first_cluster.component(name=FIRST_COMPONENT)
         service_on_second_cluster = second_cluster.service_add(name=FIRST_SERVICE)
@@ -325,9 +329,7 @@ class TestComponentActionOnHost:
         run_host_action_and_assert_result(second_host, action_name, status="success")
 
 
-def test_target_group_in_inventory(
-    cluster_with_target_group_action: Cluster, provider: Provider, sdk_client_fs
-):
+def test_target_group_in_inventory(cluster_with_target_group_action: Cluster, provider: Provider, sdk_client_fs):
     """
     Test that target group action has inventory_hostname info
     """
@@ -340,24 +342,3 @@ def test_target_group_in_inventory(
         assert (
             f"We are on host: {hostname}" in sdk_client_fs.job().log(type="stdout").content
         ), "No hostname info in the job log"
-
-
-ObjTypes = Union[Cluster, Host, Service, Component]
-
-
-def action_in_object_is_present(action: str, obj: ObjTypes):
-    with allure.step(f"Assert that action {action} is present in {_get_object_represent(obj)}"):
-        try:
-            obj.action(name=action)
-        except ObjectNotFound as err:
-            raise AssertionError(f"Action {action} not found in object {obj}") from err
-
-
-def action_in_object_is_absent(action: str, obj: ObjTypes):
-    with allure.step(f"Assert that action {action} is absent in {_get_object_represent(obj)}"):
-        with pytest.raises(ObjectNotFound):
-            obj.action(name=action)
-
-
-def _get_object_represent(obj: ObjTypes) -> str:
-    return f"host {obj.fqdn}" if isinstance(obj, Host) else f"cluster {obj.name}"

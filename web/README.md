@@ -4,12 +4,30 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 
 ## Storybook
 
-1. Run `npm run storybook` for start the Storybook.
+**Before starting:**
+To run Storybook, you need to have been installed Docker (https://www.docker.com/).
+
+1. Make sure that you have been connected to ADCM VPN
+2. Move to ADCM web root directory (usually <some_path>/adcm/web)
+3. Run the following command:
+
+`docker run -it --rm -v $(pwd):/web -p 6006:6006 node:14-alpine ./web/storybook.sh`
+
+4. Installing dependencies and launching the Storybook will take a couple of minutes
+5. Navigate to http://localhost:6006/
+
+**Tip:** The first starting may take about 15 minutes.
+
+**Tip:** To stop container just hit ctrl-c.
+
+## Storybook (development)
+
+1. Run `yarn storybook` for start the Storybook.
 2. Navigate to http://localhost:6006/.
 
 ## Development server
 
-1. Run `ng serve` for a dev server.
+1. Run `yarn start` for a dev server.
 2. Navigate to http://localhost:4200/.
 
 **Tip:** The app will automatically reload if you change any of the source files.

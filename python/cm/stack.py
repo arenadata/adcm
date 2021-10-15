@@ -9,9 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=line-too-long
 
 import os
 import re
+from copy import deepcopy
+from typing import Any
 
 import json
 import yaml
@@ -24,7 +27,7 @@ from rest_framework import status
 
 from cm.logger import log
 from cm.errors import raise_AdcmEx as err
-import cm.config as config
+from cm import config
 import cm.checker
 
 from cm.adcm_config import proto_ref, check_config_type, type_is_complex, read_bundle_file
@@ -45,7 +48,7 @@ def save_definition(path, fname, conf, obj_list, bundle_hash, adcm=False):
 
 
 def cook_obj_id(conf):
-    return '{}.{}.{}'.format(conf['type'], conf['name'], conf['version'])
+    return f'{conf["type"]}.{conf["name"]}.{conf["version"]}'
 
 
 def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm=False):
@@ -61,7 +64,7 @@ def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm=False)
 
 
 def check_object_definition(fname, conf, def_type, obj_list):
-    ref = '{} "{}" {}'.format(def_type, conf['name'], conf['version'])
+    ref = f'{def_type} "{conf["name"]}" {conf["version"]}'
     if cook_obj_id(conf) in obj_list:
         err('INVALID_OBJECT_DEFINITION', f'Duplicate definition of {ref} (file {fname})')
 
@@ -73,26 +76,27 @@ def get_config_files(path, bundle_hash):
         ('config.yml', 'yaml'),
     ]
     if not os.path.isdir(path):
-        return err('STACK_LOAD_ERROR', f'no directory: {path}', status.HTTP_404_NOT_FOUND)
+        err('STACK_LOAD_ERROR', f'no directory: {path}', status.HTTP_404_NOT_FOUND)
     for root, _, files in os.walk(path):
         for conf_file, conf_type in conf_types:
             if conf_file in files:
                 dirs = root.split('/')
-                path = os.path.join('', *dirs[dirs.index(bundle_hash) + 1:])
+                start_index = dirs.index(bundle_hash) + 1
+                path = os.path.join('', *dirs[start_index:])
                 conf_list.append((path, root + '/' + conf_file, conf_type))
                 break
     if not conf_list:
-        return err('STACK_LOAD_ERROR', f'no config files in stack directory "{path}"')
+        err('STACK_LOAD_ERROR', f'no config files in stack directory "{path}"')
     return conf_list
 
 
 def check_adcm_config(conf_file):
     warnings.simplefilter('error', ruyaml.error.ReusedAnchorWarning)
     schema_file = os.path.join(config.CODE_DIR, 'cm', 'adcm_schema.yaml')
-    with open(schema_file) as fd:
+    with open(schema_file, encoding='utf_8') as fd:
         rules = ruyaml.round_trip_load(fd)
     try:
-        with open(conf_file) as fd:
+        with open(conf_file, encoding='utf_8') as fd:
             ruyaml.version_info = (0, 15, 0)  # switch off duplicate keys error
             data = ruyaml.round_trip_load(fd, version="1.1")
     except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
@@ -144,6 +148,7 @@ def save_prototype(path, conf, def_type, bundle_hash):
     dict_to_obj(conf, 'description', proto)
     dict_to_obj(conf, 'adcm_min_version', proto)
     dict_to_obj(conf, 'edition', proto)
+    dict_to_obj(conf, 'config_group_customization', proto)
     fix_display_name(conf, proto)
     license_hash = get_license_hash(proto, conf, bundle_hash)
     if license_hash:
@@ -193,6 +198,7 @@ def save_components(proto, conf, bundle_hash):
         dict_to_obj(cc, 'constraint', component)
         dict_to_obj(cc, 'requires', component)
         dict_to_obj(cc, 'bound_to', component)
+        dict_to_obj(cc, 'config_group_customization', component)
         component.save()
         save_actions(component, cc, bundle_hash)
         save_prototype_config(component, cc, bundle_hash)
@@ -337,6 +343,19 @@ def save_sub_actions(proto, conf, action):
         sub_action.save()
 
 
+MASKING = 'masking'
+STATES = 'states'
+STATE = 'state'
+MULTI_STATE = 'multi_state'
+AVAILABLE = 'available'
+UNAVAILABLE = 'unavailable'
+ON_SUCCESS = 'on_success'
+ON_FAIL = 'on_fail'
+ANY = 'any'
+SET = 'set'
+UNSET = 'unset'
+
+
 def save_actions(proto, conf, bundle_hash):
     if not in_dict(conf, 'actions'):
         return
@@ -360,19 +379,59 @@ def save_actions(proto, conf, bundle_hash):
         fix_display_name(ac, action)
         check_action_hc(proto, ac, action_name)
         dict_to_obj(ac, 'hc_acl', action, 'hostcomponentmap')
-        if 'states' in ac:
-            if 'on_success' in ac['states'] and ac['states']['on_success']:
-                action.state_on_success = ac['states']['on_success']
-            if 'on_fail' in ac['states'] and ac['states']['on_fail']:
-                action.state_on_fail = ac['states']['on_fail']
-            action.state_available = ac['states']['available']
+        if MASKING in ac:
+            if STATES in ac:
+                err(
+                    'INVALID_OBJECT_DEFINITION',
+                    f'Action {action_name} uses both mutual excluding states "states" and "masking"',
+                )
+
+            action.state_available = _deep_get(ac, MASKING, STATE, AVAILABLE, default=ANY)
+            action.state_unavailable = _deep_get(ac, MASKING, STATE, UNAVAILABLE, default=[])
+            action.state_on_success = _deep_get(ac, ON_SUCCESS, STATE, default='')
+            action.state_on_fail = _deep_get(ac, ON_FAIL, STATE, default='')
+
+            action.multi_state_available = _deep_get(
+                ac, MASKING, MULTI_STATE, AVAILABLE, default=ANY
+            )
+            action.multi_state_unavailable = _deep_get(
+                ac, MASKING, MULTI_STATE, UNAVAILABLE, default=[]
+            )
+            action.multi_state_on_success_set = _deep_get(
+                ac, ON_SUCCESS, MULTI_STATE, SET, default=[]
+            )
+            action.multi_state_on_success_unset = _deep_get(
+                ac, ON_SUCCESS, MULTI_STATE, UNSET, default=[]
+            )
+            action.multi_state_on_fail_set = _deep_get(ac, ON_FAIL, MULTI_STATE, SET, default=[])
+            action.multi_state_on_fail_unset = _deep_get(
+                ac, ON_FAIL, MULTI_STATE, UNSET, default=[]
+            )
+        else:
+            if ON_SUCCESS in ac or ON_FAIL in ac:
+                err(
+                    'INVALID_OBJECT_DEFINITION',
+                    f'Action {action_name} uses "on_success/on_fail" states without "masking"',
+                )
+
+            action.state_available = _deep_get(ac, STATES, AVAILABLE, default=[])
+            action.state_unavailable = []
+            action.state_on_success = _deep_get(ac, STATES, ON_SUCCESS, default='')
+            action.state_on_fail = _deep_get(ac, STATES, ON_FAIL, default='')
+
+            action.multi_state_available = ANY
+            action.multi_state_unavailable = []
+            action.multi_state_on_success_set = []
+            action.multi_state_on_success_unset = []
+            action.multi_state_on_fail_set = []
+            action.multi_state_on_fail_unset = []
         action.save()
         save_sub_actions(proto, ac, action)
         save_prototype_config(proto, ac, bundle_hash, action)
 
 
 def check_action(proto, action, act_config):
-    err_msg = 'Action name "{}" of {} "{}" {}'.format(action, proto.type, proto.name, proto.version)
+    err_msg = f'Action name "{action}" of {proto.type} "{proto.name}" {proto.version}'
     validate_name(action, err_msg)
 
 
@@ -383,7 +442,7 @@ def is_group(conf):
 
 
 def get_yspec(proto, ref, bundle_hash, conf, name, subname):
-    msg = 'yspec file of config key "{}/{}":'.format(name, subname)
+    msg = f'yspec file of config key "{name}/{subname}":'
     yspec_body = read_bundle_file(proto, conf['yspec'], bundle_hash, msg)
     try:
         schema = yaml.safe_load(yspec_body)
@@ -442,7 +501,7 @@ def save_prototype_config(
                     opt['active'] = conf['active']
 
         if 'read_only' in conf and 'writable' in conf:
-            key_ref = '(config key "{}/{}" of {})'.format(name, subname, ref)
+            key_ref = f'(config key "{name}/{subname}" of {ref})'
             msg = 'can not have "read_only" and "writable" simultaneously {}'
             err('INVALID_CONFIG_DEFINITION', msg.format(key_ref))
 
@@ -458,6 +517,7 @@ def save_prototype_config(
         dict_to_obj(conf, 'display_name', sc)
         dict_to_obj(conf, 'required', sc)
         dict_to_obj(conf, 'ui_options', sc)
+        dict_to_obj(conf, 'group_customization', sc)
         conf['limits'] = process_limits(conf, name, subname)
         dict_to_obj(conf, 'limits', sc)
         if 'display_name' not in conf:
@@ -476,16 +536,16 @@ def save_prototype_config(
     if isinstance(conf_dict, dict):
         for (name, conf) in conf_dict.items():
             if 'type' in conf:
-                validate_name(name, 'Config key "{}" of {}'.format(name, ref))
+                validate_name(name, f'Config key "{name}" of {ref}')
                 sc = cook_conf(proto, conf, name, '')
                 sc.save()
             else:
-                validate_name(name, 'Config group "{}" of {}'.format(name, ref))
+                validate_name(name, f'Config group "{name}" of {ref}')
                 group_conf = {'type': 'group', 'required': False}
                 sc = cook_conf(proto, group_conf, name, '')
                 sc.save()
                 for (subname, subconf) in conf.items():
-                    err_msg = 'Config key "{}/{}" of {}'.format(name, subname, ref)
+                    err_msg = f'Config key "{name}/{subname}" of {ref}'
                     validate_name(name, err_msg)
                     validate_name(subname, err_msg)
                     sc = cook_conf(proto, subconf, name, subname)
@@ -494,13 +554,13 @@ def save_prototype_config(
     elif isinstance(conf_dict, list):
         for conf in conf_dict:
             name = conf['name']
-            validate_name(name, 'Config key "{}" of {}'.format(name, ref))
+            validate_name(name, f'Config key "{name}" of {ref}')
             sc = cook_conf(proto, conf, name, '')
             sc.save()
             if is_group(conf):
                 for subconf in conf['subs']:
                     subname = subconf['name']
-                    err_msg = 'Config key "{}/{}" of {}'.format(name, subname, ref)
+                    err_msg = f'Config key "{name}/{subname}" of {ref}'
                     validate_name(name, err_msg)
                     validate_name(subname, err_msg)
                     sc = cook_conf(proto, subconf, name, subname)
@@ -510,7 +570,7 @@ def save_prototype_config(
 
 def validate_name(value, name):
     if not isinstance(value, str):
-        err("WRONG_NAME", '{} should be string'.format(name))
+        err("WRONG_NAME", f'{name} should be string')
     p = re.compile(NAME_REGEX)
     msg1 = (
         '{} is incorrect. Only latin characters, digits,'
@@ -519,7 +579,7 @@ def validate_name(value, name):
     if p.fullmatch(value) is None:
         err("WRONG_NAME", msg1.format(name))
     if len(value) > MAX_NAME_LENGTH:
-        raise err("LONG_NAME", f'{name} is too long. Max length is {MAX_NAME_LENGTH}')
+        err("LONG_NAME", f'{name} is too long. Max length is {MAX_NAME_LENGTH}')
     return value
 
 
@@ -557,3 +617,17 @@ def dict_json_to_obj(dictionary, key, obj, obj_key=''):
     if isinstance(dictionary, dict):
         if key in dictionary:
             setattr(obj, obj_key, json.dumps(dictionary[key]))
+
+
+def _deep_get(deep_dict: dict, *nested_keys: str, default: Any) -> Any:
+    """
+    Safe dict.get() for deep-nested dictionaries
+    dct[key1][key2][...] -> _deep_get(dct, key1, key2, ..., default_value)
+    """
+    val = deepcopy(deep_dict)
+    for key in nested_keys:
+        try:
+            val = val[key]
+        except (KeyError, TypeError):
+            return default
+    return val

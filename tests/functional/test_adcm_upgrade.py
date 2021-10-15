@@ -9,41 +9,45 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0621,R0914
-from typing import Generator, Tuple, Union
+
+"""Tests for ADCM upgrade"""
+
+# pylint:disable=redefined-outer-name
+from typing import Tuple, Union
 
 import allure
 import pytest
+
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCMClient, Cluster, Host, Service
 from adcm_pytest_plugin.docker_utils import ADCM
-from adcm_pytest_plugin.fixtures import _adcm
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
 from version_utils import rpm
 
+from tests.functional.plugin_utils import AnyADCMObject
+from tests.functional.conftest import only_clean_adcm
+
+pytestmark = [only_clean_adcm]
+
+AVAILABLE_ACTIONS = {
+    "single_state-available",
+    "state_list-available",
+    "state_any-available",
+}
+
 
 @pytest.fixture(scope="session")
 def upgrade_target(cmd_opts) -> Tuple[str, str]:
+    """Actual ADCM version"""
     if not cmd_opts.adcm_image:
         pytest.fail("CLI parameter adcm_image should be provided")
     return tuple(cmd_opts.adcm_image.split(":", maxsplit=2))  # type: ignore
 
 
 def old_adcm_images():
+    """A list of old ADCM images"""
     return parametrized_by_adcm_version(adcm_min_version="2019.10.08")[0]
-
-
-@allure.title("[FS] Upgradable ADCM Container")
-@pytest.fixture()
-def adcm_fs(
-    image, cmd_opts, request, adcm_api_credentials
-) -> Generator[ADCM, None, None]:  # noqa: PT004
-    """Runs adcm container from the previously initialized image.
-    Operates '--dontstop' option.
-    Returns authorized instance of ADCM object
-    """
-    yield from _adcm(image, cmd_opts, request, adcm_api_credentials, upgradable=True)
 
 
 @allure.step("Check that version has been changed")
@@ -71,6 +75,15 @@ def _create_host(sdk_client_fs: ADCMClient, bundle_dir: str = "hostprovider") ->
     return provider.host_create(fqdn=f"test_host_{random_string()}")
 
 
+@allure.step("Check actions availability")
+def _assert_available_actions(obj: AnyADCMObject):
+    obj.reread()
+    actions = {action.name for action in obj.action_list()}
+    assert (
+        actions == AVAILABLE_ACTIONS
+    ), f"Unexpected list of available actions!\nExpected: {AVAILABLE_ACTIONS}\nActual:{actions}"
+
+
 @allure.step("Check that previously created cluster exists")
 def _check_that_cluster_exists(sdk_client_fs: ADCMClient, cluster: Cluster) -> None:
     assert len(sdk_client_fs.cluster_list()) == 1, "Only one cluster expected to be"
@@ -90,7 +103,8 @@ def _check_encryption(obj: Union[Cluster, Service]) -> None:
     assert obj.action(name="check-password").run().wait() == "success"
 
 
-@pytest.mark.parametrize("image", old_adcm_images(), ids=repr)
+@pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
+@pytest.mark.parametrize("image", old_adcm_images(), ids=repr, indirect=True)
 def test_upgrade_adcm(
     adcm_fs: ADCM,
     sdk_client_fs: ADCMClient,
@@ -108,7 +122,8 @@ def test_upgrade_adcm(
     _check_that_host_exists(cluster, host)
 
 
-@pytest.mark.parametrize("image", old_adcm_images(), ids=repr)
+@pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
+@pytest.mark.parametrize("image", old_adcm_images(), ids=repr, indirect=True)
 def test_pass_in_config_encryption_after_upgrade(
     adcm_fs: ADCM,
     sdk_client_fs: ADCMClient,
@@ -127,3 +142,21 @@ def test_pass_in_config_encryption_after_upgrade(
 
     _check_encryption(cluster)
     _check_encryption(service)
+
+
+@pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
+@pytest.mark.parametrize("image", [["hub.arenadata.io/adcm/adcm", "2021.06.17.06"]], ids=repr, indirect=True)
+def test_actions_availability_after_upgrade(
+    adcm_fs: ADCM,
+    sdk_client_fs: ADCMClient,
+    adcm_api_credentials: dict,
+    upgrade_target: Tuple[str, str],
+) -> None:
+    """Test that actions availability from old DSL remains the same after update"""
+    cluster = _create_cluster(sdk_client_fs, "cluster_with_actions")
+
+    _assert_available_actions(cluster)
+
+    _upgrade_adcm(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+
+    _assert_available_actions(cluster)

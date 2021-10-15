@@ -10,10 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input } from '@angular/core';
-import { Cluster, IAction, isIssue, Issue } from '@app/core/types';
-import { UpgradeItem } from '@app/shared/components';
 
+import { IAction } from '@app/core/types';
+import { UpgradeItem } from '@app/shared/components';
 import { IDetails, INavItem, NavigationService } from '../navigation.service';
+import { IIssues } from '@app/models/issue';
+import { IssueHelper } from '@app/helpers/issue-helper';
 
 @Component({
   selector: 'app-details-top',
@@ -21,8 +23,6 @@ import { IDetails, INavItem, NavigationService } from '../navigation.service';
       <app-crumbs [navigation]="items"></app-crumbs>
       <app-upgrade *ngIf="upgradable" [row]="upgrade" xPosition="after"></app-upgrade>
       <div [style.flex]="1"></div>
-      <app-action-list *ngIf="actionFlag" [asButton]="true" [actionLink]="actionLink" [actions]="actions" [state]="state" [disabled]="disabled" [cluster]="cluster"></app-action-list>
-      <!-- <app-actions [source]="actions || []" [isIssue]="eIssue" [cluster]="cluster"></app-actions> -->
   `,
   styles: [':host {display: flex;width: 100%;padding-right: 10px;}', 'app-action-list {display: block; margin-top: 2px;}'],
 })
@@ -39,7 +39,7 @@ export class TopComponent {
 
   @Input() set isIssue(v: boolean) {
     this.disabled = v;
-    if (this.upgrade) this.upgrade.issue = (v ? { issue: '' } : {}) as Issue;
+    if (this.upgrade) this.upgrade.issue = (v ? { issue: '' } : {}) as IIssues;
     if (this.items) {
       const a = this.items.find((b) => b.id);
       if (a) a.issue = this.navigation.getIssueMessage(v);
@@ -51,11 +51,11 @@ export class TopComponent {
       const exclude = ['bundle', 'job'];
       this.actionFlag = !exclude.includes(c.typeName);
       this.items = this.navigation.getTop(c);
-      const { id, hostcomponent, issue, upgradable, upgrade } = c.parent || (c as Partial<Cluster>);
+      const { id, hostcomponent, issue, upgradable, upgrade } = c.parent || c;
       this.cluster = { id, hostcomponent };
       this.actionLink = c.action;
       this.upgradable = upgradable;
-      this.disabled = isIssue(issue) || c.state === 'locked';
+      this.disabled = IssueHelper.isIssue(issue as IIssues) || c.state === 'locked';
       this.state = c.state;
       this.upgrade = { issue, upgradable, upgrade };
     }

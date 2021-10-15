@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=wrong-import-position, unused-import, import-error
+# pylint: disable=wrong-import-position, import-error
 
 from __future__ import absolute_import, division, print_function
 
@@ -54,7 +54,7 @@ from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm/python')
-import adcm.init_django
+import adcm.init_django  # pylint: disable=unused-import
 from cm.ansible_plugin import get_object_id_from_context, change_hc
 from cm.errors import AdcmEx
 from cm.logger import log
@@ -78,14 +78,14 @@ class ActionModule(ActionBase):
         log.info('ansible module adcm_hc: cluster #%s, ops: %s', cluster_id, ops)
 
         if not isinstance(ops, list):
-            raise AnsibleError('Operations should be an array: %s' % ops)
+            raise AnsibleError(f'Operations should be an array: {ops}')
 
         for op in ops:
             if not isinstance(op, dict):
-                raise AnsibleError('Operation items should be a dictionary: %s' % op)
+                raise AnsibleError(f'Operation items should be a dictionary: {op}')
             args = frozenset(op.keys())
             if args.difference(self._VALID_SUB_ARGS):
-                raise AnsibleError('Invalid operation arguments: %s' % op)
+                raise AnsibleError(f'Invalid operation arguments: {op}')
 
         try:
             change_hc(job_id, cluster_id, ops)

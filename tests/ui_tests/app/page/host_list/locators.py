@@ -10,10 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Host List page locators"""
 
 from selenium.webdriver.common.by import By
 
-from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
+from tests.ui_tests.app.helpers.locator import (
+    Locator,
+    TemplateLocator,
+)
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 
 
@@ -21,23 +25,28 @@ class HostListLocators:
     """Host List page elements locators"""
 
     class Tooltip:
+        """Host List page tooltip elements locators"""
+
         apps_btn = Locator(By.XPATH, "//a[.//mat-icon[text()='apps']]", "Apps button")
-        host_add_btn = Locator(By.XPATH, "//button[@adcm_test='create-btn']", "Host add button")
+        host_add_btn = Locator(By.CSS_SELECTOR, "button[adcm_test='create-btn']", "Host add button")
 
     class HostTable(CommonTable):
+        """Host List page host table elements locators"""
+
         cluster_option = TemplateLocator(
             By.XPATH, "//mat-option//span[contains(text(), '{}')]", "Table dropdown option"
         )
 
         class HostRow:
-            fqdn = Locator(By.XPATH, "./mat-cell[1]", "Host FQDN in row")
-            provider = Locator(By.XPATH, "./mat-cell[2]", "Host provider in row")
-            cluster = Locator(By.XPATH, "./mat-cell[3]", "Host cluster in row")
-            state = Locator(By.XPATH, ".//app-state-column", "Host state in row")
-            status = Locator(By.XPATH, ".//app-status-column/button", "Host status in row")
-            actions = Locator(By.XPATH, ".//app-action-list/button", "Host actions in row")
-            config = Locator(By.XPATH, "./mat-cell[7]/button", "Host config in row")
-            delete_btn = Locator(By.XPATH, "./mat-cell[8]/button", "Host delete button in row")
-            action_option = TemplateLocator(
-                By.XPATH, "//button/span[text()='{}']", "Action dropdown option"
-            )
+            """Host List page host row elements locators"""
+
+            fqdn = Locator(By.CSS_SELECTOR, "mat-cell:first-child", "Host FQDN in row")
+            provider = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Host provider in row")
+            cluster = Locator(By.CSS_SELECTOR, "app-cluster-column", "Host cluster in row")
+            state = Locator(By.CSS_SELECTOR, "app-state-column", "Host state in row")
+            status = Locator(By.CSS_SELECTOR, "app-status-column button", "Host status in row")
+            actions = Locator(By.CSS_SELECTOR, "app-actions-button button", "Host actions in row")
+            config = Locator(By.XPATH, ".//button[.//mat-icon[text()='settings']]", "Host config in row")
+            delete_btn = Locator(By.XPATH, ".//button[.//mat-icon[text()='delete']]", "Host delete button in row")
+            link_off_btn = Locator(By.XPATH, ".//button[.//mat-icon[text()='link_off']]", "Host link off button in row")
+            action_option = TemplateLocator(By.XPATH, "//button/span[text()='{}']", "Action dropdown option")

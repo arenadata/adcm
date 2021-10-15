@@ -19,22 +19,21 @@ import subprocess
 import sys
 
 import adcm.init_django  # DO NOT DELETE !!!
-import cm.config as config
+from cm import config
 import cm.job
-import cm.lock
 from cm.logger import log
 from cm.models import LogStorage
 from cm.status_api import Event
 
 
 def open_file(root, tag, job_id):
-    fname = '{}/{}/{}.txt'.format(root, job_id, tag)
-    f = open(fname, 'w')
+    fname = f'{root}/{job_id}/{tag}.txt'
+    f = open(fname, 'w', encoding='utf_8')
     return f
 
 
 def read_config(job_id):
-    fd = open('{}/{}/config.json'.format(config.RUN_DIR, job_id))
+    fd = open(f'{config.RUN_DIR}/{job_id}/config.json', encoding='utf_8')
     conf = json.load(fd)
     fd.close()
     return conf
@@ -63,6 +62,9 @@ def set_pythonpath(env, stack_dir):
 
 def set_ansible_config(env, job_id):
     env['ANSIBLE_CONFIG'] = os.path.join(config.RUN_DIR, f'{job_id}/ansible.cfg')
+    # TODO: parameter is used in ansible.cfg file bypass, it is necessary to assess all
+    #  the risks of using this parameter and transfer it to ansible.cfg file
+    env['ANSIBLE_HASH_BEHAVIOUR'] = 'merge'
     return env
 
 
@@ -141,7 +143,7 @@ def run_ansible(job_id):
 
 def do():
     if len(sys.argv) < 2:
-        print("\nUsage:\n{} job_id\n".format(os.path.basename(sys.argv[0])))
+        print(f"\nUsage:\n{os.path.basename(sys.argv[0])} job_id\n")
         sys.exit(4)
     else:
         run_ansible(sys.argv[1])

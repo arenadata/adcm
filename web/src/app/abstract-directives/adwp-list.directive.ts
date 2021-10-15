@@ -6,7 +6,7 @@ import { PageEvent } from '@angular/material/paginator';
 
 import { ListDirective } from './list.directive';
 import { AdwpBaseListDirective } from './adwp-base-list.directive';
-import { Entities } from '@app/core/types';
+import { BaseEntity, Entities } from '@app/core/types';
 
 @Directive({
   selector: '[appAdwpList]',
@@ -26,13 +26,17 @@ export abstract class AdwpListDirective<T> extends ListDirective implements OnIn
     this.data$.next(data as any);
   }
 
-  ngOnInit() {
-    this.baseListDirective = new AdwpBaseListDirective(this, this.service, this.store, this.api);
+  initBaseListDirective() {
+    this.baseListDirective = new AdwpBaseListDirective(this, this.service, this.store);
     this.baseListDirective.typeName = this.type;
     this.baseListDirective.reload = this.reload.bind(this);
     (this.baseListDirective as AdwpBaseListDirective).paging = this.paging;
     (this.baseListDirective as AdwpBaseListDirective).sorting = this.sorting;
     this.baseListDirective.init();
+  }
+
+  ngOnInit() {
+    this.initBaseListDirective();
   }
 
   clickRow(data: RowEventData) {
@@ -71,6 +75,14 @@ export abstract class AdwpListDirective<T> extends ListDirective implements OnIn
 
   getSort(): Sort {
     return this.sorting.value;
+  }
+
+  rewriteRow(row: BaseEntity) {
+    this.service.checkItem(row).subscribe((item) => Object.keys(row).map((a) => (row[a] = item[a])));
+  }
+
+  findRow(id: number): BaseEntity {
+    return this.data.data.find((item) => item.id === id);
   }
 
 }

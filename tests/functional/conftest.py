@@ -2,15 +2,19 @@
 import pytest
 import allure
 
+only_clean_adcm = pytest.mark.parametrize(
+    "additional_adcm_init_config",
+    [pytest.param({}, id="clean_adcm")],
+    indirect=True,
+)
+
 
 @allure.title("Additional ADCM init config")
 @pytest.fixture(
     scope="session",
     params=[
         pytest.param({}, id="clean_adcm"),
-        pytest.param(
-            {"fill_dummy_data": True}, id="adcm_with_dummy_data", marks=[pytest.mark.full]
-        ),
+        pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data", marks=[pytest.mark.full]),
     ],
 )
 def additional_adcm_init_config(request) -> dict:

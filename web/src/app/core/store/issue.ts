@@ -16,10 +16,11 @@ import { exhaustMap, filter, map, withLatestFrom } from 'rxjs/operators';
 
 import { ApiService } from '../api';
 import { State } from '../store';
-import { ApiBase, Issue } from '../types';
+import { BaseEntity } from '../types';
+import { IIssues } from '@app/models/issue';
 
 export interface IssueState {
-  value: Issue;
+  value: IIssues;
   url: string;
 }
 
@@ -29,7 +30,7 @@ const InitState = {
 };
 
 export const loadIssue = createAction('[Issue] LoadIssue');
-export const fillIssue = createAction('[Issue] FillIssue', props<{ value: Issue; url: string }>());
+export const fillIssue = createAction('[Issue] FillIssue', props<{ value: IIssues; url: string }>());
 
 const reducer = createReducer(InitState, on(loadIssue, state => ({ ...state })), on(fillIssue, (state, { value, url }) => ({ value, url })));
 
@@ -44,7 +45,7 @@ export class IssueEffect {
       ofType(loadIssue),
       withLatestFrom(this.store, (action, state) => state.issue.url),
       filter(url => !!url),
-      exhaustMap(url => this.api.get<ApiBase>(url).pipe(map(o => fillIssue({ value: o.issue, url: o.url }))))
+      exhaustMap(url => this.api.get<BaseEntity>(url).pipe(map(o => fillIssue({ value: o.issue, url: o.url }))))
     )
   );
 

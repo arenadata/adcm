@@ -12,6 +12,8 @@
 
 # pylint: disable=not-callable, unused-import, too-many-locals
 
+from typing import List
+
 from django.core.exceptions import ObjectDoesNotExist, FieldError
 from django.http.request import QueryDict
 from django_filters import rest_framework as drf_filters
@@ -28,10 +30,9 @@ from rest_framework.permissions import DjangoModelPermissions
 from adcm.settings import REST_FRAMEWORK
 
 import cm.upgrade
-import cm.config as config
+from cm import config
 from cm.errors import AdcmEx
-from cm.models import Action, ConfigLog, PrototypeConfig
-from cm.logger import log
+from cm.models import Action, ADCMEntity, PrototypeConfig, ConcernType
 
 
 def check_obj(model, req, error=None):
@@ -63,21 +64,19 @@ def update(serializer, **kwargs):
     return save(serializer, status.HTTP_200_OK, **kwargs)
 
 
-def filter_actions(obj, actions_set):
-    if obj.state == config.Job.LOCKED:
+def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
+    """Filter out actions that are not allowed to run on object at that moment"""
+    if obj.concerns.filter(type=ConcernType.Lock).exists():
         return []
-    filtered = []
-    for act in actions_set:
-        available = act.state_available
-        if available == 'any':
-            filtered.append(act)
-        elif obj.state in available:
-            filtered.append(act)
-    for act in actions_set:
-        act.config = PrototypeConfig.objects.filter(prototype=act.prototype, action=act).order_by(
-            'id'
-        )
-    return filtered
+
+    allowed = []
+    for action in actions_set:
+        if action.allowed(obj):
+            allowed.append(action)
+            action.config = PrototypeConfig.objects.filter(
+                prototype=action.prototype, action=action
+            ).order_by('id')
+    return allowed
 
 
 def get_upgradable_func(self, obj):

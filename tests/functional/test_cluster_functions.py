@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for cluster functions"""
+
 # pylint: disable=redefined-outer-name, protected-access
 
 import allure
@@ -22,6 +24,7 @@ from adcm_pytest_plugin import utils
 
 from tests.library import errorcodes as err
 
+# pylint: disable=no-self-use
 
 DEFAULT_CLUSTER_BUNDLE_PATH = get_data_dir(__file__, "cluster_simple")
 DEFAULT_PROVIDER_BUNDLE_PATH = get_data_dir(__file__, "hostprovider_bundle")
@@ -29,23 +32,27 @@ DEFAULT_PROVIDER_BUNDLE_PATH = get_data_dir(__file__, "hostprovider_bundle")
 
 @pytest.fixture()
 def cluster_bundle(request, sdk_client_fs: ADCMClient) -> Bundle:
+    """Upload cluster bundle"""
     bundle_path = request.param if hasattr(request, "param") else DEFAULT_CLUSTER_BUNDLE_PATH
     return sdk_client_fs.upload_from_fs(bundle_path)
 
 
 @pytest.fixture()
 def cluster(cluster_bundle: Bundle) -> Cluster:
+    """Create cluster"""
     return cluster_bundle.cluster_create(name=utils.random_string())
 
 
 @pytest.fixture()
 def provider_bundle(request, sdk_client_fs: ADCMClient) -> Bundle:
+    """Upload provider bundle"""
     bundle_path = request.param if hasattr(request, "param") else DEFAULT_PROVIDER_BUNDLE_PATH
     return sdk_client_fs.upload_from_fs(bundle_path)
 
 
 @pytest.fixture()
 def provider(provider_bundle: Bundle) -> Provider:
+    """Create provider"""
     return provider_bundle.provider_create(name=utils.random_string())
 
 
@@ -55,7 +62,10 @@ def _check_hosts(actual: Host, expected: Host):
 
 
 class TestCluster:
+    """Tests for cluster functions"""
+
     def test_get_cluster_list(self, cluster_bundle: Bundle):
+        """Test get cluster list"""
         actual, expected = [], []
         # Create list of clusters and fill expected list
         for name in utils.random_string_list():
@@ -67,6 +77,7 @@ class TestCluster:
             assert actual == expected
 
     def test_creating_cluster_with_name_and_desc(self, cluster_bundle: Bundle):
+        """Test create cluster with name and desc"""
         name, description = utils.random_string_list(2)
         cluster = cluster_bundle.cluster_create(name=name, description=description)
         with allure.step("Check created cluster"):
@@ -84,6 +95,7 @@ class TestCluster:
         indirect=True,
     )
     def test_run_cluster_action(self, cluster: Cluster):
+        """Test run cluster action"""
         cluster.config_set({"required": 10})
         cluster.service_add(name="ZOOKEEPER")
         result = cluster.action().run()
@@ -92,7 +104,10 @@ class TestCluster:
 
 
 class TestClusterHost:
+    """Test cluster and host functions"""
+
     def test_adding_host_to_cluster(self, cluster: Cluster, provider: Provider):
+        """Test add host to cluster"""
         host = provider.host_create(utils.random_string())
         expected = cluster.host_add(host)
         with allure.step("Get cluster host info"):
@@ -103,6 +118,7 @@ class TestClusterHost:
             _check_hosts(actual, expected)
 
     def test_get_cluster_hosts_list(self, cluster: Cluster, provider: Provider):
+        """Test get cluster hosts list"""
         actual, expected = [], []
         with allure.step("Create host list in cluster"):
             for fqdn in utils.random_string_list():
@@ -115,6 +131,7 @@ class TestClusterHost:
             assert actual == expected
 
     def test_get_cluster_host_info(self, cluster: Cluster, provider: Provider):
+        """Test get cluster host info"""
         host = provider.host_create(utils.random_string())
         with allure.step("Create mapping between cluster and host"):
             expected = cluster.host_add(host)
@@ -124,6 +141,7 @@ class TestClusterHost:
             _check_hosts(host, expected)
 
     def test_delete_host_from_cluster(self, cluster: Cluster, provider: Provider):
+        """Test delete host from cluster"""
         host = provider.host_create(utils.random_string())
         expected = cluster.host_list()
         with allure.step("Create mapping between cluster and host"):
@@ -134,7 +152,8 @@ class TestClusterHost:
         with allure.step("Check host removed from cluster"):
             assert actual == expected
 
-    def test_host_along_to_cluster_should_not_deleted(self, cluster: Cluster, provider: Provider):
+    def test_host_belong_to_cluster_should_not_deleted(self, cluster: Cluster, provider: Provider):
+        """Test that we should be unable to delete host bounded to cluster"""
         host = provider.host_create(utils.random_string())
         cluster.host_add(host)
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
@@ -144,7 +163,10 @@ class TestClusterHost:
 
 
 class TestClusterService:
+    """Test cluster ans service functions"""
+
     def test_cluster_service_create(self, cluster: Cluster):
+        """Test create service"""
         expected = cluster.service_add(name="ZOOKEEPER")
         service_list = cluster.service_list()
         assert len(service_list) == 1
@@ -154,6 +176,7 @@ class TestClusterService:
             assert actual.name == expected.name
 
     def test_get_cluster_service_list(self, sdk_client_fs: ADCMClient, cluster: Cluster):
+        """Test cluster service list"""
         expected = []
         with allure.step("Create a list of services in the cluster"):
             for prototype in sdk_client_fs.service_prototype_list(bundle_id=cluster.bundle_id):
@@ -175,6 +198,7 @@ class TestClusterService:
         indirect=True,
     )
     def test_cluster_action_runs_task(self, cluster: Cluster):
+        """Test run cluster action"""
         cluster.config_set({"required": 10})
         cluster.service_add(name="ZOOKEEPER")
         task = cluster.action(name="check-file-type").run()

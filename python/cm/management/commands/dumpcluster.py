@@ -128,9 +128,8 @@ def get_cluster(cluster_id):
         'description',
         'config',
         'state',
-        'stack',
-        'issue',
         'prototype',
+        '_multi_state',
     )
     cluster = get_object(models.Cluster, cluster_id, fields)
     cluster['config'] = get_config(cluster['config'])
@@ -155,8 +154,7 @@ def get_provider(provider_id):
         'description',
         'config',
         'state',
-        'stack',
-        'issue',
+        '_multi_state',
     )
     provider = get_object(models.HostProvider, provider_id, fields)
     provider['config'] = get_config(provider['config'])
@@ -183,8 +181,7 @@ def get_host(host_id):
         'provider__name',
         'config',
         'state',
-        'stack',
-        'issue',
+        '_multi_state',
     )
     host = get_object(models.Host, host_id, fields)
     host['config'] = get_config(host['config'])
@@ -208,8 +205,7 @@ def get_service(service_id):
         # 'service',  # TODO: you need to remove the field from the ClusterObject model
         'config',
         'state',
-        'stack',
-        'issue',
+        '_multi_state',
     )
     service = get_object(models.ClusterObject, service_id, fields)
     service['config'] = get_config(service['config'])
@@ -233,8 +229,7 @@ def get_component(component_id):
         'service',
         'config',
         'state',
-        'stack',
-        'issue',
+        '_multi_state',
     )
     component = get_object(models.ServiceComponent, component_id, fields)
     component['config'] = get_config(component['config'])
@@ -326,7 +321,7 @@ def dump(cluster_id, output):
     result = json.dumps(data, indent=2)
 
     if output is not None:
-        with open(output, 'w') as f:
+        with open(output, 'w', encoding='utf_8') as f:
             f.write(result)
     else:
         sys.stdout.write(result)

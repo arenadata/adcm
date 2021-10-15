@@ -20,7 +20,7 @@ import { provideMockStore } from '@ngrx/store/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { EMPTY } from 'rxjs';
 
-import { FieldService } from '../field.service';
+import { FieldService } from '../services/field.service';
 import { FieldComponent } from '../field/field.component';
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
@@ -29,6 +29,7 @@ import { IConfig } from '../types';
 import { ConfigComponent } from './config.component';
 import { MainService } from './main.service';
 import { ApiService } from '@app/core/api';
+import { ActivatedRoute } from '@angular/router';
 
 const rawConfig: IConfig = {
   attr: {},
@@ -77,17 +78,19 @@ describe('Configuration : ConfigComponent >> ', () => {
   let fixture: ComponentFixture<ConfigComponent>;
   let FieldServiceStub: Partial<FieldService>;
   const initialState = { socket: {} };
+
   class MockMainService {
     getConfig = () => EMPTY;
     filterApply = () => { };
     getHistoryList = () => EMPTY;
     parseValue = () => { };
     send = () => EMPTY;
+    worker$ = EMPTY
   }
 
   beforeEach(async () => {
     FieldServiceStub = new FieldService(new FormBuilder());
-    TestBed.configureTestingModule({
+    await TestBed.configureTestingModule({
       imports: [
         NoopAnimationsModule,
         SharedModule,
@@ -102,15 +105,19 @@ describe('Configuration : ConfigComponent >> ', () => {
           useValue: { stableView: () => { } }
         },
         ApiService,
+
       ],
       schemas: [NO_ERRORS_SCHEMA],
     })
-    .overrideComponent(ConfigComponent, {
-      set: {
-        providers: [{ provide: MainService, useClass: MockMainService }],
-      },
-    })
-    .compileComponents();
+      .overrideComponent(ConfigComponent, {
+        set: {
+          providers: [
+            { provide: MainService, useClass: MockMainService },
+            { provide: ActivatedRoute, useValue: { snapshot: { data: {} } } },
+          ],
+        },
+      })
+      .compileComponents();
   });
 
   beforeEach(() => {

@@ -1,17 +1,21 @@
 import { TestBed } from '@angular/core/testing';
 
-import { IssueMessageService } from './issue-message.service';
+import { ConcernService } from './concern.service';
+import { provideMockStore } from '@ngrx/store/testing';
 
 describe('IssueMessageService', () => {
-  let service: IssueMessageService;
+  let service: ConcernService;
+
+  const initialState = { socket: {} };
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        IssueMessageService,
+        ConcernService,
+        provideMockStore({ initialState }),
       ],
     });
-    service = TestBed.inject(IssueMessageService);
+    service = TestBed.inject(ConcernService);
   });
 
   it('should be created', () => {

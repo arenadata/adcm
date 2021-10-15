@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tooltip page locators"""
 
 from selenium.webdriver.common.by import By
 
@@ -22,21 +23,14 @@ from tests.ui_tests.app.helpers.locator import (
 class CommonToolbarLocators:
     """Common toolbar elements locators"""
 
-    admin_link = Locator(By.XPATH, "//a[@routerlink='/admin']", "Link to /admin")
+    progress_bar = Locator(By.CSS_SELECTOR, "*.mat-progress-bar-background", "Loading info")
+    admin_link = Locator(By.CSS_SELECTOR, "a[routerlink='/admin']", "Link to /admin")
     text_link = TemplateLocator(By.XPATH, "//a[text()='{}']", "Link to {}")
-    action_btn = TemplateLocator(
-        By.XPATH, "//span[.//a[text()='{}']]//app-action-list/button", "Action button to {}"
-    )
-    upgrade_btn = TemplateLocator(
-        By.XPATH, "//span[.//a[text()='{}']]//app-upgrade/button", "Upgrade button to {}"
-    )
+    action_btn = TemplateLocator(By.XPATH, "//span[.//a[text()='{}']]//app-action-list/button", "Action button to {}")
+    upgrade_btn = TemplateLocator(By.XPATH, "//*[.//a[text()='{}']]//app-upgrade/button", "Upgrade button to {}")
 
     class Popup:
         """Popup to choose action or import"""
 
-        popup_block = Locator(
-            By.XPATH, "//div[contains(@class, 'mat-menu-content')]", "Header popup block"
-        )
-        item = TemplateLocator(
-            By.XPATH, "//button[@role='menuitem' and ./*[text()='{}']]", "Item {}"
-        )
+        popup_block = Locator(By.CSS_SELECTOR, "*.mat-menu-content", "Header popup block")
+        item = TemplateLocator(By.XPATH, "//button[@role='menuitem' and ./*[text()='{}']]", "Item {}")

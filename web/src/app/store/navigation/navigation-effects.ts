@@ -4,8 +4,8 @@ import { concatMap, filter, map, switchMap, take } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 import { AdcmEntity, AdcmTypedEntity } from '@app/models/entity';
 import { TypeName } from '@app/core/types';
-
 import { Action, Store } from '@ngrx/store';
+
 import { ApiService } from '@app/core/api';
 import { ServiceComponentService } from '@app/services/service-component.service';
 import { ClusterService } from '@app/core/services/cluster.service';
@@ -19,6 +19,8 @@ import {
 } from '@app/store/navigation/navigation.store';
 import { EventMessage, socketResponse } from '@app/core/store/sockets/socket.reducer';
 import { IClusterService } from '@app/models/cluster-service';
+import { ConfigGroupListService } from '@app/config-groups/service/config-group-list.service';
+import { ConcernEventType } from '@app/models/concern/concern-reason';
 
 @Injectable()
 export class NavigationEffects {
@@ -44,7 +46,9 @@ export class NavigationEffects {
 
   changePathOfEvent$ = createEffect(() => this.actions$.pipe(
     ofType(socketResponse),
-    filter(action => ['raise_issue', 'clear_issue'].includes(action.message.event)),
+    filter(action =>
+      [ConcernEventType.Service, ConcernEventType.Cluster, ConcernEventType.Host, ConcernEventType.HostProvider, ConcernEventType.ServiceComponent].includes(action.message.object.type as any)
+    ),
     concatMap((event: { message: EventMessage }) => {
       return new Observable<Action>(subscriber => {
         this.store.select(getNavigationPath).pipe(take(1)).subscribe((path) => {
@@ -70,7 +74,8 @@ export class NavigationEffects {
     private api: ApiService,
     private serviceComponentService: ServiceComponentService,
     private store: Store,
-    private clusterService: ClusterService
+    private clusterService: ClusterService,
+    private configGroupService: ConfigGroupListService
   ) {}
 
   entityGetter(type: TypeName, id: number): Observable<AdcmTypedEntity> {
@@ -81,26 +86,31 @@ export class NavigationEffects {
       } as AdcmTypedEntity))
     );
 
-
     if (EntityNames.includes(type)) {
       if (type === 'bundle') {
         return entityToTypedEntity(
           this.clusterService.one_bundle(id),
           type,
         );
-      } else if (type === 'servicecomponent') {
+      } else if (type === 'servicecomponent' || type === 'component') {
         return entityToTypedEntity(
           this.serviceComponentService.get(id),
           type,
         );
-      } if (type === 'service') {
+      }
+      if (type === 'service') {
         return entityToTypedEntity(
           this.api.getOne<any>(type, id),
           type,
         ).pipe(switchMap((entity) => {
           return this.api.getOne<any>('cluster', (entity as any as IClusterService).cluster_id)
-            .pipe(map(cluster => ({...entity, cluster})));
+            .pipe(map(cluster => ({ ...entity, cluster })));
         }));
+      } else if (type === 'group_config') {
+        return entityToTypedEntity(
+          this.configGroupService.get(id),
+          type,
+        );
       } else {
         return entityToTypedEntity(
           this.api.getOne<any>(type, id),
