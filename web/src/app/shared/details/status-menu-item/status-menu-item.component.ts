@@ -6,6 +6,7 @@ import { Component, Input, OnInit } from '@angular/core';
     <a mat-list-item
        [appForTest]="'tab_' + link"
        [routerLink]="link"
+       routerLinkActive="active"
     >
       <img src="/assets/homer-simpson.png" class="homer">
       <span>{{ label }}</span>

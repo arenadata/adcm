@@ -3,7 +3,7 @@ import { IColumns } from '@adwp-ui/widgets';
 
 import { TypeName } from '@app/core/types';
 import { IHost } from '@app/models/host';
-import { ListFactory } from '@app/factories/list-factory';
+import { ListFactory } from '../../../factories/list.factory';
 import { ConcernListDirective } from '@app/abstract-directives/concern-list.directive';
 import { ConcernEventType } from '@app/models/concern/concern-reason';
 

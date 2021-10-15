@@ -38,6 +38,9 @@ import { HostDetailsComponent } from '@app/components/host/host-details/host-det
 import { LeftMenuComponent } from './left-menu/left-menu.component';
 import { LabelMenuItemComponent } from './label-menu-item/label-menu-item.component';
 import { StatusMenuItemComponent } from './status-menu-item/status-menu-item.component';
+import { ProviderDetailsComponent } from '@app/components/hostprovider/provider-details/provider-details.component';
+import { GroupConfigProviderDetailsComponent } from '@app/components/hostprovider/group-config-provider-details/group-config-provider-details.component';
+import { BundleDetailsComponent } from '@app/components/bundle/bundle-details/bundle-details.component';
 
 @NgModule({
   imports: [
@@ -66,6 +69,9 @@ import { StatusMenuItemComponent } from './status-menu-item/status-menu-item.com
   declarations: [
     DetailComponent,
     HostDetailsComponent,
+    ProviderDetailsComponent,
+    GroupConfigProviderDetailsComponent,
+    BundleDetailsComponent,
     SubtitleComponent,
     LeftComponent,
     TopComponent,

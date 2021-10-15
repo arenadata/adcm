@@ -4,6 +4,7 @@ import { Component, Input } from '@angular/core';
   selector: 'app-label-menu-item',
   template: `
     <a mat-list-item
+       routerLinkActive="active"
        [appForTest]="'tab_' + link"
        [routerLink]="link"
     >

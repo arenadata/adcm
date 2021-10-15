@@ -5,16 +5,15 @@ import { LeftMenuItem } from '@app/shared/details/left-menu/left-menu.component'
 import { DetailsFactory } from '@app/factories/details.factory';
 
 @Component({
-  selector: 'app-host-details',
+  selector: 'app-bundle-details',
   templateUrl: '../../../templates/details.html',
   styleUrls: ['./../../../shared/details/detail.component.scss']
 })
-export class HostDetailsComponent extends DetailComponent {
+export class BundleDetailsComponent extends DetailComponent {
 
   leftMenu: LeftMenuItem[] = [
     DetailsFactory.labelMenuItem('Main', 'main'),
-    DetailsFactory.labelMenuItem('Configuration', 'config'),
-    DetailsFactory.statusMenuItem('Status', 'status'),
+    DetailsFactory.labelMenuItem('License', 'license'),
   ];
 
 }
