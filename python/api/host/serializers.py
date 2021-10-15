@@ -64,7 +64,7 @@ class HostDetailSerializer(HostSerializer):
     locked = serializers.BooleanField(read_only=True)
 
     def get_status(self, obj):
-        return cm.status_api.get_host_status(obj.id)
+        return cm.status_api.get_host_status(obj)
 
 
 class ClusterHostSerializer(HostSerializer):

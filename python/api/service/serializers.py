@@ -88,7 +88,7 @@ class ServiceDetailSerializer(ServiceSerializer):
     group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
     def get_status(self, obj):
-        return status_api.get_service_status(obj.cluster.id, obj.id)
+        return status_api.get_service_status(obj)
 
 
 class ServiceUISerializer(ServiceDetailSerializer):
