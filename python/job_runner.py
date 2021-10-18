@@ -20,6 +20,7 @@ import sys
 
 import adcm.init_django  # DO NOT DELETE !!!
 from cm import config
+from cm.ansible_plugin import finish_check
 import cm.job
 from cm.logger import log
 from cm.models import LogStorage
@@ -130,7 +131,7 @@ def run_ansible(job_id):
     event.send_state()
     log.info("run ansible job #%s, pid %s, playbook %s", job_id, proc.pid, playbook)
     ret = proc.wait()
-    cm.job.finish_check(job_id)
+    finish_check(job_id)
     ret = set_job_status(job_id, ret, proc.pid, event)
     event.send_state()
 

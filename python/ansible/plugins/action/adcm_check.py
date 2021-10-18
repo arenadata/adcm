@@ -101,7 +101,7 @@ from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm/python')
 import adcm.init_django  # pylint: disable=unused-import
-import cm.job
+from cm.ansible_plugin import log_check
 from cm.errors import AdcmEx
 from cm.logger import log
 
@@ -173,7 +173,7 @@ class ActionModule(ActionBase):
         )
 
         try:
-            cm.job.log_check(job_id, group, check)
+            log_check(job_id, group, check)
         except AdcmEx as e:
             return {"failed": True, "msg": e.code + ":" + e.msg}
 
