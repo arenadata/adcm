@@ -522,6 +522,7 @@
     structure:
       type: structure
       yspec: structure.yml
+      default: '{"cluster": [{"cluster_name": "dummy", "shards": 1}]}'
       required: False
 
 - type: service
