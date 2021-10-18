@@ -30,3 +30,5 @@
           - job.config.map[inventory_hostname].structure == services.test_service_1.first.config.structure
           - job.config.map[inventory_hostname].map == services.test_service_1.first.config.map
           - job.config.map[inventory_hostname].file == lookup('file', services.test_service_1.first.config.file)
+        fail_msg: "Expected:\n{{ job.config.map[inventory_hostname] | to_nice_json }}\n\
+        but actual is:\n {{ services.test_service_1.first.config | to_nice_json }} "
