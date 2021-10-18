@@ -375,6 +375,7 @@ class TestChangeGroupsConfig:
         "group": OrderedDict([('port', 9100), ('transport_port', 9200)]),
         "structure": [{"code": 3, "country": "Test1"}, {"code": 4, "country": "Test2"}],
         "map": {"age": "20", "name": "Chloe", "hair_color": "blond"},
+        "json": {"age": "20", "name": "Chloe", "hair_color": "blond"},
         "password": "123",
         "file": "file content test",
     }
@@ -392,6 +393,7 @@ class TestChangeGroupsConfig:
         "group": {"port": True, "transport_port": True},
         "structure": True,
         "map": True,
+        "json": True,
     }
 
     CUSTOM_GROUP_KEYS_TO_CHANGE = {
@@ -407,6 +409,7 @@ class TestChangeGroupsConfig:
         "group": {"port": False, "transport_port": False},
         "structure": False,
         "map": False,
+        "json": False,
     }
 
     CLUSTER_HOSTS_VARIANTS = [
@@ -446,9 +449,9 @@ class TestChangeGroupsConfig:
         if actual_values["file"]:
             assert actual_values["file"] == expected_values["file"], "File has not changed"
 
-    def _get_config_from_group(self, cluster_group: GroupConfig):
+    def _get_config_from_group(self, group: GroupConfig):
         """Get config from group and add custom values to password and file"""
-        config_group = cluster_group.config()
+        config_group = group.config()
         if "password" in config_group:
             config_group["password"] = "password"
         if "file" in config_group:
@@ -464,9 +467,7 @@ class TestChangeGroupsConfig:
         with allure.step(f'Check error message is "{error_message}"'):
             assert error_message in e.value.error['desc'], f"Should be error message '{error_message}'"
 
-    def _check_error_about_changing_custom_group_keys(
-        self, group: GroupConfig, config_before: dict, custom_group_keys: bool = False
-    ):
+    def _check_error_about_changing_custom_group_keys(self, group: GroupConfig, config_before: dict):
         for param in config_before.keys():
             with allure.step(f"Assert that can't change read-only {param} custom_group_keys parameter"):
                 invalid_config = {
@@ -518,7 +519,7 @@ class TestChangeGroupsConfig:
                     run_cluster_action_and_assert_result(cluster, action="test_action", config=config_previous)
         with allure.step("Check that with cluster group keys values are saved in cluster group"):
             config_expected_with_groups = self._add_values_to_group_config_template(
-                custom_group_keys=cluster_group.config()["attr"]["custom_group_keys"],
+                custom_group_keys=cluster_group.config(full=True)["attr"]["custom_group_keys"],
                 group_keys=self.GROUP_KEYS_TO_CHANGE,
             )
             config_after = cluster_group.config_set(config_expected_with_groups)
@@ -555,7 +556,7 @@ class TestChangeGroupsConfig:
                     run_service_action_and_assert_result(service, action="test_action", config=config_previous)
         with allure.step("Check that with group keys values are saved in service group"):
             config_expected_with_groups = self._add_values_to_group_config_template(
-                custom_group_keys=service_group.config()["attr"]["custom_group_keys"],
+                custom_group_keys=service_group.config(full=True)["attr"]["custom_group_keys"],
                 group_keys=self.GROUP_KEYS_TO_CHANGE,
             )
             config_after = service_group.config_set(config_expected_with_groups)
@@ -593,7 +594,7 @@ class TestChangeGroupsConfig:
                     run_component_action_and_assert_result(component, action="test_action", config=config_previous)
         with allure.step("Check that with group keys values are saved in component group"):
             config_expected_with_groups = self._add_values_to_group_config_template(
-                custom_group_keys=component_group.config()["attr"]["custom_group_keys"],
+                custom_group_keys=component_group.config(full=True)["attr"]["custom_group_keys"],
                 group_keys=self.GROUP_KEYS_TO_CHANGE,
             )
             config_after = component_group.config_set(config_expected_with_groups)
@@ -611,7 +612,7 @@ class TestChangeGroupsConfig:
 
     @pytest.mark.parametrize(
         "provider_bundle",
-        params=[
+        [
             pytest.param(PROVIDER_BUNDLE_WITH_GROUP_PATH, id="provider_with_group_customization"),
             pytest.param(PROVIDER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH, id="provider_with_config_group_customization"),
         ],
@@ -638,7 +639,7 @@ class TestChangeGroupsConfig:
                     run_provider_action_and_assert_result(provider, action="test_action", config=config_previous)
         with allure.step("Check that with group keys values are saved in provider group"):
             config_expected_with_groups = self._add_values_to_group_config_template(
-                custom_group_keys=provider_group.config()["attr"]["custom_group_keys"],
+                custom_group_keys=provider_group.config(full=True)["attr"]["custom_group_keys"],
                 group_keys=self.GROUP_KEYS_TO_CHANGE,
             )
             config_after = provider_group.config_set(config_expected_with_groups)
@@ -739,7 +740,7 @@ class TestChangeGroupsConfig:
 
     @pytest.mark.parametrize(
         "provider_bundle",
-        params=[
+        [
             pytest.param(PROVIDER_BUNDLE_WITH_GROUP_PATH, id="provider_with_group_customization"),
             pytest.param(PROVIDER_BUNDLE_WITH_CONFIG_GROUP_CUSTOM_PATH, id="provider_with_config_group_customization"),
         ],
