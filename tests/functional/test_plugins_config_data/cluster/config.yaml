@@ -519,6 +519,11 @@
         - "three"
       required: no
 
+    structure:
+      type: structure
+      yspec: structure.yml
+      required: False
+
 - type: service
   name: first
   version: 1

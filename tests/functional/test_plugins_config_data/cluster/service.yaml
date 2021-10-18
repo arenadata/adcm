@@ -20,6 +20,7 @@
       - "one"
       - "new"
       - "three"
+    new_structure: &new_structure '{"cluster": [{"cluster_name": "dummy", "shards": 3}]}'
   gather_facts: false
   connection: local
   tasks:
@@ -142,3 +143,18 @@
       when: "{{ out.value != new_map }}"
       tags:
         - map
+
+    - adcm_config:
+        type: "service"
+        key: "structure"
+        value: *new_structure
+      register: out
+      tags:
+        - structure
+
+    - name: "Check return value"
+      fail:
+        msg: "Expected value is {{ new_structure }}, actual value is {{ out.value }}"
+      when: "{{ out.value != new_structure }}"
+      tags:
+        - structure

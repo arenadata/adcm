@@ -1,0 +1,23 @@
+---
+    root:
+      match: dict
+      items:
+        cluster: cluster
+
+    cluster:
+      match: list
+      item: cluster_list
+
+    cluster_list:
+      match: dict
+      items:
+        cluster_name: string
+        shards: integer
+      required_items:
+        - cluster_name
+
+    string:
+      match: string
+
+    integer:
+      match: int

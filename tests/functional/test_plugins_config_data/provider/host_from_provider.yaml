@@ -32,6 +32,7 @@
       - "one"
       - "new"
       - "three"
+    new_structure: &new_structure '{"cluster": [{"cluster_name": "dummy", "shards": 3}]}'
 
   gather_facts: false
   connection: local
@@ -106,3 +107,12 @@
       register: out
       tags:
         - map
+
+    - adcm_config:
+        host_id: "{{ job.config.host_id }}"
+        type: "host"
+        key: "structure"
+        value: *new_structure
+      register: out
+      tags:
+        - structure

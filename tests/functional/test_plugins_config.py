@@ -52,6 +52,7 @@ INITIAL_CONFIG = {
     'dummy': 'donthurtme',
     "map": {"one": "two", "two": "three"},
     "list": ["one", "two", "three"],
+    "structure": {"cluster": [{"cluster_name": "dummy", "shards": 1}]},
 }
 CHANGED_CONFIG = {
     "int": 2,
@@ -63,6 +64,7 @@ CHANGED_CONFIG = {
     'dummy': 'donthurtme',
     "map": {"one": "two", "two": "new"},
     "list": ["one", "new", "three"],
+    "structure": {"cluster": [{"cluster_name": "dummy", "shards": 3}]},
 }
 CONFIG_KEYS = set(CHANGED_CONFIG.keys())
 
