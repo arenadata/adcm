@@ -243,7 +243,6 @@ class TestUpgradeFilledADCM:
 
     # Test itself
 
-    @pytest.mark.full()
     @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
     @pytest.mark.parametrize("image", [previous_adcm_version_tag()], indirect=True)
     def test_upgrade_dirty_adcm(
@@ -293,8 +292,9 @@ class TestUpgradeFilledADCM:
 
         yield
 
-        for job_id, job_info in frozen_objects.items():
-            comparator(adcm_client.job(id=job_id), job_info)
+        with allure.step('Assert that Jobs have correct info'):
+            for job_id, job_info in frozen_objects.items():
+                comparator(adcm_client.job(id=job_id), job_info)
 
     @allure.step('Create simple providers')
     def create_simple_providers(
@@ -496,6 +496,9 @@ class TestUpgradeFilledADCM:
                         'custom_field': random_string(12),
                     },
                 },
+                'country_codes': [
+                    {'country': random_string(12), 'code': int(random.randint(1, 200))} for _ in range(4)
+                ],
             }
 
         def get_component_random_config_map() -> dict:

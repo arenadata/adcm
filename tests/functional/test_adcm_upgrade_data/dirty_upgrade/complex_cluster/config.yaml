@@ -33,6 +33,18 @@
       type: float
       required: true
 
+    - &country_codes
+      name: country_codes
+      type: structure
+      yspec: ./schema.yaml
+      default:
+        - country: Greece
+          code: 30
+        - country: France
+          code: 33
+        - country: Spain
+          code: 34
+
     - &a_lot_of_text
       name: a_lot_of_text
       display_name: A lot of text
@@ -181,6 +193,7 @@
     - *from_doc
     - *a_lot_of_text
     - *complexity_level
+    - *country_codes
 
     - name: very_important_flag
       display_name: Is cheese put

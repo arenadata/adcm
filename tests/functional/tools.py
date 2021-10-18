@@ -53,14 +53,11 @@ def get_objects_via_pagination(
             return []
 
     pagination = {'offset': 0, 'limit': pagination_step}
-    objects = ignore_paging_ends(pagination)
-    while len(objects) == pagination_step:
+    objects = []
+    while objects_on_next_page := ignore_paging_ends(pagination):
+        objects.extend(objects_on_next_page)
         pagination['offset'] += pagination_step
         pagination['limit'] += pagination_step
-        objects_on_next_page = ignore_paging_ends(pagination)
-        if not objects_on_next_page:
-            return objects
-        objects.extend(objects_on_next_page)
     return objects
 
 
