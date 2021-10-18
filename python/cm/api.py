@@ -16,7 +16,6 @@ import json
 from django.core.exceptions import MultipleObjectsReturned
 from django.db import transaction
 from django.utils import timezone
-from django.contrib.contenttypes.models import ContentType
 
 import cm.issue
 import cm.status_api
@@ -329,6 +328,9 @@ def remove_host_from_cluster(host):
     with transaction.atomic():
         host.cluster = None
         host.save()
+        for group in cluster.group_config.all():
+            group.hosts.remove(host)
+            cm.issue.update_hierarchy_issues(host)
         host.remove_from_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(cluster)
     ctx.event.send_state()
@@ -384,6 +386,7 @@ def add_components_to_service(cluster, service):
         obj_conf = init_object_config(spec, conf, attr)
         sc = ServiceComponent(cluster=cluster, service=service, prototype=comp, config=obj_conf)
         sc.save()
+        process_file_type(sc, spec, conf)
         cm.issue.update_hierarchy_issues(sc)
 
 
@@ -474,33 +477,30 @@ def accept_license(bundle):
 
 
 def update_obj_config(obj_conf, conf, attr, desc=''):
-    is_group_config = False
     if not isinstance(attr, dict):
         err('INVALID_CONFIG_UPDATE', 'attr should be a map')
     obj = obj_conf.object
     if obj is None:
         err('INVALID_CONFIG_UPDATE', f'unknown object type "{obj_conf}"')
+    group = None
     if isinstance(obj, GroupConfig):
-        group_config = obj
-        obj = group_config.object
-        is_group_config = True
-    proto = obj.prototype
+        group = obj
+        obj = group.object
+        proto = obj.prototype
+    else:
+        proto = obj.prototype
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
     if not attr:
         if old_conf.attr:
             attr = old_conf.attr
-    new_conf = check_json_config(
-        proto, obj, conf, old_conf.config, attr, is_group_config=is_group_config
-    )
+    new_conf = check_json_config(proto, group or obj, conf, old_conf.config, attr)
     with transaction.atomic():
         cl = save_obj_config(obj_conf, new_conf, attr, desc)
         cm.issue.update_hierarchy_issues(obj)
     if hasattr(obj_conf, 'adcm'):
         prepare_social_auth(new_conf)
-    if is_group_config:
-        cm.status_api.post_event(
-            'change_config', 'group-config', group_config.id, 'version', str(cl.id)
-        )
+    if group is not None:
+        cm.status_api.post_event('change_config', 'group-config', group.id, 'version', str(cl.id))
     else:
         cm.status_api.post_event('change_config', proto.type, obj.id, 'version', str(cl.id))
     return cl
@@ -577,22 +577,8 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
     return host_comp_list
 
 
-def get_list_of_continue_existed_hc(cluster, host_comp_list):
-    result = []
-    for (service, host, comp) in host_comp_list:
-        try:
-            still_existed_hc = HostComponent.objects.get(
-                cluster=cluster, service=service, host=host, component=comp
-            )
-            result.append(still_existed_hc)
-        except HostComponent.DoesNotExist:
-            continue
-    return result
-
-
 def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     hc_queryset = HostComponent.objects.filter(cluster=cluster)
-    new_hc_list = get_list_of_continue_existed_hc(cluster, host_comp_list)
     old_hosts = {i.host for i in hc_queryset.select_related('host').all()}
     new_hosts = {i[1] for i in host_comp_list}
     for removed_host in old_hosts.difference(new_hosts):
@@ -600,15 +586,16 @@ def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     for added_host in new_hosts.difference(old_hosts):
         added_host.add_to_concerns(ctx.lock)
 
-    for removed_hc in list(set(hc_queryset) - set(new_hc_list)):
-        groupconfigs = GroupConfig.objects.filter(hosts=removed_hc.host)
-        cluster_group = GroupConfig.objects.filter(
-            object_type=ContentType.objects.get_for_model(Cluster)
-        )
-        for gc in groupconfigs:
-            if gc not in cluster_group:
-                if gc.object_id in [removed_hc.component.id, removed_hc.service.id]:
-                    removed_hc.host.group_config.remove(gc)
+    # Remove hosts from group for components and services without hc map
+    # TODO: refactoring remove hosts from group
+    hosts_for_remove_from_groups = list(old_hosts)
+    group_configs = GroupConfig.objects.filter(
+        object_type__model__in=['clusterobject', 'servicecomponent'],
+        hosts__in=hosts_for_remove_from_groups,
+    )
+    for group in group_configs:
+        group.hosts.remove(*hosts_for_remove_from_groups)
+
     hc_queryset.delete()
     result = []
     for (proto, host, comp) in host_comp_list:

@@ -150,9 +150,9 @@ def gen_action(name='', bundle=None, prototype=None) -> models.Action:
     )
 
 
-def gen_task_log(obj: models.ADCMEntity) -> models.TaskLog:
+def gen_task_log(obj: models.ADCMEntity, action: models.Action = None) -> models.TaskLog:
     return models.TaskLog.objects.create(
-        action=gen_action(),
+        action=action or gen_action(),
         object_id=obj.pk,
         status='CREATED',
         task_object=obj,
@@ -164,6 +164,7 @@ def gen_task_log(obj: models.ADCMEntity) -> models.TaskLog:
 def gen_job_log(task) -> models.JobLog:
     return models.JobLog.objects.create(
         task=task,
+        action=task.action,
         status='CREATED',
         start_date=timezone.now(),
         finish_date=timezone.now(),

@@ -10,10 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { clearEmptyField } from '@app/core/types';
 import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
 
+import { clearEmptyField, StackBase } from '@app/core/types';
 import { BaseFormDirective } from './base-form.directive';
 import { ICluster } from '@app/models/cluster';
 
@@ -21,7 +21,7 @@ import { ICluster } from '@app/models/cluster';
   selector: 'app-add-cluster',
   template: `
     <ng-container [formGroup]="form">
-      <app-bundles [form]="form" [typeName]="'cluster'"></app-bundles>
+      <app-bundles [form]="form" [typeName]="'cluster'" (prototypeChanged)="prototypeChanged($event)"></app-bundles>
       <app-input [form]="form" [label]="'Cluster name'" [controlName]="'name'" [isRequired]="true"></app-input>
       <app-input [form]="form" [label]="'Description'" [controlName]="'description'"></app-input>
       <app-add-controls [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></app-add-controls>
@@ -29,7 +29,10 @@ import { ICluster } from '@app/models/cluster';
   `,
 })
 export class AddClusterComponent extends BaseFormDirective implements OnInit, OnDestroy {
+
   sgn: Subscription;
+  private prototype: StackBase;
+
   ngOnInit() {
     this.form = this.service.model('cluster').form;
     this.sgn = this.service.genName(this.form);
@@ -39,11 +42,16 @@ export class AddClusterComponent extends BaseFormDirective implements OnInit, On
     this.sgn.unsubscribe();
   }
 
+  prototypeChanged(event: StackBase) {
+    this.prototype = event;
+  }
+
   save() {
     const data = clearEmptyField(this.form.value);
     this.service
-      .add<ICluster>(data, 'cluster')
+      .add<ICluster>(data, 'cluster', this.prototype)
       .pipe(take(1))
       .subscribe((_) => this.onCancel());
   }
+
 }

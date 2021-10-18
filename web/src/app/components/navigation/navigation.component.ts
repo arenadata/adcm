@@ -17,8 +17,13 @@ import { IIssues } from '@app/models/issue';
           <div class="link">
             <a routerLink="{{ item.url }}" [title]="item.title | uppercase">{{ item.title | uppercase }}</a>
           </div>
-          <app-actions-button [row]="item?.entity"></app-actions-button>
-          <app-upgrade *ngIf="item?.entity?.typeName === 'cluster'" [row]="item?.entity" (refresh)="refresh.emit($event)"></app-upgrade>
+          <app-actions-button *ngIf="item?.entity?.typeName !== 'group_config'"
+                              [row]="item?.entity"></app-actions-button>
+          <app-upgrade
+            *ngIf="['cluster', 'provider'].includes(item?.entity?.typeName)"
+            [row]="item?.entity"
+            (refresh)="refresh.emit($event)"
+          ></app-upgrade>
         </span>
         <span *ngIf="!isLast">&nbsp;/&nbsp;</span>
       </ng-container>
@@ -58,7 +63,7 @@ import { IIssues } from '@app/models/issue';
     .mat-nav-list .entity {
       border: 1px solid #54646E;
       border-radius: 5px;
-      padding: 2px 0 2px 8px;
+      padding: 2px 8px;
       display: flex;
       align-items: center;
       justify-content: space-around;
@@ -81,7 +86,7 @@ import { IIssues } from '@app/models/issue';
     }
 
     .mat-nav-list .entity a {
-      line-height: normal;
+      line-height: 40px;
       text-overflow: ellipsis;
       overflow: hidden;
       display: block;
@@ -108,7 +113,7 @@ export class NavigationComponent extends BaseDirective {
   @Input() set path(path: Observable<AdcmTypedEntity[]>) {
     this.ownPath = path;
     this.ownPath.pipe(this.takeUntil()).subscribe((lPath) => {
-      if (lPath) {
+      if (lPath && !!lPath.length) {
         const last = lPath[lPath.length - 1];
         const exclude = ['bundle', 'job'];
         this.actionFlag = !exclude.includes(last.typeName);
@@ -120,6 +125,7 @@ export class NavigationComponent extends BaseDirective {
       }
     });
   }
+
   get path(): Observable<AdcmTypedEntity[]> {
     return this.ownPath;
   }

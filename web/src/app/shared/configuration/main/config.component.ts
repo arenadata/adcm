@@ -34,6 +34,7 @@ import { historyAnime, ISearchParam, MainService } from './main.service';
 import { WorkerInstance } from '@app/core/services/cluster.service';
 import { ActivatedRoute } from '@angular/router';
 import { AttributeService } from '@app/shared/configuration/attributes/attribute.service';
+import * as deepmerge from 'deepmerge';
 
 @Component({
   selector: 'app-config-form',
@@ -69,7 +70,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   constructor(
     private service: MainService,
     private attributesSrv: AttributeService,
-    private cd: ChangeDetectorRef,
+    public cd: ChangeDetectorRef,
     socket: Store<SocketState>,
     route: ActivatedRoute,
   ) {
@@ -138,16 +139,14 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
 
   save(url: string): void {
     const form = this.fields.form;
+
     if (form.valid) {
       this.saveFlag = true;
       this.historyComponent.reset();
       const config = this.service.parseValue(this.fields.form.value, this.rawConfig.value.config);
       const send = {
         config,
-        attr: {
-          ...this.fields.attr,
-          ...this.attributesSrv.rawAttributes()
-        },
+        attr: deepmerge(deepmerge(this.rawConfig.getValue().attr, this.fields.attr), this.attributesSrv.rawAttributes()),
         description: this.tools.description.value,
         obj_ref: this.rawConfig.value.obj_ref
       };

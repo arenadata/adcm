@@ -10,11 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from unittest.mock import patch
+
 from django.test import TestCase
 
 from cm import issue, models
 from cm.unit_tests import utils
 from cm.hierarchy import Tree
+
+
+mock_issue_check_map = {
+    models.IssueType.Config: lambda x: False,
+    models.IssueType.RequiredImport: lambda x: True,
+    models.IssueType.RequiredService: lambda x: True,
+    models.IssueType.HostComponent: lambda x: True,
+}
 
 
 class CreateIssueTest(TestCase):
@@ -26,6 +36,7 @@ class CreateIssueTest(TestCase):
         self.tree = Tree(self.cluster)
 
     def test_new_issue(self):
+        """Test if new issue is propagated to all affected objects"""
         issue_type = models.IssueType.Config
         issue.create_issue(self.cluster, issue_type)
         own_issue = self.cluster.get_own_issue(issue_type)
@@ -36,6 +47,7 @@ class CreateIssueTest(TestCase):
             self.assertEqual(own_issue.pk, concerns[0].pk)
 
     def test_same_issue(self):
+        """Test if issue could not be added more than once"""
         issue_type = models.IssueType.Config
         issue.create_issue(self.cluster, issue_type)
         issue.create_issue(self.cluster, issue_type)  # create twice
@@ -44,6 +56,7 @@ class CreateIssueTest(TestCase):
             self.assertEqual(len(concerns), 1)  # exist only one
 
     def test_few_issues(self):
+        """Test if object could have more than one issue"""
         issue_type_1 = models.IssueType.Config
         issue_type_2 = models.IssueType.RequiredImport
         issue.create_issue(self.cluster, issue_type_1)
@@ -57,6 +70,19 @@ class CreateIssueTest(TestCase):
             concerns = {c.pk for c in node.value.concerns.all()}
             self.assertEqual(len(concerns), 2)
             self.assertSetEqual({own_issue_1.pk, own_issue_2.pk}, concerns)
+
+    @patch('cm.issue._issue_check_map', mock_issue_check_map)
+    def test_inherit_on_creation(self):
+        """Test if new object in hierarchy inherits existing issues"""
+        issue_type = models.IssueType.Config
+        issue.create_issue(self.cluster, issue_type)
+        cluster_issue = self.cluster.get_own_issue(issue_type)
+        new_service = utils.gen_service(self.cluster, self.cluster.prototype.bundle)
+        self.assertListEqual(list(new_service.concerns.all()), [])
+
+        issue.update_hierarchy_issues(new_service)
+        new_service_issues = [i.id for i in new_service.concerns.all()]
+        self.assertIn(cluster_issue.id, new_service_issues)
 
 
 class RemoveIssueTest(TestCase):

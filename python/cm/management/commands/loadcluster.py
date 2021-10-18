@@ -22,6 +22,7 @@ from django.db.utils import IntegrityError
 
 from cm import models
 from cm.errors import AdcmEx
+from cm.adcm_config import save_file_type
 
 
 def deserializer_datetime_fields(obj, fields=None):
@@ -84,6 +85,17 @@ def create_config(config):
         return None
 
 
+def create_file_from_config(obj, config):
+    if config is not None:
+        conf = config["current"]["config"]
+        proto = obj.prototype
+        for pconf in models.PrototypeConfig.objects.filter(prototype=proto, type='file'):
+            if pconf.subname and conf[pconf.name].get(pconf.subname):
+                save_file_type(obj, pconf.name, pconf.subname, conf[pconf.name][pconf.subname])
+            elif conf.get(pconf.name):
+                save_file_type(obj, pconf.name, '', conf[pconf.name])
+
+
 def create_cluster(cluster):
     """
     Creating Cluster object
@@ -99,8 +111,11 @@ def create_cluster(cluster):
     except models.Cluster.DoesNotExist:
         prototype = get_prototype(bundle_hash=cluster.pop('bundle_hash'), type='cluster')
         ex_id = cluster.pop('id')
-        config = create_config(cluster.pop('config'))
-        cluster = models.Cluster.objects.create(prototype=prototype, config=config, **cluster)
+        config = cluster.pop('config')
+        cluster = models.Cluster.objects.create(
+            prototype=prototype, config=create_config(config), **cluster
+        )
+        create_file_from_config(cluster, config)
         return ex_id, cluster
 
 
@@ -119,13 +134,15 @@ def create_provider(provider):
         same_name_provider = models.HostProvider.objects.get(name=provider['name'])
         if same_name_provider.prototype.bundle.hash != bundle_hash:
             raise IntegrityError('Name of provider already in use in another bundle')
+        create_file_from_config(same_name_provider, provider['config'])
         return ex_id, same_name_provider
     except models.HostProvider.DoesNotExist:
         prototype = get_prototype(bundle_hash=bundle_hash, type='provider')
-        config = create_config(provider.pop('config'))
+        config = provider.pop('config')
         provider = models.HostProvider.objects.create(
-            prototype=prototype, config=config, **provider
+            prototype=prototype, config=create_config(config), **provider
         )
+        create_file_from_config(provider, config)
         return ex_id, provider
 
 
@@ -141,7 +158,6 @@ def create_host(host, cluster):
     :rtype: models.Host
     """
     host.pop('provider')
-    config = create_config(host.pop('config'))
     provider = models.HostProvider.objects.get(name=host.pop('provider__name'))
     try:
         models.Host.objects.get(fqdn=host['fqdn'])
@@ -151,14 +167,16 @@ def create_host(host, cluster):
     except models.Host.DoesNotExist:
         prototype = get_prototype(bundle_hash=host.pop('bundle_hash'), type='host')
         ex_id = host.pop('id')
-        host = models.Host.objects.create(
+        config = host.pop('config')
+        new_host = models.Host.objects.create(
             prototype=prototype,
             provider=provider,
-            config=config,
+            config=create_config(config),
             cluster=cluster,
             **host,
         )
-        return ex_id, host
+        create_file_from_config(new_host, config)
+        return ex_id, new_host
 
 
 def create_service(service, cluster):
@@ -176,10 +194,11 @@ def create_service(service, cluster):
         bundle_hash=service.pop('bundle_hash'), type='service', name=service.pop('prototype__name')
     )
     ex_id = service.pop('id')
-    config = create_config(service.pop('config'))
+    config = service.pop('config')
     service = models.ClusterObject.objects.create(
-        prototype=prototype, cluster=cluster, config=config, **service
+        prototype=prototype, cluster=cluster, config=create_config(config), **service
     )
+    create_file_from_config(service, config)
     return ex_id, service
 
 
@@ -203,10 +222,15 @@ def create_component(component, cluster, service):
         parent=service.prototype,
     )
     ex_id = component.pop('id')
-    config = create_config(component.pop('config'))
+    config = component.pop('config')
     component = models.ServiceComponent.objects.create(
-        prototype=prototype, cluster=cluster, service=service, config=config, **component
+        prototype=prototype,
+        cluster=cluster,
+        service=service,
+        config=create_config(config),
+        **component
     )
+    create_file_from_config(component, config)
     return ex_id, component
 
 
@@ -272,7 +296,7 @@ def load(file_path):
         with open(file_path, 'r', encoding='utf_8') as f:
             data = json.load(f)
     except FileNotFoundError as err:
-        raise AdcmEx('DUMP_LOAD_CLUSTER_ERROR') from err
+        raise AdcmEx('DUMP_LOAD_CLUSTER_ERROR', msg='Loaded file not found') from err
 
     check(data)
 

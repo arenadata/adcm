@@ -23,6 +23,7 @@ from cm import config
 import cm.job as job_module
 from cm import models
 from cm.logger import log
+from cm.unit_tests import utils
 
 
 class TestJob(TestCase):
@@ -68,47 +69,62 @@ class TestJob(TestCase):
         self.assertEqual(task.status, config.Job.RUNNING)
         event.set_task_status.assert_called_once_with(task.id, config.Job.RUNNING)
 
-    def test_get_state(self):
-        bundle = models.Bundle.objects.create()
-        prototype = models.Prototype.objects.create(bundle=bundle)
-        # cluster = models.Cluster.objects.create(prototype=prototype)
-        action = models.Action.objects.create(
-            prototype=prototype, state_on_success='create', state_on_fail='installed'
-        )
+    def test_get_state_single_job(self):
+        bundle = utils.gen_bundle()
+        cluster_proto = utils.gen_prototype(bundle, 'cluster')
+        cluster = utils.gen_cluster(prototype=cluster_proto)
+        action = utils.gen_action(prototype=cluster_proto)
+        action.state_on_success = 'success'
+        action.state_on_fail = 'fail'
+        action.multi_state_on_success_set = ['success']
+        action.multi_state_on_success_unset = ['success unset']
+        action.multi_state_on_fail_set = ['fail']
+        action.multi_state_on_fail_unset = ['fail unset']
+        action.save()
+        task = utils.gen_task_log(cluster, action)
+        job = utils.gen_job_log(task)
 
-        job = models.JobLog(
-            action=action,
-            start_date=timezone.now(),
-            finish_date=timezone.now(),
-        )
-
-        data = [
-            (config.Job.SUCCESS, False, 'create'),
-            (config.Job.SUCCESS, False, None),
-            (config.Job.FAILED, False, 'installed'),
-            (config.Job.FAILED, False, None),
-            (config.Job.FAILED, True, 'installed'),
-            (config.Job.ABORTED, False, None),
+        # status: expected state, expected multi_state set, expected multi_state unset
+        test_data = [
+            [config.Job.SUCCESS, 'success', ['success'], ['success unset']],
+            [config.Job.FAILED, 'fail', ['fail'], ['fail unset']],
+            [config.Job.ABORTED, None, [], []],
         ]
+        for status, exp_state, exp_m_state_set, exp_m_state_unset in test_data:
+            state, m_state_set, m_state_unset = job_module.get_state(action, job, status)
+            self.assertEqual(state, exp_state)
+            self.assertListEqual(m_state_set, exp_m_state_set)
+            self.assertListEqual(m_state_unset, exp_m_state_unset)
 
-        for status, create_sub_action, test_state in data:
-            with self.subTest(
-                status=status, create_sub_action=create_sub_action, test_state=test_state
-            ):
+    def test_get_state_multi_job(self):
+        bundle = utils.gen_bundle()
+        cluster_proto = utils.gen_prototype(bundle, 'cluster')
+        cluster = utils.gen_cluster(prototype=cluster_proto)
+        action = utils.gen_action(prototype=cluster_proto)
+        action.state_on_success = 'success'
+        action.state_on_fail = 'fail'
+        action.multi_state_on_success_set = ['success']
+        action.multi_state_on_success_unset = ['success unset']
+        action.multi_state_on_fail_set = ['fail']
+        action.multi_state_on_fail_unset = ['fail unset']
+        action.save()
+        task = utils.gen_task_log(cluster, action)
+        job = utils.gen_job_log(task)
+        job.sub_action = models.SubAction.objects.create(
+            action=action, state_on_fail='sub_action fail'
+        )
 
-                if create_sub_action:
-                    sub_action = models.SubAction.objects.create(
-                        action=action, state_on_fail='installed'
-                    )
-                    job.sub_action = sub_action
-                if status == config.Job.SUCCESS and test_state is None:
-                    action.state_on_success = ''
-                if status == config.Job.FAILED and test_state is None:
-                    action.state_on_fail = ''
-
-                state = job_module.get_state(action, job, status)
-
-                self.assertEqual(state, test_state)
+        # status: expected state, expected multi_state set, expected multi_state unset
+        test_data = [
+            [config.Job.SUCCESS, 'success', ['success'], ['success unset']],
+            [config.Job.FAILED, 'sub_action fail', ['fail'], ['fail unset']],
+            [config.Job.ABORTED, None, [], []],
+        ]
+        for status, exp_state, exp_m_state_set, exp_m_state_unset in test_data:
+            state, m_state_set, m_state_unset = job_module.get_state(action, job, status)
+            self.assertEqual(state, exp_state)
+            self.assertListEqual(m_state_set, exp_m_state_set)
+            self.assertListEqual(m_state_unset, exp_m_state_unset)
 
     def test_set_action_state(self):
         bundle = models.Bundle.objects.create()
@@ -137,7 +153,7 @@ class TestJob(TestCase):
 
         for obj, state, ms_to_set, ms_to_unset in data:
             with self.subTest(obj=obj, state=state):
-                job_module.set_action_state(action, task, obj, state, ms_to_set, ms_to_unset)
+                job_module.set_action_state(action, task, obj, state, [ms_to_set], [ms_to_unset])
                 self.assertEqual(obj.state, state or 'created')
                 self.assertIn(to_set, obj.multi_state)
                 self.assertNotIn(to_unset, obj.multi_state)

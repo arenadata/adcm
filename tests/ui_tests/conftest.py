@@ -104,6 +104,13 @@ def web_driver(browser, downloads_directory):
 
 
 @pytest.fixture()
+def skip_firefox(browser: str):
+    """Skip one test on firefox"""
+    if browser == 'Firefox':
+        pytest.skip("This test shouldn't be launched on Firefox")
+
+
+@pytest.fixture()
 def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
     """
     Attach ADCM API to ADCMTest object and open new tab in browser for test

@@ -26,7 +26,7 @@ from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
 
 from tests.upgrade_utils import upgrade_adcm_version
 from tests.functional.plugin_utils import AnyADCMObject
-from .conftest import only_clean_adcm
+from tests.functional.conftest import only_clean_adcm
 
 pytestmark = [only_clean_adcm]
 

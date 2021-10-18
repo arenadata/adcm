@@ -14,7 +14,7 @@ import { BaseDirective } from '@adwp-ui/widgets';
   template: `
     <div class="group-keys-wrapper">
       <div class="group-checkbox">
-        <mat-checkbox [appTooltip]="tooltipText" [formControl]="groupControl"></mat-checkbox>
+        <mat-checkbox [matTooltip]="tooltipText" [formControl]="groupControl"></mat-checkbox>
       </div>
       <div class="group-field">
         <ng-container *ngTemplateOutlet="fieldTemplate"></ng-container>
@@ -64,7 +64,7 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
     this.groupControl = attributeControl as FormControl;
     this.parameterControl = parameterControl as FormControl;
 
-    if (disabled) {
+    if (!disabled) {
       attributeControl.disable();
       this.tooltipText = text;
     } else {
