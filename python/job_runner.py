@@ -62,9 +62,6 @@ def set_pythonpath(env, stack_dir):
 
 def set_ansible_config(env, job_id):
     env['ANSIBLE_CONFIG'] = os.path.join(config.RUN_DIR, f'{job_id}/ansible.cfg')
-    # TODO: parameter is used in ansible.cfg file bypass, it is necessary to assess all
-    #  the risks of using this parameter and transfer it to ansible.cfg file
-    env['ANSIBLE_HASH_BEHAVIOUR'] = 'merge'
     return env
 
 
