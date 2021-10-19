@@ -120,6 +120,14 @@
         age: '24'
         name: Joe
         sex: m
+    - name: json
+      type: json
+      required: false
+      group_customization: false
+      default:
+        age: '24'
+        name: Joe
+        sex: m
 
 - name: test_service_1
   type: service
@@ -229,6 +237,14 @@
         age: '24'
         name: Joe
         sex: m
+    - name: json
+      type: json
+      required: false
+      group_customization: false
+      default:
+        age: '24'
+        name: Joe
+        sex: m
   components:
     first:
       constraint: [1,+]
@@ -332,6 +348,14 @@
               country: Test2
         - name: map
           type: map
+          required: false
+          group_customization: false
+          default:
+            age: '24'
+            name: Joe
+            sex: m
+        - name: json
+          type: json
           required: false
           group_customization: false
           default:
