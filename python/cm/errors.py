@@ -150,6 +150,11 @@ ERRORS = {
         ERR,
     ),
     'LOCK_ERROR': ("lock error", rfs.HTTP_409_CONFLICT, ERR),
+    'GROUP_CONFIG_CHANGE_UNSELECTED_FIELD': (
+        'you cannot change the value of an unselected field',
+        rfs.HTTP_400_BAD_REQUEST,
+        ERR,
+    ),
 }
 
 

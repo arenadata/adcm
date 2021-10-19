@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Mapping
+
 from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
@@ -232,6 +234,22 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
         model = ConfigLog
         fields = ('id', 'date', 'description', 'config', 'attr', 'url')
         extra_kwargs = {'config': {'required': True}}
+
+    def validate(self, attrs):
+        def check_value_unselected_field(cc, nc, gk):
+            for k, v in gk.items():
+                if isinstance(v, Mapping):
+                    check_value_unselected_field(cc[k], nc[k], gk[k])
+                else:
+                    if not v and cc[k] != nc[k]:
+                        raise AdcmEx('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD')
+
+        obj_ref = self.context['obj_ref']
+        current_config = ConfigLog.objects.get(id=obj_ref.current).config
+        new_config = attrs.get('config')
+        group_keys = attrs.get('attr', {}).get('group_keys', {})
+        check_value_unselected_field(current_config, new_config, group_keys)
+        return super().validate(attrs)
 
     @atomic
     def create(self, validated_data):
