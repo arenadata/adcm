@@ -166,6 +166,13 @@ def _assert_host_is_in_group(group: GroupConfig, host: Host):
     assert host.fqdn in [h.fqdn for h in group.hosts().data], f'Host "{host.fqdn}" should be in group "{group.name}"'
 
 
+@allure.step('Check that host is not in group')
+def _assert_host_is_not_in_group(group: GroupConfig, host: Host):
+    assert host.fqdn not in (
+        h.fqdn for h in group.hosts().data
+    ), f'Host "{host.fqdn}" should be in group "{group.name}"'
+
+
 @allure.step("Check that the only second host is present in candidates on second group")
 def _assert_host_candidate_equal_expected(group: HostList, expected_hosts_names: [str]):
     expected_hosts_amount = len(expected_hosts_names)
@@ -358,6 +365,31 @@ class TestDeleteHostInGroups:
         with allure.step("Delete host"):
             test_host.delete()
         self._check_no_hosts_in_group(provider_group)
+
+    @allure.link(url="https://arenadata.atlassian.net/browse/ADCM-2176")
+    def test_host_in_service_group_after_hc_change(
+        self, cluster_with_components_on_first_host: Tuple[Service, Host, Host]
+    ):
+        """
+        Check that host stays in cluster and service config groups
+            after components were moved to another host
+            during hostcomponent map change
+        """
+        service, first_host, second_host = cluster_with_components_on_first_host
+        cluster = service.cluster()
+        cluster.host_add(second_host)
+        first_component = service.component(name=FIRST_COMPONENT_NAME)
+        second_component = service.component(name=SECOND_COMPONENT_NAME)
+        cluster_group = _create_group_and_add_host(cluster, first_host)
+        service_group = _create_group_and_add_host(service, first_host)
+        component_group = _create_group_and_add_host(first_component, first_host)
+        cluster.hostcomponent_set((second_host, first_component), (second_host, second_component))
+        with allure.step(f'Check host "{first_host.fqdn}" is still presented in cluster config group'):
+            _assert_host_is_in_group(cluster_group, first_host)
+        with allure.step(f'Check host "{first_host.fqdn}" is still presented in service config group'):
+            _assert_host_is_in_group(service_group, first_host)
+        with allure.step(f'Check host "{first_host.fqdn}" is not presented in component config group'):
+            _assert_host_is_not_in_group(component_group, first_host)
 
 
 class TestChangeGroupsConfig:
