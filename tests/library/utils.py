@@ -15,7 +15,11 @@
 import time
 import json
 import random
+from typing import Tuple
+
 import requests
+
+from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 
 
 class RequestFailedException(Exception):
@@ -175,3 +179,8 @@ def get_json_or_text(response: requests.Response):
         return response.json()
     except json.JSONDecodeError:
         return response.text
+
+
+def previous_adcm_version_tag() -> Tuple[str, str]:
+    """Get tag of previous ADCM version"""
+    return parametrized_by_adcm_version(adcm_min_version="2021.03.10")[0][-1]
