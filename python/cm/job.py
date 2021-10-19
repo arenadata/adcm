@@ -14,12 +14,10 @@
 
 import json
 import os
-import fcntl
 import shutil
 import signal
 import subprocess
 import time
-from collections import defaultdict
 from configparser import ConfigParser
 from datetime import timedelta, datetime
 from typing import List, Tuple, Optional, Hashable, Any
@@ -40,13 +38,11 @@ from cm.models import (
     ADCMEntity,
     Action,
     ActionType,
-    CheckLog,
     Cluster,
     ClusterObject,
     ConcernType,
     ConfigLog,
     DummyData,
-    GroupCheckLog,
     Host,
     HostComponent,
     HostProvider,
@@ -708,118 +704,6 @@ def get_log(job: JobLog) -> List[dict]:
         logs.append({'name': ls.name, 'type': ls.type, 'format': ls.format, 'id': ls.pk})
 
     return logs
-
-
-def log_group_check(group: GroupCheckLog, fail_msg: str, success_msg: str):
-    logs = CheckLog.objects.filter(group=group).values('result')
-    result = all(log['result'] for log in logs)
-
-    if result:
-        msg = success_msg
-    else:
-        msg = fail_msg
-
-    group.message = msg
-    group.result = result
-    group.save()
-
-
-def job_lock(job_id):
-    fname = os.path.join(config.RUN_DIR, f'{job_id}/config.json')
-    fd = open(fname, 'r', encoding='utf_8')
-    try:
-        fcntl.flock(fd.fileno(), fcntl.LOCK_EX)  # pylint: disable=I1101
-        log.debug('lock #%s ok', job_id)
-        return fd
-    except IOError as e:
-        log.debug('lock #%s fail %s', job_id, e)
-        return None
-
-
-def job_unlock(fd):
-    fd.close()
-
-
-def log_check(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
-    lock = job_lock(job_id)
-    if lock is None:
-        log.debug('re run log_check() because of lock')
-        return log_check(job_id, group_data, check_data)
-
-    job = JobLog.obj.get(id=job_id)
-    if job.status != config.Job.RUNNING:
-        err('JOB_NOT_FOUND', f'job #{job.pk} has status "{job.status}", not "running"')
-
-    group_title = group_data.pop('title')
-
-    if group_title:
-        group, _ = GroupCheckLog.objects.get_or_create(job=job, title=group_title)
-    else:
-        group = None
-
-    check_data.update({'job': job, 'group': group})
-    cl = CheckLog.objects.create(**check_data)
-
-    if group is not None:
-        group_data.update({'group': group})
-        log_group_check(**group_data)
-
-    ls, _ = LogStorage.objects.get_or_create(job=job, name='ansible', type='check', format='json')
-
-    post_event(
-        'add_job_log',
-        'job',
-        job_id,
-        {
-            'id': ls.pk,
-            'type': ls.type,
-            'name': ls.name,
-            'format': ls.format,
-        },
-    )
-    job_unlock(lock)
-    return cl
-
-
-def get_check_log(job_id: int):
-    data = []
-    group_subs = defaultdict(list)
-
-    for cl in CheckLog.objects.filter(job_id=job_id):
-        group = cl.group
-        if group is None:
-            data.append(
-                {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result}
-            )
-        else:
-            if group not in group_subs:
-                data.append(
-                    {
-                        'title': group.title,
-                        'type': 'group',
-                        'message': group.message,
-                        'result': group.result,
-                        'content': group_subs[group],
-                    }
-                )
-            group_subs[group].append(
-                {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result}
-            )
-    return data
-
-
-def finish_check(job_id: int):
-    data = get_check_log(job_id)
-    if not data:
-        return
-
-    job = JobLog.objects.get(id=job_id)
-    LogStorage.objects.filter(job=job, name='ansible', type='check', format='json').update(
-        body=json.dumps(data)
-    )
-
-    GroupCheckLog.objects.filter(job=job).delete()
-    CheckLog.objects.filter(job=job).delete()
 
 
 def log_custom(job_id, name, log_format, body):

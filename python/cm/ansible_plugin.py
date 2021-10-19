@@ -12,6 +12,11 @@
 
 # pylint: disable=line-too-long
 
+import fcntl
+import json
+import os
+from collections import defaultdict
+
 from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
 from ansible.utils.vars import merge_hash
@@ -20,11 +25,16 @@ import cm
 from cm.api import add_hc, get_hc
 from cm.api_context import ctx
 from cm.adcm_config import set_object_config
+from cm import config
 from cm.errors import raise_AdcmEx as err
+from cm.status_api import post_event
 from cm.models import (
     ADCMEntity,
+    CheckLog,
     Cluster,
     ClusterObject,
+    GroupCheckLog,
+    LogStorage,
     ServiceComponent,
     HostProvider,
     Host,
@@ -65,6 +75,20 @@ MSG_NO_MULTI_STATE_TO_DELETE = (
     "You try to delete absent multi_state. You should define missing_ok as True "
     "or choose an existing multi_state"
 )
+
+
+def job_lock(job_id):
+    fname = os.path.join(config.RUN_DIR, f'{job_id}/config.json')
+    fd = open(fname, 'r', encoding='utf_8')
+    try:
+        fcntl.flock(fd.fileno(), fcntl.LOCK_EX)  # pylint: disable=I1101
+        return fd
+    except IOError as e:
+        return err('LOCK_ERROR', e)
+
+
+def job_unlock(fd):
+    fd.close()
 
 
 def check_context_type(task_vars, *context_type, err_msg=None):
@@ -147,6 +171,8 @@ class ContextActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):  # pylint: disable=too-many-branches
         self._check_mandatory()
         obj_type = self._task.args["type"]
+        job_id = task_vars['job']['id']
+        lock = job_lock(job_id)
 
         if obj_type == 'cluster':
             check_context_type(task_vars, 'cluster', 'service', 'component')
@@ -208,6 +234,7 @@ class ContextActionModule(ActionBase):
             raise AnsibleError(MSG_NO_ROUTE)
 
         result = super().run(tmp, task_vars)
+        job_unlock(lock)
         return merge_hash(result, res)
 
 
@@ -322,6 +349,7 @@ def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branc
     '''
     For use in ansible plugin adcm_hc
     '''
+    lock = job_lock(job_id)
     job = JobLog.objects.get(id=job_id)
     action = Action.objects.get(id=job.action_id)
     if action.hostcomponentmap:
@@ -356,6 +384,7 @@ def change_hc(job_id, cluster_id, operations):  # pylint: disable=too-many-branc
             err('INVALID_INPUT', f'unknown hc action "{op["action"]}"')
 
     add_hc(cluster, hc)
+    job_unlock(lock)
 
 
 def set_cluster_config(cluster_id, keys, value):
@@ -441,3 +470,95 @@ def unset_provider_multi_state(provider_id, multi_state, missing_ok):
 def unset_host_multi_state(host_id, multi_state, missing_ok):
     obj = Host.obj.get(id=host_id)
     return _unset_object_multi_state(obj, multi_state, missing_ok)
+
+
+def log_group_check(group: GroupCheckLog, fail_msg: str, success_msg: str):
+    logs = CheckLog.objects.filter(group=group).values('result')
+    result = all(log['result'] for log in logs)
+
+    if result:
+        msg = success_msg
+    else:
+        msg = fail_msg
+
+    group.message = msg
+    group.result = result
+    group.save()
+
+
+def log_check(job_id: int, group_data: dict, check_data: dict) -> CheckLog:
+    lock = job_lock(job_id)
+    job = JobLog.obj.get(id=job_id)
+    if job.status != config.Job.RUNNING:
+        err('JOB_NOT_FOUND', f'job #{job.pk} has status "{job.status}", not "running"')
+
+    group_title = group_data.pop('title')
+
+    if group_title:
+        group, _ = GroupCheckLog.objects.get_or_create(job=job, title=group_title)
+    else:
+        group = None
+
+    check_data.update({'job': job, 'group': group})
+    cl = CheckLog.objects.create(**check_data)
+
+    if group is not None:
+        group_data.update({'group': group})
+        log_group_check(**group_data)
+
+    ls, _ = LogStorage.objects.get_or_create(job=job, name='ansible', type='check', format='json')
+
+    post_event(
+        'add_job_log',
+        'job',
+        job_id,
+        {
+            'id': ls.pk,
+            'type': ls.type,
+            'name': ls.name,
+            'format': ls.format,
+        },
+    )
+    job_unlock(lock)
+    return cl
+
+
+def get_check_log(job_id: int):
+    data = []
+    group_subs = defaultdict(list)
+
+    for cl in CheckLog.objects.filter(job_id=job_id):
+        group = cl.group
+        if group is None:
+            data.append(
+                {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result}
+            )
+        else:
+            if group not in group_subs:
+                data.append(
+                    {
+                        'title': group.title,
+                        'type': 'group',
+                        'message': group.message,
+                        'result': group.result,
+                        'content': group_subs[group],
+                    }
+                )
+            group_subs[group].append(
+                {'title': cl.title, 'type': 'check', 'message': cl.message, 'result': cl.result}
+            )
+    return data
+
+
+def finish_check(job_id: int):
+    data = get_check_log(job_id)
+    if not data:
+        return
+
+    job = JobLog.objects.get(id=job_id)
+    LogStorage.objects.filter(job=job, name='ansible', type='check', format='json').update(
+        body=json.dumps(data)
+    )
+
+    GroupCheckLog.objects.filter(job=job).delete()
+    CheckLog.objects.filter(job=job).delete()
