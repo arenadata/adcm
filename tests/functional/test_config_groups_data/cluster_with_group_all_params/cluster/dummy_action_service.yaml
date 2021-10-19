@@ -23,6 +23,7 @@
           - job.config.map[inventory_hostname].boolean == services.test_service_1.config.boolean
           - job.config.map[inventory_hostname].integer == services.test_service_1.config.integer
           - job.config.map[inventory_hostname].password == services.test_service_1.config.password
+          - job.config.map[inventory_hostname].secrettext == services.test_service_1.config.secrettext
           - job.config.map[inventory_hostname].string == services.test_service_1.config.string
           - job.config.map[inventory_hostname].list == services.test_service_1.config.list
           - job.config.map[inventory_hostname].text == services.test_service_1.config.text
@@ -30,4 +31,3 @@
           - job.config.map[inventory_hostname].structure == services.test_service_1.config.structure
           - job.config.map[inventory_hostname].map == services.test_service_1.config.map
           - job.config.map[inventory_hostname].file == lookup('file', services.test_service_1.config.file)
-          - job.config.map[inventory_hostname].secrettext == services.test_service_1.config.secrettext
