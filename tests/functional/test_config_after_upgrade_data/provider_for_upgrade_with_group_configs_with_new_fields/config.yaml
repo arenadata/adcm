@@ -159,6 +159,19 @@
       default:
         time: '12'
         range: 'super long'
+    - name: json
+      type: json
+      required: false
+      default:
+        age: '24'
+        name: Joe
+        sex: m
+    - name: new_json
+      type: json
+      required: false
+      default:
+        time: '12'
+        range: 'super long'
     - name: secrettext
       type: secrettext
       required: false

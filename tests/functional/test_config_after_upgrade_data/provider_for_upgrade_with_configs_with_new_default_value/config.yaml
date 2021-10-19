@@ -95,6 +95,13 @@
         age: '25'
         name: Jane
         sex: f
+    - name: json
+      type: json
+      required: false
+      default:
+        age: '25'
+        name: Jane
+        sex: f
     - name: secrettext
       type: secrettext
       required: false

@@ -47,6 +47,7 @@ def _update_config_and_attr_for_new_field_test(
         OrderedDict({"name": "Allice", "surname": "Cooper"}),
     ]
     config["new_map"] = {"time": "12", "range": "super long"}
+    config["new_json"] = {"time": "12", "range": "super long"}
 
     attr["new_group"] = {"active": True}
 
@@ -64,6 +65,7 @@ def _update_config_and_attr_for_new_field_test(
         attr["group_keys"]["new_group"] = {"new_port": False}
         attr["group_keys"]["new_structure"] = False
         attr["group_keys"]["new_map"] = False
+        attr["group_keys"]["new_json"] = False
 
         attr["custom_group_keys"]["new_float"] = True
         attr["custom_group_keys"]["new_boolean"] = True
@@ -78,6 +80,7 @@ def _update_config_and_attr_for_new_field_test(
         attr["custom_group_keys"]["new_group"] = {"new_port": True}
         attr["custom_group_keys"]["new_structure"] = True
         attr["custom_group_keys"]["new_map"] = True
+        attr["custom_group_keys"]["new_json"] = True
     return config, attr
 
 
@@ -95,6 +98,7 @@ def _update_config_and_attr_for_new_default_value_test(
     config["group"] = {"port": 9201, "transport_port": 9301}
     config["structure"] = [OrderedDict({"code": 1, "country": "Test1_new"})]
     config["map"] = {"age": "25", "name": "Jane", "sex": "f"}
+    config["json"] = {"age": "25", "name": "Jane", "sex": "f"}
     _ = group_config
     return config, attr
 
@@ -147,6 +151,7 @@ def _update_config_and_attr_for_changed_group_customisation_test(
         attr["custom_group_keys"]["option"] = False
         attr["custom_group_keys"]["group"] = {"port": False, "transport_port": False}
         attr["custom_group_keys"]["map"] = False
+        attr["custom_group_keys"]["json"] = False
         attr["custom_group_keys"]["secrettext"] = True
 
     return config, attr
@@ -232,7 +237,7 @@ class TestUpgradeWithConfigs:
             ),
         ],
     )
-    def test_upgrade_cluster_with_ordinary_configs(self, sdk_client_fs, bundle_name, update_func):
+    def test_upgrade_cluster_with_ordinary_configs(self, sdk_client_fs, bundle_name, update_func: Callable):
         """
         Test upgrade cluster with ordinary configs
         - Upload cluster bundle
@@ -295,7 +300,7 @@ class TestUpgradeWithConfigs:
             ),
         ],
     )
-    def test_upgrade_provider_with_ordinary_configs(self, sdk_client_fs, bundle_name, update_func):
+    def test_upgrade_provider_with_ordinary_configs(self, sdk_client_fs, bundle_name, update_func: Callable):
         """
         Test upgrade provider with ordinary configs
         - Upload provider bundle
@@ -368,7 +373,7 @@ class TestUpgradeWithGroupConfigs:
             ),
         ],
     )
-    def test_upgrade_cluster_with_group_configs(self, sdk_client_fs, bundle_name, update_func):
+    def test_upgrade_cluster_with_group_configs(self, sdk_client_fs, bundle_name, update_func: Callable):
         """
         Test upgrade cluster with group configs enabled
         - Upload cluster bundle
@@ -442,7 +447,7 @@ class TestUpgradeWithGroupConfigs:
             ),
         ],
     )
-    def test_upgrade_provider_with_group_configs(self, sdk_client_fs, bundle_name, update_func):
+    def test_upgrade_provider_with_group_configs(self, sdk_client_fs, bundle_name, update_func: Callable):
         """
         Test upgrade provider with group configs enabled
         - Upload provider bundle

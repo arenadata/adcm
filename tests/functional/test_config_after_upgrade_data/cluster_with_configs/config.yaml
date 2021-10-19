@@ -89,6 +89,13 @@
         age: '24'
         name: Joe
         sex: m
+    - name: json
+      type: json
+      required: false
+      default:
+        age: '24'
+        name: Joe
+        sex: m
     - &secrettext
       name: secrettext
       type: secrettext
@@ -174,6 +181,13 @@
         age: '24'
         name: Joe
         sex: m
+    - name: json
+      type: json
+      required: false
+      default:
+        age: '24'
+        name: Joe
+        sex: m
     - *secrettext
 
   components:
@@ -249,6 +263,13 @@
               country: Test2
         - name: map
           type: map
+          required: false
+          default:
+            age: '24'
+            name: Joe
+            sex: m
+        - name: json
+          type: json
           required: false
           default:
             age: '24'

@@ -96,6 +96,13 @@
         age: '25'
         name: Jane
         sex: f
+    - name: json
+      type: json
+      required: false
+      default:
+        age: '25'
+        name: Jane
+        sex: f
     - &secrettext
       name: secrettext
       type: secrettext
@@ -180,6 +187,13 @@
         age: '25'
         name: Jane
         sex: f
+    - name: json
+      type: json
+      required: false
+      default:
+        age: '25'
+        name: Jane
+        sex: f
     - *secrettext
 
   components:
@@ -254,6 +268,13 @@
               country: Test1_new
         - name: map
           type: map
+          required: false
+          default:
+            age: '25'
+            name: Jane
+            sex: f
+        - name: json
+          type: json
           required: false
           default:
             age: '25'

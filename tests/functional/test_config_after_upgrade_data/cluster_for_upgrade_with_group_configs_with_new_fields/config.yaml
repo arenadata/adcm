@@ -159,6 +159,19 @@
       default:
         time: '12'
         range: 'super long'
+    - name: json
+      type: json
+      required: false
+      default:
+        age: '24'
+        name: Joe
+        sex: m
+    - name: new_json
+      type: json
+      required: false
+      default:
+        time: '12'
+        range: 'super long'
     - &secrettext
       name: secrettext
       type: secrettext
@@ -307,6 +320,19 @@
       default:
         time: '12'
         range: 'super long'
+    - name: json
+      type: json
+      required: false
+      default:
+        age: '24'
+        name: Joe
+        sex: m
+    - name: new_json
+      type: json
+      required: false
+      default:
+        time: '12'
+        range: 'super long'
     - *secrettext
 
   components:
@@ -445,6 +471,19 @@
             sex: m
         - name: new_map
           type: map
+          required: false
+          default:
+            time: '12'
+            range: 'super long'
+        - name: json
+          type: json
+          required: false
+          default:
+            age: '24'
+            name: Joe
+            sex: m
+        - name: new_json
+          type: json
           required: false
           default:
             time: '12'
