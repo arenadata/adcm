@@ -48,9 +48,9 @@ if [ ! \( -f "${adcmuserconf}/ssl/cert.pem" -a -f "${adcmuserconf}/ssl/key.pem" 
 
 fi
 
+"${adcmroot}"/python/backupdb.py
 "${adcmroot}"/python/manage.py migrate
 "${adcmroot}"/python/init_db.py
-"${adcmroot}"/python/backupdb.py
 touch "${initreadyfile}"
 
 # That is sleep forever case because I have no idea how to force
