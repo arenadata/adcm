@@ -712,7 +712,7 @@ def provider(request: SubRequest, sdk_client_fs: ADCMClient) -> Provider:
 class TestConfigFieldTypes:
     """Test different types of fields"""
 
-    # pylint: disable-next=too-many-locals
+    # pylint: disable=too-many-locals
     @pytest.mark.parametrize('cluster', ["secret_text"], indirect=True)
     @pytest.mark.parametrize('provider', ["secret_text"], indirect=True)
     def test_secret_text_field(self, cluster: Cluster, provider: Provider):

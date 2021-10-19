@@ -108,6 +108,11 @@
         age: '24'
         name: Joe
         sex: m
+    - &secrettext
+      name: secrettext
+      type: secrettext
+      required: false
+      default: "secret\npass\nword"
 
 - name: test_service_1
   type: service
@@ -205,6 +210,8 @@
         age: '24'
         name: Joe
         sex: m
+    - *secrettext
+
   components:
     first:
       constraint: [1,+]
@@ -302,6 +309,8 @@
             age: '24'
             name: Joe
             sex: m
+        - *secrettext
+
     second:
       constraint: [1,+]
 

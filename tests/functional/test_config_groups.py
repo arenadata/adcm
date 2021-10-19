@@ -378,6 +378,7 @@ class TestChangeGroupsConfig:
         "map": {"age": "20", "name": "Chloe", "sex": "f"},
         "password": "123",
         "file": "file content test",
+        "secrettext": "awesome\npa$$",
     }
 
     GROUP_KEYS_TO_CHANGE = {
@@ -393,6 +394,7 @@ class TestChangeGroupsConfig:
         "group": {"port": True, "transport_port": True},
         "structure": True,
         "map": True,
+        "secrettext": True,
     }
 
     CUSTOM_GROUP_KEYS_TO_CHANGE = {
@@ -408,6 +410,7 @@ class TestChangeGroupsConfig:
         "group": {"port": False, "transport_port": False},
         "structure": False,
         "map": False,
+        "secrettext": False,
     }
 
     CLUSTER_HOSTS_VARIANTS = [
@@ -448,6 +451,7 @@ class TestChangeGroupsConfig:
             ), f'Value is "{values_after[item]}", but should be {expected_values[item]}'
         if values_before:
             assert values_after["password"] != values_before["password"], "Password has not changed"
+            assert values_after["secrettext"] != values_before["secrettext"], "Secrettext has not changed"
         if values_after["file"]:
             assert values_after["file"] == expected_values["file"], "File has not changed"
 
@@ -456,6 +460,8 @@ class TestChangeGroupsConfig:
         config_group = cluster_group.config()
         if "password" in config_group:
             config_group["password"] = "password"
+        if "secrettext" in config_group:
+            config_group["secrettext"] = "secret\npass\nword"
         if "file" in config_group:
             config_group["file"] = config_group["file"].replace("\n", "")
         return config_group

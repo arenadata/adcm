@@ -120,6 +120,10 @@
         age: '24'
         name: Joe
         sex: m
+    - name: secrettext
+      type: secrettext
+      required: false
+      default: "secret\npass\nword"
 
 - type: host
   name: host_from_provider
