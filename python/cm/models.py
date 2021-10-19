@@ -781,6 +781,7 @@ class GroupConfig(ADCMModel):
         group_keys = group_cl.attr.get('group_keys', {})
         group_attr = self.get_config_attr()
         config = self.merge_config(object_config, group_config, group_keys)
+        self.preparing_file_type_field(config)
         attr.update(group_attr)
         return config, attr
 
@@ -805,12 +806,13 @@ class GroupConfig(ADCMModel):
         if host not in self.host_candidate():
             raise AdcmEx('GROUP_CONFIG_HOST_ERROR')
 
-    def preparing_file_type_field(self):
+    def preparing_file_type_field(self, config=None):
         """Creating file for file type field"""
 
         if self.config is None:
             return
-        config = ConfigLog.objects.get(id=self.config.current).config
+        if config is None:
+            config = ConfigLog.objects.get(id=self.config.current).config
         fields = PrototypeConfig.objects.filter(
             prototype=self.object.prototype, action__isnull=True, type='file'
         ).order_by('id')
