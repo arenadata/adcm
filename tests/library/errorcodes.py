@@ -97,6 +97,11 @@ GROUP_CONFIG_HOST_EXISTS = ADCMError(
     'GROUP_CONFIG_HOST_EXISTS',
 )
 
+ATTRIBUTE_ERROR = ADCMError(
+    '400 Bad Request',
+    'ATTRIBUTE_ERROR',
+)
+
 TASK_ERROR = ADCMError(
     '409 Conflict',
     'TASK_ERROR',

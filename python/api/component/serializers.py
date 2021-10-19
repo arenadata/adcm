@@ -59,7 +59,7 @@ class ComponentDetailSerializer(ComponentSerializer):
     group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
     def get_status(self, obj):
-        return status_api.get_component_status(obj.id)
+        return status_api.get_component_status(obj)
 
 
 class ComponentUISerializer(ComponentDetailSerializer):

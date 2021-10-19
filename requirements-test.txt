@@ -1,6 +1,6 @@
 --extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
 adcm-client>=2021.7.21
-adcm_pytest_plugin~=4.7
+adcm_pytest_plugin~=4.9
 attr
 allure-pytest
 delayed_assert
@@ -14,7 +14,7 @@ pytest-timeout
 pyyaml
 requests
 requests-toolbelt
-selenium
+selenium~=3.141.0
 multipledispatch
 rstr
 genson

@@ -14,8 +14,8 @@ from django_filters import rest_framework as drf_filters
 from rest_framework import status
 from rest_framework.response import Response
 
-import cm
 from api.api_views import PageView, DetailViewDelete, create, check_obj
+from cm.api import remove_host_from_cluster, delete_host
 from cm.errors import AdcmEx
 from cm.models import Cluster, HostProvider, Host, GroupConfig, ClusterObject, ServiceComponent
 from . import serializers
@@ -171,8 +171,8 @@ class HostDetail(DetailViewDelete):
             # Remove host from cluster
             cluster = check_obj(Cluster, kwargs['cluster_id'])
             check_host(host, cluster)
-            cm.api.remove_host_from_cluster(host)
+            remove_host_from_cluster(host)
         else:
             # Delete host (and all corresponding host services:components)
-            cm.api.delete_host(host)
+            delete_host(host)
         return Response(status=status.HTTP_204_NO_CONTENT)

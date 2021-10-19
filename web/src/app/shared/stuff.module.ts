@@ -16,10 +16,16 @@ import { RouterModule } from '@angular/router';
 import { ActionsComponent, CrumbsComponent, UpgradeComponent } from './components';
 import { ActionListComponent } from './components/actions/action-list/action-list.component';
 import { ActionsDirective } from './components/actions/actions.directive';
-import { TooltipComponent } from '@app/shared/components/tooltip';
 import { TooltipDirective } from '@app/shared/components/tooltip';
 import { PopoverDirective } from '@app/directives/popover.directive';
-import { BaseDirective, ForTestDirective, InfinityScrollDirective, MTextareaDirective, ScrollDirective, SocketListenerDirective } from './directives';
+import {
+  BaseDirective,
+  ForTestDirective,
+  InfinityScrollDirective,
+  MTextareaDirective,
+  ScrollDirective,
+  SocketListenerDirective
+} from './directives';
 import { MaterialModule } from './material.module';
 import { MenuItemComponent } from './components/actions/action-list/menu-item/menu-item.component';
 import { PopoverComponent } from '@app/components/popover/popover.component';
@@ -32,12 +38,11 @@ import { ConcernItemComponent } from '@app/components/concern/concern-item/conce
 import { IssueMessagePlaceholderPipe } from '@app/pipes/issue-message-placeholder.pipe';
 import { ConcernListComponent } from '@app/components/concern/concern-list/concern-list.component';
 import { ConcernListRefComponent } from '@app/components/concern/concern-list-ref/concern-list-ref.component';
+import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
 
 @NgModule({
   declarations: [
     ForTestDirective,
-    TooltipDirective,
-    TooltipComponent,
     MTextareaDirective,
     BaseDirective,
     SocketListenerDirective,
@@ -64,33 +69,34 @@ import { ConcernListRefComponent } from '@app/components/concern/concern-list-re
     CommonModule,
     MaterialModule,
     RouterModule,
+    TooltipModule
   ],
-    exports: [
-        ForTestDirective,
-        TooltipDirective,
-        TooltipComponent,
-        MTextareaDirective,
-        BaseDirective,
-        SocketListenerDirective,
-        CrumbsComponent,
-        UpgradeComponent,
-        ScrollDirective,
-        InfinityScrollDirective,
-        ActionsComponent,
-        ActionsDirective,
-        ActionListComponent,
-        MenuItemComponent,
-        PopoverDirective,
-        PopoverComponent,
-        ConcernComponent,
-        ConcernItemComponent,
-        IssueMessagePlaceholderPipe,
-        ConcernListComponent,
-        KeysPipe,
-        IsArrayPipe,
-        IssuePathPipe,
-        ConcernListRefComponent,
-    ],
+  exports: [
+    ForTestDirective,
+    TooltipDirective,
+    MTextareaDirective,
+    BaseDirective,
+    SocketListenerDirective,
+    CrumbsComponent,
+    UpgradeComponent,
+    ScrollDirective,
+    InfinityScrollDirective,
+    ActionsComponent,
+    ActionsDirective,
+    ActionListComponent,
+    MenuItemComponent,
+    PopoverDirective,
+    PopoverComponent,
+    ConcernComponent,
+    ConcernItemComponent,
+    IssueMessagePlaceholderPipe,
+    ConcernListComponent,
+    KeysPipe,
+    IsArrayPipe,
+    IssuePathPipe,
+    ConcernListRefComponent,
+    TooltipModule
+  ],
   providers: [
     ConcernService,
   ],

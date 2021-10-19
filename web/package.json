@@ -34,6 +34,7 @@
     "@ngrx/store-devtools": "^10.1.2",
     "@ngx-translate/core": "^13.0.0",
     "@ngx-translate/http-loader": "^6.0.0",
+    "deepmerge": "^4.2.2",
     "luxon": "^1.25.0",
     "rxjs": "^6.5.5",
     "sass": "^1.32.8",

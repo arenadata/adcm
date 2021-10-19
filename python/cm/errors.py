@@ -150,6 +150,7 @@ ERRORS = {
         rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),
+    'LOCK_ERROR': ("lock error", rfs.HTTP_409_CONFLICT, ERR),
 }
 
 

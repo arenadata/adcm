@@ -17,7 +17,6 @@ from typing import Tuple, Callable
 import allure
 import pytest
 
-from coreapi.exceptions import ErrorMessage
 from adcm_client.objects import ADCMClient, Cluster, Provider, Host, Component, Service
 from adcm_pytest_plugin.steps.actions import (
     run_provider_action_and_assert_result,
@@ -26,9 +25,9 @@ from adcm_pytest_plugin.steps.actions import (
     run_host_action_and_assert_result,
 )
 
+from tests.functional.tools import AnyADCMObject, get_config
 from tests.functional.plugin_utils import (
     build_objects_checker,
-    AnyADCMObject,
     generate_cluster_success_params,
     compose_name,
     run_successful_task,
@@ -65,14 +64,6 @@ CHANGED_CONFIG = {
     "list": ["one", "new", "three"],
 }
 CONFIG_KEYS = set(CHANGED_CONFIG.keys())
-
-
-def get_config(adcm_object: AnyADCMObject):
-    """Get config or empty tuple (if config not defined)"""
-    try:
-        return adcm_object.config()
-    except ErrorMessage:
-        return ()
 
 
 check_config_changed = build_objects_checker(

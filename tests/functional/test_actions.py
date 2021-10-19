@@ -27,12 +27,16 @@ from adcm_pytest_plugin.steps.actions import (
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import fixture_parametrized_by_data_subdirs
 
-from tests.ui_tests.test_actions_page import check_verbosity
 from tests.functional.tools import (
+    AnyADCMObject,
     actions_in_objects_are_present,
     actions_in_objects_are_absent,
 )
-from tests.functional.plugin_utils import AnyADCMObject
+
+
+def check_verbosity(log, verbose_state):
+    """Assert action verbosity by log content"""
+    assert ("verbosity: 4" in log.content) is verbose_state
 
 
 @pytest.mark.parametrize("verbose_state", [True, False], ids=["verbose_state_true", "verbose_state_false"])
