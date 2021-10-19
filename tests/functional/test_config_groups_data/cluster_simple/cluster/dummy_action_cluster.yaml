@@ -19,3 +19,5 @@
       assert:
         that:
           - job.config.map[inventory_hostname].group == cluster.config.group
+        fail_msg: "Expected:\n{{ job.config.map[inventory_hostname].group | to_nice_json }}\n\
+        but actual is:\n {{ cluster.config.group | to_nice_json }} "

@@ -106,6 +106,13 @@
         age: '24'
         name: Joe
         sex: m
+    - name: json
+      type: json
+      required: false
+      default:
+        age: '24'
+        name: Joe
+        sex: m
 
 - type: host
   name: host_from_provider
