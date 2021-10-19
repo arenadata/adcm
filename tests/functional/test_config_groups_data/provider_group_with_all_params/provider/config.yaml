@@ -124,6 +124,7 @@
       type: secrettext
       required: false
       default: "secret\npass\nword"
+      group_customization: true
 
 - type: host
   name: host_from_provider

@@ -30,3 +30,4 @@
           - job.config.map[inventory_hostname].structure == cluster.config.structure
           - job.config.map[inventory_hostname].map == cluster.config.map
           - job.config.map[inventory_hostname].file == lookup('file', cluster.config.file)
+          - job.config.map[inventory_hostname].secrettext == cluster.config.secrettext
