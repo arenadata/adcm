@@ -13,7 +13,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { IRoot, TypeName } from '@app/core/types/api';
-import { ListResult } from '@app/shared/components/list/list.component';
+import { ListResult } from '@app/models/list-result';
 import { select, Store } from '@ngrx/store';
 import { EMPTY, Observable } from 'rxjs';
 import { catchError, filter, switchMap } from 'rxjs/operators';
@@ -42,7 +42,7 @@ export class ApiService {
   }
 
   getList<T>(url: string, p: ParamMap): Observable<ListResult<T>> {
-    const params = p.keys.reduce((pr, c) => ({ ...pr, [c]: p.get(c) }), {});
+    const params = p?.keys.reduce((pr, c) => ({ ...pr, [c]: p.get(c) }), {});
     if (p) {
       const limit = p.get('limit') ? +p.get('limit') : +localStorage.getItem('limit'),
         offset = (p.get('page') ? +p.get('page') : 0) * limit;

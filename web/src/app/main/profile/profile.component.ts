@@ -86,7 +86,4 @@ export class ProfileComponent extends BaseDirective implements OnInit, OnDestroy
     this.service.setPassword(password).subscribe(() => this.router.navigate(['/login']));
   }
 
-  // flatten(arr) {
-  //   return flatten<Widget>(arr);
-  // }
 }

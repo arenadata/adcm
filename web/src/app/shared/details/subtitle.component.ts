@@ -10,7 +10,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input } from '@angular/core';
-
 import { IDetails } from './navigation.service';
 
 @Component({
@@ -18,10 +17,7 @@ import { IDetails } from './navigation.service';
   template: `
     <ng-container *ngIf="cur">
       <ng-container *ngIf="cur.typeName === 'job'; else link">
-        <ng-container *ngFor="let o of cur.objects; index as i; last as lastElement">
-          <a [routerLink]="getParentLink(cur.objects, i)">{{ o.name }}</a>
-          <span *ngIf="!lastElement"> / </span>
-        </ng-container>
+        <app-task-objects [row]="cur"></app-task-objects>
       </ng-container>
       <ng-template #link>
         <a [routerLink]="['/', cur.provider_id ? 'provider' : 'bundle', cur.provider_id || cur.bundle_id || {}]">
@@ -41,7 +37,4 @@ export class SubtitleComponent {
     }
   }
 
-  getParentLink(objects: { id: number; type: string }[], ind: number) {
-    return objects.filter((a, i) => i <= ind).reduce((a, c) => [...a, c.type, c.id], ['/']);
-  }
 }

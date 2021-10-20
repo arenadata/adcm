@@ -12,22 +12,25 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ApiService } from '@app/core/api';
-import { EmmitRow, Issue, isIssue } from '@app/core/types';
+import { EmmitRow } from '@app/core/types';
 import { concat, Observable, of } from 'rxjs';
 import { filter, map, switchMap } from 'rxjs/operators';
 import { EventHelper } from '@adwp-ui/widgets';
 
 import { BaseDirective } from '../directives';
 import { DialogComponent } from './dialog.component';
+import { IIssues } from '@app/models/issue';
+import { IssueHelper } from '@app/helpers/issue-helper';
 
 export interface UpgradeItem {
   upgradable: boolean;
   upgrade: string;
-  issue: Issue;
+  issue: IIssues;
 }
 
-interface Upgrade {
+export interface Upgrade {
   id: number;
+  bundle_id: number;
   name: string;
   description: string;
   do: string;
@@ -35,19 +38,25 @@ interface Upgrade {
   from_edition: string[];
   license: 'unaccepted' | 'absent';
   license_url: string;
+  max_strict: boolean;
+  max_version: string;
+  min_strict: boolean;
+  min_version: string;
+  state_available: string;
+  state_on_success: string;
+  url: string;
 }
 
 @Component({
   selector: 'app-upgrade',
   template: `
-    <button
-      mat-icon-button
-      matTooltip="There are a pending upgrades of object here"
-      [appForTest]="'upgrade_btn'"
-      color="warn"
-      [disabled]="!checkIssue()"
-      [matMenuTriggerFor]="menu"
-      (click)="EventHelper.stopPropagation($event)"
+    <button mat-icon-button
+            matTooltip="There are a pending upgrades of object here"
+            [appForTest]="'upgrade_btn'"
+            color="warn"
+            [disabled]="!checkIssue()"
+            [matMenuTriggerFor]="menu"
+            (click)="EventHelper.stopPropagation($event)"
     >
       <mat-icon>sync_problem</mat-icon>
     </button>
@@ -71,9 +80,7 @@ export class UpgradeComponent extends BaseDirective {
   @Input()
   set row(row: UpgradeItem) {
     this.pRow = row;
-    if (row.upgrade) {
-      this.list$ = this.api.get(`${row.upgrade}?ordering=-name`).pipe(filter((list: Upgrade[]) => !!list.length));
-    }
+    this.list$ = this.getUpgrades(this.pRow.upgrade);
   }
 
   @Output()
@@ -84,7 +91,7 @@ export class UpgradeComponent extends BaseDirective {
   }
 
   checkIssue() {
-    return this.pRow.upgradable && !isIssue(this.pRow.issue);
+    return this.pRow.upgradable && !IssueHelper.isIssue(this.pRow.issue);
   }
 
   runUpgrade(item: Upgrade) {
@@ -99,7 +106,10 @@ export class UpgradeComponent extends BaseDirective {
                 title: 'Are you sure you want to upgrade?',
                 text,
                 disabled: !item.upgradable,
-                controls: item.license === 'unaccepted' ? { label: 'Do you accept the license agreement?', buttons: ['Yes', 'No'] } : ['Yes', 'No']
+                controls: item.license === 'unaccepted' ? {
+                  label: 'Do you accept the license agreement?',
+                  buttons: ['Yes', 'No']
+                } : ['Yes', 'No']
               }
             })
             .beforeClosed()
@@ -116,5 +126,11 @@ export class UpgradeComponent extends BaseDirective {
   fork(item: Upgrade) {
     const flag = item.license === 'unaccepted';
     return flag ? this.api.get<{ text: string }>(item.license_url).pipe(map(a => a.text)) : of(item.description);
+  }
+
+  getUpgrades(upgrade: string): Observable<any> {
+    return this.api.get(`${upgrade}?ordering=-name`).pipe(
+      filter((list: Upgrade[]) => !!list.length)
+    );
   }
 }

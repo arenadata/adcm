@@ -9,16 +9,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621, W0404, W0212, C1801
-from typing import List
+
+"""Tests for backend filtering"""
+
+from typing import List, Union, Type
 
 import allure
 import pytest
-from adcm_client.base import ResponseTooLong
+from adcm_client.base import ResponseTooLong, BaseAPIListObject, BaseAPIObject
 from adcm_client.objects import (
     Action,
     ADCMClient,
-    Bundle,  # ActionList,
+    Bundle,
     BundleList,
     Cluster,
     ClusterList,
@@ -38,14 +40,18 @@ from adcm_client.objects import (
     ProviderPrototypeList,
     Task,
     TaskList,
+    Service,
 )
 from adcm_pytest_plugin.utils import get_data_dir, get_subdirs_iter
 from delayed_assert import assert_expectations, expect
 from pytest_lazyfixture import lazy_fixture
 
+# pylint: disable=redefined-outer-name,protected-access
+
 
 @pytest.fixture()
 def cluster_bundles(sdk_client_fs: ADCMClient):
+    """Upload cluster bundles"""
     for path in get_subdirs_iter(__file__, "cluster_bundles"):
         sdk_client_fs.upload_from_fs(path)
     return sdk_client_fs
@@ -53,21 +59,25 @@ def cluster_bundles(sdk_client_fs: ADCMClient):
 
 @pytest.fixture()
 def one_cluster_prototype(cluster_bundles: ADCMClient):
+    """Get cluster prototype"""
     return cluster_bundles.bundle(name="4").cluster_prototype()
 
 
 @pytest.fixture()
 def one_cluster_prototype_name_attr(one_cluster_prototype: ClusterPrototype):
+    """Get cluster prototype name attr"""
     return {'name': one_cluster_prototype.name}
 
 
 @pytest.fixture()
 def one_cluster_prototype_bundle_id_attr(one_cluster_prototype: ClusterPrototype):
+    """Get cluster prototype bundle_id attr"""
     return {'bundle_id': one_cluster_prototype.bundle_id}
 
 
 @pytest.fixture()
 def clusters(cluster_bundles: ADCMClient):
+    """Create clusters"""
     for i in range(51):
         cluster_bundles.bundle(name='14').cluster_create(name=str(i))
     return cluster_bundles
@@ -75,21 +85,25 @@ def clusters(cluster_bundles: ADCMClient):
 
 @pytest.fixture()
 def one_cluster(cluster_bundles: ADCMClient):
+    """Create one cluster"""
     return cluster_bundles.bundle(name='42').cluster_create(name="I am a Cluster")
 
 
 @pytest.fixture()
 def one_cluster_name_attr(one_cluster: Cluster):
+    """Get cluster name attr"""
     return {'name': one_cluster.name}
 
 
 @pytest.fixture()
 def one_cluster_prototype_id_attr(one_cluster: Cluster):
+    """Get cluster prototype_id attr"""
     return {'prototype_id': one_cluster.prototype_id}
 
 
 @pytest.fixture()
 def provider_bundles(sdk_client_fs: ADCMClient):
+    """Upload provider bundles"""
     for path in get_subdirs_iter(__file__, "provider_bundles"):
         sdk_client_fs.upload_from_fs(path)
     return sdk_client_fs
@@ -97,6 +111,7 @@ def provider_bundles(sdk_client_fs: ADCMClient):
 
 @pytest.fixture()
 def providers(provider_bundles: ADCMClient):
+    """Create providers"""
     bundle = provider_bundles.bundle(name='provider18')
     for i in range(51):
         bundle.provider_create(name=str(i))
@@ -105,26 +120,31 @@ def providers(provider_bundles: ADCMClient):
 
 @pytest.fixture()
 def one_provider(provider_bundles: ADCMClient):
+    """Create one provider"""
     return provider_bundles.bundle(name='provider15').provider_create(name="I am a Provider")
 
 
 @pytest.fixture()
 def one_provider_name_attr(one_provider: Provider):
+    """Get provider name attr"""
     return {'name': one_provider.name}
 
 
 @pytest.fixture()
 def one_provider_prototype_id_attr(one_provider: Provider):
+    """Get provider prototype_id attr"""
     return {'prototype_id': one_provider.prototype_id}
 
 
 @pytest.fixture()
 def provider_bundle_id(one_provider: Provider):
+    """Get provider bundle_id attr"""
     return {'bundle_id': one_provider.bundle_id}
 
 
 @pytest.fixture()
 def hosts(provider_bundles: ADCMClient, one_provider):
+    """Create hosts return provider bundles"""
     for i in range(51):
         one_provider.host_create(fqdn=str(i))
     return provider_bundles
@@ -132,27 +152,31 @@ def hosts(provider_bundles: ADCMClient, one_provider):
 
 @pytest.fixture()
 def one_host(provider_bundles: ADCMClient):
+    """Create one host"""
     provider = provider_bundles.bundle(name='provider42').provider_create(name="For one Host")
     return provider.host_create(fqdn='host.host.host')
 
 
 @pytest.fixture()
 def one_host_fqdn_attr(one_host: Host):
+    """Get host fqdn attr"""
     return {'fqdn': one_host.fqdn}
 
 
 @pytest.fixture()
 def one_host_prototype_id_attr(one_host: Host):
+    """Get host prototype_id attr"""
     return {'prototype_id': one_host.prototype_id}
 
 
 @pytest.fixture()
 def one_host_provider_id_attr(one_host: Host):
+    """Get host provider_id attr"""
     return {'provider_id': one_host.provider_id}
 
 
 @pytest.mark.parametrize(
-    'TestedClass',
+    'tested_class',
     [
         pytest.param(Bundle, id="Bundle"),
         pytest.param(Prototype, id="Prototype"),
@@ -166,38 +190,36 @@ def one_host_provider_id_attr(one_host: Host):
         pytest.param(Job, id="Job"),
     ],
 )
-def test_coreapi_schema(sdk_client_fs: ADCMClient, TestedClass):
-    def get_params(link):
+def test_coreapi_schema(sdk_client_fs: ADCMClient, tested_class: Type[BaseAPIObject]):
+    """Test coreapi schema"""
+
+    def _get_params(link):
         result = {}
-        for f in link.fields:
-            result[f.name] = True
+        for field in link.fields:
+            result[field.name] = True
         return result
 
     schema_obj = sdk_client_fs._api.schema
-    with allure.step(f'Get {TestedClass.__name__} schema objects'):
-        for p in TestedClass.PATH:
-            assert p in schema_obj.data
-            schema_obj = schema_obj[p]
-        params = get_params(schema_obj.links['list'])
-    with allure.step(f'Check if filters are acceptable for coreapi {TestedClass.__name__}'):
-        for f in TestedClass.FILTERS:
+    with allure.step(f'Get {tested_class.__name__} schema objects'):
+        for path in tested_class.PATH:
+            assert path in schema_obj.data
+            schema_obj = schema_obj[path]
+        params = _get_params(schema_obj.links['list'])
+    with allure.step(f'Check if filters are acceptable for coreapi {tested_class.__name__}'):
+        for _filter in tested_class.FILTERS:
             expect(
-                f in params,
-                "Filter {} should be acceptable for coreapi in class {}".format(
-                    f, TestedClass.__name__
-                ),
+                _filter in params,
+                f"Filter {_filter} should be acceptable for coreapi in class {tested_class.__name__}",
             )
         assert_expectations()
 
 
 @pytest.mark.parametrize(
-    ('sdk_client', 'TestedClass'),
+    ('sdk_client', 'tested_class'),
     [
         pytest.param(lazy_fixture('cluster_bundles'), ClusterPrototypeList, id="Cluster Prototype"),
         pytest.param(lazy_fixture('cluster_bundles'), PrototypeList, id="Prototype"),
-        pytest.param(
-            lazy_fixture('provider_bundles'), ProviderPrototypeList, id="Provider Prototype"
-        ),
+        pytest.param(lazy_fixture('provider_bundles'), ProviderPrototypeList, id="Provider Prototype"),
         pytest.param(lazy_fixture('provider_bundles'), HostPrototypeList, id="Host Prototype"),
         pytest.param(lazy_fixture('provider_bundles'), BundleList, id="Bundle"),
         pytest.param(lazy_fixture('clusters'), ClusterList, id="Cluster"),
@@ -206,22 +228,19 @@ def test_coreapi_schema(sdk_client_fs: ADCMClient, TestedClass):
         pytest.param(lazy_fixture('hosts_with_jobs'), JobList, id="Job"),
     ],
 )
-def test_paging_fail(sdk_client, TestedClass):
+def test_paging_fail(sdk_client, tested_class: Type[BaseAPIListObject]):
     """Scenario:
     * Prepare a lot of objects in ADCM
     * Call listing api over objects.*List classes
     * Expecting to have ResponseTooLong error
     """
-    with allure.step(
-        f'Prepare a lot of objects: {TestedClass.__name__} '
-        f'in ADCM and check ResponseTooLong error'
-    ):
+    with allure.step(f'Prepare a lot of objects: {tested_class.__name__} ' f'in ADCM and check ResponseTooLong error'):
         with pytest.raises(ResponseTooLong):
-            TestedClass(sdk_client._api)
+            tested_class(sdk_client._api)
 
 
 @pytest.mark.parametrize(
-    ('sdk_client', 'TestedClass', 'TestedListClass', 'search_args', 'expected_args'),
+    ('sdk_client', 'tested_class', 'tested_list_class', 'search_args', 'expected_args'),
     [
         pytest.param(
             lazy_fixture('cluster_bundles'),
@@ -393,7 +412,7 @@ def test_paging_fail(sdk_client, TestedClass):
         ),
     ],
 )
-def test_filter(sdk_client: ADCMClient, TestedClass, TestedListClass, search_args, expected_args):
+def test_filter(sdk_client: ADCMClient, tested_class, tested_list_class, search_args, expected_args):
     """Scenario:
     * Create a lot of objects in ADCM (more than allowed to get without paging)
     * Call listing over *List class with tested filter as search args.
@@ -404,49 +423,54 @@ def test_filter(sdk_client: ADCMClient, TestedClass, TestedListClass, search_arg
     * Check that we found what we need
     """
     with allure.step('Create a lot of objects in ADCM'):
-        lo = TestedListClass(sdk_client._api, **search_args)
+        objects = tested_list_class(sdk_client._api, **search_args)
     with allure.step('Inspect first (and only) element of list'):
         for k, v in expected_args.items():
-            assert getattr(lo[0], k) == v
+            assert getattr(objects[0], k) == v
     with allure.step(
-        'Create single object over class call (like Cluster or Bundle) '
-        'with tested filter as search args'
+        'Create single object over class call (like Cluster or Bundle) ' 'with tested filter as search args'
     ):
-        o = TestedClass(sdk_client._api, **search_args)
+        single_object = tested_class(sdk_client._api, **search_args)
     with allure.step('Check created object'):
         for k, v in expected_args.items():
-            assert getattr(o, k) == v
+            assert getattr(single_object, k) == v
 
 
 @pytest.fixture()
 def cluster_with_actions(sdk_client_fs: ADCMClient):
-    b = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_actions'))
-    return b.cluster_create(name="cluster_with_actions")
+    """Create cluster with actions"""
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_actions'))
+    return bundle.cluster_create(name="cluster_with_actions")
 
 
 @pytest.fixture()
 def service_with_actions(cluster_with_actions: Cluster):
+    """Create service with actions"""
     return cluster_with_actions.service_add(name='service_with_actions')
 
 
 @pytest.fixture()
 def provider_with_actions(sdk_client_fs: ADCMClient):
-    b = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'provider_with_actions'))
-    return b.provider_create(name="provider_with_actions")
+    """Create provider with actions"""
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'provider_with_actions'))
+    return bundle.provider_create(name="provider_with_actions")
 
 
 @pytest.fixture()
 def host_with_actions(provider_with_actions: Provider):
+    """Create host with actions"""
     return provider_with_actions.host_create(fqdn='host.with.actions')
 
 
 @pytest.fixture()
 def host_ok_action(host_with_actions: Host):
+    """Het host OK action"""
     return host_with_actions.action(name="ok42")
 
 
 @pytest.fixture()
 def hosts_with_actions(host_with_actions: Host, provider_with_actions: Provider):
+    """Create hosts with actions"""
     hosts = [host_with_actions]
     for i in range(9):
         hosts.append(provider_with_actions.host_create(fqdn=f'host.with.actions.{i}'))
@@ -470,16 +494,19 @@ def hosts_with_jobs(hosts_with_actions: List, host_ok_action: Action):
 
 @pytest.fixture()
 def task_action_id_attr(host_ok_action: Action):
+    """Get task action_id attr"""
     return {'action_id': host_ok_action.action_id}
 
 
 @pytest.fixture()
-def task_status_attr(host_ok_action: Action):
+def task_status_attr():
+    """Get task status attr"""
     return {'status': 'success'}
 
 
 @pytest.fixture()
 def job_task_id_attr(host_ok_action: Action):
+    """Get task task_id attr"""
     return {'task_id': host_ok_action.task().task_id}
 
 
@@ -516,7 +543,7 @@ def job_task_id_attr(host_ok_action: Action):
 
 
 @pytest.mark.parametrize(
-    ('TestedParentClass', 'search_args', 'expected_args'),
+    ('tested_parent_class', 'search_args', 'expected_args'),
     [
         pytest.param(
             lazy_fixture('cluster_with_actions'),
@@ -536,12 +563,12 @@ def job_task_id_attr(host_ok_action: Action):
             {'name': 'ok14'},
             id="on Provider",
         ),
-        pytest.param(
-            lazy_fixture('host_with_actions'), {'name': 'fail15'}, {'name': 'fail15'}, id="on Host"
-        ),
+        pytest.param(lazy_fixture('host_with_actions'), {'name': 'fail15'}, {'name': 'fail15'}, id="on Host"),
     ],
 )
-def test_actions_name_filter(TestedParentClass, search_args, expected_args):
+def test_actions_name_filter(
+    tested_parent_class: Union[Provider, Service, Cluster], search_args: dict, expected_args: dict
+):
     """Scenario:
     * Create object with a lot of actions
     * Call action_list() with tested filter as search args.
@@ -550,13 +577,13 @@ def test_actions_name_filter(TestedParentClass, search_args, expected_args):
     * Call action() with tested filter as search args
     * Check that we found what we need
     """
-    with allure.step(f'Create {TestedParentClass} with a lot of actions'):
-        lo = TestedParentClass.action_list(**search_args)
+    with allure.step(f'Create {tested_parent_class} with a lot of actions'):
+        actions = tested_parent_class.action_list(**search_args)
     with allure.step('Inspect first (and only) element of list'):
         for k, v in expected_args.items():
-            assert getattr(lo[0], k) == v
+            assert getattr(actions[0], k) == v
     with allure.step('Call action() with tested filter as search args'):
-        o = TestedParentClass.action(**search_args)
+        action = tested_parent_class.action(**search_args)
     with allure.step('Check action name'):
         for k, v in expected_args.items():
-            assert getattr(o, k) == v
+            assert getattr(action, k) == v

@@ -13,7 +13,7 @@
 from rest_framework import serializers
 
 from cm.logger import log  # pylint: disable=unused-import
-import cm.config as config
+from cm import config
 from cm.models import ClusterObject, Prototype, Bundle
 
 from api.api_views import hlink, UrlField
@@ -42,7 +42,7 @@ class UploadBundle(serializers.Serializer):
 
     def create(self, validated_data):
         fd = self.context['request'].data['file']
-        fname = '{}/{}'.format(config.DOWNLOAD_DIR, fd)
+        fname = f'{config.DOWNLOAD_DIR}/{fd}'
         with open(fname, 'wb+') as dest:
             for chunk in fd.chunks():
                 dest.write(chunk)

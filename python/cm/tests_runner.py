@@ -16,9 +16,9 @@ from unittest.mock import patch, Mock, mock_open, call
 from django.test import TestCase
 from django.utils import timezone
 
-import cm.config as config
 import job_runner
 import task_runner
+from cm import config
 from cm.logger import log
 from cm.models import TaskLog, JobLog, Bundle, Prototype, Action
 
@@ -81,7 +81,7 @@ class TestTaskRunner(TestCase):
         process_mock.configure_mock(**attrs)
         mock_subprocess_popen.return_value = process_mock
         code = task_runner.run_job(1, 1, '')
-        cmd = ['{}/job_runner.py'.format(config.CODE_DIR), str(1)]
+        cmd = [f'{config.CODE_DIR}/job_runner.py', str(1)]
         mock_subprocess_popen.assert_called_once_with(cmd, stderr='')
         process_mock.wait.assert_called_once()
         self.assertEqual(code, 0)
@@ -121,9 +121,9 @@ class TestJobRunner(TestCase):
 
     @patch('builtins.open')
     def test_open_file(self, _mock_open):
-        file_path = "{}/{}/{}.txt".format('root', 'tag', 1)
+        file_path = f"{'root'}/{'tag'}/{1}.txt"
         job_runner.open_file('root', 1, 'tag')
-        _mock_open.assert_called_once_with(file_path, 'w')
+        _mock_open.assert_called_once_with(file_path, 'w', encoding='utf_8')
 
     @patch('json.load')
     @patch('builtins.open', create=True)
@@ -131,8 +131,8 @@ class TestJobRunner(TestCase):
         _mock_open.side_effect = mock_open(read_data='').return_value
         mock_json.return_value = {}
         conf = job_runner.read_config(1)
-        file_name = '{}/{}/config.json'.format(config.RUN_DIR, 1)
-        _mock_open.assert_called_once_with(file_name)
+        file_name = f'{config.RUN_DIR}/{1}/config.json'
+        _mock_open.assert_called_once_with(file_name, encoding='utf_8')
         self.assertDictEqual(conf, {})
 
     @patch('cm.job.set_job_status')
@@ -202,9 +202,9 @@ class TestJobRunner(TestCase):
                 '--vault-password-file',
                 f'{config.CODE_DIR}/ansible_secret.py',
                 '-e',
-                '@{}/{}/config.json'.format(config.RUN_DIR, 1),
+                f'@{config.RUN_DIR}/{1}/config.json',
                 '-i',
-                '{}/{}/inventory.json'.format(config.RUN_DIR, 1),
+                f'{config.RUN_DIR}/{1}/inventory.json',
                 conf['job']['playbook'],
             ],
             env=env,

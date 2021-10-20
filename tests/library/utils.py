@@ -1,5 +1,29 @@
-import random
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Common utils for ADCM tests"""
+
 import time
+import json
+import random
+from typing import Tuple
+
+import requests
+
+from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
+
+
+class RequestFailedException(Exception):
+    """Request to ADCM API has status code >= 400"""
 
 
 def get_action_by_name(client, cluster, name):
@@ -100,9 +124,7 @@ def get_random_cluster_service_component(client, cluster, service) -> dict:
         :py:class:`ValueError`
             If service is not found
     """
-    components = client.cluster.service.component.list(
-        cluster_id=cluster['id'], service_id=service['id']
-    )
+    components = client.cluster.service.component.list(cluster_id=cluster['id'], service_id=service['id'])
     if components:
         return random.choice(components)
     raise ValueError('Service has not components')
@@ -143,9 +165,22 @@ def wait_until(client, task, interval=1, timeout=30):
 
     """
     start = time.time()
-    while (
-        not (task['status'] == 'success' or task['status'] == 'failed')
-        and time.time() - start < timeout
-    ):
+    while not (task['status'] == 'success' or task['status'] == 'failed') and time.time() - start < timeout:
         time.sleep(interval)
         task = client.task.read(task_id=task['id'])
+
+
+def get_json_or_text(response: requests.Response):
+    """
+    Try to get JSON or text if JSON can't be parsed from requests.Response.
+    Use this function to provide more info on ADCM API Error.
+    """
+    try:
+        return response.json()
+    except json.JSONDecodeError:
+        return response.text
+
+
+def previous_adcm_version_tag() -> Tuple[str, str]:
+    """Get tag of previous ADCM version"""
+    return parametrized_by_adcm_version(adcm_min_version="2021.03.10")[0][-1]

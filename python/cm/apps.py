@@ -10,11 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
+from functools import partial
+
+from adwp_events.signals import model_change, model_delete, m2m_change
 from django.apps import AppConfig
-from django.db.models.signals import post_migrate
-
+from django.db.models.signals import post_save, post_delete, post_migrate, m2m_changed
 
 ops_model_list = [
     'adcm',
@@ -75,8 +76,36 @@ def fill_role(apps, **kwargs):
     fill_admin_role(Role, Permission)
 
 
+_watched_m2m_links = (
+    # 'cluster',
+    'group-config',
+    'group-config-hosts',
+    'adcm-concerns',
+    'cluster-concerns',
+    'cluster-object-concerns',
+    'service-component-concerns',
+    'host-provider-concerns',
+    'host-concerns',
+)
+
+
+def filter_out_event(module, name):
+    # We filter the sending of events only for the cm application
+    if module[0:2] != 'cm':
+        return True
+    if name not in _watched_m2m_links:
+        return True
+    return False
+
+
 class CmConfig(AppConfig):
     name = 'cm'
+    model_change = partial(model_change, filter_out=filter_out_event)
+    model_delete = partial(model_delete, filter_out=filter_out_event)
+    m2m_change = partial(m2m_change, filter_out=filter_out_event)
 
     def ready(self):
         post_migrate.connect(fill_role, sender=self)
+        post_save.connect(self.model_change, dispatch_uid='model_change')
+        post_delete.connect(self.model_delete, dispatch_uid='model_delete')
+        m2m_changed.connect(self.m2m_change, dispatch_uid='m2m_change')

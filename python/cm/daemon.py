@@ -42,7 +42,7 @@ class Daemon:
                 # exit first parent
                 sys.exit(0)
         except OSError as e:
-            sys.stderr.write("fork #1 failed: %d (%s)\n" % (e.errno, e.strerror))
+            sys.stderr.write(f"fork #1 failed: {e.errno:d} ({e.strerror})\n")
             sys.exit(1)
 
         # decouple from parent environment
@@ -57,22 +57,22 @@ class Daemon:
                 # exit from second parent
                 sys.exit(0)
         except OSError as e:
-            sys.stderr.write("fork #2 failed: %d (%s)\n" % (e.errno, e.strerror))
+            sys.stderr.write(f"fork #2 failed: {e.errno:d} ({e.strerror})\n")
             sys.exit(1)
 
         try:
-            pidfile = open(self.pidfile, 'w+')
+            pidfile = open(self.pidfile, 'w+', encoding='utf_8')
         except IOError as e:
-            sys.stderr.write("Can't open pid file %s\n" % self.pidfile)
-            sys.stderr.write("%s\n" % e.strerror)
+            sys.stderr.write(f"Can't open pid file {self.pidfile}\n")
+            sys.stderr.write(f"{e.strerror}\n")
             sys.exit(1)
 
         # redirect standard file descriptors
         sys.stdout.flush()
         sys.stderr.flush()
-        si = open(self.stdin, 'r')
-        so = open(self.stdout, 'a+')
-        se = open(self.stderr, 'w+')
+        si = open(self.stdin, 'r', encoding='utf_8')
+        so = open(self.stdout, 'a+', encoding='utf_8')
+        se = open(self.stderr, 'w+', encoding='utf_8')
         os.dup2(si.fileno(), sys.stdin.fileno())
         os.dup2(so.fileno(), sys.stdout.fileno())
         os.dup2(se.fileno(), sys.stderr.fileno())
@@ -80,7 +80,7 @@ class Daemon:
         # write pidfile
         atexit.register(self.delpid)
         pid = str(os.getpid())
-        pidfile.write("%s\n" % pid)
+        pidfile.write(f"{pid}\n")
 
     def delpid(self):
         os.remove(self.pidfile)
@@ -88,7 +88,7 @@ class Daemon:
     def getpid(self):
         '''get pid from pidfile'''
         try:
-            pf = open(self.pidfile, 'r')
+            pf = open(self.pidfile, 'r', encoding='utf_8')
             try:
                 pid = int(pf.read().strip())
             except ValueError:

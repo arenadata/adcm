@@ -10,11 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Locator constants"""
+
 # Created by a1wen at 05.03.19
+from deprecated import deprecated
 
 from tests.ui_tests.app.helpers import bys
 
+# pylint: disable=too-few-public-methods
 
+
+@deprecated("Use CommonHeaderLocators or AuthorizedHeaderLocators")
 class Menu:
     """Top menu locators"""
 
@@ -78,8 +84,8 @@ class Common:
     mat_raised_button = bys.by_class("mat-raised-button")
     mat_form_field = bys.by_tag("mat-form-field")
 
-    # Comon elements
-    all_childs = bys.by("*")
+    # Common elements
+    all_childs = bys.by_css("*")
 
 
 class Cluster:

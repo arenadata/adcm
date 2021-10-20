@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=wrong-import-position, unused-import, import-error, too-many-locals
+# pylint: disable=wrong-import-position, import-error, too-many-locals
 
 from __future__ import absolute_import, division, print_function
 
@@ -100,8 +100,8 @@ import sys
 from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm/python')
-import adcm.init_django
-import cm.job
+import adcm.init_django  # pylint: disable=unused-import
+from cm.ansible_plugin import log_check
 from cm.errors import AdcmEx
 from cm.logger import log
 
@@ -173,7 +173,7 @@ class ActionModule(ActionBase):
         )
 
         try:
-            cm.job.log_check(job_id, group, check)
+            log_check(job_id, group, check)
         except AdcmEx as e:
             return {"failed": True, "msg": e.code + ":" + e.msg}
 

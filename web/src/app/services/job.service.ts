@@ -3,8 +3,8 @@ import { Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
 
-import { EventableService } from '@app/models/eventable-service';
-import { EntityEvent, EventMessage, selectMessage, SocketState } from '@app/core/store';
+import { EventableService, EventFilter } from '@app/models/eventable-service';
+import { EventMessage, selectMessage, SocketState } from '@app/core/store';
 
 @Injectable()
 export class JobService implements EventableService {
@@ -13,15 +13,12 @@ export class JobService implements EventableService {
     private store: Store<SocketState>,
   ) {}
 
-  events(events: EntityEvent[]): Observable<EventMessage> {
-    const result = this.store.pipe(
+  events(eventFilter?: EventFilter): Observable<EventMessage> {
+    return this.store.pipe(
       selectMessage,
       filter(event => event?.object?.type === 'job'),
+      filter(event => !eventFilter?.events || eventFilter.events.includes(event?.event)),
     );
-    if (events) {
-      result.pipe(filter(event => events.includes(event.event)));
-    }
-    return result;
   }
 
 }

@@ -2,8 +2,9 @@
 <mat-toolbar>
 
   <app-navigation
-    *ngIf="['servicecomponent', 'service', 'cluster'].includes(current?.typeName); else notServiceComponent"
+    *ngIf="['servicecomponent', 'component', 'service', 'cluster', 'host', 'provider', 'group_config'].includes(current?.typeName); else notServiceComponent"
     [path]="navigationPath"
+    (refresh)="refresh($event)"
   ></app-navigation>
 
   <ng-template #notServiceComponent>

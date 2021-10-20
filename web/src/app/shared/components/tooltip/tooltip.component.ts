@@ -23,7 +23,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { BaseDirective } from '@app/shared/directives';
-import { delay, take } from 'rxjs/operators';
+import { delay } from 'rxjs/operators';
 
 import { IssueInfoComponent } from '../issue-info.component';
 import { StatusInfoComponent } from '../status-info.component';
@@ -135,7 +135,7 @@ export class TooltipComponent extends BaseDirective implements OnInit, OnDestroy
     this.CurrentComponent = kit[this.options.options.componentName] || SimpleTextComponent;
 
     const emitter = new EventEmitter();
-    emitter.pipe(take(1), delay(100), this.takeUntil()).subscribe(() => this.position());
+    emitter.pipe(delay(100), this.takeUntil()).subscribe(() => this.position());
 
     const parse = (url: string) =>
       url

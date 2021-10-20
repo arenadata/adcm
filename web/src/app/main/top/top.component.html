@@ -19,57 +19,26 @@
     </a>
   </mat-nav-list>
 
-  <span class="col s12 l3" [style.textAlign]="'right'">
-    <span *ngIf="(isAuth$ | async)">
-      <ng-container *ngIf="(jobStat$ | async)"></ng-container>
-      <span class="job-status">
-        <button
-          [appForTest]="'jobs_yellow'"
-          mat-mini-fab
-          [style.backgroundColor]="'#FFEA00'"
-          [routerLink]="['/task']"
-          [queryParams]="{ page: 1, status: 'running' }"
-          matTooltip="Show jobs in progress"
-        >
-          {{ jobStatus.running }}
-        </button>
-
-        <button
-          [appForTest]="'jobs_green'"
-          mat-mini-fab
-          color="accent"
-          [routerLink]="['/task']"
-          [queryParams]="{ page: 1, status: 'success' }"
-          matTooltip="Show success jobs"
-        >
-          {{ jobStatus.success > 1000 ? (jobStatus.success/1000).toFixed(1) + 'K' : jobStatus.success }}
-        </button>
-
-        <button
-          [appForTest]="'jobs_red'"
-          mat-mini-fab
-          [style.backgroundColor]="'#FF8A80'"
-          [routerLink]="['/task']"
-          [queryParams]="{ page: 1, status: 'failed' }"
-          matTooltip="Show failed jobs"
-        >
-          {{ jobStatus.failed > 1000 ? (jobStatus.failed/1000).toFixed(1) + 'K' : jobStatus.failed }}
-        </button>
-      </span>
+  <span class="col s12 l3">
+    <span *ngIf="(isAuth$ | async)" class="right-panel">
+      <app-bell></app-bell>
 
       <button [appForTest]="'help'" mat-icon-button [matMenuTriggerFor]="helpMenu">
         <mat-icon>help</mat-icon>
       </button>
+
       <mat-menu #helpMenu="matMenu" [overlapTrigger]="false">
         <a href="https://t.me/joinchat/DYEBbReM-hj421LV0y5prw" target="_blank" [appForTest]="'ask_for_help'"
           mat-menu-item>
           <mat-icon>contact_support</mat-icon>
           <span>Ask for help</span>
         </a>
+
         <a [appForTest]="'dock'" mat-menu-item href="http://docs.arenadata.io/adcm/" target="_blank">
           <mat-icon>event_seat</mat-icon>
           <span>Documentation</span>
         </a>
+
       </mat-menu>
 
       <button [appForTest]="'account'" class="toppanel_button_user" mat-icon-button [matMenuTriggerFor]="accountMenu">

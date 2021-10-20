@@ -1,11 +1,12 @@
 import os
 
 
-VARIABLES = [("2.2", "3.0", 'max', 'min', "2.5"),
-             ("2.2", "3.0", 'max', 'min_strict', "3.0"),
-             ("2.2", "3.0", 'max_strict', 'min_strict', "2.5"),
-             ("2.2", "3.0", 'max_strict', 'min', "2.2"),
-             ]
+VARIABLES = [
+    ("2.2", "3.0", 'max', 'min', "2.5"),
+    ("2.2", "3.0", 'max', 'min_strict', "3.0"),
+    ("2.2", "3.0", 'max_strict', 'min_strict', "2.5"),
+    ("2.2", "3.0", 'max_strict', 'min', "2.2"),
+]
 
 TEMPLATE_EXPORT_CLUSTER = """
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -208,23 +209,23 @@ TEMPLATE_CLUSTER = """
 """
 
 for variable in VARIABLES:
-    d_name = "service_import/{}_{}".format(variable[2], variable[3])
+    d_name = f"service_import/{variable[2]}_{variable[3]}"
     export_dir = d_name + "/export"
     import_dir = d_name + "/import"
     for d in d_name, export_dir, import_dir:
         os.makedirs(d)
-    with open("{}/import/config.yaml".format(d_name), "w+") as f:
+    with open(f"{d_name}/import/config.yaml", "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_SERVICE.format(variable[0], variable[1], variable[2], variable[3]))
-    with open("{}/export/config.yaml".format(d_name), "w+") as f:
+    with open(f"{d_name}/export/config.yaml", "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_EXPORT_SERVICE.format(variable[4]))
 
 for variable in VARIABLES:
-    d_name = "cluster_import/{}_{}".format(variable[2], variable[3])
+    d_name = f"cluster_import/{variable[2]}_{variable[3]}"
     export_dir = d_name + "/export"
     import_dir = d_name + "/import"
     for d in d_name, export_dir, import_dir:
         os.makedirs(d)
-    with open("{}/import/config.yaml".format(d_name), "w+") as f:
+    with open(f"{d_name}/import/config.yaml", "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_CLUSTER.format(variable[0], variable[1], variable[2], variable[3]))
-    with open("{}/export/config.yaml".format(d_name), "w+") as f:
+    with open(f"{d_name}/export/config.yaml", "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_EXPORT_CLUSTER.format(variable[4]))

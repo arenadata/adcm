@@ -1,26 +1,20 @@
-import { Component, Input } from '@angular/core';
-import { EventHelper } from '@adwp-ui/widgets';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { BaseDirective, EventHelper } from '@adwp-ui/widgets';
 
-import { isIssue, Issue } from '@app/core/types';
-import { IssuesComponent } from '@app/components/issues/issues.component';
-import { IssueType } from '@app/models/issue';
+import { BaseEntity } from '@app/core/types';
 
 @Component({
   selector: 'app-actions-button',
   templateUrl: './actions-button.component.html',
   styleUrls: ['./actions-button.component.scss']
 })
-export class ActionsButtonComponent<T> {
+export class ActionsButtonComponent<T extends BaseEntity> extends BaseDirective {
 
-  IssuesComponent = IssuesComponent;
   EventHelper = EventHelper;
 
   @Input() row: T;
-  @Input() issueType: IssueType;
 
-  notIssue(issue: Issue): boolean {
-    return !isIssue(issue);
-  }
+  @Output() onMouseenter = new EventEmitter<T>();
 
   getClusterData(row: any) {
     const { id, hostcomponent } = row.cluster || row;

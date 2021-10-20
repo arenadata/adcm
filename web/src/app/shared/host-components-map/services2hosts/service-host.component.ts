@@ -11,12 +11,13 @@
 // limitations under the License.
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { ChannelService, keyChannelStrim } from '@app/core';
+import { ChannelService } from '@app/core/services';
+import { keyChannelStrim } from '@app/core/services';
 import { EventMessage, IEMObject, SocketState } from '@app/core/store';
 import { IActionParameter } from '@app/core/types';
 import { Store } from '@ngrx/store';
 
-import { SocketListenerDirective } from '../../directives/socketListener.directive';
+import { SocketListenerDirective } from '@app/shared/directives';
 import { getSelected, TakeService } from '../take.service';
 import { CompTile, HostTile, IRawHosComponent, Post, StatePost, Tile } from '../types';
 

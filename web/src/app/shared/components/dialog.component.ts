@@ -13,7 +13,8 @@ import { Component, ComponentFactoryResolver, EventEmitter, Inject, OnInit, Type
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import { DynamicComponent, DynamicDirective, DynamicEvent } from '../directives/dynamic.directive';
-import { ChannelService, keyChannelStrim } from '@app/core';
+import { ChannelService } from '@app/core/services';
+import { keyChannelStrim } from '@app/core/services';
 import { ActionParameters } from '@app/shared/components/actions/actions.directive';
 
 export interface DialogData {

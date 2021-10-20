@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Tests for hostprovider functions"""
+
 import json
 import os
 
@@ -28,49 +31,52 @@ SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
 
 
 def test_load_host_provider(sdk_client_fs: ADCMClient):
+    """Test load hostprovider bundle"""
     sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     with allure.step("Check bundle list"):
-        assert len(sdk_client_fs.bundle_list()) == 1
+        assert "provider_sample" in [bundle.name for bundle in sdk_client_fs.bundle_list()]
 
 
 def test_validate_provider_prototype(sdk_client_fs: ADCMClient):
+    """Test validate hostprovider prototype"""
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     with allure.step("Load provider prototype"):
         provider_prototype = bundle.provider_prototype()._data
-        schema = json.load(
-            open(SCHEMAS + '/stack_list_item_schema.json')
-        )
+        with open(SCHEMAS + '/stack_list_item_schema.json', encoding='utf_8') as file:
+            schema = json.load(file)
     with allure.step("Check provider prototype"):
         assert validate(provider_prototype, schema) is None
 
 
 def test_should_create_provider_wo_description(sdk_client_fs: ADCMClient):
+    """Test create provider without description"""
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
-    bundle.provider_create(name=utils.random_string())
+    provider_name = utils.random_string()
+    bundle.provider_create(name=provider_name)
     with allure.step("Check provider list"):
-        assert len(sdk_client_fs.provider_list()) == 1
+        assert provider_name in [provider.name for provider in sdk_client_fs.provider_list()]
 
 
 def test_should_create_provider_w_description(sdk_client_fs: ADCMClient):
+    """Test create provider with description"""
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     description = utils.random_string(140)
-    provider = bundle.provider_create(
-        name=utils.random_string(),
-        description=description)
+    provider = bundle.provider_create(name=utils.random_string(), description=description)
     with allure.step("Check provider with description"):
         assert provider.description == description
 
 
 def test_get_provider_config(sdk_client_fs: ADCMClient):
+    """Test get provider config"""
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
-    provider = bundle.provider_create(
-        name=utils.random_string())
+    provider = bundle.provider_create(name=utils.random_string())
     with allure.step("Check provider config"):
         assert provider.config() is not None
 
 
 @allure.link("https://jira.arenadata.io/browse/ADCM-472")
 def test_provider_shouldnt_be_deleted_when_it_has_host(sdk_client_fs: ADCMClient):
+    """Test delete provider with host should fail"""
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
     provider = bundle.provider_create(name=utils.random_string())
     provider.host_create(fqdn=utils.random_string())
@@ -82,18 +88,15 @@ def test_provider_shouldnt_be_deleted_when_it_has_host(sdk_client_fs: ADCMClient
 
 
 def test_shouldnt_create_host_with_unknown_prototype(sdk_client_fs):
+    """Test create host with unknown prototype should fail"""
     bundle = sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
-    provider = bundle.provider_create(
-        name=utils.random_string()
-    )
+    provider = bundle.provider_create(name=utils.random_string())
     with allure.step("Delete provider"):
         provider.delete()
     with allure.step("Create host"):
         with pytest.raises(exceptions.ErrorMessage) as e:
             # Using lack of auto refresh of object as workaround.
             # If adcm_client object behaviour will be changed, test may fall.
-            provider.host_create(
-                fqdn=utils.random_string()
-            )
+            provider.host_create(fqdn=utils.random_string())
     with allure.step("Check error provider doesnt exist"):
         errorcodes.PROVIDER_NOT_FOUND.equal(e, "HostProvider", "does not exist")

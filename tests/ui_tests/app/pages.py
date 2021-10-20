@@ -10,9 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""DEPRECATED! Base page objects."""
+
+# Since this module is deprecated we will not fix docstrings here
+# pylint: disable=missing-function-docstring, missing-class-docstring
+
 from time import sleep
 
 import allure
+from deprecated import deprecated
 
 # Created by a1wen at 05.03.19
 from selenium.common.exceptions import (
@@ -31,33 +37,35 @@ from tests.ui_tests.app.helpers import bys
 from tests.ui_tests.app.locators import Menu, Common, Cluster, Provider, Host, Service
 
 
-def element_text(e):
-    if not e:
+def element_text(element):
+    if not element:
         raise NoSuchElementException("Asked for text of None element")
-    text = e.get_attribute("innerText")
+    text = element.get_attribute("innerText")
     if not text:
         return ""
     return text.strip()
 
 
+@deprecated("Use BasePageObj")
 class BasePage:
-    ignored_exceptions = (NoSuchElementException, StaleElementReferenceException)
-
     """That is base page object for all ADCM's pages"""
+
+    ignored_exceptions = (NoSuchElementException, StaleElementReferenceException)
 
     def __init__(self, driver):
         self.driver = driver
 
+    @allure.step("Navigate to {url}")
     def get(self, url, url_path=None, timeout=5):
         if self.driver.current_url != url:
             self.driver.get(url)
         self._contains_url(url_path, timer=timeout)
 
     @allure.step('Find elements')
-    def _elements(self, locator: tuple, f, **kwargs):
+    def _elements(self, locator: tuple, func, **kwargs):
         """Find elements
         :param locator: locator
-        :param f: function that takes in elements and does something
+        :param func: function that takes in elements and does something
                   n.b. DO NOT RETURN ELEMENTS FROM THIS FUNCTION, ONLY DERIVED DATA (e.g., strings)
         :kwparam name: (optional) element text to look for
         :kwparam parent: (optional) locator of parent in which we should find element.
@@ -70,7 +78,7 @@ class BasePage:
             if len(elements) == 0:
                 raise NoSuchElementException(f"Could not find element {locator}")
             if name:
-                elements = [e for e in elements if name in element_text(e)]
+                elements = [element for element in elements if name in element_text(element)]
                 if len(elements) == 0:
                     raise NoSuchElementException(f"Could not find element {name}")
             return elements
@@ -84,7 +92,7 @@ class BasePage:
             parent_element = get_elements(kwargs["parent"], parent_name, self.driver)[parent_idx]
 
         name = kwargs["name"] if "name" in kwargs else ""
-        return f(get_elements(locator, name, parent_element))
+        return func(get_elements(locator, name, parent_element))
 
     def _wait_element(self, locator: tuple, **kwargs):
         """see _elements"""
@@ -95,11 +103,12 @@ class BasePage:
         self._elements(locator, wait, **kwargs)
 
     def _get_adcm_test_element(self, element_name):
-        return self._getelement(bys.by_xpath("//*[@adcm_test='{}']".format(element_name)))
+        return self._getelement(bys.by_xpath(f"//*[@adcm_test='{element_name}']"))
 
     def _getelement(self, locator: tuple, timer=10):
         return WDW(self.driver, timer, ignored_exceptions=self.ignored_exceptions).until(
-            EC.presence_of_element_located(locator)
+            EC.presence_of_element_located(locator),
+            message=f"Can't find locator on page {self.driver.current_url} for {timer} seconds",
         )
 
     def _click_element(self, locator: tuple, **kwargs):
@@ -116,12 +125,15 @@ class BasePage:
         self._elements(locator, click, **kwargs)
 
     def _getelements(self, locator: tuple, timer=20):
-        return WDW(self.driver, timer).until(EC.presence_of_all_elements_located(locator))
+        return WDW(self.driver, timer).until(
+            EC.presence_of_all_elements_located(locator),
+            message=f"Can't find locators on page {self.driver.current_url} for {timer} seconds",
+        )
 
     def _click_element_in_list(self, element_name):
-        for el in self._getelements(Common.list_text):
-            if el.text == element_name:
-                el.click()
+        for element in self._getelements(Common.list_text):
+            if element.text == element_name:
+                element.click()
                 return True
         return False
 
@@ -130,18 +142,31 @@ class BasePage:
         return self._getelements(Common.mat_error)
 
     def _wait_element_present(self, locator: tuple, timer=5):
-        WDW(self.driver, timer).until(EC.presence_of_element_located(locator))
+        WDW(self.driver, timer).until(
+            EC.presence_of_element_located(locator),
+            message=f"Can't find locator on page " f"{self.driver.current_url} for {timer} seconds",
+        )
         return self.driver.find_element(*locator)
 
     def _wait_element_hide(self, locator: tuple, timer=5):
-        WDW(self.driver, timer).until(EC.invisibility_of_element_located(locator))
+        WDW(self.driver, timer).until(
+            EC.invisibility_of_element_located(locator),
+            message=f"locator hasn't hide for {timer} seconds",
+        )
 
     def _wait_element_present_in_sublement(self, subel, locator: tuple, timer=5):
-        WDW(subel, timer).until(EC.presence_of_element_located(locator))
+        WDW(subel, timer).until(
+            EC.presence_of_element_located(locator),
+            message=f"Can't find locator on page " f"{self.driver.current_url} for {timer} seconds",
+        )
         return subel.find_element(*locator)
 
-    def _wait_text_element_in_element(self, element, locator: tuple, timer=5, text=""):
-        WDW(element, timer).until(EC.text_to_be_present_in_element(locator, text))
+    @staticmethod
+    def _wait_text_element_in_element(element, locator: tuple, timer=5, text=""):
+        WDW(element, timer).until(
+            EC.text_to_be_present_in_element(locator, text),
+            message=f"Can't find text in locator for {timer} seconds",
+        )
         return element.find_element(*locator)
 
     def _set_field_value(self, field: tuple, value):
@@ -175,8 +200,9 @@ class BasePage:
         """
         return "mat-checkbox-checked" in element.get_attribute("class")
 
+    @staticmethod
     @allure.step('Clear element')
-    def clear_element(self, element):
+    def clear_element(element):
         element.send_keys(Keys.CONTROL + "a")
         element.send_keys(Keys.BACK_SPACE)
         return element
@@ -190,22 +216,27 @@ class BasePage:
 
     def _click_with_offset(self, element: tuple, x_offset, y_offset):
         actions = ActionChains(self.driver)
-        actions.move_to_element_with_offset(
-            self._getelement(element), x_offset, y_offset
-        ).click().perform()
+        actions.move_to_element_with_offset(self._getelement(element), x_offset, y_offset).click().perform()
 
     def _contains_url(self, url: str, timer=5):
-        WDW(self.driver, timer).until(EC.url_contains(url))
+        WDW(self.driver, timer).until(
+            EC.url_contains(url),
+            message=f"Page with url '{url}' has not been loaded " f"for {timer} seconds",
+        )
         return self.driver.current_url
 
     def _is_element_clickable(self, locator: tuple, timer=5) -> bool:
-        return bool(WDW(self.driver, timer).until(EC.element_to_be_clickable(locator)))
+        return bool(
+            WDW(self.driver, timer).until(
+                EC.element_to_be_clickable(locator),
+                message=f"locator hasn't become clickable " f"for {timer} seconds",
+            )
+        )
 
     def _menu_click(self, locator: tuple):
-        if self._is_element_clickable(locator):
-            return self._click_element(locator)
-        else:
+        if not self._is_element_clickable(locator):
             raise InvalidElementStateException
+        return self._click_element(locator)
 
 
 class Ui(BasePage):
@@ -247,9 +278,7 @@ class Ui(BasePage):
 class ListPage(BasePage):
     """Basic methods under the lists pages"""
 
-    _inactive_tabs = bys.by_xpath(
-        "//a[@class='mat-list-item ng-star-inserted']//div[@class='mat-list-item-content']"
-    )
+    _inactive_tabs = bys.by_xpath("//a[@class='mat-list-item ng-star-inserted']//div[@class='mat-list-item-content']")
 
     def _press_add(self):
         self._click_element(Common.add_btn)
@@ -339,6 +368,7 @@ class Details(BasePage):
     pass
 
 
+@deprecated("Use LoginPage(BasePageObject)")
 class LoginPage(BasePage):
     login_locator = bys.by_id('login')
     passwd_locator = bys.by_id('password')
@@ -381,6 +411,7 @@ class LoginPage(BasePage):
                 self.driver.refresh()
 
 
+@deprecated("Use ClusterListPage")
 class ClustersList(ListPage):
     @allure.step('Add new cluster')
     def add_new_cluster(self, name=None, description=None):
@@ -410,6 +441,7 @@ class ClustersList(ListPage):
         return ClusterDetails(self.driver)
 
 
+@deprecated("Use ClusterMainPage")
 class ClusterDetails(Details, ListPage):
 
     _host = bys.by_class('add-host2cluster')
@@ -453,7 +485,7 @@ class ClusterDetails(Details, ListPage):
 
     @allure.step('Create host from cluster')
     def create_host_from_cluster(self, provider_name, fqdn):
-        self.host_tab  # pylint: disable=W0104
+        _ = self.host_tab
         self._press_add()
         self._wait_add_form()
         self._click_element(Host.prototype)
@@ -493,6 +525,7 @@ class ProvidersList(ListPage):
         return self._delete_first_element()
 
 
+@deprecated("Use HostListPage")
 class HostsList(ListPage):
     @allure.step('Add new host')
     def add_new_host(self, fqdn=None, description=None):

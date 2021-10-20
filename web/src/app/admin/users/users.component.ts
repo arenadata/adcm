@@ -15,14 +15,14 @@ import { map } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 
-import { AuthService } from '@app/core';
+import { AuthService } from '../../core/auth/auth.service';
 import { DialogComponent } from '@app/shared/components';
 import { User, UsersService } from './users.service';
 
 @Component({
   selector: 'app-users',
   templateUrl: './users.component.html',
-  styles: ['.add-button {position: absolute; right: 40px;top: 10px;}', ':host {flex:1}'],
+  styleUrls: ['users.component.scss'],
   providers: [UsersService],
 })
 export class UsersComponent implements OnInit {

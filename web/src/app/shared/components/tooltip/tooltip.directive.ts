@@ -12,14 +12,14 @@
 import { Directive, ElementRef, HostListener, Input } from '@angular/core';
 import { EventHelper } from '@adwp-ui/widgets';
 
-import { ApiBase } from '@app/core/types/api';
+import { BaseEntity } from '@app/core/types/api';
 import { ComponentName, PositionType, TooltipService } from '../tooltip/tooltip.service';
 
 @Directive({
   selector: '[appTooltip]',
 })
 export class TooltipDirective {
-  @Input() appTooltip: string | ApiBase;
+  @Input() appTooltip: string | BaseEntity;
   @Input() appTooltipPosition: PositionType = 'bottom';
   @Input() appTooltipComponent: ComponentName;
 
@@ -33,7 +33,7 @@ export class TooltipDirective {
 
   constructor(private el: ElementRef, private tooltip: TooltipService) {}
 
-  @HostListener('mouseenter', ['$event']) menter(e: MouseEvent) {
+  @HostListener('mouseenter', ['$event']) menter(e: MouseEvent): void {
     EventHelper.stopPropagation(e);
     const options = {
       content: this.appTooltip,
@@ -44,7 +44,11 @@ export class TooltipDirective {
     if (this.appTooltip) this.tooltip.show(e, this.el.nativeElement, options);
   }
 
-  @HostListener('mouseleave') mleave() {
+  @HostListener('mouseleave') mleave(): void {
     this.tooltip.hide();
+  }
+
+  @HostListener('click') mclick(): void {
+    this.tooltip.hide(true);
   }
 }

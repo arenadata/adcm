@@ -10,10 +10,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Directive, Injectable, OnDestroy } from '@angular/core';
-import { EventMessage, getMessage, SocketState, clearMessages } from '@app/core/store';
 import { select, Store } from '@ngrx/store';
 import { filter, tap } from 'rxjs/operators';
-import { BaseDirective } from './base.directive';
+import { BaseDirective } from '@adwp-ui/widgets';
+
+import { EventMessage, getMessage, SocketState, clearMessages } from '@app/core/store';
 
 @Directive({
   selector: '[appBase]',

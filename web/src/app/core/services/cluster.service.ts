@@ -12,21 +12,34 @@
 import { Injectable } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { ApiService } from '@app/core/api';
-import { BehaviorSubject, EMPTY, forkJoin, Observable, of } from 'rxjs';
-import { filter, map, switchMap, tap } from 'rxjs/operators';
+import { BehaviorSubject, EMPTY, forkJoin, Observable, of, throwError } from 'rxjs';
+import { catchError, filter, map, switchMap, tap } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
 
-import { Bundle, Cluster, Entities, Host, IAction, IImport, Job, LogFile, Provider, Service } from '@app/core/types';
+import {
+  Bundle,
+  Entities,
+  Host,
+  IAction,
+  IImport,
+  Job,
+  License,
+  LogFile,
+  Provider,
+  Service
+} from '@app/core/types';
 import { environment } from '@env/environment';
 import { ServiceComponentService } from '@app/services/service-component.service';
-import { setPathOfRoute } from '@app/store/navigation/navigation.store';
 import { EntityNames } from '@app/models/entity-names';
+import { HttpResponseBase } from '@angular/common/http';
+import { setPathOfRoute } from '@app/store/navigation/navigation.store';
+import { EntityService } from '@app/abstract/entity-service';
+import { ICluster } from '@app/models/cluster';
 
 export interface WorkerInstance {
   current: Entities;
-  cluster: Cluster | null;
+  cluster: ICluster | null;
 }
-type pagesType = 'cluster' | 'host' | 'provider' | 'service' | 'job' | 'bundle';
 
 @Injectable({
   providedIn: 'root',
@@ -36,13 +49,11 @@ export class ClusterService {
   private workerSubject = new BehaviorSubject<WorkerInstance>(null);
   public worker$ = this.workerSubject.asObservable();
 
-  private _currentParamMap: { [key in pagesType]: number };
-
   get Cluster() {
     return this.worker ? this.worker.cluster : null;
   }
 
-  set Cluster(cluster: Cluster) {
+  set Cluster(cluster: ICluster) {
     if (cluster) cluster.typeName = 'cluster';
     if (this.worker) this.worker.cluster = cluster;
     else this.worker = { current: cluster, cluster: cluster };
@@ -62,8 +73,8 @@ export class ClusterService {
     this.worker = null;
   }
 
-  one_cluster(id: number): Observable<Cluster> {
-    return this.Cluster ? of(this.Cluster) : this.api.getOne<Cluster>('cluster', id);
+  one_cluster(id: number): Observable<ICluster> {
+    return this.Cluster ? of(this.Cluster) : this.api.getOne<ICluster>('cluster', id);
   }
 
   one_service(id: number): Observable<Service> {
@@ -94,30 +105,30 @@ export class ClusterService {
     return this.api.get<Bundle>(`${environment.apiRoot}stack/bundle/${id}/`);
   }
 
-  getContext(param: ParamMap): Observable<WorkerInstance> {
+  getContext(param: ParamMap, service?: EntityService<any>): Observable<WorkerInstance> {
     this.store.dispatch(setPathOfRoute({ params: param }));
 
     const typeName = EntityNames.find((a) => param.keys.some((b) => a === b));
     const id = +param.get(typeName);
-    const cluster$ = param.has('cluster') ? this.api.getOne<Cluster>('cluster', +param.get('cluster')) : of(null);
-
+    const cluster$ = param.has('cluster') ? this.api.getOne<ICluster>('cluster', +param.get('cluster')) : of(null);
     return cluster$
       .pipe(
         tap((cluster) => (this.Cluster = cluster)),
         switchMap((cluster) => {
-          if (cluster && typeName === 'servicecomponent') {
+          if (typeName === 'group_config') {
+            return service.get(id);
+          } else if (cluster && (typeName === 'servicecomponent' || typeName === 'component')) {
             return this.serviceComponentService.get(id);
           } else if (cluster && typeName !== 'cluster') {
             return this.api.get<Entities>(`${cluster[typeName]}${id}/`);
           } else {
             return this[`one_${typeName}`](id);
           }
-        })
+        }),
       )
       .pipe(
-        map((a: Entities) => {
-          a.typeName = typeName;
-          this.worker.current = { ...a, name: a.display_name || a.name || (a as Host).fqdn };
+        map((a: any) => {
+          this.worker.current = { ...a, name: (a?.display_name || a?.name || (a as Host)?.fqdn) ?? '', typeName };
           this.workerSubject.next(this.worker);
           return this.worker;
         })
@@ -159,7 +170,7 @@ export class ClusterService {
     return this.api.get<Entities>(this.Current.url).pipe(
       filter((_) => !!this.worker),
       map((a) => {
-        if (typeName === 'cluster') this.worker.cluster = { ...(a as Cluster), typeName };
+        if (typeName === 'cluster') this.worker.cluster = { ...(a as ICluster), typeName };
         this.worker.current = { ...a, typeName, name: a.display_name || a.name || (a as Host).fqdn };
         return this.worker;
       })
@@ -170,7 +181,22 @@ export class ClusterService {
     return this.api.get<any>(`${this.Current.config}current/`).pipe(
       map((a: any) => a.config.find((b: { name: string }) => b.name === '__main_info')),
       filter((a) => a),
-      map((a) => a.value)
+      map((a) => a.value),
+      catchError((e: HttpResponseBase) => {
+        if (e.status === 404) {
+          return of('Nothing to display');
+        } else {
+          return throwError(e);
+        }
+      }),
+    );
+  }
+
+  getBundleLicenseText(): Observable<string> {
+    const { license_url, license } = (this.Current as Bundle);
+
+    return this.api.get<License>(license_url).pipe(
+      map(({ text }) => license !== 'absent' ? text : 'No license required'),
     );
   }
 

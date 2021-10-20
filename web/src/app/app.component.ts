@@ -11,10 +11,10 @@
 // limitations under the License.
 
 import { Component, ElementRef, OnInit } from '@angular/core';
-import { AppService, ChannelService, DomService, keyChannelStrim } from '@app/core';
+import { AppService, ChannelService, DomService, keyChannelStrim } from '@app/core/services';
 import { filter } from 'rxjs/operators';
 
-import { TooltipComponent } from './shared/components/tooltip/tooltip.component';
+import { TooltipComponent } from '@app/shared/components/tooltip';
 
 /** Magic strings for marking loading stages and other, for ci tests */
 const enum flagForConsole {

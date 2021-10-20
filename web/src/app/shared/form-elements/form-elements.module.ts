@@ -63,6 +63,7 @@ import { VariantComponent } from './variant.component';
     InputComponent,
     ButtonUploaderComponent,
     VariantComponent,
+    ConfirmEqualValidatorDirective,
   ],
 })
 export class FormElementsModule {}

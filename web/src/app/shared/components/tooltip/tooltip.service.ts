@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { EventEmitter, Injectable } from '@angular/core';
-import { ApiBase } from '@app/core/types/api';
+import { BaseEntity } from '@app/core/types/api';
 import { Subject } from 'rxjs';
 
 export type ComponentName = 'issue' | 'status' | undefined;
@@ -22,7 +22,7 @@ export interface TooltipOptions {
 }
 
 export interface TooltipDisplayOptions {
-  content: string | ApiBase;
+  content: string | BaseEntity;
   componentName: ComponentName;
   position: PositionType;
   condition: boolean;
@@ -64,8 +64,13 @@ export class TooltipService {
     }
   }
 
-  hide() {
-    this.timeOut = setTimeout(() => this.positionSource.next(), 500);
+  hide(withoutTimout = false, timeout = 500) {
+    if (withoutTimout) {
+      this.positionSource.next();
+      return;
+    }
+
+    this.timeOut = setTimeout(() => this.positionSource.next(), timeout);
   }
 
   mouseEnterTooltip() {

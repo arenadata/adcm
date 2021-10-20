@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-npm config set registry https://rt.adsw.io/artifactory/api/npm/arenadata-npm/
-npm install
+yarn config set registry https://rt.adsw.io/artifactory/api/npm/arenadata-npm/
+yarn install
 export PATH=./node_modules/.bin/:$PATH
 ng build --prod --progress=false --no-delete-output-path --output-path /wwwroot adcm

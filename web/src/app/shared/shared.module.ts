@@ -13,7 +13,6 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { AdwpListModule } from '@adwp-ui/widgets';
 
 import { AddingModule } from './add-component/adding.module';
 import {
@@ -28,11 +27,8 @@ import {
   StatusInfoComponent,
   UpgradeComponent,
 } from './components';
-import { ActionCardComponent } from './components/actions/action-card/action-card.component';
 import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
-import { ListComponent } from './components/list/list.component';
 import { MultiSortDirective } from './components/list/multi-sort.directive';
-import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { DetailsModule } from './details/details.module';
 import { DynamicDirective, HoverDirective } from './directives';
@@ -46,6 +42,13 @@ import { StateColumnComponent } from '@app/components/columns/state-column/state
 import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
 import { ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
 import { ServiceComponentsComponent } from '@app/components/service-components.component';
+import { JobService } from '@app/services/job.service';
+import { TaskService } from '@app/services/task.service';
+import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
+import { TranslateModule } from '@ngx-translate/core';
+import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
+import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
+import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
 
 @NgModule({
   imports: [
@@ -60,20 +63,17 @@ import { ServiceComponentsComponent } from '@app/components/service-components.c
     AddingModule,
     HostComponentsMapModule,
     DetailsModule,
-    AdwpListModule.forRoot({
-      itemsPerPage: [10, 25, 50, 100],
-    }),
+    TranslateModule,
+    TooltipModule
   ],
   declarations: [
     DialogComponent,
-    ListComponent,
     BreakRowPipe,
     HoverDirective,
     DynamicDirective,
     ButtonSpinnerComponent,
     TagEscPipe,
     IssueInfoComponent,
-    SimpleTextComponent,
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
@@ -82,14 +82,15 @@ import { ServiceComponentsComponent } from '@app/components/service-components.c
     ExportComponent,
     ActionMasterComponent,
     ActionMasterConfigComponent,
-    ActionCardComponent,
     StatusColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,
     ClusterColumnComponent,
     ServiceComponentsComponent,
+    ToDataSourcePipe,
+    PickKeysPipe,
+    TranslateKeysPipe,
   ],
-  // entryComponents: [DialogComponent, IssueInfoComponent, IssueInfoComponent, StatusInfoComponent, SimpleTextComponent, ActionMasterComponent],
   exports: [
     FormsModule,
     ReactiveFormsModule,
@@ -101,7 +102,6 @@ import { ServiceComponentsComponent } from '@app/components/service-components.c
     HostComponentsMapModule,
     DetailsModule,
     DialogComponent,
-    ListComponent,
     BreakRowPipe,
     HoverDirective,
     DynamicDirective,
@@ -113,13 +113,20 @@ import { ServiceComponentsComponent } from '@app/components/service-components.c
     MainInfoComponent,
     ImportComponent,
     ExportComponent,
-    ActionCardComponent,
     StatusColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,
     ClusterColumnComponent,
     ServiceComponentsComponent,
-    AdwpListModule,
+    ToDataSourcePipe,
+    PickKeysPipe,
+    TranslateKeysPipe,
+    TooltipModule
+  ],
+  providers: [
+    JobService,
+    TaskService,
   ],
 })
-export class SharedModule {}
+export class SharedModule {
+}

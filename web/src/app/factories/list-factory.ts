@@ -3,11 +3,11 @@ import { ComponentRef } from '@angular/core';
 
 import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';
 import { StatusColumnComponent, StatusData } from '@app/components/columns/status-column/status-column.component';
-import { ActionsColumnComponent } from '@app/components/columns/actions-column/actions-column.component';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { UpgradeComponent } from '@app/shared/components';
 import { ActionsButtonComponent } from '@app/components/actions-button/actions-button.component';
-import { IssueType } from '@app/models/issue';
+import { BaseEntity } from '@app/core/types';
+import { ConcernListDirective } from '@app/abstract-directives/concern-list.directive';
 
 export class ListFactory {
 
@@ -63,17 +63,7 @@ export class ListFactory {
     };
   }
 
-  static actionsColumn(): IComponentColumn<any> {
-    return {
-      label: 'Actions',
-      type: 'component',
-      className: 'list-control',
-      headerClassName: 'list-control',
-      component: ActionsColumnComponent,
-    };
-  }
-
-  static actionsButton<T>(type: IssueType): IComponentColumn<T> {
+  static actionsButton<T extends BaseEntity>(listDirective: ConcernListDirective<T>): IComponentColumn<T> {
     return {
       label: 'Actions',
       type: 'component',
@@ -81,8 +71,12 @@ export class ListFactory {
       headerClassName: 'list-control',
       component: ActionsButtonComponent,
       instanceTaken: (componentRef: ComponentRef<ActionsButtonComponent<T>>) => {
-        componentRef.instance.issueType = type;
-      }
+        componentRef.instance.onMouseenter
+          .pipe(listDirective.takeUntil())
+          .subscribe((row: T) => {
+            listDirective.rewriteRow(row);
+          });
+      },
     };
   }
 
@@ -115,7 +109,7 @@ export class ListFactory {
   static bundleColumn(): IValueColumn<any> {
     return {
       label: 'Bundle',
-      sort: 'prototype_version',
+      sort: 'prototype_display_name',
       value: (row) => [row.prototype_display_name || row.prototype_name, row.prototype_version, row.edition].join(' '),
     };
   }
@@ -149,6 +143,22 @@ export class ListFactory {
       sort: 'provider_name',
       value: row => row.provider_name,
       url: row => `/provider/${row.provider_id}`,
+    };
+  }
+
+  static keyColumn(): IValueColumn<any> {
+    return {
+      label: 'Parameter',
+      value: (row) => row.key,
+    };
+  }
+
+  static valueColumn(): IValueColumn<any> {
+    return {
+      label: 'Value',
+      className: 'width30pr',
+      headerClassName: 'width30pr',
+      value: (row) => row.value,
     };
   }
 

@@ -27,7 +27,7 @@ describe('Issue-info component', () => {
   let component: IssueInfoComponent;
 
   beforeEach(async () => {
-    TestBed.configureTestingModule({
+    await TestBed.configureTestingModule({
       imports: [RouterTestingModule],
       declarations: [IssueInfoComponent],
       providers: [{ provide: ComponentData, useClass: MockComponentData }],

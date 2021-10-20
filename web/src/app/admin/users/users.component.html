@@ -2,7 +2,7 @@
     <mat-icon>library_add</mat-icon> Add user
 </button>
 
-<mat-card [class.hidden]="hideLeft" style="float:right;width: 250px;">
+<mat-card class="users-add-card" [class.hidden]="hideLeft">
   <mat-card-content>
     <div [formGroup]="addForm">
       <div style="display: flex">
@@ -67,7 +67,7 @@
   <ng-container matColumnDef="username">
     <mat-header-cell *matHeaderCellDef> UserName </mat-header-cell>
     <mat-cell *matCellDef="let row">
-      {{ row.username }}
+      <div class="overflow">{{ row.username }}</div>
     </mat-cell>
   </ng-container>
 

@@ -9,15 +9,7 @@ import { ObjectsHelper } from '../helpers/objects-helper';
 export class SortObjectsPipe implements PipeTransform {
 
   transform(objects: JobObject[]): JobObject[] {
-    if (ObjectsHelper.getObject(objects, 'component')) {
-      return [
-        ObjectsHelper.getObject(objects, 'component'),
-        ObjectsHelper.getObject(objects, 'service'),
-        ObjectsHelper.getObject(objects, 'cluster'),
-      ];
-    }
-
-    return objects;
+    return ObjectsHelper.sortObjects(objects);
   }
 
 }

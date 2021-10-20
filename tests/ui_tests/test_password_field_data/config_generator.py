@@ -14,8 +14,7 @@ template = """
 
 
 for config in [(confirm, required) for confirm in ("true", "false") for required in ("true", "false")]:
-    d_name = "password_confirm_{0}_required_{1}/".format(
-        config[0], config[1])
+    d_name = f"password_confirm_{config[0]}_required_{config[1]}/"
     os.makedirs(d_name)
-    with open("{}/config.yaml".format(d_name), "w+") as f:
+    with open(f"{d_name}/config.yaml", "w+", encoding='utf_8') as f:
         f.write(template.format(config[0], config[1]))

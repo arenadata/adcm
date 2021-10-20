@@ -24,8 +24,6 @@ from api.api_views import (
 from api.job.serializers import RunTaskSerializer
 from cm.models import (
     Host,
-    ClusterObject,
-    ServiceComponent,
     Action,
     TaskLog,
     HostComponent,
@@ -46,29 +44,6 @@ def get_obj(**kwargs):
     model = get_model_by_type(object_type)
     obj = model.obj.get(id=object_id)
     return obj, action_id
-
-
-def get_selector(obj, action):
-    selector = {obj.prototype.type: obj.id}
-    if obj.prototype.type == 'service':
-        selector['cluster'] = obj.cluster.id
-    if obj.prototype.type == 'component':
-        selector['cluster'] = obj.cluster.id
-        selector['service'] = obj.service.id
-    if isinstance(obj, Host) and action.host_action:
-        if action.prototype.type == 'component':
-            service = ClusterObject.obj.get(prototype=action.prototype.parent, cluster=obj.cluster)
-            component = ServiceComponent.obj.get(
-                cluster=obj.cluster, service=service, prototype=action.prototype
-            )
-            selector['service'] = service.id
-            selector['component'] = component.id
-        if action.prototype.type == 'service':
-            service = ClusterObject.obj.get(prototype=action.prototype, cluster=obj.cluster)
-            selector['service'] = service.id
-        if obj.cluster is not None:
-            selector['cluster'] = obj.cluster.id
-    return selector
 
 
 class ActionList(ListView):
@@ -168,6 +143,5 @@ class RunTask(GenericAPIPermView):
         """
         obj, action_id = get_obj(**kwargs)
         action = check_obj(Action, {'id': action_id}, 'ACTION_NOT_FOUND')
-        selector = get_selector(obj, action)
         serializer = self.serializer_class(data=request.data, context={'request': request})
-        return create(serializer, action_id=action.id, selector=selector)
+        return create(serializer, action=action, task_object=obj)

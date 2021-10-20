@@ -9,10 +9,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 import { IAction } from './actions';
 import { IComponent } from './host-component';
-import { Issue } from './issue';
 import { Job, Task } from './task-job';
+import { AdcmEntity } from '@app/models/entity';
+import { IIssues } from '@app/models/issue';
+import { ICluster } from '@app/models/cluster';
+import { Concern } from '@app/models/concern/concern';
 
 export type TypeName =
   'bundle' |
@@ -30,8 +34,10 @@ export type TypeName =
   'service2cluster' |
   'host2cluster' |
   'servicecomponent' |
-  'component';
-export type Entities = Cluster | Service | Host | Provider | Job | Task | Bundle;
+  'component' |
+  'group_config' |
+  'group_config_hosts';
+export type Entities = ICluster | Service | Host | Provider | Job | Task | Bundle;
 
 /**
  *```
@@ -44,44 +50,37 @@ export interface IRoot {
   [key: string]: string;
 }
 
-export interface ApiBase {
+export interface BaseEntity extends AdcmEntity {
   typeName: TypeName;
-  id: number;
-  name: string;
-  display_name?: string;
   description?: string;
   url: string;
-  state: string;
+  state?: string;
   config: string;
-  action: string;
-  actions: IAction[];
-  issue: Issue;
-  prototype_id: number;
-  prototype_name: string;
+  action?: string;
+  actions?: IAction[];
+  issue?: IIssues;
+  prototype_id?: number;
+  prototype_name?: string;
   prototype_display_name?: string;
-  prototype_version: string;
-  bundle_id: number;
-  status: number | string;
+  prototype_version?: string;
+  bundle_id?: number;
+  status?: number | string;
+  concerns: Concern[];
+  locked: boolean;
 }
 
-export interface Cluster extends ApiBase {
-  service: string;
-  host: string;
-  bundle: string;
-  hostcomponent: string;
-  imports: string;
-  bind: string;
-  serviceprototype: string;
-  upgradable: boolean;
-  upgrade: string;
-  status_url: string;
+export interface ApiFlat {
+  id: number;
+  object_id: number;
+  object_type: TypeName;
+  url: string;
 }
 
-export interface Provider extends ApiBase {
+export interface Provider extends BaseEntity {
   host: string;
 }
 
-export interface Host extends ApiBase {
+export interface Host extends BaseEntity {
   fqdn: string;
   provider_id: number;
   cluster: string;
@@ -89,16 +88,26 @@ export interface Host extends ApiBase {
   cluster_name?: string;
 }
 
-export interface Service extends ApiBase {
+export interface Service extends BaseEntity {
   components: IComponent[];
   status: number;
   hostcomponent: string;
   display_name: string;
   cluster_id?: number;
+  group_config: string;
 }
 
-export interface Bundle extends ApiBase {
-  [key: string]: any;
+export interface CanLicensed {
   license: 'unaccepted' | 'accepted' | 'absent';
   license_url: string;
+}
+
+export interface License {
+  accept: string;
+  license: 'unaccepted' | 'accepted' | 'absent';
+  text: string;
+}
+
+export interface Bundle extends BaseEntity, CanLicensed {
+  [key: string]: any;
 }

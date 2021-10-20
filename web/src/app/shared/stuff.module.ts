@@ -16,24 +16,33 @@ import { RouterModule } from '@angular/router';
 import { ActionsComponent, CrumbsComponent, UpgradeComponent } from './components';
 import { ActionListComponent } from './components/actions/action-list/action-list.component';
 import { ActionsDirective } from './components/actions/actions.directive';
-import { TooltipComponent } from './components/tooltip/tooltip.component';
-import { TooltipDirective } from './components/tooltip/tooltip.directive';
+import { TooltipDirective } from '@app/shared/components/tooltip';
 import { PopoverDirective } from '@app/directives/popover.directive';
-import { BaseDirective, ForTestDirective, InfinityScrollDirective, MTextareaDirective, ScrollDirective, SocketListenerDirective } from './directives';
+import {
+  BaseDirective,
+  ForTestDirective,
+  InfinityScrollDirective,
+  MTextareaDirective,
+  ScrollDirective,
+  SocketListenerDirective
+} from './directives';
 import { MaterialModule } from './material.module';
 import { MenuItemComponent } from './components/actions/action-list/menu-item/menu-item.component';
-import { CardItemComponent } from './components/actions/action-card/card-item/card-item.component';
 import { PopoverComponent } from '@app/components/popover/popover.component';
-import { IssuesComponent } from '@app/components/issues/issues.component';
 import { KeysPipe } from '@app/pipes/keys.pipe';
 import { IsArrayPipe } from '@app/pipes/is-array.pipe';
 import { IssuePathPipe } from '@app/pipes/issue-path.pipe';
+import { ConcernComponent } from '@app/components/concern/concern.component';
+import { ConcernService } from '@app/services/concern.service';
+import { ConcernItemComponent } from '@app/components/concern/concern-item/concern-item.component';
+import { IssueMessagePlaceholderPipe } from '@app/pipes/issue-message-placeholder.pipe';
+import { ConcernListComponent } from '@app/components/concern/concern-list/concern-list.component';
+import { ConcernListRefComponent } from '@app/components/concern/concern-list-ref/concern-list-ref.component';
+import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
 
 @NgModule({
   declarations: [
     ForTestDirective,
-    TooltipDirective,
-    TooltipComponent,
     MTextareaDirective,
     BaseDirective,
     SocketListenerDirective,
@@ -45,19 +54,26 @@ import { IssuePathPipe } from '@app/pipes/issue-path.pipe';
     ActionsDirective,
     ActionListComponent,
     MenuItemComponent,
-    CardItemComponent,
     PopoverDirective,
     PopoverComponent,
-    IssuesComponent,
+    ConcernComponent,
+    ConcernItemComponent,
+    IssueMessagePlaceholderPipe,
+    ConcernListComponent,
+    ConcernListRefComponent,
     KeysPipe,
     IsArrayPipe,
     IssuePathPipe,
   ],
-  imports: [CommonModule, MaterialModule, RouterModule],
+  imports: [
+    CommonModule,
+    MaterialModule,
+    RouterModule,
+    TooltipModule
+  ],
   exports: [
     ForTestDirective,
     TooltipDirective,
-    TooltipComponent,
     MTextareaDirective,
     BaseDirective,
     SocketListenerDirective,
@@ -69,13 +85,20 @@ import { IssuePathPipe } from '@app/pipes/issue-path.pipe';
     ActionsDirective,
     ActionListComponent,
     MenuItemComponent,
-    CardItemComponent,
     PopoverDirective,
     PopoverComponent,
-    IssuesComponent,
+    ConcernComponent,
+    ConcernItemComponent,
+    IssueMessagePlaceholderPipe,
+    ConcernListComponent,
     KeysPipe,
     IsArrayPipe,
     IssuePathPipe,
+    ConcernListRefComponent,
+    TooltipModule
+  ],
+  providers: [
+    ConcernService,
   ],
 })
 export class StuffModule {}

@@ -10,12 +10,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 export * from './func';
-export * from './button';
 export * from './api';
 export * from './utils';
 export * from './actions';
 export * from './stack';
 export * from './host-component';
-export * from './issue';
 export * from './import-export';
 export * from './task-job';
