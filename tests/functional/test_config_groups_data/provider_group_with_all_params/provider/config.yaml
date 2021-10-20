@@ -125,6 +125,14 @@
       required: false
       default: "secret\npass\nword"
       group_customization: true
+    - name: json
+      type: json
+      required: false
+      group_customization: true
+      default:
+        age: '24'
+        name: Joe
+        sex: m
 
 - type: host
   name: host_from_provider

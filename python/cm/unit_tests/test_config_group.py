@@ -78,7 +78,7 @@ class GroupConfigTest(TestCase):
     def test_get_group_config(self):
         """Test get_group_config() method"""
         group = self.create_group('group', self.cluster.id, 'cluster')
-        self.assertDictEqual(group.get_group_config(), {})
+        self.assertDictEqual(group.get_diff_config(), {})
         cl = ConfigLog.objects.get(id=group.config.current)
         cl.config = {'group': {'string': 'str'}, 'activatable_group': {'integer': 1}}
         cl.attr = {
@@ -86,7 +86,7 @@ class GroupConfigTest(TestCase):
             'group_keys': {'group': {'string': True}, 'activatable_group': {'integer': False}},
         }
         cl.save()
-        self.assertDictEqual(group.get_group_config(), {'group': {'string': 'str'}})
+        self.assertDictEqual(group.get_diff_config(), {'group': {'string': 'str'}})
 
     def test_get_config_spec(self):
         """Test get_config_spec() method"""

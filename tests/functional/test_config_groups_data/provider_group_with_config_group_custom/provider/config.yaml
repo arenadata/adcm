@@ -110,6 +110,13 @@
       type: secrettext
       required: false
       default: "secret\npass\nword"
+    - name: json
+      type: json
+      required: false
+      default:
+        age: '24'
+        name: Joe
+        sex: m
 
 - type: host
   name: host_from_provider

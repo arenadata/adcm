@@ -113,6 +113,13 @@
       type: secrettext
       required: false
       default: "secret\npass\nword"
+    - name: json
+      type: json
+      required: false
+      default:
+        age: '24'
+        name: Joe
+        sex: m
 
 - name: test_service_1
   type: service
@@ -205,6 +212,13 @@
           country: Test2
     - name: map
       type: map
+      required: false
+      default:
+        age: '24'
+        name: Joe
+        sex: m
+    - name: json
+      type: json
       required: false
       default:
         age: '24'
@@ -304,6 +318,13 @@
               country: Test2
         - name: map
           type: map
+          required: false
+          default:
+            age: '24'
+            name: Joe
+            sex: m
+        - name: json
+          type: json
           required: false
           default:
             age: '24'

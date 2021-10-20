@@ -128,6 +128,14 @@
       required: false
       group_customization: true
       default: "secret\npass\nword"
+    - name: json
+      type: json
+      required: false
+      group_customization: true
+      default:
+        age: '24'
+        name: Joe
+        sex: m
 
 - name: test_service_1
   type: service
@@ -241,6 +249,14 @@
         sex: m
     - *secrettext
 
+    - name: json
+      type: json
+      required: false
+      group_customization: true
+      default:
+        age: '24'
+        name: Joe
+        sex: m
   components:
     first:
       constraint: [1,+]
@@ -346,6 +362,14 @@
               country: Test2
         - name: map
           type: map
+          required: false
+          group_customization: true
+          default:
+            age: '24'
+            name: Joe
+            sex: m
+        - name: json
+          type: json
           required: false
           group_customization: true
           default:
