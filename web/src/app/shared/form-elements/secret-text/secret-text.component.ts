@@ -23,30 +23,36 @@ export class SecretTextComponent extends FieldDirective implements OnInit, OnCha
   dummyControl: FormControl;
   value: string;
 
-  get control(): FormControl {
-    return this.dummyControl;
-  }
-
   ngOnChanges(): void {
     this.value = this.field.value as string;
   }
 
   ngOnInit(): void {
     this._initDummyControl();
+
   }
 
   onBlur(): void {
-    this.form.controls[this.field.name].setValue(this.control.value);
-    this.control.setValue(this.dummy);
+    this.control.setValue(this.dummyControl.value || this.value);
+    this.dummyControl.setValue(this.dummy);
   }
 
   onFocus(): void {
-    this.control.setValue(null);
+    this.dummyControl.setValue(null);
   }
 
   private _initDummyControl(): void {
-    this.dummyControl = new FormControl(this.dummy);
+    this.dummyControl = new FormControl({ value: this.dummy, disabled: this.control.disabled });
     this.control.markAllAsTouched();
+
+
+    this.control.statusChanges.pipe(this.takeUntil()).subscribe((status) => {
+      if (status === 'VALID') {
+        this.dummyControl.enable();
+      } else if (status === 'DISABLED') {
+        this.dummyControl.disable();
+      }
+    });
   }
 
 }

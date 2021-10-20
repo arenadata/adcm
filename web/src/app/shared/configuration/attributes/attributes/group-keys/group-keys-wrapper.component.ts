@@ -8,13 +8,15 @@ import {
 import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { IFieldOptions } from '@app/shared/configuration/types';
 import { BaseDirective } from '@adwp-ui/widgets';
+import { MatCheckboxChange } from '@angular/material/checkbox';
 
 @Component({
   selector: 'app-group-keys-wrapper',
   template: `
     <div class="group-keys-wrapper">
       <div class="group-checkbox">
-        <mat-checkbox [matTooltip]="tooltipText" [formControl]="groupControl"></mat-checkbox>
+        <mat-checkbox [matTooltip]="tooltipText" [formControl]="groupControl"
+                      (change)="onChange($event)"></mat-checkbox>
       </div>
       <div class="group-field">
         <ng-container *ngTemplateOutlet="fieldTemplate"></ng-container>
@@ -66,11 +68,27 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
 
     if (!disabled) {
       attributeControl.disable();
+      parameterControl.disable();
+
       this.tooltipText = text;
     } else {
       attributeControl.enable();
+      if (attributeControl.value) {
+        parameterControl.enable();
+      } else {
+        parameterControl.disable();
+      }
+
       this.tooltipText = this.wrapperOptions.tooltipText;
     }
 
+  }
+
+  onChange(e: MatCheckboxChange) {
+    if (e.checked) {
+      this.parameterControl.enable();
+    } else {
+      this.parameterControl.disable();
+    }
   }
 }
