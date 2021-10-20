@@ -848,8 +848,8 @@ class GroupConfig(ADCMModel):
 
     @transaction.atomic()
     def save(self, *args, **kwargs):
-        obj = self.object_type.model_class().obj.get(id=self.object_id)
         if self._state.adding:
+            obj = self.object_type.model_class().obj.get(id=self.object_id)
             if obj.config is not None:
                 parent_config_log = ConfigLog.obj.get(id=obj.config.current)
                 self.config = ObjectConfig.objects.create(current=0, previous=0)
