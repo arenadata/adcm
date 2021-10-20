@@ -734,7 +734,8 @@ class TestConfigFieldTypes:
             not_required_default: default_value,
         }
 
-        component = (service := cluster.service()).component()
+        service = cluster.service()
+        component = service.component()
         host = provider.host()
         cluster.host_add(host)
         cluster.hostcomponent_set((host, component))
