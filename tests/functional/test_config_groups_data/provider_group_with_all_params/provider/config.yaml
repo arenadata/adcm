@@ -13,6 +13,7 @@
 - type: provider
   name: provider_sample
   version: "0.3"
+  config_group_customization: false
   actions:
     test_action:
       type: job
@@ -23,6 +24,8 @@
       config:
         - name: map
           type: json
+        - name: hosts
+          type: string
   config:
     - name: float
       type: float
@@ -89,7 +92,7 @@
           max: 65536
           default: 9200
           required: yes
-          group_customization: false
+          group_customization: true
         - name: transport_port
           display_name: Transport port
           description: Used for communication between nodes in the cluster, by the Java Transport client.
@@ -111,6 +114,14 @@
           country: Test2
     - name: map
       type: map
+      required: false
+      group_customization: true
+      default:
+        age: '24'
+        name: Joe
+        sex: m
+    - name: json
+      type: json
       required: false
       group_customization: true
       default:

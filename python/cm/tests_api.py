@@ -120,6 +120,7 @@ class TestApi(TestCase):
         utils.gen_host_component(component_2, host_2)
 
         task = utils.gen_task_log(service)
+        utils.gen_job_log(task)
         tree = cm.hierarchy.Tree(self.cluster)
         affected = (node.value for node in tree.get_all_affected(tree.built_from))
         task.lock_affected(affected)

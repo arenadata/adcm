@@ -20,10 +20,10 @@ import allure
 import pytest
 from adcm_client.wrappers.api import ADCMApiWrapper
 
-from .endpoints import Endpoints
-from .methods import Methods
-from .tools import attach_request_log
-from ..steps.asserts import status_code_should_be, body_should_be, ExpectedBody
+from tests.api.utils.endpoints import Endpoints
+from tests.api.utils.methods import Methods
+from tests.api.utils.tools import attach_request_log
+from tests.api.steps.asserts import status_code_should_be, body_should_be, ExpectedBody
 
 
 @dataclass
@@ -95,6 +95,13 @@ class ADCMTestApiWrapper:
                     and request.data.get("object_id") == 100
                 ):
                     pytest.xfail("ADCM-2051 404 on POST negative cases for /group-config/")
+                if (
+                    request.endpoint == Endpoints.GroupConfig
+                    and response.status_code == HTTPStatus.NOT_FOUND
+                    and expected_response.status_code == HTTPStatus.BAD_REQUEST
+                    and expected_response.body.fields == {'object_type': ['This field cannot be changed']}
+                ):
+                    pytest.xfail("ADCM-2185 404 when try to change unabled to change field object_type")
                 raise
 
             if expected_response.body is not None:

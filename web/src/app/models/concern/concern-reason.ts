@@ -14,13 +14,13 @@ export enum IMPlaceholderItemType {
   Component = 'component',
   HostProvider = 'provider',
   Host = 'host',
-  Action = 'action',
+  Job = 'job',
 }
 
 export interface IMPlaceholderItem {
-  type: IMPlaceholderItemType;
+  type?: IMPlaceholderItemType;
   name: string;
-  ids: { [id: string]: number };
+  ids: { [id: string]: number } | number;
 }
 
 export interface IMPlaceholderActionRun extends IMPlaceholderItem {
@@ -81,12 +81,9 @@ export interface IMPlaceholderHost extends IMPlaceholderItem {
   };
 }
 
-export interface IMPlaceholderAction extends IMPlaceholderItem {
-  type: IMPlaceholderItemType.Action;
-  ids: {
-    action: number;
-    cluster: number;
-  };
+export interface IMPlaceholderJob extends IMPlaceholderItem {
+  type: IMPlaceholderItemType.Job;
+  ids: number;
 }
 
 export interface IMPlaceholder {

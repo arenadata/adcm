@@ -25,6 +25,8 @@
       config:
         - name: map
           type: json
+        - name: hosts
+          type: string
   config:
     - name: float
       type: float
@@ -106,6 +108,13 @@
         age: '24'
         name: Joe
         sex: m
+    - name: json
+      type: json
+      required: false
+      default:
+        age: '24'
+        name: Joe
+        sex: m
 
 - name: test_service_1
   type: service
@@ -121,6 +130,8 @@
       config:
         - name: map
           type: json
+        - name: hosts
+          type: string
   config:
     - name: float
       type: float
@@ -201,6 +212,13 @@
         age: '24'
         name: Joe
         sex: m
+    - name: json
+      type: json
+      required: false
+      default:
+        age: '24'
+        name: Joe
+        sex: m
   components:
     first:
       constraint: [1,+]
@@ -215,6 +233,8 @@
           config:
             - name: map
               type: json
+            - name: hosts
+              type: string
 
       config:
         - name: float
@@ -291,6 +311,13 @@
               country: Test2
         - name: map
           type: map
+          required: false
+          default:
+            age: '24'
+            name: Joe
+            sex: m
+        - name: json
+          type: json
           required: false
           default:
             age: '24'

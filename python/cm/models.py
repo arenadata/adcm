@@ -30,10 +30,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
+from django.utils import timezone
 
+from cm.config import FILE_DIR
 from cm.errors import AdcmEx
 from cm.logger import log
-from cm.config import FILE_DIR
 
 
 class PrototypeEnum(Enum):
@@ -291,11 +292,13 @@ class ConfigLog(ADCMModel):
                     origin[key] = value
             return origin
 
+        DummyData.objects.filter(id=1).update(date=timezone.now())
         obj = self.obj_ref.object
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
             for cg in obj.group_config.all():
-                diff = cg.get_group_config()
+                # TODO: We need refactoring for upgrade cluster
+                diff = cg.get_diff_config()
                 group_config = ConfigLog()
                 current_group_config = ConfigLog.objects.get(id=cg.config.current)
                 group_config.obj_ref = cg.config
@@ -557,14 +560,6 @@ class Host(ADCMEntity):
             result['issue']['provider'] = provider_issue
         return result if result['issue'] else {}
 
-    @transaction.atomic()
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if not self.cluster:
-            groupconfig = GroupConfig.objects.filter(hosts=self.id)
-            for item in groupconfig:
-                self.group_config.remove(item)
-
 
 class ClusterObject(ADCMEntity):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
@@ -729,7 +724,7 @@ class GroupConfig(ADCMModel):
                 custom_group_keys[k] = v['group_customization']
         return group_keys, custom_group_keys
 
-    def get_group_config(self):
+    def get_diff_config(self):
         def get_diff(config, group_keys, diff=None):
             if diff is None:
                 diff = {}
@@ -748,6 +743,47 @@ class GroupConfig(ADCMModel):
         config = cl.config
         group_keys = cl.attr.get('group_keys', {})
         return get_diff(config, group_keys)
+
+    def get_group_keys(self):
+        cl = ConfigLog.objects.get(id=self.config.current)
+        return cl.attr.get('group_keys', {})
+
+    def merge_config(self, object_config: dict, group_config: dict, group_keys: dict, config=None):
+        """Merge object config with group config based group_keys"""
+
+        if config is None:
+            config = {}
+        for k, v in group_keys.items():
+            if isinstance(v, Mapping):
+                config.setdefault(k, {})
+                self.merge_config(object_config[k], group_config[k], group_keys[k], config[k])
+            else:
+                if v:
+                    config[k] = group_config[k]
+                else:
+                    config[k] = object_config[k]
+        return config
+
+    def get_config_attr(self):
+        """Return attr for group config without group_keys and custom_group_keys params"""
+        cl = ConfigLog.obj.get(id=self.config.current)
+        attr = {k: v for k, v in cl.attr.items() if k not in ('group_keys', 'custom_group_keys')}
+        return attr
+
+    def get_config_and_attr(self):
+        """Return merge object config with group config and merge attr"""
+
+        object_cl = ConfigLog.objects.get(id=self.object.config.current)
+        object_config = object_cl.config
+        attr = deepcopy(object_cl.attr)
+        group_cl = ConfigLog.objects.get(id=self.config.current)
+        group_config = group_cl.config
+        group_keys = group_cl.attr.get('group_keys', {})
+        group_attr = self.get_config_attr()
+        config = self.merge_config(object_config, group_config, group_keys)
+        self.preparing_file_type_field(config)
+        attr.update(group_attr)
+        return config, attr
 
     def host_candidate(self):
         """Returns candidate hosts valid to add to the group"""
@@ -770,12 +806,13 @@ class GroupConfig(ADCMModel):
         if host not in self.host_candidate():
             raise AdcmEx('GROUP_CONFIG_HOST_ERROR')
 
-    def preparing_file_type_field(self):
+    def preparing_file_type_field(self, config=None):
         """Creating file for file type field"""
 
         if self.config is None:
             return
-        config = ConfigLog.objects.get(id=self.config.current).config
+        if config is None:
+            config = ConfigLog.objects.get(id=self.config.current).config
         fields = PrototypeConfig.objects.filter(
             prototype=self.object.prototype, action__isnull=True, type='file'
         ).order_by('id')
@@ -844,15 +881,20 @@ def verify_host_candidate_for_group_config(sender, **kwargs):
             group_config.check_host_candidate(host)
 
 
-ACTION_TYPE = (
-    ('task', 'task'),
-    ('job', 'job'),
-)
+class ActionType(models.TextChoices):
+    Task = 'task', 'task'
+    Job = 'job', 'job'
+
 
 SCRIPT_TYPE = (
     ('ansible', 'ansible'),
     ('task_generator', 'task_generator'),
 )
+
+
+def get_any():
+    """Get `any` literal for JSON field default value"""
+    return 'any'
 
 
 class AbstractAction(ADCMModel):
@@ -865,7 +907,7 @@ class AbstractAction(ADCMModel):
     description = models.TextField(blank=True)
     ui_options = models.JSONField(default=dict)
 
-    type = models.CharField(max_length=16, choices=ACTION_TYPE)
+    type = models.CharField(max_length=16, choices=ActionType.choices)
     button = models.CharField(max_length=64, default=None, null=True)
 
     script = models.CharField(max_length=160)
@@ -876,7 +918,7 @@ class AbstractAction(ADCMModel):
     state_on_success = models.CharField(max_length=64, blank=True)
     state_on_fail = models.CharField(max_length=64, blank=True)
 
-    multi_state_available = models.JSONField(default=lambda: 'any')
+    multi_state_available = models.JSONField(default=get_any)
     multi_state_unavailable = models.JSONField(default=list)
     multi_state_on_success_set = models.JSONField(default=list)
     multi_state_on_success_unset = models.JSONField(default=list)
@@ -1098,10 +1140,10 @@ class TaskLog(ADCMModel):
     def lock_affected(self, objects: Iterable[ADCMEntity]) -> None:
         if self.lock:
             return
-
+        first_job = JobLog.obj.filter(task=self).order_by('id').first()
         reason = MessageTemplate.get_message_from_template(
-            MessageTemplate.KnownNames.LockedByAction.value,
-            action=self.action,
+            MessageTemplate.KnownNames.LockedByJob.value,
+            job=first_job,
             target=self.task_object,
         )
         self.lock = ConcernItem.objects.create(
@@ -1311,7 +1353,7 @@ class MessageTemplate(ADCMModel):
     template = models.JSONField()
 
     class KnownNames(Enum):
-        LockedByAction = 'locked by action on target'  # kwargs=(action, target)
+        LockedByJob = 'locked by running job on target'  # kwargs=(job, target)
         ConfigIssue = 'object config issue'  # kwargs=(source, )
         RequiredServiceIssue = 'required service issue'  # kwargs=(source, )
         RequiredImportIssue = 'required import issue'  # kwargs=(source, )
@@ -1326,6 +1368,7 @@ class MessageTemplate(ADCMModel):
         Component = 'component'
         Provider = 'provider'
         Host = 'host'
+        Job = 'job'
 
     @classmethod
     def get_message_from_template(cls, name: str, **kwargs) -> dict:
@@ -1361,6 +1404,7 @@ class MessageTemplate(ADCMModel):
             cls.PlaceHolderType.Component.value: cls._adcm_entity_placeholder,
             cls.PlaceHolderType.Provider.value: cls._adcm_entity_placeholder,
             cls.PlaceHolderType.Host.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Job.value: cls._job_placeholder,
         }
         return type_map[ph_data['type']](ph_name, **ph_source_data)
 
@@ -1388,6 +1432,18 @@ class MessageTemplate(ADCMModel):
             'type': obj.prototype.type,
             'name': obj.display_name,
             'ids': obj.get_id_chain(),
+        }
+
+    @classmethod
+    def _job_placeholder(cls, _, **kwargs) -> dict:
+        job = kwargs.get('job')
+        assert job
+        action = job.sub_action or job.action
+
+        return {
+            'type': cls.PlaceHolderType.Job.value,
+            'name': action.display_name or action.name,
+            'ids': job.id,
         }
 
 

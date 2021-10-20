@@ -40,13 +40,17 @@ def fix_tasklog(apps, schema_editor):
             cash[context] = ContentType.objects.get(app_label='cm', model=content[context])
         return cash[context]
 
-    def get_task_obj(context, obj_id):
+    def get_task_obj(action, obj_id):
+        if action is None:
+            return None
+
         def get_obj_safe(model, obj_id):
             try:
                 return model.objects.get(id=obj_id)
             except model.DoesNotExist:
                 return None
 
+        context = action.prototype.type
         if context == 'component':
             obj = get_obj_safe(ServiceComponent, obj_id)
         elif context == 'service':
@@ -64,7 +68,7 @@ def fix_tasklog(apps, schema_editor):
         return obj
 
     for task in TaskLog.objects.all():
-        obj = get_task_obj(task.action.prototype.type, task.object_id)
+        obj = get_task_obj(task.action, task.object_id)
         if obj:
             task.object_type = get_content(task.action.prototype.type)
             task.save()
