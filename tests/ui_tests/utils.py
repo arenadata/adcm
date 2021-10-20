@@ -169,13 +169,16 @@ def check_rows_amount(page, expected_amount: int, table_page_num: int):
 
 
 def ignore_flaky_errors(func: Callable):
-    """Use it as decorator to ignore flaky exceptions, but do it only in 'retry' functions"""
+    """
+    Use it as decorator to catch flaky exceptions and raise Assertion messages instead.
+    Use it only with `wait_until_step_succeeds` or something similar.
+    """
 
     def wrapped(*args, **kwargs):
         try:
             func(*args, **kwargs)
-        except (StaleElementReferenceException, NoSuchElementException):
-            pass
+        except (StaleElementReferenceException, NoSuchElementException) as e:
+            raise AssertionError(f'Got a flaky error: {e}') from e
 
     return wrapped
 
