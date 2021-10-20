@@ -65,6 +65,8 @@ FIRST_GROUP = "test_group"
 SECOND_GROUP = "test_group_2"
 FIRST_HOST = "test_host_1"
 SECOND_HOST = "test_host_2"
+ACTION_NAME = "test_action"
+ACTION_MULTIJOB_NAME = "test_action_multijob"
 
 
 @pytest.fixture()
@@ -516,7 +518,8 @@ class TestChangeGroupsConfig:
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_previous["hosts"] = hosts
                 with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
-                    run_cluster_action_and_assert_result(cluster, action="test_action", config=config_previous)
+                    run_cluster_action_and_assert_result(cluster, action=ACTION_NAME, config=config_previous)
+                    run_cluster_action_and_assert_result(cluster, action=ACTION_MULTIJOB_NAME, config=config_previous)
         with allure.step("Check that with cluster group keys values are saved in cluster group"):
             config_expected_with_groups = self._add_values_to_group_config_template(
                 custom_group_keys=cluster_group.config(full=True)["attr"]["custom_group_keys"],
@@ -533,7 +536,8 @@ class TestChangeGroupsConfig:
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_updated["hosts"] = hosts
                 with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
-                    run_cluster_action_and_assert_result(cluster, action="test_action", config=config_updated)
+                    run_cluster_action_and_assert_result(cluster, action=ACTION_NAME, config=config_updated)
+                    run_cluster_action_and_assert_result(cluster, action=ACTION_MULTIJOB_NAME, config=config_updated)
 
     def test_change_group_in_service(self, cluster_bundle, cluster_with_components):
         """Test that groups in service are allowed change"""
@@ -553,7 +557,8 @@ class TestChangeGroupsConfig:
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_previous["hosts"] = hosts
                 with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
-                    run_service_action_and_assert_result(service, action="test_action", config=config_previous)
+                    run_service_action_and_assert_result(service, action=ACTION_NAME, config=config_previous)
+                    run_service_action_and_assert_result(service, action=ACTION_MULTIJOB_NAME, config=config_previous)
         with allure.step("Check that with group keys values are saved in service group"):
             config_expected_with_groups = self._add_values_to_group_config_template(
                 custom_group_keys=service_group.config(full=True)["attr"]["custom_group_keys"],
@@ -570,7 +575,8 @@ class TestChangeGroupsConfig:
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_updated["hosts"] = hosts
                 with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
-                    run_service_action_and_assert_result(service, action="test_action", config=config_updated)
+                    run_service_action_and_assert_result(service, action=ACTION_NAME, config=config_updated)
+                    run_service_action_and_assert_result(service, action=ACTION_MULTIJOB_NAME, config=config_updated)
 
     def test_change_group_in_component(self, cluster_bundle, cluster_with_components):
         """Test that groups in component are allowed change"""
@@ -591,7 +597,8 @@ class TestChangeGroupsConfig:
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_previous["hosts"] = hosts
                 with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
-                    run_component_action_and_assert_result(component, action="test_action", config=config_previous)
+                    run_component_action_and_assert_result(component, action=ACTION_NAME, config=config_previous)
+                    run_component_action_and_assert_result(component, action=ACTION_MULTIJOB_NAME, config=config_previous)
         with allure.step("Check that with group keys values are saved in component group"):
             config_expected_with_groups = self._add_values_to_group_config_template(
                 custom_group_keys=component_group.config(full=True)["attr"]["custom_group_keys"],
@@ -608,7 +615,8 @@ class TestChangeGroupsConfig:
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_updated["hosts"] = hosts
                 with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
-                    run_component_action_and_assert_result(component, action="test_action", config=config_updated)
+                    run_component_action_and_assert_result(component, action=ACTION_NAME, config=config_updated)
+                    run_component_action_and_assert_result(component, action=ACTION_MULTIJOB_NAME, config=config_updated)
 
     @pytest.mark.parametrize(
         "provider_bundle",
@@ -636,7 +644,8 @@ class TestChangeGroupsConfig:
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_previous["hosts"] = hosts
                 with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
-                    run_provider_action_and_assert_result(provider, action="test_action", config=config_previous)
+                    run_provider_action_and_assert_result(provider, action=ACTION_NAME, config=config_previous)
+                    run_provider_action_and_assert_result(provider, action=ACTION_MULTIJOB_NAME, config=config_previous)
         with allure.step("Check that with group keys values are saved in provider group"):
             config_expected_with_groups = self._add_values_to_group_config_template(
                 custom_group_keys=provider_group.config(full=True)["attr"]["custom_group_keys"],
@@ -653,7 +662,8 @@ class TestChangeGroupsConfig:
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
                 config_updated["hosts"] = hosts
                 with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
-                    run_provider_action_and_assert_result(provider, action="test_action", config=config_updated)
+                    run_provider_action_and_assert_result(provider, action=ACTION_NAME, config=config_updated)
+                    run_provider_action_and_assert_result(provider, action=ACTION_MULTIJOB_NAME, config=config_updated)
 
     def test_error_with_changing_custom_group_keys_in_cluster_group(self, cluster_bundle, cluster):
         """Test error with changing group_customization in cluster group"""
@@ -797,11 +807,13 @@ class TestChangeGroupsConfig:
             config_updated = {
                 "map": {test_host_1.fqdn: config_expected['config'], test_host_2.fqdn: dict(config_before)}
             }
-            run_cluster_action_and_assert_result(cluster, action="test_action", config=config_updated)
+            run_cluster_action_and_assert_result(cluster, action=ACTION_NAME, config=config_updated)
+            run_cluster_action_and_assert_result(cluster, action=ACTION_MULTIJOB_NAME, config=config_updated)
         with allure.step("Check changing sub with group_customization false"):
             config_expected_wrong = self._add_values_to_group_config_template(
                 config_attr={"group": OrderedDict([('port', 9100), ('transport_port', 9300)])},
             )
             cluster_group.config_set(config_expected_wrong)
             config_updated_wrong = {"map": {test_host_1.fqdn: config_before, test_host_2.fqdn: config_before}}
-            run_cluster_action_and_assert_result(cluster, action="test_action", config=config_updated_wrong)
+            run_cluster_action_and_assert_result(cluster, action=ACTION_NAME, config=config_updated_wrong)
+            run_cluster_action_and_assert_result(cluster, action=ACTION_MULTIJOB_NAME, config=config_updated_wrong)
