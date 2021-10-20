@@ -33,6 +33,9 @@
     <ng-container *ngSwitchCase="'variant'">
       <app-fields-variant [field]="options" [form]="currentFormGroup"></app-fields-variant>
     </ng-container>
+    <ng-container *ngSwitchCase="'secrettext'">
+      <app-fields-secret-text [field]="options" [form]="currentFormGroup"></app-fields-secret-text>
+    </ng-container>
 
     <span class="info">
       <mat-icon *ngIf="options.description" style="vertical-align: middle;" [ngClass]="'info-icon'"
