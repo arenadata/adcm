@@ -26,12 +26,12 @@ from adcm_pytest_plugin.steps.actions import (
 )
 from adcm_client.objects import ADCMClient, Cluster, Provider, Host, Service, Component
 
+from tests.functional.tools import AnyADCMObject
 from tests.functional.plugin_utils import (
     generate_cluster_success_params,
     generate_provider_success_params,
     compose_name,
     build_objects_checker,
-    AnyADCMObject,
     get_cluster_related_object,
     get_provider_related_object,
     create_two_clusters,
