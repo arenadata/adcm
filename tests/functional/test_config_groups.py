@@ -598,7 +598,9 @@ class TestChangeGroupsConfig:
                 config_previous["hosts"] = hosts
                 with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
                     run_component_action_and_assert_result(component, action=ACTION_NAME, config=config_previous)
-                    run_component_action_and_assert_result(component, action=ACTION_MULTIJOB_NAME, config=config_previous)
+                    run_component_action_and_assert_result(
+                        component, action=ACTION_MULTIJOB_NAME, config=config_previous
+                    )
         with allure.step("Check that with group keys values are saved in component group"):
             config_expected_with_groups = self._add_values_to_group_config_template(
                 custom_group_keys=component_group.config(full=True)["attr"]["custom_group_keys"],
@@ -616,7 +618,9 @@ class TestChangeGroupsConfig:
                 config_updated["hosts"] = hosts
                 with allure.step(f"Assert that config values is fine on inventory hosts: {hosts}"):
                     run_component_action_and_assert_result(component, action=ACTION_NAME, config=config_updated)
-                    run_component_action_and_assert_result(component, action=ACTION_MULTIJOB_NAME, config=config_updated)
+                    run_component_action_and_assert_result(
+                        component, action=ACTION_MULTIJOB_NAME, config=config_updated
+                    )
 
     @pytest.mark.parametrize(
         "provider_bundle",
