@@ -26,6 +26,7 @@ from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
+from selenium.common.exceptions import StaleElementReferenceException, NoSuchElementException
 
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.configuration import Configuration
@@ -167,6 +168,21 @@ def check_rows_amount(page, expected_amount: int, table_page_num: int):
     ) == expected_amount, f'Page #{table_page_num} should contain {expected_amount}, not {row_count}'
 
 
+def ignore_flaky_errors(func: Callable):
+    """
+    Use it as decorator to catch flaky exceptions and raise Assertion messages instead.
+    Use it only with `wait_until_step_succeeds` or something similar.
+    """
+
+    def wrapped(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except (StaleElementReferenceException, NoSuchElementException) as e:
+            raise AssertionError(f'Got a flaky error: {e}') from e
+
+    return wrapped
+
+
 # !===== UI Information Comparator Function =====!
 
 
@@ -218,13 +234,13 @@ def wait_and_assert_ui_info(
     :param period: Period between retries.
     """
     get_info_kwargs = get_info_kwargs or {}
-    info = get_info_func(**get_info_kwargs)
-    # to make assertion message more verbal
-    ui_info_classname = info.__class__.__name__
     human_key_names = {k: k.replace("_", " ").capitalize() for k in expected_values.keys()}
 
+    @ignore_flaky_errors
     def _check_info_from_ui():
         ui_info: FuncType = get_info_func(**get_info_kwargs)
+        # to make assertion message more verbal
+        ui_info_classname = ui_info.__class__.__name__
         for key, value in expected_values.items():
             actual_value = ui_info[key] if isinstance(ui_info, dict) else getattr(ui_info, key)
             # we may want if out of loop someday
