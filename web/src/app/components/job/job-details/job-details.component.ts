@@ -1,26 +1,24 @@
 import { Component, Injector } from '@angular/core';
 import { Store } from '@ngrx/store';
 
+import { Job } from '@app/core/types';
 import { DetailsFactory } from '@app/factories/details.factory';
-import { DetailAbstractDirective } from '@app/abstract-directives/detail.abstract.directive';
-import { Provider } from '@app/core/types';
 import { SocketState } from '@app/core/store';
 import { ActivatedRoute } from '@angular/router';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ChannelService } from '@app/core/services';
-import { ProviderService } from '@app/services/provider.service';
+import { JobService } from '@app/services/job.service';
+import { DetailAbstractDirective } from '@app/abstract-directives/detail.abstract.directive';
 
 @Component({
-  selector: 'app-provider-details',
+  selector: 'app-job-details',
   templateUrl: '../../../templates/details.html',
   styleUrls: ['./../../../shared/details/detail.component.scss']
 })
-export class ProviderDetailsComponent extends DetailAbstractDirective<Provider> {
+export class JobDetailsComponent extends DetailAbstractDirective<Job> {
 
   leftMenu = [
     DetailsFactory.labelMenuItem('Main', 'main'),
-    DetailsFactory.labelMenuItem('Configuration', 'config'),
-    DetailsFactory.labelMenuItem('Configuration groups', 'group_config'),
   ];
 
   constructor(
@@ -30,7 +28,7 @@ export class ProviderDetailsComponent extends DetailAbstractDirective<Provider> 
     protected channel: ChannelService,
     protected store: Store,
     injector: Injector,
-    protected subjectService: ProviderService,
+    protected subjectService: JobService,
   ) {
     super(socket, route, service, channel, store, injector);
   }

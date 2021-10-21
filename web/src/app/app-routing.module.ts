@@ -14,7 +14,7 @@ import { HostproviderComponent } from '@app/components/hostprovider/hostprovider
 import { CONFIG_GROUP_LIST_SERVICE, ConfigGroupHostListComponent, ConfigGroupListComponent } from '@app/config-groups';
 import { HostDetailsComponent } from '@app/components/host/host-details/host-details.component';
 import { ProviderDetailsComponent } from '@app/components/hostprovider/provider-details/provider-details.component';
-import { GroupConfigProviderDetailsComponent } from '@app/components/hostprovider/group-config-provider-details/group-config-provider-details.component';
+import { GroupConfigDetailsComponent } from '@app/components/hostprovider/group-config-details/group-config-details.component';
 
 const routes: Routes = [
   {
@@ -77,7 +77,7 @@ const routes: Routes = [
     path: 'provider/:provider/group_config/:group_config',
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
-    component: GroupConfigProviderDetailsComponent,
+    component: GroupConfigDetailsComponent,
     data: {
       entityService: CONFIG_GROUP_LIST_SERVICE
     },

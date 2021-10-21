@@ -1,0 +1,27 @@
+import { switchMap } from 'rxjs/operators';
+import { Directive, OnInit } from '@angular/core';
+
+import { BaseDetailAbstractDirective } from './base-detail.abstract.directive';
+import { LeftMenuItem } from '@app/shared/details/left-menu/left-menu.component';
+import { AdcmEntity } from '@app/models/entity';
+import { EntityService } from '@app/abstract/entity-service';
+
+@Directive({
+  selector: '[appDetailAbstract]',
+})
+export abstract class DetailAbstractDirective<EntityType extends AdcmEntity> extends BaseDetailAbstractDirective implements OnInit {
+
+  entity: EntityType;
+
+  abstract leftMenu: LeftMenuItem[];
+  protected abstract subjectService: EntityService<EntityType>;
+
+  ngOnInit() {
+    super.ngOnInit();
+
+    this.route.params.pipe(
+      switchMap((params) => this.subjectService.get(params.host)),
+    ).subscribe((entity) => this.entity = entity);
+  }
+
+}

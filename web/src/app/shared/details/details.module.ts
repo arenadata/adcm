@@ -21,11 +21,8 @@ import { RouterModule } from '@angular/router';
 import { AdwpListModule } from '@adwp-ui/widgets';
 
 import { StuffModule } from '../stuff.module';
-import { DetailComponent } from './detail.component';
-import { LeftComponent } from './left/left.component';
 import { NavigationService } from './navigation.service';
 import { SubtitleComponent } from './subtitle.component';
-import { TopComponent } from './top/top.component';
 import { NavigationComponent } from '@app/components/navigation/navigation.component';
 import { ActionsButtonComponent } from '@app/components/actions-button/actions-button.component';
 
@@ -36,11 +33,15 @@ import { SortObjectsPipe } from '@app/pipes/sort-objects.pipe';
 import { TaskObjectsComponent } from '@app/components/columns/task-objects/task-objects.component';
 import { HostDetailsComponent } from '@app/components/host/host-details/host-details.component';
 import { LeftMenuComponent } from './left-menu/left-menu.component';
-import { LabelMenuItemComponent } from './label-menu-item/label-menu-item.component';
-import { StatusMenuItemComponent } from './status-menu-item/status-menu-item.component';
+import { LabelMenuItemComponent } from './left-menu-items/label-menu-item/label-menu-item.component';
+import { StatusMenuItemComponent } from './left-menu-items/status-menu-item/status-menu-item.component';
 import { ProviderDetailsComponent } from '@app/components/hostprovider/provider-details/provider-details.component';
-import { GroupConfigProviderDetailsComponent } from '@app/components/hostprovider/group-config-provider-details/group-config-provider-details.component';
+import { GroupConfigDetailsComponent } from '@app/components/hostprovider/group-config-details/group-config-details.component';
 import { BundleDetailsComponent } from '@app/components/bundle/bundle-details/bundle-details.component';
+import { ServiceDetailsComponent } from '@app/components/service/service-details/service-details.component';
+import { ServiceComponentDetailsComponent } from '@app/components/service-component/service-component-details/service-component-details.component';
+import { JobDetailsComponent } from '@app/components/job/job-details/job-details.component';
+import { ClusterDetailsComponent } from '@app/components/cluster/cluster-details/cluster-details.component';
 
 @NgModule({
   imports: [
@@ -59,7 +60,14 @@ import { BundleDetailsComponent } from '@app/components/bundle/bundle-details/bu
     }),
   ],
   exports: [
-    DetailComponent,
+    ServiceDetailsComponent,
+    HostDetailsComponent,
+    ProviderDetailsComponent,
+    GroupConfigDetailsComponent,
+    ServiceComponentDetailsComponent,
+    ClusterDetailsComponent,
+    BundleDetailsComponent,
+    JobDetailsComponent,
     ActionsButtonComponent,
     ObjectLinkColumnPipe,
     SortObjectsPipe,
@@ -67,19 +75,19 @@ import { BundleDetailsComponent } from '@app/components/bundle/bundle-details/bu
     TaskObjectsComponent,
   ],
   declarations: [
-    DetailComponent,
+    ServiceDetailsComponent,
     HostDetailsComponent,
     ProviderDetailsComponent,
-    GroupConfigProviderDetailsComponent,
+    GroupConfigDetailsComponent,
+    ServiceComponentDetailsComponent,
+    ClusterDetailsComponent,
     BundleDetailsComponent,
+    JobDetailsComponent,
     SubtitleComponent,
-    LeftComponent,
-    TopComponent,
     NavigationComponent,
     ActionsButtonComponent,
 
     NavItemPipe,
-
     ObjectLinkColumnPipe,
     SortObjectsPipe,
     TaskObjectsComponent,

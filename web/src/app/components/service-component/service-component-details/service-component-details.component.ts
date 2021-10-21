@@ -1,26 +1,27 @@
 import { Component, Injector } from '@angular/core';
 import { Store } from '@ngrx/store';
-
-import { DetailsFactory } from '@app/factories/details.factory';
-import { DetailAbstractDirective } from '@app/abstract-directives/detail.abstract.directive';
-import { Provider } from '@app/core/types';
-import { SocketState } from '@app/core/store';
 import { ActivatedRoute } from '@angular/router';
+
+import { DetailAbstractDirective } from '@app/abstract-directives/detail.abstract.directive';
+import { SocketState } from '@app/core/store';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ChannelService } from '@app/core/services';
-import { ProviderService } from '@app/services/provider.service';
+import { ServiceComponentService } from '@app/services/service-component.service';
+import { DetailsFactory } from '@app/factories/details.factory';
+import { IServiceComponent } from '@app/models/service-component';
 
 @Component({
-  selector: 'app-provider-details',
+  selector: 'app-service-component-details',
   templateUrl: '../../../templates/details.html',
   styleUrls: ['./../../../shared/details/detail.component.scss']
 })
-export class ProviderDetailsComponent extends DetailAbstractDirective<Provider> {
+export class ServiceComponentDetailsComponent extends DetailAbstractDirective<IServiceComponent> {
 
   leftMenu = [
     DetailsFactory.labelMenuItem('Main', 'main'),
     DetailsFactory.labelMenuItem('Configuration', 'config'),
     DetailsFactory.labelMenuItem('Configuration groups', 'group_config'),
+    DetailsFactory.statusMenuItem('Status', 'status'),
   ];
 
   constructor(
@@ -30,7 +31,7 @@ export class ProviderDetailsComponent extends DetailAbstractDirective<Provider> 
     protected channel: ChannelService,
     protected store: Store,
     injector: Injector,
-    protected subjectService: ProviderService,
+    protected subjectService: ServiceComponentService,
   ) {
     super(socket, route, service, channel, store, injector);
   }

@@ -1,15 +1,15 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { ApiService } from '@app/core/api';
-import { EntityService } from '@app/abstract/entity-service';
+import { EntityService } from '../abstract/entity-service';
+import { Bundle } from '../core/types';
+import { ApiService } from '../core/api';
 import { environment } from '@env/environment';
-import { Service } from '@app/core/types';
 
 @Injectable({
   providedIn: 'root',
 })
-export class ServiceService extends EntityService<Service> {
+export class BundleService extends EntityService<Bundle> {
 
   constructor(
     protected api: ApiService,
@@ -20,8 +20,8 @@ export class ServiceService extends EntityService<Service> {
   get(
     id: number,
     params: { [key: string]: string } = {},
-  ): Observable<Service> {
-    return this.api.get(`${environment.apiRoot}service/${id}/`, params);
+  ): Observable<Bundle> {
+    return this.api.get(`${environment.apiRoot}stack/bundle/${id}/`, params);
   }
 
 }

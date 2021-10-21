@@ -9,31 +9,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Injector, OnDestroy, OnInit } from '@angular/core';
+import { Directive, Injector, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, convertToParamMap, ParamMap } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 
-import { ChannelService, keyChannelStrim } from '@app/core/services';
-import { ClusterService, WorkerInstance } from '@app/core/services/cluster.service';
-import { EventMessage, getNavigationPath, setPathOfRoute, SocketState } from '@app/core/store';
-import { EmmitRow, Host, IAction, Job } from '@app/core/types';
-import { SocketListenerDirective } from '@app/shared/directives/socketListener.directive';
-import { IDetails } from './navigation.service';
-import { AdcmEntity } from '@app/models/entity';
-import { EntityService } from '@app/abstract/entity-service';
-import { IIssues } from '@app/models/issue';
-import { IssueHelper } from '@app/helpers/issue-helper';
-import { ICluster } from '@app/models/cluster';
+import { ChannelService, keyChannelStrim } from '../core/services';
+import { ClusterService, WorkerInstance } from '../core/services/cluster.service';
+import { EventMessage, getNavigationPath, setPathOfRoute, SocketState } from '../core/store';
+import { EmmitRow, Host, IAction, Job } from '../core/types';
+import { SocketListenerDirective } from '@app/shared/directives';
+import { IDetails } from '../shared/details/navigation.service';
+import { AdcmEntity } from '../models/entity';
+import { EntityService } from '../abstract/entity-service';
+import { IIssues } from '../models/issue';
+import { IssueHelper } from '../helpers/issue-helper';
+import { ICluster } from '../models/cluster';
 
-@Component({
-  selector: 'app-detail',
-  templateUrl: './detail.component.html',
-  styleUrls: ['./detail.component.scss'],
+@Directive({
+  selector: '[appBaseDetailAbstract]',
 })
-export class DetailComponent extends SocketListenerDirective implements OnInit, OnDestroy {
-  request$: Observable<WorkerInstance>;
+export abstract class BaseDetailAbstractDirective extends SocketListenerDirective implements OnInit, OnDestroy {
+  subscription$: Subscription;
   upgradable = false;
   actions: IAction[] = [];
   status: number | string;
@@ -47,11 +45,11 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
 
   constructor(
     socket: Store<SocketState>,
-    private route: ActivatedRoute,
-    private service: ClusterService,
-    private channel: ChannelService,
-    private store: Store,
-    injector: Injector
+    protected route: ActivatedRoute,
+    protected service: ClusterService,
+    protected channel: ChannelService,
+    protected store: Store,
+    injector: Injector,
   ) {
     super(socket);
     const serviceToken = route.snapshot.data['entityService'];
@@ -65,12 +63,11 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   }
 
   ngOnInit(): void {
-    this.request$ = this.route.paramMap.pipe(
+    this.subscription$ = this.route.paramMap.pipe(
       switchMap((param) => this.service.getContext(param, this.entityService)),
       tap((w) => this.run(w)),
       this.takeUntil(),
-    );
-    this.request$.subscribe();
+    ).subscribe();
 
     super.startListenSocket();
   }
@@ -138,12 +135,14 @@ export class DetailComponent extends SocketListenerDirective implements OnInit, 
   }
 
   reset() {
-    this.request$ = this.service.reset().pipe(
+    if (this.subscription$) {
+      this.subscription$.unsubscribe();
+    }
+    this.subscription$ = this.service.reset().pipe(
       this.takeUntil(),
       tap((a) => this.run(a)),
       this.takeUntil(),
-    );
-    this.request$.subscribe();
+    ).subscribe();
   }
 
   socketListener(m: EventMessage) {

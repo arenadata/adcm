@@ -1,6 +1,6 @@
 import { LeftMenuItem } from '../shared/details/left-menu/left-menu.component';
-import { LabelMenuItemComponent } from '../shared/details/label-menu-item/label-menu-item.component';
-import { StatusMenuItemComponent } from '@app/shared/details/status-menu-item/status-menu-item.component';
+import { LabelMenuItemComponent } from '../shared/details/left-menu-items/label-menu-item/label-menu-item.component';
+import { StatusMenuItemComponent } from '@app/shared/details/left-menu-items/status-menu-item/status-menu-item.component';
 
 export class DetailsFactory {
 

@@ -1,20 +1,38 @@
-import { Component } from '@angular/core';
+import { Component, Injector } from '@angular/core';
+import { Store } from '@ngrx/store';
 
-import { DetailComponent } from '@app/shared/details/detail.component';
-import { LeftMenuItem } from '@app/shared/details/left-menu/left-menu.component';
 import { DetailsFactory } from '@app/factories/details.factory';
+import { IHost } from '@app/models/host';
+import { SocketState } from '@app/core/store';
+import { ActivatedRoute } from '@angular/router';
+import { ClusterService } from '@app/core/services/cluster.service';
+import { ChannelService } from '@app/core/services';
+import { HostService } from '@app/services/host.service';
+import { DetailAbstractDirective } from '@app/abstract-directives/detail.abstract.directive';
 
 @Component({
   selector: 'app-host-details',
   templateUrl: '../../../templates/details.html',
   styleUrls: ['./../../../shared/details/detail.component.scss']
 })
-export class HostDetailsComponent extends DetailComponent {
+export class HostDetailsComponent extends DetailAbstractDirective<IHost> {
 
-  leftMenu: LeftMenuItem[] = [
+  leftMenu = [
     DetailsFactory.labelMenuItem('Main', 'main'),
     DetailsFactory.labelMenuItem('Configuration', 'config'),
     DetailsFactory.statusMenuItem('Status', 'status'),
   ];
+
+  constructor(
+    socket: Store<SocketState>,
+    protected route: ActivatedRoute,
+    protected service: ClusterService,
+    protected channel: ChannelService,
+    protected store: Store,
+    injector: Injector,
+    protected subjectService: HostService,
+  ) {
+    super(socket, route, service, channel, store, injector);
+  }
 
 }
