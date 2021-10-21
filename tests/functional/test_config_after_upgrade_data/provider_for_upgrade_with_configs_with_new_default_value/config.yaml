@@ -95,6 +95,10 @@
         age: '25'
         name: Jane
         sex: f
+    - name: secrettext
+      type: secrettext
+      required: false
+      default: "new\nidentity"
 
 - type: host
   name: host_from_provider

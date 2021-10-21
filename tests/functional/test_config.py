@@ -15,6 +15,8 @@
 """Tests for config"""
 
 import os
+from typing import Tuple
+
 import allure
 import yaml
 import pytest
@@ -27,6 +29,7 @@ from adcm_client.base import ActionHasIssues
 from adcm_client.objects import ADCMClient, Cluster, Service, Provider, Host
 from adcm_pytest_plugin.utils import fixture_parametrized_by_data_subdirs, get_data_dir
 
+from tests.functional.plugin_utils import AnyADCMObject
 from tests.library.errorcodes import CONFIG_KEY_ERROR, ADCMError, CONFIG_NOT_FOUND
 
 
@@ -682,9 +685,6 @@ def test_required_without_default_sent_null_value(r_wod_nv):
     assert_config_type(*r_wod_nv, True, False, 'null_value')
 
 
-# !===== Negative scenarious =====!
-
-
 @pytest.fixture()
 def cluster(request: SubRequest, sdk_client_fs: ADCMClient) -> Cluster:
     """Upload cluster bundle, create cluster, add service"""
@@ -701,8 +701,76 @@ def provider(request: SubRequest, sdk_client_fs: ADCMClient) -> Provider:
     bundle_subdir = request.param if hasattr(request, 'param') else "simple_config"
     bundle = sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), bundle_subdir, "provider"))
     provider = bundle.provider_create(name='test_provider')
-    provider.host_create(fqdn='test_service')
+    provider.host_create(fqdn='test-host')
     return provider
+
+
+# !===== Secret text config field type =====!
+
+
+# pylint: disable-next=too-few-public-methods
+class TestConfigFieldTypes:
+    """Test different types of fields"""
+
+    # pylint: disable=too-many-locals
+    @pytest.mark.parametrize('cluster', ["secret_text"], indirect=True)
+    @pytest.mark.parametrize('provider', ["secret_text"], indirect=True)
+    def test_secret_text_field(self, cluster: Cluster, provider: Provider):
+        """Test "secrettext" config field type"""
+        value_to_set = "verysimple\nI'am"
+        default_value = "very\nsecret\ntext"
+        fields = (
+            'secret_required_default',
+            'secret_not_required_default',
+            'secret_not_required_no_default',
+            'secret_required_no_default',
+        )
+        required_default, not_required_default, not_required_no_default, required_no_default = fields
+        required_diff = {required_no_default: value_to_set}
+        changed_diff = {field: value_to_set for field in fields if field != required_no_default}
+        default_diff = {
+            not_required_no_default: None,
+            required_default: default_value,
+            not_required_default: default_value,
+        }
+
+        service = cluster.service()
+        component = service.component()
+        host = provider.host()
+        cluster.host_add(host)
+        cluster.hostcomponent_set((host, component))
+        objects_to_change = (cluster, service, component, provider, host)
+
+        # to make actions available
+        with allure.step(f'Set required fields that has no default to {value_to_set}'):
+            for adcm_object in objects_to_change:
+                adcm_object.config_set_diff(required_diff)
+        with allure.step(f'Set other fields to {value_to_set} and check that config changed correctly'):
+            self._change_config_and_check_changed_by_action(
+                objects_to_change, changed_diff, 'check_default', 'check_changed'
+            )
+        with allure.step('Set default values for fields and check that config changed correctly'):
+            self._change_config_and_check_changed_by_action(
+                objects_to_change, default_diff, 'check_changed', 'check_default'
+            )
+
+    # pylint: disable-next=no-self-use
+    def _change_config_and_check_changed_by_action(
+        self, objects_to_change: Tuple[AnyADCMObject], config_to_set: dict, action_before: str, action_after: str
+    ):
+        """
+        Loop over objects_to_change:
+        1. Run `action_before` to ensure state before config change is correct
+        2. Change config
+        3. Run `action_after` to ensure config changed correctly
+        """
+        for adcm_object in objects_to_change:
+            _run_action_and_assert_status(adcm_object, action_before)
+            adcm_object.config_set_diff(config_to_set)
+            _run_action_and_assert_status(adcm_object, action_after)
+
+
+# !===== Negative scenarios =====!
 
 
 @pytest.mark.parametrize("cluster", ["no_config"], indirect=True)
@@ -729,3 +797,15 @@ def _expect_correct_fail_on_config(cluster: Cluster, provider: Provider, config:
                 error.equal(e)
             else:
                 raise AssertionError("Config set should've failed")
+
+
+@allure.step("Run action '{action_name}' on {adcm_object} and expect status '{expected_status}'")
+def _run_action_and_assert_status(adcm_object: AnyADCMObject, action_name: str, expected_status: str = 'success'):
+    """
+    Run action on any ADCM object and assert status
+    """
+    assert (
+        actual_status := adcm_object.action(name=action_name).run().wait()
+    ) == expected_status, (
+        f"Actions '{action_name}' is expected to finish with status '{expected_status}', not '{actual_status}'"
+    )

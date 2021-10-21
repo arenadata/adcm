@@ -122,6 +122,10 @@
         age: '24'
         name: Joe
         sex: m
+    - name: secrettext
+      type: secrettext
+      required: false
+      default: "secret\npass\nword"
     - name: json
       type: json
       required: false

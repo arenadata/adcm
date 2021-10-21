@@ -158,6 +158,10 @@
       default:
         time: '12'
         range: 'super long'
+    - name: secrettext
+      type: secrettext
+      required: false
+      default: "sec\nret\ntext"
 
 - type: host
   name: host_from_provider
