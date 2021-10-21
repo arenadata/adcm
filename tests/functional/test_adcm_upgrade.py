@@ -12,17 +12,16 @@
 
 """Tests for ADCM upgrade"""
 
-# pylint:disable=no-self-use, too-many-arguments
+# pylint:disable=redefined-outer-name, no-self-use, too-many-arguments
 import random
 from contextlib import contextmanager
 
 from pathlib import Path
-from typing import Tuple, Union, List, Iterable
+from typing import Tuple, Union, List, Iterable, Any
 
 import allure
 import pytest
 
-from version_utils import rpm
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCMClient, Cluster, Host, Service, Bundle, Component, Provider, Task, Job, Upgrade
 from adcm_pytest_plugin.docker_utils import ADCM
@@ -37,7 +36,6 @@ from adcm_pytest_plugin.steps.actions import (
 
 from tests.upgrade_utils import upgrade_adcm_version
 from tests.library.utils import previous_adcm_version_tag
-from tests.functional.plugin_utils import AnyADCMObject
 from tests.functional.tools import AnyADCMObject, get_config, get_objects_via_pagination
 from tests.functional.plugin_utils import build_objects_checker, build_objects_comparator
 from tests.functional.conftest import only_clean_adcm
@@ -251,7 +249,7 @@ class TestUpgradeFilledADCM:
         with allure.step('Upgrade ADCM and expect all objects to be same'), objects_are_not_changed(
             sdk_client_fs
         ), self.check_job_related_objects_are_not_changed(sdk_client_fs):
-            _upgrade_adcm(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+            upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
         self.run_actions_after_upgrade(
             dirty_adcm['complex']['clusters']['all_services'],
             dirty_adcm['complex']['clusters']['config_history'],
