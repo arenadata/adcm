@@ -361,11 +361,11 @@ class ADCMEntity(ADCMModel):
 
         self.concerns.remove(item)
 
-    def get_own_issue(self, issue_type: 'IssueType') -> Optional['ConcernItem']:
-        """Get object's issue of specified type or None"""
-        issue_name = issue_type.gen_issue_name(self)
-        for issue in self.concerns.filter(type=ConcernType.Issue, name=issue_name):
-            return issue
+    def get_own_issue(self, cause: 'ConcernCause') -> Optional['ConcernItem']:
+        """Get object's issue of specified cause or None"""
+        return self.concerns.filter(
+            type=ConcernType.Issue, owner_id=self.pk, owner_type=self.content_type, cause=cause
+        ).first()
 
     def __str__(self):
         own_name = getattr(self, 'name', None)
@@ -424,6 +424,11 @@ class ADCMEntity(ADCMModel):
     def has_multi_state_intersection(self, multi_states: List[str]) -> bool:
         """Check if entity._multi_state has an intersection with list of multi_states"""
         return bool(set(self._multi_state).intersection(multi_states))
+
+    @property
+    def content_type(self):
+        model_name = self.__class__.__name__.lower()
+        return ContentType.objects.get(app_label='cm', model=model_name)
 
 
 class ADCM(ADCMEntity):
@@ -1147,7 +1152,12 @@ class TaskLog(ADCMModel):
             target=self.task_object,
         )
         self.lock = ConcernItem.objects.create(
-            type=ConcernType.Lock.value, name=None, reason=reason, blocking=True
+            type=ConcernType.Lock.value,
+            name=None,
+            reason=reason,
+            blocking=True,
+            owner=self.task_object,
+            cause=ConcernCause.Job.value,
         )
         self.save()
         for obj in objects:
@@ -1447,21 +1457,18 @@ class MessageTemplate(ADCMModel):
         }
 
 
-class IssueType(Enum):
-    Config = 'config'
-    RequiredService = 'required_service'
-    RequiredImport = 'required_import'
-    HostComponent = 'host_component'
-
-    def gen_issue_name(self, obj: ADCMEntity) -> str:
-        """Generate unique issue name for object"""
-        return f'{self.name} issue on {obj.prototype.type} {obj.pk}'
-
-
 class ConcernType(models.TextChoices):
     Lock = 'lock', 'lock'
     Issue = 'issue', 'issue'
     Flag = 'flag', 'flag'
+
+
+class ConcernCause(models.TextChoices):
+    Config = 'config', 'config'
+    Job = 'job', 'job'
+    HostComponent = 'host-component', 'host-component'
+    Import = 'import', 'import'
+    Service = 'service', 'service'
 
 
 class ConcernItem(ADCMModel):
@@ -1476,6 +1483,8 @@ class ConcernItem(ADCMModel):
     `reason` is used to display/notify on front-end, text template and data for URL generation
         should be generated from pre-created templates model `MessageTemplate`
     `blocking` blocks actions from running
+    `owner` is object-origin of concern
+    `cause` is owner's parameter causing concern
     `related_objects` are back-refs from affected ADCMEntities.concerns
     """
 
@@ -1483,6 +1492,10 @@ class ConcernItem(ADCMModel):
     name = models.CharField(max_length=160, null=True, unique=True)
     reason = models.JSONField(default=dict)
     blocking = models.BooleanField(default=True)
+    owner_id = models.PositiveIntegerField(null=True)
+    owner_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)
+    owner = GenericForeignKey('owner_type', 'owner_id')
+    cause = models.CharField(max_length=16, null=True, choices=ConcernCause.choices)
 
     @property
     def related_objects(self) -> Iterable[ADCMEntity]:
