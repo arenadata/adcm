@@ -98,6 +98,11 @@
         age: '24'
         name: Joe
         sex: m
+    - &secrettext
+      name: secrettext
+      type: text
+      required: false
+      default: "sec\nret\ntext"
 
 - type: service
   name: test_service
@@ -179,6 +184,7 @@
         age: '24'
         name: Joe
         sex: m
+    - *secrettext
 
   components:
     test_component:
@@ -259,3 +265,4 @@
             age: '24'
             name: Joe
             sex: m
+        - *secrettext
