@@ -48,8 +48,6 @@ export class LogComponent implements OnInit {
     'change_status',
     'change_job_status',
     'change_hostcomponentmap',
-    'raise_issue',
-    'clear_issue',
     'upgrade',
   ];
 
@@ -81,7 +79,7 @@ export class LogComponent implements OnInit {
           this.slider.value
         );
       else this.api.getOne<any>(m.object.type, m.object.id).subscribe(value => this.list(m, value));
-    } 
+    }
     // else this.list(m, `Not request for ${eventName} event.`);
   }
 
