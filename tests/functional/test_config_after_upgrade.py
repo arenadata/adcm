@@ -47,7 +47,7 @@ def _update_config_and_attr_for_new_field_test(
         OrderedDict({"name": "Allice", "surname": "Cooper"}),
     ]
     config["new_map"] = {"time": "12", "range": "super long"}
-    config["new_json"] = {"time": "12", "range": "super long"}
+    config["new_json"] = {"key": "value", "integer": 52}
 
     attr["new_group"] = {"active": True}
 
@@ -98,7 +98,7 @@ def _update_config_and_attr_for_new_default_value_test(
     config["group"] = {"port": 9201, "transport_port": 9301}
     config["structure"] = [OrderedDict({"code": 1, "country": "Test1_new"})]
     config["map"] = {"age": "25", "name": "Jane", "sex": "f"}
-    config["json"] = {"age": "25", "name": "Jane", "sex": "f"}
+    config["json"] = {"key": "initial value", "float": 3.25}
     _ = group_config
     return config, attr
 

@@ -94,9 +94,8 @@
       type: json
       required: false
       default:
-        age: '24'
-        name: Joe
-        sex: m
+        key: "default value"
+        boolean: true
     - name: secrettext
       type: secrettext
       required: false

@@ -163,15 +163,14 @@
       type: json
       required: false
       default:
-        age: '24'
-        name: Joe
-        sex: m
+        key: "default value"
+        boolean: true
     - name: new_json
       type: json
       required: false
       default:
-        time: '12'
-        range: 'super long'
+        key: "value"
+        integer: 52
     - &secrettext
       name: secrettext
       type: secrettext
@@ -324,15 +323,14 @@
       type: json
       required: false
       default:
-        age: '24'
-        name: Joe
-        sex: m
+        key: "default value"
+        boolean: true
     - name: new_json
       type: json
       required: false
       default:
-        time: '12'
-        range: 'super long'
+        key: "value"
+        integer: 52
     - *secrettext
 
   components:
@@ -479,13 +477,12 @@
           type: json
           required: false
           default:
-            age: '24'
-            name: Joe
-            sex: m
+            key: "default value"
+            boolean: true
         - name: new_json
           type: json
           required: false
           default:
-            time: '12'
-            range: 'super long'
+            key: "value"
+            integer: 52
         - *secrettext

@@ -99,9 +99,8 @@
       type: json
       required: false
       default:
-        age: '25'
-        name: Jane
-        sex: f
+        key: "initial value"
+        float: 3.25
     - &secrettext
       name: secrettext
       type: secrettext
@@ -189,9 +188,8 @@
       type: json
       required: false
       default:
-        age: '25'
-        name: Jane
-        sex: f
+        key: "initial value"
+        float: 3.25
     - *secrettext
 
   components:
@@ -274,7 +272,6 @@
           type: json
           required: false
           default:
-            age: '25'
-            name: Jane
-            sex: f
+            key: "initial value"
+            float: 3.25
         - *secrettext
