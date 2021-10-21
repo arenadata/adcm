@@ -11,6 +11,7 @@
 # limitations under the License.
 
 """Init or upgrade RBAC roles and permissions"""
+from typing import List
 
 import ruyaml
 
@@ -62,7 +63,7 @@ def check_roles_childs(data: dict):
                 find_role(child, data['roles'])
 
 
-def get_role_permissions(role: dict, data: dict) -> list[Permission]:
+def get_role_permissions(role: dict, data: dict) -> List[Permission]:
     """Retrieve all role's permissions"""
     all_perm = []
     if 'apps' not in role:
