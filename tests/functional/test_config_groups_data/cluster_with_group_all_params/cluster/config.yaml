@@ -138,6 +138,12 @@
         age: '24'
         name: Joe
         sex: m
+    - &secrettext
+      name: secrettext
+      type: secrettext
+      required: false
+      group_customization: true
+      default: "secret\npass\nword"
     - name: json
       type: json
       required: false
@@ -273,6 +279,8 @@
         age: '24'
         name: Joe
         sex: m
+    - *secrettext
+
     - name: json
       type: json
       required: false
@@ -416,6 +424,8 @@
             age: '24'
             name: Joe
             sex: m
+        - *secrettext
+
     second:
       constraint: [1,+]
 

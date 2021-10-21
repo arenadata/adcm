@@ -96,6 +96,11 @@
         age: '25'
         name: Jane
         sex: f
+    - &secrettext
+      name: secrettext
+      type: secrettext
+      required: false
+      default: "new\nidentity"
 
 - type: service
   name: test_service
@@ -175,6 +180,7 @@
         age: '25'
         name: Jane
         sex: f
+    - *secrettext
 
   components:
     test_component:
@@ -253,3 +259,4 @@
             age: '25'
             name: Jane
             sex: f
+        - *secrettext

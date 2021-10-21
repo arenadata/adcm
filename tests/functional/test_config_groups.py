@@ -412,6 +412,7 @@ class TestChangeGroupsConfig:
         "json": {"age": "20", "name": "Chloe", "hair_color": "blond"},
         "password": "123",
         "file": "file content test",
+        "secrettext": "awesome\npa$$",
     }
 
     GROUP_KEYS_TO_CHANGE = {
@@ -428,6 +429,7 @@ class TestChangeGroupsConfig:
         "structure": True,
         "map": True,
         "json": True,
+        "secrettext": True,
     }
 
     CUSTOM_GROUP_KEYS_TO_CHANGE = {
@@ -444,6 +446,7 @@ class TestChangeGroupsConfig:
         "structure": False,
         "map": False,
         "json": False,
+        "secrettext": False,
     }
 
     CLUSTER_HOSTS_VARIANTS = [
@@ -488,6 +491,8 @@ class TestChangeGroupsConfig:
         config_group = group.config()
         if "password" in config_group:
             config_group["password"] = "password"
+        if "secrettext" in config_group:
+            config_group["secrettext"] = "secret\npass\nword"
         if "file" in config_group:
             config_group["file"] = config_group["file"].replace("\n", "")
         return config_group
