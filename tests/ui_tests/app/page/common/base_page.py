@@ -305,9 +305,12 @@ class BasePageObject:
 
         :param locator: Locator of element to write into (should be input)
         :param text: Text to use in .send_keys method
+        :param clean_input: Clear input before saving element or not
         :param timeout: Timeout on finding element
         """
         element = self.find_element(locator, timeout)
+        if clean_input:
+            self.clear_by_keys(locator)
         expected_value = element.get_property('value') + text
 
         def _send_keys_and_check():

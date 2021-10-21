@@ -67,11 +67,7 @@ class CommonConfigMenuObj(BasePageObject):
         """Clear description field, set new value and get previous description"""
         desc = self.find_element(self.locators.description_input)
         previous_description = desc.get_property('value')
-        desc.clear()
-        desc.send_keys(description)
-        assert (
-            current_description := desc.get_property('value')
-        ) == description, f'Description value should be {description}, not {current_description}'
+        self.send_text_to_element(self.locators.description_input, description, clean_input=True)
         return previous_description
 
     def compare_versions(self, compare_with: str, base_compare_version: Optional[str] = None):

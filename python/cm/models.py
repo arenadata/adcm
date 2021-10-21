@@ -296,7 +296,8 @@ class ConfigLog(ADCMModel):
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
             for cg in obj.group_config.all():
-                diff = cg.get_group_config()
+                # TODO: We need refactoring for upgrade cluster
+                diff = cg.get_diff_config()
                 group_config = ConfigLog()
                 current_group_config = ConfigLog.objects.get(id=cg.config.current)
                 group_config.obj_ref = cg.config
@@ -722,7 +723,7 @@ class GroupConfig(ADCMModel):
                 custom_group_keys[k] = v['group_customization']
         return group_keys, custom_group_keys
 
-    def get_group_config(self):
+    def get_diff_config(self):
         def get_diff(config, group_keys, diff=None):
             if diff is None:
                 diff = {}
@@ -741,6 +742,47 @@ class GroupConfig(ADCMModel):
         config = cl.config
         group_keys = cl.attr.get('group_keys', {})
         return get_diff(config, group_keys)
+
+    def get_group_keys(self):
+        cl = ConfigLog.objects.get(id=self.config.current)
+        return cl.attr.get('group_keys', {})
+
+    def merge_config(self, object_config: dict, group_config: dict, group_keys: dict, config=None):
+        """Merge object config with group config based group_keys"""
+
+        if config is None:
+            config = {}
+        for k, v in group_keys.items():
+            if isinstance(v, Mapping):
+                config.setdefault(k, {})
+                self.merge_config(object_config[k], group_config[k], group_keys[k], config[k])
+            else:
+                if v:
+                    config[k] = group_config[k]
+                else:
+                    config[k] = object_config[k]
+        return config
+
+    def get_config_attr(self):
+        """Return attr for group config without group_keys and custom_group_keys params"""
+        cl = ConfigLog.obj.get(id=self.config.current)
+        attr = {k: v for k, v in cl.attr.items() if k not in ('group_keys', 'custom_group_keys')}
+        return attr
+
+    def get_config_and_attr(self):
+        """Return merge object config with group config and merge attr"""
+
+        object_cl = ConfigLog.objects.get(id=self.object.config.current)
+        object_config = object_cl.config
+        attr = deepcopy(object_cl.attr)
+        group_cl = ConfigLog.objects.get(id=self.config.current)
+        group_config = group_cl.config
+        group_keys = group_cl.attr.get('group_keys', {})
+        group_attr = self.get_config_attr()
+        config = self.merge_config(object_config, group_config, group_keys)
+        self.preparing_file_type_field(config)
+        attr.update(group_attr)
+        return config, attr
 
     def host_candidate(self):
         """Returns candidate hosts valid to add to the group"""
@@ -763,12 +805,13 @@ class GroupConfig(ADCMModel):
         if host not in self.host_candidate():
             raise AdcmEx('GROUP_CONFIG_HOST_ERROR')
 
-    def preparing_file_type_field(self):
+    def preparing_file_type_field(self, config=None):
         """Creating file for file type field"""
 
         if self.config is None:
             return
-        config = ConfigLog.objects.get(id=self.config.current).config
+        if config is None:
+            config = ConfigLog.objects.get(id=self.config.current).config
         fields = PrototypeConfig.objects.filter(
             prototype=self.object.prototype, action__isnull=True, type='file'
         ).order_by('id')
