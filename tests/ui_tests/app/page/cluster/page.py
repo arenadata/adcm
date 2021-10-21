@@ -163,6 +163,7 @@ class ClusterServicesPage(ClusterPageMixin):
             if service_text.text == service_name:
                 service_text.click()
         self.find_and_click(ClusterServicesLocators.AddServicePopup.create_btn)
+        self.wait_element_hide(ClusterServicesLocators.AddServicePopup.block)
 
     @allure.step("Click on service concern object name from the row")
     def click_on_concern_by_object_name(self, row: WebElement, concern_object_name: str):
