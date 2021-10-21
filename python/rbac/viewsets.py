@@ -49,7 +49,7 @@ class DjangoObjectPerm(DjangoObjectPermissions):
 
 
 class ModelPermViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
-    """Replace of DRF ModelViewSet with view premission"""
+    """Replace of DRF ModelViewSet with view permission"""
 
     permission_classes = (DjangoModelPerm,)
 
@@ -57,6 +57,6 @@ class ModelPermViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ances
 class GenericPermViewSet(
     viewsets.GenericViewSet,
 ):
-    """Replace of DRF GenericViewSet with view premission"""
+    """Replace of DRF GenericViewSet with view permission"""
 
     permission_classes = (DjangoModelPerm,)
