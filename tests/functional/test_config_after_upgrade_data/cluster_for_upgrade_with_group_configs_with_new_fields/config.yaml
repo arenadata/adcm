@@ -159,6 +159,12 @@
       default:
         time: '12'
         range: 'super long'
+    - &secrettext
+      name: secrettext
+      type: secrettext
+      required: false
+      default: "sec\nret\ntext"
+
 
 - type: service
   name: test_service
@@ -301,6 +307,7 @@
       default:
         time: '12'
         range: 'super long'
+    - *secrettext
 
   components:
     test_component:
@@ -442,3 +449,4 @@
           default:
             time: '12'
             range: 'super long'
+        - *secrettext
