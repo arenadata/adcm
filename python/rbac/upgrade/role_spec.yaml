@@ -35,7 +35,7 @@ roles:
                 - view
                 - add
 
-    - name: create CLuster
+    - name: create Cluster
       description: The ability to add new cluster
       apps:
         - label: cm
