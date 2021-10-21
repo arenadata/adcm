@@ -352,6 +352,7 @@ def expect_rows_amount_change(get_all_rows: Callable[[], Sized]):
 
     yield
 
+    @ignore_flaky_errors
     def _check_rows_amount_is_changed():
         assert len(get_all_rows()) != current_amount, "Amount of rows on the page hasn't changed"
 
