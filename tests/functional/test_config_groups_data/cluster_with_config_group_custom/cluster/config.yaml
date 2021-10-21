@@ -27,6 +27,22 @@
           type: json
         - name: hosts
           type: string
+    test_action_multijob:
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: ./dummy_action_cluster.yaml
+        - name: part2
+          script_type: ansible
+          script: ./dummy_action_cluster.yaml
+      states:
+        available: any
+      config:
+        - name: map
+          type: json
+        - name: hosts
+          type: string
   config:
     - name: float
       type: float
@@ -137,6 +153,22 @@
           type: json
         - name: hosts
           type: string
+    test_action_multijob:
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: ./dummy_action_service.yaml
+        - name: part2
+          script_type: ansible
+          script: ./dummy_action_service.yaml
+      states:
+        available: any
+      config:
+        - name: map
+          type: json
+        - name: hosts
+          type: string
   config:
     - name: float
       type: float
@@ -235,6 +267,22 @@
           type: job
           script: ./dummy_action_component.yaml
           script_type: ansible
+          states:
+            available: any
+          config:
+            - name: map
+              type: json
+            - name: hosts
+              type: string
+        test_action_multijob:
+          type: task
+          scripts:
+            - name: part1
+              script_type: ansible
+              script: ./dummy_action_component.yaml
+            - name: part2
+              script_type: ansible
+              script: ./dummy_action_component.yaml
           states:
             available: any
           config:

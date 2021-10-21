@@ -26,6 +26,22 @@
           type: json
         - name: hosts
           type: string
+    test_action_multijob:
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: ./dummy_action_provider.yaml
+        - name: part2
+          script_type: ansible
+          script: ./dummy_action_provider.yaml
+      states:
+        available: any
+      config:
+        - name: map
+          type: json
+        - name: hosts
+          type: string
   config:
     - name: float
       type: float
