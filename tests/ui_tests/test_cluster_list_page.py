@@ -46,7 +46,7 @@ from tests.ui_tests.app.page.service.page import (
     ServiceConfigPage,
     ServiceImportPage,
 )
-from tests.ui_tests.utils import wait_and_assert_ui_info, check_host_value
+from tests.ui_tests.utils import wait_and_assert_ui_info, check_host_value, wrap_in_dict
 
 BUNDLE_COMMUNITY = "cluster_community"
 BUNDLE_ENTERPRISE = "cluster_enterprise"
@@ -216,9 +216,11 @@ class TestClusterListPage:
         with cluster_page.wait_cluster_state_change(row):
             cluster_page.run_action_in_cluster_row(row, params["action_name"])
         with allure.step("Check cluster state has changed"):
-            assert (
-                cluster_page.get_cluster_state_from_row(row) == params["expected_state"]
-            ), f"Cluster state should be {params['expected_state']}"
+            wait_and_assert_ui_info(
+                {"state": params["expected_state"]},
+                wrap_in_dict("state", cluster_page.get_cluster_state_from_row),
+                get_info_kwargs={'row': row},
+            )
         with allure.step("Check success cluster job"):
             assert (
                 cluster_page.header.get_success_job_amount_from_header() == "1"
