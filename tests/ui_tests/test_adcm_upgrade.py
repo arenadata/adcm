@@ -32,8 +32,6 @@ from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.bundle_list.page import BundleListPage
 from tests.ui_tests.app.page.profile.page import ProfilePage
 
-# pylint: disable=redefined-outer-name
-
 
 def old_adcm_image() -> Tuple[str, str]:
     """Get previous ADCM version"""
