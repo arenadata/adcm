@@ -50,6 +50,20 @@
       config:
         - name: map
           type: json
+    test_action_multijob:
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: ./dummy_action_cluster.yaml
+        - name: part2
+          script_type: ansible
+          script: ./dummy_action_cluster.yaml
+      states:
+        available: any
+      config:
+        - name: map
+          type: json
 
 - type: service
   name: test_service_1
