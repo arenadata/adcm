@@ -97,6 +97,12 @@
         age: '24'
         name: Joe
         sex: m
+    - name: json
+      type: json
+      required: false
+      default:
+        key: "default value"
+        boolean: true
     - name: secrettext
       type: text
       required: false
