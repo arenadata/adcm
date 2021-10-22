@@ -15,12 +15,13 @@ export abstract class DetailAbstractDirective<EntityType extends AdcmEntity> ext
 
   abstract leftMenu: LeftMenuItem[];
   protected abstract subjectService: EntityService<EntityType>;
+  abstract entityParam: string;
 
   ngOnInit() {
     super.ngOnInit();
 
     this.route.params.pipe(
-      switchMap((params) => this.subjectService.get(params.host)),
+      switchMap((params) => this.subjectService.get(params[this.entityParam])),
     ).subscribe((entity) => this.entity = entity);
   }
 

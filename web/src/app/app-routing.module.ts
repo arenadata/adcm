@@ -11,7 +11,7 @@ import { HostListComponent } from '@app/components/host/host-list/host-list.comp
 import { MainInfoComponent, StatusComponent } from '@app/shared/components';
 import { ConfigComponent } from '@app/shared/configuration/main/config.component';
 import { HostproviderComponent } from '@app/components/hostprovider/hostprovider.component';
-import { CONFIG_GROUP_LIST_SERVICE, ConfigGroupHostListComponent, ConfigGroupListComponent } from '@app/config-groups';
+import { ConfigGroupHostListComponent, ConfigGroupListComponent } from '@app/config-groups';
 import { HostDetailsComponent } from '@app/components/host/host-details/host-details.component';
 import { ProviderDetailsComponent } from '@app/components/hostprovider/provider-details/provider-details.component';
 import { GroupConfigDetailsComponent } from '@app/components/hostprovider/group-config-details/group-config-details.component';
@@ -78,9 +78,6 @@ const routes: Routes = [
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
     component: GroupConfigDetailsComponent,
-    data: {
-      entityService: CONFIG_GROUP_LIST_SERVICE
-    },
     children: [
       { path: '', redirectTo: 'host', pathMatch: 'full' },
       { path: 'host', component: ConfigGroupHostListComponent },

@@ -13,9 +13,11 @@ import { IServiceComponent } from '@app/models/service-component';
 @Component({
   selector: 'app-service-component-details',
   templateUrl: '../../../templates/details.html',
-  styleUrls: ['./../../../shared/details/detail.component.scss']
+  styleUrls: ['../../../styles/details.scss']
 })
 export class ServiceComponentDetailsComponent extends DetailAbstractDirective<IServiceComponent> {
+
+  entityParam = 'servicecomponent';
 
   leftMenu = [
     DetailsFactory.labelMenuItem('Main', 'main'),

@@ -1,11 +1,11 @@
 import { Component, Injector } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Store } from '@ngrx/store';
 
 import { DetailsFactory } from '@app/factories/details.factory';
 import { DetailAbstractDirective } from '@app/abstract-directives/detail.abstract.directive';
 import { ICluster } from '@app/models/cluster';
 import { SocketState } from '@app/core/store';
-import { ActivatedRoute } from '@angular/router';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ChannelService } from '@app/core/services';
 import { ClusterEntityService } from '@app/services/cluster-entity.service';
@@ -13,9 +13,11 @@ import { ClusterEntityService } from '@app/services/cluster-entity.service';
 @Component({
   selector: 'app-cluster-details',
   templateUrl: '../../../templates/details.html',
-  styleUrls: ['./../../../shared/details/detail.component.scss']
+  styleUrls: ['../../../styles/details.scss']
 })
 export class ClusterDetailsComponent extends DetailAbstractDirective<ICluster> {
+
+  entityParam = 'cluster';
 
   leftMenu = [
     DetailsFactory.labelMenuItem('Main', 'main'),

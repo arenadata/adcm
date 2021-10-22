@@ -1,10 +1,10 @@
 import { Component, Injector } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Store } from '@ngrx/store';
 
 import { DetailsFactory } from '@app/factories/details.factory';
 import { IHost } from '@app/models/host';
 import { SocketState } from '@app/core/store';
-import { ActivatedRoute } from '@angular/router';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ChannelService } from '@app/core/services';
 import { HostService } from '@app/services/host.service';
@@ -13,9 +13,11 @@ import { DetailAbstractDirective } from '@app/abstract-directives/detail.abstrac
 @Component({
   selector: 'app-host-details',
   templateUrl: '../../../templates/details.html',
-  styleUrls: ['./../../../shared/details/detail.component.scss']
+  styleUrls: ['../../../styles/details.scss']
 })
 export class HostDetailsComponent extends DetailAbstractDirective<IHost> {
+
+  entityParam = 'host';
 
   leftMenu = [
     DetailsFactory.labelMenuItem('Main', 'main'),

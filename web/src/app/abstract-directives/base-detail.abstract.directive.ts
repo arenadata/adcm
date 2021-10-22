@@ -22,7 +22,6 @@ import { EmmitRow, Host, IAction, Job } from '../core/types';
 import { SocketListenerDirective } from '@app/shared/directives';
 import { IDetails } from '../shared/details/navigation.service';
 import { AdcmEntity } from '../models/entity';
-import { EntityService } from '../abstract/entity-service';
 import { IIssues } from '../models/issue';
 import { IssueHelper } from '../helpers/issue-helper';
 import { ICluster } from '../models/cluster';
@@ -41,8 +40,6 @@ export abstract class BaseDetailAbstractDirective extends SocketListenerDirectiv
 
   navigationPath: Observable<AdcmEntity[]> = this.store.select(getNavigationPath).pipe(this.takeUntil());
 
-  entityService: EntityService<any>;
-
   constructor(
     socket: Store<SocketState>,
     protected route: ActivatedRoute,
@@ -52,19 +49,19 @@ export abstract class BaseDetailAbstractDirective extends SocketListenerDirectiv
     injector: Injector,
   ) {
     super(socket);
-    const serviceToken = route.snapshot.data['entityService'];
-    if (serviceToken) {
-      this.entityService = injector.get<EntityService<any>>(serviceToken);
-    }
   }
 
   get Current() {
     return this.service.Current;
   }
 
+  initContext(param: ParamMap): Observable<WorkerInstance> {
+    return this.service.getContext(param);
+  }
+
   ngOnInit(): void {
     this.subscription$ = this.route.paramMap.pipe(
-      switchMap((param) => this.service.getContext(param, this.entityService)),
+      switchMap((param) => this.initContext(param)),
       tap((w) => this.run(w)),
       this.takeUntil(),
     ).subscribe();

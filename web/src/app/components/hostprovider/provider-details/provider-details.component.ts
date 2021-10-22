@@ -1,11 +1,11 @@
 import { Component, Injector } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Store } from '@ngrx/store';
 
 import { DetailsFactory } from '@app/factories/details.factory';
 import { DetailAbstractDirective } from '@app/abstract-directives/detail.abstract.directive';
 import { Provider } from '@app/core/types';
 import { SocketState } from '@app/core/store';
-import { ActivatedRoute } from '@angular/router';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ChannelService } from '@app/core/services';
 import { ProviderService } from '@app/services/provider.service';
@@ -13,9 +13,11 @@ import { ProviderService } from '@app/services/provider.service';
 @Component({
   selector: 'app-provider-details',
   templateUrl: '../../../templates/details.html',
-  styleUrls: ['./../../../shared/details/detail.component.scss']
+  styleUrls: ['../../../styles/details.scss']
 })
 export class ProviderDetailsComponent extends DetailAbstractDirective<Provider> {
+
+  entityParam = 'provider';
 
   leftMenu = [
     DetailsFactory.labelMenuItem('Main', 'main'),

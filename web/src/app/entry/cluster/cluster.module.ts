@@ -25,10 +25,8 @@ import { ServicesComponent } from '@app/components/cluster/services/services.com
 import { AuthGuard } from '../../core/auth/auth.guard';
 import { ServiceComponentsComponent } from '../../components/service-component/service-components.component';
 import {
-  CONFIG_GROUP_LIST_SERVICE,
   ConfigGroupHostListComponent,
   ConfigGroupListComponent,
-  ConfigGroupListService,
   ConfigGroupModule
 } from '../../config-groups';
 import { ClusterDetailsComponent } from '../../components/cluster/cluster-details/cluster-details.component';
@@ -65,9 +63,6 @@ const clusterRoutes: Routes = [
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
     component: GroupConfigDetailsComponent,
-    data: {
-      entityService: CONFIG_GROUP_LIST_SERVICE
-    },
     children: [
       { path: '', redirectTo: 'host', pathMatch: 'full' },
       { path: 'host', component: ConfigGroupHostListComponent },
@@ -94,9 +89,6 @@ const clusterRoutes: Routes = [
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
     component: GroupConfigDetailsComponent,
-    data: {
-      entityService: CONFIG_GROUP_LIST_SERVICE
-    },
     children: [
       { path: '', redirectTo: 'host', pathMatch: 'full' },
       { path: 'host', component: ConfigGroupHostListComponent },
@@ -121,9 +113,6 @@ const clusterRoutes: Routes = [
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
     component: GroupConfigDetailsComponent,
-    data: {
-      entityService: CONFIG_GROUP_LIST_SERVICE
-    },
     children: [
       { path: '', redirectTo: 'host', pathMatch: 'full' },
       { path: 'host', component: ConfigGroupHostListComponent },
@@ -156,11 +145,5 @@ export class ClusterRoutingModule {
 @NgModule({
   imports: [CommonModule, SharedModule, RouterModule, ConfigGroupModule, ClusterRoutingModule],
   declarations: [ClusterListComponent, ServicesComponent, ClusterHostComponent, HcmapComponent],
-  providers: [
-    {
-      provide: CONFIG_GROUP_LIST_SERVICE,
-      useClass: ConfigGroupListService
-    },
-  ]
 })
 export class ClusterModule {}
