@@ -89,6 +89,12 @@
         age: '24'
         name: Joe
         sex: m
+    - name: json
+      type: json
+      required: false
+      default:
+        key: "default value"
+        boolean: true
     - &secrettext
       name: secrettext
       type: secrettext
@@ -174,6 +180,12 @@
         age: '24'
         name: Joe
         sex: m
+    - name: json
+      type: json
+      required: false
+      default:
+        key: "default value"
+        boolean: true
     - *secrettext
 
   components:
@@ -254,4 +266,10 @@
             age: '24'
             name: Joe
             sex: m
+        - name: json
+          type: json
+          required: false
+          default:
+            key: "default value"
+            boolean: true
         - *secrettext
