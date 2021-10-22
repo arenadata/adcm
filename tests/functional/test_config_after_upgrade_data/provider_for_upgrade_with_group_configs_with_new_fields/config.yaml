@@ -159,6 +159,18 @@
       default:
         time: '12'
         range: 'super long'
+    - name: json
+      type: json
+      required: false
+      default:
+        key: "default value"
+        boolean: true
+    - name: new_json
+      type: json
+      required: false
+      default:
+        key: "value"
+        integer: 52
     - name: secrettext
       type: secrettext
       required: false
