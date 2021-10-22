@@ -20,9 +20,22 @@ from django.core.management.base import BaseCommand
 from django.db.transaction import atomic
 from django.db.utils import IntegrityError
 
-from cm import models
 from cm.errors import AdcmEx
 from cm.adcm_config import save_file_type
+from cm.models import (
+    Bundle,
+    Cluster,
+    Prototype,
+    ClusterObject,
+    ServiceComponent,
+    Host,
+    HostProvider,
+    GroupConfig,
+    ObjectConfig,
+    ConfigLog,
+    PrototypeConfig,
+    HostComponent,
+)
 
 
 def deserializer_datetime_fields(obj, fields=None):
@@ -47,8 +60,8 @@ def get_prototype(**kwargs):
     :return: Prototype object
     :rtype: models.Prototype
     """
-    bundle = models.Bundle.objects.get(hash=kwargs.pop('bundle_hash'))
-    prototype = models.Prototype.objects.get(bundle=bundle, **kwargs)
+    bundle = Bundle.objects.get(hash=kwargs.pop('bundle_hash'))
+    prototype = Prototype.objects.get(bundle=bundle, **kwargs)
     return prototype
 
 
@@ -67,12 +80,12 @@ def create_config(config):
         previous_config = config['previous']
         deserializer_datetime_fields(previous_config, ['date'])
 
-        conf = models.ObjectConfig.objects.create(current=0, previous=0)
+        conf = ObjectConfig.objects.create(current=0, previous=0)
 
-        current = models.ConfigLog.objects.create(obj_ref=conf, **current_config)
+        current = ConfigLog.objects.create(obj_ref=conf, **current_config)
         current_id = current.id
         if previous_config is not None:
-            previous = models.ConfigLog.objects.create(obj_ref=conf, **previous_config)
+            previous = ConfigLog.objects.create(obj_ref=conf, **previous_config)
             previous_id = previous.id
         else:
             previous_id = 0
@@ -89,7 +102,7 @@ def create_file_from_config(obj, config):
     if config is not None:
         conf = config["current"]["config"]
         proto = obj.prototype
-        for pconf in models.PrototypeConfig.objects.filter(prototype=proto, type='file'):
+        for pconf in PrototypeConfig.objects.filter(prototype=proto, type='file'):
             if pconf.subname and conf[pconf.name].get(pconf.subname):
                 save_file_type(obj, pconf.name, pconf.subname, conf[pconf.name][pconf.subname])
             elif conf.get(pconf.name):
@@ -106,13 +119,13 @@ def create_cluster(cluster):
     :rtype: models.Cluster
     """
     try:
-        models.Cluster.objects.get(name=cluster['name'])
+        Cluster.objects.get(name=cluster['name'])
         raise AdcmEx('CLUSTER_CONFLICT', 'Cluster with the same name already exist')
-    except models.Cluster.DoesNotExist:
+    except Cluster.DoesNotExist:
         prototype = get_prototype(bundle_hash=cluster.pop('bundle_hash'), type='cluster')
         ex_id = cluster.pop('id')
         config = cluster.pop('config')
-        cluster = models.Cluster.objects.create(
+        cluster = Cluster.objects.create(
             prototype=prototype, config=create_config(config), **cluster
         )
         create_file_from_config(cluster, config)
@@ -131,15 +144,15 @@ def create_provider(provider):
     bundle_hash = provider.pop('bundle_hash')
     ex_id = provider.pop('id')
     try:
-        same_name_provider = models.HostProvider.objects.get(name=provider['name'])
+        same_name_provider = HostProvider.objects.get(name=provider['name'])
         if same_name_provider.prototype.bundle.hash != bundle_hash:
             raise IntegrityError('Name of provider already in use in another bundle')
         create_file_from_config(same_name_provider, provider['config'])
         return ex_id, same_name_provider
-    except models.HostProvider.DoesNotExist:
+    except HostProvider.DoesNotExist:
         prototype = get_prototype(bundle_hash=bundle_hash, type='provider')
         config = provider.pop('config')
-        provider = models.HostProvider.objects.create(
+        provider = HostProvider.objects.create(
             prototype=prototype, config=create_config(config), **provider
         )
         create_file_from_config(provider, config)
@@ -158,17 +171,17 @@ def create_host(host, cluster):
     :rtype: models.Host
     """
     host.pop('provider')
-    provider = models.HostProvider.objects.get(name=host.pop('provider__name'))
+    provider = HostProvider.objects.get(name=host.pop('provider__name'))
     try:
-        models.Host.objects.get(fqdn=host['fqdn'])
+        Host.objects.get(fqdn=host['fqdn'])
         provider.delete()
         cluster.delete()
         raise AdcmEx('HOST_CONFLICT', 'Host fqdn already in use')
-    except models.Host.DoesNotExist:
+    except Host.DoesNotExist:
         prototype = get_prototype(bundle_hash=host.pop('bundle_hash'), type='host')
         ex_id = host.pop('id')
         config = host.pop('config')
-        new_host = models.Host.objects.create(
+        new_host = Host.objects.create(
             prototype=prototype,
             provider=provider,
             config=create_config(config),
@@ -195,7 +208,7 @@ def create_service(service, cluster):
     )
     ex_id = service.pop('id')
     config = service.pop('config')
-    service = models.ClusterObject.objects.create(
+    service = ClusterObject.objects.create(
         prototype=prototype, cluster=cluster, config=create_config(config), **service
     )
     create_file_from_config(service, config)
@@ -223,7 +236,7 @@ def create_component(component, cluster, service):
     )
     ex_id = component.pop('id')
     config = component.pop('config')
-    component = models.ServiceComponent.objects.create(
+    component = ServiceComponent.objects.create(
         prototype=prototype,
         cluster=cluster,
         service=service,
@@ -252,7 +265,7 @@ def create_host_component(host_component, cluster, host, service, component):
     :rtype: models.HostComponent
     """
     host_component.pop('cluster')
-    host_component = models.HostComponent.objects.create(
+    host_component = HostComponent.objects.create(
         cluster=cluster, host=host, service=service, component=component, **host_component
     )
     return host_component
@@ -276,8 +289,8 @@ def check(data):
 
     for bundle_hash, bundle in data['bundles'].items():
         try:
-            models.Bundle.objects.get(hash=bundle_hash)
-        except models.Bundle.DoesNotExist as err:
+            Bundle.objects.get(hash=bundle_hash)
+        except Bundle.DoesNotExist as err:
             raise AdcmEx(
                 'DUMP_LOAD_BUNDLE_ERROR',
                 msg=f'Bundle "{bundle["name"]} {bundle["version"]}" not found',
