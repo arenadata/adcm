@@ -9,6 +9,7 @@ import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { IFieldOptions } from '@app/shared/configuration/types';
 import { BaseDirective } from '@adwp-ui/widgets';
 import { MatCheckboxChange } from '@angular/material/checkbox';
+import { FieldComponent } from '@app/shared/configuration/field/field.component';
 
 @Component({
   selector: 'app-group-keys-wrapper',
@@ -42,13 +43,17 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
 
   @Input() fieldOptions: IFieldOptions;
 
+  @Input() field: FieldComponent;
+
+  private _disabled: boolean;
+
   constructor(private _attributeSrv: AttributeService) {
     super();
   }
 
-
   ngOnInit(): void {
     this._resolveAndSetupControls(this.attributeForm, this.parametersForm, this.fieldOptions);
+    Promise.resolve().then(() => this._restoreStatus());
   }
 
   private _resolveAndSetupControls(attributeForm: FormGroup, parametersForm: FormGroup, fieldOptions: IFieldOptions): void {
@@ -80,15 +85,21 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
       }
 
       this.tooltipText = this.wrapperOptions.tooltipText;
+      this._disabled = !attributeControl.value;
     }
-
   }
 
   onChange(e: MatCheckboxChange) {
     if (e.checked) {
       this.parameterControl.enable();
+      this.field.disabled = false;
     } else {
       this.parameterControl.disable();
+      this.field.disabled = true;
     }
+  }
+
+  private _restoreStatus() {
+    this.field.disabled = this._disabled;
   }
 }
