@@ -266,6 +266,18 @@ def wait_and_assert_ui_info(
         wait_until_step_succeeds(_check_info_from_ui, timeout=timeout, period=period)
 
 
+def wrap_in_dict(key: str, function: Callable) -> Callable:
+    """
+    Helper to use `wait_and_assert_ui_info` with functions that doesn't return dict-like value.
+
+    It "changes" return type of function by creating lambda returning dict
+    """
+    return lambda *args, **kwargs: {key: function(*args, **kwargs)}
+
+
+# !===== Helpful stuff =====!
+
+
 def check_host_value(key: str, actual_value, expected_value):
     """
     Assert that actual value equals to expected value
@@ -340,6 +352,7 @@ def expect_rows_amount_change(get_all_rows: Callable[[], Sized]):
 
     yield
 
+    @ignore_flaky_errors
     def _check_rows_amount_is_changed():
         assert len(get_all_rows()) != current_amount, "Amount of rows on the page hasn't changed"
 
