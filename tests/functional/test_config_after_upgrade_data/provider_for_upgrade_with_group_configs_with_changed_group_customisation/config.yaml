@@ -103,6 +103,11 @@
         age: '24'
         name: Joe
         sex: m
+    - name: secrettext
+      type: secrettext
+      required: false
+      default: "sec\nret\ntext"
+      group_customization: true
 
 - type: host
   name: host_from_provider
