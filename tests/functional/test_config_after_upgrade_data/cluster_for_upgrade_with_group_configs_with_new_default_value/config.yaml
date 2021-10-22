@@ -96,6 +96,17 @@
         age: '25'
         name: Jane
         sex: f
+    - name: json
+      type: json
+      required: false
+      default:
+        key: "initial value"
+        float: 3.25
+    - &secrettext
+      name: secrettext
+      type: secrettext
+      required: false
+      default: "new\nidentity"
 
 - type: service
   name: test_service
@@ -175,6 +186,13 @@
         age: '25'
         name: Jane
         sex: f
+    - name: json
+      type: json
+      required: false
+      default:
+        key: "initial value"
+        float: 3.25
+    - *secrettext
 
   components:
     test_component:
@@ -253,3 +271,10 @@
             age: '25'
             name: Jane
             sex: f
+        - name: json
+          type: json
+          required: false
+          default:
+            key: "initial value"
+            float: 3.25
+        - *secrettext

@@ -97,6 +97,17 @@
         age: '24'
         name: Joe
         sex: m
+    - name: json
+      type: json
+      required: false
+      default:
+        key: "default value"
+        boolean: true
+    - &secrettext
+      name: secrettext
+      type: secrettext
+      required: false
+      default: "sec\nret\ntext"
 
 - type: service
   name: test_service
@@ -177,6 +188,13 @@
         age: '24'
         name: Joe
         sex: m
+    - name: json
+      type: json
+      required: false
+      default:
+        key: "default value"
+        boolean: true
+    - *secrettext
 
   components:
     test_component:
@@ -256,3 +274,10 @@
             age: '24'
             name: Joe
             sex: m
+        - name: json
+          type: json
+          required: false
+          default:
+            key: "default value"
+            boolean: true
+        - *secrettext
