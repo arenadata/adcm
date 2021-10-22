@@ -147,6 +147,7 @@ def _update_config_and_attr_for_changed_group_customisation_test(
         attr["custom_group_keys"]["option"] = False
         attr["custom_group_keys"]["group"] = {"port": False, "transport_port": False}
         attr["custom_group_keys"]["map"] = False
+        attr["custom_group_keys"]["secrettext"] = True
 
     return config, attr
 
