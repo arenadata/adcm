@@ -758,9 +758,8 @@ class GroupConfig(ADCMModel):
                 config.setdefault(k, {})
                 self.merge_config(object_config[k], group_config[k], group_keys[k], config[k])
             else:
-                if v:
-                    if k in group_config:
-                        config[k] = group_config[k]
+                if v and k in group_config:
+                    config[k] = group_config[k]
                 else:
                     if k in object_config:
                         config[k] = object_config[k]
