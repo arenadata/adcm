@@ -17,7 +17,6 @@
 from __future__ import unicode_literals
 
 import os.path
-import re
 from collections.abc import Mapping
 from copy import deepcopy
 from enum import Enum
@@ -38,9 +37,9 @@ from cm.errors import AdcmEx
 from cm.logger import log
 
 
-def validate_line_break_character(value):
+def validate_line_break_character(value: str) -> None:
     """Check line break character in CharField"""
-    if re.findall(r'\n', value):
+    if len(value.splitlines()) > 1:
         raise ValidationError('the string field contains a line break character')
 
 

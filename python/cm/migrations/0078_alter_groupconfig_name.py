@@ -17,6 +17,14 @@ from django.db import migrations, models
 import cm.models
 
 
+def remove_line_break_character(apps, schema_editor):
+    """Remove line break character from `name` field from `GroupConfig` model"""
+    GroupConfig = apps.get_model('cm', 'GroupConfig')
+    for gc in GroupConfig.objects.all():
+        gc.name = ''.join(gc.name.splitlines())
+        gc.save()
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ('cm', '0077_job_lock_message_tpl'),
@@ -30,4 +38,5 @@ class Migration(migrations.Migration):
                 max_length=30, validators=[cm.models.validate_line_break_character]
             ),
         ),
+        migrations.RunPython(remove_line_break_character),
     ]
