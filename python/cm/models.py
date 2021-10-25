@@ -480,9 +480,6 @@ class Cluster(ADCMEntity):
     def display_name(self):
         return self.name
 
-    def __str__(self):
-        return f'{self.name} ({self.id})'
-
     @property
     def serialized_issue(self):
         result = {
@@ -521,9 +518,6 @@ class HostProvider(ADCMEntity):
     def display_name(self):
         return self.name
 
-    def __str__(self):
-        return str(self.name)
-
     @property
     def serialized_issue(self):
         result = {
@@ -553,9 +547,6 @@ class Host(ADCMEntity):
     @property
     def display_name(self):
         return self.fqdn
-
-    def __str__(self):
-        return f"{self.fqdn}"
 
     @property
     def serialized_issue(self):
