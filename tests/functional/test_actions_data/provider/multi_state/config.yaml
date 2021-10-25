@@ -40,16 +40,16 @@
       script: dummy_action.yaml
       script_type: ansible
       masking:
-        state:
-          available:
-            - created
+        multi_state:
+          unavailable:
+            - installed
 
     some_action_state_installed:
       type: job
       script: dummy_action.yaml
       script_type: ansible
       masking:
-        state:
+        multi_state:
           available:
             - installed
 
@@ -81,7 +81,7 @@
       script: dummy_action.yaml
       script_type: ansible
       masking:
-        state:
+        multi_state:
           available: any
 
     some_action_state_created:
@@ -89,16 +89,16 @@
       script: dummy_action.yaml
       script_type: ansible
       masking:
-        state:
-          available:
-            - created
+        multi_state:
+          unavailable:
+            - installed
 
     some_action_state_installed:
       type: job
       script: dummy_action.yaml
       script_type: ansible
       masking:
-        state:
+        multi_state:
           available:
             - installed
 
