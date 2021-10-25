@@ -441,6 +441,7 @@ def copy_stage_actons(stage_actions, prototype):
             'state_on_success',
             'state_on_fail',
             'multi_state_available',
+            'multi_state_unavailable',
             'multi_state_on_success_set',
             'multi_state_on_success_unset',
             'multi_state_on_fail_set',
