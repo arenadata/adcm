@@ -88,13 +88,6 @@ class ADCMTestApiWrapper:
             except AssertionError:
                 if request.data and request.data.get("name") and "\n" in request.data.get("name"):
                     pytest.xfail(reason="ADCM-2052 String type fields with '\\n' in value")
-                if (
-                    request.endpoint == Endpoints.GroupConfig
-                    and response.status_code == HTTPStatus.NOT_FOUND
-                    and request.data
-                    and request.data.get("object_id") == 100
-                ):
-                    pytest.xfail("ADCM-2051 404 on POST negative cases for /group-config/")
                 raise
 
             if expected_response.body is not None:
