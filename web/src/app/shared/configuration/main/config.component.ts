@@ -108,10 +108,6 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     this.filter(this.tools.filterParams);
     this.cd.detectChanges();
 
-    this.fields.form.valueChanges.subscribe((qq) => {
-      console.log('valueChanges: ', qq);
-    });
-
     if (!this.isGroupConfig) {
       this.service.getHistoryList(this.configUrl, this.rawConfig.value.id).subscribe((h) => {
         this.historyComponent.compareConfig = h;
