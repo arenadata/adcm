@@ -23,6 +23,7 @@ from adcm_client.objects import (
     Provider,
 )
 from adcm_pytest_plugin import utils
+from adcm_pytest_plugin import params
 
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
@@ -369,6 +370,7 @@ class TestClusterServicePage:
         cluster_service_page.click_on_concern_by_object_name(row, params["concern_object_name"])
         ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, 1).wait_page_is_opened()
 
+    @params.including_https
     @pytest.mark.smoke()
     def test_check_actions_from_service_list_page(self, app_fs, create_community_cluster_with_service):
         """Test run action from the row on cluster/{}/service page"""
