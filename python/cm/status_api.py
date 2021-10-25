@@ -173,8 +173,19 @@ def get_hc_status(hc):
     return get_status(hc.component, f'/host/{hc.host_id}/component/{hc.component_id}/')
 
 
+def get_host_comp_status(host, component):
+    return get_status(component, f'/host/{host.id}/component/{component.id}/')
+
+
 def get_component_status(comp):
     return get_status(comp, f'/component/{comp.id}/')
+
+
+def get_cluster_map(cluster):
+    r = api_get(f'/cluster/{cluster.id}/?view=interface')
+    if r is None:
+        return None
+    return r.json()
 
 
 def load_service_map():

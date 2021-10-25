@@ -158,11 +158,24 @@
       default:
         time: '12'
         range: 'super long'
+    - name: json
+      type: json
+      required: false
+      default:
+        key: "default value"
+        boolean: true
+    - name: new_json
+      type: json
+      required: false
+      default:
+        key: "value"
+        integer: 52
     - &secrettext
       name: secrettext
       type: secrettext
       required: false
       default: "sec\nret\ntext"
+
 - type: service
   name: test_service
   version: 1.6
@@ -303,6 +316,18 @@
       default:
         time: '12'
         range: 'super long'
+    - name: json
+      type: json
+      required: false
+      default:
+        key: "default value"
+        boolean: true
+    - name: new_json
+      type: json
+      required: false
+      default:
+        key: "value"
+        integer: 52
     - *secrettext
 
   components:
@@ -444,4 +469,16 @@
           default:
             time: '12'
             range: 'super long'
+        - name: json
+          type: json
+          required: false
+          default:
+            key: "default value"
+            boolean: true
+        - name: new_json
+          type: json
+          required: false
+          default:
+            key: "value"
+            integer: 52
         - *secrettext
