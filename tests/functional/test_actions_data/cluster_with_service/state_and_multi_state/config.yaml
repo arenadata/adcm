@@ -21,7 +21,7 @@
       masking:
         state:
           available:
-            - installed
+            - created
         multi_state:
           unavailable:
             - installed
@@ -55,7 +55,7 @@
       masking:
         state:
           available:
-            - installed
+            - created
         multi_state:
           unavailable:
             - installed
@@ -91,7 +91,7 @@
       masking:
         state:
           available:
-            - installed
+            - created
         multi_state:
           unavailable:
             - installed
