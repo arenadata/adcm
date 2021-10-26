@@ -30,3 +30,10 @@ lxml
 pycrypto
 --extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
 adwp-events==0.1.7
+# YCC bundle libs (yandexcloud requirements)
+cryptography>=2.8
+grpcio>=1.38.1
+googleapis-common-protos>=1.53.0
+pyjwt>=1.7.1
+requests>=2.22.0
+six>=1.14.0
