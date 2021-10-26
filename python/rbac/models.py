@@ -37,7 +37,7 @@ class Role(models.Model):
     permissions = models.ManyToManyField(Permission, blank=True)
     module_name = models.CharField(max_length=32)
     class_name = models.CharField(max_length=32)
-    init_params = models.JSONField(default={})
+    init_params = models.JSONField(default=dict)
     __obj__ = None
 
     def get_role_obj(self):
