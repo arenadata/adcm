@@ -13,21 +13,34 @@
 """RBAC Role classes"""
 
 from guardian.models import UserObjectPermission
+from rbac.models import PolicyPermission
 
 
 class ModelRole:
     def __init__(self, **kwargs):
         pass
 
-    def apply(self, role, user, obj=None):
+    def apply(self, policy, role, user, group=None, obj=None):
         for perm in role.get_permissions():
-            user.user_permissions.add(perm)
+            if group is not None:
+                group.permissions.add(perm)
+                pp = PolicyPermission(policy=policy, group=group, permission=perm).create()
+                policy.model_perm.add(pp)
+            if user is not None:
+                user.user_permissions.add(perm)
+                pp = PolicyPermission(policy=policy, user=user, permission=perm).create()
+                policy.model_perm.add(pp)
 
 
 class ObjectRole:
     def __init__(self, **kwargs):
         pass
 
-    def apply(self, role, user, obj):
+    def apply(self, policy, role, user, group=None, obj=None):
         for perm in role.get_permissions():
-            UserObjectPermission.objects.assign_perm(perm, user, obj=obj)
+            if user is not None:
+                uop = UserObjectPermission.objects.assign_perm(perm, user, obj=obj)
+                policy.object_perm.add(uop)
+            if group is not None:
+                uop = UserObjectPermission.objects.assign_perm(perm, group, obj=obj)
+                policy.object_perm.add(uop)

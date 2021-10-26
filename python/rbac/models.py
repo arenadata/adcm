@@ -15,9 +15,11 @@
 import importlib
 
 from django.contrib.auth.models import User, Group, Permission
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.db import transaction
+from django.db.transaction import atomic
 from django.db import models
+from guardian.models import UserObjectPermission
 
 from adwp_base.errors import raise_AdwpEx as err
 
@@ -33,8 +35,6 @@ class Role(models.Model):
     description = models.TextField(blank=True)
     childs = models.ManyToManyField("self", symmetrical=False, blank=True)
     permissions = models.ManyToManyField(Permission, blank=True)
-    user = models.ManyToManyField(User, blank=True)
-    group = models.ManyToManyField(Group, blank=True)
     module_name = models.CharField(max_length=32)
     class_name = models.CharField(max_length=32)
     init_params = models.JSONField(default={})
@@ -42,15 +42,23 @@ class Role(models.Model):
 
     def get_role_obj(self):
         """Returns object with related role based on classes from roles.py"""
+        try:
+            role_module = importlib.import_module(self.module_name)
+        except ModuleNotFoundError:
+            err('ROLE_MODULE_ERROR', f'No module named "{self.module_name}"')
+        try:
+            role_class = getattr(role_module, self.class_name)
+        except AttributeError:
+            msg = f'No class named "{self.class_name}" in module "{self.module_name}"'
+            err('ROLE_CLASS_ERROR', msg)
 
-        role_module = importlib.import_module(self.module_name)
-        role_class = getattr(role_module, self.class_name)
-        return role_class(**self.init_params)   # pylint: disable=E1134
+        return role_class(**self.init_params)  # pylint: disable=E1134
 
-    def apply(self, user, obj):
+    def apply(self, policy, user, group=None, obj=None):
+        """apply policy to user and/or group"""
         if __obj__ is None:
             __obj__ = self.get_role_obj()
-        return __obj__.apply(self, user, obj)
+        return __obj__.apply(self, policy, user, group, obj)
 
     def get_permissions(self, role=None):
         """Recursively get permissions of role and all her childs"""
@@ -72,64 +80,6 @@ class Role(models.Model):
         get_perm(role, perm_list, role_list)
         return perm_list
 
-    def get_permissions_without_role(self, role_list):
-        """Get all permissions of user except specified role permissions"""
-        perm_list = {}
-        for r in role_list:
-            if r == self:
-                continue
-            for perm in self.get_permissions(r):
-                perm_list[perm.codename] = True
-        return perm_list
-
-    def add_user(self, user):
-        """Add role and appropriate permissions to user"""
-        if self in user.role_set.all():
-            err('ROLE_ERROR', f'User "{user.username}" already has role "{self.name}"')
-        with transaction.atomic():
-            self.user.add(user)
-            self.save()
-            for perm in self.get_permissions():
-                user.user_permissions.add(perm)
-        return self
-
-    def remove_user(self, user):
-        """Remove role and appropriate permissions from user"""
-        user_roles = user.role_set.all()
-        if self not in user_roles:
-            err('ROLE_ERROR', f'User "{user.username}" does not has role "{self.name}"')
-        perm_list = self.get_permissions_without_role(user_roles)
-        with transaction.atomic():
-            self.user.remove(user)
-            self.save()
-            for perm in self.get_permissions():
-                if perm.codename not in perm_list:
-                    user.user_permissions.remove(perm)
-
-    def add_group(self, group):
-        """Add role and appropriate permissions to group"""
-        if self in group.role_set.all():
-            err('ROLE_ERROR', f'Group "{group.name}" already has role "{self.name}"')
-        with transaction.atomic():
-            self.group.add(group)
-            self.save()
-            for perm in self.get_permissions():
-                group.permissions.add(perm)
-        return self
-
-    def remove_group(self, group):
-        """Remove role and appropriate permissions from group"""
-        group_roles = group.role_set.all()
-        if self not in group_roles:
-            err('ROLE_ERROR', f'Group "{group.name}" does not has role "{self.name}"')
-        perm_list = self.get_permissions_without_role(group_roles)
-        with transaction.atomic():
-            self.group.remove(group)
-            self.save()
-            for perm in self.get_permissions():
-                if perm.codename not in perm_list:
-                    group.permissions.remove(perm)
-
 
 class RoleMigration(models.Model):
     """Keep version of last role upgrade"""
@@ -143,7 +93,15 @@ class PolicyObject(models.Model):
 
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
-    object = models.GenericForeignKey('content_type', 'object_id')
+    object = GenericForeignKey('content_type', 'object_id')
+
+
+class PolicyPermission(models.Model):
+    """Reference to Policy model level Permissions"""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, default=None)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True, default=None)
+    permission = models.ForeignKey(Permission, on_delete=models.CASCADE, null=True, default=None)
 
 
 class Policy(models.Model):
@@ -153,12 +111,34 @@ class Policy(models.Model):
     object = models.ManyToManyField(PolicyObject, blank=True)
     user = models.ManyToManyField(User, blank=True)
     group = models.ManyToManyField(Group, blank=True)
-    # permissions = models.ManyToManyField(Permission, blank=True, on_delete=models.CASCADE)
+    model_perm = models.ManyToManyField(PolicyPermission, blank=True)
+    object_perm = models.ManyToManyField(UserObjectPermission, blank=True)
 
-    def apply(self, user, obj=None):
+    def remove_permissions(self):
+        for pp in self.model_perm.all():
+            if pp.user:
+                pp.user.user_permissions.remove(pp.permission)
+            if pp.group:
+                pp.group.permissions.remove(pp.permission)
+            pp.delete()
+        for pp in self.object_perm.all():
+            pp.delete()
+
+    def get_objects(self):
+        obj_list = []
+        for obj in self.object.all():
+            obj_list.append(obj.object)
+        return obj_list
+
+    @atomic
+    def apply(self):
         """This function apply role over"""
-        # self.permissions.all().delete()
-        self.role.apply(self, user, obj=None)
+        self.remove_permissions()
+        objects = self.get_objects()
+        for user in self.user.all():
+            self.role.apply(self, user, obj=objects)
+        for group in self.group.all():
+            self.role.apply(self, None, group=group, obj=objects)
 
 
 class UserProfile(models.Model):
