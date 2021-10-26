@@ -10,6 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import {
+  AfterViewInit,
   ChangeDetectorRef,
   Component,
   EventEmitter,
@@ -43,7 +44,7 @@ import * as deepmerge from 'deepmerge';
   animations: historyAnime,
   providers: [MainService]
 })
-export class ConfigComponent extends SocketListenerDirective implements OnChanges, OnInit {
+export class ConfigComponent extends SocketListenerDirective implements OnChanges, OnInit, AfterViewInit {
   loadingStatus = 'Loading...';
   rawConfig = new BehaviorSubject<IConfig>(null);
   saveFlag = false;
@@ -77,6 +78,10 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     super(socket);
     this.isGroupConfig = route.snapshot.data['isGroupConfig'];
     this.worker$ = service.worker$.pipe(this.takeUntil());
+  }
+
+  ngAfterViewInit(): void {
+
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -143,7 +148,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     if (form.valid) {
       this.saveFlag = true;
       this.historyComponent.reset();
-      const config = this.service.parseValue(this.fields.form.value, this.rawConfig.value.config);
+      const config = this.service.parseValue(this.fields.form.getRawValue(), this.rawConfig.value.config);
       const send = {
         config,
         attr: deepmerge(deepmerge(this.rawConfig.getValue().attr, this.fields.attr), this.attributesSrv.rawAttributes()),
