@@ -12,7 +12,6 @@
 
 """Module contains api objects for executing and checking requests"""
 from dataclasses import field, dataclass
-from http import HTTPStatus
 from typing import Optional
 from urllib.parse import urlencode
 
