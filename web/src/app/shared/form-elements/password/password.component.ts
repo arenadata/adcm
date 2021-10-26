@@ -62,10 +62,20 @@ export class PasswordComponent extends FieldDirective implements OnInit, AfterVi
       this.form.addControl(
         `confirm_${this.field.name}`,
         new FormControl(
-          this.field.value,
+          { value: this.field.value, disabled: this.control.disabled },
           this.field.activatable ? [] : this.service.setValidator(this.field, this.control)
         )
       );
+
+      this.control.statusChanges.pipe(
+        this.takeUntil()
+      ).subscribe((state) => {
+        if (state === 'DISABLED') {
+          this.form.controls[`confirm_${this.field.name}`].disable();
+        } else {
+          this.form.controls[`confirm_${this.field.name}`].enable();
+        }
+      });
     }
 
     if (this.field.required && !this.field.value) {

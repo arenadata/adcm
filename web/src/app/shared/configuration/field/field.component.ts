@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, InjectionToken, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { FieldDirective } from '@app/shared/form-elements/field.directive';
 import { BaseMapListDirective } from '@app/shared/form-elements/map.component';
@@ -18,6 +18,8 @@ import { SchemeComponent } from '../scheme/scheme.component';
 import { IFieldOptions } from '../types';
 import { BaseDirective } from '@adwp-ui/widgets';
 
+export const CONFIG_FIELD = new InjectionToken('Config field');
+
 @Component({
   selector: 'app-field',
   templateUrl: './field.component.html',
@@ -25,7 +27,10 @@ import { BaseDirective } from '@adwp-ui/widgets';
   host: {
     class: 'field-row w100 d-flex ',
     '[class.read-only]': 'options.read_only'
-  }
+  },
+  providers: [
+    { provide: CONFIG_FIELD, useExisting: FieldComponent }
+  ]
 })
 export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
   @Input()
@@ -33,6 +38,8 @@ export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
   @Input()
   form: FormGroup;
   currentFormGroup: FormGroup;
+
+  disabled: boolean = false;
 
   @ViewChild('cc') inputControl: FieldDirective;
 
@@ -67,6 +74,8 @@ export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
    * @member FieldComponent
    */
   restore() {
+    if (this.disabled) return;
+
     const field = this.currentFormGroup.controls[this.options.name];
     const defaultValue = this.options.default;
     const type = this.options.type;
