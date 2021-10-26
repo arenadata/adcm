@@ -180,3 +180,40 @@ PUT           False
 PATCH         False
 DELETE        False
 ============= =======
+
+.. _concern-item:
+
+Config
+~~~~~~
+
+ConcernItem is an object that contains info about single concern to address before any actions could be run on linked objects
+
+Endpoint: */concern*
+
+=================== ======= ======= ======== ================ ================== ================== ===========
+Name                Type    Default Nullable :term:`Required` :term:`POSTable`   :term:`Changeable` Description
+=================== ======= ======= ======== ================ ================== ================== ===========
+id                  integer auto    False    False            False              False              Object id.
+name                string  -       False    False            False              False              Concern name for debug purposes
+type                string  'lock'  False    False            False              False              Type of concern - lock, issue or flag
+blocking            boolean -       False    False            False              False              Does concern locks actions running
+reason              json    {}      False    False            False              False              Templated message for use on front-end
+related_objects     json    []      False    False            False              False              LIst of objects referencing to this concern
+cause               string  -       False    False            False              False              Cause of concern - config, job, import, service or host-component map
+owner               FK      -       False    False            False              False              Reference to a source object of concern (Cluster, Host, etc.)
+url                 link    -       False    False            False              False              Reference to this object
+=================== ======= ======= ======== ================ ================== ================== ===========
+
+API Calls Allowed
+^^^^^^^^^^^^^^^^^
+
+============= =======
+Operation     Allowed
+============= =======
+GET           True
+LIST          True
+POST          False
+PUT           False
+PATCH         False
+DELETE        False
+============= =======
