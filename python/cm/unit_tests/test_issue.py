@@ -20,10 +20,10 @@ from cm.hierarchy import Tree
 
 
 mock_issue_check_map = {
-    models.IssueType.Config: lambda x: False,
-    models.IssueType.RequiredImport: lambda x: True,
-    models.IssueType.RequiredService: lambda x: True,
-    models.IssueType.HostComponent: lambda x: True,
+    models.ConcernCause.Config: lambda x: False,
+    models.ConcernCause.Import: lambda x: True,
+    models.ConcernCause.Service: lambda x: True,
+    models.ConcernCause.HostComponent: lambda x: True,
 }
 
 
@@ -37,7 +37,7 @@ class CreateIssueTest(TestCase):
 
     def test_new_issue(self):
         """Test if new issue is propagated to all affected objects"""
-        issue_type = models.IssueType.Config
+        issue_type = models.ConcernCause.Config
         issue.create_issue(self.cluster, issue_type)
         own_issue = self.cluster.get_own_issue(issue_type)
         self.assertIsNotNone(own_issue)
@@ -48,7 +48,7 @@ class CreateIssueTest(TestCase):
 
     def test_same_issue(self):
         """Test if issue could not be added more than once"""
-        issue_type = models.IssueType.Config
+        issue_type = models.ConcernCause.Config
         issue.create_issue(self.cluster, issue_type)
         issue.create_issue(self.cluster, issue_type)  # create twice
         for node in self.tree.get_directly_affected(self.tree.built_from):
@@ -57,8 +57,8 @@ class CreateIssueTest(TestCase):
 
     def test_few_issues(self):
         """Test if object could have more than one issue"""
-        issue_type_1 = models.IssueType.Config
-        issue_type_2 = models.IssueType.RequiredImport
+        issue_type_1 = models.ConcernCause.Config
+        issue_type_2 = models.ConcernCause.Import
         issue.create_issue(self.cluster, issue_type_1)
         issue.create_issue(self.cluster, issue_type_2)
         own_issue_1 = self.cluster.get_own_issue(issue_type_1)
@@ -74,7 +74,7 @@ class CreateIssueTest(TestCase):
     @patch('cm.issue._issue_check_map', mock_issue_check_map)
     def test_inherit_on_creation(self):
         """Test if new object in hierarchy inherits existing issues"""
-        issue_type = models.IssueType.Config
+        issue_type = models.ConcernCause.Config
         issue.create_issue(self.cluster, issue_type)
         cluster_issue = self.cluster.get_own_issue(issue_type)
         new_service = utils.gen_service(self.cluster, self.cluster.prototype.bundle)
@@ -94,13 +94,13 @@ class RemoveIssueTest(TestCase):
         self.tree = Tree(self.cluster)
 
     def test_no_issue(self):
-        issue_type = models.IssueType.Config
+        issue_type = models.ConcernCause.Config
         self.assertIsNone(self.cluster.get_own_issue(issue_type))
         issue.remove_issue(self.cluster, issue_type)
         self.assertIsNone(self.cluster.get_own_issue(issue_type))
 
     def test_single_issue(self):
-        issue_type = models.IssueType.Config
+        issue_type = models.ConcernCause.Config
         issue.create_issue(self.cluster, issue_type)
 
         issue.remove_issue(self.cluster, issue_type)
@@ -110,8 +110,8 @@ class RemoveIssueTest(TestCase):
             self.assertEqual(len(concerns), 0)
 
     def test_few_issues(self):
-        issue_type_1 = models.IssueType.Config
-        issue_type_2 = models.IssueType.RequiredImport
+        issue_type_1 = models.ConcernCause.Config
+        issue_type_2 = models.ConcernCause.Import
         issue.create_issue(self.cluster, issue_type_1)
         issue.create_issue(self.cluster, issue_type_2)
 

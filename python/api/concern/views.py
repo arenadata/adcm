@@ -17,7 +17,13 @@ from cm import models
 from . import serializers
 
 
+def _filter_by_owner(queryset, name, value: models.ADCMEntity):
+    return queryset.filter(owner_id=value.pk, owner_type=value.content_type)
+
+
 class ConcernFilter(drf_filters.FilterSet):
+    type = drf_filters.ChoiceFilter(choices=models.ConcernType.choices)
+    cause = drf_filters.ChoiceFilter(choices=models.ConcernCause.choices)
     adcm = drf_filters.ModelMultipleChoiceFilter(
         queryset=models.ADCM.objects.all(),
         field_name='adcm_entities__id',
@@ -48,17 +54,49 @@ class ConcernFilter(drf_filters.FilterSet):
         field_name='host_entities__id',
         to_field_name='id',
     )
+    adcmowner = drf_filters.ModelChoiceFilter(
+        label='Owned by ADCM', queryset=models.ADCM.objects.all(), method=_filter_by_owner
+    )
+    clusterowner = drf_filters.ModelChoiceFilter(
+        label='Owned by Cluster', queryset=models.Cluster.objects.all(), method=_filter_by_owner
+    )
+    serviceowner = drf_filters.ModelChoiceFilter(
+        label='Owned by Service',
+        queryset=models.ClusterObject.objects.all(),
+        method=_filter_by_owner,
+    )
+    componentowner = drf_filters.ModelChoiceFilter(
+        label='Owned by Component',
+        queryset=models.ServiceComponent.objects.all(),
+        method=_filter_by_owner,
+    )
+    providerowner = drf_filters.ModelChoiceFilter(
+        label='Owned by Provider',
+        queryset=models.HostProvider.objects.all(),
+        method=_filter_by_owner,
+    )
+    hostowner = drf_filters.ModelChoiceFilter(
+        label='Owned by Host', queryset=models.Host.objects.all(), method=_filter_by_owner
+    )
 
     class Meta:
         model = models.ConcernItem
         fields = [
             'name',
+            'type',
+            'cause',
             'adcm',
             'cluster',
             'service',
             'component',
             'provider',
             'host',
+            'adcmowner',
+            'clusterowner',
+            'serviceowner',
+            'componentowner',
+            'providerowner',
+            'hostowner',
         ]
 
 
@@ -70,7 +108,7 @@ class ConcernItemList(PageView):
 
     queryset = models.ConcernItem.objects.all()
     serializer_class = serializers.ConcernItemSerializer
-    serializer_class_ui = serializers.ConcernItemDetailSerializer
+    serializer_class_ui = serializers.ConcernItemUISerializer
     filterset_class = ConcernFilter
     ordering_fields = ('name',)
 
