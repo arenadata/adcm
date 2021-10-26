@@ -129,7 +129,8 @@ export type controlType =
   | 'dropdown'
   | 'file'
   | 'text'
-  | 'structure';
+  | 'structure'
+  | 'secrettext';
 
 /**
  *```
