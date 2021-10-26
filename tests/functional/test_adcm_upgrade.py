@@ -15,30 +15,29 @@
 # pylint:disable=redefined-outer-name, no-self-use, too-many-arguments
 import random
 from contextlib import contextmanager
-
 from pathlib import Path
 from typing import Tuple, Union, List, Iterable, Any
 
 import allure
 import pytest
-
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCMClient, Cluster, Host, Service, Bundle, Component, Provider, Task, Job, Upgrade
+from adcm_pytest_plugin import params
 from adcm_pytest_plugin.docker_utils import ADCM
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
-from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
     run_service_action_and_assert_result,
     run_component_action_and_assert_result,
     run_provider_action_and_assert_result,
 )
-
+from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
 from tests.upgrade_utils import upgrade_adcm_version
-from tests.library.utils import previous_adcm_version_tag
-from tests.functional.tools import AnyADCMObject, get_config, get_objects_via_pagination
-from tests.functional.plugin_utils import build_objects_checker, build_objects_comparator
+
 from tests.functional.conftest import only_clean_adcm
+from tests.functional.plugin_utils import build_objects_checker, build_objects_comparator
+from tests.functional.tools import AnyADCMObject, get_config, get_objects_via_pagination
+from tests.library.utils import previous_adcm_version_tag
 
 pytestmark = [only_clean_adcm]
 
@@ -230,6 +229,7 @@ class TestUpgradeFilledADCM:
 
     # Test itself
 
+    @params.including_https
     @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
     @pytest.mark.parametrize("image", [previous_adcm_version_tag()], indirect=True)
     def test_upgrade_dirty_adcm(
