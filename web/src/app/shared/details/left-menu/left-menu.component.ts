@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ComponentFactoryResolver, ComponentRef, Input, Type, ViewChild, ViewContainerRef } from '@angular/core';
+import { Component, ComponentFactoryResolver, ComponentRef, Input, Type, ViewChild, ViewContainerRef } from '@angular/core';
 
 import { AdcmEntity } from '@app/models/entity';
 import { MenuItemAbstractDirective } from '@app/abstract-directives/menu-item.abstract.directive';
@@ -6,6 +6,7 @@ import { MenuItemAbstractDirective } from '@app/abstract-directives/menu-item.ab
 export interface LeftMenuItem {
   link: string;
   label: string;
+  data?: any;
   component: Type<MenuItemAbstractDirective>;
 }
 
@@ -18,12 +19,21 @@ export interface LeftMenuItem {
   `,
   styleUrls: ['./left-menu.component.scss']
 })
-export class LeftMenuComponent implements AfterViewInit {
+export class LeftMenuComponent {
 
   @ViewChild('menu', { read: ViewContainerRef }) menuRef: ViewContainerRef;
 
-  @Input() leftMenu: LeftMenuItem[] = [];
+  private _leftMenu: LeftMenuItem[] = [];
+  @Input() set leftMenu(leftMenu: LeftMenuItem[]) {
+    this._leftMenu = leftMenu;
+    this.rebuildComponents();
+  }
+  get leftMenu(): LeftMenuItem[] {
+    return this._leftMenu;
+  }
+
   @Input() set entity(entity: AdcmEntity) {
+    this._entity = entity;
     this.componentsRef.forEach((componentRef) => componentRef.instance.entity = entity);
   }
   get entity(): AdcmEntity {
@@ -37,14 +47,19 @@ export class LeftMenuComponent implements AfterViewInit {
     protected componentFactoryResolver: ComponentFactoryResolver,
   ) {}
 
-  ngAfterViewInit() {
+  rebuildComponents() {
     setTimeout(() => {
+      this.componentsRef = [];
+      this.menuRef.clear();
       this.leftMenu.forEach((item) => {
         const componentFactory =
           this.componentFactoryResolver.resolveComponentFactory(item.component);
         const componentRef = this.menuRef.createComponent(componentFactory);
         componentRef.instance.label = item.label;
         componentRef.instance.link = item.link;
+        if (item.data) {
+          componentRef.instance.data = item.data;
+        }
         if (this.entity !== undefined) {
           componentRef.instance.entity = this.entity;
         }

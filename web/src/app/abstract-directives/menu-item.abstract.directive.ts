@@ -18,5 +18,6 @@ export abstract class MenuItemAbstractDirective<EntityType extends AdcmEntity = 
   set entity(value: EntityType) {
       this._entity = value;
   }
+  @Input() data: any;
 
 }

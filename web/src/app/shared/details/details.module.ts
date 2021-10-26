@@ -21,7 +21,6 @@ import { RouterModule } from '@angular/router';
 import { AdwpListModule } from '@adwp-ui/widgets';
 
 import { StuffModule } from '../stuff.module';
-import { NavigationService } from './navigation.service';
 import { SubtitleComponent } from './subtitle.component';
 import { NavigationComponent } from '@app/components/navigation/navigation.component';
 import { ActionsButtonComponent } from '@app/components/actions-button/actions-button.component';
@@ -42,6 +41,7 @@ import { ServiceDetailsComponent } from '@app/components/service/service-details
 import { ServiceComponentDetailsComponent } from '@app/components/service-component/service-component-details/service-component-details.component';
 import { JobDetailsComponent } from '@app/components/job/job-details/job-details.component';
 import { ClusterDetailsComponent } from '@app/components/cluster/cluster-details/cluster-details.component';
+import { LogMenuItemComponent } from './left-menu-items/log-menu-item/log-menu-item.component';
 
 @NgModule({
   imports: [
@@ -94,9 +94,7 @@ import { ClusterDetailsComponent } from '@app/components/cluster/cluster-details
     LeftMenuComponent,
     LabelMenuItemComponent,
     StatusMenuItemComponent,
-  ],
-  providers: [
-    NavigationService,
+    LogMenuItemComponent,
   ],
 })
 export class DetailsModule {}

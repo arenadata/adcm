@@ -20,7 +20,7 @@ import { ClusterService, WorkerInstance } from '../core/services/cluster.service
 import { EventMessage, getNavigationPath, setPathOfRoute, SocketState } from '../core/store';
 import { EmmitRow, Host, IAction, Job } from '../core/types';
 import { SocketListenerDirective } from '@app/shared/directives';
-import { IDetails } from '../shared/details/navigation.service';
+import { IDetails } from '@app/models/details';
 import { AdcmEntity } from '../models/entity';
 import { IIssues } from '../models/issue';
 import { IssueHelper } from '../helpers/issue-helper';

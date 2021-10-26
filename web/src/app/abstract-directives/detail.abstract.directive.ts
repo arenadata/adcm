@@ -17,12 +17,17 @@ export abstract class DetailAbstractDirective<EntityType extends AdcmEntity> ext
   protected abstract subjectService: EntityService<EntityType>;
   abstract entityParam: string;
 
+  entityReceived(entity: EntityType): void {
+    this.entity = entity;
+  }
+
   ngOnInit() {
     super.ngOnInit();
 
     this.route.params.pipe(
       switchMap((params) => this.subjectService.get(params[this.entityParam])),
-    ).subscribe((entity) => this.entity = entity);
+      this.takeUntil(),
+    ).subscribe((entity) => this.entityReceived(entity));
   }
 
 }

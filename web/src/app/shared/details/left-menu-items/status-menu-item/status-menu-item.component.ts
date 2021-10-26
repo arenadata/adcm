@@ -24,10 +24,11 @@ import { selectMessage, SocketState } from '@app/core/store';
   `,
   styles: ['a span { white-space: nowrap; }'],
 })
-export class StatusMenuItemComponent extends MenuItemAbstractDirective<BaseEntity> implements OnInit {
+export class StatusMenuItemComponent extends MenuItemAbstractDirective<BaseEntity> {
 
   @Input() set entity(entity: BaseEntity) {
     this._entity = entity;
+    this.listenToStatusChanges();
   }
   get entity(): BaseEntity {
     return this._entity;
@@ -39,7 +40,7 @@ export class StatusMenuItemComponent extends MenuItemAbstractDirective<BaseEntit
     super();
   }
 
-  ngOnInit() {
+  listenToStatusChanges() {
     this.store.pipe(
       selectMessage,
       filter(event => event?.object?.id && this.entity?.id && event.object.id === this.entity.id),

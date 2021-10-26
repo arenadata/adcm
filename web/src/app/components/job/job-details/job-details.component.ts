@@ -1,6 +1,8 @@
 import { Component, Injector } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { filter, switchMap } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 
 import { Job } from '@app/core/types';
 import { DetailsFactory } from '@app/factories/details.factory';
@@ -19,9 +21,9 @@ export class JobDetailsComponent extends DetailAbstractDirective<Job> {
 
   entityParam = 'job';
 
-  leftMenu = [
-    DetailsFactory.labelMenuItem('Main', 'main'),
-  ];
+  leftMenu = [];
+
+  jobEvents$: Subscription;
 
   constructor(
     socket: Store<SocketState>,
@@ -33,6 +35,38 @@ export class JobDetailsComponent extends DetailAbstractDirective<Job> {
     protected subjectService: JobService,
   ) {
     super(socket, route, service, channel, store, injector);
+  }
+
+  prepareMenuItems() {
+    const itemsOfFiles = this.entity.log_files.map(
+      (file) => DetailsFactory.logMenuItem(`${file.name} [ ${file.type} ]`, file.id.toString(), file.id)
+    );
+
+    this.leftMenu = [
+      DetailsFactory.labelMenuItem('Main', 'main'),
+      ...itemsOfFiles,
+    ];
+  }
+
+  entityReceived(entity: Job) {
+    super.entityReceived(entity);
+
+    this.prepareMenuItems();
+
+    if (this.jobEvents$) {
+      this.jobEvents$.unsubscribe();
+    }
+
+    this.jobEvents$ = this.subjectService.events({
+      events: ['change_job_status', 'add_job_log'],
+    }).pipe(
+      this.takeUntil(),
+      filter(event => event?.object?.id === this.entity.id),
+      switchMap(() => this.subjectService.get(this.entity.id)),
+    ).subscribe((resp) => {
+      this.entity = resp;
+      this.prepareMenuItems();
+    });
   }
 
 }
