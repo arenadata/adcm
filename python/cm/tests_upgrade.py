@@ -23,7 +23,7 @@ from cm.models import (
     ConfigLog,
     Host,
     HostComponent,
-    IssueType,
+    ConcernCause,
     Prototype,
     PrototypeConfig,
     ServiceComponent,
@@ -94,7 +94,7 @@ class TestUpgradeVersion(TestCase):
 
     def test_issue(self):
         obj = utils.gen_cluster()
-        issue.create_issue(obj, IssueType.Config)
+        issue.create_issue(obj, ConcernCause.Config)
         upgrade = self.cook_upgrade()
         self.check_upgrade(obj, upgrade, False)
 

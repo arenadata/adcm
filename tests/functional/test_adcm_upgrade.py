@@ -15,30 +15,29 @@
 # pylint:disable=redefined-outer-name, no-self-use, too-many-arguments
 import random
 from contextlib import contextmanager
-
 from pathlib import Path
-from typing import Tuple, Union, List, Iterable
+from typing import Tuple, Union, List, Iterable, Any
 
 import allure
 import pytest
-
-from version_utils import rpm
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCMClient, Cluster, Host, Service, Bundle, Component, Provider, Task, Job, Upgrade
+from adcm_pytest_plugin import params
 from adcm_pytest_plugin.docker_utils import ADCM
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
-from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
     run_service_action_and_assert_result,
     run_component_action_and_assert_result,
     run_provider_action_and_assert_result,
 )
+from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
+from tests.upgrade_utils import upgrade_adcm_version
 
-from tests.library.utils import previous_adcm_version_tag
-from tests.functional.tools import AnyADCMObject, get_config, get_objects_via_pagination
-from tests.functional.plugin_utils import build_objects_checker, build_objects_comparator
 from tests.functional.conftest import only_clean_adcm
+from tests.functional.plugin_utils import build_objects_checker, build_objects_comparator
+from tests.functional.tools import AnyADCMObject, get_config, get_objects_via_pagination
+from tests.library.utils import previous_adcm_version_tag
 
 pytestmark = [only_clean_adcm]
 
@@ -57,22 +56,9 @@ def upgrade_target(cmd_opts) -> Tuple[str, str]:
     return tuple(cmd_opts.adcm_image.split(":", maxsplit=2))  # type: ignore
 
 
-def old_adcm_images():
+def old_adcm_images() -> Tuple[List[Tuple[str, str]], Any]:
     """A list of old ADCM images"""
     return parametrized_by_adcm_version(adcm_min_version="2019.10.08")[0]
-
-
-@allure.step("Check that version has been changed")
-def _check_that_version_changed(before: str, after: str) -> None:
-    if rpm.compare_versions(after, before) < 1:
-        raise AssertionError("ADCM version after upgrade is older or equal to the version before")
-
-
-def _upgrade_adcm(adcm: ADCM, sdk: ADCMClient, credentials: dict, target: Tuple[str, str]) -> None:
-    buf = sdk.adcm_version
-    adcm.upgrade(target)
-    sdk.reset(url=adcm.url, **credentials)
-    _check_that_version_changed(buf, sdk.adcm_version)
 
 
 def _create_cluster(sdk_client_fs: ADCMClient, bundle_dir: str = "cluster_bundle") -> Cluster:
@@ -121,14 +107,14 @@ def test_upgrade_adcm(
     adcm_fs: ADCM,
     sdk_client_fs: ADCMClient,
     adcm_api_credentials: dict,
-    upgrade_target: Tuple[str, str],
+    adcm_image_tags: Tuple[str, str],
 ) -> None:
     """Test adcm upgrade"""
     cluster = _create_cluster(sdk_client_fs)
     host = _create_host(sdk_client_fs)
     cluster.host_add(host)
 
-    _upgrade_adcm(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+    upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, adcm_image_tags)
 
     _check_that_cluster_exists(sdk_client_fs, cluster)
     _check_that_host_exists(cluster, host)
@@ -140,7 +126,7 @@ def test_pass_in_config_encryption_after_upgrade(
     adcm_fs: ADCM,
     sdk_client_fs: ADCMClient,
     adcm_api_credentials: dict,
-    upgrade_target: Tuple[str, str],
+    adcm_image_tags: Tuple[str, str],
 ) -> None:
     """Test adcm upgrade with encrypted fields"""
     cluster = _create_cluster(sdk_client_fs, "cluster_with_pass_verify")
@@ -150,7 +136,7 @@ def test_pass_in_config_encryption_after_upgrade(
     cluster.config_set_diff(config_diff)
     service.config_set_diff(config_diff)
 
-    _upgrade_adcm(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+    upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, adcm_image_tags)
 
     _check_encryption(cluster)
     _check_encryption(service)
@@ -169,7 +155,7 @@ def test_actions_availability_after_upgrade(
 
     _assert_available_actions(cluster)
 
-    _upgrade_adcm(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+    upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
 
     _assert_available_actions(cluster)
 
@@ -243,6 +229,7 @@ class TestUpgradeFilledADCM:
 
     # Test itself
 
+    @params.including_https
     @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
     @pytest.mark.parametrize("image", [previous_adcm_version_tag()], indirect=True)
     def test_upgrade_dirty_adcm(
@@ -262,7 +249,7 @@ class TestUpgradeFilledADCM:
         with allure.step('Upgrade ADCM and expect all objects to be same'), objects_are_not_changed(
             sdk_client_fs
         ), self.check_job_related_objects_are_not_changed(sdk_client_fs):
-            _upgrade_adcm(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+            upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
         self.run_actions_after_upgrade(
             dirty_adcm['complex']['clusters']['all_services'],
             dirty_adcm['complex']['clusters']['config_history'],
