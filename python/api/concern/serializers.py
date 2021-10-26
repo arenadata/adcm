@@ -25,11 +25,13 @@ class ConcernItemUISerializer(ConcernItemSerializer):
     type = serializers.CharField()
     blocking = serializers.BooleanField()
     reason = serializers.JSONField()
+    cause = serializers.CharField()
 
 
 class ConcernItemDetailSerializer(ConcernItemUISerializer):
     name = serializers.CharField()
     related_objects = serializers.SerializerMethodField()
+    owner = serializers.SerializerMethodField()
 
     def get_related_objects(self, item):
         result = []
@@ -45,3 +47,12 @@ class ConcernItemDetailSerializer(ConcernItemUISerializer):
                 }
             )
         return result
+
+    def get_owner(self, item):
+        request = self.context.get('request', None)
+        kwargs = get_api_url_kwargs(item.owner, request, no_obj_type=True)
+        return {
+            'type': item.owner.prototype.type,
+            'id': item.owner.pk,
+            'url': reverse(f'{item.owner.prototype.type}-details', kwargs=kwargs, request=request),
+        }

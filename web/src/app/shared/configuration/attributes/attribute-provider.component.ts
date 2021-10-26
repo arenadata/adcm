@@ -6,7 +6,9 @@ import {
   ComponentFactoryResolver,
   ComponentRef,
   ContentChild,
+  ContentChildren,
   Input,
+  QueryList,
   TemplateRef,
   ViewChild,
   ViewContainerRef
@@ -15,6 +17,7 @@ import { ConfigFieldMarker } from '@app/shared/configuration/attributes/config-f
 import { AttributeService, AttributeWrapper } from '@app/shared/configuration/attributes/attribute.service';
 import { FormGroup } from '@angular/forms';
 import { IFieldOptions } from '@app/shared/configuration/types';
+import { CONFIG_FIELD, FieldComponent } from '@app/shared/configuration/field/field.component';
 
 @Component({
   selector: 'app-config-field-attribute-provider',
@@ -51,6 +54,9 @@ export class ConfigFieldAttributeProviderComponent implements AfterViewInit {
   @ContentChild(ConfigFieldMarker)
   field: ConfigFieldMarker;
 
+  @ContentChildren(CONFIG_FIELD, { descendants: true })
+  fieldComponent: QueryList<FieldComponent>;
+
   constructor(private componentFactoryResolver: ComponentFactoryResolver,
               public attributesSrv: AttributeService,
               private _cdr: ChangeDetectorRef) {}
@@ -67,9 +73,9 @@ export class ConfigFieldAttributeProviderComponent implements AfterViewInit {
           this.containerRef.instance.fieldOptions = this.options;
           this.containerRef.instance.attributeForm = attribute.form;
           this.containerRef.instance.parametersForm = this.parametersForm;
+          Promise.resolve().then(() => this.containerRef.instance.field = this.fieldComponent.first);
         }
       });
-
     } else {
       this.template = this.field.template;
     }

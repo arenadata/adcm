@@ -19,12 +19,12 @@ from cm.models import (
     Cluster,
     ClusterBind,
     ClusterObject,
+    ConcernCause,
     ConcernItem,
     ConcernType,
     ConfigLog,
     Host,
     HostComponent,
-    IssueType,
     MessageTemplate as MsgTpl,
     PrototypeEnum,
     Prototype,
@@ -243,40 +243,47 @@ def check_component_constraint(service, hc_in):
 
 
 _issue_check_map = {
-    IssueType.Config: check_config,
-    IssueType.RequiredImport: check_required_import,
-    IssueType.RequiredService: check_required_services,
-    IssueType.HostComponent: check_hc,
+    ConcernCause.Config: check_config,
+    ConcernCause.Import: check_required_import,
+    ConcernCause.Service: check_required_services,
+    ConcernCause.HostComponent: check_hc,
 }
 _prototype_issue_map = {
     PrototypeEnum.ADCM.value: tuple(),
     PrototypeEnum.Cluster.value: (
-        IssueType.Config,
-        IssueType.RequiredImport,
-        IssueType.RequiredService,
-        IssueType.HostComponent,
+        ConcernCause.Config,
+        ConcernCause.Import,
+        ConcernCause.Service,
+        ConcernCause.HostComponent,
     ),
-    PrototypeEnum.Service.value: (IssueType.Config, IssueType.RequiredImport),
-    PrototypeEnum.Component.value: (IssueType.Config,),
-    PrototypeEnum.Provider.value: (IssueType.Config,),
-    PrototypeEnum.Host.value: (IssueType.Config,),
+    PrototypeEnum.Service.value: (ConcernCause.Config, ConcernCause.Import),
+    PrototypeEnum.Component.value: (ConcernCause.Config,),
+    PrototypeEnum.Provider.value: (ConcernCause.Config,),
+    PrototypeEnum.Host.value: (ConcernCause.Config,),
 }
-_issue_type_name_map = {
-    IssueType.Config: MsgTpl.KnownNames.ConfigIssue,
-    IssueType.RequiredImport: MsgTpl.KnownNames.RequiredImportIssue,
-    IssueType.RequiredService: MsgTpl.KnownNames.RequiredServiceIssue,
-    IssueType.HostComponent: MsgTpl.KnownNames.HostComponentIssue,
+_issue_template_map = {
+    ConcernCause.Config: MsgTpl.KnownNames.ConfigIssue,
+    ConcernCause.Import: MsgTpl.KnownNames.RequiredImportIssue,
+    ConcernCause.Service: MsgTpl.KnownNames.RequiredServiceIssue,
+    ConcernCause.HostComponent: MsgTpl.KnownNames.HostComponentIssue,
 }
 
 
-def create_issue(obj: ADCMEntity, issue_type: IssueType) -> None:
+def _gen_issue_name(obj: ADCMEntity, cause: ConcernCause) -> str:
+    """Make human-understandable issue name for debug use"""
+    return f'{obj} has issue with {cause.value}'
+
+
+def create_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
     """Create newly discovered issue and add it to linked objects concerns"""
-    issue = obj.get_own_issue(issue_type)
+    issue = obj.get_own_issue(issue_cause)
     if issue is None:
-        msg_name = _issue_type_name_map[issue_type]
+        msg_name = _issue_template_map[issue_cause]
         reason = MsgTpl.get_message_from_template(msg_name.value, source=obj)
-        issue_name = issue_type.gen_issue_name(obj)
-        issue = ConcernItem.objects.create(type=ConcernType.Issue, name=issue_name, reason=reason)
+        issue_name = _gen_issue_name(obj, issue_cause)
+        issue = ConcernItem.objects.create(
+            type=ConcernType.Issue, name=issue_name, reason=reason, owner=obj, cause=issue_cause
+        )
 
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(tree.built_from)
@@ -284,9 +291,9 @@ def create_issue(obj: ADCMEntity, issue_type: IssueType) -> None:
         node.value.add_to_concerns(issue)
 
 
-def remove_issue(obj: ADCMEntity, issue_type: IssueType) -> None:
+def remove_issue(obj: ADCMEntity, issue_cause: ConcernCause) -> None:
     """Remove outdated issue from other's concerns"""
-    issue = obj.get_own_issue(issue_type)
+    issue = obj.get_own_issue(issue_cause)
     if not issue:
         return
     issue.delete()
@@ -294,12 +301,12 @@ def remove_issue(obj: ADCMEntity, issue_type: IssueType) -> None:
 
 def recheck_issues(obj: ADCMEntity) -> None:
     """Re-check for object's type-specific issues"""
-    issue_types = _prototype_issue_map.get(obj.prototype.type, [])
-    for issue_type in issue_types:
-        if not _issue_check_map[issue_type](obj):
-            create_issue(obj, issue_type)
+    issue_causes = _prototype_issue_map.get(obj.prototype.type, [])
+    for issue_cause in issue_causes:
+        if not _issue_check_map[issue_cause](obj):
+            create_issue(obj, issue_cause)
         else:
-            remove_issue(obj, issue_type)
+            remove_issue(obj, issue_cause)
 
 
 def update_hierarchy_issues(obj: ADCMEntity):

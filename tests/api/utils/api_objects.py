@@ -91,13 +91,6 @@ class ADCMTestApiWrapper:
                 if (
                     request.endpoint == Endpoints.GroupConfig
                     and response.status_code == HTTPStatus.NOT_FOUND
-                    and request.data
-                    and request.data.get("object_id") == 100
-                ):
-                    pytest.xfail("ADCM-2051 404 on POST negative cases for /group-config/")
-                if (
-                    request.endpoint == Endpoints.GroupConfig
-                    and response.status_code == HTTPStatus.NOT_FOUND
                     and expected_response.status_code == HTTPStatus.BAD_REQUEST
                     and expected_response.body.fields == {'object_type': ['This field cannot be changed']}
                 ):

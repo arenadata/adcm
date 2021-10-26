@@ -17,13 +17,15 @@ import os
 import sys
 import tarfile
 from pathlib import PosixPath
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 import pytest
 import yaml
+
 from _pytest.python import Function
 from allure_commons.model2 import TestResult, Parameter
 from allure_pytest.listener import AllureListener
+from docker.utils import parse_repository_tag
 
 pytest_plugins = "adcm_pytest_plugin"
 
@@ -152,3 +154,11 @@ def create_bundle_archives(request, tmp_path: PosixPath) -> List[str]:
                 archive.add(license_fp, arcname=config[0]['license'])
         archives.append(str(archive_path))
     return archives
+
+
+@pytest.fixture(scope="session")
+def adcm_image_tags(cmd_opts) -> Tuple[str, str]:
+    """Get tag parts of --adcm-image argument (split by ":")"""
+    if not cmd_opts.adcm_image:
+        pytest.fail("CLI parameter adcm_image should be provided")
+    return tuple(parse_repository_tag(cmd_opts.adcm_image))  # type: ignore
