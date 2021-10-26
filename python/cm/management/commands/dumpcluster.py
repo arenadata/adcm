@@ -125,6 +125,27 @@ def get_config(object_config_id):
     return config
 
 
+def get_groups(object_id, model_name):
+    """Return list of groups. Each group contain dictionary with all needed information
+
+    :param object_id: Object ID
+    :type object_id: int
+    :param model_name: name of Type Object
+    :type model_name: str
+    :return: List with GroupConfig on that object in dict format
+    :rtype: list
+    """
+    fields = ('object_id', 'name', 'description', 'config', 'object_type')
+    groups = []
+    for gc in GroupConfig.objects.filter(object_id=object_id, object_type__model=model_name):
+        group = get_object(GroupConfig, gc.id, fields)
+        group['config'] = get_config(group['config'])
+        group['model_name'] = model_name
+        group['hosts'] = [host.id for host in gc.hosts.all()]
+        groups.append(group)
+    return groups
+
+
 def get_cluster(cluster_id):
     """
     Returns cluster object in dictionary format
@@ -291,9 +312,11 @@ def dump(cluster_id, output):
         'services': [],
         'components': [],
         'host_components': [],
+        'groups': [],
     }
 
     provider_ids = set()
+    data['groups'].extend(get_groups(cluster_id, 'cluster'))
 
     for host_obj in Host.objects.filter(cluster_id=cluster['id']):
         host = get_host(host_obj.id)
@@ -305,10 +328,12 @@ def dump(cluster_id, output):
     for provider_obj in HostProvider.objects.filter(id__in=provider_ids):
         provider, bundle = get_provider(provider_obj.id)
         data['providers'].append(provider)
+        data['groups'].extend(get_groups(provider_obj.id, 'hostprovider'))
         data['bundles'][bundle['hash']] = bundle
 
     for service_obj in ClusterObject.objects.filter(cluster_id=cluster['id']):
         service = get_service(service_obj.id)
+        data['groups'].extend(get_groups(service_obj.id, 'clusterobject'))
         data['services'].append(service)
 
     service_ids = [service['id'] for service in data['services']]
@@ -317,6 +342,7 @@ def dump(cluster_id, output):
         cluster_id=cluster['id'], service_id__in=service_ids
     ):
         component = get_component(component_obj.id)
+        data['groups'].extend(get_groups(component_obj.id, 'servicecomponent'))
         data['components'].append(component)
 
     component_ids = [component['id'] for component in data['components']]

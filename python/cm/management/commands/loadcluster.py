@@ -17,6 +17,7 @@ from datetime import datetime
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
 from django.db.utils import IntegrityError
 
@@ -96,6 +97,34 @@ def create_config(config):
         return conf
     else:
         return None
+
+
+def create_group(group, ex_hosts_list, obj):
+    """
+    Creating GroupConfig object
+
+    :param group: GroupConfig object in dictionary format
+    :type group: dict
+    :param ex_hosts_list: Map of ex_host_ids and new hosts
+    :type ex_hosts_list: dict
+    :return: GroupConfig object
+    :rtype: models.GroupConfig
+    """
+    model_name = group.pop('model_name')
+    ex_object_id = group.pop('object_id')
+    group.pop('object_type')
+    config = create_config(group.pop('config'))
+    hosts = []
+    for host in group.pop('hosts'):
+        hosts.append(ex_hosts_list[host])
+    gc = GroupConfig.objects.create(
+        object_id=obj.id,
+        config=config,
+        object_type=ContentType.objects.get(model=model_name),
+        **group
+    )
+    gc.hosts.set(hosts)
+    return ex_object_id, gc
 
 
 def create_file_from_config(obj, config):
@@ -315,8 +344,10 @@ def load(file_path):
 
     _, cluster = create_cluster(data['cluster'])
 
+    ex_provider_ids = {}
     for provider_data in data['providers']:
-        create_provider(provider_data)
+        ex_provider_id, provider = create_provider(provider_data)
+        ex_provider_ids[ex_provider_id] = provider
 
     ex_host_ids = {}
     for host_data in data['hosts']:
@@ -343,6 +374,16 @@ def load(file_path):
             ex_service_ids[host_component_data.pop('service')],
             ex_component_ids[host_component_data.pop('component')],
         )
+    for group_data in data['groups']:
+        if group_data['model_name'] == 'cluster':
+            obj = cluster
+        elif group_data['model_name'] == 'clusterobject':
+            obj = ex_service_ids[group_data['object_id']]
+        elif group_data['model_name'] == 'servicecomponent':
+            obj = ex_component_ids[group_data['object_id']]
+        elif group_data['model_name'] == 'hostprovider':
+            obj = ex_provider_ids[group_data['object_id']]
+        create_group(group_data, ex_host_ids, obj)
 
 
 class Command(BaseCommand):
