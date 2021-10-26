@@ -1,5 +1,3 @@
-# pylint: disable=too-many-lines,unsupported-membership-test,unsupported-delete-operation
-#   pylint could not understand that JSON fields are dicts
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,7 +12,10 @@
 
 """RBAC models"""
 
+import importlib
+
 from django.contrib.auth.models import User, Group, Permission
+from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.db import models
 
@@ -34,6 +35,22 @@ class Role(models.Model):
     permissions = models.ManyToManyField(Permission, blank=True)
     user = models.ManyToManyField(User, blank=True)
     group = models.ManyToManyField(Group, blank=True)
+    module_name = models.CharField(max_length=32)
+    class_name = models.CharField(max_length=32)
+    init_params = models.JSONField(default={})
+    __obj__ = None
+
+    def get_role_obj(self):
+        """Returns object with related role based on classes from roles.py"""
+
+        role_module = importlib.import_module(self.module_name)
+        role_class = getattr(role_module, self.class_name)
+        return role_class(**self.init_params)   # pylint: disable=E1134
+
+    def apply(self, user, obj):
+        if __obj__ is None:
+            __obj__ = self.get_role_obj()
+        return __obj__.apply(self, user, obj)
 
     def get_permissions(self, role=None):
         """Recursively get permissions of role and all her childs"""
@@ -119,6 +136,29 @@ class RoleMigration(models.Model):
 
     version = models.PositiveIntegerField(primary_key=True)
     date = models.DateTimeField(auto_now=True)
+
+
+class PolicyObject(models.Model):
+    """Reference to any model for Policy"""
+
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    object = models.GenericForeignKey('content_type', 'object_id')
+
+
+class Policy(models.Model):
+    """Policy connect role, users and (maybe) objects"""
+
+    role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    object = models.ManyToManyField(PolicyObject, blank=True)
+    user = models.ManyToManyField(User, blank=True)
+    group = models.ManyToManyField(Group, blank=True)
+    # permissions = models.ManyToManyField(Permission, blank=True, on_delete=models.CASCADE)
+
+    def apply(self, user, obj=None):
+        """This function apply role over"""
+        # self.permissions.all().delete()
+        self.role.apply(self, user, obj=None)
 
 
 class UserProfile(models.Model):
