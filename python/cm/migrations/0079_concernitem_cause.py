@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('contenttypes', '0002_remove_content_type_name'),
-        ('cm', '0077_job_lock_message_tpl'),
+        ('cm', '0078_alter_groupconfig_name'),
     ]
 
     operations = [
