@@ -49,7 +49,7 @@ Name                Type    Default Nullable :term:`Required` :term:`POSTable`  
 id                  integer auto    False    False            False              False              Object id.
 date                date    auto    False    False            False              False              Object creation date
 obj_ref             FK      null    False    True             True               False              FK on `ObjectConfig` object
-description         string  ''      False    False            True               False              Description
+description         text    ''      False    False            True               False              Description
 config              json    {}      False    True             True               False              Configuration
 attr                json    {}      False    False            True               False              Additional attributes
 url                 link    null    False    False            False              False              Reference to this object
@@ -123,7 +123,7 @@ cluster_id          integer null    False    False            False             
 prototype_id        integer null    False    False            False              False              Prototype object ID
 provider_id         integer null    False    False            False              False              Provider object ID
 fqdn                string  null    False    False            False              False              FQDN host
-description         string  null    False    False            False              False              Host description
+description         text    null    False    False            False              False              Host description
 state               string  null    False    False            False              False              Host state
 url                 link    null    False    False            False              False              Reference to this object
 =================== ======= ======= ======== ================ ================== ================== ===========
@@ -162,7 +162,7 @@ cluster_id          integer null    False    False            False             
 prototype_id        integer null    False    False            False              False              Prototype object ID
 provider_id         integer null    False    False            False              False              Provider object ID
 fqdn                string  null    False    False            False              False              FQDN host
-description         string  null    False    False            False              False              Host description
+description         text    null    False    False            False              False              Host description
 state               string  null    False    False            False              False              Host state
 url                 link    null    False    False            False              False              Reference to this object
 =================== ======= ======= ======== ================ ================== ================== ===========
