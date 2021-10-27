@@ -16,7 +16,6 @@ from typing import Optional
 from urllib.parse import urlencode
 
 import allure
-import pytest
 from adcm_client.wrappers.api import ADCMApiWrapper
 
 from tests.api.utils.endpoints import Endpoints
