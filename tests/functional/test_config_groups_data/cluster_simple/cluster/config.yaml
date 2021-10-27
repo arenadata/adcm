@@ -14,6 +14,56 @@
   name: test_cluster
   version: 1.5
   edition: community
+  config:
+    - name: group
+      type: group
+      activatable: True
+      active: True
+      group_customization: true
+      subs:
+        - name: port
+          display_name: HTTP port
+          description: Exposes the JSON-over-HTTP interface used by all clients.
+          type: integer
+          min: 1024
+          max: 65536
+          default: 9200
+          required: yes
+          group_customization: false
+        - name: transport_port
+          display_name: Transport port
+          description: Used for communication between nodes in the cluster, by the
+            Java Transport client.
+          type: integer
+          min: 1024
+          max: 65536
+          default: 9300
+          required: yes
+          group_customization: true
+  actions:
+    test_action:
+      type: job
+      script: ./dummy_action_cluster.yaml
+      script_type: ansible
+      states:
+        available: any
+      config:
+        - name: map
+          type: json
+    test_action_multijob:
+      type: task
+      scripts:
+        - name: part1
+          script_type: ansible
+          script: ./dummy_action_cluster.yaml
+        - name: part2
+          script_type: ansible
+          script: ./dummy_action_cluster.yaml
+      states:
+        available: any
+      config:
+        - name: map
+          type: json
 
 - type: service
   name: test_service_1

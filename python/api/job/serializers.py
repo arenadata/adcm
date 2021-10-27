@@ -20,6 +20,7 @@ import cm.job
 import cm.stack
 import cm.status_api
 from cm import config
+from cm.ansible_plugin import get_check_log
 from cm.errors import AdcmEx
 from cm.models import JobLog, Host, ClusterObject, ServiceComponent, get_object_cluster
 from api.api_views import hlink
@@ -277,7 +278,7 @@ class LogStorageSerializer(serializers.Serializer):
                 content = self._get_ansible_content(obj)
         elif obj.type == 'check':
             if content is None:
-                content = cm.job.get_check_log(obj.job_id)
+                content = get_check_log(obj.job_id)
             if isinstance(content, str):
                 content = json.loads(content)
         elif obj.type == 'custom':
@@ -336,7 +337,7 @@ class LogSerializer(serializers.Serializer):
                     content = f.read()
         elif obj.type == 'check':
             if content is None:
-                content = cm.job.get_check_log(obj.job_id)
+                content = get_check_log(obj.job_id)
             if isinstance(content, str):
                 content = json.loads(content)
         return content

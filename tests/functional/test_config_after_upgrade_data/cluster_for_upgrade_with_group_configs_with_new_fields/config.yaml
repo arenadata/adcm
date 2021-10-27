@@ -113,12 +113,10 @@
           max: 65536
           default: 9200
           required: true
-        - name: transport_port
-          type: integer
-          min: 1024
-          max: 65536
-          default: 9300
-          required: true
+        - name: new_text
+          type: text
+          required: false
+          default: text_new
     - name: new_group
       type: group
       activatable: true
@@ -161,6 +159,24 @@
       default:
         time: '12'
         range: 'super long'
+    - name: json
+      type: json
+      required: false
+      default:
+        key: "default value"
+        boolean: true
+    - name: new_json
+      type: json
+      required: false
+      default:
+        key: "value"
+        integer: 52
+    - &secrettext
+      name: secrettext
+      type: secrettext
+      required: false
+      default: "sec\nret\ntext"
+
 
 - type: service
   name: test_service
@@ -257,12 +273,10 @@
           max: 65536
           default: 9200
           required: true
-        - name: transport_port
-          type: integer
-          min: 1024
-          max: 65536
-          default: 9300
-          required: true
+        - name: new_text
+          type: text
+          required: false
+          default: text_new
     - name: new_group
       type: group
       activatable: true
@@ -305,6 +319,19 @@
       default:
         time: '12'
         range: 'super long'
+    - name: json
+      type: json
+      required: false
+      default:
+        key: "default value"
+        boolean: true
+    - name: new_json
+      type: json
+      required: false
+      default:
+        key: "value"
+        integer: 52
+    - *secrettext
 
   components:
     test_component:
@@ -400,12 +427,10 @@
               max: 65536
               default: 9200
               required: true
-            - name: transport_port
-              type: integer
-              min: 1024
-              max: 65536
-              default: 9300
-              required: true
+            - name: new_text
+              type: text
+              required: false
+              default: text_new
         - name: new_group
           type: group
           activatable: true
@@ -448,3 +473,16 @@
           default:
             time: '12'
             range: 'super long'
+        - name: json
+          type: json
+          required: false
+          default:
+            key: "default value"
+            boolean: true
+        - name: new_json
+          type: json
+          required: false
+          default:
+            key: "value"
+            integer: 52
+        - *secrettext

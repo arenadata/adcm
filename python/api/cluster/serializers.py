@@ -96,7 +96,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
     def get_status(self, obj):
-        return cm.status_api.get_cluster_status(obj.id)
+        return cm.status_api.get_cluster_status(obj)
 
 
 class ClusterUISerializer(ClusterDetailSerializer):
@@ -140,7 +140,7 @@ class StatusSerializer(serializers.Serializer):
         data['service_display_name'] = instance.service.prototype.display_name
         data['service_version'] = instance.service.prototype.version
         data['monitoring'] = instance.component.prototype.monitoring
-        status = cm.status_api.get_hc_status(instance.host_id, instance.component_id)
+        status = cm.status_api.get_hc_status(instance)
         data['status'] = status
         return data
 

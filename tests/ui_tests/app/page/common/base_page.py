@@ -304,11 +304,10 @@ class BasePageObject:
         because sometimes text doesn't appear in input
 
         :param locator: Locator of element to write into (should be input)
-        :param text: Text to use in .send_keys method
+        :param text: Text to use in .send_keys method and it's also a expected_value
+        :param clean_input: Clear input before saving element or not
         :param timeout: Timeout on finding element
         """
-        element = self.find_element(locator, timeout)
-        expected_value = element.get_property('value') + text
 
         def _send_keys_and_check():
             if clean_input:
@@ -317,9 +316,7 @@ class BasePageObject:
             input_element.send_keys(text)
             assert (
                 actual_value := input_element.get_property('value')
-            ) == expected_value, (
-                f'Value of input {locator.name} expected to be "{expected_value}", but "{actual_value}" was found'
-            )
+            ) == text, f'Value of input {locator.name} expected to be "{text}", but "{actual_value}" was found'
 
         wait_until_step_succeeds(_send_keys_and_check, period=0.5, timeout=1.5)
 

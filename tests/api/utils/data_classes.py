@@ -16,7 +16,7 @@
 from abc import ABC
 from typing import List
 
-from .types import (
+from tests.api.utils.types import (
     Field,
     PositiveInt,
     String,
@@ -199,7 +199,7 @@ class GroupConfigHostCandidatesFields(BaseClass):
     prototype_id = Field(name="prototype_id", f_type=PositiveInt(), default_value="auto")
     provider_id = Field(name="provider_id", f_type=PositiveInt(), default_value="auto")
     fqdn = Field(name="fqdn", f_type=String(), default_value="auto")
-    description = Field(name="description", f_type=String(), default_value="auto")
+    description = Field(name="description", f_type=Text(), default_value="auto")
     state = Field(name="state", f_type=String(), default_value="auto")
     url = Field(name="url", f_type=String(), default_value="auto")
 
@@ -222,7 +222,7 @@ class GroupConfigHostsFields(BaseClass):
     prototype_id = Field(name="prototype_id", f_type=PositiveInt(), default_value="auto")
     provider_id = Field(name="provider_id", f_type=PositiveInt(), default_value="auto")
     fqdn = Field(name="fqdn", f_type=String(), default_value="auto")
-    description = Field(name="description", f_type=String(), default_value="auto")
+    description = Field(name="description", f_type=Text(), default_value="auto")
     state = Field(name="state", f_type=String(), default_value="auto")
     url = Field(name="url", f_type=String(), default_value="auto")
 

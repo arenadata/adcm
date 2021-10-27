@@ -28,11 +28,30 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
   ngOnInit() {
     if (!Object.keys(this.field.value || {}).length) this.control.setValue('');
     this.reload();
-    this.items.valueChanges.subscribe((a: { key: string; value: string }[]) => this.prepare(a));
+    this.items.valueChanges.pipe(
+      this.takeUntil()
+    ).subscribe((a: { key: string; value: string }[]) => this.prepare(a));
+
+    this.control.statusChanges.pipe(
+      this.takeUntil()
+    ).subscribe((state) => {
+      if (state === 'DISABLED') {
+        this.items.controls.forEach((control) => {
+          control.disable({ emitEvent: false });
+        });
+      } else {
+        this.items.controls.forEach((control) => {
+          control.enable({ emitEvent: false });
+        });
+      }
+    });
   }
 
   prepare(a: { key: string; value: string }[]) {
-    let value = this.asList ? a.map(b => b.value).filter(c => c) : a.length ? a.reduce((p, c) => ({ ...p, [c.key]: c.value }), {}) : null;
+    let value = this.asList ? a.map(b => b.value).filter(c => c) : a.length ? a.reduce((p, c) => ({
+      ...p,
+      [c.key]: c.value
+    }), {}) : null;
     if (value && this.asList) value = (value as Array<string>).length ? value : null;
     this.control.setValue(value);
   }
@@ -40,8 +59,11 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
   reload() {
     this.items.reset([]);
     this.items.controls = [];
-    const fieldValue = this.field.value ? { ...(this.field.value as Object) } : { };
-    Object.keys(fieldValue).forEach(a => this.items.push(this.fb.group({ key: [a, Validators.required], value: fieldValue[a] })));
+    const fieldValue = this.field.value ? { ...(this.field.value as Object) } : {};
+    Object.keys(fieldValue).forEach(a => this.items.push(this.fb.group({
+      key: [{ value: a, disabled: this.control.disabled }, Validators.required],
+      value: [{ value: fieldValue[a], disabled: this.control.disabled }],
+    })));
   }
 
   add() {

@@ -28,10 +28,10 @@ from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import fixture_parametrized_by_data_subdirs
 
 from tests.functional.tools import (
+    AnyADCMObject,
     actions_in_objects_are_present,
     actions_in_objects_are_absent,
 )
-from tests.functional.plugin_utils import AnyADCMObject
 
 
 def check_verbosity(log, verbose_state):

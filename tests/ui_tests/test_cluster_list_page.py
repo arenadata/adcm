@@ -23,6 +23,7 @@ from adcm_client.objects import (
     Provider,
 )
 from adcm_pytest_plugin import utils
+from adcm_pytest_plugin import params
 
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
@@ -46,7 +47,7 @@ from tests.ui_tests.app.page.service.page import (
     ServiceConfigPage,
     ServiceImportPage,
 )
-from tests.ui_tests.utils import wait_and_assert_ui_info, check_host_value
+from tests.ui_tests.utils import wait_and_assert_ui_info, check_host_value, wrap_in_dict
 
 BUNDLE_COMMUNITY = "cluster_community"
 BUNDLE_ENTERPRISE = "cluster_enterprise"
@@ -216,9 +217,11 @@ class TestClusterListPage:
         with cluster_page.wait_cluster_state_change(row):
             cluster_page.run_action_in_cluster_row(row, params["action_name"])
         with allure.step("Check cluster state has changed"):
-            assert (
-                cluster_page.get_cluster_state_from_row(row) == params["expected_state"]
-            ), f"Cluster state should be {params['expected_state']}"
+            wait_and_assert_ui_info(
+                {"state": params["expected_state"]},
+                wrap_in_dict("state", cluster_page.get_cluster_state_from_row),
+                get_info_kwargs={'row': row},
+            )
         with allure.step("Check success cluster job"):
             assert (
                 cluster_page.header.get_success_job_amount_from_header() == "1"
@@ -367,6 +370,7 @@ class TestClusterServicePage:
         cluster_service_page.click_on_concern_by_object_name(row, params["concern_object_name"])
         ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, 1).wait_page_is_opened()
 
+    @params.including_https
     @pytest.mark.smoke()
     def test_check_actions_from_service_list_page(self, app_fs, create_community_cluster_with_service):
         """Test run action from the row on cluster/{}/service page"""

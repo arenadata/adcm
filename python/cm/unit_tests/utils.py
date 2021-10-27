@@ -127,11 +127,13 @@ def gen_host_component(component, host) -> models.HostComponent:
     )
 
 
-def gen_concern_item(concern_type, name=None, reason=None, blocking=True) -> models.ConcernItem:
+def gen_concern_item(
+    concern_type, name=None, reason=None, blocking=True, owner=None
+) -> models.ConcernItem:
     """Generate ConcernItem object"""
     reason = reason or {'message': 'Test', 'placeholder': {}}
     return models.ConcernItem.objects.create(
-        type=concern_type, name=name, reason=reason, blocking=blocking
+        type=concern_type, name=name, reason=reason, blocking=blocking, owner=owner
     )
 
 
@@ -164,6 +166,7 @@ def gen_task_log(obj: models.ADCMEntity, action: models.Action = None) -> models
 def gen_job_log(task) -> models.JobLog:
     return models.JobLog.objects.create(
         task=task,
+        action=task.action,
         status='CREATED',
         start_date=timezone.now(),
         finish_date=timezone.now(),
@@ -175,25 +178,37 @@ def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
     Generates hierarchy:
         cluster - service - component - host - provider
     """
-    gen_adcm()
+    adcm = gen_adcm()
+    adcm.config = gen_config()
+    adcm.save()
 
     cluster_bundle = gen_bundle()
     provider_bundle = gen_bundle()
 
     cluster_pt = gen_prototype(cluster_bundle, 'cluster')
     cluster = gen_cluster(prototype=cluster_pt)
+    cluster.config = gen_config()
+    cluster.save()
 
     service_pt = gen_prototype(cluster_bundle, 'service')
     service = gen_service(cluster, prototype=service_pt)
+    service.config = gen_config()
+    service.save()
 
     component_pt = gen_prototype(cluster_bundle, 'component')
     component = gen_component(service, prototype=component_pt)
+    component.config = gen_config()
+    component.save()
 
     provider_pt = gen_prototype(provider_bundle, 'provider')
     provider = gen_provider(prototype=provider_pt)
+    provider.config = gen_config()
+    provider.save()
 
     host_pt = gen_prototype(provider_bundle, 'host')
     host = gen_host(provider, prototype=host_pt)
+    host.config = gen_config()
+    host.save()
 
     gen_host_component(component, host)
 

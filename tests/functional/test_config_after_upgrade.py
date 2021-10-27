@@ -39,12 +39,15 @@ def _update_config_and_attr_for_new_field_test(
     config["new_file"] = "other file content\n"
     config["new_option"] = "NOTTOBE"
     config["new_text"] = "text_new"
+    config["group"]["new_text"] = "text_new"
+    del config["group"]["transport_port"]
     config["new_group"] = {"new_port": 9201}
     config["new_structure"] = [
         OrderedDict({"name": "John", "surname": "Doe"}),
         OrderedDict({"name": "Allice", "surname": "Cooper"}),
     ]
     config["new_map"] = {"time": "12", "range": "super long"}
+    config["new_json"] = {"key": "value", "integer": 52}
 
     attr["new_group"] = {"active": True}
 
@@ -57,9 +60,12 @@ def _update_config_and_attr_for_new_field_test(
         attr["group_keys"]["new_file"] = False
         attr["group_keys"]["new_option"] = False
         attr["group_keys"]["new_text"] = False
+        attr["group_keys"]["group"]["new_text"] = False
+        del attr["group_keys"]["group"]["transport_port"]
         attr["group_keys"]["new_group"] = {"new_port": False}
         attr["group_keys"]["new_structure"] = False
         attr["group_keys"]["new_map"] = False
+        attr["group_keys"]["new_json"] = False
 
         attr["custom_group_keys"]["new_float"] = True
         attr["custom_group_keys"]["new_boolean"] = True
@@ -69,9 +75,12 @@ def _update_config_and_attr_for_new_field_test(
         attr["custom_group_keys"]["new_file"] = True
         attr["custom_group_keys"]["new_option"] = True
         attr["custom_group_keys"]["new_text"] = True
+        attr["custom_group_keys"]["group"]["new_text"] = True
+        del attr["custom_group_keys"]["group"]["transport_port"]
         attr["custom_group_keys"]["new_group"] = {"new_port": True}
         attr["custom_group_keys"]["new_structure"] = True
         attr["custom_group_keys"]["new_map"] = True
+        attr["custom_group_keys"]["new_json"] = True
     return config, attr
 
 
@@ -89,6 +98,7 @@ def _update_config_and_attr_for_new_default_value_test(
     config["group"] = {"port": 9201, "transport_port": 9301}
     config["structure"] = [OrderedDict({"code": 1, "country": "Test1_new"})]
     config["map"] = {"age": "25", "name": "Jane", "sex": "f"}
+    config["json"] = {"key": "initial value", "float": 3.25}
     _ = group_config
     return config, attr
 
@@ -141,6 +151,8 @@ def _update_config_and_attr_for_changed_group_customisation_test(
         attr["custom_group_keys"]["option"] = False
         attr["custom_group_keys"]["group"] = {"port": False, "transport_port": False}
         attr["custom_group_keys"]["map"] = False
+        attr["custom_group_keys"]["json"] = False
+        attr["custom_group_keys"]["secrettext"] = True
 
     return config, attr
 
@@ -203,23 +215,29 @@ class TestUpgradeWithConfigs:
     @pytest.mark.parametrize(
         ("bundle_name", "update_func"),
         [
-            ("cluster_for_upgrade_with_configs_with_new_fields", _update_config_and_attr_for_new_field_test),
-            (
+            pytest.param(
+                "cluster_for_upgrade_with_configs_with_new_fields",
+                _update_config_and_attr_for_new_field_test,
+                id="new_fields",
+            ),
+            pytest.param(
                 "cluster_for_upgrade_with_configs_with_new_default_value",
                 _update_config_and_attr_for_new_default_value_test,
+                id="new_default_values",
             ),
-            (
+            pytest.param(
                 "cluster_for_upgrade_with_configs_with_removed_field",
                 _update_config_and_attr_for_removed_field_test,
+                id="removed_fields",
             ),
-            (
+            pytest.param(
                 "cluster_for_upgrade_with_configs_with_changed_types",
                 _update_config_and_attr_for_changed_types,
+                id="changed_types",
             ),
         ],
-        ids=["new_fields", "new_default_values", "removed_fields", "changed_types"],
     )
-    def test_upgrade_cluster_with_ordinary_configs(self, sdk_client_fs, bundle_name, update_func):
+    def test_upgrade_cluster_with_ordinary_configs(self, sdk_client_fs, bundle_name, update_func: Callable):
         """
         Test upgrade cluster with ordinary configs
         - Upload cluster bundle
@@ -260,23 +278,29 @@ class TestUpgradeWithConfigs:
     @pytest.mark.parametrize(
         ("bundle_name", "update_func"),
         [
-            ("provider_for_upgrade_with_configs_with_new_fields", _update_config_and_attr_for_new_field_test),
-            (
+            pytest.param(
+                "provider_for_upgrade_with_configs_with_new_fields",
+                _update_config_and_attr_for_new_field_test,
+                id="new_fields",
+            ),
+            pytest.param(
                 "provider_for_upgrade_with_configs_with_new_default_value",
                 _update_config_and_attr_for_new_default_value_test,
+                id="new_default_values",
             ),
-            (
+            pytest.param(
                 "provider_for_upgrade_with_configs_with_removed_field",
                 _update_config_and_attr_for_removed_field_test,
+                id="removed_fields",
             ),
-            (
+            pytest.param(
                 "provider_for_upgrade_with_configs_with_changed_types",
                 _update_config_and_attr_for_changed_types,
+                id="changed_types",
             ),
         ],
-        ids=["new_fields", "new_default_values", "removed_fields", "changed_types"],
     )
-    def test_upgrade_provider_with_ordinary_configs(self, sdk_client_fs, bundle_name, update_func):
+    def test_upgrade_provider_with_ordinary_configs(self, sdk_client_fs, bundle_name, update_func: Callable):
         """
         Test upgrade provider with ordinary configs
         - Upload provider bundle
@@ -321,27 +345,35 @@ class TestUpgradeWithGroupConfigs:
     @pytest.mark.parametrize(
         ("bundle_name", "update_func"),
         [
-            ("cluster_for_upgrade_with_group_configs_with_new_fields", _update_config_and_attr_for_new_field_test),
-            (
+            pytest.param(
+                "cluster_for_upgrade_with_group_configs_with_new_fields",
+                _update_config_and_attr_for_new_field_test,
+                id="new_fields",
+            ),
+            pytest.param(
                 "cluster_for_upgrade_with_group_configs_with_new_default_value",
                 _update_config_and_attr_for_new_default_value_test,
+                id="new_default_values",
             ),
-            (
+            pytest.param(
                 "cluster_for_upgrade_with_group_configs_with_removed_field",
                 _update_config_and_attr_for_removed_field_test,
+                id="removed_fields",
             ),
-            (
+            pytest.param(
                 "cluster_for_upgrade_with_group_configs_with_changed_types",
                 _update_config_and_attr_for_changed_types,
+                id="changed_types",
+                marks=pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2172"),
             ),
-            (
+            pytest.param(
                 "cluster_for_upgrade_with_group_configs_with_changed_group_customisation",
                 _update_config_and_attr_for_changed_group_customisation_test,
+                id="changed_group_customisation",
             ),
         ],
-        ids=["new_fields", "new_default_values", "removed_fields", "changed_types", "changed_group_customisation"],
     )
-    def test_upgrade_cluster_with_group_configs(self, sdk_client_fs, bundle_name, update_func):
+    def test_upgrade_cluster_with_group_configs(self, sdk_client_fs, bundle_name, update_func: Callable):
         """
         Test upgrade cluster with group configs enabled
         - Upload cluster bundle
@@ -387,27 +419,35 @@ class TestUpgradeWithGroupConfigs:
     @pytest.mark.parametrize(
         ("bundle_name", "update_func"),
         [
-            ("provider_for_upgrade_with_group_configs_with_new_fields", _update_config_and_attr_for_new_field_test),
-            (
+            pytest.param(
+                "provider_for_upgrade_with_group_configs_with_new_fields",
+                _update_config_and_attr_for_new_field_test,
+                id="new_fields",
+            ),
+            pytest.param(
                 "provider_for_upgrade_with_group_configs_with_new_default_value",
                 _update_config_and_attr_for_new_default_value_test,
+                id="new_default_values",
             ),
-            (
+            pytest.param(
                 "provider_for_upgrade_with_group_configs_with_removed_field",
                 _update_config_and_attr_for_removed_field_test,
+                id="removed_fields",
             ),
-            (
+            pytest.param(
                 "provider_for_upgrade_with_group_configs_with_changed_types",
                 _update_config_and_attr_for_changed_types,
+                id="changed_types",
+                marks=pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2172"),
             ),
-            (
+            pytest.param(
                 "provider_for_upgrade_with_group_configs_with_changed_group_customisation",
                 _update_config_and_attr_for_changed_group_customisation_test,
+                id="changed_group_customisation",
             ),
         ],
-        ids=["new_fields", "new_default_values", "removed_fields", "changed_types", "changed_group_customisation"],
     )
-    def test_upgrade_provider_with_group_configs(self, sdk_client_fs, bundle_name, update_func):
+    def test_upgrade_provider_with_group_configs(self, sdk_client_fs, bundle_name, update_func: Callable):
         """
         Test upgrade provider with group configs enabled
         - Upload provider bundle

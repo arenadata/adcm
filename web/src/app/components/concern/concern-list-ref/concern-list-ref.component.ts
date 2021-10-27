@@ -12,6 +12,7 @@ import { Concern } from '@app/models/concern/concern';
       color="warn"
       [component]="ConcernListComponent"
       [data]="data"
+      [hideTimeout]="200"
     >
       <mat-icon>priority_hight</mat-icon>
     </button>
@@ -29,6 +30,6 @@ export class ConcernListRefComponent {
       concerns,
     };
   }
- data: { concerns: Concern[] };
+  data: { concerns: Concern[] };
 
 }

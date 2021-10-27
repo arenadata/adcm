@@ -11,7 +11,7 @@
 # limitations under the License.
 ---
 - name: Dummy action
-  hosts: all
+  hosts: "{{ job.config.hosts }}"
   connection: local
   gather_facts: no
 
@@ -23,10 +23,14 @@
           - job.config.map[inventory_hostname].boolean == services.test_service_1.first.config.boolean
           - job.config.map[inventory_hostname].integer == services.test_service_1.first.config.integer
           - job.config.map[inventory_hostname].password == services.test_service_1.first.config.password
+          - job.config.map[inventory_hostname].secrettext == services.test_service_1.first.config.secrettext
           - job.config.map[inventory_hostname].string == services.test_service_1.first.config.string
           - job.config.map[inventory_hostname].list == services.test_service_1.first.config.list
           - job.config.map[inventory_hostname].text == services.test_service_1.first.config.text
           - job.config.map[inventory_hostname].group == services.test_service_1.first.config.group
           - job.config.map[inventory_hostname].structure == services.test_service_1.first.config.structure
           - job.config.map[inventory_hostname].map == services.test_service_1.first.config.map
+          - job.config.map[inventory_hostname].json == services.test_service_1.first.config.json
           - job.config.map[inventory_hostname].file == lookup('file', services.test_service_1.first.config.file)
+        fail_msg: "Expected:\n{{ job.config.map[inventory_hostname] | to_nice_json }}\n\
+        but actual is:\n {{ services.test_service_1.first.config | to_nice_json }} "

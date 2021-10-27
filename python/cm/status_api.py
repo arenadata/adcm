@@ -137,7 +137,7 @@ def change_obj_multi_state(obj_type, obj_id, multi_state):
     return post_event('change_state', obj_type, obj_id, 'multi_state', multi_state)
 
 
-def get_status(url):
+def get_raw_status(url):
     r = api_get(url)
     if r is None:
         return 32
@@ -151,24 +151,41 @@ def get_status(url):
         return 4
 
 
-def get_cluster_status(cluster_id):
-    return get_status(f'/cluster/{cluster_id}/')
+def get_status(obj, url):
+    if obj.prototype.monitoring == 'passive':
+        return 0
+    return get_raw_status(url)
 
 
-def get_service_status(cluster_id, service_id):
-    return get_status(f'/cluster/{cluster_id}/service/{service_id}/')
+def get_cluster_status(cluster):
+    return get_raw_status(f'/cluster/{cluster.id}/')
 
 
-def get_host_status(host_id):
-    return get_status(f'/host/{host_id}/')
+def get_service_status(service):
+    return get_status(service, f'/cluster/{service.cluster.id}/service/{service.id}/')
 
 
-def get_hc_status(host_id, comp_id):
-    return get_status(f'/host/{host_id}/component/{comp_id}/')
+def get_host_status(host):
+    return get_status(host, f'/host/{host.id}/')
 
 
-def get_component_status(comp_id):
-    return get_status(f'/component/{comp_id}/')
+def get_hc_status(hc):
+    return get_status(hc.component, f'/host/{hc.host_id}/component/{hc.component_id}/')
+
+
+def get_host_comp_status(host, component):
+    return get_status(component, f'/host/{host.id}/component/{component.id}/')
+
+
+def get_component_status(comp):
+    return get_status(comp, f'/component/{comp.id}/')
+
+
+def get_cluster_map(cluster):
+    r = api_get(f'/cluster/{cluster.id}/?view=interface')
+    if r is None:
+        return None
+    return r.json()
 
 
 def load_service_map():

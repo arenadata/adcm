@@ -31,7 +31,7 @@ from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.asserts import assert_state
 from adcm_pytest_plugin.utils import random_string
 
-from tests.functional.plugin_utils import AnyADCMObject
+from tests.functional.tools import AnyADCMObject
 
 LOCK_ACTION_NAMES = ["lock", "lock_multijob"]
 
