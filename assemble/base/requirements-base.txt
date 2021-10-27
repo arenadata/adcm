@@ -26,6 +26,7 @@ yspec
 # Custom bundle libs
 apache-libcloud
 jmespath
+jsonschema
 lxml
 pycrypto
 --extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
