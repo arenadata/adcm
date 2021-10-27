@@ -10,12 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
-import { ApiBase, Cluster } from '@app/core/types/api';
+import { BaseEntity } from '@app/core/types/api';
 import { Observable, of } from 'rxjs';
 import { switchMap, tap, map } from 'rxjs/operators';
 
 import { StatusService } from './status/status.service';
 import { ComponentData } from './tooltip/tooltip.service';
+import { ICluster } from '@app/models/cluster';
 
 @Component({
   selector: 'app-status-info',
@@ -37,8 +38,8 @@ import { ComponentData } from './tooltip/tooltip.service';
 })
 export class StatusInfoComponent implements OnInit {
   path: string;
-  cluster: Cluster;
-  current: ApiBase;
+  cluster: ICluster;
+  current: BaseEntity;
   statusInfo$: Observable<any>;
 
   constructor(private service: StatusService, private componentData: ComponentData) {}
@@ -53,7 +54,7 @@ export class StatusInfoComponent implements OnInit {
 
     switch (name) {
       case 'cluster':
-        this.cluster = this.current as Cluster;
+        this.cluster = this.current as ICluster;
         req$ = this.service.getServiceComponentsByCluster(this.cluster);
         break;
       case 'service':

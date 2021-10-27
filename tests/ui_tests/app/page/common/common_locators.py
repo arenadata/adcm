@@ -10,38 +10,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Common locators"""
+
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator
+
+# pylint: disable=too-few-public-methods
 
 
 class CommonLocators:
     """Locators common to all pages"""
 
-    socket = Locator(By.CLASS_NAME, "socket", "open socket marker")
-    profile = Locator(By.CLASS_NAME, "profile", "profile load marker")
-    load_marker = Locator(By.CLASS_NAME, 'load_complete', "page load marker")
+    socket = Locator(By.CSS_SELECTOR, ".socket", "open socket marker")
+    profile = Locator(By.CSS_SELECTOR, ".profile", "profile load marker")
+    load_marker = Locator(By.CSS_SELECTOR, '.load_complete', "page load marker")
 
 
 class ObjectPageLocators:
     """Common locators for object's detailed page"""
 
-    title = Locator(
-        By.XPATH, "//mat-drawer-content/mat-card/mat-card-header/div/mat-card-title", "Title"
-    )
-    subtitle = Locator(
-        By.XPATH, "//mat-drawer-content/mat-card/mat-card-header/div/mat-card-subtitle", "Subtitle"
-    )
+    title = Locator(By.CSS_SELECTOR, "mat-card-header mat-card-title", "Title")
+    subtitle = Locator(By.CSS_SELECTOR, "mat-card-header mat-card-subtitle", "Subtitle")
+    text = Locator(By.CSS_SELECTOR, "mat-card-content", "Cluster main page text")
 
 
 class ObjectPageMenuLocators:
     """Menu elements locators"""
 
-    main_tab = Locator(By.XPATH, "//a[@adcm_test='tab_main']", "Tab main")
-    services_tab = Locator(By.XPATH, "//a[@adcm_test='tab_service']", "Tab services")
-    hosts_tab = Locator(By.XPATH, "//a[@adcm_test='tab_host']", "Tab hosts")
-    components_tab = Locator(By.XPATH, "//a[@adcm_test='tab_host_component']", "Tab components")
-    config_tab = Locator(By.XPATH, "//a[@adcm_test='tab_config']", "Tab config")
-    status_tab = Locator(By.XPATH, "//a[@adcm_test='tab_status']", "Tab status")
-    import_tab = Locator(By.XPATH, "//a[@adcm_test='tab_import']", "Tab import")
-    actions_tab = Locator(By.XPATH, "//a[@adcm_test='tab_action']", "Tab actions")
+    main_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_main']", "Tab main")
+    services_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_service']", "Tab services")
+    hosts_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_host']", "Tab hosts")
+    components_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_host_component']", "Tab components")
+    config_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_config']", "Tab config")
+    status_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_status']", "Tab status")
+    import_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_import']", "Tab import")
+    intro_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_intro']", "Tab admin intro")
+    settings_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_settings']", "Tab admin settings")
+    users_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_users']", "Tab admin users")
+
+
+class CommonActionLocators:
+    """Common action page elements locators"""
+
+    action_card = Locator(By.CSS_SELECTOR, "app-action-card", "Action card")
+    info_text = Locator(By.CSS_SELECTOR, "app-action-card>p", "Text on action page")
+
+    class ActionCard:
+        """Common action page action card elements locators"""
+
+        play_btn = Locator(By.CSS_SELECTOR, "button", "Action run button")

@@ -3,11 +3,11 @@ import { ComponentRef } from '@angular/core';
 
 import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';
 import { StatusColumnComponent, StatusData } from '@app/components/columns/status-column/status-column.component';
-import { ActionsColumnComponent } from '@app/components/columns/actions-column/actions-column.component';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { UpgradeComponent } from '@app/shared/components';
 import { ActionsButtonComponent } from '@app/components/actions-button/actions-button.component';
-import { IssueType } from '@app/models/issue';
+import { BaseEntity } from '@app/core/types';
+import { ConcernListDirective } from '@app/abstract-directives/concern-list.directive';
 
 export class ListFactory {
 
@@ -63,17 +63,7 @@ export class ListFactory {
     };
   }
 
-  static actionsColumn(): IComponentColumn<any> {
-    return {
-      label: 'Actions',
-      type: 'component',
-      className: 'list-control',
-      headerClassName: 'list-control',
-      component: ActionsColumnComponent,
-    };
-  }
-
-  static actionsButton<T>(type: IssueType): IComponentColumn<T> {
+  static actionsButton<T extends BaseEntity>(listDirective: ConcernListDirective<T>): IComponentColumn<T> {
     return {
       label: 'Actions',
       type: 'component',
@@ -81,8 +71,12 @@ export class ListFactory {
       headerClassName: 'list-control',
       component: ActionsButtonComponent,
       instanceTaken: (componentRef: ComponentRef<ActionsButtonComponent<T>>) => {
-        componentRef.instance.issueType = type;
-      }
+        componentRef.instance.onMouseenter
+          .pipe(listDirective.takeUntil())
+          .subscribe((row: T) => {
+            listDirective.rewriteRow(row);
+          });
+      },
     };
   }
 

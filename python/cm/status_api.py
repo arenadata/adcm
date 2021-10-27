@@ -11,12 +11,12 @@
 # limitations under the License.
 
 import json
-import requests
-import simplejson
 
+import requests
+
+from cm.config import STATUS_SECRET_KEY
 from cm.logger import log
 from cm.models import HostComponent, ServiceComponent, ClusterObject, Host
-from cm.config import STATUS_SECRET_KEY
 
 API_URL = "http://localhost:8020/api/v1"
 TIMEOUT = 0.01
@@ -26,17 +26,22 @@ class Event:
     def __init__(self):
         self.events = []
 
+    def __del__(self):
+        self.send_state()
+
     def send_state(self):
-        for _ in range(len(self.events)):
+        while self.events:
             try:
-                event = self.events.pop(0)
-                func, args = event
+                func, args = self.events.pop(0)
                 func.__call__(*args)
             except IndexError:
                 pass
 
     def set_object_state(self, obj_type, obj_id, state):
         self.events.append((set_obj_state, (obj_type, obj_id, state)))
+
+    def change_object_multi_state(self, obj_type, obj_id, multi_state):
+        self.events.append((change_obj_multi_state, (obj_type, obj_id, multi_state)))
 
     def set_job_status(self, job_id, status):
         self.events.append((set_job_status, (job_id, status)))
@@ -102,6 +107,7 @@ def post_event(event, obj_type, obj_id, det_type=None, det_val=None):
             'details': details,
         },
     }
+    log.debug('post_event %s', data)
     return api_post('/event/', data)
 
 
@@ -122,13 +128,22 @@ def set_obj_state(obj_type, obj_id, state):
     return post_event('change_state', obj_type, obj_id, 'state', state)
 
 
-def get_status(url):
+def change_obj_multi_state(obj_type, obj_id, multi_state):
+    if obj_type == 'adcm':
+        return None
+    if obj_type not in ('cluster', 'service', 'host', 'provider', 'component'):
+        log.error('Unknown object type: "%s"', obj_type)
+        return None
+    return post_event('change_state', obj_type, obj_id, 'multi_state', multi_state)
+
+
+def get_raw_status(url):
     r = api_get(url)
     if r is None:
         return 32
     try:
         js = r.json()
-    except simplejson.scanner.JSONDecodeError:
+    except ValueError:
         return 8
     if 'status' in js:
         return js['status']
@@ -136,24 +151,41 @@ def get_status(url):
         return 4
 
 
-def get_cluster_status(cluster_id):
-    return get_status('/cluster/{}/'.format(cluster_id))
+def get_status(obj, url):
+    if obj.prototype.monitoring == 'passive':
+        return 0
+    return get_raw_status(url)
 
 
-def get_service_status(cluster_id, service_id):
-    return get_status('/cluster/{}/service/{}/'.format(cluster_id, service_id))
+def get_cluster_status(cluster):
+    return get_raw_status(f'/cluster/{cluster.id}/')
 
 
-def get_host_status(host_id):
-    return get_status('/host/{}/'.format(host_id))
+def get_service_status(service):
+    return get_status(service, f'/cluster/{service.cluster.id}/service/{service.id}/')
 
 
-def get_hc_status(host_id, comp_id):
-    return get_status('/host/{}/component/{}/'.format(host_id, comp_id))
+def get_host_status(host):
+    return get_status(host, f'/host/{host.id}/')
 
 
-def get_component_status(comp_id):
-    return get_status('/component/{}/'.format(comp_id))
+def get_hc_status(hc):
+    return get_status(hc.component, f'/host/{hc.host_id}/component/{hc.component_id}/')
+
+
+def get_host_comp_status(host, component):
+    return get_status(component, f'/host/{host.id}/component/{component.id}/')
+
+
+def get_component_status(comp):
+    return get_status(comp, f'/component/{comp.id}/')
+
+
+def get_cluster_map(cluster):
+    r = api_get(f'/cluster/{cluster.id}/?view=interface')
+    if r is None:
+        return None
+    return r.json()
 
 
 def load_service_map():
@@ -168,7 +200,7 @@ def load_service_map():
     for hc in HostComponent.objects.all():
         if hc.component.id in passive:
             continue
-        key = '{}.{}'.format(hc.host.id, hc.component.id)
+        key = f'{hc.host.id}.{hc.component.id}'
         hc_map[key] = {'cluster': hc.cluster.id, 'service': hc.service.id}
         if str(hc.cluster.id) not in comps:
             comps[str(hc.cluster.id)] = {}

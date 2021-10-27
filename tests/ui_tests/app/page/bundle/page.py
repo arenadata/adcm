@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Bundle page PageObjects classes"""
+
 import allure
 
 from tests.ui_tests.app.page.bundle.locators import BundleLocators, BundleMainMenuLocators
@@ -25,14 +28,15 @@ class BundlePage(BasePageObject):
     config: CommonConfigMenuObj
 
     def __init__(self, driver, base_url, bundle_id: int):
-        super().__init__(driver, base_url, f"/bundle/{bundle_id}/main")
+        super().__init__(driver, base_url, "/bundle/{bundle_id}/main", bundle_id=bundle_id)
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.bundle_id = bundle_id
 
-    @allure.step('Open "Main" menu')
+    @allure.step('Click on the "Main" menu item')
     def open_main_menu(self) -> 'BundlePage':
+        """Click on the 'Main' menu item"""
         self.find_and_click(BundleLocators.MenuNavigation.main)
         self.wait_page_is_opened()
         return self

@@ -20,9 +20,11 @@ import cm.job
 import cm.stack
 import cm.status_api
 from cm import config
+from cm.ansible_plugin import get_check_log
 from cm.errors import AdcmEx
 from cm.models import JobLog, Host, ClusterObject, ServiceComponent, get_object_cluster
 from api.api_views import hlink
+from api.concern.serializers import ConcernItemSerializer
 
 
 def get_object_name(obj):
@@ -164,6 +166,7 @@ class TaskSerializer(TaskListSerializer):
     terminatable = serializers.SerializerMethodField()
     cancel = hlink('task-cancel', 'id', 'task_id')
     object_type = serializers.SerializerMethodField()
+    lock = ConcernItemSerializer(read_only=True)
 
     get_action_url = get_action_url
 
@@ -260,7 +263,7 @@ class LogStorageSerializer(serializers.Serializer):
             config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}'
         )
         try:
-            with open(path_file, 'r') as f:
+            with open(path_file, 'r', encoding='utf_8') as f:
                 content = f.read()
         except FileNotFoundError:
             msg = f'File "{obj.name}-{obj.type}.{obj.format}" not found'
@@ -275,7 +278,7 @@ class LogStorageSerializer(serializers.Serializer):
                 content = self._get_ansible_content(obj)
         elif obj.type == 'check':
             if content is None:
-                content = cm.job.get_check_log(obj.job_id)
+                content = get_check_log(obj.job_id)
             if isinstance(content, str):
                 content = json.loads(content)
         elif obj.type == 'custom':
@@ -330,11 +333,11 @@ class LogSerializer(serializers.Serializer):
                 path_file = os.path.join(
                     config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}'
                 )
-                with open(path_file, 'r') as f:
+                with open(path_file, 'r', encoding='utf_8') as f:
                     content = f.read()
         elif obj.type == 'check':
             if content is None:
-                content = cm.job.get_check_log(obj.job_id)
+                content = get_check_log(obj.job_id)
             if isinstance(content, str):
                 content = json.loads(content)
         return content

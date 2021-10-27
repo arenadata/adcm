@@ -9,7 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621
+
+"""Tests for objects with component deletion"""
+
+# pylint:disable=redefined-outer-name
 import allure
 import coreapi
 import pytest
@@ -20,7 +23,8 @@ from tests.library import errorcodes as err
 
 
 @pytest.fixture()
-def cluster(sdk_client_fs: ADCMClient):
+def cluster_host_service(sdk_client_fs: ADCMClient):
+    """Create cluster, host and service"""
     hostprovider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hostprovider'))
     provider = hostprovider_bundle.provider_create("test")
     host = provider.host_create("test_host")
@@ -33,17 +37,17 @@ def cluster(sdk_client_fs: ADCMClient):
     return cluster, host, service
 
 
-def test_delete_host_with_components(cluster):
+def test_delete_host_with_components(cluster_host_service):
     """If host has NO component, than we can simple remove it from cluster."""
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        cluster[0].host_delete(cluster[1])
+        cluster_host_service[0].host_delete(cluster_host_service[1])
     with allure.step('Check host conflict'):
         err.HOST_CONFLICT.equal(e)
 
 
-def test_delete_service_with_components(cluster):
+def test_delete_service_with_components(cluster_host_service):
     """If host has NO component, than we can simple remove it from cluster."""
-    service = cluster[2]
+    service = cluster_host_service[2]
     with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
         service.delete()
     with allure.step('Check service conflict'):

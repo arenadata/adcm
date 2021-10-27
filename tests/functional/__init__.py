@@ -10,9 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""ADCM functional tests"""
+
 import pytest
 
 pytestmark = [
     pytest.mark.allure_label("API Tests", label_type="layer"),
-    pytest.mark.allure_label("FunctionalTests", label_type="parentSuite"),
+    pytest.mark.allure_label("Functional Tests", label_type="parentSuite"),
+    pytest.mark.allure_label("Functional Tests", label_type="page_url"),
 ]

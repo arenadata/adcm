@@ -6,6 +6,7 @@
 .cache
 .coverage
 .idea/
+.venv
 .version
 .vscode
 /allure-results/

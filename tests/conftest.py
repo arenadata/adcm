@@ -9,20 +9,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Common fixtures and tools for ADCM tests"""
+
 # pylint: disable=W0621
 import os
+import sys
 import tarfile
-from typing import Optional, List
+from pathlib import PosixPath
+from typing import Optional, List, Tuple
 
 import pytest
-import sys
 import yaml
 
 from _pytest.python import Function
-from pathlib import PosixPath
 from allure_commons.model2 import TestResult, Parameter
 from allure_pytest.listener import AllureListener
-
+from docker.utils import parse_repository_tag
 
 pytest_plugins = "adcm_pytest_plugin"
 
@@ -58,7 +61,7 @@ def pytest_generate_tests(metafunc):
 def pytest_runtest_setup(item: Function):
     """
     Pytest hook that overrides test parameters
-    In case of adss tests, parameters in allure report don't make sense unlike test ID
+    In case of adcm tests, parameters in allure report don't make sense unlike test ID
     So, we remove all parameters in allure report but add one parameter with test ID
     """
     yield
@@ -141,7 +144,7 @@ def create_bundle_archives(request, tmp_path: PosixPath) -> List[str]:
         archive_path = tmp_path / f'spam_bundle_{i}.tar'
         config_fp = (bundle_dir := tmp_path / f'spam_bundle_{i}') / 'config.yaml'
         bundle_dir.mkdir()
-        with open(config_fp, 'w') as config_file:
+        with open(config_fp, 'w', encoding='utf_8') as config_file:
             yaml.safe_dump(config, config_file)
         with tarfile.open(archive_path, 'w') as archive:
             archive.add(config_fp, arcname='config.yaml')
@@ -151,3 +154,11 @@ def create_bundle_archives(request, tmp_path: PosixPath) -> List[str]:
                 archive.add(license_fp, arcname=config[0]['license'])
         archives.append(str(archive_path))
     return archives
+
+
+@pytest.fixture(scope="session")
+def adcm_image_tags(cmd_opts) -> Tuple[str, str]:
+    """Get tag parts of --adcm-image argument (split by ":")"""
+    if not cmd_opts.adcm_image:
+        pytest.fail("CLI parameter adcm_image should be provided")
+    return tuple(parse_repository_tag(cmd_opts.adcm_image))  # type: ignore

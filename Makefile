@@ -2,7 +2,7 @@
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 ADCMBASE_IMAGE ?= hub.arenadata.io/adcm/base
-ADCMBASE_TAG ?= 20210317134752
+ADCMBASE_TAG ?= 20210927130343
 
 APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
@@ -78,14 +78,16 @@ ng_tests: ## Run Angular tests
 
 linters : ## Run linters
 	docker pull hub.adsw.io/library/pr-builder:3-x64
-	docker run -i --rm -v $(CURDIR)/:/source -w /source hub.adsw.io/library/pr-builder:3-x64 /linters.sh shellcheck pylint pep8
-	docker run -i --rm -v $(CURDIR)/:/source -w /source hub.adsw.io/library/pr-builder:3-x64 /linters.sh -f ./tests black
-	docker run -i --rm -v $(CURDIR)/:/source -w /source hub.adsw.io/library/pr-builder:3-x64 /linters.sh -f ./tests/functional flake8_pytest_style
-	docker run -i --rm -v $(CURDIR)/:/source -w /source hub.adsw.io/library/pr-builder:3-x64 /linters.sh -f ./tests/ui_tests flake8_pytest_style
+	docker run -i --rm -v $(CURDIR)/:/source -w /source hub.adsw.io/library/pr-builder:3-x64 \
+        /bin/bash -xeo pipefail -c "/linters.sh shellcheck pylint pep8 && \
+        /linters.sh -b ./tests -f ../tests pylint && \
+        /linters.sh -f ./tests black && \
+        /linters.sh -f ./tests/functional flake8_pytest_style && \
+        /linters.sh -f ./tests/ui_tests flake8_pytest_style"
 
 npm_check: ## Run npm-check
 	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./npm_check.sh
 
 django_tests : ## Run django tests.
 	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) python python/manage.py test cm
+	docker run -e DJANGO_SETTINGS_MODULE=adcm.test -i --rm -v $(CURDIR)/:/adcm -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) python python/manage.py test cm

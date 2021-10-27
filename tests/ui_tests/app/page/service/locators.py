@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Service page locators"""
 
 from selenium.webdriver.common.by import By
 
@@ -19,4 +20,4 @@ from tests.ui_tests.app.helpers.locator import Locator
 class ServiceImportLocators:
     """Service import page elements locators"""
 
-    import_item_block = Locator(By.XPATH, "//div[@class='items']/div", "Import item block")
+    import_item_block = Locator(By.CSS_SELECTOR, ".items>div", "Import item block")

@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Common methods and constants"""
+
 import os
 from os.path import dirname
 

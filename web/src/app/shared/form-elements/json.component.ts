@@ -19,8 +19,11 @@ import { debounceTime } from 'rxjs/operators';
   template: `
     <ng-container [formGroup]="form">
       <mat-form-field>
-        <textarea matInput [appMTextarea]="field.key" [formControlName]="field.name" [readonly]="field.read_only"></textarea>
-        <mat-error *ngIf="!isValid"><app-error-info [field]="field" [control]="control"></app-error-info></mat-error>
+        <textarea matInput [appMTextarea]="field.key" [formControlName]="field.name"
+                  [readonly]="field.read_only"></textarea>
+        <mat-error *ngIf="!isValid">
+          <app-error-info [field]="field" [control]="control"></app-error-info>
+        </mat-error>
       </mat-form-field>
     </ng-container>
   `,
@@ -32,8 +35,9 @@ export class JsonComponent extends FieldDirective implements OnInit {
     control.valueChanges.pipe(debounceTime(500)).subscribe((value) => {
       try {
         const v = JSON.parse(value);
-        control.setValue(JSON.stringify(v, undefined, 4));
-      } catch (e) {}
+        control.setValue(JSON.stringify(v, undefined, 4), { emitEvent: false });
+      } catch (e) {
+      }
     });
   }
 }

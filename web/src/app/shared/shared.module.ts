@@ -13,7 +13,6 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { AdwpListModule } from '@adwp-ui/widgets';
 
 import { AddingModule } from './add-component/adding.module';
 import {
@@ -28,10 +27,8 @@ import {
   StatusInfoComponent,
   UpgradeComponent,
 } from './components';
-import { ActionCardComponent } from './components/actions/action-card/action-card.component';
 import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
 import { MultiSortDirective } from './components/list/multi-sort.directive';
-import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { DetailsModule } from './details/details.module';
 import { DynamicDirective, HoverDirective } from './directives';
@@ -51,8 +48,7 @@ import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
 import { TranslateModule } from '@ngx-translate/core';
 import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
 import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
-import { MatTreeModule } from '@angular/material/tree';
-import { StatusTreeComponent } from '@app/components/status-tree/status-tree.component';
+import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
 
 @NgModule({
   imports: [
@@ -68,10 +64,7 @@ import { StatusTreeComponent } from '@app/components/status-tree/status-tree.com
     HostComponentsMapModule,
     DetailsModule,
     TranslateModule,
-    AdwpListModule.forRoot({
-      itemsPerPage: [10, 25, 50, 100],
-    }),
-    MatTreeModule,
+    TooltipModule
   ],
   declarations: [
     DialogComponent,
@@ -81,7 +74,6 @@ import { StatusTreeComponent } from '@app/components/status-tree/status-tree.com
     ButtonSpinnerComponent,
     TagEscPipe,
     IssueInfoComponent,
-    SimpleTextComponent,
     StatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
@@ -90,7 +82,6 @@ import { StatusTreeComponent } from '@app/components/status-tree/status-tree.com
     ExportComponent,
     ActionMasterComponent,
     ActionMasterConfigComponent,
-    ActionCardComponent,
     StatusColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,
@@ -99,7 +90,6 @@ import { StatusTreeComponent } from '@app/components/status-tree/status-tree.com
     ToDataSourcePipe,
     PickKeysPipe,
     TranslateKeysPipe,
-    StatusTreeComponent,
   ],
   exports: [
     FormsModule,
@@ -123,20 +113,20 @@ import { StatusTreeComponent } from '@app/components/status-tree/status-tree.com
     MainInfoComponent,
     ImportComponent,
     ExportComponent,
-    ActionCardComponent,
     StatusColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,
     ClusterColumnComponent,
     ServiceComponentsComponent,
-    AdwpListModule,
     ToDataSourcePipe,
     PickKeysPipe,
     TranslateKeysPipe,
+    TooltipModule
   ],
   providers: [
     JobService,
     TaskService,
   ],
 })
-export class SharedModule {}
+export class SharedModule {
+}

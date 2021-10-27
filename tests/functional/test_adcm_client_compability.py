@@ -9,7 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621
+
+"""Tests for adcm_client capability"""
+
 import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
@@ -23,11 +25,13 @@ from adcm_pytest_plugin.utils import get_data_dir
 
 
 def old_adcm_images():
+    """Prepare a list of old ADCM images"""
     return parametrized_by_adcm_version(adcm_min_version="2019.10.08")[0]
 
 
 @pytest.mark.parametrize("image", old_adcm_images(), ids=repr)
-def test_actions(image, sdk_client_fs: ADCMClient):
+@pytest.mark.usefixtures("image")
+def test_actions(sdk_client_fs: ADCMClient):
     """
     Tests that action works on latest adcm client and old adcm versions
     """

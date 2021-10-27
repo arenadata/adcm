@@ -11,136 +11,117 @@
 # limitations under the License.
 
 from unittest.mock import patch
+
 from django.test import TestCase
 
+from cm import issue, models
 from cm.unit_tests import utils
-from cm import issue
 from cm.hierarchy import Tree
 
 
-def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements
-    """
-    Generates hierarchy:
-        cluster - service - component - host - provider
-    """
-    utils.gen_adcm()
-    cluster_bundle = utils.gen_bundle()
-    provider_bundle = utils.gen_bundle()
-    cluster_pt = utils.gen_prototype(cluster_bundle, 'cluster')
-    cluster = utils.gen_cluster(prototype=cluster_pt)
-    service_pt = utils.gen_prototype(cluster_bundle, 'service')
-    service = utils.gen_service(cluster, prototype=service_pt)
-    component_pt = utils.gen_prototype(cluster_bundle, 'component')
-    component = utils.gen_component(service, prototype=component_pt)
-    provider_pt = utils.gen_prototype(provider_bundle, 'provider')
-    provider = utils.gen_provider(prototype=provider_pt)
-    host_pt = utils.gen_prototype(provider_bundle, 'host')
-    host = utils.gen_host(provider, prototype=host_pt)
-    utils.gen_host_component(component, host)
-    return dict(
-        cluster=cluster,
-        service=service,
-        component=component,
-        provider=provider,
-        host=host,
-    )
+mock_issue_check_map = {
+    models.ConcernCause.Config: lambda x: False,
+    models.ConcernCause.Import: lambda x: True,
+    models.ConcernCause.Service: lambda x: True,
+    models.ConcernCause.HostComponent: lambda x: True,
+}
 
 
-class AggregateIssuesTest(TestCase):
-    """
-    Tests for `cm.issue.aggregate_issues()`
-    BEWARE of different object instances in `self.tree` and `self.hierarchy`, use `refresh_from_db`
-    """
+class CreateIssueTest(TestCase):
+    """Tests for `cm.issue.create_issues()`"""
 
     def setUp(self) -> None:
-        self.hierarchy = generate_hierarchy()
-        self.tree = Tree(self.hierarchy['cluster'])
+        self.hierarchy = utils.generate_hierarchy()
+        self.cluster = self.hierarchy['cluster']
+        self.tree = Tree(self.cluster)
 
-    def test_no_issues(self):
-        """Objects with no issues has no aggregated issues as well"""
-        for obj in self.hierarchy.values():
-            self.assertFalse(issue.aggregate_issues(obj, self.tree))
+    def test_new_issue(self):
+        """Test if new issue is propagated to all affected objects"""
+        issue_type = models.ConcernCause.Config
+        issue.create_issue(self.cluster, issue_type)
+        own_issue = self.cluster.get_own_issue(issue_type)
+        self.assertIsNotNone(own_issue)
+        for node in self.tree.get_directly_affected(self.tree.built_from):
+            concerns = list(node.value.concerns.all())
+            self.assertEqual(len(concerns), 1)
+            self.assertEqual(own_issue.pk, concerns[0].pk)
 
-    def test_provider_issue(self):
-        """Test provider's special case - it does not aggregate issues from other objects"""
-        data = {'config': False}
-        for node in self.tree.get_all_affected(self.tree.built_from):
-            node.value.issue = data
-            node.value.save()
+    def test_same_issue(self):
+        """Test if issue could not be added more than once"""
+        issue_type = models.ConcernCause.Config
+        issue.create_issue(self.cluster, issue_type)
+        issue.create_issue(self.cluster, issue_type)  # create twice
+        for node in self.tree.get_directly_affected(self.tree.built_from):
+            concerns = list(node.value.concerns.all())
+            self.assertEqual(len(concerns), 1)  # exist only one
 
-        provider = self.hierarchy['provider']
-        provider.refresh_from_db()
-        self.assertDictEqual(data, issue.aggregate_issues(provider, self.tree))
+    def test_few_issues(self):
+        """Test if object could have more than one issue"""
+        issue_type_1 = models.ConcernCause.Config
+        issue_type_2 = models.ConcernCause.Import
+        issue.create_issue(self.cluster, issue_type_1)
+        issue.create_issue(self.cluster, issue_type_2)
+        own_issue_1 = self.cluster.get_own_issue(issue_type_1)
+        self.assertIsNotNone(own_issue_1)
+        own_issue_2 = self.cluster.get_own_issue(issue_type_2)
+        self.assertIsNotNone(own_issue_2)
+        self.assertNotEqual(own_issue_1.pk, own_issue_2.pk)
+        for node in self.tree.get_directly_affected(self.tree.built_from):
+            concerns = {c.pk for c in node.value.concerns.all()}
+            self.assertEqual(len(concerns), 2)
+            self.assertSetEqual({own_issue_1.pk, own_issue_2.pk}, concerns)
 
-    def test_own_issue(self):
-        """Test if own issue is not doubled as nested"""
-        data = {'config': False}
-        for node in self.tree.get_all_affected(self.tree.built_from):
-            node.value.issue = data
-            node.value.save()
+    @patch('cm.issue._issue_check_map', mock_issue_check_map)
+    def test_inherit_on_creation(self):
+        """Test if new object in hierarchy inherits existing issues"""
+        issue_type = models.ConcernCause.Config
+        issue.create_issue(self.cluster, issue_type)
+        cluster_issue = self.cluster.get_own_issue(issue_type)
+        new_service = utils.gen_service(self.cluster, self.cluster.prototype.bundle)
+        self.assertListEqual(list(new_service.concerns.all()), [])
 
-        for name, obj in self.hierarchy.items():
-            obj.refresh_from_db()
-            agg_issue = issue.aggregate_issues(obj, self.tree)
-            self.assertNotIn(name, agg_issue)
-            self.assertIn('config', agg_issue)
-
-    def test_linked_issues(self):
-        """Test if aggregated issue has issues from all linked objects"""
-        data = {'config': False}
-        for node in self.tree.get_all_affected(self.tree.built_from):
-            node.value.issue = data
-            node.value.save()
-
-        keys = {'config', 'cluster', 'service', 'component', 'provider', 'host'}
-        for name, obj in self.hierarchy.items():
-            if name == 'provider':
-                continue
-
-            obj.refresh_from_db()
-            agg_issue = issue.aggregate_issues(obj, self.tree)
-            expected_keys = keys.difference({name})
-            got_keys = set(agg_issue.keys())
-            self.assertSetEqual(expected_keys, got_keys)
+        issue.update_hierarchy_issues(new_service)
+        new_service_issues = [i.id for i in new_service.concerns.all()]
+        self.assertIn(cluster_issue.id, new_service_issues)
 
 
-class IssueReporterTest(TestCase):
-    @patch('cm.status_api.post_event')
-    def test_update__no_issue_changes(self, mock_evt_post):
-        hierarchy = generate_hierarchy()
-        issue.update_hierarchy_issues(hierarchy['cluster'])
-        mock_evt_post.assert_not_called()
+class RemoveIssueTest(TestCase):
+    """Tests for `cm.issue.create_issues()`"""
 
-    @patch('cm.status_api.post_event')
-    @patch('cm.issue.check_cluster_issue')
-    def test_update__raise_issue(self, mock_check, mock_evt_post):
-        mock_check.return_value = {'config': False}
-        hierarchy = generate_hierarchy()
+    def setUp(self) -> None:
+        self.hierarchy = utils.generate_hierarchy()
+        self.cluster = self.hierarchy['cluster']
+        self.tree = Tree(self.cluster)
 
-        issue.update_hierarchy_issues(hierarchy['cluster'])
+    def test_no_issue(self):
+        issue_type = models.ConcernCause.Config
+        self.assertIsNone(self.cluster.get_own_issue(issue_type))
+        issue.remove_issue(self.cluster, issue_type)
+        self.assertIsNone(self.cluster.get_own_issue(issue_type))
 
-        affected = ('cluster', 'service', 'component', 'host')
-        self.assertEqual(len(affected), mock_evt_post.call_count)
-        expected_calls = {('raise_issue', n) for n in affected}
-        got_calls = set()
-        for call in mock_evt_post.mock_calls:
-            got_calls.add((call.args[0], call.args[1]))
-        self.assertSetEqual(expected_calls, got_calls)
+    def test_single_issue(self):
+        issue_type = models.ConcernCause.Config
+        issue.create_issue(self.cluster, issue_type)
 
-    @patch('cm.status_api.post_event')
-    @patch('cm.issue.check_cluster_issue')
-    def test_update__clear_issue(self, mock_check, mock_evt_post):
-        mock_check.return_value = {}
-        hierarchy = generate_hierarchy()
-        hierarchy['cluster'].issue = {'config': False}
-        hierarchy['cluster'].save()
+        issue.remove_issue(self.cluster, issue_type)
+        self.assertIsNone(self.cluster.get_own_issue(issue_type))
+        for node in self.tree.get_directly_affected(self.tree.built_from):
+            concerns = list(node.value.concerns.all())
+            self.assertEqual(len(concerns), 0)
 
-        issue.update_hierarchy_issues(hierarchy['cluster'])
+    def test_few_issues(self):
+        issue_type_1 = models.ConcernCause.Config
+        issue_type_2 = models.ConcernCause.Import
+        issue.create_issue(self.cluster, issue_type_1)
+        issue.create_issue(self.cluster, issue_type_2)
 
-        affected = ('cluster', 'service', 'component', 'host')
-        self.assertEqual(len(affected), mock_evt_post.call_count)
-        expected_calls = {('clear_issue', n) for n in affected}
-        got_calls = set()
-        for call in mock_evt_post.mock_calls:
-            got_calls.add((call.args[0], call.args[1]))
-        self.assertSetEqual(expected_calls, got_calls)
+        issue.remove_issue(self.cluster, issue_type_1)
+        own_issue_1 = self.cluster.get_own_issue(issue_type_1)
+        self.assertIsNone(own_issue_1)
+        own_issue_2 = self.cluster.get_own_issue(issue_type_2)
+        self.assertIsNotNone(own_issue_2)
+
+        for node in self.tree.get_directly_affected(self.tree.built_from):
+            concerns = [c.pk for c in node.value.concerns.all()]
+            self.assertEqual(len(concerns), 1)
+            self.assertEqual(concerns[0], own_issue_2.pk)

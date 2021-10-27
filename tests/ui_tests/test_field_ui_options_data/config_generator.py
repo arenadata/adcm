@@ -170,8 +170,8 @@ TEMPLATES = {
 
 for t in TYPES:
     for config in DATA:
-        d_name = "{}_{}/{}_{}/{}".format(config[0], config[1], config[2], config[3], t)
+        d_name = f"{config[0]}_{config[1]}/{config[2]}_{config[3]}/{t}"
         os.makedirs(d_name)
         tmpl = ''
-        with open("{}/config.yaml".format(d_name), "w+") as f:
+        with open(f"{d_name}/config.yaml", "w+", encoding='utf_8') as f:
             f.write(TEMPLATES[t].format(config[0], config[1], config[2], config[3], t))

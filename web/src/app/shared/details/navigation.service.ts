@@ -10,13 +10,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { ApiBase, Cluster, isIssue, Issue, Job, TypeName, IAction, LogFile, JobObject } from '@app/core/types';
+import { BaseEntity, IAction, Job, JobObject, LogFile, TypeName } from '@app/core/types';
 import { AdcmTypedEntity } from '@app/models/entity';
+import { IIssues } from '@app/models/issue';
+import { IssueHelper } from '@app/helpers/issue-helper';
+import { ICluster } from '@app/models/cluster';
 
 export const ISSUE_MESSAGE = 'Something is wrong with your cluster configuration, please review it.';
 
 export interface IDetails {
-  parent?: Cluster;
+  parent?: ICluster;
   typeName: TypeName;
   id: number;
   name: string;
@@ -26,7 +29,7 @@ export interface IDetails {
   /** link to actionss */
   action: string;
   actions: IAction[];
-  issue: Issue;
+  issue: IIssues;
   log_files?: LogFile[];
   objects: JobObject[];
   prototype_name: string;
@@ -71,15 +74,15 @@ const all = [
   { id: 0, title: 'Main', url: 'main' },
   { id: 8, title: 'License', url: 'license' },
   { id: 4, title: 'Configuration', url: 'config' },
-  { id: 5, title: 'Status', url: 'status' },
-  { id: 6, title: 'Import', url: 'import' },
-  { id: 7, title: 'Actions', url: 'action' },
+  { id: 5, title: 'Configuration groups', url: 'group_config' },
+  { id: 6, title: 'Status', url: 'status' },
+  { id: 7, title: 'Import', url: 'import' },
   { id: 1, title: 'Services', url: 'service' },
   { id: 2, title: 'Hosts', url: 'host' },
   { id: 3, title: 'Hosts - Components', url: 'host_component' },
 ];
 
-const [main, license, config, m_status, m_import, actions, services, hosts, host_components] = all;
+const [main, license, config, group_config, m_status, m_import, services, hosts, host_components] = all;
 
 const components = {
   id: 8,
@@ -89,28 +92,30 @@ const components = {
 
 export const Config = {
   menu: {
-    cluster: [main, config, m_status, m_import, actions, services, hosts, host_components].sort((a, b) => a.id - b.id),
-    service: [main, components, config, m_status, m_import, actions],
-    host: [main, config, m_status, actions],
-    provider: [main, config, actions],
+    cluster: [main, config, group_config, m_status, m_import, services, hosts, host_components].sort((a, b) => a.id - b.id),
+    service: [main, components, config, group_config, m_status, m_import],
+    group_config: [hosts, config],
+    host: [main, config, m_status],
+    provider: [main, config, group_config],
     bundle: [main, license],
-    servicecomponent: [main, config, m_status, actions],
+    servicecomponent: [main, config, group_config, m_status],
+    component: [main, config, group_config, m_status],
   },
 };
 
 @Injectable()
 export class NavigationService {
-  findIssue = (url: string, issue: Issue) => Object.keys(issue).some((p) => p === url || (IssueSet[url] && IssueSet[url].some((a) => a === p)));
+  findIssue = (url: string, issue: IIssues) => Object.keys(issue).some((p) => p === url || (IssueSet[url] && IssueSet[url].some((a) => a === p)));
   getIssueMessage = (flag: boolean) => (flag ? ISSUE_MESSAGE : '');
 
-  getLeft(current: Partial<ApiBase>): INavItem[] {
-    const getMenu = (c: Partial<ApiBase>) => {
+  getLeft(current: Partial<BaseEntity>): INavItem[] {
+    const getMenu = (c: Partial<BaseEntity>) => {
       const forJob = (job: Job) => job.log_files.map((a) => ({
         title: `${a.name} [ ${a.type} ]`,
         url: `${a.id}`,
         action: () => (location.href = a.download_url)
       }));
-      const def = (typeName: TypeName, issue: Issue, status: number) =>
+      const def = (typeName: TypeName, issue: IIssues, status: number) =>
         Config.menu[typeName].map((i: INavItem) => ({
           ...i,
           issue: this.findIssue(i.url, issue),
@@ -122,10 +127,10 @@ export class NavigationService {
   }
 
   getTop(current: IDetails): INavItem[] {
-    const issue = (i: Issue) => (isIssue(i) ? ISSUE_MESSAGE : '');
-    const link = (p: { typeName: string; id: number }) => (p ? `/${p.typeName}/${p.id}` : '');
+    const issue = (i: IIssues) => (IssueHelper.isIssue(i) ? ISSUE_MESSAGE : '');
+    const link = (p: { typeName: string; id?: number }) => (p ? `/${p.typeName}/${p.id}` : '');
     const typeObj = (type: string, prev: string) => ({ url: `${prev}/${type}`, title: `${type}s` });
-    const fullLink = (c: { parent?: Cluster; typeName: TypeName; id: number; name: string; issue: Issue }): INavItem[] => [
+    const fullLink = (c: { parent?: ICluster; typeName: TypeName; id?: number; name?: string; issue?: IIssues }): INavItem[] => [
       typeObj(c.typeName === 'job' ? 'task' : c.typeName, link(c.parent)),
       {
         id: c.id,

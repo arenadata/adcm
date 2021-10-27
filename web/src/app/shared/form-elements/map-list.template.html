@@ -1,5 +1,5 @@
 <div class="tools" [ngClass]="{ hidden: field.read_only}">
-  <button mat-icon-button color="accent" (click)="add()">
+  <button mat-icon-button color="accent" [disabled]="control.disabled" (click)="add()">
     <mat-icon>add_circle_outline</mat-icon>
   </button>
 </div>
@@ -11,7 +11,7 @@
     <mat-error *ngIf="check(item)">Map property name is required!</mat-error>
   </mat-form-field>
   <mat-form-field class="value-field">
-    <button mat-icon-button matSuffix (click)="clear(i)" *ngIf="!field.read_only">
+    <button mat-icon-button matSuffix (click)="clear(i)" [disabled]="control.disabled" *ngIf="!field.read_only">
       <mat-icon>clear</mat-icon>
     </button>
     <input matInput formControlName="value" [readonly]="field.read_only" />

@@ -20,21 +20,21 @@ import sys
 
 import adcm.init_django  # DO NOT DELETE !!!
 from cm import config
+from cm.ansible_plugin import finish_check
 import cm.job
-import cm.lock
 from cm.logger import log
 from cm.models import LogStorage
 from cm.status_api import Event
 
 
 def open_file(root, tag, job_id):
-    fname = '{}/{}/{}.txt'.format(root, job_id, tag)
-    f = open(fname, 'w')
+    fname = f'{root}/{job_id}/{tag}.txt'
+    f = open(fname, 'w', encoding='utf_8')
     return f
 
 
 def read_config(job_id):
-    fd = open('{}/{}/config.json'.format(config.RUN_DIR, job_id))
+    fd = open(f'{config.RUN_DIR}/{job_id}/config.json', encoding='utf_8')
     conf = json.load(fd)
     fd.close()
     return conf
@@ -128,7 +128,7 @@ def run_ansible(job_id):
     event.send_state()
     log.info("run ansible job #%s, pid %s, playbook %s", job_id, proc.pid, playbook)
     ret = proc.wait()
-    cm.job.finish_check(job_id)
+    finish_check(job_id)
     ret = set_job_status(job_id, ret, proc.pid, event)
     event.send_state()
 
@@ -141,7 +141,7 @@ def run_ansible(job_id):
 
 def do():
     if len(sys.argv) < 2:
-        print("\nUsage:\n{} job_id\n".format(os.path.basename(sys.argv[0])))
+        print(f"\nUsage:\n{os.path.basename(sys.argv[0])} job_id\n")
         sys.exit(4)
     else:
         run_ansible(sys.argv[1])

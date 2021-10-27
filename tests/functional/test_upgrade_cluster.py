@@ -9,7 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621
+
+"""Tests for cluster upgrade"""
 import allure
 import coreapi
 import pytest
@@ -46,10 +47,7 @@ def test_upgrade_with_two_clusters(sdk_client_fs: ADCMClient):
 
 
 def test_check_prototype(sdk_client_fs: ADCMClient):
-    """Check prototype for service and cluster after upgrade
-    :param sdk_client_fs:
-    :return:
-    """
+    """Check prototype for service and cluster after upgrade"""
     with allure.step('Create test cluster'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster'))
@@ -73,149 +71,8 @@ def test_check_prototype(sdk_client_fs: ADCMClient):
         assert service_proto_before.id != service_proto_after.id
 
 
-def test_check_config(sdk_client_fs: ADCMClient):
-    """Check default service and cluster config fields after upgrade
-    :return:
-    """
-    with allure.step('Create upgradable cluster'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
-        sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster'))
-        cluster = bundle.cluster_create("test")
-        service = cluster.service_add(name="zookeeper")
-        cluster_config_before = cluster.config()
-        service_config_before = service.config()
-    with allure.step('Upgrade cluster to 1.6'):
-        upgr = cluster.upgrade(name='upgrade to 1.6')
-        upgr.do()
-    with allure.step('Check config'):
-        cluster.reread()
-        service.reread()
-        cluster_config_after = cluster.config()
-        service_config_after = service.config()
-        assert cluster.prototype().version == '1.6'
-        assert service.prototype().version == '3.4.11'
-        for variable in cluster_config_before:
-            assert cluster_config_before[variable] == cluster_config_after[variable]
-        for variable in service_config_before:
-            assert service_config_before[variable] == service_config_after[variable]
-
-
-def test_with_new_default_values(sdk_client_fs: ADCMClient):
-    """Upgrade cluster with new default fields. Old and new config values should be presented
-    :return:
-    """
-    with allure.step('Create upgradable cluster with new default values'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
-        upgr_bundle = sdk_client_fs.upload_from_fs(
-            get_data_dir(__file__, 'upgradable_cluster_new_default_values')
-        )
-        upgr_cluster_prototype = upgr_bundle.cluster_prototype().config
-        upgr_service_prototype = upgr_bundle.service_prototype().config
-        cluster = bundle.cluster_create("test")
-        service = cluster.service_add(name="zookeeper")
-    with allure.step('Upgrade cluster with new default fields to 1.6'):
-        upgr = cluster.upgrade(name='upgrade to 1.6')
-        upgr.do()
-    with allure.step('Check old and new config'):
-        cluster.reread()
-        service.reread()
-        cluster_config_after = cluster.config()
-        service_config_after = service.config()
-        for variable in upgr_cluster_prototype:
-            assert variable['value'] == cluster_config_after[variable['name']]
-        for variable in upgr_service_prototype:
-            assert variable['value'] == service_config_after[variable['name']]
-
-
-def test_with_new_default_variables(sdk_client_fs: ADCMClient):
-    """Upgrade cluster with new default fields. Old and new config variables should be presented
-    :return:
-    """
-    with allure.step('Create upgradable cluster new default variables'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
-        upgr_bundle = sdk_client_fs.upload_from_fs(
-            get_data_dir(__file__, 'upgradable_cluster_new_default_variables')
-        )
-        upgr_cluster_prototype = upgr_bundle.cluster_prototype().config
-        upgr_service_prototype = upgr_bundle.service_prototype().config
-        cluster = bundle.cluster_create("test")
-        service = cluster.service_add(name="zookeeper")
-    with allure.step('Upgrade cluster with new default variables to 1.6'):
-        upgr = cluster.upgrade(name='upgrade to 1.6')
-        upgr.do()
-    with allure.step('Check old and new config'):
-        cluster.reread()
-        service.reread()
-        cluster_config_after = cluster.config()
-        service_config_after = service.config()
-        for variable in upgr_cluster_prototype:
-            assert variable['name'] in cluster_config_after.keys()
-        for variable in upgr_service_prototype:
-            assert variable['name'] in service_config_after.keys()
-
-
-def test_decrase_config(sdk_client_fs: ADCMClient):
-    """Upgrade cluster with config without old values in config. Deleted lines not presented"""
-    with allure.step('Create upgradable cluster with decrase variables'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
-        sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_decrase_variables'))
-        cluster = bundle.cluster_create("test")
-        service = cluster.service_add(name="zookeeper")
-        cluster_config_before = cluster.config()
-        service_config_before = service.config()
-    with allure.step('Upgrade cluster with config without old values in config to 1.6'):
-        upgr = cluster.upgrade(name='upgrade to 1.6')
-        upgr.do()
-    with allure.step('Check that deleted lines not presented'):
-        cluster.reread()
-        service.reread()
-        cluster_config_after = cluster.config()
-        service_config_after = service.config()
-        assert len(cluster_config_after.keys()) == 1
-        assert len(service_config_after.keys()) == 1
-        for key in cluster_config_after:
-            assert cluster_config_before[key] == cluster_config_after[key]
-        for key in service_config_after:
-            assert service_config_before[key] == service_config_after[key]
-
-
-def test_changed_variable_type(sdk_client_fs: ADCMClient):
-    """Change config variable type for upgrade
-
-    :param sdk_client_fs:
-    :return:
-    """
-    with allure.step('Create upgradable cluster with change variable type'):
-        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
-        sdk_client_fs.upload_from_fs(
-            get_data_dir(__file__, 'upgradable_cluster_change_variable_type')
-        )
-        cluster = bundle.cluster_create("test")
-        service = cluster.service_add(name="zookeeper")
-        cluster_config_before = cluster.config()
-        service_config_before = service.config()
-    with allure.step('Upgrade cluster with change variable type to 1.6'):
-        upgr = cluster.upgrade(name='upgrade to 1.6')
-        upgr.do()
-    with allure.step('Check changed variable type'):
-        cluster.reread()
-        service.reread()
-        cluster_config_after = cluster.config()
-        service_config_after = service.config()
-        assert isinstance(cluster_config_after['required'], str)
-        assert isinstance(service_config_after['required_service'], str)
-        assert int(cluster_config_after['required']) == cluster_config_before['required']
-        assert (
-            int(service_config_after['required_service'])
-            == service_config_before['required_service']
-        )
-
-
 def test_multiple_upgrade_bundles(sdk_client_fs: ADCMClient):
-    """Upgrade cluster multiple time from version to another
-
-    :return:
-    """
+    """Upgrade cluster multiple time from version to another"""
     with allure.step('Create upgradable cluster for multiple upgrade'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster'))
@@ -264,12 +121,36 @@ def test_change_config(sdk_client_fs: ADCMClient):
             assert service_config_before[key] == service_config_after[key]
 
 
-def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient):
-    """
+@allure.issue("https://arenadata.atlassian.net/browse/ADCM-1971")
+def test_upgrade_cluster_with_config_groups(sdk_client_fs):
+    """Test upgrade cluster config groups"""
+    with allure.step('Create cluster with different groups on config'):
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_groups'))
+        sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_with_groups'))
+        cluster = bundle.cluster_create("test")
+        service = cluster.service_add(name="zookeeper")
+    with allure.step('Upgrade cluster with new change values to 1.6'):
+        upgrade = cluster.upgrade(name='upgrade to 1.6')
+        upgrade.do()
+    with allure.step('Assert that configs save success after upgrade'):
+        cluster.config_set(
+            {
+                **cluster.config(),
+                "activatable_group_with_ro": {"readonly-key": "value"},
+                "activatable_group": {"required": 10, "writable-key": "value"},
+            }
+        )
+        service.config_set(
+            {
+                **cluster.config(),
+                "activatable_group_with_ro": {"readonly-key": "value"},
+                "activatable_group": {"required": 10, "writable-key": "value"},
+            }
+        )
 
-    :param sdk_client_fs:
-    :return:
-    """
+
+def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient):
+    """Test upgrade should not be available ant stater"""
     with allure.step('Create upgradable cluster with unsupported state'):
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster'))
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'upgradable_cluster_unsupported_state'))

@@ -9,18 +9,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import List
+
+"""UI tests for /bundle page"""
 
 import os
-import pytest
-import allure
+from typing import List
 
-from adcm_pytest_plugin import utils
+import allure
+import pytest
 from adcm_client.objects import ADCMClient, Bundle
+from adcm_pytest_plugin import utils
+from adcm_pytest_plugin.utils import catch_failed
+from selenium.common.exceptions import ElementClickInterceptedException
 
 from tests.conftest import DUMMY_CLUSTER_BUNDLE
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.page.admin_intro.page import AdminIntroPage
+from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.bundle.page import BundlePage
 from tests.ui_tests.app.page.bundle_list.page import BundleListPage, BundleInfo
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
@@ -57,17 +61,13 @@ PROVIDER_CONFIG = [
 def _assert_bundle_info_value(attribute: str, actual_info: BundleInfo, expected_info: BundleInfo):
     actual_value = getattr(actual_info, attribute)
     expected_value = getattr(expected_info, attribute)
-    assert (
-        actual_value == expected_value
-    ), f"Bundle's {attribute} should be {expected_value}, not {actual_value}"
+    assert actual_value == expected_value, f"Bundle's {attribute} should be {expected_value}, not {actual_value}"
 
 
 # pylint: disable=redefined-outer-name
 @allure.step('Check bundle list is empty')
 def _check_bundle_list_is_empty(page: BundleListPage):
-    assert (
-        row_count := page.table.row_count
-    ) == 0, f'Bundle list should be empty, but {row_count} records was found'
+    assert (row_count := page.table.row_count) == 0, f'Bundle list should be empty, but {row_count} records was found'
 
 
 @allure.step('Check bundle is listed in table')
@@ -85,19 +85,22 @@ def _open_bundle_list_and_check_info(page: BundleListPage, expected_info: Bundle
 
 @allure.step('Check bundle info')
 def check_bundle_info_is_equal(actual_info: BundleInfo, expected_info: BundleInfo):
+    """Assert bundle attrs values"""
     for attr in ('name', 'description', 'version', 'edition'):
         _assert_bundle_info_value(attr, actual_info, expected_info)
 
 
 @pytest.fixture()
+# pylint: disable-next=unused-argument
 def page(app_fs: ADCMTest, login_to_adcm_over_api) -> BundleListPage:
     """Get BundleListPage after authorization"""
     return BundleListPage(app_fs.driver, app_fs.adcm.url).open()
 
 
-@allure.title("Upload bundle")
+@allure.title("Upload bundles")
 @pytest.fixture()
 def upload_bundles(create_bundle_archives: List[str], sdk_client_fs: ADCMClient) -> List[Bundle]:
+    """Upload bundles to ADCM"""
     return [sdk_client_fs.upload_from_fs(path) for path in create_bundle_archives]
 
 
@@ -107,6 +110,7 @@ def _create_cluster(upload_bundles: List[Bundle]):
     upload_bundles[0].cluster_create('Best Cluster Ever')
 
 
+@pytest.mark.smoke()
 def test_ce_bundle_upload(create_bundle_archives: List[str], page: BundleListPage):
     """Upload community bundle"""
     bundle_params = BundleInfo(
@@ -117,9 +121,8 @@ def test_ce_bundle_upload(create_bundle_archives: List[str], page: BundleListPag
     check_bundle_info_is_equal(bundle_info, bundle_params)
 
 
-@pytest.mark.parametrize(
-    "create_bundle_archives", [([CLUSTER_EE_CONFIG], LICENSE_FP)], indirect=True
-)
+@pytest.mark.smoke()
+@pytest.mark.parametrize("create_bundle_archives", [([CLUSTER_EE_CONFIG], LICENSE_FP)], indirect=True)
 def test_ee_bundle_upload(create_bundle_archives: List[str], page: BundleListPage):
     """Upload enterprise bundle and accept licence"""
     bundle_params = BundleInfo(
@@ -134,6 +137,7 @@ def test_ee_bundle_upload(create_bundle_archives: List[str], page: BundleListPag
     check_bundle_info_is_equal(bundle_info, bundle_params)
 
 
+@pytest.mark.smoke()
 def test_delete_bundle(create_bundle_archives: List[str], page: BundleListPage):
     """Upload bundle and delete it"""
     with allure.step('Upload bundle'):
@@ -144,21 +148,34 @@ def test_delete_bundle(create_bundle_archives: List[str], page: BundleListPage):
         assert page.table.row_count == 0, 'No bundle should be listed in the table'
 
 
-@pytest.mark.full()
 @pytest.mark.parametrize(
     "create_bundle_archives", [([CLUSTER_CE_CONFIG, CLUSTER_EE_CONFIG], LICENSE_FP)], indirect=True
 )
 def test_two_bundles(create_bundle_archives: List[str], page: BundleListPage):
     """Upload two bundles"""
-    with page.table.wait_rows_change():
+    with allure.step('Upload 1st bundle'), page.table.wait_rows_change():
         page.upload_bundle(create_bundle_archives[0])
-    with page.table.wait_rows_change():
+    with allure.step('Upload 2nd bundle'), page.table.wait_rows_change():
         page.upload_bundle(create_bundle_archives[1])
-    with allure.step('Check amount of rows'):
+    with allure.step('Check there are exactly 2 rows'):
         rows = page.table.row_count
         assert rows == 2, f'Row amount should be 2, but only {rows} is presented'
 
 
+@allure.issue("https://arenadata.atlassian.net/browse/ADCM-2010")
+@pytest.mark.skip(reason="Not worked using selenoid https://github.com/aerokube/selenoid/issues/844")
+@pytest.mark.parametrize(
+    "create_bundle_archives", [([CLUSTER_CE_CONFIG, CLUSTER_EE_CONFIG], LICENSE_FP)], indirect=True
+)
+def test_accept_license_with_two_bundles_upload_at_once(create_bundle_archives: List[str], page: BundleListPage):
+    """Upload two bundles and accept license"""
+    with page.table.wait_rows_change():
+        page.upload_bundles(create_bundle_archives)
+    with catch_failed(ElementClickInterceptedException, "License was not accepted by single button click"):
+        page.accept_licence(row_num=1)
+
+
+@pytest.mark.smoke()
 def test_open_bundle_from_table(page: BundleListPage, upload_bundles: List[Bundle]):
     """Test open bundle object page from list of bundles"""
     with allure.step('Open bundle object page from bundle list'):
@@ -168,6 +185,7 @@ def test_open_bundle_from_table(page: BundleListPage, upload_bundles: List[Bundl
         object_page.wait_page_is_opened()
 
 
+@pytest.mark.smoke()
 def test_open_main_menu_on_bundle_page(page: BundleListPage, upload_bundles: List[Bundle]):
     """Open main menu on bundle detailed page"""
     with allure.step('Open bundle object page'):
@@ -177,7 +195,6 @@ def test_open_main_menu_on_bundle_page(page: BundleListPage, upload_bundles: Lis
     object_page.check_all_main_menu_fields_are_presented()
 
 
-@pytest.mark.full()
 @pytest.mark.usefixtures('upload_bundles')
 def test_open_adcm_main_menu(page: BundleListPage):
     """Open main menu by clicking on the menu icon in toolbar"""
@@ -185,7 +202,6 @@ def test_open_adcm_main_menu(page: BundleListPage):
     AdminIntroPage(page.driver, page.base_url).wait_page_is_opened()
 
 
-@pytest.mark.full()
 @pytest.mark.usefixtures("_create_cluster")
 def test_delete_bundle_with_created_cluster(page: BundleListPage):
     """
@@ -195,6 +211,7 @@ def test_delete_bundle_with_created_cluster(page: BundleListPage):
     page.check_at_least_one_bundle_is_presented()
 
 
+@pytest.mark.smoke()
 @pytest.mark.parametrize(
     "create_bundle_archives",
     [[PROVIDER_CONFIG]],
@@ -207,9 +224,7 @@ def test_upload_provider_bundle_from_another_page(
     """
     Upload bundle from host list and check it is presented in table
     """
-    expected_info = BundleInfo(
-        name='test_provider', version='2.15-dev', edition='community', description=''
-    )
+    expected_info = BundleInfo(name='test_provider', version='2.15-dev', edition='community', description='')
     _check_bundle_list_is_empty(page)
     with allure.step('Create bundle from host creation popup'):
         host_list_page = HostListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -217,6 +232,7 @@ def test_upload_provider_bundle_from_another_page(
     _open_bundle_list_and_check_info(page, expected_info)
 
 
+@pytest.mark.smoke()
 @pytest.mark.parametrize(
     "create_bundle_archives",
     [[CLUSTER_CE_CONFIG]],
@@ -239,12 +255,7 @@ def test_upload_cluster_bundle_from_another_page(
 
 @pytest.mark.parametrize(
     "create_bundle_archives",
-    [
-        [
-            [{'type': 'cluster', 'name': f'ihavetodance-{i}', 'version': f'{i}-ver'}]
-            for i in range(12)
-        ]
-    ],
+    [[[{'type': 'cluster', 'name': f'ihavetodance-{i}', 'version': f'{i}-ver'}] for i in range(12)]],
     indirect=True,
 )
 @pytest.mark.usefixtures("upload_bundles")

@@ -30,7 +30,7 @@ export interface IEMObject {
   type: TypeName;
   id: number;
   details: {
-    id?: string;
+    id?: number;
     type: string;
     value: any;
   };
@@ -47,8 +47,6 @@ export type EntityEvent =
   | 'change_status'
   | 'change_job_status'
   | 'change_hostcomponentmap'
-  | 'raise_issue'
-  | 'clear_issue'
   | 'upgrade';
 
 export interface EventMessage {

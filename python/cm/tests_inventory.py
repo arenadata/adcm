@@ -63,7 +63,7 @@ class TestInventory(TestCase):
         object_config = models.ObjectConfig.objects.create(current=1, previous=1)
         cluster = models.Cluster.objects.create(prototype=prototype, config=object_config)
 
-        res = cm.inventory.get_cluster_config(cluster.id)
+        res = cm.inventory.get_cluster_config(cluster)
         test_res = {
             'cluster': {
                 'config': {},
@@ -72,6 +72,7 @@ class TestInventory(TestCase):
                 'id': 1,
                 'version': '2.2',
                 'state': 'created',
+                'multi_state': [],
             },
             'services': {},
         }
@@ -98,6 +99,7 @@ class TestInventory(TestCase):
                 'id': 1,
                 'host_prototype_id': 1,
                 'state': 'created',
+                'multi_state': [],
             }
         }
         self.assertDictEqual(config, test_config)
@@ -112,7 +114,7 @@ class TestInventory(TestCase):
         object_config = models.ObjectConfig.objects.create(current=1, previous=1)
         cluster = models.Cluster.objects.create(prototype=prototype, config=object_config)
 
-        groups = cm.inventory.get_host_groups(cluster.id, {})
+        groups = cm.inventory.get_host_groups(cluster, {})
 
         self.assertDictEqual(groups, {})
         mock_get_obj_config.assert_not_called()
@@ -129,11 +131,11 @@ class TestInventory(TestCase):
 
         test_cluster_hosts = {'CLUSTER': {'hosts': [], 'vars': []}}
 
-        cluster_hosts = cm.inventory.get_cluster_hosts(cluster.id)
+        cluster_hosts = cm.inventory.get_cluster_hosts(cluster)
 
         self.assertDictEqual(cluster_hosts, test_cluster_hosts)
         mock_get_hosts.assert_called_once()
-        mock_get_cluster_config.assert_called_once_with(cluster.id)
+        mock_get_cluster_config.assert_called_once_with(cluster)
 
     @patch('cm.inventory.get_hosts')
     def test_get_provider_hosts(self, mock_get_hosts):
@@ -144,7 +146,7 @@ class TestInventory(TestCase):
         provider = models.HostProvider.objects.create(prototype=prototype)
         models.Host.objects.create(prototype=prototype, provider=provider)
 
-        provider_hosts = cm.inventory.get_provider_hosts(provider.id)
+        provider_hosts = cm.inventory.get_provider_hosts(provider)
 
         test_provider_hosts = {'PROVIDER': {'hosts': []}}
 
@@ -173,12 +175,13 @@ class TestInventory(TestCase):
                         'id': 1,
                         'host_prototype_id': 1,
                         'state': 'created',
+                        'multi_state': [],
                     }
                 },
             }
         }
         self.assertDictEqual(groups, test_groups)
-        mock_get_hosts.assert_called_once_with([host])
+        mock_get_hosts.assert_called_once_with([host], host)
 
     @patch('json.dump')
     @patch('cm.inventory.open')
@@ -204,7 +207,9 @@ class TestInventory(TestCase):
             'all': {
                 'children': {
                     'CLUSTER': {
-                        'hosts': {host2.fqdn: {'adcm_hostid': 2, 'state': 'created'}},
+                        'hosts': {
+                            host2.fqdn: {'adcm_hostid': 2, 'state': 'created', 'multi_state': []}
+                        },
                         'vars': {
                             'cluster': {
                                 'config': {},
@@ -213,6 +218,7 @@ class TestInventory(TestCase):
                                 'version': '2.2',
                                 'edition': 'community',
                                 'state': 'created',
+                                'multi_state': [],
                             },
                             'services': {},
                         },
@@ -224,7 +230,7 @@ class TestInventory(TestCase):
             'all': {
                 'children': {
                     'HOST': {
-                        'hosts': {'': {'adcm_hostid': 1, 'state': 'created'}},
+                        'hosts': {'': {'adcm_hostid': 1, 'state': 'created', 'multi_state': []}},
                         'vars': {
                             'provider': {
                                 'config': {},
@@ -232,6 +238,7 @@ class TestInventory(TestCase):
                                 'id': 1,
                                 'host_prototype_id': proto3.id,
                                 'state': 'created',
+                                'multi_state': [],
                             }
                         },
                     }
@@ -243,8 +250,8 @@ class TestInventory(TestCase):
                 'children': {
                     'PROVIDER': {
                         'hosts': {
-                            '': {'adcm_hostid': 1, 'state': 'created'},
-                            'h2': {'adcm_hostid': 2, 'state': 'created'},
+                            '': {'adcm_hostid': 1, 'state': 'created', 'multi_state': []},
+                            'h2': {'adcm_hostid': 2, 'state': 'created', 'multi_state': []},
                         }
                     }
                 },
@@ -255,6 +262,7 @@ class TestInventory(TestCase):
                         'id': 1,
                         'host_prototype_id': proto3.id,
                         'state': 'created',
+                        'multi_state': [],
                     }
                 },
             }

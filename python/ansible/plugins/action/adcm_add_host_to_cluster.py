@@ -11,9 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=wrong-import-position, unused-import, import-error
+# pylint: disable=wrong-import-position, import-error
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 ANSIBLE_METADATA = {'metadata_version': '1.1', 'supported_by': 'Arenadata'}
@@ -51,7 +52,7 @@ from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm/python')
-import adcm.init_django
+import adcm.init_django  # pylint: disable=unused-import
 import cm.api
 from cm.ansible_plugin import get_object_id_from_context
 from cm.errors import AdcmEx
@@ -67,13 +68,12 @@ class ActionModule(ActionBase):
         super().run(tmp, task_vars)
         msg = 'You can add host only in cluster or service context'
         cluster_id = get_object_id_from_context(
-            task_vars, 'cluster_id', 'cluster', 'service', err_msg=msg)
+            task_vars, 'cluster_id', 'cluster', 'service', err_msg=msg
+        )
         fqdn = self._task.args.get('fqdn', None)
         host_id = self._task.args.get('host_id', None)
 
-        log.info(
-            'ansible module: cluster_id %s, fqdn %s, host_id: %s', cluster_id, fqdn, host_id
-        )
+        log.info('ansible module: cluster_id %s, fqdn %s, host_id: %s', cluster_id, fqdn, host_id)
         try:
             cm.api.add_host_to_cluster_by_id(cluster_id, fqdn, host_id)
         except AdcmEx as e:

@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Service page PageObjects classes"""
+
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
     PageHeader,
@@ -39,7 +42,11 @@ class ServicePageMixin(BasePageObject):
         if self.MENU_SUFFIX is None:
             raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
         super().__init__(
-            driver, base_url, f"/cluster/{cluster_id}/service/{service_id}/{self.MENU_SUFFIX}"
+            driver,
+            base_url,
+            "/cluster/{cluster_id}/service/{service_id}/" + self.MENU_SUFFIX,
+            cluster_id=cluster_id,
+            service_id=service_id,
         )
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
@@ -68,4 +75,5 @@ class ServiceImportPage(ServicePageMixin):
     MENU_SUFFIX = 'import'
 
     def get_import_items(self):
+        """Get import items"""
         return self.find_elements(ServiceImportLocators.import_item_block)

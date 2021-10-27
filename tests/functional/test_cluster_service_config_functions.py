@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Tests for services and not only"""
+
 import json
 import os
 from typing import Tuple, Any
@@ -23,7 +25,7 @@ from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from jsonschema import validate
 
-# pylint: disable=E0401, W0601, W0611, W0621, W0212
+# pylint: disable=no-self-use,redefined-outer-name
 from tests.library import errorcodes as err
 
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
@@ -32,44 +34,53 @@ SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
 
 @pytest.fixture()
 def cluster_bundle(sdk_client_fs: ADCMClient) -> Bundle:
+    """Upload cluster bundle"""
     return sdk_client_fs.upload_from_fs(BUNDLES + "cluster_bundle")
 
 
 @pytest.fixture()
 def cluster(cluster_bundle: Bundle) -> Cluster:
+    """Create cluster"""
     return cluster_bundle.cluster_create(name=utils.random_string())
 
 
 @pytest.fixture()
 def cluster_with_service(cluster: Cluster) -> Tuple[Cluster, Service]:
+    """Create cluster and service"""
     service = cluster.service_add()
     return cluster, service
 
 
 @pytest.fixture()
 def provider_bundle(sdk_client_fs: ADCMClient) -> Bundle:
+    """Upload provider bundle"""
     return sdk_client_fs.upload_from_fs(BUNDLES + "hostprovider_bundle")
 
 
 @pytest.fixture()
 def provider(provider_bundle: Bundle) -> Provider:
+    """Create provider"""
     return provider_bundle.provider_create(name=utils.random_string())
 
 
 def _get_prev_config(obj: BaseAPIObject, full=False):
     """Copy of config() method"""
-    history_entry = obj._subcall("config", "previous", "list")
+    # TODO: Fix after https://arenadata.atlassian.net/browse/ADCM-1651
+    history_entry = obj._subcall("config", "previous", "list")  # pylint: disable=protected-access
     if full:
         return history_entry
     return history_entry["config"]
 
 
 def _get_config_history(obj: BaseAPIObject):
-    return obj._subcall("config", "history", "list")
+    return obj._subcall("config", "history", "list")  # pylint: disable=protected-access
 
 
 class TestClusterServiceConfig:
+    """Tests for service config"""
+
     def test_create_cluster_service_config(self, cluster_with_service: Tuple[Cluster, Service]):
+        """Test service config"""
         cfg_json = {
             "ssh-key": "TItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA",
             "zoo.cfg": {"autopurge.purgeInterval": 30, "dataDir": "/dev/0", "port": 80},
@@ -263,12 +274,13 @@ class TestClusterServiceConfig:
     ]
 
     @pytest.mark.parametrize(("service_config", "expected_error"), INVALID_SERVICE_CONFIGS)
-    def test_should_not_create_service_with_invalid_config(
+    def test_should_not_set_invalid_service_config(
         self,
         cluster_with_service: Tuple[Cluster, Service],
         service_config: Any,
         expected_error: Tuple[err.ADCMError, str],
     ):
+        """Test set invalid config for service"""
         _, cluster_svc = cluster_with_service
         adcm_error, expected_msg = expected_error
         with allure.step("Try to set invalid config"):
@@ -278,24 +290,8 @@ class TestClusterServiceConfig:
         with allure.step("Check error"):
             adcm_error.equal(e, expected_msg)
 
-    def test_when_delete_host_all_children_cannot_be_deleted(
-        self, cluster_with_service: Tuple[Cluster, Service], provider: Provider
-    ):
-        host = provider.host_create(fqdn=utils.random_string())
-        cluster, service = cluster_with_service
-        cluster.host_add(host)
-        with allure.step("Create hostcomponent"):
-            component = service.component()
-            cluster.hostcomponent_set((host, component))
-        with allure.step(f"Removing host id={host.id}"):
-            with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-                host.delete()
-        with allure.step("Check host conflict"):
-            err.HOST_CONFLICT.equal(e)
-
-    def test_should_throws_exception_when_havent_previous_config(
-        self, cluster_with_service: Tuple[Cluster, Service]
-    ):
+    def test_should_throws_exception_when_havent_previous_config(self, cluster_with_service: Tuple[Cluster, Service]):
+        """Test error when no previous config is present"""
         _, service = cluster_with_service
         with allure.step("Try to get previous version of the service config"):
             with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
@@ -304,33 +300,11 @@ class TestClusterServiceConfig:
             err.CONFIG_NOT_FOUND.equal(e, "ConfigLog", "does not exist")
 
 
-class TestClusterServiceConfigHistory:
-    # Do we really need this test?
-    def test_config_history_url_must_point_to_the_service_config(
-        self, cluster_with_service: Tuple[Cluster, Service]
-    ):
-        _, service = cluster_with_service
-        config_str = {
-            "ssh-key": "eulav",
-            "integer-key": 23,
-            "required-key": "10",
-            "float-key": 38.5,
-            "zoo.cfg": {
-                "autopurge.purgeInterval": 40,
-                "dataDir": "/opt/data",
-                "port": 80,
-            },
-        }
-        for _ in range(10):
-            service.config_set(config_str)
-        with allure.step("Check config history"):
-            for conf in _get_config_history(service):
-                # url changed, because request is related to the service
-                assert "/service/{}".format(service.id) in conf["url"]
+class TestClusterServiceConfigHistory:  # pylint: disable=too-few-public-methods
+    """Tests for service config history"""
 
-    def test_get_config_from_nonexistant_cluster_service(
-        self, cluster_with_service: Tuple[Cluster, Service]
-    ):
+    def test_get_config_from_nonexistent_cluster_service(self, cluster_with_service: Tuple[Cluster, Service]):
+        """Test get config for nonexistent cluster"""
         _, service = cluster_with_service
         with allure.step(f"Removing service id={service.id}"):
             service.delete()
@@ -341,32 +315,27 @@ class TestClusterServiceConfigHistory:
 
 
 class TestClusterConfig:
-    # Do we really need this test?
-    def test_config_history_url_must_point_to_the_cluster_config(self, cluster: Cluster):
-        config_str = {"required": 10, "int_key": 50, "bool": False, "str-key": "eulav"}
-        with allure.step("Create config history"):
-            for _ in range(10):
-                cluster.config_set(config_str)
-            history = _get_config_history(cluster)
-        with allure.step("Check config history"):
-            for conf in history:
-                assert "api/v1/cluster/{0}/config/".format(cluster.id) in conf["url"]
+    """Tests for cluster config"""
 
     def test_read_default_cluster_config(self, cluster: Cluster):
+        """Validate default cluster config by schema"""
         config = cluster.config(full=True)
         config_json = utils.ordered_dict_to_dict(config)
         with allure.step("Load schema"):
-            schema = json.load(open(SCHEMAS + "/config_item_schema.json"))
+            with open(SCHEMAS + "/config_item_schema.json", encoding='utf_8') as file:
+                schema = json.load(file)
         with allure.step("Check schema"):
             assert validate(config_json, schema) is None
 
     def test_create_new_config_version_with_one_req_parameter(self, cluster: Cluster):
+        """Test create new cluster config with one parameter"""
         cfg = {"required": 42}
         expected = cluster.config_set(cfg)
         with allure.step("Check new config"):
             assert cluster.config() == expected
 
     def test_create_new_config_version_with_other_parameters(self, cluster: Cluster):
+        """Test create new cluster config with many parameters"""
         cfg = {"required": 99, "str-key": utils.random_string()}
         expected = cluster.config_set(cfg)
         with allure.step("Check new config"):
@@ -396,12 +365,13 @@ class TestClusterConfig:
     ]
 
     @pytest.mark.parametrize(("cluster_config", "expected_error"), INVALID_CLUSTER_CONFIGS)
-    def test_should_not_create_cluster_with_invalid_config(
+    def test_should_not_set_invalid_cluster_config(
         self,
         cluster: Cluster,
         cluster_config: Any,
         expected_error: Tuple[err.ADCMError, str],
     ):
+        """Invalid cluster config should not be set"""
         adcm_error, expected_msg = expected_error
         with allure.step("Try to set invalid config"):
             allure.attach(json.dumps(cluster_config), "config.json", allure.attachment_type.JSON)
@@ -410,7 +380,8 @@ class TestClusterConfig:
         with allure.step("Check error"):
             adcm_error.equal(e, expected_msg)
 
-    def test_get_nonexistant_cluster_config(self, cluster: Cluster):
+    def test_get_nonexistent_cluster_config(self, cluster: Cluster):
+        """Test get nonexistent cluster config"""
         # we try to get a nonexistant cluster config, test should raise exception
         with allure.step(f"Removing cluster id={cluster.id}"):
             cluster.delete()
@@ -428,12 +399,14 @@ class TestClusterConfig:
 
     @pytest.mark.parametrize(("datatype", "name"), check_types)
     def test_verify_that_supported_type_is(self, cluster_bundle: Bundle, datatype, name):
+        """Some mysterious type checking test"""
         with allure.step("Check stack config"):
             for item in cluster_bundle.cluster_prototype().config:
                 if item["name"] == name:
                     assert item["type"] == datatype
 
     def test_check_that_file_field_put_correct_data_in_file_inside_docker(self, cluster: Cluster):
+        """Another mysterious type checking test"""
         test_data = "lorem ipsum"
         with allure.step("Create config data"):
             config_data = utils.ordered_dict_to_dict(cluster.config())

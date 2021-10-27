@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Base classes for locators"""
+
 from dataclasses import dataclass
 
 from selenium.webdriver.common.by import By
@@ -22,6 +24,9 @@ class Locator:
     by: By
     value: str
     name: str
+
+    def __repr__(self):
+        return self.name
 
 
 @dataclass

@@ -9,6 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Bundle page locators"""
+
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator
@@ -19,10 +22,12 @@ class BundleLocators:
     """Bundle main page elements locators"""
 
     class MenuNavigation:
-        main = Locator(By.XPATH, "//a[@adcm_test='tab_main']", "Main link in side menu")
+        """Bundle main menu navigation elements locators"""
+
+        main = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_main']", "Main link in side menu")
 
 
 class BundleMainMenuLocators(ObjectPageLocators):
     """Bundle object page main menu locators"""
 
-    text = Locator(By.XPATH, "//mat-card-content", "Bundle main page text")
+    text = Locator(By.CSS_SELECTOR, "mat-card-content", "Bundle main page text")

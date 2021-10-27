@@ -1,4 +1,5 @@
-<div class="field" [appForTest]="getTestName()" [ngClass]="{'read-only': options.read_only, advanced: isAdvanced() }">
+<div class="field w100" [appForTest]="getTestName()"
+     [ngClass]="{'read-only': options.read_only, advanced: isAdvanced() }">
   <label [appTooltip]="options.display_name" [appTooltipShowByCondition]="true">{{ options.display_name }}:</label>
 
   <ng-container [ngSwitch]="options.controlType">
@@ -32,11 +33,16 @@
     <ng-container *ngSwitchCase="'variant'">
       <app-fields-variant [field]="options" [form]="currentFormGroup"></app-fields-variant>
     </ng-container>
+    <ng-container *ngSwitchCase="'secrettext'">
+      <app-fields-secret-text [field]="options" [form]="currentFormGroup"></app-fields-secret-text>
+    </ng-container>
 
-    <span class="info" style="align-self: baseline;">
+    <span class="info">
       <mat-icon *ngIf="options.description" style="vertical-align: middle;" [ngClass]="'info-icon'"
                 matTooltipClass="info-tooltip" [matTooltip]="options.description">info_outline</mat-icon>
-      <button (click)="restore()" [disabled]="options.read_only" mat-icon-button matSuffix color="primary" matTooltip="Reset to default">
+      <button (click)="restore()" [disabled]="options.read_only || disabled" mat-icon-button matSuffix
+              color="primary"
+              matTooltip="Reset to default">
         <mat-icon>refresh</mat-icon>
       </button>
     </span>
@@ -48,6 +54,6 @@
     <span class="label">
       {{ item.date | date: 'short' }}
     </span>&nbsp;----&nbsp;&nbsp;<span [appTooltip]="outputValue(item.value)"
-      class="accent">{{ outputValue(item.value, true) }}</span>
+                                       class="accent">{{ outputValue(item.value, true) }}</span>
   </mat-list-item>
 </mat-list>

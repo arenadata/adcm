@@ -1,3 +1,18 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""UI tests for string type config fields"""
+
+# pylint:disable=redefined-outer-name
 import os
 import time
 
@@ -5,7 +20,6 @@ import allure
 import pytest
 from adcm_pytest_plugin.utils import get_data_dir
 
-# pylint: disable=W0611, W0621
 from tests.ui_tests.app.configuration import Configuration
 from tests.ui_tests.app.locators import Common
 
@@ -41,8 +55,9 @@ REQUIRED_FIELDS = [
 
 
 @pytest.fixture()
-@allure.step('Upload bundle, create cluster and add service')
+@allure.title('Upload bundle, create cluster and add service')
 def service(sdk_client_fs):
+    """Upload bundle, create cluster and add service"""
     bundle = sdk_client_fs.upload_from_fs(DATADIR)
     cluster = bundle.cluster_create(name='my cluster')
     cluster.service_add(name='string_fields_config_test')
@@ -50,14 +65,10 @@ def service(sdk_client_fs):
 
 
 @pytest.fixture()
-@allure.step("Open ADCM tab Configuration")
-def ui_config(app_fs, login_to_adcm_over_api, service):
-    return Configuration(
-        app_fs.driver,
-        "{}/cluster/{}/service/{}/config".format(
-            app_fs.adcm.url, service.cluster_id, service.service_id
-        ),
-    )
+@allure.title("Open service config page")
+def ui_config(app_fs, service, login_to_adcm_over_api):  # pylint: disable=unused-argument
+    """Open service config page"""
+    return Configuration.from_service(app_fs, service)
 
 
 @pytest.mark.parametrize("required_field", REQUIRED_FIELDS)
@@ -70,9 +81,7 @@ def test_required_string_frontend_error(ui_config, required_field):
     """
 
     textboxes = ui_config.get_textboxes()
-    with allure.step(
-        'Check that we have frontend error for required field and ave button is not active'
-    ):
+    with allure.step('Check that we have frontend error for required field and ave button is not active'):
         for textbox in textboxes:
             name = textbox.text.split(":")[0]
             if name == required_field:
@@ -80,12 +89,13 @@ def test_required_string_frontend_error(ui_config, required_field):
                 ui_config.clear_element(input_element)
                 time.sleep(2)
                 error = textbox.find_element(*Common.mat_error).text
-                assert 'Field [{}] is required!'.format(name) == error
+                assert f'Field [{name}] is required!' == error
                 assert not ui_config.save_button_status()
 
 
 @pytest.mark.parametrize("field", NO_REQUIRED_FIELDS)
 def test_empty_no_required_string(field, ui_config):
+    """Test UI behaviour of non-required empty field"""
     textboxes = ui_config.get_textboxes()
     with allure.step('Check that save button is active in case when no required field is empty'):
         for textbox in textboxes:
@@ -113,5 +123,6 @@ def test_search_field(ui_config, pattern):
 
 
 def test_save_configuration(ui_config):
+    """Test that we can click save configuration if no errors on page"""
     with allure.step('Check that we can click save configuration if no errors on page'):
         assert ui_config.save_button_status()

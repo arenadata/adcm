@@ -9,18 +9,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621
-import time
 
+"""Tests for adcm_host plugin"""
+
+# pylint:disable=redefined-outer-name
 import adcm_client.base
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Bundle, Provider
-from adcm_pytest_plugin.utils import get_data_dir
+from adcm_pytest_plugin.utils import get_data_dir, wait_until_step_succeeds
 
 
 @pytest.fixture()
 def bundle(sdk_client_fs: ADCMClient) -> Bundle:
+    """Upload bundle and create 4 provider objects"""
     bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__))
     bundle.provider_create(name="first_p")
     bundle.provider_create(name="second_p")
@@ -31,21 +33,25 @@ def bundle(sdk_client_fs: ADCMClient) -> Bundle:
 
 @pytest.fixture()
 def first_p(bundle: Bundle):
+    """First provider"""
     return bundle.provider(name="first_p")
 
 
 @pytest.fixture()
 def second_p(bundle: Bundle):
+    """Second provider"""
     return bundle.provider(name="second_p")
 
 
 @pytest.fixture()
 def third_p(bundle: Bundle):
+    """Third provider"""
     return bundle.provider(name="third_p")
 
 
 @pytest.fixture()
 def forth_p(bundle: Bundle):
+    """Forth provider"""
     return bundle.provider(name="forth_p")
 
 
@@ -56,13 +62,13 @@ def test_create_one_host(second_p: Provider):
     2. Create host on one of the providers
     3. Ensure host exists
     """
-    HOSTNAME = "second_h"
+    hostname = "second_h"
     with allure.step('Run action create host'):
-        second_p.action(name="create_host").run(config_diff={'fqdn': HOSTNAME}).try_wait()
-        second_h = second_p.host(fqdn=HOSTNAME)
+        second_p.action(name="create_host").run(config_diff={'fqdn': hostname}).try_wait()
+        second_h = second_p.host(fqdn=hostname)
     with allure.step('Check if host is created'):
         assert second_h.provider().id == second_p.id
-        assert second_h.fqdn == HOSTNAME
+        assert second_h.fqdn == hostname
 
 
 def test_create_multi_host_and_delete_one(first_p: Provider, third_p: Provider):
@@ -91,19 +97,13 @@ def test_create_multi_host_and_delete_one(first_p: Provider, third_p: Provider):
             first_p.host(fqdn="one_two")
 
 
-def _wait_for_object(f, timeout=10, **kwargs):
-    t = 0
-    obj = None
-    while t < 10 and obj is None:
-        try:
-            obj = f(**kwargs)
-        except adcm_client.base.ObjectNotFound:
-            pass
-        time.sleep(0.1)
-        t = t + 0.1
+def _assert_that_object_exists(get_object_func, *args, **kwargs):
+    try:
+        obj = get_object_func(*args, **kwargs)
+    except adcm_client.base.ObjectNotFound as error:
+        raise AssertionError("Object still not found") from error
     if obj is None:
-        raise adcm_client.base.ObjectNotFound
-    return obj
+        raise AssertionError("Object is None")
 
 
 def test_check_host_lock_during_operations(forth_p: Provider):
@@ -113,40 +113,41 @@ def test_check_host_lock_during_operations(forth_p: Provider):
     2. Create host first host on provider
     3. Run job that creates the second host on provider
     4. Wait until second host will be created.
-    5. Check that both host has "locked" state
-    6. Wait for job to be finished without erros
-    7. Check that both hosts is in "created" state
+    5. Check that both host is locked
+    6. Wait for job to be finished without errors
+    7. Check that both hosts is free
     8. Run remove action on one of hosts
-    9. Check that host under action is "locked", while other host is "created"
+    9. Check that host under action is locked, while other host is free
     10. Wait for job to be finished without errors
-    11. Check that remaining host is in "created" state.
+    11. Check that remaining host is free.
     """
     with allure.step('Create host first host on provider'):
         forth_p.action(name="create_host").run(config_diff={'fqdn': "forth_one"}).try_wait()
     with allure.step('Run job that creates the second host on provider'):
         job = forth_p.action(name="create_host").run(config={'fqdn': "forth_two", 'sleep': 2})
     with allure.step('Wait until second host will be created'):
-        forth_two_h = _wait_for_object(forth_p.host, fqdn='forth_two')
+        wait_until_step_succeeds(_assert_that_object_exists, period=0.5, get_object_func=forth_p.host, fqdn="forth_two")
+        forth_two_h = forth_p.host(fqdn="forth_two")
         forth_one_h = forth_p.host(fqdn='forth_one')
-    with allure.step('Check that both host has "locked" state'):
-        assert forth_one_h.state == 'locked'
-        assert forth_two_h.state == 'locked'
-    with allure.step('Wait for job to be finished without erros'):
-        job.try_wait()
-    with allure.step('Check that both hosts is in "created" state'):
-        forth_one_h.reread()
-        forth_two_h.reread()
-        assert forth_one_h.state == 'created'
-        assert forth_two_h.state == 'created'
-    with allure.step('Run remove action on one of hosts'):
-        job = forth_one_h.action(name="remove_host").run(config={"sleep": 2})
-    with allure.step('Check that host under action is "locked", while other host is "created"'):
-        forth_one_h.reread()
-        forth_two_h.reread()
-        assert forth_one_h.state == 'locked'
-        assert forth_two_h.state == 'created'
+    with allure.step('Check that both host has is locked'):
+        assert forth_one_h.locked is True
+        assert forth_two_h.locked is True
     with allure.step('Wait for job to be finished without errors'):
         job.try_wait()
-    with allure.step('Check that remaining host is in "created" state'):
+    with allure.step('Check that both hosts is free'):
+        forth_one_h.reread()
         forth_two_h.reread()
-        assert forth_two_h.state == 'created'
+        assert forth_one_h.locked is False
+        assert forth_two_h.locked is False
+    with allure.step('Run remove action on one of hosts'):
+        job = forth_one_h.action(name="remove_host").run(config={"sleep": 2})
+    with allure.step('Check that host under action is locked, while other host is free'):
+        forth_one_h.reread()
+        forth_two_h.reread()
+        assert forth_one_h.locked is True
+        assert forth_two_h.locked is False
+    with allure.step('Wait for job to be finished without errors'):
+        job.try_wait()
+    with allure.step('Check that remaining host is free'):
+        forth_two_h.reread()
+        assert forth_two_h.locked is False

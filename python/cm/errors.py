@@ -12,8 +12,10 @@
 
 import rest_framework.status as rfs
 from rest_framework.exceptions import APIException
+from rest_framework.views import exception_handler
 
 from cm.logger import log
+
 
 WARN = 'warning'
 ERR = 'error'
@@ -54,6 +56,8 @@ ERRORS = {
     'PERMISSION_NOT_FOUND': ("permission is not found", rfs.HTTP_404_NOT_FOUND, ERR),
     'MODULE_NOT_FOUND': ("module doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
     'FUNCTION_NOT_FOUND': ("function doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
+    'CONCERNITEM_NOT_FOUND': ("concern item doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
+    'GROUP_CONFIG_NOT_FOUND': ("group config doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
     'TASK_GENERATOR_ERROR': ("task generator error", rfs.HTTP_409_CONFLICT, ERR),
     'OBJ_TYPE_ERROR': ("wrong object type", rfs.HTTP_409_CONFLICT, ERR),
     'SERVICE_CONFLICT': ("service already exists in specified cluster", rfs.HTTP_409_CONFLICT, ERR),
@@ -99,6 +103,7 @@ ERRORS = {
     'WRONG_ACTION_TYPE': ("config action type error", rfs.HTTP_409_CONFLICT, ERR),
     'WRONG_ACTION_HC': ("action hostcomponentmap error", rfs.HTTP_409_CONFLICT, ERR),
     'WRONG_CLUSTER_ID_TYPE': ("cluster id must be integer", rfs.HTTP_400_BAD_REQUEST, ERR),
+    'OVERFLOW': ("integer or floats in a request cause an overflow", rfs.HTTP_400_BAD_REQUEST, ERR),
     'WRONG_NAME': ("wrong name", rfs.HTTP_400_BAD_REQUEST, ERR),
     'LONG_NAME': ("name is too long", rfs.HTTP_400_BAD_REQUEST, ERR),
     'INVALID_INPUT': ("invalid input", rfs.HTTP_400_BAD_REQUEST, ERR),
@@ -110,8 +115,41 @@ ERRORS = {
     'TOO_LONG': ("response is too long", rfs.HTTP_400_BAD_REQUEST, WARN),
     'NOT_IMPLEMENTED': ("not implemented yet", rfs.HTTP_501_NOT_IMPLEMENTED, ERR),
     'NO_JOBS_RUNNING': ("no jobs running", rfs.HTTP_409_CONFLICT, ERR),
-    'BAD_QUERY_PARAMS': ("bad query params", rfs.HTTP_400_BAD_REQUEST),
-    'DUMP_LOAD_CLUSTER_ERROR': ("Dumping or Loading error", rfs.HTTP_409_CONFLICT),
+    'BAD_QUERY_PARAMS': ("bad query params", rfs.HTTP_400_BAD_REQUEST, ERR),
+    'DUMP_LOAD_CLUSTER_ERROR': (
+        "Dumping or loading error with cluster",
+        rfs.HTTP_409_CONFLICT,
+        ERR,
+    ),
+    'DUMP_LOAD_BUNDLE_ERROR': ("Dumping or loading error with bundle", rfs.HTTP_409_CONFLICT, ERR),
+    'DUMP_LOAD_ADCM_VERSION_ERROR': (
+        "Dumping or loading error. Versions of ADCM didn't match",
+        rfs.HTTP_409_CONFLICT,
+        ERR,
+    ),
+    'MESSAGE_TEMPLATING_ERROR': ("Message templating error", rfs.HTTP_409_CONFLICT, ERR),
+    'ISSUE_INTEGRITY_ERROR': ("Issue object integrity error", rfs.HTTP_409_CONFLICT, ERR),
+    'GROUP_CONFIG_HOST_ERROR': (
+        (
+            "host is not available for this object,"
+            " or host already is a member of another group of this object"
+        ),
+        rfs.HTTP_400_BAD_REQUEST,
+    ),
+    'GROUP_CONFIG_HOST_EXISTS': (
+        'the host is already a member of this group ',
+        rfs.HTTP_400_BAD_REQUEST,
+    ),
+    'NOT_CHANGEABLE_FIELDS': ("fields cannot be changed", rfs.HTTP_400_BAD_REQUEST, ERR),
+    'GROUP_CONFIG_TYPE_ERROR': (
+        (
+            "invalid type object for group config,"
+            " valid types: `cluster`, `service`, `component` and `provider`"
+        ),
+        rfs.HTTP_400_BAD_REQUEST,
+        ERR,
+    ),
+    'LOCK_ERROR': ("lock error", rfs.HTTP_409_CONFLICT, ERR),
 }
 
 
@@ -125,7 +163,7 @@ def get_error(code):
         else:
             return (code, err[0], err[1], err[2])
     else:
-        msg = 'unknow error: "{}"'.format(code)
+        msg = f'unknow error: "{code}"'
         return ('UNKNOWN_ERROR', msg, rfs.HTTP_501_NOT_IMPLEMENTED, CRIT)
 
 
@@ -161,3 +199,12 @@ def raise_AdcmEx(code, msg='', args=''):
         err_msg = msg
     log.error(err_msg)
     raise AdcmEx(code, msg=msg, args=args)
+
+
+def custom_drf_exception_handler(exc, context):
+    if isinstance(exc, OverflowError):
+        # This is an error with DB mostly. For example SqlLite can't handle 64bit numbers.
+        # So we have to handle this right and rise HTTP 400, instead of HTTP 500
+        return exception_handler(AdcmEx('OVERFLOW'), context)
+
+    return exception_handler(exc, context)

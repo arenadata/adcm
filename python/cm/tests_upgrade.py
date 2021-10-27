@@ -14,18 +14,25 @@ from django.test import TestCase
 
 import cm.api
 import cm.job
-from cm.models import Cluster, Host, ClusterObject, ServiceComponent, HostComponent
-from cm.models import Bundle, Upgrade, Prototype, PrototypeConfig, ConfigLog
+import cm.upgrade
+from cm import adcm_config, issue
 from cm.errors import AdcmEx
-from cm import adcm_config
+from cm.models import (
+    Bundle,
+    ClusterObject,
+    ConfigLog,
+    Host,
+    HostComponent,
+    ConcernCause,
+    Prototype,
+    PrototypeConfig,
+    ServiceComponent,
+    Upgrade,
+)
+from cm.unit_tests import utils
 
 
 class TestUpgradeVersion(TestCase):
-    def cook_cluster(self):
-        b = Bundle(name="ADH", version="1.0")
-        proto = Prototype(type="cluster", name="ADH", bundle=b)
-        return Cluster(prototype=proto, issue={})
-
     def cook_upgrade(self):
         return Upgrade(
             min_version="1.0",
@@ -37,12 +44,10 @@ class TestUpgradeVersion(TestCase):
 
     def check_upgrade(self, obj, upgrade, result):
         ok, msg = cm.upgrade.check_upgrade(obj, upgrade)
-        if not ok:
-            print("check_upgrade msg: ", msg)
-        self.assertEqual(ok, result)
+        self.assertEqual(ok, result, f'check_upgrade msg: {msg or None}')
 
     def test_version(self):
-        obj = self.cook_cluster()
+        obj = utils.gen_cluster()
         upgrade = self.cook_upgrade()
 
         obj.prototype.version = "1.5"
@@ -58,7 +63,7 @@ class TestUpgradeVersion(TestCase):
         self.check_upgrade(obj, upgrade, True)
 
     def test_strict_version(self):
-        obj = self.cook_cluster()
+        obj = utils.gen_cluster()
         upgrade = self.cook_upgrade()
         upgrade.min_strict = True
         upgrade.max_strict = True
@@ -76,7 +81,7 @@ class TestUpgradeVersion(TestCase):
         self.check_upgrade(obj, upgrade, False)
 
     def test_state(self):
-        obj = self.cook_cluster()
+        obj = utils.gen_cluster()
         upgrade = self.cook_upgrade()
         upgrade.state_available = ["installed", "any"]
         obj.prototype.version = "1.5"
@@ -88,8 +93,8 @@ class TestUpgradeVersion(TestCase):
         self.check_upgrade(obj, upgrade, True)
 
     def test_issue(self):
-        obj = self.cook_cluster()
-        obj.issue = {"config": False}
+        obj = utils.gen_cluster()
+        issue.create_issue(obj, ConcernCause.Config)
         upgrade = self.cook_upgrade()
         self.check_upgrade(obj, upgrade, False)
 
@@ -230,17 +235,26 @@ class TestConfigUpgrade(TestCase):
 
     def test_add_non_active_group(self):
         (proto1, proto2) = self.cook_proto()
+        # Old config with one key "host"
         self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
+
+        # New config with key "host" and activatable group "advance"
         self.add_conf(prototype=proto2, name='host', type='string', default='arenadata.com')
         limits = {"activatable": True, "active": False}
         self.add_conf(prototype=proto2, name='advance', type='group', limits=limits)
         self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=42)
+
+        # Create cluster with old config
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
         old_conf, _ = get_config(cluster)
         self.assertEqual(old_conf, {'host': 'arenadata.com'})
+
+        # Upgrade
         cm.adcm_config.switch_config(cluster, proto2, proto1)
         new_config, new_attr = get_config(cluster)
-        self.assertEqual(new_config, {'host': 'arenadata.com', 'advance': None})
+
+        # Check that new activatable but inactive group default values are added to new config
+        self.assertEqual(new_config, {'host': 'arenadata.com', 'advance': {'port': 42}})
         self.assertEqual(new_attr, {'advance': {'active': False}})
 
     def test_add_active_group(self):
@@ -294,6 +308,39 @@ class TestConfigUpgrade(TestCase):
         new_conf, new_attr = get_config(cluster)
         self.assertEqual(new_conf, {'advance': {'port': 33}})
         self.assertEqual(new_attr, {'advance': {'active': True}})
+
+    def test_non_active_group(self):
+        proto1, proto2 = self.cook_proto()
+        # Old config with activatable group "advance"
+        self.add_conf(
+            prototype=proto1,
+            name='advance',
+            type='group',
+            limits={"activatable": True, "active": False},
+        )
+        self.add_conf(prototype=proto1, name='advance', subname='port', type='integer', default=11)
+
+        # New config with the same activatable group "advance"
+        self.add_conf(
+            prototype=proto2,
+            name='advance',
+            type='group',
+            limits={"activatable": True, "active": False},
+        )
+        self.add_conf(prototype=proto2, name='advance', subname='port', type='integer', default=11)
+
+        cluster = cm.api.add_cluster(proto1, 'Cluster1')
+        old_conf, old_attr = get_config(cluster)
+        self.assertEqual(old_conf, {'advance': {'port': 11}})
+        self.assertEqual(old_attr, {'advance': {'active': False}})
+
+        # Ugrade
+        adcm_config.switch_config(cluster, proto2, proto1)
+        new_conf, new_attr = get_config(cluster)
+
+        # Check that activatable but not active group does not disappear from new config
+        self.assertEqual(new_conf, {'advance': {'port': 11}})
+        self.assertEqual(new_attr, {'advance': {'active': False}})
 
 
 class TestUpgrade(TestCase):
