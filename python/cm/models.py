@@ -26,7 +26,7 @@ from typing import Dict, Iterable, List, Optional
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
@@ -35,6 +35,12 @@ from django.utils import timezone
 from cm.config import FILE_DIR
 from cm.errors import AdcmEx
 from cm.logger import log
+
+
+def validate_line_break_character(value: str) -> None:
+    """Check line break character in CharField"""
+    if len(value.splitlines()) > 1:
+        raise ValidationError('the string field contains a line break character')
 
 
 class PrototypeEnum(Enum):
@@ -664,7 +670,7 @@ class GroupConfig(ADCMModel):
     object_id = models.PositiveIntegerField()
     object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object = GenericForeignKey('object_type', 'object_id')
-    name = models.CharField(max_length=30)
+    name = models.CharField(max_length=30, validators=[validate_line_break_character])
     description = models.TextField(blank=True)
     hosts = models.ManyToManyField(Host, blank=True, related_name='group_config')
     config = models.OneToOneField(
@@ -754,10 +760,11 @@ class GroupConfig(ADCMModel):
                 config.setdefault(k, {})
                 self.merge_config(object_config[k], group_config[k], group_keys[k], config[k])
             else:
-                if v:
+                if v and k in group_config:
                     config[k] = group_config[k]
                 else:
-                    config[k] = object_config[k]
+                    if k in object_config:
+                        config[k] = object_config[k]
         return config
 
     def get_config_attr(self):
