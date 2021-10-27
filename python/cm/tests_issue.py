@@ -14,7 +14,7 @@ from django.test import TestCase
 
 import cm.api
 import cm.issue
-from cm.models import Bundle, Prototype, PrototypeImport, ClusterBind, IssueType
+from cm.models import Bundle, Prototype, PrototypeImport, ClusterBind, ConcernCause
 
 
 class TestImport(TestCase):
@@ -94,7 +94,7 @@ class TestImport(TestCase):
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2)
 
         cm.issue.recheck_issues(cluster1)
-        issue = cluster1.get_own_issue(IssueType.RequiredImport)
+        issue = cluster1.get_own_issue(ConcernCause.Import)
         self.assertIsNotNone(issue)
 
     def test_issue_cluster_imported(self):
@@ -105,7 +105,7 @@ class TestImport(TestCase):
         ClusterBind.objects.create(cluster=cluster1, source_cluster=cluster2)
 
         cm.issue.recheck_issues(cluster1)
-        issue = cluster1.get_own_issue(IssueType.RequiredImport)
+        issue = cluster1.get_own_issue(ConcernCause.Import)
         self.assertIsNone(issue)
 
     def test_issue_service_required_import(self):
@@ -118,7 +118,7 @@ class TestImport(TestCase):
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
 
         cm.issue.recheck_issues(service)
-        issue = service.get_own_issue(IssueType.RequiredImport)
+        issue = service.get_own_issue(ConcernCause.Import)
         self.assertIsNotNone(issue)
 
     def test_issue_service_imported(self):
@@ -131,5 +131,5 @@ class TestImport(TestCase):
         ClusterBind.objects.create(cluster=cluster1, service=service, source_cluster=cluster2)
 
         cm.issue.recheck_issues(service)
-        issue = service.get_own_issue(IssueType.RequiredImport)
+        issue = service.get_own_issue(ConcernCause.Import)
         self.assertIsNone(issue)

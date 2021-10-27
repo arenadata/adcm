@@ -2,6 +2,7 @@ import { Inject, Injectable, InjectionToken, TemplateRef, Type } from '@angular/
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { IFieldOptions } from '@app/shared/configuration/types';
 import { isBoolean, isEmptyObject } from '@app/core/types';
+import { FieldComponent } from '@app/shared/configuration/field/field.component';
 
 export const ATTRIBUTES_OPTIONS = new InjectionToken('Attributes options');
 
@@ -19,6 +20,7 @@ export interface AttributeWrapper {
   fieldOptions: IFieldOptions;
   attributeForm: FormGroup;
   parametersForm: FormGroup;
+  field: FieldComponent;
 }
 
 export enum ConfigAttributeNames {

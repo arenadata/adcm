@@ -83,7 +83,7 @@ class ADCMEntityConcernTest(TestCase):
 
     def test_get_own_issue__empty(self):
         cluster = self.hierarchy['cluster']
-        self.assertIsNone(cluster.get_own_issue(models.IssueType.Config))
+        self.assertIsNone(cluster.get_own_issue(models.ConcernCause.Config))
 
     def test_get_own_issue__others(self):
         cluster = self.hierarchy['cluster']
@@ -91,10 +91,9 @@ class ADCMEntityConcernTest(TestCase):
         reason = models.MessageTemplate.get_message_from_template(
             models.MessageTemplate.KnownNames.ConfigIssue.value, source=cluster
         )
-        issue_type = models.IssueType.Config
-        issue_name = issue_type.gen_issue_name(cluster)
+        issue_type = models.ConcernCause.Config
         issue = models.ConcernItem.objects.create(
-            type=models.ConcernType.Issue, name=issue_name, reason=reason
+            type=models.ConcernType.Issue, reason=reason, owner=cluster, cause=issue_type
         )
         cluster.add_to_concerns(issue)
         service.add_to_concerns(issue)
@@ -105,10 +104,9 @@ class ADCMEntityConcernTest(TestCase):
         reason = models.MessageTemplate.get_message_from_template(
             models.MessageTemplate.KnownNames.ConfigIssue.value, source=cluster
         )
-        issue_type = models.IssueType.Config
-        issue_name = issue_type.gen_issue_name(cluster)
+        issue_type = models.ConcernCause.Config
         issue = models.ConcernItem.objects.create(
-            type=models.ConcernType.Issue, name=issue_name, reason=reason
+            type=models.ConcernType.Issue, reason=reason, owner=cluster, cause=issue_type
         )
         cluster.add_to_concerns(issue)
         self.assertIsNotNone(cluster.get_own_issue(issue_type))

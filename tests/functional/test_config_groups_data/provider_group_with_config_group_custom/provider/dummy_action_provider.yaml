@@ -23,6 +23,7 @@
           - job.config.map[inventory_hostname].boolean == provider.config.boolean
           - job.config.map[inventory_hostname].integer == provider.config.integer
           - job.config.map[inventory_hostname].password == provider.config.password
+          - job.config.map[inventory_hostname].secrettext == provider.config.secrettext
           - job.config.map[inventory_hostname].string == provider.config.string
           - job.config.map[inventory_hostname].list == provider.config.list
           - job.config.map[inventory_hostname].text == provider.config.text
