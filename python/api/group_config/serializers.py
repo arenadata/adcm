@@ -254,7 +254,7 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
                 if isinstance(v, Mapping):
                     check_value_unselected_field(cc[k], nc[k], gk[k])
                 else:
-                    if not v and cc[k] != nc[k]:
+                    if not v and k in cc and k in nc and cc[k] != nc[k]:
                         raise AdcmEx('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD')
 
         obj_ref = self.context['obj_ref']
