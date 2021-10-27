@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.db.transaction import atomic
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
@@ -128,6 +129,18 @@ class GroupConfigSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializ
             'hosts': (HostFlexFieldsSerializer, {'many': True}),
             'host_candidate': (HostFlexFieldsSerializer, {'many': True}),
         }
+
+    def validate(self, attrs):
+        object_type = attrs.get('object_type')
+        object_id = attrs.get('object_id')
+        if object_type is not None and object_id is not None:
+            obj_model = object_type.model_class()
+            try:
+                obj_model.objects.get(id=object_id)
+            except obj_model.DoesNotExist:
+                error_dict = {'object_id': [f'Invalid pk "{object_id}" - object does not exist.']}
+                raise ValidationError(error_dict, 'does_not_exist') from None
+        return super().validate(attrs)
 
 
 class GroupConfigHostSerializer(serializers.ModelSerializer):
