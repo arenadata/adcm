@@ -24,11 +24,13 @@ class ModelRole:
         for perm in role.get_permissions():
             if group is not None:
                 group.permissions.add(perm)
-                pp = PolicyPermission(policy=policy, group=group, permission=perm).create()
+                pp = PolicyPermission(policy=policy, group=group, permission=perm)
+                pp.save()
                 policy.model_perm.add(pp)
             if user is not None:
                 user.user_permissions.add(perm)
-                pp = PolicyPermission(policy=policy, user=user, permission=perm).create()
+                pp = PolicyPermission(policy=policy, user=user, permission=perm)
+                pp.save()
                 policy.model_perm.add(pp)
 
 

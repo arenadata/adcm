@@ -39,14 +39,27 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='UserProfile',
             fields=[
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, serialize=False, to='auth.user')),
+                (
+                    'user',
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True,
+                        serialize=False,
+                        to='auth.user',
+                    ),
+                ),
                 ('profile', models.JSONField(default=str)),
             ],
         ),
         migrations.CreateModel(
             name='Role',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('name', models.CharField(max_length=32, unique=True)),
                 ('description', models.TextField(blank=True)),
                 ('module_name', models.CharField(max_length=32)),
@@ -59,29 +72,79 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='PolicyPermission',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('group', models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='auth.group')),
-                ('permission', models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='auth.permission')),
-                ('user', models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
+                (
+                    'group',
+                    models.ForeignKey(
+                        default=None,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to='auth.group',
+                    ),
+                ),
+                (
+                    'permission',
+                    models.ForeignKey(
+                        default=None,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to='auth.permission',
+                    ),
+                ),
+                (
+                    'user',
+                    models.ForeignKey(
+                        default=None,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='PolicyObject',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('object_id', models.PositiveIntegerField()),
-                ('content_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype')),
+                (
+                    'content_type',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype'
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
             name='Policy',
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('group', models.ManyToManyField(blank=True, to='auth.Group')),
                 ('model_perm', models.ManyToManyField(blank=True, to='rbac.PolicyPermission')),
                 ('object', models.ManyToManyField(blank=True, to='rbac.PolicyObject')),
-                ('object_perm', models.ManyToManyField(blank=True, to='guardian.UserObjectPermission')),
-                ('role', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rbac.role')),
+                (
+                    'object_perm',
+                    models.ManyToManyField(blank=True, to='guardian.UserObjectPermission'),
+                ),
+                (
+                    'role',
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='rbac.role'),
+                ),
                 ('user', models.ManyToManyField(blank=True, to=settings.AUTH_USER_MODEL)),
             ],
         ),

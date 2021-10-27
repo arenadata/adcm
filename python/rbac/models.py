@@ -56,9 +56,9 @@ class Role(models.Model):
 
     def apply(self, policy, user, group=None, obj=None):
         """apply policy to user and/or group"""
-        if __obj__ is None:
-            __obj__ = self.get_role_obj()
-        return __obj__.apply(self, policy, user, group, obj)
+        if self.__obj__ is None:
+            self.__obj__ = self.get_role_obj()
+        return self.__obj__.apply(policy, self, user, group, obj)
 
     def get_permissions(self, role=None):
         """Recursively get permissions of role and all her childs"""

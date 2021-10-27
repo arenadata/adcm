@@ -47,7 +47,7 @@ class SelfChangePasswordPerm(DjangoModelPerm):
         return True
 
 
-class PasswordSerializer(UserSerializer):
+class PasswordSerializer(UserSerializer):  # pylint: disable=too-many-ancestors
     """UserSerializer with only one changable field - password"""
 
     username = serializers.CharField(read_only=True)
