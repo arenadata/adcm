@@ -82,12 +82,7 @@ class ADCMTestApiWrapper:
 
             attach_request_log(response)
 
-            try:
-                status_code_should_be(response=response, status_code=expected_response.status_code)
-            except AssertionError:
-                if request.data and request.data.get("name") and "\n" in request.data.get("name"):
-                    pytest.xfail(reason="ADCM-2052 String type fields with '\\n' in value")
-                raise
+            status_code_should_be(response=response, status_code=expected_response.status_code)
 
             if expected_response.body is not None:
                 body_should_be(response=response, expected_body=expected_response.body)
