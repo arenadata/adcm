@@ -338,8 +338,17 @@ def save_sub_actions(proto, conf, action):
         if 'display_name' in sub:
             sub_action.display_name = sub['display_name']
         dict_to_obj(sub, 'params', sub_action)
-        if 'on_fail' in sub:
-            sub_action.state_on_fail = sub['on_fail']
+        on_fail = sub.get(ON_FAIL, '')
+        if isinstance(on_fail, str):
+            sub_action.state_on_fail = on_fail
+            sub_action.multi_state_on_fail_set = []
+            sub_action.multi_state_on_fail_unset = []
+        elif isinstance(on_fail, dict):
+            sub_action.state_on_fail = _deep_get(on_fail, STATE, default='')
+            sub_action.multi_state_on_fail_set = _deep_get(on_fail, MULTI_STATE, SET, default=[])
+            sub_action.multi_state_on_fail_unset = _deep_get(
+                on_fail, MULTI_STATE, UNSET, default=[]
+            )
         sub_action.save()
 
 
