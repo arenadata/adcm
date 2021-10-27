@@ -23,6 +23,7 @@ import { of } from 'rxjs/internal/observable/of';
 import { JobInfoComponent } from '../job-info.component';
 import { LogComponent } from './log.component';
 import { TextComponent } from './text.component';
+import { JobService } from '@app/services/job.service';
 
 const LogMock = { id: 1, name: 'log_test', type: 'stdout', content: 'First message', url: 'job/1' } as LogFile;
 const JobMock = { id: 1, start_date: '2020-08-03T11:56:16.191363Z', finish_date: null, status: 'running', log_files: [LogMock] } as Job;
@@ -41,6 +42,7 @@ describe('Job Module :: LogComponent', () => {
       providers: [
         { provide: ApiService, useValue: { getOne: () => of(JobMock), get: () => of(LogMock) } },
         { provide: ActivatedRoute, useValue: { params: of({ log: 1 }), paramMap: of(convertToParamMap({ log: 1 })) } },
+        JobService,
         provideMockStore(),
       ],
     }).compileComponents();

@@ -19,6 +19,7 @@ import { ClusterService } from '@app/core/services/cluster.service';
 import { Job, JobStatus, LogFile } from '@app/core/types';
 import { TextComponent } from './text.component';
 import { JobService } from '@app/services/job.service';
+import { EventMessage } from '@app/core/store';
 
 export interface ITimeInfo {
   start: string;
@@ -77,19 +78,21 @@ export class LogComponent extends BaseDirective implements OnInit {
     super();
   }
 
+  socketListener(event: EventMessage) {
+    if (event.event === 'change_job_status') {
+      this.job.status = event.object.details.value as JobStatus;
+      this.job.finish_date = new Date().toISOString();
+      this.timeInfo = this.service.getOperationTimeData(this.job);
+      if (this.textComp) this.textComp.update(this.job.status);
+    }
+    this.refresh();
+  }
+
   startListenSocket() {
     this.jobService.events().pipe(
       this.takeUntil(),
       filter(event => event?.object?.id === this.job.id),
-    ).subscribe((event) => {
-      if (event.event === 'change_job_status') {
-        this.job.status = event.object.details.value as JobStatus;
-        this.job.finish_date = new Date().toISOString();
-        this.timeInfo = this.service.getOperationTimeData(this.job);
-        if (this.textComp) this.textComp.update(this.job.status);
-      }
-      this.refresh();
-    });
+    ).subscribe((event) => this.socketListener(event));
   }
 
   ngOnInit() {
