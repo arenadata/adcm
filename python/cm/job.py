@@ -609,12 +609,9 @@ def get_state(
         if not state:
             log.warning('action "%s" success state is not set', action.name)
     elif status == config.Job.FAILED:
-        multi_state_set = action.multi_state_on_fail_set
-        multi_state_unset = action.multi_state_on_fail_unset
-        if sub_action and sub_action.state_on_fail:
-            state = sub_action.state_on_fail
-        else:
-            state = action.state_on_fail
+        state = getattr_first('state_on_fail', sub_action, action)
+        multi_state_set = getattr_first('multi_state_on_fail_set', sub_action, action)
+        multi_state_unset = getattr_first('multi_state_on_fail_unset', sub_action, action)
         if not state:
             log.warning('action "%s" fail state is not set', action.name)
     else:
@@ -826,3 +823,16 @@ def abort_all(event):
     for job in JobLog.objects.filter(status=config.Job.RUNNING):
         set_job_status(job.pk, config.Job.ABORTED, event)
     ctx.event.send_state()
+
+
+def getattr_first(attr: str, *objects: Any, default: Any = None) -> Any:
+    """Get first truthy attr from list of object or use last one or default if set"""
+    result = None
+    for obj in objects:
+        result = getattr(obj, attr, None)
+        if result:
+            return result
+    if default is not None:
+        return default
+    else:
+        return result  # it could any falsy value from objects

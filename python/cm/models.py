@@ -1001,14 +1001,24 @@ class Action(AbstractAction):
         return state_allowed and multi_state_allowed
 
 
-class SubAction(ADCMModel):
-    action = models.ForeignKey(Action, on_delete=models.CASCADE)
+class AbstractSubAction(ADCMModel):
+    action = None
+
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
     state_on_fail = models.CharField(max_length=64, blank=True)
+    multi_state_on_fail_set = models.JSONField(default=list)
+    multi_state_on_fail_unset = models.JSONField(default=list)
     params = models.JSONField(default=dict)
+
+    class Meta:
+        abstract = True
+
+
+class SubAction(AbstractSubAction):
+    action = models.ForeignKey(Action, on_delete=models.CASCADE)
 
 
 class HostComponent(ADCMModel):
@@ -1279,14 +1289,8 @@ class StageAction(AbstractAction):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
 
 
-class StageSubAction(ADCMModel):
+class StageSubAction(AbstractSubAction):
     action = models.ForeignKey(StageAction, on_delete=models.CASCADE)
-    name = models.CharField(max_length=160)
-    display_name = models.CharField(max_length=160, blank=True)
-    script = models.CharField(max_length=160)
-    script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
-    state_on_fail = models.CharField(max_length=64, blank=True)
-    params = models.JSONField(default=dict)
 
 
 class StagePrototypeConfig(ADCMModel):

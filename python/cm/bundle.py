@@ -483,7 +483,16 @@ def copy_stage_sub_actons(bundle):
         sub = copy_obj(
             ssubaction,
             SubAction,
-            ('name', 'display_name', 'script', 'script_type', 'state_on_fail', 'params'),
+            (
+                'name',
+                'display_name',
+                'script',
+                'script_type',
+                'state_on_fail',
+                'multi_state_on_fail_set',
+                'multi_state_on_fail_unset',
+                'params',
+            ),
         )
         sub.action = action
         sub_actions.append(sub)
@@ -715,7 +724,16 @@ def update_bundle_from_stage(
             SubAction.objects.filter(action=action).delete()
             for ssubaction in StageSubAction.objects.filter(action=saction):
                 sub = copy_obj(
-                    ssubaction, SubAction, ('script', 'script_type', 'state_on_fail', 'params')
+                    ssubaction,
+                    SubAction,
+                    (
+                        'script',
+                        'script_type',
+                        'state_on_fail',
+                        'multi_state_on_fail_set',
+                        'multi_state_on_fail_unset',
+                        'params',
+                    ),
                 )
                 sub.action = action
                 sub.save()
