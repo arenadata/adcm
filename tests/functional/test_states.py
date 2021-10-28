@@ -62,6 +62,20 @@ def cluster_and_multi_states_checker(sdk_client_fs: ADCMClient, request) -> Tupl
     return cluster, check_objects_state_changed
 
 
+@fixture_parametrized_by_data_subdirs(__file__, 'cluster_and_service_state_and_multistate')
+def cluster_and_multi_states_plus_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Cluster, Callable]:
+    """Create cluster and multi states + states checker"""
+    bundle = sdk_client_fs.upload_from_fs(request.param)
+    cluster = bundle.cluster_create(name=bundle.name)
+    bundle.cluster_create(name=f"{bundle.name}_second")
+    check_objects_state_changed = build_objects_checker(
+        field_name='Multi states and states',
+        changed=dict(state=cluster.name, multi_states=[cluster.name]),
+        extractor=lambda obj: dict(state=obj.state, multi_states=sorted(obj.multi_state)),
+    )
+    return cluster, check_objects_state_changed
+
+
 class TestClusterRelatedObjects:
     """Tests for cluster-related objects states"""
 
@@ -158,6 +172,58 @@ class TestClusterRelatedObjects:
                 status="success" if "fail" not in cluster_obj.name else "failed",
             )
 
+    def test_cluster_multi_state_plus_states_after_action(self, sdk_client_fs: ADCMClient, cluster_and_multi_states_plus_states_checker):
+        """
+        Test cluster and multi states and states after action
+        Before action add multi state that should be unset via action
+        """
+        object_to_be_changed, check_objects_multi_state_changed = cluster_and_multi_states_plus_states_checker
+        run_cluster_action_and_assert_result(object_to_be_changed, ACTION_SET_MULTISTATE_NAME)
+        with check_objects_multi_state_changed(sdk_client_fs, {object_to_be_changed}), allure.step(
+            f'Run cluster action: {ACTION_NAME}'
+        ):
+            run_cluster_action_and_assert_result(
+                object_to_be_changed,
+                action=ACTION_NAME,
+                status="success" if "fail" not in object_to_be_changed.name else "failed",
+            )
+
+    def test_service_multi_state_plus_state_after_action(self, sdk_client_fs: ADCMClient, cluster_and_multi_states_plus_states_checker):
+        """
+        Test service and multi states and states after action
+        Before action add multi state that should be unset via action
+        """
+        cluster_obj, check_objects_multi_state_changed = cluster_and_multi_states_plus_states_checker
+        object_to_be_changed = cluster_obj.service_add(name='first_srv')
+        cluster_obj.service_add(name='second_srv')
+        run_service_action_and_assert_result(object_to_be_changed, ACTION_SET_MULTISTATE_NAME)
+        with check_objects_multi_state_changed(sdk_client_fs, {object_to_be_changed}), allure.step(
+            f'Run service action: {ACTION_NAME}'
+        ):
+            run_service_action_and_assert_result(
+                object_to_be_changed,
+                action=ACTION_NAME,
+                status="success" if "fail" not in cluster_obj.name else "failed",
+            )
+
+    def test_component_multi_state_plus_state_after_action(self, sdk_client_fs: ADCMClient, cluster_and_multi_states_plus_states_checker):
+        """
+        Test components and multi states and states after action
+        Before action add multi state that should be unset via action
+        """
+        cluster_obj, check_objects_state_changed = cluster_and_multi_states_plus_states_checker
+        cluster_obj.service_add(name='first_srv')
+        object_to_be_changed = cluster_obj.service(name='first_srv').component(name='first_cmp')
+        run_component_action_and_assert_result(object_to_be_changed, ACTION_SET_MULTISTATE_NAME)
+        with check_objects_state_changed(sdk_client_fs, {object_to_be_changed}), allure.step(
+            f'Run component action: {ACTION_NAME}'
+        ):
+            run_component_action_and_assert_result(
+                object_to_be_changed,
+                action=ACTION_NAME,
+                status="success" if "fail" not in cluster_obj.name else "failed",
+            )
+
 
 @fixture_parametrized_by_data_subdirs(__file__, 'provider_and_host')
 def provider_and_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Provider, Callable]:
@@ -171,6 +237,22 @@ def provider_and_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Pro
         field_name='State',
         changed=bundle.name,
         extractor=lambda obj: obj.state,
+    )
+    return provider, check_objects_state_changed
+
+
+@fixture_parametrized_by_data_subdirs(__file__, 'provider_and_host_state_and_multistate')
+def provider_and_multi_states_plus_states_checker(sdk_client_fs: ADCMClient, request) -> Tuple[Provider, Callable]:
+    """Create provider and multi state plus state checker"""
+    bundle = sdk_client_fs.upload_from_fs(request.param)
+    provider = bundle.provider_create(name=bundle.name)
+    bundle.provider_create(name=f"{bundle.name}_second")
+    provider.host_create(fqdn=bundle.name)
+    provider.host_create(fqdn=f"{bundle.name}_second")
+    check_objects_state_changed = build_objects_checker(
+        field_name='Multi states and states',
+        changed=dict(state=bundle.name, multi_states=[bundle.name]),
+        extractor=lambda obj: dict(state=obj.state, multi_states=sorted(obj.multi_state)),
     )
     return provider, check_objects_state_changed
 
@@ -243,6 +325,40 @@ class TestProviderRelatedObjects:
         Before action add multi state that should be unset via action
         """
         provider_obj, check_objects_state_changed = provider_and_multi_states_checker
+        object_to_be_changed = provider_obj.host(fqdn=provider_obj.name)
+        run_host_action_and_assert_result(object_to_be_changed, ACTION_SET_MULTISTATE_NAME)
+        with check_objects_state_changed(sdk_client_fs, {object_to_be_changed}), allure.step(
+            f'Run host action: {ACTION_NAME}'
+        ):
+            run_host_action_and_assert_result(
+                object_to_be_changed,
+                action=ACTION_NAME,
+                status="success" if "fail" not in provider_obj.name else "failed",
+            )
+
+    def test_provider_multi_state_plus_state_after_action(self, sdk_client_fs: ADCMClient, provider_and_multi_states_plus_states_checker):
+        """
+        Test provider and multi states and states after action
+        Before action add multi state that should be unset via action
+        """
+        provider_obj, check_objects_state_changed = provider_and_multi_states_plus_states_checker
+        object_to_be_changed = provider_obj
+        run_provider_action_and_assert_result(object_to_be_changed, ACTION_SET_MULTISTATE_NAME)
+        with check_objects_state_changed(sdk_client_fs, {object_to_be_changed}), allure.step(
+            f'Run provider action: {ACTION_NAME}'
+        ):
+            run_provider_action_and_assert_result(
+                object_to_be_changed,
+                action=ACTION_NAME,
+                status="success" if "fail" not in provider_obj.name else "failed",
+            )
+
+    def test_host_multi_state_plus_state_after_action(self, sdk_client_fs: ADCMClient, provider_and_multi_states_plus_states_checker):
+        """
+        Test host and multi states and states after action
+        Before action add multi state that should be unset via action
+        """
+        provider_obj, check_objects_state_changed = provider_and_multi_states_plus_states_checker
         object_to_be_changed = provider_obj.host(fqdn=provider_obj.name)
         run_host_action_and_assert_result(object_to_be_changed, ACTION_SET_MULTISTATE_NAME)
         with check_objects_state_changed(sdk_client_fs, {object_to_be_changed}), allure.step(
