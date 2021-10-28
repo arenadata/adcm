@@ -172,7 +172,9 @@ class TestClusterRelatedObjects:
                 status="success" if "fail" not in cluster_obj.name else "failed",
             )
 
-    def test_cluster_multi_state_plus_states_after_action(self, sdk_client_fs: ADCMClient, cluster_and_multi_states_plus_states_checker):
+    def test_cluster_multi_state_plus_states_after_action(
+        self, sdk_client_fs: ADCMClient, cluster_and_multi_states_plus_states_checker
+    ):
         """
         Test cluster and multi states and states after action
         Before action add multi state that should be unset via action
@@ -188,7 +190,9 @@ class TestClusterRelatedObjects:
                 status="success" if "fail" not in object_to_be_changed.name else "failed",
             )
 
-    def test_service_multi_state_plus_state_after_action(self, sdk_client_fs: ADCMClient, cluster_and_multi_states_plus_states_checker):
+    def test_service_multi_state_plus_state_after_action(
+        self, sdk_client_fs: ADCMClient, cluster_and_multi_states_plus_states_checker
+    ):
         """
         Test service and multi states and states after action
         Before action add multi state that should be unset via action
@@ -206,7 +210,9 @@ class TestClusterRelatedObjects:
                 status="success" if "fail" not in cluster_obj.name else "failed",
             )
 
-    def test_component_multi_state_plus_state_after_action(self, sdk_client_fs: ADCMClient, cluster_and_multi_states_plus_states_checker):
+    def test_component_multi_state_plus_state_after_action(
+        self, sdk_client_fs: ADCMClient, cluster_and_multi_states_plus_states_checker
+    ):
         """
         Test components and multi states and states after action
         Before action add multi state that should be unset via action
@@ -336,7 +342,9 @@ class TestProviderRelatedObjects:
                 status="success" if "fail" not in provider_obj.name else "failed",
             )
 
-    def test_provider_multi_state_plus_state_after_action(self, sdk_client_fs: ADCMClient, provider_and_multi_states_plus_states_checker):
+    def test_provider_multi_state_plus_state_after_action(
+        self, sdk_client_fs: ADCMClient, provider_and_multi_states_plus_states_checker
+    ):
         """
         Test provider and multi states and states after action
         Before action add multi state that should be unset via action
@@ -353,7 +361,9 @@ class TestProviderRelatedObjects:
                 status="success" if "fail" not in provider_obj.name else "failed",
             )
 
-    def test_host_multi_state_plus_state_after_action(self, sdk_client_fs: ADCMClient, provider_and_multi_states_plus_states_checker):
+    def test_host_multi_state_plus_state_after_action(
+        self, sdk_client_fs: ADCMClient, provider_and_multi_states_plus_states_checker
+    ):
         """
         Test host and multi states and states after action
         Before action add multi state that should be unset via action
