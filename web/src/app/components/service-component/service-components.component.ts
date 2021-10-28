@@ -2,7 +2,7 @@ import { IColumns } from '@adwp-ui/widgets';
 import { Component } from '@angular/core';
 
 import { TypeName } from '@app/core/types';
-import { ListFactory } from '@app/factories/list-factory';
+import { ListFactory } from '@app/factories/list.factory';
 import { ConcernListDirective } from '@app/abstract-directives/concern-list.directive';
 import { ConcernEventType } from '@app/models/concern/concern-reason';
 

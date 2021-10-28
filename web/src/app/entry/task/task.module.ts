@@ -18,7 +18,7 @@ import { SharedModule } from '@app/shared/shared.module';
 import { HoverDirective } from './hover.directive';
 import { TasksComponent } from './tasks.component';
 import { TaskStatusColumnComponent } from '@app/components/columns/task-status-column/task-status-column.component';
-import { JobsComponent } from '@app/components/task/jobs/jobs.component';
+import { JobsComponent } from '@app/components/job/jobs/jobs.component';
 import { JobStatusColumnComponent } from '@app/components/columns/job-status-column/job-status-column.component';
 import { TaskNameComponent } from '@app/components/columns/task-name/task-name.component';
 import { JobNameComponent } from '@app/components/columns/job-name/job-name.component';
