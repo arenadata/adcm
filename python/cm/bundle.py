@@ -128,7 +128,9 @@ def untar_safe(bundle_hash, path):
 def untar(bundle_hash, bundle):
     path = os.path.join(config.BUNDLE_DIR, bundle_hash)
     if os.path.isdir(path):
-        err('BUNDLE_ERROR', f'bundle directory "{path}" already exists')
+        existed = Bundle.objects.get(hash=bundle_hash)
+        msg = 'Bundle already exists. Name: {}, version: {}, edition: {}'
+        err('BUNDLE_ERROR', msg.format(existed.name, existed.version, existed.edition))
     tar = tarfile.open(bundle)
     tar.extractall(path=path)
     tar.close()
