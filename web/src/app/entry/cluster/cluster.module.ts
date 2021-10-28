@@ -34,6 +34,8 @@ import { GroupConfigDetailsComponent } from '../../components/hostprovider/group
 import { ServiceDetailsComponent } from '../../components/service/service-details/service-details.component';
 import { ServiceComponentDetailsComponent } from '../../components/service-component/service-component-details/service-component-details.component';
 import { HostDetailsComponent } from '../../components/host/host-details/host-details.component';
+import { ClusterStatusComponent } from '../../components/cluster/cluster-status/cluster-status.component';
+import { ClusterStatusToStatusTreePipe } from '../../pipes/cluster-status-to-status-tree.pipe';
 
 const clusterRoutes: Routes = [
   {
@@ -54,7 +56,7 @@ const clusterRoutes: Routes = [
       { path: 'host_component', component: HcmapComponent },
       { path: 'config', component: ConfigComponent },
       { path: 'group_config', component: ConfigGroupListComponent },
-      { path: 'status', component: StatusComponent },
+      { path: 'status', component: ClusterStatusComponent },
       { path: 'import', component: ImportComponent },
     ],
   },
@@ -143,7 +145,20 @@ export class ClusterRoutingModule {
 }
 
 @NgModule({
-  imports: [CommonModule, SharedModule, RouterModule, ConfigGroupModule, ClusterRoutingModule],
-  declarations: [ClusterListComponent, ServicesComponent, ClusterHostComponent, HcmapComponent],
+  imports: [
+    CommonModule,
+    SharedModule,
+    RouterModule,
+    ConfigGroupModule,
+    ClusterRoutingModule,
+  ],
+  declarations: [
+    ClusterListComponent,
+    ServicesComponent,
+    ClusterHostComponent,
+    HcmapComponent,
+    ClusterStatusComponent,
+    ClusterStatusToStatusTreePipe,
+  ],
 })
 export class ClusterModule {}

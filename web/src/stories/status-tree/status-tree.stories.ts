@@ -5,7 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTreeModule } from '@angular/material/tree';
 
 import { Folding, StatusTreeComponent } from '../../app/components/status-tree/status-tree.component';
-import { StatusTree, SubjectStatus } from '../../app/models/status-tree';
+import { StatusTree } from '../../app/models/status-tree';
 
 export default {
   title: 'ADCM/Status Tree',
@@ -55,31 +55,31 @@ RegularTree.args = {
     {
       subject: {
         name: 'ADB Spark',
-        status: SubjectStatus.Fail,
+        status: 16,
       },
       children: [
         {
           subject: {
             name: 'Hosts',
-            status: SubjectStatus.Fail,
+            status: 16,
           },
           children: [
             {
               subject: {
                 name: 'adb-spark-m.ru-central1.internal',
-                status: SubjectStatus.Success,
+                status: 0,
               }
             },
             {
               subject: {
                 name: 'adb-spark-seg1.ru-central1.internal',
-                status: SubjectStatus.Fail,
+                status: 1,
               }
             },
             {
               subject: {
                 name: 'adb-spark-seg2.ru-central1.internal',
-                status: SubjectStatus.Fail,
+                status: 1,
               }
             }
           ]
@@ -87,25 +87,25 @@ RegularTree.args = {
         {
           subject: {
             name: 'Services',
-            status: SubjectStatus.Fail,
+            status: 1,
           },
           children: [
             {
               subject: {
                 name: 'Chrony',
-                status: SubjectStatus.Success,
+                status: 0,
               },
               children: [
                 {
                   subject: {
                     name: 'NTP Master',
-                    status: SubjectStatus.Success,
+                    status: 0,
                   },
                   children: [
                     {
                       subject: {
                         name: 'adb-spark-m.ru-central1.internal',
-                        status: SubjectStatus.Success,
+                        status: 0,
                       }
                     }
                   ]
@@ -113,19 +113,19 @@ RegularTree.args = {
                 {
                   subject: {
                     name: 'NTP Slave',
-                    status: SubjectStatus.Success,
+                    status: 0,
                   },
                   children: [
                     {
                       subject: {
                         name: 'adb-spark-seg1.ru-central1.internal',
-                        status: SubjectStatus.Success,
+                        status: 0,
                       }
                     },
                     {
                       subject: {
                         name: 'adb-spark-seg2.ru-central1.internal',
-                        status: SubjectStatus.Success,
+                        status: 0,
                       }
                     }
                   ]
@@ -136,19 +136,19 @@ RegularTree.args = {
             {
               subject: {
                 name: 'ADB',
-                status: SubjectStatus.Fail,
+                status: 1,
               },
               children: [
                 {
                   subject: {
                     name: 'ADB Master',
-                    status: SubjectStatus.Success,
+                    status: 0,
                   },
                   children: [
                     {
                       subject: {
                         name: 'adb-spark-m.ru-central1.internal',
-                        status: SubjectStatus.Success,
+                        status: 0,
                       }
                     }
                   ]
@@ -156,19 +156,19 @@ RegularTree.args = {
                 {
                   subject: {
                     name: 'ADB Segment',
-                    status: SubjectStatus.Fail,
+                    status: 1,
                   },
                   children: [
                     {
                       subject: {
                         name: 'adb-spark-seg1.ru-central1.internal',
-                        status: SubjectStatus.Success,
+                        status: 0,
                       }
                     },
                     {
                       subject: {
                         name: 'adb-spark-seg2.ru-central1.internal',
-                        status: SubjectStatus.Fail,
+                        status: 1,
                       }
                     }
                   ]
@@ -178,25 +178,25 @@ RegularTree.args = {
             {
               subject: {
                 name: 'PXF',
-                status: SubjectStatus.Success,
+                status: 0,
               },
               children: [
                 {
                   subject: {
                     name: 'PXF',
-                    status: SubjectStatus.Success,
+                    status: 0,
                   },
                   children: [
                     {
                       subject: {
                         name: 'adb-spark-seg1.ru-central1.internal',
-                        status: SubjectStatus.Success,
+                        status: 0,
                       }
                     },
                     {
                       subject: {
                         name: 'adb-spark-seg2.ru-central1.internal',
-                        status: SubjectStatus.Success,
+                        status: 0,
                       }
                     }
                   ]

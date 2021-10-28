@@ -24,10 +24,12 @@
 </mat-tree>
 
 <ng-template #statusNode let-node="node">
-  <mat-icon *ngIf="node.subject.status === SubjectStatus.Success; else failed" color="accent">check_circle_outline</mat-icon>
-  <ng-template #failed>
-    <mat-icon color="warn">error_outline</mat-icon>
-  </ng-template>
+  <ng-container *ngIf="node.subject.status !== undefined && node.subject.status !== null">
+    <mat-icon *ngIf="node.subject.status === 0; else failed" color="accent">check_circle_outline</mat-icon>
+    <ng-template #failed>
+      <mat-icon color="warn">error_outline</mat-icon>
+    </ng-template>
+  </ng-container>
   &nbsp;
   <span [ngClass]="{ expandable: node.expandable }">{{node.subject.name}}</span>
   &nbsp;

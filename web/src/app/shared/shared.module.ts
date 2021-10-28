@@ -13,6 +13,8 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
+import { MatTreeModule } from '@angular/material/tree';
 
 import { AddingModule } from './add-component/adding.module';
 import {
@@ -45,10 +47,10 @@ import { ServiceComponentsComponent } from '@app/components/service-component/se
 import { JobService } from '@app/services/job.service';
 import { TaskService } from '@app/services/task.service';
 import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
-import { TranslateModule } from '@ngx-translate/core';
 import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
 import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
 import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
+import { StatusTreeComponent } from '@app/components/status-tree/status-tree.component';
 
 @NgModule({
   imports: [
@@ -64,7 +66,8 @@ import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
     HostComponentsMapModule,
     DetailsModule,
     TranslateModule,
-    TooltipModule
+    TooltipModule,
+    MatTreeModule,
   ],
   declarations: [
     DialogComponent,
@@ -90,6 +93,7 @@ import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
     ToDataSourcePipe,
     PickKeysPipe,
     TranslateKeysPipe,
+    StatusTreeComponent,
   ],
   exports: [
     FormsModule,
@@ -121,7 +125,8 @@ import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
     ToDataSourcePipe,
     PickKeysPipe,
     TranslateKeysPipe,
-    TooltipModule
+    TooltipModule,
+    StatusTreeComponent,
   ],
   providers: [
     JobService,

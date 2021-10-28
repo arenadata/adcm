@@ -3,7 +3,7 @@ import { Component, Input } from '@angular/core';
 import { FlatTreeControl } from '@angular/cdk/tree';
 import { MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';
 
-import { StatusTree, StatusTreeSubject, SubjectStatus } from '@app/models/status-tree';
+import { StatusTree, StatusTreeSubject } from '@app/models/status-tree';
 
 interface ExampleFlatNode {
   expandable: boolean;
@@ -32,12 +32,10 @@ export enum Folding {
 })
 export class StatusTreeComponent {
 
-  SubjectStatus = SubjectStatus;
-
   private calcCounts = (children: CountedStatusTree[]): Counts => {
     return children.reduce((acc: Counts, child: CountedStatusTree) => {
         acc.total++;
-        if (child.subject.status === SubjectStatus.Success) {
+        if (child.subject.status === 0) {
           acc.succeed++;
         }
         return acc;

@@ -1,0 +1,4 @@
+<button mat-stroked-button color="accent" (click)="folding = Folding.Collapsed">Collapse</button>
+<button mat-stroked-button color="accent" (click)="folding = Folding.Expanded">Expand</button>
+
+<app-status-tree [tree]="statusTree | async | clusterStatusToStatusTree" [folding]="folding"></app-status-tree>
