@@ -858,3 +858,32 @@ class TestChangeGroupsConfig:
             config_updated_wrong = {"map": {test_host_1.fqdn: config_before, test_host_2.fqdn: config_before}}
             run_cluster_action_and_assert_result(cluster, action=ACTION_NAME, config=config_updated_wrong)
             run_cluster_action_and_assert_result(cluster, action=ACTION_MULTIJOB_NAME, config=config_updated_wrong)
+
+    @pytest.mark.parametrize(
+        "cluster_bundle",
+        [pytest.param(get_data_dir(__file__, "cluster_with_main_info"), id="main_info_check")],
+        indirect=True,
+    )
+    @allure.issue("https://arenadata.atlassian.net/browse/ADCM-2235")
+    def test_changing_group_with_main_info_key(self, cluster_bundle, cluster_with_two_hosts_on_it):
+        """Test that __main_info key do not break action runner"""
+
+        test_host_1, _, cluster = cluster_with_two_hosts_on_it
+        with allure.step("Assert that action with __main_info key works fine without config group"):
+            cluster.config_set({"float": 0.3})
+            run_cluster_action_and_assert_result(cluster, action=ACTION_NAME)
+            run_cluster_action_and_assert_result(cluster, action=ACTION_MULTIJOB_NAME)
+        with allure.step("Create group and add host"):
+            cluster_group = _create_group_and_add_host(cluster, test_host_1)
+        with allure.step("Assert that action with __main_info key works fine with host in config group"):
+            cluster_group.config_set(
+                {
+                    "config": {"__main_info": "This is cluster main info", "float": 0.1},
+                    "attr": {
+                        "group_keys": {"__main_info": False, "float": False},
+                        "custom_group_keys": {"__main_info": False, "float": True},
+                    },
+                }
+            )
+            run_cluster_action_and_assert_result(cluster, action=ACTION_NAME, timeout=30)
+            run_cluster_action_and_assert_result(cluster, action=ACTION_MULTIJOB_NAME, timeout=30)
