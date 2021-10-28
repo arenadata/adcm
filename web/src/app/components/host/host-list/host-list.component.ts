@@ -6,7 +6,7 @@ import { MatDialog } from '@angular/material/dialog';
 
 import { TypeName } from '@app/core/types';
 import { IHost } from '@app/models/host';
-import { ListFactory } from '@app/factories/list-factory';
+import { ListFactory } from '@app/factories/list.factory';
 import { AddClusterEventData, ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
 import { UniversalAdcmEventData } from '@app/models/universal-adcm-event-data';
 import { ConcernListDirective } from '@app/abstract-directives/concern-list.directive';

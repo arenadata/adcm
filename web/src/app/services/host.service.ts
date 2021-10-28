@@ -22,7 +22,7 @@ export class HostService extends EntityService<IHost> {
     id: number,
     params: { [key: string]: string } = {},
   ): Observable<IHost> {
-    return this.api.get(`api/v1/host/${id}/`, params);
+    return this.api.get(`${environment.apiRoot}host/${id}/`, params);
   }
 
   addToCluster(hostId: number, clusterId: number): Observable<Host> {
