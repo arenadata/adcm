@@ -14,11 +14,12 @@ from django_filters import rest_framework as drf_filters
 from rest_framework import status
 from rest_framework.response import Response
 
-from api.api_views import PageView, DetailViewDelete, create, check_obj
+from api.api_views import PageView, DetailViewDelete, create, check_obj, GenericAPIPermView, InterfaceView
 from cm.api import remove_host_from_cluster, delete_host
 from cm.errors import AdcmEx
-from cm.models import Cluster, HostProvider, Host, GroupConfig, ClusterObject, ServiceComponent
+from cm.models import Cluster, HostProvider, Host, GroupConfig, ClusterObject, ServiceComponent, HostComponent
 from . import serializers
+import cm.status_api
 
 
 class NumberInFilter(drf_filters.BaseInFilter, drf_filters.NumberFilter):
@@ -176,3 +177,39 @@ class HostDetail(DetailViewDelete):
             # Delete host (and all corresponding host services:components)
             delete_host(host)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class StatusList(GenericAPIPermView, InterfaceView):
+    serializer_class = serializers.StatusSerializer
+    queryset = HostComponent.objects.all()
+
+    def ui_status(self, host, host_components):
+        host_map = cm.status_api.get_host_map(host)
+
+        comp_list = []
+        for hc in host_components:
+            comp_list.append(
+                {
+                    'id': hc.component.id,
+                    'name': hc.component.name,
+                    'status': cm.status_api.get_component_status(hc.component),
+                 }
+            )
+        return {
+            'id': host.id,
+            'name': host.fqdn,
+            'status': 32 if host_map is None else host_map.get('status', 0),
+            'hc': comp_list,
+        }
+
+    def get(self, request, host_id, cluster_id=None):
+        """
+        Show all components in a specified host
+        """
+        host = check_obj(Host, host_id)
+        hc_queryset = self.get_queryset().filter(host=host)
+        if self.for_ui(request):
+            return Response(self.ui_status(host, hc_queryset))
+        else:
+            serializer = self.serializer_class(hc_queryset, many=True, context={'request': request})
+            return Response(serializer.data)

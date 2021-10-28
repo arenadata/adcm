@@ -188,6 +188,13 @@ def get_cluster_map(cluster):
     return r.json()
 
 
+def get_host_map(host):
+    r = api_get(f'/host/{host.id}/?view=interface')
+    if r is None:
+        return None
+    return r.json()
+
+
 def load_service_map():
     comps = {}
     hosts = {}
