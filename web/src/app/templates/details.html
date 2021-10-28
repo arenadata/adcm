@@ -1,25 +1,15 @@
 <mat-toolbar>
 
   <app-navigation
-    *ngIf="['servicecomponent', 'component', 'service', 'cluster', 'host', 'provider', 'group_config'].includes(current?.typeName); else notServiceComponent"
     [path]="navigationPath"
     (refresh)="refresh($event)"
   ></app-navigation>
-
-  <ng-template #notServiceComponent>
-    <app-details-top
-      [current]="current"
-      [actions]="actions"
-      [isIssue]="isIssue"
-      [upgradable]="upgradable"
-    ></app-details-top>
-  </ng-template>
 
 </mat-toolbar>
 
 <mat-drawer-container [style.flex]="1" autosize>
   <mat-drawer disableClose="true" mode="side" opened>
-    <app-details-left [current]="current" [issue]="issue" [status]="status"></app-details-left>
+    <app-left-menu [leftMenu]="leftMenu" [entity]="entity"></app-left-menu>
   </mat-drawer>
   <mat-drawer-content [style.display]="'flex'">
     <mat-card>

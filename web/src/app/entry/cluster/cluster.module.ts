@@ -14,7 +14,6 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
 
-import { DetailComponent } from '@app/shared/details/detail.component';
 import { ConfigComponent } from '../../shared/configuration/main/config.component';
 import { ImportComponent, MainInfoComponent, StatusComponent } from '@app/shared/components';
 import { SharedModule } from '@app/shared/shared.module';
@@ -24,14 +23,17 @@ import { HcmapComponent } from '@app/components/cluster/hcmap/hcmap.component';
 import { ClusterHostComponent } from '../../components/cluster/host/cluster-host.component';
 import { ServicesComponent } from '@app/components/cluster/services/services.component';
 import { AuthGuard } from '../../core/auth/auth.guard';
-import { ServiceComponentsComponent } from '@app/components/service-components.component';
+import { ServiceComponentsComponent } from '../../components/service-component/service-components.component';
 import {
-  CONFIG_GROUP_LIST_SERVICE,
   ConfigGroupHostListComponent,
   ConfigGroupListComponent,
-  ConfigGroupListService,
   ConfigGroupModule
 } from '../../config-groups';
+import { ClusterDetailsComponent } from '../../components/cluster/cluster-details/cluster-details.component';
+import { GroupConfigDetailsComponent } from '../../components/hostprovider/group-config-details/group-config-details.component';
+import { ServiceDetailsComponent } from '../../components/service/service-details/service-details.component';
+import { ServiceComponentDetailsComponent } from '../../components/service-component/service-component-details/service-component-details.component';
+import { HostDetailsComponent } from '../../components/host/host-details/host-details.component';
 
 const clusterRoutes: Routes = [
   {
@@ -41,7 +43,7 @@ const clusterRoutes: Routes = [
   },
   {
     path: ':cluster',
-    component: DetailComponent,
+    component: ClusterDetailsComponent,
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
     children: [
@@ -60,10 +62,7 @@ const clusterRoutes: Routes = [
     path: ':cluster/group_config/:group_config',
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
-    component: DetailComponent,
-    data: {
-      entityService: CONFIG_GROUP_LIST_SERVICE
-    },
+    component: GroupConfigDetailsComponent,
     children: [
       { path: '', redirectTo: 'host', pathMatch: 'full' },
       { path: 'host', component: ConfigGroupHostListComponent },
@@ -72,7 +71,7 @@ const clusterRoutes: Routes = [
   },
   {
     path: ':cluster/service/:service',
-    component: DetailComponent,
+    component: ServiceDetailsComponent,
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
     children: [
@@ -89,10 +88,7 @@ const clusterRoutes: Routes = [
     path: ':cluster/service/:service/group_config/:group_config',
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
-    component: DetailComponent,
-    data: {
-      entityService: CONFIG_GROUP_LIST_SERVICE
-    },
+    component: GroupConfigDetailsComponent,
     children: [
       { path: '', redirectTo: 'host', pathMatch: 'full' },
       { path: 'host', component: ConfigGroupHostListComponent },
@@ -101,7 +97,7 @@ const clusterRoutes: Routes = [
   },
   {
     path: ':cluster/service/:service/component/:servicecomponent',
-    component: DetailComponent,
+    component: ServiceComponentDetailsComponent,
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
     children: [
@@ -116,10 +112,7 @@ const clusterRoutes: Routes = [
     path: ':cluster/service/:service/component/:component/group_config/:group_config',
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
-    component: DetailComponent,
-    data: {
-      entityService: CONFIG_GROUP_LIST_SERVICE
-    },
+    component: GroupConfigDetailsComponent,
     children: [
       { path: '', redirectTo: 'host', pathMatch: 'full' },
       { path: 'host', component: ConfigGroupHostListComponent },
@@ -128,7 +121,7 @@ const clusterRoutes: Routes = [
   },
   {
     path: ':cluster/host/:host',
-    component: DetailComponent,
+    component: HostDetailsComponent,
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
     children: [
@@ -152,12 +145,5 @@ export class ClusterRoutingModule {
 @NgModule({
   imports: [CommonModule, SharedModule, RouterModule, ConfigGroupModule, ClusterRoutingModule],
   declarations: [ClusterListComponent, ServicesComponent, ClusterHostComponent, HcmapComponent],
-  providers: [
-    {
-      provide: CONFIG_GROUP_LIST_SERVICE,
-      useClass: ConfigGroupListService
-    },
-  ]
 })
-export class ClusterModule {
-}
+export class ClusterModule {}

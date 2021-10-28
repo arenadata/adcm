@@ -50,8 +50,11 @@ export class ConfigGroupListService extends EntityService<ConfigGroup> implement
     return this.current;
   }
 
-  get(id: number): Observable<ConfigGroup> {
-    return this.api.get<ConfigGroup>(`${environment.apiRoot}group-config/${id}`);
+  get(
+    id: number,
+    params: { [key: string]: string } = {},
+  ): Observable<ConfigGroup> {
+    return this.api.get(`${environment.apiRoot}group-config/${id}/`, params);
   }
 
   delete(row: ConfigGroup): Observable<Object> {
