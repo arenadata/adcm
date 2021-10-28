@@ -14,10 +14,19 @@ from django_filters import rest_framework as drf_filters
 from rest_framework import status
 from rest_framework.response import Response
 
-from api.api_views import PageView, DetailViewDelete, create, check_obj, GenericAPIPermView, InterfaceView
+from api.api_views import create, check_obj, GenericAPIPermView
+from api.api_views import PageView, DetailViewDelete, InterfaceView
 from cm.api import remove_host_from_cluster, delete_host
 from cm.errors import AdcmEx
-from cm.models import Cluster, HostProvider, Host, GroupConfig, ClusterObject, ServiceComponent, HostComponent
+from cm.models import (
+    Cluster,
+    HostProvider,
+    Host,
+    GroupConfig,
+    ClusterObject,
+    ServiceComponent,
+    HostComponent,
+)
 from . import serializers
 import cm.status_api
 
