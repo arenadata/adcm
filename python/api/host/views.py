@@ -208,7 +208,7 @@ class StatusList(GenericAPIPermView, InterfaceView):
                     'id': hc.component.id,
                     'name': hc.component.name,
                     'status': cm.status_api.get_component_status(hc.component),
-                 }
+                }
             )
         return {
             'id': host.id,
