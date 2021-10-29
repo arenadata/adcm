@@ -199,7 +199,7 @@ class StatusList(GenericAPIPermView, InterfaceView):
     queryset = HostComponent.objects.all()
 
     def ui_status(self, host, host_components):
-        host_map = cm.status_api.get_host_map(host)
+        host_map = cm.status_api.get_object_map(host, 'host')
 
         comp_list = []
         for hc in host_components:

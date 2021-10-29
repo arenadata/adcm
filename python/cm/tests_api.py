@@ -97,7 +97,6 @@ class TestApi(TestCase):
         mock_load_service_map.assert_called_once()
 
     @patch('cm.api.ctx')
-    @patch('cm.status_api.load_service_map')
     @patch('cm.api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
     def test_save_hc__big_update__locked_hierarchy(self, mock_issue, mock_post, mock_load, ctx):

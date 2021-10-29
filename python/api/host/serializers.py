@@ -31,7 +31,6 @@ class HostSerializer(serializers.Serializer):
     description = serializers.CharField(required=False)
     state = serializers.CharField(read_only=True)
     url = ObjectURL(read_only=True, view_name='host-details')
-    status_url = ObjectURL(view_name='host-status')
 
     def validate_prototype_id(self, prototype_id):
         return check_obj(Prototype, {'id': prototype_id, 'type': 'host'})
@@ -99,21 +98,11 @@ class ProvideHostSerializer(HostSerializer):
 class StatusSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     component_id = serializers.IntegerField(read_only=True)
-    service_id = serializers.IntegerField(read_only=True)
-    state = serializers.CharField(read_only=True, required=False)
+    host_id = serializers.IntegerField(read_only=True)
+    status = serializers.SerializerMethodField()
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['component'] = instance.component.prototype.name
-        data['component_display_name'] = instance.component.prototype.display_name
-        data['host'] = instance.host.fqdn
-        data['service_name'] = instance.service.prototype.name
-        data['service_display_name'] = instance.service.prototype.display_name
-        data['service_version'] = instance.service.prototype.version
-        data['monitoring'] = instance.component.prototype.monitoring
-        status = cm.status_api.get_hc_status(instance)
-        data['status'] = status
-        return data
+    def get_status(self, obj):
+        return cm.status_api.get_hc_status(obj)
 
 
 class HostUISerializer(HostDetailSerializer):
