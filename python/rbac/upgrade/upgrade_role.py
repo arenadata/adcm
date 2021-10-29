@@ -23,7 +23,7 @@ import cm.checker
 
 from rbac import log
 from rbac.settings import api_settings
-from rbac.models import Role, RoleMigration
+from rbac.models import Role, RoleMigration, Policy
 
 
 def upgrade(data: dict):
@@ -42,13 +42,8 @@ def upgrade(data: dict):
             role_obj.childs.add(child_role)
         role_obj.save()
 
-    for role in new_roles.values():
-        perm_list = role.get_permissions()
-        for user in role.user.all():
-            user.user_permissions.clear()
-            for perm in perm_list:
-                user.user_permissions.add(perm)
-            user.save()
+    for policy in Policy.objects.all():
+        policy.apply()
 
 
 def find_role(name: str, roles: list):
@@ -100,6 +95,10 @@ def upgrade_role(role: dict, data: dict) -> Role:
     except Role.DoesNotExist:
         new_role = Role(name=role['name'])
         new_role.save()
+    new_role.module_name = role['module_name']
+    new_role.class_name = role['class_name']
+    if 'init_params' in role:
+        new_role.init_params = role['init_params']
     if 'description' in role:
         new_role.description = role['description']
     for perm in perm_list:
@@ -134,7 +133,7 @@ def get_role_spec(data: str, schema: str) -> dict:
                 if 'Input data for' in ee.message:
                     continue
                 args += f'line {ee.line}: {ee}\n'
-        err('INVALID_ROLE_SPEC', f'"{data}" line {e.line} error: {e}', args)
+        err('INVALID_ROLE_SPEC', f'line {e.line} error: {e}', args)
 
     return data
 
