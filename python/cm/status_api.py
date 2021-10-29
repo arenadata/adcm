@@ -16,7 +16,7 @@ import requests
 
 from cm.config import STATUS_SECRET_KEY
 from cm.logger import log
-from cm.models import HostComponent, ServiceComponent, ClusterObject, Host, ADCMEntity
+from cm.models import ADCMEntity
 
 API_URL = "http://localhost:8020/api/v1"
 TIMEOUT = 0.01
@@ -186,4 +186,3 @@ def get_object_map(obj: ADCMEntity, url_type: str):
     if r is None:
         return None
     return r.json()
-

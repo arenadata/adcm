@@ -99,7 +99,7 @@ class TestApi(TestCase):
     @patch('cm.api.ctx')
     @patch('cm.api.load_service_map')
     @patch('cm.issue.update_hierarchy_issues')
-    def test_save_hc__big_update__locked_hierarchy(self, mock_issue, mock_post, mock_load, ctx):
+    def test_save_hc__big_update__locked_hierarchy(self, mock_issue, mock_load, ctx):
         """
         Update bigger HC map - move `component_2` from `host_2` to `host_3`
         On locked hierarchy (from ansible task)
