@@ -11,17 +11,17 @@
 // limitations under the License.
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { AuthGuard } from '@app/core/auth/auth.guard';
-import { DetailComponent } from '@app/shared/details/detail.component';
 
+import { AuthGuard } from '@app/core/auth/auth.guard';
 import { MainComponent } from './job.component';
 import { LogComponent } from './log/log.component';
+import { JobDetailsComponent } from '../../components/job/job-details/job-details.component';
 
 const routes: Routes = [
   {
     path: ':job',
     canActivate: [AuthGuard],
-    component: DetailComponent,
+    component: JobDetailsComponent,
     children: [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainComponent },

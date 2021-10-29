@@ -2,7 +2,7 @@ import { Component, Type } from '@angular/core';
 import { IColumns, RowEventData } from '@adwp-ui/widgets';
 import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { TypeName } from '@app/core/types';
-import { ListFactory } from '@app/factories/list-factory';
+import { ListFactory } from '@app/factories/list.factory';
 import { IHost } from '@app/models/host';
 import { LIST_SERVICE_PROVIDER } from '@app/shared/components/list/list-service-token';
 import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
