@@ -11,10 +11,10 @@
 // limitations under the License.
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
-import { SharedModule } from '@app/shared/shared.module';
 
+import { SharedModule } from '@app/shared/shared.module';
 import { HostproviderComponent } from '@app/components/hostprovider/hostprovider.component';
-import { HostListComponent } from '@app/components/host-list/host-list.component';
+import { HostListComponent } from '@app/components/host/host-list/host-list.component';
 
 @NgModule({
   imports: [CommonModule, SharedModule],

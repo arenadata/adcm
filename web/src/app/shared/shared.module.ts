@@ -41,7 +41,7 @@ import { StatusColumnComponent } from '@app/components/columns/status-column/sta
 import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';
 import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
 import { ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
-import { ServiceComponentsComponent } from '@app/components/service-components.component';
+import { ServiceComponentsComponent } from '@app/components/service-component/service-components.component';
 import { JobService } from '@app/services/job.service';
 import { TaskService } from '@app/services/task.service';
 import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
