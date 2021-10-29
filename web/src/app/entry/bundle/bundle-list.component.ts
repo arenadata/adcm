@@ -23,7 +23,7 @@ import { ListService } from '@app/shared/components/list/list.service';
 import { SocketState } from '@app/core/store';
 import { TypeName } from '@app/core/types';
 import { IBundle } from '@app/models/bundle';
-import { ListFactory } from '@app/factories/list-factory';
+import { ListFactory } from '../../factories/list.factory';
 import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
 
 @Component({
