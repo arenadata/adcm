@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { BaseDirective } from '@adwp-ui/widgets';
-import { filter, switchMap } from 'rxjs/operators';
+import { filter, switchMap, tap } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
 import { fromJS, updateIn } from 'immutable';
 import { BehaviorSubject } from 'rxjs';
@@ -20,6 +20,7 @@ export class ClusterStatusComponent extends BaseDirective implements OnInit {
 
   Folding = Folding;
 
+  clusterId: number;
   statusTree = new BehaviorSubject<ClusterStatusTree>(null);
 
   folding: Folding;
@@ -38,17 +39,48 @@ export class ClusterStatusComponent extends BaseDirective implements OnInit {
       this.takeUntil(),
       filter(event => event.event === 'change_status'),
     ).subscribe((event) => {
-      if (event.object.type === 'component') {
-        const output = updateIn(fromJS(this.statusTree.value), ['chilren', 'services'], (services: any[]) => (
-          services.map(service => updateIn(service, ['hc'], (components: any) => components.map( (component: any) => {
-            if (component.get('id') === event.object.id) {
-              return component.set('status', +event.object.details.value);
-            }
-            return component;
-          })))
-        ));
-
-        this.statusTree.next(output.toJS() as any as ClusterStatusTree);
+      console.log(event);
+      let output;
+      switch (event.object.type) {
+        case 'component':
+          output = updateIn(fromJS(this.statusTree.value), ['chilren', 'services'], (services: any[]) => (
+            services.map(service => updateIn(service, ['hc'], (components: any) => components.map( (component: any) => {
+              if (component.get('id') === event.object.id) {
+                return component.set('status', +event.object.details.value);
+              }
+              return component;
+            })))
+          ));
+          this.statusTree.next(output.toJS() as any as ClusterStatusTree);
+          break;
+        case 'service':
+          output = updateIn(fromJS(this.statusTree.value), ['chilren', 'services'], (services: any[]) => (
+            services.map(service => {
+              if (service.get('id') === event.object.id) {
+                return service.set('status', +event.object.details.value);
+              }
+              return service;
+            })));
+          this.statusTree.next(output.toJS() as any as ClusterStatusTree);
+          break;
+        case 'host':
+          output = updateIn(fromJS(this.statusTree.value), ['chilren', 'hosts'], (hosts: any[]) => (
+            hosts.map(host => {
+              if (host.get('id') === event.object.id) {
+                return host.set('status', +event.object.details.value);
+              }
+              return host;
+            })
+          ));
+          this.statusTree.next(output.toJS() as any as ClusterStatusTree);
+          break;
+        case 'cluster':
+          output = fromJS(this.statusTree.value);
+          if (output.get('id') === event.object.id) {
+            output = output.set('status', +event.object.details.value);
+          }
+          this.statusTree.next(output.toJS() as any as ClusterStatusTree);
+          break;
       }
     });
   }
@@ -56,8 +88,10 @@ export class ClusterStatusComponent extends BaseDirective implements OnInit {
   ngOnInit(): void {
     this.route.params.pipe(
       this.takeUntil(),
-      switchMap(() => this.clusterEntityService.getStatusTree(+this.route.parent.snapshot.params.cluster)),
+      tap(() => this.clusterId = +this.route.parent.snapshot.params.cluster),
+      switchMap(() => this.clusterEntityService.getStatusTree(this.clusterId)),
     ).subscribe((resp) => {
+      resp.id = this.clusterId;
       this.statusTree.next(resp);
       this.prepareListeners();
     });
