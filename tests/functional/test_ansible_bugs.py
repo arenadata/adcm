@@ -211,9 +211,9 @@ def wait_init_script_finished(*containers: Iterable[Container]) -> None:
 
     try:
         wait_until_step_succeeds(_containers_are_initialized, timeout=90, period=10)
-    except AssertionError:
+    except AssertionError as e:
         _attach_containers_info(containers)
-        raise
+        raise TimeoutError('Containers failed to initialize, see logs for details') from e
 
 
 @allure.step('Create hosts: {host_fqdns} and add them to cluster {cluster}')
@@ -248,7 +248,6 @@ def test_delegate_to_directive(
     good_host, bad_host = create_hosts_and_add_to_cluster(
         cluster_delegate_to, ssh_provider, (good_host_fqdn, bad_host_fqdn)
     )
-    # wait_init_script_finished(good_container, bad_container)
 
     with allure.step(f'Set "ansible_host" in one host to {good_host_fqdn} and in another to None'):
         good_host.config_set_diff({'ansible_host': good_host_fqdn, **ansible_credentials})
