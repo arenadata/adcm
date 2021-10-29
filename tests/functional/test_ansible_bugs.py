@@ -50,8 +50,8 @@ TMPFS_ARGUMENTS = {'/run': '', '/run/lock': ''}
 VOLUME_ARGUMENTS = {'/sys/fs/cgroup': {'bind': '/sys/fs/cgroup', 'mode': 'ro'}}
 ENV_ARGUMENTS = ["WAIT=yes", f"EXEC={INIT_FILEPATH}"]
 
-INIT_SCRIPT_CENTOS = "install_sshd_centos.sh"
-INIT_SCRIPT_ALTLINUX = "install_sshd_alt.sh"
+INIT_SCRIPT_CENTOS = "init_centos.sh"
+INIT_SCRIPT_ALTLINUX = "init_alt.sh"
 INSTALL_FINISHED_MARK = "SSH is ready to be used by test!"
 
 FQDN_PREFIXES_DELEGATE_TO = ("good-container", "bad-container")
@@ -76,7 +76,7 @@ def get_container_logs(container: Container) -> str:
 
 def get_container_hostname(container: Container) -> str:
     """Get hostname from container as string"""
-    return str(container.exec_run('hostname').output, encoding='utf-8').strip(" \n")
+    return str(container.exec_run('hostname').output, encoding='utf-8').strip()
 
 
 # !===== Fixtures =====!
@@ -184,7 +184,7 @@ def prepare_volume_with_init_script(image: str, script: PathLike, volume: Volume
         command=[
             'bash',
             '-c',
-            f'echo "{file_content}" > {INIT_FILEPATH} && chmod 755 {INIT_FILEPATH}',
+            f'echo "{file_content}" > {INIT_FILEPATH} && chmod +x {INIT_FILEPATH}',
         ],
     )
     container.wait()
