@@ -226,5 +226,5 @@ class StatusList(GenericAPIPermView, InterfaceView):
         if self.for_ui(request):
             return Response(self.ui_status(host, hc_queryset))
         else:
-            serializer = self.serializer_class(hc_queryset, many=True, context={'request': request})
+            serializer = self.serializer_class(host, context={'request': request})
             return Response(serializer.data)

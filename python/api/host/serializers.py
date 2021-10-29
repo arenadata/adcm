@@ -97,12 +97,11 @@ class ProvideHostSerializer(HostSerializer):
 
 class StatusSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-    component_id = serializers.IntegerField(read_only=True)
-    host_id = serializers.IntegerField(read_only=True)
+    fqdn = serializers.CharField(read_only=True)
     status = serializers.SerializerMethodField()
 
     def get_status(self, obj):
-        return cm.status_api.get_hc_status(obj)
+        return cm.status_api.get_host_status(obj)
 
 
 class HostUISerializer(HostDetailSerializer):
