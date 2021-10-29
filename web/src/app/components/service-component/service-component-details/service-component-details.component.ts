@@ -23,7 +23,7 @@ export class ServiceComponentDetailsComponent extends DetailAbstractDirective<IS
     DetailsFactory.labelMenuItem('Main', 'main'),
     DetailsFactory.labelMenuItem('Configuration', 'config'),
     DetailsFactory.labelMenuItem('Configuration groups', 'group_config'),
-    DetailsFactory.statusMenuItem('Status', 'status'),
+    DetailsFactory.statusMenuItem('Status', 'status', 'component'),
   ];
 
   constructor(

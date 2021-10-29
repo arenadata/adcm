@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { filter } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
 
@@ -45,8 +45,9 @@ export class StatusMenuItemComponent extends MenuItemAbstractDirective<BaseEntit
       selectMessage,
       filter(event => event?.object?.id && this.entity?.id && event.object.id === this.entity.id),
       filter(event => event?.event === 'change_status'),
+      filter(event => event?.object?.type === this.data.entityType),
       this.takeUntil(),
-    ).subscribe((event) => this.entity.status = event.object.details.value);
+    ).subscribe((event) => this.entity.status = +event.object.details.value);
   }
 
 }
