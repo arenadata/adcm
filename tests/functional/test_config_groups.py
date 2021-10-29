@@ -44,7 +44,7 @@ from coreapi.exceptions import ErrorMessage
 from tests.library.errorcodes import (
     GROUP_CONFIG_HOST_ERROR,
     GROUP_CONFIG_HOST_EXISTS,
-    ATTRIBUTE_ERROR,
+    GROUP_CONFIG_CHANGE_UNSELECTED_FIELD,
 )
 
 CLUSTER_BUNDLE_PATH = get_data_dir(__file__, "cluster_simple")
@@ -59,6 +59,7 @@ HOST_ERROR_MESSAGE = (
 HOST_EXISTS_MESSAGE = "the host is already a member of this group"
 ATTRIBUTE_ERROR_MESSAGE = "field cannot be changed, read-only"
 GROUP_ERROR_MESSAGE = "parameter cannot be included in the group"
+GROUP_CONFIG_CHANGE_UNSELECTED_ERROR_MESSAGE = "you cannot change the value of an unselected field"
 FIRST_COMPONENT_NAME = "first"
 SECOND_COMPONENT_NAME = "second"
 FIRST_GROUP = "test_group"
@@ -467,10 +468,10 @@ class TestChangeGroupsConfig:
 
     @allure.step("Check error that group config can't change")
     def _check_error_with_adding_param_to_group(self, group: GroupConfig, params: dict, error_message):
-        with allure.step(f'Check that error is "{ATTRIBUTE_ERROR.code}"'):
+        with allure.step(f'Check that error is "{GROUP_CONFIG_CHANGE_UNSELECTED_FIELD.code}"'):
             with pytest.raises(ErrorMessage) as e:
                 group.config_set_diff(params)
-            ATTRIBUTE_ERROR.equal(e)
+            GROUP_CONFIG_CHANGE_UNSELECTED_FIELD.equal(e)
         with allure.step(f'Check error message is "{error_message}"'):
             assert error_message in e.value.error['desc'], f"Should be error message '{error_message}'"
 
@@ -482,7 +483,7 @@ class TestChangeGroupsConfig:
                     "config": {param: self.PARAMS_TO_CHANGE[param]},
                 }
                 self._check_error_with_adding_param_to_group(
-                    group, invalid_config, error_message=ATTRIBUTE_ERROR_MESSAGE
+                    group, invalid_config, error_message=GROUP_CONFIG_CHANGE_UNSELECTED_ERROR_MESSAGE
                 )
 
     def _check_error_about_group_keys(self, group: GroupConfig, config_before: dict):
