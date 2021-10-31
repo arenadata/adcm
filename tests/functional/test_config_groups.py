@@ -45,6 +45,8 @@ from tests.library.errorcodes import (
     GROUP_CONFIG_HOST_ERROR,
     GROUP_CONFIG_HOST_EXISTS,
     GROUP_CONFIG_CHANGE_UNSELECTED_FIELD,
+    ADCMError,
+    ATTRIBUTE_ERROR,
 )
 
 CLUSTER_BUNDLE_PATH = get_data_dir(__file__, "cluster_simple")
@@ -467,11 +469,13 @@ class TestChangeGroupsConfig:
         return config_group
 
     @allure.step("Check error that group config can't change")
-    def _check_error_with_adding_param_to_group(self, group: GroupConfig, params: dict, error_message):
-        with allure.step(f'Check that error is "{GROUP_CONFIG_CHANGE_UNSELECTED_FIELD.code}"'):
+    def _check_error_with_adding_param_to_group(
+        self, group: GroupConfig, params: dict, error_message: str, adcm_error: ADCMError
+    ):
+        with allure.step(f'Check that error is "{adcm_error.code}"'):
             with pytest.raises(ErrorMessage) as e:
                 group.config_set_diff(params)
-            GROUP_CONFIG_CHANGE_UNSELECTED_FIELD.equal(e)
+            adcm_error.equal(e)
         with allure.step(f'Check error message is "{error_message}"'):
             assert error_message in e.value.error['desc'], f"Should be error message '{error_message}'"
 
@@ -483,7 +487,10 @@ class TestChangeGroupsConfig:
                     "config": {param: self.PARAMS_TO_CHANGE[param]},
                 }
                 self._check_error_with_adding_param_to_group(
-                    group, invalid_config, error_message=GROUP_CONFIG_CHANGE_UNSELECTED_ERROR_MESSAGE
+                    group,
+                    invalid_config,
+                    error_message=GROUP_CONFIG_CHANGE_UNSELECTED_ERROR_MESSAGE,
+                    adcm_error=GROUP_CONFIG_CHANGE_UNSELECTED_FIELD,
                 )
 
     def _check_error_about_group_keys(self, group: GroupConfig, config_before: dict):
@@ -494,7 +501,9 @@ class TestChangeGroupsConfig:
                     "attr": {"group_keys": {param: self.GROUP_KEYS_TO_CHANGE[param]}},
                     "config": {param: self.PARAMS_TO_CHANGE[param]},
                 }
-                self._check_error_with_adding_param_to_group(group, invalid_config, error_message=GROUP_ERROR_MESSAGE)
+                self._check_error_with_adding_param_to_group(
+                    group, invalid_config, error_message=GROUP_ERROR_MESSAGE, adcm_error=ATTRIBUTE_ERROR
+                )
 
     @pytest.fixture(
         params=[
