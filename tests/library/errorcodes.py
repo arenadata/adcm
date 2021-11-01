@@ -12,7 +12,8 @@
 
 """Tools for ADCM errors handling in tests"""
 
-from delayed_assert import expect, assert_expectations
+import pytest_check as check
+from pytest_check.check_methods import get_failures
 
 
 class ADCMError:  # pylint: disable=too-few-public-methods
@@ -32,16 +33,11 @@ class ADCMError:  # pylint: disable=too-few-public-methods
         code = error.get("code", "")
         desc = error.get("desc", "")
         error_args = error.get("args", "")
-        expect(title == self.title, f'Expected title is "{self.title}", actual is "{title}"')
-        expect(code == self.code, f'Expected error code is "{self.code}", actual is "{code}"')
+        check.equal(title, self.title, f'Expected title is "{self.title}", actual is "{title}"')
+        check.equal(code, self.code, f'Expected error code is "{self.code}", actual is "{code}"')
         for i in args:
-            expect(
-                i in desc or i in error_args,
-                f'Expected part of desc or args is "{i}", '
-                f'actual desc is: \n"{desc}", '
-                f'\nargs is: \n"{error_args or None}"',
-            )
-        assert_expectations()
+            check.is_in(i, desc + "\n" + error_args, f"Text '{i}' should be present in error message")
+        assert not get_failures(), "All assertions should passed"
 
     def __str__(self):
         return f'{self.code} {self.title}'
