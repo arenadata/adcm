@@ -13,10 +13,10 @@
 # pylint: disable=redefined-builtin
 
 from rest_framework import serializers
-from rest_framework.reverse import reverse
+
 
 from api.action.serializers import ActionShort
-from api.api_views import hlink, filter_actions, get_api_url_kwargs, CommonAPIURL, ObjectURL
+from api.api_views import hlink, filter_actions, CommonAPIURL, ObjectURL
 
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
