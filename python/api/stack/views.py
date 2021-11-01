@@ -361,5 +361,5 @@ class LoadServiceMap(GenericAPIPermView):
     serializer_class = serializers.Stack
 
     def put(self, request):
-        cm.status_api.load_service_map()
+        cm.api.load_service_map()
         return Response(status=status.HTTP_200_OK)

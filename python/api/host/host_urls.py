@@ -20,5 +20,6 @@ urlpatterns = [
         path('', views.HostDetail.as_view(), name='host-details'),
         path('config/', include('api.config.urls'), {'object_type': 'host'}),
         path('action/', include('api.action.urls'), {'object_type': 'host'}),
+        path('status/', views.StatusList.as_view(), name='host-status'),
     ])),
 ]
