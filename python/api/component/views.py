@@ -12,9 +12,10 @@
 
 from rest_framework.response import Response
 
-from api.api_views import PageView, check_obj, DetailViewRO
-from cm.models import ServiceComponent, ClusterObject, Cluster
+from api.api_views import PageView, check_obj, DetailViewRO, GenericAPIPermView, InterfaceView
+from cm.models import ServiceComponent, ClusterObject, Cluster, HostComponent
 from . import serializers
+import cm.status_api
 
 
 class ComponentListView(PageView):
@@ -56,3 +57,39 @@ class ComponentDetailView(DetailViewRO):
         serial_class = self.select_serializer(request)
         serializer = serial_class(component, context={'request': request})
         return Response(serializer.data)
+
+
+class StatusList(GenericAPIPermView, InterfaceView):
+    serializer_class = serializers.StatusSerializer
+    queryset = HostComponent.objects.all()
+
+    def ui_status(self, component, host_components):
+        component_map = cm.status_api.get_object_map(component, 'component')
+
+        host_list = []
+        for hc in host_components:
+            host_list.append(
+                {
+                    'id': hc.host.id,
+                    'name': hc.host.fqdn,
+                    'status': cm.status_api.get_host_comp_status(hc.host, hc.component),
+                }
+            )
+        return {
+            'id': component.id,
+            'name': component.name,
+            'status': 32 if component_map is None else component_map.get('status', 0),
+            'hosts': host_list,
+        }
+
+    def get(self, request, cluster_id, service_id, component_id):
+        """
+        Show all components in a specified host
+        """
+        component = check_obj(ServiceComponent, component_id)
+        hc_queryset = self.get_queryset().filter(component=component)
+        if self.for_ui(request):
+            return Response(self.ui_status(component, hc_queryset))
+        else:
+            serializer = self.serializer_class(component, context={'request': request})
+            return Response(serializer.data)
