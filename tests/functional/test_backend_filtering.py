@@ -208,7 +208,8 @@ def test_coreapi_schema(sdk_client_fs: ADCMClient, tested_class: Type[BaseAPIObj
     with allure.step(f'Check if filters are acceptable for coreapi {tested_class.__name__}'):
         for _filter in tested_class.FILTERS:
             check.is_in(
-                _filter, params,
+                _filter,
+                params,
                 f"Filter {_filter} should be acceptable for coreapi in class {tested_class.__name__}",
             )
 
