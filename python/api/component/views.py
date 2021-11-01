@@ -82,7 +82,7 @@ class StatusList(GenericAPIPermView, InterfaceView):
             'hosts': host_list,
         }
 
-    def get(self, request, cluster_id, service_id, component_id):
+    def get(self, request, component_id, cluster_id=None, service_id=None):
         """
         Show all components in a specified host
         """
