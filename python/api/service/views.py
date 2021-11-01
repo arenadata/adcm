@@ -211,7 +211,6 @@ class StatusList(GenericAPIPermView, InterfaceView):
             'name': service.name,
             'status': 32 if service_map is None else service_map.get('status', 0),
             'hc': comp_list,
-            'service_map': service_map,
         }
 
     def get(self, request, service_id, cluster_id=None):
