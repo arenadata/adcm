@@ -858,7 +858,7 @@ class TestChangeGroupsConfig:
                 {
                     "config": {"__main_info": "This is cluster main info", "float": 0.1},
                     "attr": {
-                        "group_keys": {"__main_info": False, "float": False},
+                        "group_keys": {"__main_info": False, "float": True},
                         "custom_group_keys": {"__main_info": False, "float": True},
                     },
                 }
