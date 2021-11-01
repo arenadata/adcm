@@ -95,6 +95,15 @@ class ProvideHostSerializer(HostSerializer):
             raise AdcmEx("HOST_CONFLICT", "duplicate host") from None
 
 
+class StatusSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    fqdn = serializers.CharField(read_only=True)
+    status = serializers.SerializerMethodField()
+
+    def get_status(self, obj):
+        return cm.status_api.get_host_status(obj)
+
+
 class HostUISerializer(HostDetailSerializer):
     actions = serializers.SerializerMethodField()
     cluster_name = serializers.SerializerMethodField()
