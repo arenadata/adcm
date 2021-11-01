@@ -240,7 +240,7 @@ class StatusList(GenericAPIPermView, InterfaceView):
     serializer_class = serializers.StatusSerializer
 
     def ui_status(self, cluster, host_component):
-        cluster_map = cm.status_api.get_cluster_map(cluster)
+        cluster_map = cm.status_api.get_object_map(cluster, 'cluster')
 
         def get_status(key, obj_id):
             if cluster_map is None:
