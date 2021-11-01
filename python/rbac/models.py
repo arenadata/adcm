@@ -130,6 +130,11 @@ class Policy(models.Model):
             obj_list.append(obj.object)
         return obj_list
 
+    def add_object(self, obj):
+        po = PolicyObject(object=obj)
+        po.save()
+        self.object.add(po)
+
     @atomic
     def apply(self):
         """This function apply role over"""

@@ -18,6 +18,7 @@ from adwp_base.errors import AdwpEx
 
 from rbac.models import Role, Policy
 from rbac.roles import ModelRole
+from cm.models import Bundle
 
 
 @pytest.mark.django_db
@@ -43,12 +44,18 @@ def cook_user(name):
     return user
 
 
-def cook_perm(model, codename):
-    content = ContentType(app_label='adcm', model=model)
+def cook_perm(app, codename, model):
+    content = ContentType(app_label=app, model=model)
     content.save()
     perm = Permission(codename=f'{codename}_{model}', content_type=content)
     perm.save()
     return perm
+
+
+def clear_perm_cache(user):
+    delattr(user, '_perm_cache')
+    delattr(user, '_user_perm_cache')
+    delattr(user, '_group_perm_cache')
 
 
 @pytest.mark.django_db
@@ -60,13 +67,55 @@ def test_policy():
         class_name='ModelRole',
     )
     r.save()
-    perm = cook_perm('host', 'add')
+    perm = cook_perm('adcm', 'add', 'host')
     r.permissions.add(perm)
     p = Policy(role=r)
     p.save()
     p.user.add(user)
 
-    assert perm not in user.user_permissions.all()
+    # assert perm not in user.user_permissions.all()
+    assert not user.has_perm('adcm.add_host')
+    clear_perm_cache(user)
+
     p.apply()
-    assert perm in user.user_permissions.all()
-    # assert user.has_perm(perm)
+    # assert perm in user.user_permissions.all()
+    assert user.has_perm('adcm.add_host')
+
+    clear_perm_cache(user)
+    p.apply()
+    assert user.has_perm('adcm.add_host')
+
+
+@pytest.mark.django_db
+def test_object_policy():
+    user = cook_user('Joe')
+    r = Role(
+        name='view',
+        module_name='rbac.roles',
+        class_name='ObjectRole',
+    )
+    r.save()
+    perm = Permission.objects.get(codename='view_bundle')
+    r.permissions.add(perm)
+    p = Policy(role=r)
+    p.save()
+    p.user.add(user)
+
+    b1 = Bundle(name='ADH', version='1.0')
+    b1.save()
+
+    b2 = Bundle(name='ADH', version='2.0')
+    b2.save()
+
+    p.add_object(b1)
+    assert not user.has_perm('cm.view_bundle', b1)
+
+    p.apply()
+
+    assert user.has_perm('cm.view_bundle', b1)
+    assert not user.has_perm('cm.view_bundle', b2)
+
+    p.apply()
+
+    assert user.has_perm('cm.view_bundle', b1)
+    assert not user.has_perm('cm.view_bundle', b2)

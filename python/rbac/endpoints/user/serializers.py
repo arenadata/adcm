@@ -158,7 +158,6 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
     password = PasswordField()
     profile = ProfileField(required=False)
     groups = serializers.SerializerMethodField(read_only=True)
-    roles = serializers.SerializerMethodField(read_only=True)
     permissions = PermissionSerializer(many=True, source='user_permissions', read_only=True)
     add_group = serializers.HyperlinkedIdentityField(
         view_name='rbac_user_group:list', lookup_field='id'
@@ -181,7 +180,6 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
             'email',
             'is_superuser',
             'groups',
-            'roles',
             'permissions',
             'profile',
             'url',
@@ -198,11 +196,6 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
         """Get all user's groups"""
         self.context['user'] = obj
         return GroupSerializer(obj.groups.all(), many=True, context=self.context).data
-
-    def get_roles(self, obj):
-        """Get all user's groups"""
-        self.context['user'] = obj
-        return UserRoleSerializer(obj.role_set.all(), many=True, context=self.context).data
 
     @atomic
     def create(self, validated_data):

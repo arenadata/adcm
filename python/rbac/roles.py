@@ -38,11 +38,12 @@ class ObjectRole:
     def __init__(self, **kwargs):
         pass
 
-    def apply(self, policy, role, user, group=None, obj=None):
-        for perm in role.get_permissions():
-            if user is not None:
-                uop = UserObjectPermission.objects.assign_perm(perm, user, obj=obj)
-                policy.object_perm.add(uop)
-            if group is not None:
-                uop = UserObjectPermission.objects.assign_perm(perm, group, obj=obj)
-                policy.object_perm.add(uop)
+    def apply(self, policy, role, user, group=None, obj_list=None):
+        for obj in obj_list:
+            for perm in role.get_permissions():
+                if user is not None:
+                    uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
+                    policy.object_perm.add(uop)
+                if group is not None:
+                    uop = UserObjectPermission.objects.assign_perm(perm, group, obj)
+                    policy.object_perm.add(uop)
