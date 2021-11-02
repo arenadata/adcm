@@ -54,6 +54,12 @@ class Role(models.Model):
 
         return role_class(**self.init_params)  # pylint: disable=E1134
 
+    def filter(self):
+        """filter out objects sutable for role"""
+        if self.__obj__ is None:
+            self.__obj__ = self.get_role_obj()
+        return self.__obj__.filter()
+
     def apply(self, policy, user, group=None, obj=None):
         """apply policy to user and/or group"""
         if self.__obj__ is None:
@@ -134,6 +140,9 @@ class Policy(models.Model):
         po = PolicyObject(object=obj)
         po.save()
         self.object.add(po)
+
+    def filter(self):
+        return self.role.filter()
 
     @atomic
     def apply(self):

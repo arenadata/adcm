@@ -12,7 +12,9 @@
 
 """RBAC Role classes"""
 
+from django.apps import apps
 from guardian.models import UserObjectPermission
+from adwp_base.errors import raise_AdwpEx as err
 from rbac.models import PolicyPermission
 
 
@@ -36,8 +38,18 @@ class ModelRole:
 
 class ObjectRole:
     def __init__(self, **kwargs):
-        pass
+        self.params = kwargs
 
+    def filter(self):
+        if 'model' not in self.params:
+            return None
+        try:
+            model = apps.get_model(self.params['app_name'], self.params['model'])
+        except LookupError as e:
+            err('ROLE_FILTER_ERROR', str(e))
+        return model.objects.filter(**self.params['filter'])
+        
+        
     def apply(self, policy, role, user, group=None, obj_list=None):
         for obj in obj_list:
             for perm in role.get_permissions():
