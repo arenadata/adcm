@@ -43,7 +43,7 @@ from adcm_client.objects import (
     Service,
 )
 from adcm_pytest_plugin.utils import get_data_dir, get_subdirs_iter
-from delayed_assert import assert_expectations, expect
+import pytest_check as check
 from pytest_lazyfixture import lazy_fixture
 
 # pylint: disable=redefined-outer-name,protected-access
@@ -207,11 +207,11 @@ def test_coreapi_schema(sdk_client_fs: ADCMClient, tested_class: Type[BaseAPIObj
         params = _get_params(schema_obj.links['list'])
     with allure.step(f'Check if filters are acceptable for coreapi {tested_class.__name__}'):
         for _filter in tested_class.FILTERS:
-            expect(
-                _filter in params,
+            check.is_in(
+                _filter,
+                params,
                 f"Filter {_filter} should be acceptable for coreapi in class {tested_class.__name__}",
             )
-        assert_expectations()
 
 
 @pytest.mark.parametrize(
