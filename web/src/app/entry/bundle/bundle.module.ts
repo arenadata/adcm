@@ -15,8 +15,8 @@ import { Routes, RouterModule } from '@angular/router';
 
 import { AuthGuard } from '../../core/auth/auth.guard';
 import { BundleListComponent, MainComponent, LicenseComponent } from './bundle-list.component';
-import { DetailComponent } from '@app/shared/details/detail.component';
 import { SharedModule } from '@app/shared/shared.module';
+import { BundleDetailsComponent } from '../../components/bundle/bundle-details/bundle-details.component';
 
 const routes: Routes = [
   {
@@ -27,7 +27,7 @@ const routes: Routes = [
   {
     path: ':bundle',
     canActivate: [AuthGuard],
-    component: DetailComponent,
+    component: BundleDetailsComponent,
     children: [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainComponent },

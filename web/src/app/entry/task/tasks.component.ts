@@ -21,7 +21,7 @@ import { EventMessage } from '@app/core/store';
 import { JobStatus, Task, Job } from '@app/core/types';
 import { TaskObjectsComponent } from '@app/components/columns/task-objects/task-objects.component';
 import { TaskStatusColumnComponent } from '@app/components/columns/task-status-column/task-status-column.component';
-import { JobsComponent } from '@app/components/task/jobs/jobs.component';
+import { JobsComponent } from '@app/components/job/jobs/jobs.component';
 import { TaskNameComponent } from '@app/components/columns/task-name/task-name.component';
 import { TaskService } from '@app/services/task.service';
 import { JobService } from '@app/services/job.service';

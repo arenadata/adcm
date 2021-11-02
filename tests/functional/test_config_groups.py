@@ -44,6 +44,8 @@ from coreapi.exceptions import ErrorMessage
 from tests.library.errorcodes import (
     GROUP_CONFIG_HOST_ERROR,
     GROUP_CONFIG_HOST_EXISTS,
+    GROUP_CONFIG_CHANGE_UNSELECTED_FIELD,
+    ADCMError,
     ATTRIBUTE_ERROR,
 )
 
@@ -59,6 +61,7 @@ HOST_ERROR_MESSAGE = (
 HOST_EXISTS_MESSAGE = "the host is already a member of this group"
 ATTRIBUTE_ERROR_MESSAGE = "field cannot be changed, read-only"
 GROUP_ERROR_MESSAGE = "parameter cannot be included in the group"
+GROUP_CONFIG_CHANGE_UNSELECTED_ERROR_MESSAGE = "you cannot change the value of an unselected field"
 FIRST_COMPONENT_NAME = "first"
 SECOND_COMPONENT_NAME = "second"
 FIRST_GROUP = "test_group"
@@ -498,11 +501,13 @@ class TestChangeGroupsConfig:
         return config_group
 
     @allure.step("Check error that group config can't change")
-    def _check_error_with_adding_param_to_group(self, group: GroupConfig, params: dict, error_message):
-        with allure.step(f'Check that error is "{ATTRIBUTE_ERROR.code}"'):
+    def _check_error_with_adding_param_to_group(
+        self, group: GroupConfig, params: dict, error_message: str, adcm_error: ADCMError
+    ):
+        with allure.step(f'Check that error is "{adcm_error.code}"'):
             with pytest.raises(ErrorMessage) as e:
                 group.config_set_diff(params)
-            ATTRIBUTE_ERROR.equal(e)
+            adcm_error.equal(e)
         with allure.step(f'Check error message is "{error_message}"'):
             assert error_message in e.value.error['desc'], f"Should be error message '{error_message}'"
 
@@ -514,7 +519,10 @@ class TestChangeGroupsConfig:
                     "config": {param: self.PARAMS_TO_CHANGE[param]},
                 }
                 self._check_error_with_adding_param_to_group(
-                    group, invalid_config, error_message=ATTRIBUTE_ERROR_MESSAGE
+                    group,
+                    invalid_config,
+                    error_message=GROUP_CONFIG_CHANGE_UNSELECTED_ERROR_MESSAGE,
+                    adcm_error=GROUP_CONFIG_CHANGE_UNSELECTED_FIELD,
                 )
 
     def _check_error_about_group_keys(self, group: GroupConfig, config_before: dict):
@@ -525,7 +533,9 @@ class TestChangeGroupsConfig:
                     "attr": {"group_keys": {param: self.GROUP_KEYS_TO_CHANGE[param]}},
                     "config": {param: self.PARAMS_TO_CHANGE[param]},
                 }
-                self._check_error_with_adding_param_to_group(group, invalid_config, error_message=GROUP_ERROR_MESSAGE)
+                self._check_error_with_adding_param_to_group(
+                    group, invalid_config, error_message=GROUP_ERROR_MESSAGE, adcm_error=ATTRIBUTE_ERROR
+                )
 
     @pytest.fixture(
         params=[
@@ -880,7 +890,7 @@ class TestChangeGroupsConfig:
                 {
                     "config": {"__main_info": "This is cluster main info", "float": 0.1},
                     "attr": {
-                        "group_keys": {"__main_info": False, "float": False},
+                        "group_keys": {"__main_info": False, "float": True},
                         "custom_group_keys": {"__main_info": False, "float": True},
                     },
                 }
