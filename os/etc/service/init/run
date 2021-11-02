@@ -29,7 +29,10 @@ chmod 777 "${adcmtmp}"
 chmod a+t "${adcmtmp}"
 mkdir -p "${adcmuserconf}"
 mkdir -p "${adcmlog}/nginx"
-ln -s "${adcmlog}/nginx" /var/log/nginx
+[ ! -L  "/var/log/nginx" ] && ln -s "${adcmlog}/nginx" /var/log/
+
+## We got an issue on existing installation with folded log/nginx/nginx/nginx....
+[ -L "${adcmlog}/nginx/nginx" ] && rm -f "${adcmlog}/nginx/nginx"
 
 
 echo "Root keys generation"
