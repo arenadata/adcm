@@ -22,7 +22,7 @@ export class HostDetailsComponent extends DetailAbstractDirective<IHost> {
   leftMenu = [
     DetailsFactory.labelMenuItem('Main', 'main'),
     DetailsFactory.labelMenuItem('Configuration', 'config'),
-    DetailsFactory.statusMenuItem('Status', 'status'),
+    DetailsFactory.statusMenuItem('Status', 'status', 'host'),
   ];
 
   constructor(
