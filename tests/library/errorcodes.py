@@ -36,7 +36,7 @@ class ADCMError:  # pylint: disable=too-few-public-methods
         check.equal(title, self.title, f'Expected title is "{self.title}", actual is "{title}"')
         check.equal(code, self.code, f'Expected error code is "{self.code}", actual is "{code}"')
         for i in args:
-            check.is_in(i, desc + "\n" + error_args, f"Text '{i}' should be present in error message")
+            check.is_true(i in desc or i in error_args, f"Text '{i}' should be present in error message")
         assert not get_failures(), "All assertions should passed"
 
     def __str__(self):
