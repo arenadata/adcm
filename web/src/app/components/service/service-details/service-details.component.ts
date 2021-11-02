@@ -24,7 +24,7 @@ export class ServiceDetailsComponent extends DetailAbstractDirective<Service> {
     DetailsFactory.labelMenuItem('Components', 'component'),
     DetailsFactory.labelMenuItem('Configuration', 'config'),
     DetailsFactory.labelMenuItem('Configuration groups', 'group_config'),
-    DetailsFactory.statusMenuItem('Status', 'status'),
+    DetailsFactory.statusMenuItem('Status', 'status', 'service'),
     DetailsFactory.labelMenuItem('Import', 'import'),
   ];
 

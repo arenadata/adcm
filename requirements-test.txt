@@ -3,7 +3,6 @@ adcm-client>=2021.7.21
 adcm_pytest_plugin~=4.10
 attr
 allure-pytest
-delayed_assert
 docker
 jsonschema
 pytest
@@ -11,6 +10,7 @@ pytest-lazy-fixture
 pytest-xdist
 pytest-rerunfailures
 pytest-timeout
+pytest-check
 pyyaml
 requests
 requests-toolbelt
