@@ -117,7 +117,8 @@ def get_host_vars(host: Host, obj):
     variables = {}
     for group in groups:
         # TODO: What to do with activatable group in attr ???
-        group_config = process_config_and_attr(group, group.get_group_config())
+        conf, attr = group.get_config_and_attr()
+        group_config = process_config_and_attr(group, conf, attr)
         if isinstance(group.object, Cluster):
             variables.update({'cluster': {'config': group_config}})
         elif isinstance(group.object, ClusterObject):

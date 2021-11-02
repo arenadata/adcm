@@ -23,10 +23,14 @@
           - job.config.map[inventory_hostname].boolean == provider.config.boolean
           - job.config.map[inventory_hostname].integer == provider.config.integer
           - job.config.map[inventory_hostname].password == provider.config.password
+          - job.config.map[inventory_hostname].secrettext == provider.config.secrettext
           - job.config.map[inventory_hostname].string == provider.config.string
           - job.config.map[inventory_hostname].list == provider.config.list
           - job.config.map[inventory_hostname].text == provider.config.text
           - job.config.map[inventory_hostname].group == provider.config.group
           - job.config.map[inventory_hostname].structure == provider.config.structure
           - job.config.map[inventory_hostname].map == provider.config.map
+          - job.config.map[inventory_hostname].json == provider.config.json
           - job.config.map[inventory_hostname].file == lookup('file', provider.config.file)
+        fail_msg: "Expected:\n{{ job.config.map[inventory_hostname] | to_nice_json }}\n\
+        but actual is:\n {{ provider.config | to_nice_json }} "

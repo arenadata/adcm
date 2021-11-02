@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { ApiService } from '@app/core/api';
 import { IServiceComponent } from '@app/models/service-component';
 import { EntityService } from '@app/abstract/entity-service';
+import { environment } from '@env/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -20,7 +21,7 @@ export class ServiceComponentService extends EntityService<IServiceComponent> {
     id: number,
     params: { [key: string]: string } = {},
   ): Observable<IServiceComponent> {
-    return this.api.get(`api/v1/component/${id}`, params);
+    return this.api.get(`${environment.apiRoot}component/${id}`, params);
   }
 
 }

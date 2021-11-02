@@ -26,7 +26,7 @@ from typing import Dict, Iterable, List, Optional
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
@@ -35,6 +35,12 @@ from django.utils import timezone
 from cm.config import FILE_DIR
 from cm.errors import AdcmEx
 from cm.logger import log
+
+
+def validate_line_break_character(value: str) -> None:
+    """Check line break character in CharField"""
+    if len(value.splitlines()) > 1:
+        raise ValidationError('the string field contains a line break character')
 
 
 class PrototypeEnum(Enum):
@@ -297,7 +303,8 @@ class ConfigLog(ADCMModel):
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
             # Sync group configs with object config
             for cg in obj.group_config.all():
-                diff = cg.get_group_config()
+                # TODO: We need refactoring for upgrade cluster
+                diff = cg.get_diff_config()
                 group_config = ConfigLog()
                 current_group_config = ConfigLog.objects.get(id=cg.config.current)
                 group_config.obj_ref = cg.config
@@ -360,11 +367,11 @@ class ADCMEntity(ADCMModel):
 
         self.concerns.remove(item)
 
-    def get_own_issue(self, issue_type: 'IssueType') -> Optional['ConcernItem']:
-        """Get object's issue of specified type or None"""
-        issue_name = issue_type.gen_issue_name(self)
-        for issue in self.concerns.filter(type=ConcernType.Issue, name=issue_name):
-            return issue
+    def get_own_issue(self, cause: 'ConcernCause') -> Optional['ConcernItem']:
+        """Get object's issue of specified cause or None"""
+        return self.concerns.filter(
+            type=ConcernType.Issue, owner_id=self.pk, owner_type=self.content_type, cause=cause
+        ).first()
 
     def __str__(self):
         own_name = getattr(self, 'name', None)
@@ -424,6 +431,11 @@ class ADCMEntity(ADCMModel):
         """Check if entity._multi_state has an intersection with list of multi_states"""
         return bool(set(self._multi_state).intersection(multi_states))
 
+    @property
+    def content_type(self):
+        model_name = self.__class__.__name__.lower()
+        return ContentType.objects.get(app_label='cm', model=model_name)
+
 
 class ADCM(ADCMEntity):
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
@@ -474,9 +486,6 @@ class Cluster(ADCMEntity):
     def display_name(self):
         return self.name
 
-    def __str__(self):
-        return f'{self.name} ({self.id})'
-
     @property
     def serialized_issue(self):
         result = {
@@ -515,9 +524,6 @@ class HostProvider(ADCMEntity):
     def display_name(self):
         return self.name
 
-    def __str__(self):
-        return str(self.name)
-
     @property
     def serialized_issue(self):
         result = {
@@ -547,9 +553,6 @@ class Host(ADCMEntity):
     @property
     def display_name(self):
         return self.fqdn
-
-    def __str__(self):
-        return f"{self.fqdn}"
 
     @property
     def serialized_issue(self):
@@ -667,7 +670,7 @@ class GroupConfig(ADCMModel):
     object_id = models.PositiveIntegerField()
     object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object = GenericForeignKey('object_type', 'object_id')
-    name = models.CharField(max_length=30)
+    name = models.CharField(max_length=30, validators=[validate_line_break_character])
     description = models.TextField(blank=True)
     hosts = models.ManyToManyField(Host, blank=True, related_name='group_config')
     config = models.OneToOneField(
@@ -723,7 +726,7 @@ class GroupConfig(ADCMModel):
                 custom_group_keys[k] = v['group_customization']
         return group_keys, custom_group_keys
 
-    def get_group_config(self):
+    def get_diff_config(self):
         def get_diff(config, group_keys, diff=None):
             if diff is None:
                 diff = {}
@@ -742,6 +745,48 @@ class GroupConfig(ADCMModel):
         config = cl.config
         group_keys = cl.attr.get('group_keys', {})
         return get_diff(config, group_keys)
+
+    def get_group_keys(self):
+        cl = ConfigLog.objects.get(id=self.config.current)
+        return cl.attr.get('group_keys', {})
+
+    def merge_config(self, object_config: dict, group_config: dict, group_keys: dict, config=None):
+        """Merge object config with group config based group_keys"""
+
+        if config is None:
+            config = {}
+        for k, v in group_keys.items():
+            if isinstance(v, Mapping):
+                config.setdefault(k, {})
+                self.merge_config(object_config[k], group_config[k], group_keys[k], config[k])
+            else:
+                if v and k in group_config:
+                    config[k] = group_config[k]
+                else:
+                    if k in object_config:
+                        config[k] = object_config[k]
+        return config
+
+    def get_config_attr(self):
+        """Return attr for group config without group_keys and custom_group_keys params"""
+        cl = ConfigLog.obj.get(id=self.config.current)
+        attr = {k: v for k, v in cl.attr.items() if k not in ('group_keys', 'custom_group_keys')}
+        return attr
+
+    def get_config_and_attr(self):
+        """Return merge object config with group config and merge attr"""
+
+        object_cl = ConfigLog.objects.get(id=self.object.config.current)
+        object_config = object_cl.config
+        attr = deepcopy(object_cl.attr)
+        group_cl = ConfigLog.objects.get(id=self.config.current)
+        group_config = group_cl.config
+        group_keys = group_cl.attr.get('group_keys', {})
+        group_attr = self.get_config_attr()
+        config = self.merge_config(object_config, group_config, group_keys)
+        self.preparing_file_type_field(config)
+        attr.update(group_attr)
+        return config, attr
 
     def host_candidate(self):
         """Returns candidate hosts valid to add to the group"""
@@ -764,12 +809,13 @@ class GroupConfig(ADCMModel):
         if host not in self.host_candidate():
             raise AdcmEx('GROUP_CONFIG_HOST_ERROR')
 
-    def preparing_file_type_field(self):
+    def preparing_file_type_field(self, config=None):
         """Creating file for file type field"""
 
         if self.config is None:
             return
-        config = ConfigLog.objects.get(id=self.config.current).config
+        if config is None:
+            config = ConfigLog.objects.get(id=self.config.current).config
         fields = PrototypeConfig.objects.filter(
             prototype=self.object.prototype, action__isnull=True, type='file'
         ).order_by('id')
@@ -805,8 +851,8 @@ class GroupConfig(ADCMModel):
 
     @transaction.atomic()
     def save(self, *args, **kwargs):
-        obj = self.object_type.model_class().obj.get(id=self.object_id)
         if self._state.adding:
+            obj = self.object_type.model_class().obj.get(id=self.object_id)
             if obj.config is not None:
                 parent_config_log = ConfigLog.obj.get(id=obj.config.current)
                 self.config = ObjectConfig.objects.create(current=0, previous=0)
@@ -955,14 +1001,24 @@ class Action(AbstractAction):
         return state_allowed and multi_state_allowed
 
 
-class SubAction(ADCMModel):
-    action = models.ForeignKey(Action, on_delete=models.CASCADE)
+class AbstractSubAction(ADCMModel):
+    action = None
+
     name = models.CharField(max_length=160)
     display_name = models.CharField(max_length=160, blank=True)
     script = models.CharField(max_length=160)
     script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
     state_on_fail = models.CharField(max_length=64, blank=True)
+    multi_state_on_fail_set = models.JSONField(default=list)
+    multi_state_on_fail_unset = models.JSONField(default=list)
     params = models.JSONField(default=dict)
+
+    class Meta:
+        abstract = True
+
+
+class SubAction(AbstractSubAction):
+    action = models.ForeignKey(Action, on_delete=models.CASCADE)
 
 
 class HostComponent(ADCMModel):
@@ -1104,7 +1160,12 @@ class TaskLog(ADCMModel):
             target=self.task_object,
         )
         self.lock = ConcernItem.objects.create(
-            type=ConcernType.Lock.value, name=None, reason=reason, blocking=True
+            type=ConcernType.Lock.value,
+            name=None,
+            reason=reason,
+            blocking=True,
+            owner=self.task_object,
+            cause=ConcernCause.Job.value,
         )
         self.save()
         for obj in objects:
@@ -1228,14 +1289,8 @@ class StageAction(AbstractAction):
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
 
 
-class StageSubAction(ADCMModel):
+class StageSubAction(AbstractSubAction):
     action = models.ForeignKey(StageAction, on_delete=models.CASCADE)
-    name = models.CharField(max_length=160)
-    display_name = models.CharField(max_length=160, blank=True)
-    script = models.CharField(max_length=160)
-    script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
-    state_on_fail = models.CharField(max_length=64, blank=True)
-    params = models.JSONField(default=dict)
 
 
 class StagePrototypeConfig(ADCMModel):
@@ -1404,21 +1459,18 @@ class MessageTemplate(ADCMModel):
         }
 
 
-class IssueType(Enum):
-    Config = 'config'
-    RequiredService = 'required_service'
-    RequiredImport = 'required_import'
-    HostComponent = 'host_component'
-
-    def gen_issue_name(self, obj: ADCMEntity) -> str:
-        """Generate unique issue name for object"""
-        return f'{self.name} issue on {obj.prototype.type} {obj.pk}'
-
-
 class ConcernType(models.TextChoices):
     Lock = 'lock', 'lock'
     Issue = 'issue', 'issue'
     Flag = 'flag', 'flag'
+
+
+class ConcernCause(models.TextChoices):
+    Config = 'config', 'config'
+    Job = 'job', 'job'
+    HostComponent = 'host-component', 'host-component'
+    Import = 'import', 'import'
+    Service = 'service', 'service'
 
 
 class ConcernItem(ADCMModel):
@@ -1433,6 +1485,8 @@ class ConcernItem(ADCMModel):
     `reason` is used to display/notify on front-end, text template and data for URL generation
         should be generated from pre-created templates model `MessageTemplate`
     `blocking` blocks actions from running
+    `owner` is object-origin of concern
+    `cause` is owner's parameter causing concern
     `related_objects` are back-refs from affected ADCMEntities.concerns
     """
 
@@ -1440,6 +1494,10 @@ class ConcernItem(ADCMModel):
     name = models.CharField(max_length=160, null=True, unique=True)
     reason = models.JSONField(default=dict)
     blocking = models.BooleanField(default=True)
+    owner_id = models.PositiveIntegerField(null=True)
+    owner_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)
+    owner = GenericForeignKey('owner_type', 'owner_id')
+    cause = models.CharField(max_length=16, null=True, choices=ConcernCause.choices)
 
     @property
     def related_objects(self) -> Iterable[ADCMEntity]:

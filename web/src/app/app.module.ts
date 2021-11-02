@@ -34,7 +34,6 @@ import { ListService } from '@app/shared/components/list/list.service';
 import { LIST_SERVICE_PROVIDER } from '@app/shared/components/list/list-service-token';
 import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
 import { AddService } from '@app/shared/add-component/add.service';
-import { CONFIG_GROUP_LIST_SERVICE, ConfigGroupListService } from '@app/config-groups';
 
 @NgModule({
   declarations: [
@@ -84,10 +83,6 @@ import { CONFIG_GROUP_LIST_SERVICE, ConfigGroupListService } from '@app/config-g
       provide: ADD_SERVICE_PROVIDER,
       useClass: AddService
     },
-    {
-      provide: CONFIG_GROUP_LIST_SERVICE,
-      useClass: ConfigGroupListService
-    }
   ],
 })
 export class AppModule {

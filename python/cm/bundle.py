@@ -128,7 +128,9 @@ def untar_safe(bundle_hash, path):
 def untar(bundle_hash, bundle):
     path = os.path.join(config.BUNDLE_DIR, bundle_hash)
     if os.path.isdir(path):
-        err('BUNDLE_ERROR', f'bundle directory "{path}" already exists')
+        existed = Bundle.objects.get(hash=bundle_hash)
+        msg = 'Bundle already exists. Name: {}, version: {}, edition: {}'
+        err('BUNDLE_ERROR', msg.format(existed.name, existed.version, existed.edition))
     tar = tarfile.open(bundle)
     tar.extractall(path=path)
     tar.close()
@@ -441,6 +443,7 @@ def copy_stage_actons(stage_actions, prototype):
             'state_on_success',
             'state_on_fail',
             'multi_state_available',
+            'multi_state_unavailable',
             'multi_state_on_success_set',
             'multi_state_on_success_unset',
             'multi_state_on_fail_set',
@@ -482,7 +485,16 @@ def copy_stage_sub_actons(bundle):
         sub = copy_obj(
             ssubaction,
             SubAction,
-            ('name', 'display_name', 'script', 'script_type', 'state_on_fail', 'params'),
+            (
+                'name',
+                'display_name',
+                'script',
+                'script_type',
+                'state_on_fail',
+                'multi_state_on_fail_set',
+                'multi_state_on_fail_unset',
+                'params',
+            ),
         )
         sub.action = action
         sub_actions.append(sub)
@@ -714,7 +726,16 @@ def update_bundle_from_stage(
             SubAction.objects.filter(action=action).delete()
             for ssubaction in StageSubAction.objects.filter(action=saction):
                 sub = copy_obj(
-                    ssubaction, SubAction, ('script', 'script_type', 'state_on_fail', 'params')
+                    ssubaction,
+                    SubAction,
+                    (
+                        'script',
+                        'script_type',
+                        'state_on_fail',
+                        'multi_state_on_fail_set',
+                        'multi_state_on_fail_unset',
+                        'params',
+                    ),
                 )
                 sub.action = action
                 sub.save()

@@ -43,7 +43,7 @@ import { exhaustMap, filter } from 'rxjs/operators';
       </mat-drawer-content>
     </mat-drawer-container>
   `,
-  styleUrls: ['../shared/details/detail.component.scss'],
+  styleUrls: ['../styles/details.scss'],
 })
 export class PatternComponent extends BaseDirective implements OnInit, OnDestroy {
   title = '';
