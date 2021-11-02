@@ -23,3 +23,7 @@ export interface ServiceStatusTree extends StatusTreeSubject {
 export interface HostComponentStatusTree extends StatusTreeSubject {
   hosts: StatusTreeSubject[];
 }
+
+export interface HostStatusTree extends StatusTreeSubject {
+  hc: StatusTreeSubject[];
+}

@@ -8,13 +8,14 @@ import { ProfileComponent } from '@app/main/profile/profile.component';
 import { SupportComponent } from '@app/main/support/support.component';
 import { FatalErrorComponent, GatewayTimeoutComponent, PageNotFoundComponent } from '@app/main/server-status.component';
 import { HostListComponent } from '@app/components/host/host-list/host-list.component';
-import { MainInfoComponent, StatusComponent } from '@app/shared/components';
+import { MainInfoComponent } from '@app/shared/components';
 import { ConfigComponent } from '@app/shared/configuration/main/config.component';
 import { HostproviderComponent } from '@app/components/hostprovider/hostprovider.component';
 import { ConfigGroupHostListComponent, ConfigGroupListComponent } from '@app/config-groups';
 import { HostDetailsComponent } from '@app/components/host/host-details/host-details.component';
 import { ProviderDetailsComponent } from '@app/components/hostprovider/provider-details/provider-details.component';
 import { GroupConfigDetailsComponent } from '@app/components/hostprovider/group-config-details/group-config-details.component';
+import { HostStatusComponent } from '@app/components/host/host-status/host-status.component';
 
 const routes: Routes = [
   {
@@ -47,7 +48,7 @@ const routes: Routes = [
           { path: '', redirectTo: 'main', pathMatch: 'full' },
           { path: 'main', component: MainInfoComponent },
           { path: 'config', component: ConfigComponent },
-          { path: 'status', component: StatusComponent },
+          { path: 'status', component: HostStatusComponent },
         ],
       }
     ],

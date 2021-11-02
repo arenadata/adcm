@@ -51,6 +51,8 @@ import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
 import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
 import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
 import { StatusTreeComponent } from '@app/components/status-tree/status-tree.component';
+import { HostStatusComponent } from '@app/components/host/host-status/host-status.component';
+import { HostStatusToStatusTreePipe } from '@app/pipes/host-status-to-status-tree.pipe';
 
 @NgModule({
   imports: [
@@ -78,6 +80,7 @@ import { StatusTreeComponent } from '@app/components/status-tree/status-tree.com
     TagEscPipe,
     IssueInfoComponent,
     StatusComponent,
+    HostStatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
     MultiSortDirective,
@@ -94,6 +97,7 @@ import { StatusTreeComponent } from '@app/components/status-tree/status-tree.com
     PickKeysPipe,
     TranslateKeysPipe,
     StatusTreeComponent,
+    HostStatusToStatusTreePipe,
   ],
   exports: [
     FormsModule,
@@ -113,6 +117,7 @@ import { StatusTreeComponent } from '@app/components/status-tree/status-tree.com
     UpgradeComponent,
     TagEscPipe,
     StatusComponent,
+    HostStatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
     ImportComponent,
@@ -127,6 +132,7 @@ import { StatusTreeComponent } from '@app/components/status-tree/status-tree.com
     TranslateKeysPipe,
     TooltipModule,
     StatusTreeComponent,
+    HostStatusToStatusTreePipe,
   ],
   providers: [
     JobService,

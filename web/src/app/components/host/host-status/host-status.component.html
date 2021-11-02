@@ -9,7 +9,7 @@
   </div>
 
   <app-status-tree
-    [tree]="statusTree | async | clusterStatusToStatusTree"
+    [tree]="statusTree | async | hostStatusToStatusTree"
     [folding]="folding"
     #tree
   ></app-status-tree>

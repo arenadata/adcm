@@ -1,5 +1,5 @@
 /* tslint:disable:member-ordering */
-import { Component, Input } from '@angular/core';
+import { Component, Input, ViewChild } from '@angular/core';
 import { FlatTreeControl } from '@angular/cdk/tree';
 import { MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';
 
@@ -32,11 +32,20 @@ export enum Folding {
 })
 export class StatusTreeComponent {
 
+  @ViewChild('treeNode', { static: true }) treeNode: any;
+
   private calcCounts = (children: CountedStatusTree[]): Counts => {
     return children.reduce((acc: Counts, child: CountedStatusTree) => {
         acc.total++;
-        if (child.subject.status === 0) {
-          acc.succeed++;
+        if ('status' in child.subject) {
+          if (child.subject.status === 0) {
+            acc.succeed++;
+          }
+        } else {
+          const childrenSucceed = child.children.reduce((accum, item) => item.subject.status === 0 ? accum + 1 : accum, 0);
+          if (childrenSucceed === child.children.length) {
+            acc.succeed++;
+          }
         }
         return acc;
       },
@@ -59,7 +68,11 @@ export class StatusTreeComponent {
   );
 
   treeFlattener = new MatTreeFlattener(
-    this.transformer, node => node.level, node => node.expandable, node => node.children);
+    this.transformer,
+    node => node.level,
+    node => node.expandable,
+    node => node.children,
+  );
 
   dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
 
@@ -89,6 +102,23 @@ export class StatusTreeComponent {
   }
   get folding(): Folding {
     return this.ownFolding;
+  }
+
+  expandAll() {
+    this.treeControl.expandAll();
+  }
+
+  collapseAll() {
+    this.treeControl.collapseAll();
+  }
+
+  hasCollapsed(): boolean {
+    for (const item of this.treeControl.dataNodes) {
+      if (!this.treeControl.isExpanded(item)) {
+        return true;
+      }
+    }
+    return false;
   }
 
 }

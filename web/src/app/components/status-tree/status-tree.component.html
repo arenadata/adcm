@@ -1,5 +1,5 @@
 <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
-  <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+  <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding #treeNode>
     <button mat-icon-button disabled></button>
 
     <ng-container
