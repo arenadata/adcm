@@ -101,7 +101,7 @@ class JobPageMixin(BasePageObject):
 class JobPageStdout(JobPageMixin):
     """Job Page Stdout log"""
 
-    @allure.step("Check text on the page")
+    @allure.step("Check text on the job log")
     def check_text(self, success_task: bool = True):
         """Check text on the page"""
         task_result = 'Success' if success_task else 'Fail'
@@ -113,9 +113,9 @@ class JobPageStdout(JobPageMixin):
             "Gathering Facts ---",
             f"{task_result} ---",
         ]
-        page_text = self.find_element(ObjectPageLocators.text).text
+        job_log = self.find_element(JobPageLocators.job_log).text
         for header in headings:
-            assert header in page_text, f"There are no header '{header}' on the page"
+            assert header in job_log, f"There are no header '{header}' on the page"
 
 
 class JobPageStderr(JobPageMixin):

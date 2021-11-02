@@ -382,18 +382,14 @@ class TestTaskHeaderPopup:
         ],
         ids=['success_job', 'failed_job', 'in_progress_job', 'three_job'],
     )
-    @pytest.mark.usefixtures('skip_firefox', 'login_to_adcm_over_api')
+    @pytest.mark.usefixtures('login_to_adcm_over_api')
     def test_job_has_correct_info_in_header_popup(self, job_info: dict, cluster: Cluster, app_fs):
         """Run action that finishes (success/failed) and check it in header popup"""
 
-        # Firefox disabled due to problems with running actions via client (lag of "bell" color)
-        # while running actions from UI is troublesome due to bug ADCM-2144.
-        # After this bug is fixed, rework test to run actions from UI / run all from client and enable FF
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         for action_name, expected_status in job_info['action_name'].items():
             if action_name == LONG_ACTION_DISPLAY_NAME:
-                row = cluster_page.table.get_all_rows()[0]
-                cluster_page.run_action_in_cluster_row(row, action_name)
+                cluster.action(display_name=action_name).run()
             else:
                 run_cluster_action_and_assert_result(
                     cluster, cluster.action(display_name=action_name).name, status=expected_status
@@ -429,7 +425,7 @@ class TestTaskHeaderPopup:
             page.header.click_on_task_row_by_name(task_name=action_name)
             job_page = JobPageStdout(app_fs.driver, app_fs.adcm.url, job_id=1)
             job_page.check_title(action_name)
-            job_page.check_text(success_task=bool(action_name == SUCCESS_ACTION_DISPLAY_NAME))
+            job_page.check_text(success_task=action_name == SUCCESS_ACTION_DISPLAY_NAME)
 
     @pytest.mark.usefixtures('login_to_adcm_over_api')
     def test_six_tasks_in_header_popup(self, cluster: Cluster, app_fs):
