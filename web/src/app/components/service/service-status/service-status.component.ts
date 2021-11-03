@@ -7,13 +7,14 @@ import { StatusAbstractDirective } from '@app/abstract-directives/status.abstrac
 import { EventMessage, SocketState } from '@app/core/store';
 import { ServiceService } from '@app/services/service.service';
 import { ServiceStatusTree } from '@app/models/status-tree';
+import { Service } from '@app/core/types';
 
 @Component({
   selector: 'app-service-status',
   templateUrl: '../../../templates/status-tree.html',
   styleUrls: ['../../../styles/status-tree.scss']
 })
-export class ServiceStatusComponent extends StatusAbstractDirective<ServiceStatusTree> {
+export class ServiceStatusComponent extends StatusAbstractDirective<ServiceStatusTree, Service> {
 
   constructor(
     protected route: ActivatedRoute,
@@ -21,6 +22,10 @@ export class ServiceStatusComponent extends StatusAbstractDirective<ServiceStatu
     public entityService: ServiceService,
   ) {
     super(route, store, entityService);
+  }
+
+  pipeData(): any {
+    return this.entity.cluster_id;
   }
 
   eventReceived(event: EventMessage) {

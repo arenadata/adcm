@@ -9,16 +9,18 @@ import { StatusTreeSubject } from '../models/status-tree';
 import { Folding } from '../components/status-tree/status-tree.component';
 import { EventMessage, selectMessage, SocketState } from '../core/store';
 import { HavingStatusTreeAbstractService } from '../abstract/having-status-tree.abstract.service';
+import { AdcmEntity } from '@app/models/entity';
 
 @Directive({
   selector: '[appStatusAbstract]',
 })
-export abstract class StatusAbstractDirective<StatusTreeType extends StatusTreeSubject> extends BaseDirective implements OnInit {
+export abstract class StatusAbstractDirective<StatusTreeType extends StatusTreeSubject, EntityType extends AdcmEntity> extends BaseDirective implements OnInit {
 
   @ViewChild('tree', { static: false }) tree: any;
 
   loading = false;
 
+  entity: EntityType;
   entityId: number;
   statusTree = new BehaviorSubject<StatusTreeType>(null);
 
@@ -29,7 +31,7 @@ export abstract class StatusAbstractDirective<StatusTreeType extends StatusTreeS
   constructor(
     protected route: ActivatedRoute,
     protected store: Store<SocketState>,
-    public entityService: HavingStatusTreeAbstractService<StatusTreeType>,
+    public entityService: HavingStatusTreeAbstractService<StatusTreeType, EntityType>,
   ) {
     super();
   }
@@ -48,12 +50,16 @@ export abstract class StatusAbstractDirective<StatusTreeType extends StatusTreeS
     return input;
   }
 
+  pipeData(): any {}
+
   ngOnInit(): void {
     this.route.params.pipe(
       this.takeUntil(),
       tap(() => this.loading = true),
       tap(() => this.folding = Folding.Expanded),
       tap((params) => this.entityId = this.getEntityIdFromParams(params)),
+      switchMap(() => this.entityService.get(this.entityId)),
+      tap(entity => this.entity = entity),
       switchMap(() => this.entityService.getStatusTree(this.entityId)),
     ).subscribe((resp) => {
       this.loading = false;

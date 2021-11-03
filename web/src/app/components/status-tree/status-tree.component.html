@@ -31,7 +31,13 @@
     </ng-template>
   </ng-container>
   &nbsp;
-  <span [ngClass]="{ expandable: node.expandable }">{{node.subject.name}}</span>
+  <span *ngIf="!node.subject.link; else link" [ngClass]="{ expandable: node.expandable }">{{node.subject.name}}</span>
+  <ng-template #link>
+    <a [ngClass]="{ expandable: node.expandable }"
+       [routerLink]="node.subject.id | statusTreeLink : tree : node.subject.link">
+      {{node.subject.name}}
+    </a>
+  </ng-template>
   &nbsp;
   <span
     *ngIf="node.counts.total"

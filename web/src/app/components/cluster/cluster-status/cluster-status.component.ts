@@ -7,13 +7,14 @@ import { ClusterEntityService } from '@app/services/cluster-entity.service';
 import { ClusterStatusTree } from '@app/models/status-tree';
 import { EventMessage, SocketState } from '@app/core/store';
 import { StatusAbstractDirective } from '@app/abstract-directives/status.abstract.directive';
+import { ICluster } from '../../../models/cluster';
 
 @Component({
   selector: 'app-cluster-status',
   templateUrl: '../../../templates/status-tree.html',
   styleUrls: ['../../../styles/status-tree.scss']
 })
-export class ClusterStatusComponent extends StatusAbstractDirective<ClusterStatusTree> {
+export class ClusterStatusComponent extends StatusAbstractDirective<ClusterStatusTree, ICluster> {
 
   constructor(
     protected route: ActivatedRoute,

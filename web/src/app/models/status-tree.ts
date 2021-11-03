@@ -1,7 +1,10 @@
+export type StatusTreeLinkFunc = (id: number, tree: StatusTree[]) => string[];
+
 export interface StatusTreeSubject {
   id?: number;
   name: string;
   status?: number;
+  link?: StatusTreeLinkFunc;
 }
 
 export interface StatusTree {

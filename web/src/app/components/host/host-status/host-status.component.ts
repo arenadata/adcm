@@ -7,13 +7,14 @@ import { EventMessage, SocketState } from '@app/core/store';
 import { HostStatusTree } from '@app/models/status-tree';
 import { HostService } from '@app/services/host.service';
 import { StatusAbstractDirective } from '@app/abstract-directives/status.abstract.directive';
+import { IHost } from '@app/models/host';
 
 @Component({
   selector: 'app-host-status',
   templateUrl: '../../../templates/status-tree.html',
   styleUrls: ['../../../styles/status-tree.scss']
 })
-export class HostStatusComponent extends StatusAbstractDirective<HostStatusTree> {
+export class HostStatusComponent extends StatusAbstractDirective<HostStatusTree, IHost> {
 
   constructor(
     protected route: ActivatedRoute,

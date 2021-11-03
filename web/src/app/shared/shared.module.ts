@@ -54,6 +54,7 @@ import { HostStatusComponent } from '@app/components/host/host-status/host-statu
 import { EntityStatusToStatusTreePipe } from '@app/pipes/entity-status-to-status-tree.pipe';
 import { ServiceStatusComponent } from '@app/components/service/service-status/service-status.component';
 import { ServiceComponentStatusComponent } from '@app/components/service-component/service-component-status/service-component-status.component';
+import { StatusTreeLinkPipe } from '@app/pipes/status-tree-link.pipe';
 
 @NgModule({
   imports: [
@@ -100,6 +101,7 @@ import { ServiceComponentStatusComponent } from '@app/components/service-compone
     TranslateKeysPipe,
     StatusTreeComponent,
     EntityStatusToStatusTreePipe,
+    StatusTreeLinkPipe,
   ],
   exports: [
     FormsModule,
@@ -136,6 +138,7 @@ import { ServiceComponentStatusComponent } from '@app/components/service-compone
     TooltipModule,
     StatusTreeComponent,
     EntityStatusToStatusTreePipe,
+    StatusTreeLinkPipe,
   ],
   providers: [
     JobService,

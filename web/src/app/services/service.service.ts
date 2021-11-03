@@ -11,7 +11,7 @@ import { ServiceStatusTree, StatusTree } from '@app/models/status-tree';
 @Injectable({
   providedIn: 'root',
 })
-export class ServiceService extends EntityService<Service> implements HavingStatusTreeAbstractService<ServiceStatusTree> {
+export class ServiceService extends EntityService<Service> implements HavingStatusTreeAbstractService<ServiceStatusTree, Service> {
 
   constructor(
     protected api: ApiService,
@@ -30,7 +30,7 @@ export class ServiceService extends EntityService<Service> implements HavingStat
     return this.api.get(`${environment.apiRoot}service/${id}/status/`);
   }
 
-  entityStatusTreeToStatusTree(input: ServiceStatusTree): StatusTree[] {
+  entityStatusTreeToStatusTree(input: ServiceStatusTree, clusterId: number): StatusTree[] {
     return [{
       subject: {
         id: input.id,
@@ -48,6 +48,7 @@ export class ServiceService extends EntityService<Service> implements HavingStat
             id: host.id,
             name: host.name,
             status: host.status,
+            link: (id) => ['/cluster', clusterId.toString(), 'host', id.toString(), 'status'],
           },
           children: [],
         })),

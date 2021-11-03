@@ -11,7 +11,7 @@ import { HavingStatusTreeAbstractService } from '@app/abstract/having-status-tre
 @Injectable({
   providedIn: 'root',
 })
-export class ClusterEntityService extends EntityService<ICluster> implements HavingStatusTreeAbstractService<ClusterStatusTree> {
+export class ClusterEntityService extends EntityService<ICluster> implements HavingStatusTreeAbstractService<ClusterStatusTree, ICluster> {
 
   constructor(
     protected api: ApiService,
@@ -47,6 +47,7 @@ export class ClusterEntityService extends EntityService<ICluster> implements Hav
               id: host.id,
               status: host.status,
               name: host.name,
+              link: (id) => ['/cluster', input.id.toString(), 'host', id.toString(), 'status'],
             },
             children: [],
           })),
@@ -71,6 +72,7 @@ export class ClusterEntityService extends EntityService<ICluster> implements Hav
                   id: host.id,
                   status: host.status,
                   name: host.name,
+                  link: (id) => ['/cluster', input.id.toString(), 'host', id.toString(), 'status'],
                 },
                 children: [],
               })),

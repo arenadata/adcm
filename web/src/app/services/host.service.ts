@@ -12,7 +12,7 @@ import { HavingStatusTreeAbstractService } from '@app/abstract/having-status-tre
 @Injectable({
   providedIn: 'root',
 })
-export class HostService extends EntityService<IHost> implements HavingStatusTreeAbstractService<HostStatusTree> {
+export class HostService extends EntityService<IHost> implements HavingStatusTreeAbstractService<HostStatusTree, IHost> {
 
   constructor(
     protected api: ApiService,

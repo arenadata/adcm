@@ -11,7 +11,7 @@ import { HostComponentStatusTree, StatusTree } from '@app/models/status-tree';
 @Injectable({
   providedIn: 'root',
 })
-export class ServiceComponentService extends EntityService<IServiceComponent> implements HavingStatusTreeAbstractService<HostComponentStatusTree> {
+export class ServiceComponentService extends EntityService<IServiceComponent> implements HavingStatusTreeAbstractService<HostComponentStatusTree, IServiceComponent> {
 
   constructor(
     protected api: ApiService,
@@ -30,7 +30,7 @@ export class ServiceComponentService extends EntityService<IServiceComponent> im
     return this.api.get(`${environment.apiRoot}component/${id}/status/`);
   }
 
-  entityStatusTreeToStatusTree(input: HostComponentStatusTree): StatusTree[] {
+  entityStatusTreeToStatusTree(input: HostComponentStatusTree, clusterId: number): StatusTree[] {
     return [{
       subject: {
         id: input.id,
@@ -42,6 +42,7 @@ export class ServiceComponentService extends EntityService<IServiceComponent> im
           id: host.id,
           name: host.name,
           status: host.status,
+          link: (id) => ['/cluster', clusterId.toString(), 'host', id.toString(), 'status'],
         },
         children: [],
       })),
