@@ -13,7 +13,7 @@ export class ClusterStatusToStatusTreePipe implements PipeTransform {
   ) {}
 
   transform(value: ClusterStatusTree): StatusTree[] {
-    return value ? this.clusterEntityService.clusterStatusTreeToStatusTree(value) : [];
+    return value ? this.clusterEntityService.entityStatusTreeToStatusTree(value) : [];
   }
 
 }

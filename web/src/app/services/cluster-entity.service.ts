@@ -6,11 +6,12 @@ import { environment } from '@env/environment';
 import { ApiService } from '@app/core/api';
 import { ICluster } from '@app/models/cluster';
 import { ClusterStatusTree, StatusTree } from '@app/models/status-tree';
+import { HavingStatusTreeAbstractService } from '@app/abstract/having-status-tree.abstract.service';
 
 @Injectable({
   providedIn: 'root',
 })
-export class ClusterEntityService extends EntityService<ICluster> {
+export class ClusterEntityService extends EntityService<ICluster> implements HavingStatusTreeAbstractService<ClusterStatusTree> {
 
   constructor(
     protected api: ApiService,
@@ -29,7 +30,7 @@ export class ClusterEntityService extends EntityService<ICluster> {
     return this.api.get(`${environment.apiRoot}cluster/${id}/status/`);
   }
 
-  clusterStatusTreeToStatusTree(input: ClusterStatusTree): StatusTree[] {
+  entityStatusTreeToStatusTree(input: ClusterStatusTree): StatusTree[] {
     return [{
       subject: {
         id: input.id,

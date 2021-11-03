@@ -7,11 +7,12 @@ import { Host } from '../core/types';
 import { environment } from '@env/environment';
 import { ApiService } from '@app/core/api';
 import { HostStatusTree, StatusTree } from '@app/models/status-tree';
+import { HavingStatusTreeAbstractService } from '@app/abstract/having-status-tree.abstract.service';
 
 @Injectable({
   providedIn: 'root',
 })
-export class HostService extends EntityService<IHost> {
+export class HostService extends EntityService<IHost> implements HavingStatusTreeAbstractService<HostStatusTree> {
 
   constructor(
     protected api: ApiService,
@@ -34,7 +35,7 @@ export class HostService extends EntityService<IHost> {
     return this.api.get(`${environment.apiRoot}host/${id}/status/`);
   }
 
-  hostStatusTreeToStatusTree(input: HostStatusTree): StatusTree[] {
+  entityStatusTreeToStatusTree(input: HostStatusTree): StatusTree[] {
     return [{
       subject: {
         id: input.id,

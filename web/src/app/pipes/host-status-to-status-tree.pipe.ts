@@ -13,7 +13,7 @@ export class HostStatusToStatusTreePipe implements PipeTransform {
   ) {}
 
   transform(value: HostStatusTree): unknown {
-    return value ? this.hostService.hostStatusTreeToStatusTree(value) : [];
+    return value ? this.hostService.entityStatusTreeToStatusTree(value) : [];
   }
 
 }
