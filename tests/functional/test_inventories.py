@@ -95,6 +95,8 @@ def test_check_inventories_file(cluster: Cluster, provider: Provider, adcm_fs: A
         assert (
             inventory == expected
         ), "Content of file inventory.json doesn't match expected. See attachments for more info."
+    with allure.step('Check that object attributes are available in ansible script'):
+        run_cluster_action_and_assert_result(cluster, 'check')
 
 
 def _attach_inventory_file(request: SubRequest, inventory_content: str, name: str):
