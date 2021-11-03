@@ -24,6 +24,7 @@ urlpatterns = [
                 path('', views.ComponentDetailView.as_view(), name='component-details'),
                 path('config/', include('api.config.urls'), {'object_type': 'component'}),
                 path('action/', include('api.action.urls'), {'object_type': 'component'}),
+                path('status/', views.StatusList.as_view(), name='component-status'),
             ]
         ),
     ),
