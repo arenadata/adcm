@@ -53,6 +53,7 @@ import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
 import { StatusTreeComponent } from '@app/components/status-tree/status-tree.component';
 import { HostStatusComponent } from '@app/components/host/host-status/host-status.component';
 import { EntityStatusToStatusTreePipe } from '@app/pipes/entity-status-to-status-tree.pipe';
+import { ServiceStatusComponent } from '@app/components/service/service-status/service-status.component';
 
 @NgModule({
   imports: [
@@ -81,6 +82,7 @@ import { EntityStatusToStatusTreePipe } from '@app/pipes/entity-status-to-status
     IssueInfoComponent,
     StatusComponent,
     HostStatusComponent,
+    ServiceStatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
     MultiSortDirective,
@@ -118,6 +120,7 @@ import { EntityStatusToStatusTreePipe } from '@app/pipes/entity-status-to-status
     TagEscPipe,
     StatusComponent,
     HostStatusComponent,
+    ServiceStatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
     ImportComponent,
