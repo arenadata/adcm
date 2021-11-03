@@ -387,6 +387,11 @@ class TestTaskHeaderPopup:
         """Run action that finishes (success/failed) and check it in header popup"""
 
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+        cluster_page.wait_config_loaded()
+        # TODO remove sleep after fix ADCM-2279
+        # the current sleep step is a temporary solution and need to fix flaky test evidence
+        import time
+        time.sleep(2)
         for action_name, expected_status in job_info['action_name'].items():
             if action_name == LONG_ACTION_DISPLAY_NAME:
                 cluster.action(display_name=action_name).run()

@@ -101,7 +101,7 @@ class JobPageMixin(BasePageObject):
 class JobPageStdout(JobPageMixin):
     """Job Page Stdout log"""
 
-    @allure.step("Check text on the job log")
+    @allure.step("Check text on the job log page")
     def check_text(self, success_task: bool = True):
         """Check text on the page"""
         task_result = 'Success' if success_task else 'Fail'
