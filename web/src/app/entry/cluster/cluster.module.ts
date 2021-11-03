@@ -36,6 +36,7 @@ import { ServiceComponentDetailsComponent } from '../../components/service-compo
 import { HostDetailsComponent } from '../../components/host/host-details/host-details.component';
 import { ClusterStatusComponent } from '../../components/cluster/cluster-status/cluster-status.component';
 import { ServiceStatusComponent } from '../../components/service/service-status/service-status.component';
+import { ServiceComponentStatusComponent } from '../../components/service-component/service-component-status/service-component-status.component';
 
 const clusterRoutes: Routes = [
   {
@@ -107,7 +108,7 @@ const clusterRoutes: Routes = [
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
       { path: 'group_config', component: ConfigGroupListComponent },
-      { path: 'status', component: StatusComponent },
+      { path: 'status', component: ServiceComponentStatusComponent },
     ],
   },
   {
