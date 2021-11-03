@@ -35,7 +35,6 @@ import { ServiceDetailsComponent } from '../../components/service/service-detail
 import { ServiceComponentDetailsComponent } from '../../components/service-component/service-component-details/service-component-details.component';
 import { HostDetailsComponent } from '../../components/host/host-details/host-details.component';
 import { ClusterStatusComponent } from '../../components/cluster/cluster-status/cluster-status.component';
-import { ClusterStatusToStatusTreePipe } from '../../pipes/cluster-status-to-status-tree.pipe';
 
 const clusterRoutes: Routes = [
   {
@@ -158,7 +157,6 @@ export class ClusterRoutingModule {
     ClusterHostComponent,
     HcmapComponent,
     ClusterStatusComponent,
-    ClusterStatusToStatusTreePipe,
   ],
 })
 export class ClusterModule {}

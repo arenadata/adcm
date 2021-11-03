@@ -18,13 +18,12 @@ export class HostStatusComponent extends StatusAbstractDirective<HostStatusTree>
   constructor(
     protected route: ActivatedRoute,
     protected store: Store<SocketState>,
-    protected entityService: HostService,
+    public entityService: HostService,
   ) {
     super(route, store, entityService);
   }
 
   eventReceived(event: EventMessage) {
-    console.log(event);
     let output;
     switch (event.object.type) {
       case 'host':

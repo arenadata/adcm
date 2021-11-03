@@ -52,7 +52,7 @@ import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
 import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
 import { StatusTreeComponent } from '@app/components/status-tree/status-tree.component';
 import { HostStatusComponent } from '@app/components/host/host-status/host-status.component';
-import { HostStatusToStatusTreePipe } from '@app/pipes/host-status-to-status-tree.pipe';
+import { EntityStatusToStatusTreePipe } from '@app/pipes/entity-status-to-status-tree.pipe';
 
 @NgModule({
   imports: [
@@ -97,7 +97,7 @@ import { HostStatusToStatusTreePipe } from '@app/pipes/host-status-to-status-tre
     PickKeysPipe,
     TranslateKeysPipe,
     StatusTreeComponent,
-    HostStatusToStatusTreePipe,
+    EntityStatusToStatusTreePipe,
   ],
   exports: [
     FormsModule,
@@ -132,7 +132,7 @@ import { HostStatusToStatusTreePipe } from '@app/pipes/host-status-to-status-tre
     TranslateKeysPipe,
     TooltipModule,
     StatusTreeComponent,
-    HostStatusToStatusTreePipe,
+    EntityStatusToStatusTreePipe,
   ],
   providers: [
     JobService,

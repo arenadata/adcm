@@ -29,7 +29,7 @@ export abstract class StatusAbstractDirective<StatusTreeType extends StatusTreeS
   constructor(
     protected route: ActivatedRoute,
     protected store: Store<SocketState>,
-    protected entityService: HavingStatusTreeAbstractService<StatusTreeType>,
+    public entityService: HavingStatusTreeAbstractService<StatusTreeType>,
   ) {
     super();
   }
