@@ -26,7 +26,7 @@ export class ClusterDetailsComponent extends DetailAbstractDirective<ICluster> {
     DetailsFactory.labelMenuItem('Hosts - Components', 'host_component'),
     DetailsFactory.labelMenuItem('Configuration', 'config'),
     DetailsFactory.labelMenuItem('Configuration groups', 'group_config'),
-    DetailsFactory.statusMenuItem('Status', 'status'),
+    DetailsFactory.statusMenuItem('Status', 'status', 'cluster'),
     DetailsFactory.labelMenuItem('Import', 'import'),
   ];
 

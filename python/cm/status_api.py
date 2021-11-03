@@ -16,7 +16,7 @@ import requests
 
 from cm.config import STATUS_SECRET_KEY
 from cm.logger import log
-from cm.models import HostComponent, ServiceComponent, ClusterObject, Host
+from cm.models import ADCMEntity
 
 API_URL = "http://localhost:8020/api/v1"
 TIMEOUT = 0.01
@@ -181,52 +181,11 @@ def get_component_status(comp):
     return get_status(comp, f'/component/{comp.id}/')
 
 
-def get_cluster_map(cluster):
-    r = api_get(f'/cluster/{cluster.id}/?view=interface')
+def get_object_map(obj: ADCMEntity, url_type: str):
+    if url_type == 'service':
+        r = api_get(f'/cluster/{obj.cluster.id}/service/{obj.id}/?view=interface')
+    else:
+        r = api_get(f'/{url_type}/{obj.id}/?view=interface')
     if r is None:
         return None
     return r.json()
-
-
-def load_service_map():
-    comps = {}
-    hosts = {}
-    hc_map = {}
-    services = {}
-    passive = {}
-    for c in ServiceComponent.objects.filter(prototype__monitoring='passive'):
-        passive[c.id] = True
-
-    for hc in HostComponent.objects.all():
-        if hc.component.id in passive:
-            continue
-        key = f'{hc.host.id}.{hc.component.id}'
-        hc_map[key] = {'cluster': hc.cluster.id, 'service': hc.service.id}
-        if str(hc.cluster.id) not in comps:
-            comps[str(hc.cluster.id)] = {}
-        if str(hc.service.id) not in comps[str(hc.cluster.id)]:
-            comps[str(hc.cluster.id)][str(hc.service.id)] = []
-        comps[str(hc.cluster.id)][str(hc.service.id)].append(key)
-
-    for host in Host.objects.filter(prototype__monitoring='active'):
-        if host.cluster:
-            cluster_id = host.cluster.id
-        else:
-            cluster_id = 0
-        if cluster_id not in hosts:
-            hosts[cluster_id] = []
-        hosts[cluster_id].append(host.id)
-
-    for co in ClusterObject.objects.filter(prototype__monitoring='active'):
-        if co.cluster.id not in services:
-            services[co.cluster.id] = []
-        services[co.cluster.id].append(co.id)
-
-    m = {
-        'hostservice': hc_map,
-        'component': comps,
-        'service': services,
-        'host': hosts,
-    }
-    log.debug("service map: %s", m)
-    return api_post('/servicemap/', m)
