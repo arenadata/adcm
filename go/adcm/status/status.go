@@ -34,15 +34,15 @@ type eventMsg struct {
 	Event  string `json:"event"`
 	Object struct {
 		Type    string      `json:"type"`
-		Id      int         `json:"id,omitempty"`
-		HostId  int         `json:"host_id,omitempty"`
+		Id      int         `json:"id"`
 		Details interface{} `json:"details"`
 	} `json:"object"`
 }
 
 type eventDetail struct {
-	Id           int         `json:"id,omitempty"`
-	ComponentId  int         `json:"component_id,omitempty"`
+	Id           string      `json:"id,omitempty"`
+	HostId       string      `json:"host_id,omitempty"`
+	ComponentId  string      `json:"component_id,omitempty"`
 	Type         string      `json:"type"`
 	Value        interface{} `json:"value"`
 }
@@ -55,11 +55,13 @@ func (e eventMsg) encode() ([]byte, error) {
 func newEventMsg4(status int, objType string, objId int, id2 int) eventMsg {
 	em := eventMsg{Event: "change_status"}
 	em.Object.Type = objType
-	em.Object.HostId = objId
+	em.Object.Id = objId
 	em.Object.Details = eventDetail{
 		Type:  "status",
 		Value: strconv.Itoa(status),
-		ComponentId: id2,
+		Id: strconv.Itoa(id2),
+		HostId: strconv.Itoa(objId),
+		ComponentId: strconv.Itoa(id2),
 	}
 	return em
 }
