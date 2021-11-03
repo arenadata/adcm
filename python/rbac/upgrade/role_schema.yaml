@@ -22,7 +22,7 @@ role:
     description: string
     module_name: module_name
     class_name: class_name
-    init_params: map_string_any
+    init_params: json
     apps: app_list
     childs: child_list
   required_items:
@@ -84,6 +84,9 @@ string:
 
 integer:
   match: int
+
+json:
+  match: any
 
 map_string_any:
   match: dict
