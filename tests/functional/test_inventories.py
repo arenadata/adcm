@@ -100,18 +100,13 @@ def test_check_inventories_file(cluster: Cluster, provider: Provider, adcm_fs: A
 def _attach_inventory_file(request: SubRequest, inventory_content: str, name: str):
     """Attach inventory file on top level of allure report"""
     reporter = utils.allure_reporter(request.config)
-    if reporter:
-        test_result = reporter.get_test(uuid=None)
-        reporter.attach_data(
-            uuid=uuid4(),
-            body=inventory_content,
-            name=name,
-            attachment_type=allure.attachment_type.JSON,
-            parent_uuid=test_result.uuid,
-        )
-    else:
-        allure.attach(
-            body=inventory_content,
-            name=name,
-            attachment_type=allure.attachment_type.JSON,
-        )
+    if not reporter:
+        return
+    test_result = reporter.get_test(uuid=None)
+    reporter.attach_data(
+        uuid=uuid4(),
+        body=inventory_content,
+        name=name,
+        attachment_type=allure.attachment_type.JSON,
+        parent_uuid=test_result.uuid,
+    )
