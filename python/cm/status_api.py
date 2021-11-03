@@ -182,7 +182,10 @@ def get_component_status(comp):
 
 
 def get_object_map(obj: ADCMEntity, url_type: str):
-    r = api_get(f'/{url_type}/{obj.id}/?view=interface')
+    if url_type == 'service':
+        r = api_get(f'/cluster/{obj.cluster.id}/service/{obj.id}/?view=interface')
+    else:
+        r = api_get(f'/{url_type}/{obj.id}/?view=interface')
     if r is None:
         return None
     return r.json()

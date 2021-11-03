@@ -152,3 +152,12 @@ class ServiceBindPostSerializer(serializers.Serializer):
             export_cluster,
             validated_data.get('export_service_id'),
         )
+
+
+class StatusSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    status = serializers.SerializerMethodField()
+
+    def get_status(self, obj):
+        return status_api.get_service_status(obj)
