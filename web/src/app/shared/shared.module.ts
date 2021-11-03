@@ -25,7 +25,6 @@ import {
   ImportComponent,
   IssueInfoComponent,
   MainInfoComponent,
-  StatusComponent,
   StatusInfoComponent,
   UpgradeComponent,
 } from './components';
@@ -81,7 +80,6 @@ import { ServiceComponentStatusComponent } from '@app/components/service-compone
     ButtonSpinnerComponent,
     TagEscPipe,
     IssueInfoComponent,
-    StatusComponent,
     HostStatusComponent,
     ServiceStatusComponent,
     StatusInfoComponent,
@@ -120,7 +118,6 @@ import { ServiceComponentStatusComponent } from '@app/components/service-compone
     ButtonSpinnerComponent,
     UpgradeComponent,
     TagEscPipe,
-    StatusComponent,
     HostStatusComponent,
     ServiceStatusComponent,
     StatusInfoComponent,

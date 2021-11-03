@@ -15,7 +15,7 @@ import { RouterModule, Routes } from '@angular/router';
 
 
 import { ConfigComponent } from '../../shared/configuration/main/config.component';
-import { ImportComponent, MainInfoComponent, StatusComponent } from '@app/shared/components';
+import { ImportComponent, MainInfoComponent } from '@app/shared/components';
 import { SharedModule } from '@app/shared/shared.module';
 
 import { ClusterListComponent } from './cluster.component';
@@ -37,6 +37,7 @@ import { HostDetailsComponent } from '../../components/host/host-details/host-de
 import { ClusterStatusComponent } from '../../components/cluster/cluster-status/cluster-status.component';
 import { ServiceStatusComponent } from '../../components/service/service-status/service-status.component';
 import { ServiceComponentStatusComponent } from '../../components/service-component/service-component-status/service-component-status.component';
+import { HostStatusComponent } from '../../components/host/host-status/host-status.component';
 
 const clusterRoutes: Routes = [
   {
@@ -131,7 +132,7 @@ const clusterRoutes: Routes = [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
-      { path: 'status', component: StatusComponent },
+      { path: 'status', component: HostStatusComponent },
     ],
   },
 ];
