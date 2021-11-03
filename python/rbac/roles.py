@@ -13,16 +13,17 @@
 """RBAC Role classes"""
 
 from django.apps import apps
+from django.contrib.auth.models import User, Group
 from guardian.models import UserObjectPermission
 from adwp_base.errors import raise_AdwpEx as err
-from rbac.models import PolicyPermission
+from rbac.models import Policy, PolicyPermission, Role
 
 
 class ModelRole:
     def __init__(self, **kwargs):
         pass
 
-    def apply(self, policy, role, user, group=None, obj=None):
+    def apply(self, policy: Policy, role: Role, user: User, group: Group = None):
         for perm in role.get_permissions():
             if group is not None:
                 group.permissions.add(perm)
@@ -48,10 +49,9 @@ class ObjectRole:
         except LookupError as e:
             err('ROLE_FILTER_ERROR', str(e))
         return model.objects.filter(**self.params['filter'])
-        
-        
-    def apply(self, policy, role, user, group=None, obj_list=None):
-        for obj in obj_list:
+
+    def apply(self, policy: Policy, role: Role, user: User, group: Group = None):
+        for obj in policy.get_objects():
             for perm in role.get_permissions():
                 if user is not None:
                     uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
