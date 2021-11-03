@@ -13,6 +13,11 @@
 - hosts: "{{ job.config.bad_fqdn }}"
   gather_facts: false
   tasks:
+    - name: FROM BAD
+      command: hostname
+      register: preresult
+    - debug:
+        msg: "BAD container own hostname is {{ preresult.stdout }}, expected to be {{ job.config.bad_fqdn }}"
     - command: hostname
       delegate_to: "{{ job.config.good_fqdn }}"
       register: result
@@ -23,6 +28,11 @@
   connection: local
   gather_facts: false
   tasks:
+    - name: FROM GOOD
+      command: hostname
+      register: preresult
+    - debug:
+        msg: "GOOD container own hostname is {{ preresult.stdout }}, expected to be {{ job.config.good_fqdn }}"
     - command: hostname
       delegate_to: "{{ job.config.bad_fqdn }}"
       register: result
