@@ -768,6 +768,7 @@ class TestClusterConfigPage:
         cluster_config_page.config.check_field_is_invalid(params['not_req_name'])
 
 
+# pylint: disable=too-few-public-methods
 class TestClusterStatusPage:
     """Tests for the /cluster/{}/status page"""
 
