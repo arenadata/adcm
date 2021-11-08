@@ -13,28 +13,40 @@
 - hosts: "{{ job.config.bad_fqdn }}"
   gather_facts: false
   tasks:
-    - name: FROM BAD
-      command: hostname
-      register: preresult
+    - command: hostname
+      register: bad_hostname
+    - command: hostname -i
+      register: bad_ip
     - debug:
-        msg: "BAD container own hostname is {{ preresult.stdout }}, expected to be {{ job.config.bad_fqdn }}"
+        msg: "BAD hostname is {{ bad_hostname.stdout }}, IP is {{ bad_ip.stdout }}"
     - command: hostname
       delegate_to: "{{ job.config.good_fqdn }}"
       register: result
     - debug:
         msg: "{{ job.config.good_fqdn }}-hostname: {{ result.stdout }}"
+    - command: hostname -i
+      delegate_to: "{{ job.config.good_fqdn }}"
+      register: result_ip
+    - debug:
+        msg: "{{ job.config.good_fqdn }}-ip: {{ result_ip.stdout }}"
 
 - hosts: "{{ job.config.good_fqdn }}"
   connection: local
   gather_facts: false
   tasks:
-    - name: FROM GOOD
-      command: hostname
-      register: preresult
+    - command: hostname
+      register: good_hostname
+    - command: hostname -i
+      register: good_ip
     - debug:
-        msg: "GOOD container own hostname is {{ preresult.stdout }}, expected to be {{ job.config.good_fqdn }}"
+        msg: "GOOD hostname is {{ good_hostname.stdout }}, IP is {{ good_ip.stdout }}"
     - command: hostname
       delegate_to: "{{ job.config.bad_fqdn }}"
       register: result
     - debug:
         msg: "{{ job.config.bad_fqdn }}-hostname: {{ result.stdout }}"
+    - command: hostname
+      delegate_to: "{{ job.config.bad_fqdn }}"
+      register: result_ip
+    - debug:
+        msg: "{{ job.config.bad_fqdn }}-ip: {{ result_ip.stdout }}"
