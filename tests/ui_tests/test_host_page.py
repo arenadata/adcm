@@ -13,6 +13,7 @@
 """UI tests for /host page"""
 
 import os
+
 # pylint:disable=redefined-outer-name
 from typing import Tuple
 
