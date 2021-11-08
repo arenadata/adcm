@@ -54,11 +54,17 @@ INIT_SCRIPT_CENTOS = "init_centos.sh"
 INIT_SCRIPT_ALTLINUX = "init_alt.sh"
 INSTALL_FINISHED_MARK = "SSH is ready to be used by test!"
 
-FQDN_PREFIXES_DELEGATE_TO = ("good-container", "bad-container")
+# Run containers parametrization
+
+FQDN_PREFIXES_DELEGATE_TO = ('good-container', 'bad-container')
+FQDN_PREFIXES_APT_RPM = ('install-as-list', 'install-as-string')
+
+CENTOS_IMAGE_AND_SCRIPT = (CENTOS_IMAGE, INIT_SCRIPT_CENTOS)
+ALT_IMAGE_AND_SCRIPT = (ALTLINUX_IMAGE, INIT_SCRIPT_ALTLINUX)
 
 RunContainersParam = namedtuple('RunContainersParam', ('image', 'init_script', 'fqdn_prefixes'))
-CENTOS_TWO_CLUSTERS = RunContainersParam(CENTOS_IMAGE, INIT_SCRIPT_CENTOS, FQDN_PREFIXES_DELEGATE_TO)
-ALTLINUX_TWO_CLUSTERS = RunContainersParam(ALTLINUX_IMAGE, INIT_SCRIPT_ALTLINUX, FQDN_PREFIXES_DELEGATE_TO)
+CENTOS_TWO_CLUSTERS = RunContainersParam(*CENTOS_IMAGE_AND_SCRIPT, FQDN_PREFIXES_DELEGATE_TO)
+ALTLINUX_TWO_CLUSTERS = RunContainersParam(*ALT_IMAGE_AND_SCRIPT, FQDN_PREFIXES_DELEGATE_TO)
 
 
 # !===== General Helpers =====!
@@ -92,7 +98,14 @@ def ssh_provider(sdk_client_fs: ADCMClient) -> Provider:
 @pytest.fixture()
 def cluster_delegate_to(sdk_client_fs: ADCMClient) -> Cluster:
     """Cluster to catch the ADCM-683 bug (delegate_to with ansible_host == null)"""
-    bundle = sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), "cluster_adcm_683"))
+    bundle = sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), 'cluster_adcm_683'))
+    return bundle.cluster_create(name='test_cluster')
+
+
+@pytest.fixture()
+def cluster_apt_rpm(sdk_client_fs: ADCMClient) -> Cluster:
+    """Cluster to test apt_rpm bug (argument is list)"""
+    bundle = sdk_client_fs.upload_from_fs(os.path.join(get_data_dir(__file__), 'cluster_apt_rpm'))
     return bundle.cluster_create(name='test_cluster')
 
 
@@ -232,7 +245,7 @@ def test_delegate_to_directive(
     adcm_fs: ADCM,
     custom_network: Network,
     cluster_delegate_to: Cluster,
-    run_containers: Tuple[Container, ...],
+    run_containers: Tuple[Container, Container],
     ssh_provider: Provider,
     action_name: str = 'delegate',
 ):
@@ -259,6 +272,49 @@ def test_delegate_to_directive(
             config={'good_fqdn': good_container.name, 'bad_fqdn': bad_container.name},
         )
     _check_hostnames(task, good_container, bad_container)
+
+
+@pytest.mark.parametrize(
+    'run_containers',
+    [
+        RunContainersParam(*CENTOS_IMAGE_AND_SCRIPT, FQDN_PREFIXES_APT_RPM),
+        RunContainersParam(*ALT_IMAGE_AND_SCRIPT, FQDN_PREFIXES_APT_RPM),
+    ],
+    indirect=True,
+    ids=['centos_two_containers', 'altlinux_two_containers'],
+)
+@allure.link(url='https://arenadata.atlassian.net/browse/ADCM-1229')
+def test_apt_rpm_list_argument(
+    adcm_fs: ADCM,
+    custom_network: Network,
+    run_containers: Tuple[Container, Container],
+    ssh_provider: Provider,
+    cluster_apt_rpm: Cluster,
+    packages_to_install=('libaio', 'neovim'),
+):
+    """
+    Test that ansible version used in ADCM doesn't have known bug
+        with passing "list" type argument to apt_rpm
+    """
+    ansible_credentials = {'ansible_user': 'root', 'ansible_ssh_pass': 'root'}
+    container_list_argument, container_string_argument = run_containers
+    cluster = cluster_apt_rpm
+
+    connect_containers_to_network(custom_network, adcm_fs.container, container_list_argument, container_string_argument)
+    _check_packages_are_not_installed(packages_to_install, container_list_argument, container_string_argument)
+    list_install_host, string_install_host = create_hosts_and_add_to_cluster(
+        cluster, ssh_provider, (container_list_argument.name, container_string_argument.name)
+    )
+    with allure.step('Configure ansible access on hosts'):
+        list_install_host.config_set_diff(ansible_credentials)
+        string_install_host.config_set_diff(ansible_credentials)
+
+    with allure.step('Install packages with list argument'):
+        run_cluster_action_and_assert_result(cluster, 'install_as_list', config={'host': list_install_host.fqdn})
+        _check_packages_are_installed(packages_to_install, container_list_argument)
+    with allure.step('Install packages with string argument'):
+        run_cluster_action_and_assert_result(cluster, 'install_as_string', config={'host': string_install_host.fqdn})
+        _check_packages_are_installed(packages_to_install, container_string_argument)
 
 
 # !===== Specific Steps and Helpers =====!
@@ -291,3 +347,30 @@ def _attach_containers_info(containers: Iterable[Container]) -> None:
             name=f'Hostname of {container.name}',
             attachment_type=allure.attachment_type.TEXT,
         )
+
+
+def _check_packages_are_installed(packages: Iterable[str], *containers: Iterable[Container]) -> None:
+    """Check that packages are installed in containers"""
+    for package in packages:
+        for container in containers:
+            with allure.step(f"Check that package {package} is installed in container {container.name}"):
+                assert _package_is_installed(
+                    package, container
+                ), f"Package {package} should be installed in container {container.name}"
+
+
+@allure.step("Check that packages aren't installed in containers")
+def _check_packages_are_not_installed(packages: Iterable[str], *containers: Iterable[Container]) -> None:
+    """Check that packages aren't installed in containers"""
+    for package in packages:
+        for container in containers:
+            with allure.step(f"Check that package {package} is not installed in container {container.name}"):
+                assert not _package_is_installed(
+                    package, container
+                ), f"Package {package} shouldn't be installed in container {container.name}"
+
+
+def _package_is_installed(package: str, container: Container) -> bool:
+    """Check if package is installed on container"""
+    message = container.exec_run(f'rpm -q {package}').output.decode('utf-8').strip()
+    return message != f'package {package} is not installed'
