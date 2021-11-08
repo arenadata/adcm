@@ -10,6 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: skip-file
+# fmt: off
+
+
 """Tests on known ansible bugs"""
 
 import os.path
