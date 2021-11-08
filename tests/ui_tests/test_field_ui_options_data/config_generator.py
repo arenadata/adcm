@@ -180,7 +180,7 @@ TEMPLATES = {
     'map': template_map,
     'json': template_json,
     'file': template_file,
-    'secrettext': template_secrettext
+    'secrettext': template_secrettext,
 }
 
 
