@@ -59,7 +59,7 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
     def assert_field_content_equal(self, field_type, field, expected_value):
         """Assert field value based on field type and name"""
         current_value = self.get_field_value_by_type(field, field_type)
-        if field_type == 'password':
+        if field_type == 'password' or 'secrettext':
             # In case of password we have no raw password in API after writing.
             if expected_value is not None and expected_value != "":
                 assert current_value is not None, "Password field expected to be filled"
