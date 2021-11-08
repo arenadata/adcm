@@ -38,7 +38,7 @@ from tests.functional.docker_utils import run_container, get_docker_client
 pytestmark = [only_clean_adcm]
 
 CENTOS_IMAGE = "hub.adsw.io/re/tent:test-centos7-x86_64"
-ALTLINUX_IMAGE = "hub.adsw.io/re/tent:test-altlinux-c8.2-x86_64"
+# ALTLINUX_IMAGE = "hub.adsw.io/re/tent:test-altlinux-c8.2-x86_64"
 
 
 SSH_PROVIDER_URL = 'https://downloads.arenadata.io/ADCM/infrastructure/adcm_host_ssh_v2.7-1_community.tgz'
@@ -51,7 +51,7 @@ VOLUME_ARGUMENTS = {'/sys/fs/cgroup': {'bind': '/sys/fs/cgroup', 'mode': 'ro'}}
 ENV_ARGUMENTS = ["WAIT=yes", f"EXEC={INIT_FILEPATH}"]
 
 INIT_SCRIPT_CENTOS = "init_centos.sh"
-INIT_SCRIPT_ALTLINUX = "init_alt.sh"
+# INIT_SCRIPT_ALTLINUX = "init_alt.sh"
 INSTALL_FINISHED_MARK = "SSH is ready to be used by test!"
 
 # Run containers parametrization
@@ -60,11 +60,11 @@ FQDN_PREFIXES_DELEGATE_TO = ('good-container', 'bad-container')
 FQDN_PREFIXES_APT_RPM = ('install-as-list', 'install-as-string')
 
 CENTOS_IMAGE_AND_SCRIPT = (CENTOS_IMAGE, INIT_SCRIPT_CENTOS)
-ALT_IMAGE_AND_SCRIPT = (ALTLINUX_IMAGE, INIT_SCRIPT_ALTLINUX)
+# ALT_IMAGE_AND_SCRIPT = (ALTLINUX_IMAGE, INIT_SCRIPT_ALTLINUX)
 
 RunContainersParam = namedtuple('RunContainersParam', ('image', 'init_script', 'fqdn_prefixes'))
 CENTOS_TWO_CLUSTERS = RunContainersParam(*CENTOS_IMAGE_AND_SCRIPT, FQDN_PREFIXES_DELEGATE_TO)
-ALTLINUX_TWO_CLUSTERS = RunContainersParam(*ALT_IMAGE_AND_SCRIPT, FQDN_PREFIXES_DELEGATE_TO)
+# ALTLINUX_TWO_CLUSTERS = RunContainersParam(*ALT_IMAGE_AND_SCRIPT, FQDN_PREFIXES_DELEGATE_TO)
 
 
 # !===== General Helpers =====!
@@ -136,7 +136,8 @@ def custom_volume() -> Generator[Volume, None, None]:
 
 
 @pytest.fixture(
-    params=[CENTOS_TWO_CLUSTERS, ALTLINUX_TWO_CLUSTERS], ids=["centos_two_containers", "altlinux_two_containers"]
+    # params=[CENTOS_TWO_CLUSTERS, ALTLINUX_TWO_CLUSTERS], ids=["centos_two_containers", "altlinux_two_containers"]
+    params=[CENTOS_TWO_CLUSTERS], ids=["centos_two_containers"]
 )
 def run_containers(request, custom_volume: Volume) -> Generator[Tuple[Container, ...], None, None]:
     """Run docker containers and stop them afterwards"""
@@ -278,10 +279,11 @@ def test_delegate_to_directive(
     'run_containers',
     [
         RunContainersParam(*CENTOS_IMAGE_AND_SCRIPT, FQDN_PREFIXES_APT_RPM),
-        RunContainersParam(*ALT_IMAGE_AND_SCRIPT, FQDN_PREFIXES_APT_RPM),
+        # RunContainersParam(*ALT_IMAGE_AND_SCRIPT, FQDN_PREFIXES_APT_RPM),
     ],
     indirect=True,
-    ids=['centos_two_containers', 'altlinux_two_containers'],
+    ids=['centos_two_containers'],
+    # ids=['centos_two_containers', 'altlinux_two_containers'],
 )
 @allure.link(url='https://arenadata.atlassian.net/browse/ADCM-1229')
 def test_apt_rpm_list_argument(
