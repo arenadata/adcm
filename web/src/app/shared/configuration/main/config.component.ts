@@ -156,7 +156,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
         obj_ref: this.rawConfig.value.obj_ref
       };
 
-      if (this.tools.description.pristine) {
+      if (this.rawConfig.value.description === this.tools.description.value) {
         delete send.description;
       }
 
