@@ -113,6 +113,7 @@ class PolicyPermission(models.Model):
 class Policy(models.Model):
     """Policy connect role, users and (maybe) objects"""
 
+    name = models.CharField(max_length=255)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
     object = models.ManyToManyField(PolicyObject, blank=True)
     user = models.ManyToManyField(User, blank=True)

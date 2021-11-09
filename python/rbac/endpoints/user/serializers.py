@@ -97,13 +97,6 @@ class PermissionSerializer(serializers.ModelSerializer):
         return obj.content_type.model
 
 
-class ProfileField(serializers.JSONField):
-    """Get profile field from one to one model UserProfile"""
-
-    def get_attribute(self, instance):
-        return instance.userprofile.profile
-
-
 class UserGroupSerializer(serializers.ModelSerializer):
     """Serializer for user's groups"""
 
@@ -156,7 +149,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
     """User serializer"""
 
     password = PasswordField()
-    profile = ProfileField(required=False)
+    profile = serializers.JSONField(source='userprofile.profile', allow_null=True)
     groups = serializers.SerializerMethodField(read_only=True)
     permissions = PermissionSerializer(many=True, source='user_permissions', read_only=True)
     add_group = serializers.HyperlinkedIdentityField(
