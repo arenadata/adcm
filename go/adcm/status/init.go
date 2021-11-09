@@ -22,13 +22,16 @@ import (
 )
 
 const httpPort = ":8020"
-const componentTimeout = 300 // seconds
+const componentTimeout = 30
+
+//const componentTimeout = 300 // seconds
 
 type Hub struct {
 	HostStorage          *Storage
 	HostComponentStorage *Storage
 	ServiceMap           *ServiceServer
 	EventWS              *wsHub
+	StatusEvent          *StatusEvent
 	AdcmApi              *AdcmApi
 	Secrets              *SecretConfig
 }
@@ -57,6 +60,8 @@ func Start(secrets *SecretConfig, logFile string, logLevel string) {
 		time.Sleep(time.Second)
 		hub.AdcmApi.getServiceMap()
 	}()
+
+	hub.StatusEvent = newStatusEvent()
 
 	startHTTP(httpPort, hub)
 }

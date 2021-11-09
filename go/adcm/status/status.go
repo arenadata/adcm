@@ -164,8 +164,8 @@ func cookClusterStatus(serviceStatus int, hostStatus int) int {
 	return 0
 }
 
-func getClusterStatus(h Hub, clusterId int) int {
+func getClusterStatus(h Hub, clusterId int) Status {
 	serviceStatus, _ := getClusterServiceStatus(h, clusterId)
 	hostStatus, _ := getClusterHostStatus(h, clusterId)
-	return cookClusterStatus(serviceStatus, hostStatus)
+	return Status{Status: cookClusterStatus(serviceStatus, hostStatus)}
 }
