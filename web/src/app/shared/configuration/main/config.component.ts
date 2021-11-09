@@ -145,9 +145,6 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   save(url: string): void {
     const form = this.fields.form;
 
-    console.log('touched', this.tools.description.touched);
-    console.log('pristine', this.tools.description.pristine);
-
     if (form.valid) {
       this.saveFlag = true;
       this.historyComponent.reset();
