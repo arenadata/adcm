@@ -2,6 +2,7 @@ import { Meta, moduleMetadata, Story } from '@storybook/angular';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { provideMockStore } from '@ngrx/store/testing';
 
 import { ConcernService } from '../../app/services/concern.service';
 import { ConcernComponent } from '../../app/components/concern/concern.component';
@@ -18,6 +19,7 @@ export default {
     moduleMetadata({
       providers: [
         ConcernService,
+        provideMockStore({}),
       ],
       declarations: [
         ConcernComponent,
