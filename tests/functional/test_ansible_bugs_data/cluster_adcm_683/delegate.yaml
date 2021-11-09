@@ -45,7 +45,7 @@
       register: result
     - debug:
         msg: "{{ job.config.bad_fqdn }}-hostname: {{ result.stdout }}"
-    - command: hostname
+    - command: hostname -i
       delegate_to: "{{ job.config.bad_fqdn }}"
       register: result_ip
     - debug:

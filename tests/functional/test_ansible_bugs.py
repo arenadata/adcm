@@ -269,7 +269,8 @@ def test_delegate_to_directive(
 
     with allure.step(f'Set "ansible_host" in one host to {good_host_fqdn} and in another to None'):
         good_host.config_set_diff({'ansible_host': good_host_fqdn, **ansible_credentials})
-        bad_host.config_set_diff({'ansible_host': None, **ansible_credentials})
+        bad_host.config_set_diff({'ansible_host': bad_host_fqdn, **ansible_credentials})
+        # bad_host.config_set_diff({'ansible_host': None, **ansible_credentials})
     with allure.step(f'Run {action_name} on cluster and check result'):
         task = run_cluster_action_and_assert_result(
             cluster_delegate_to,
