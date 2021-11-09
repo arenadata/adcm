@@ -43,13 +43,13 @@ def version_in(version, ver):
     if ver.min_strict:
         if rpm.compare_versions(version, ver.min_version) <= 0:
             return False
-    else:
+    elif ver.min_version:
         if rpm.compare_versions(version, ver.min_version) < 0:
             return False
     if ver.max_strict:
         if rpm.compare_versions(version, ver.max_version) >= 0:
             return False
-    else:
+    elif ver.max_version:
         if rpm.compare_versions(version, ver.max_version) > 0:
             return False
     return True
