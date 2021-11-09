@@ -13,6 +13,8 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
+import { MatTreeModule } from '@angular/material/tree';
 
 import { AddingModule } from './add-component/adding.module';
 import {
@@ -23,7 +25,6 @@ import {
   ImportComponent,
   IssueInfoComponent,
   MainInfoComponent,
-  StatusComponent,
   StatusInfoComponent,
   UpgradeComponent,
 } from './components';
@@ -45,10 +46,15 @@ import { ServiceComponentsComponent } from '@app/components/service-component/se
 import { JobService } from '@app/services/job.service';
 import { TaskService } from '@app/services/task.service';
 import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
-import { TranslateModule } from '@ngx-translate/core';
 import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
 import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
 import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
+import { StatusTreeComponent } from '@app/components/status-tree/status-tree.component';
+import { HostStatusComponent } from '@app/components/host/host-status/host-status.component';
+import { EntityStatusToStatusTreePipe } from '@app/pipes/entity-status-to-status-tree.pipe';
+import { ServiceStatusComponent } from '@app/components/service/service-status/service-status.component';
+import { ServiceComponentStatusComponent } from '@app/components/service-component/service-component-status/service-component-status.component';
+import { StatusTreeLinkPipe } from '@app/pipes/status-tree-link.pipe';
 
 @NgModule({
   imports: [
@@ -64,7 +70,8 @@ import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
     HostComponentsMapModule,
     DetailsModule,
     TranslateModule,
-    TooltipModule
+    TooltipModule,
+    MatTreeModule,
   ],
   declarations: [
     DialogComponent,
@@ -74,7 +81,8 @@ import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
     ButtonSpinnerComponent,
     TagEscPipe,
     IssueInfoComponent,
-    StatusComponent,
+    HostStatusComponent,
+    ServiceStatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
     MultiSortDirective,
@@ -87,9 +95,13 @@ import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
     EditionColumnComponent,
     ClusterColumnComponent,
     ServiceComponentsComponent,
+    ServiceComponentStatusComponent,
     ToDataSourcePipe,
     PickKeysPipe,
     TranslateKeysPipe,
+    StatusTreeComponent,
+    EntityStatusToStatusTreePipe,
+    StatusTreeLinkPipe,
   ],
   exports: [
     FormsModule,
@@ -108,7 +120,8 @@ import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
     ButtonSpinnerComponent,
     UpgradeComponent,
     TagEscPipe,
-    StatusComponent,
+    HostStatusComponent,
+    ServiceStatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
     ImportComponent,
@@ -118,10 +131,14 @@ import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
     EditionColumnComponent,
     ClusterColumnComponent,
     ServiceComponentsComponent,
+    ServiceComponentStatusComponent,
     ToDataSourcePipe,
     PickKeysPipe,
     TranslateKeysPipe,
-    TooltipModule
+    TooltipModule,
+    StatusTreeComponent,
+    EntityStatusToStatusTreePipe,
+    StatusTreeLinkPipe,
   ],
   providers: [
     JobService,
