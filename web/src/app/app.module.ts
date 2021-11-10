@@ -85,5 +85,4 @@ import { AddService } from '@app/shared/add-component/add.service';
     },
   ],
 })
-export class AppModule {
-}
+export class AppModule {}
