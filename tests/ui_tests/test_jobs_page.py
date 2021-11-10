@@ -510,7 +510,7 @@ def _check_finished_job_info_in_table(page: JobListPage, expected_info: dict):
     wait_and_assert_ui_info(
         {**expected_info, 'start_date': is_not_empty, 'finish_date': is_not_empty},
         page.get_task_info_from_table,
-        timeout=10
+        timeout=10,
     )
 
 
