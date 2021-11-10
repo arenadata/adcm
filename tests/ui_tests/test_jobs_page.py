@@ -160,6 +160,7 @@ class TestTaskPage:
         ],
         ids=['success_job', 'failed_job'],
     )
+    @pytest.mark.usefixtures('skip_firefox')
     def test_finished_job_has_correct_info(self, job_info: dict, cluster: Cluster, page: JobListPage):
         """Run action that finishes (success/failed) and check it is displayed correctly"""
         expected_info_in_popup = {**job_info}
@@ -382,7 +383,7 @@ class TestTaskHeaderPopup:
         ],
         ids=['success_job', 'failed_job', 'in_progress_job', 'three_job'],
     )
-    @pytest.mark.usefixtures('login_to_adcm_over_api')
+    @pytest.mark.usefixtures('login_to_adcm_over_api', 'skip_firefox')
     def test_job_has_correct_info_in_header_popup(self, job_info: dict, cluster: Cluster, app_fs):
         """Run action that finishes (success/failed) and check it in header popup"""
 
@@ -390,9 +391,9 @@ class TestTaskHeaderPopup:
         cluster_page.wait_config_loaded()
         # TODO remove sleep after fix ADCM-2279
         # the current sleep step is a temporary solution and need to fix flaky test evidence
-        import time  # pylint: disable=import-outside-toplevel
-
-        time.sleep(2)
+        # import time  # pylint: disable=import-outside-toplevel
+        #
+        # time.sleep(2)
         for action_name, expected_status in job_info['action_name'].items():
             if action_name == LONG_ACTION_DISPLAY_NAME:
                 cluster.action(display_name=action_name).run()
