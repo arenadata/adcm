@@ -16,9 +16,13 @@ import allure
 import coreapi
 import pytest
 from adcm_client.objects import ADCMClient
-from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
+from adcm_pytest_plugin.utils import parametrize_by_data_subdirs, get_data_dir
 
 from tests.library import errorcodes as err
+from tests.library.errorcodes import BIND_ERROR
+from tests.functional.conftest import only_clean_adcm
+
+pytestmark = [only_clean_adcm]
 
 
 @parametrize_by_data_subdirs(__file__, "service_import_check_negative")
@@ -94,3 +98,22 @@ def test_cluster_import(sdk_client_fs: ADCMClient, path):
         cluster_import = bundle_import.cluster_create("cluster_import")
     with allure.step('Bind cluster from cluster with export to cluster with import'):
         cluster_import.bind(cluster)
+
+
+@pytest.xfail('https://arenadata.atlassian.net/browse/ADCM-2292')
+def test_import_with_zero_range(sdk_client_fs: ADCMClient):
+    """Import cluster with range where min is greater than max"""
+    with allure.step('Prepare clusters'):
+        import_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_empty_range", "import"))
+        export_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_empty_range", "export"))
+        import_cluster = import_bundle.cluster_create('import')
+        export_cluster = export_bundle.cluster_create('export')
+        service_in_middle_of_range = export_cluster.service_add(name='in_the_middle')
+        service_above_range = export_cluster.service_add(name='above')
+    for adcm_object in (export_cluster, service_above_range, service_in_middle_of_range):
+        with allure.step(f'Try to import {adcm_object} and expect error'), pytest.raises(
+            coreapi.exceptions.ErrorMessage
+        ) as e:
+            import_cluster.bind(adcm_object)
+        with allure.step('Check that error is correct'):
+            BIND_ERROR.equal(e)
