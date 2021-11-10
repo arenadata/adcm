@@ -62,7 +62,7 @@ pytest: ## Run functional tests
 	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
 	hub.adsw.io/library/functest:3.8.6.slim.buster-x64 /bin/sh -e \
-	./pytest.sh -m "not full" --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
+	./pytest.sh --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
 
 pytest_release: ## Run functional tests on release
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster.firefox-x64
