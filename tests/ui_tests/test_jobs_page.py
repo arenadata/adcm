@@ -160,7 +160,7 @@ class TestTaskPage:
         ],
         ids=['success_job', 'failed_job'],
     )
-    @pytest.mark.usefixtures('skip_firefox')
+    @pytest.mark.usefixtures('skip_firefox')  # TODO: Remove Firefox skip after QA-334
     def test_finished_job_has_correct_info(self, job_info: dict, cluster: Cluster, page: JobListPage):
         """Run action that finishes (success/failed) and check it is displayed correctly"""
         expected_info_in_popup = {**job_info}
@@ -383,7 +383,7 @@ class TestTaskHeaderPopup:
         ],
         ids=['success_job', 'failed_job', 'in_progress_job', 'three_job'],
     )
-    @pytest.mark.usefixtures('login_to_adcm_over_api', 'skip_firefox')
+    @pytest.mark.usefixtures('login_to_adcm_over_api', 'skip_firefox')  # TODO: Remove Firefox skip after QA-334
     def test_job_has_correct_info_in_header_popup(self, job_info: dict, cluster: Cluster, app_fs):
         """Run action that finishes (success/failed) and check it in header popup"""
 
