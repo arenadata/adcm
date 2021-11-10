@@ -129,7 +129,7 @@ def app_fs(adcm_fs: ADCM, web_driver: ADCMTest, request):
             allure.attach(
                 web_driver.driver.page_source,
                 name="page_source",
-                attachment_type=allure.attachment_type.TEXT,
+                attachment_type=allure.attachment_type.HTML,
             )
             web_driver.driver.execute_script("document.body.bgColor = 'white';")
             allure.attach(
