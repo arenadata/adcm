@@ -214,13 +214,13 @@ def check_versions(proto, conf, label):
     if 'min' in conf['versions'] and 'min_strict' in conf['versions']:
         msg = 'min and min_strict can not be used simultaneously in versions of {} ({})'
         err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
-    if 'min' not in conf['versions'] and 'min_strict' not in conf['versions']:
+    if 'min' not in conf['versions'] and 'min_strict' not in conf['versions'] and 'import' not in label:
         msg = 'min or min_strict should be present in versions of {} ({})'
         err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
     if 'max' in conf['versions'] and 'max_strict' in conf['versions']:
         msg = 'max and max_strict can not be used simultaneously in versions of {} ({})'
         err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
-    if 'max' not in conf['versions'] and 'max_strict' not in conf['versions']:
+    if 'max' not in conf['versions'] and 'max_strict' not in conf['versions'] and 'import' not in label:
         msg = 'max and max_strict should be present in versions of {} ({})'
         err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
     for name in ('min', 'min_strict', 'max', 'max_strict'):
@@ -295,7 +295,7 @@ def check_default_import(proto, conf):
     groups = get_config_groups(proto)
     for key in conf['default']:
         if key not in groups:
-            msg = 'No import deafult group "{}" in config ({})'
+            msg = 'No import default group "{}" in config ({})'
             err('INVALID_OBJECT_DEFINITION', msg.format(key, ref))
 
 
@@ -304,13 +304,14 @@ def save_import(proto, conf):
     if not in_dict(conf, 'import'):
         return
     for key in conf['import']:
-        check_versions(proto, conf['import'][key], f'import "{key}"')
         if 'default' in conf['import'][key] and 'required' in conf['import'][key]:
             msg = 'Import can\'t have default and be required in the same time ({})'
             err('INVALID_OBJECT_DEFINITION', msg.format(ref))
         check_default_import(proto, conf['import'][key])
         si = StagePrototypeImport(prototype=proto, name=key)
-        set_version(si, conf['import'][key])
+        if 'versions' in conf['import'][key]:
+            check_versions(proto, conf['import'][key], f'import "{key}"')
+            set_version(si, conf['import'][key])
         dict_to_obj(conf['import'][key], 'required', si)
         dict_to_obj(conf['import'][key], 'multibind', si)
         dict_to_obj(conf['import'][key], 'default', si)
