@@ -21,7 +21,7 @@ import unittest
 import requests
 import websocket
 
-from tests.base.test_api import ApiTestCase
+from base.test_api import ApiTestCase
 
 
 class TestStatusAPI(ApiTestCase):
