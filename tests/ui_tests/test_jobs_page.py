@@ -392,7 +392,7 @@ class TestTaskHeaderPopup:
         # the current sleep step is a temporary solution and need to fix flaky test evidence
         import time  # pylint: disable=import-outside-toplevel
 
-        time.sleep(2)
+        time.sleep(5)
         for action_name, expected_status in job_info['action_name'].items():
             if action_name == LONG_ACTION_DISPLAY_NAME:
                 cluster.action(display_name=action_name).run()
@@ -510,6 +510,7 @@ def _check_finished_job_info_in_table(page: JobListPage, expected_info: dict):
     wait_and_assert_ui_info(
         {**expected_info, 'start_date': is_not_empty, 'finish_date': is_not_empty},
         page.get_task_info_from_table,
+        timeout=10
     )
 
 
