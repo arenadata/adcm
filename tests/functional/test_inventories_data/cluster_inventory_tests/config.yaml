@@ -131,6 +131,25 @@
           type: file
           required: false
 
+    GROUP_BUDDY:
+      config_group_customization: true
+      config:
+        - name: __main_info
+          type: string
+          default: "I'm a very important string, don't touch me"
+          group_customization: false
+        - name: simple_field
+          type: integer
+          default: 1
+        - name: json_field
+          type: json
+          default:
+            long_time: "ago"
+        - name: map_field
+          type: map
+          default:
+            long_time: "ago"
+
   actions:
     install:
       type: job
@@ -214,6 +233,13 @@
                     - installed
                 on_success: deleted
                 on_fail: created
+
+        check:
+          type: job
+          script: ansible/check_attributes.yaml
+          script_type: ansible
+          states:
+            available: any
 
     config:
         required:
