@@ -634,8 +634,6 @@ import_dict_item:
     required: boolean
     multibind: boolean
     default: list_of_string
-  required_items:
-    - versions
 
 # Actions. Actions could be in two forms: job or task
 actions_dict:
