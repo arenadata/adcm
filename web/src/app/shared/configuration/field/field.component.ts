@@ -62,6 +62,7 @@ export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
 
   outputValue(v: string, isPart = false) {
     if (this.options.type === 'password') v = v.replace(/\w/gi, '*');
+    if (this.options.type === 'secrettext') v = '****';
     return v.length > 80 ? (isPart ? v : `${v.substr(0, 80)}...`) : v;
   }
 
