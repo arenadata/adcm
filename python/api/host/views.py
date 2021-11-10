@@ -206,7 +206,7 @@ class StatusList(GenericAPIPermView, InterfaceView):
             comp_list.append(
                 {
                     'id': hc.component.id,
-                    'name': hc.component.name,
+                    'name': hc.component.display_name,
                     'status': cm.status_api.get_component_status(hc.component),
                 }
             )

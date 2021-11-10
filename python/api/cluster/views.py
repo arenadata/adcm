@@ -278,7 +278,7 @@ class StatusList(GenericAPIPermView, InterfaceView):
                 hc_list.append(
                     {
                         'id': hc['comp'].id,
-                        'name': hc['comp'].name,
+                        'name': hc['comp'].display_name,
                         'status': cm.status_api.get_component_status(hc['comp']),
                         'hosts': host_comp_list,
                     }
@@ -286,7 +286,7 @@ class StatusList(GenericAPIPermView, InterfaceView):
             service_list.append(
                 {
                     'id': srv['service'].id,
-                    'name': srv['service'].name,
+                    'name': srv['service'].display_name,
                     'status': get_status('services', srv['service'].id),
                     'hc': hc_list,
                 }

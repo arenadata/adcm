@@ -64,8 +64,6 @@ class StatusList(GenericAPIPermView, InterfaceView):
     queryset = HostComponent.objects.all()
 
     def ui_status(self, component, host_components):
-        component_map = cm.status_api.get_object_map(component, 'component')
-
         host_list = []
         for hc in host_components:
             host_list.append(
@@ -77,8 +75,8 @@ class StatusList(GenericAPIPermView, InterfaceView):
             )
         return {
             'id': component.id,
-            'name': component.name,
-            'status': 32 if component_map is None else component_map.get('status', 0),
+            'name': component.display_name,
+            'status': cm.status_api.get_component_status(component),
             'hosts': host_list,
         }
 
