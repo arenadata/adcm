@@ -100,6 +100,8 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
   }
 
   private _restoreStatus() {
-    this.field.disabled = this._disabled;
+    if (this.field?.disabled) {
+      this.field.disabled = this._disabled;
+    }
   }
 }
