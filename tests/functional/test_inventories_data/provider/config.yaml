@@ -9,30 +9,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-- type: cluster
-  name: Nothing
-  description: Arenadata Nothing
-  version: 1.0
-
-
-- type: service
-  name: zookeeper
+---
+- type: provider
+  name: dummy_provider
   version: 1
-  actions:
-    remove_service:
-      type: job
-      script_type: ansible
-      script: ./remove_service.yaml
-      states:
-        available: any
-  components:
-    ZOOKEEPER_SERVER:
-      constraint: [1,+]
-    ZOOKEEPER_CLIENT:
 
-- type: service
-  name: second_service
-  version: 1
-  components:
-    some_component:
+  config:
+    - name: verbose
+      type: boolean
+      default: false
+
+- type: host
+  name: dummy_host
+  version: 1.6
+
+  config:
+    - name: sometext
+      type: text
+      default: Nothing to see here

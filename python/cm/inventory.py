@@ -109,6 +109,49 @@ def get_obj_config(obj):
     return process_config_and_attr(obj, cl.config, cl.attr)
 
 
+def get_cluster_variables(cluster: Cluster, cluster_config: dict = None):
+    return {
+        'config': cluster_config or get_obj_config(cluster),
+        'name': cluster.name,
+        'id': cluster.id,
+        'version': cluster.prototype.version,
+        'edition': cluster.prototype.bundle.edition,
+        'state': cluster.state,
+        'multi_state': cluster.multi_state,
+    }
+
+
+def get_service_variables(service: ClusterObject, service_config: dict = None):
+    return {
+        'id': service.id,
+        'version': service.prototype.version,
+        'state': service.state,
+        'multi_state': service.multi_state,
+        'config': service_config or get_obj_config(service),
+    }
+
+
+def get_component_variables(component: ServiceComponent, component_config: dict = None):
+    return {
+        'component_id': component.id,
+        'config': component_config or get_obj_config(component),
+        'state': component.state,
+        'multi_state': component.multi_state,
+    }
+
+
+def get_provider_variables(provider: HostProvider, provider_config: dict = None):
+    host_proto = Prototype.objects.get(bundle=provider.prototype.bundle, type='host')
+    return {
+        'config': provider_config or get_obj_config(provider),
+        'name': provider.name,
+        'id': provider.id,
+        'host_prototype_id': host_proto.id,
+        'state': provider.state,
+        'multi_state': provider.multi_state,
+    }
+
+
 def get_host_vars(host: Host, obj):
     # TODO: add test for this function
     groups = host.group_config.filter(
@@ -120,71 +163,73 @@ def get_host_vars(host: Host, obj):
         conf, attr = group.get_config_and_attr()
         group_config = process_config_and_attr(group, conf, attr)
         if isinstance(group.object, Cluster):
-            variables.update({'cluster': {'config': group_config}})
+            variables.update(
+                {'cluster': get_cluster_variables(group.object, cluster_config=group_config)}
+            )
         elif isinstance(group.object, ClusterObject):
-            variables.update({'services': {group.object.prototype.name: {'config': group_config}}})
+            variables.update(
+                {
+                    'services': {
+                        group.object.prototype.name: get_service_variables(
+                            group.object, service_config=group_config
+                        )
+                    }
+                }
+            )
+            for component in ServiceComponent.objects.filter(
+                cluster=group.object.cluster, service=group.object
+            ):
+                variables['services'][group.object.prototype.name][
+                    component.prototype.name
+                ] = get_component_variables(component)
         elif isinstance(group.object, ServiceComponent):
             variables.update(
                 {
                     'services': {
-                        group.object.service.prototype.name: {
-                            group.object.prototype.name: {'config': group_config}
-                        }
+                        group.object.service.prototype.name: get_service_variables(
+                            group.object.service
+                        )
                     }
                 }
             )
+            variables['services'][group.object.service.prototype.name][
+                group.object.prototype.name
+            ] = get_component_variables(group.object, component_config=group_config)
+
+            for component in ServiceComponent.objects.filter(
+                cluster=group.object.cluster, service=group.object.service
+            ).exclude(pk=group.object.id):
+                variables['services'][component.service.prototype.name][
+                    component.prototype.name
+                ] = get_component_variables(component)
+
         else:  # HostProvider
-            variables.update({'provider': {'config': group_config}})
+            variables.update(
+                {'provider': get_provider_variables(group.object, provider_config=group_config)}
+            )
     return variables
 
 
 def get_cluster_config(cluster):
     res = {
-        'cluster': {
-            'config': get_obj_config(cluster),
-            'name': cluster.name,
-            'id': cluster.id,
-            'version': cluster.prototype.version,
-            'edition': cluster.prototype.bundle.edition,
-            'state': cluster.state,
-            'multi_state': cluster.multi_state,
-        },
+        'cluster': get_cluster_variables(cluster),
         'services': {},
     }
     imports = get_import(cluster)
     if imports:
         res['cluster']['imports'] = imports
     for service in ClusterObject.objects.filter(cluster=cluster):
-        res['services'][service.prototype.name] = {
-            'id': service.id,
-            'version': service.prototype.version,
-            'state': service.state,
-            'multi_state': service.multi_state,
-            'config': get_obj_config(service),
-        }
+        res['services'][service.prototype.name] = get_service_variables(service)
         for component in ServiceComponent.objects.filter(cluster=cluster, service=service):
-            res['services'][service.prototype.name][component.prototype.name] = {
-                'component_id': component.id,
-                'config': get_obj_config(component),
-                'state': component.state,
-                'multi_state': component.multi_state,
-            }
+            res['services'][service.prototype.name][
+                component.prototype.name
+            ] = get_component_variables(component)
     return res
 
 
 def get_provider_config(provider_id):
     provider = HostProvider.objects.get(id=provider_id)
-    host_proto = Prototype.objects.get(bundle=provider.prototype.bundle, type='host')
-    return {
-        'provider': {
-            'config': get_obj_config(provider),
-            'name': provider.name,
-            'id': provider.id,
-            'host_prototype_id': host_proto.id,
-            'state': provider.state,
-            'multi_state': provider.multi_state,
-        }
-    }
+    return {'provider': get_provider_variables(provider)}
 
 
 def get_host_groups(cluster, delta, action_host=None):
