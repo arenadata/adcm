@@ -143,6 +143,7 @@ class TestTaskPage:
         host = provider.host_create('some-fqdn')
         _test_run_action(page, host, f'{provider.name}/{host.fqdn}')
 
+    @allure.issue(name='Firefox issues', url='https://arenadata.atlassian.net/browse/QA-334')
     @pytest.mark.smoke()
     @pytest.mark.parametrize(
         'job_info',
@@ -160,6 +161,7 @@ class TestTaskPage:
         ],
         ids=['success_job', 'failed_job'],
     )
+    @pytest.mark.usefixtures('skip_firefox')
     def test_finished_job_has_correct_info(self, job_info: dict, cluster: Cluster, page: JobListPage):
         """Run action that finishes (success/failed) and check it is displayed correctly"""
         expected_info_in_popup = {**job_info}
@@ -330,6 +332,7 @@ class TestTaskHeaderPopup:
         assert 'background: transparent' in page.header.get_jobs_circle_color(), "Bell circle should be without color"
         page.header.check_acknowledge_btn_not_displayed()
 
+    @allure.issue(name='Firefox issues', url='https://arenadata.atlassian.net/browse/QA-334')
     @pytest.mark.smoke()
     @pytest.mark.parametrize(
         'job_info',
@@ -382,7 +385,7 @@ class TestTaskHeaderPopup:
         ],
         ids=['success_job', 'failed_job', 'in_progress_job', 'three_job'],
     )
-    @pytest.mark.usefixtures('login_to_adcm_over_api')
+    @pytest.mark.usefixtures('login_to_adcm_over_api', 'skip_firefox')
     def test_job_has_correct_info_in_header_popup(self, job_info: dict, cluster: Cluster, app_fs):
         """Run action that finishes (success/failed) and check it in header popup"""
 
