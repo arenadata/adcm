@@ -28,4 +28,11 @@
         available: any
   components:
     ZOOKEEPER_SERVER:
+      constraint: [1,+]
     ZOOKEEPER_CLIENT:
+
+- type: service
+  name: second_service
+  version: 1
+  components:
+    some_component:
