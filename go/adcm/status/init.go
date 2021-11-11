@@ -29,6 +29,7 @@ type Hub struct {
 	HostComponentStorage *Storage
 	ServiceMap           *ServiceServer
 	EventWS              *wsHub
+	StatusEvent          *StatusEvent
 	AdcmApi              *AdcmApi
 	Secrets              *SecretConfig
 }
@@ -57,6 +58,8 @@ func Start(secrets *SecretConfig, logFile string, logLevel string) {
 		time.Sleep(time.Second)
 		hub.AdcmApi.getServiceMap()
 	}()
+
+	hub.StatusEvent = newStatusEvent()
 
 	startHTTP(httpPort, hub)
 }
