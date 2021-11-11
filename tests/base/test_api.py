@@ -111,7 +111,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         if self.token is not None:
             return
         response = requests.post(
-            self.url + '/token/',
+            self.url + '/rbac/token/',
             data=json.dumps({'username': 'admin', 'password': 'admin'}),
             headers={'Content-Type': 'application/json'},
         )
@@ -174,7 +174,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         return (ssh_bundle_id, provider_id, host_id)
 
     def test_access(self):
-        api = ['cluster', 'host', 'job', 'task', 'stack', 'user', 'profile']
+        api = ['cluster', 'host', 'job', 'task', 'stack']
         for path in api:
             response = requests.get(self.url + '/' + path + '/')
             self.assertEqual(response.status_code, 401, msg=response.text)

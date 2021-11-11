@@ -10,32 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import django.contrib.auth
-import rest_framework.authtoken.serializers
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 from rest_framework_extensions.settings import extensions_api_settings
 
 from api.api_views import check_obj, hlink, UrlField
 from cm.adcm_config import ui_config
-from cm.errors import AdcmEx, raise_AdcmEx
+from cm.errors import raise_AdcmEx
 from cm.models import Upgrade, GroupConfig
 from cm.upgrade import do_upgrade
-
-
-class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
-    def validate(self, attrs):
-        user = django.contrib.auth.authenticate(
-            username=attrs.get('username'), password=attrs.get('password')
-        )
-        if not user:
-            raise AdcmEx('AUTH_ERROR', 'Wrong user or password')
-        attrs['user'] = user
-        return attrs
-
-
-class LogOutSerializer(serializers.Serializer):
-    pass
 
 
 class EmptySerializer(serializers.Serializer):

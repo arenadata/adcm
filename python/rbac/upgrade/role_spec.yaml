@@ -1,0 +1,16 @@
+---
+
+version: 1
+
+roles:
+    - name: base
+      description: Base user role
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: auth
+          models:
+            - name: user
+              codenames:
+                - view
+                - self_change_password

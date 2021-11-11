@@ -74,6 +74,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework.authtoken',
     'social_django',
+    'guardian',
+    'rbac',
     'adwp_events',
     'cm.apps.CmConfig',
 ]
@@ -166,6 +168,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
+    'guardian.backends.ObjectPermissionBackend',
     'social_core.backends.google.GoogleOAuth2',
 )
 
@@ -251,7 +254,7 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
-        'adwp.events': {
+        'adwp': {
             'handlers': ['adwp_file'],
             'level': 'DEBUG',
             'propagate': True,

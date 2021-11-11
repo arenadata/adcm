@@ -15,65 +15,7 @@ from functools import partial
 
 from adwp_events.signals import model_change, model_delete, m2m_change
 from django.apps import AppConfig
-from django.db.models.signals import post_save, post_delete, post_migrate, m2m_changed
-
-ops_model_list = [
-    'adcm',
-    'bundle',
-    'prototype',
-    'upgrade',
-    'tasklog',
-    'joblog',
-    'logstorage',
-    'cluster',
-    'clusterbind',
-    'clusterobject',
-    'servicecomponent',
-    'hostcomponent',
-    'hostprovider',
-    'host',
-    'action',
-    'configlog',
-    'userprofile',
-]
-
-auth_model_list = ['user', 'group', 'role']
-
-
-def fill_view_role(Role, Permission):
-    if Role.objects.filter(name='view'):
-        return
-    role = Role(name='view', description='View all data')
-    role.save()
-    for model in ops_model_list + auth_model_list:
-        codename = f'view_{model}'
-        perm = Permission.objects.get(codename=codename)
-        role.permissions.add(perm)
-    role.save()
-
-
-def fill_admin_role(Role, Permission):
-    if Role.objects.filter(name='admin'):
-        return
-    role = Role(name='admin', description='Admin clusters')
-    role.save()
-    for model in auth_model_list:
-        codename = f'view_{model}'
-        perm = Permission.objects.get(codename=codename)
-        role.permissions.add(perm)
-    for model in ops_model_list:
-        for mod in ('view', 'add', 'change', 'delete'):
-            codename = f'{mod}_{model}'
-            perm = Permission.objects.get(codename=codename)
-            role.permissions.add(perm)
-    role.save()
-
-
-def fill_role(apps, **kwargs):
-    Role = apps.get_model('cm', 'Role')
-    Permission = apps.get_model('auth', 'Permission')
-    fill_view_role(Role, Permission)
-    fill_admin_role(Role, Permission)
+from django.db.models.signals import post_save, post_delete, m2m_changed
 
 
 _watched_m2m_links = (
@@ -105,7 +47,6 @@ class CmConfig(AppConfig):
     m2m_change = partial(m2m_change, filter_out=filter_out_event)
 
     def ready(self):
-        post_migrate.connect(fill_role, sender=self)
         post_save.connect(self.model_change, dispatch_uid='model_change')
         post_delete.connect(self.model_delete, dispatch_uid='model_delete')
         m2m_changed.connect(self.m2m_change, dispatch_uid='m2m_change')

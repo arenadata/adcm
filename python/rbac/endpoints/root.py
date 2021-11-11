@@ -10,20 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Arenadata RBAC root view"""
 
-from django.urls import path, include
-from . import views
+from rest_framework import permissions, routers
 
 
-urlpatterns = [
-    path('', views.ProfileList.as_view(), name='profile-list'),
-    path(
-        '<name:username>/',
-        include(
-            [
-                path('', views.ProfileDetail.as_view(), name='profile-details'),
-                path('password/', views.UserPasswd.as_view(), name='profile-passwd'),
-            ]
-        ),
-    ),
-]
+class RBACRoot(routers.APIRootView):
+    """Arenadata RBAC Root"""
+
+    permission_classes = (permissions.AllowAny,)
+    api_root_dict = {
+        'user': 'rbac-user-list',
+        'group': 'rbac_group:group-list',
+        'role': 'rbac_role:role-list',
+        'logout': 'rbac-logout',
+        'token': 'rbac-token',
+    }

@@ -9,21 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
-from django.urls import path, include
-from . import views
-
-
-urlpatterns = [
-    path('', views.GroupList.as_view(), name='group-list'),
-    path(
-        '<name:name>/',
-        include(
-            [
-                path('', views.GroupDetail.as_view(), name='group-details'),
-                path('role/', views.ChangeGroupRole.as_view(), name='change-group-role'),
-            ]
-        ),
-    ),
-]
