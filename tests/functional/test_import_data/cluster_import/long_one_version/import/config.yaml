@@ -18,7 +18,7 @@
        hadoop:
           versions:
              min: 1.2
-             max: 1.2
+             max: 1.2.3
        ADH:
           versions:
              max: 1.2

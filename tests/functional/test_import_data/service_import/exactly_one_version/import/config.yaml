@@ -17,8 +17,8 @@
     import:
        hadoop:
           versions:
-             min_strict: 1.2
-             max_strict: 1.2
+             min: 1.2
+             max: 1.2
        ADH:
           versions:
              max: 1.2
