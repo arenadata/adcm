@@ -24,6 +24,7 @@ class JobPageLocators(ObjectPageLocators):
     """Locators for detailed job page"""
 
     job_info = Locator(By.TAG_NAME, "app-job-info", "Job info section")
+    job_log = Locator(By.CSS_SELECTOR, "app-log-text", "Job log")
     start_date = Locator(By.CSS_SELECTOR, ".time-info>div:first-child>span", "Start date")
     finish_date = Locator(By.CSS_SELECTOR, ".time-info>div:last-child>span", "Finish date")
     duration = Locator(By.CSS_SELECTOR, ".time-info>div:nth-child(2)>span", "Task duration")

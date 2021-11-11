@@ -275,16 +275,12 @@ func setHost(h Hub, w http.ResponseWriter, r *http.Request) {
 		ErrOut4(w, r, "HOST_NOT_FOUND", "unknown host")
 		return
 	}
-	oldClusterStatus := getClusterStatus(h, clusterId)
-	oldStatus, ok := h.HostStorage.get(ALL, hostId)
-	res := h.HostStorage.set(ALL, hostId, status)
-	if oldStatus.Status != status || !ok {
-		h.EventWS.send2ws(newEventMsg(status, "host", hostId))
+	h.StatusEvent.save_host(h, hostId, clusterId)
+	clear := func() {
+		h.StatusEvent.check_host(h, hostId, clusterId)
 	}
-	newClusterStatus := getClusterStatus(h, clusterId)
-	if oldClusterStatus != newClusterStatus {
-		h.EventWS.send2ws(newEventMsg(status, "cluster", clusterId))
-	}
+	res := h.HostStorage.set(ALL, hostId, status, clear)
+	h.StatusEvent.check_host(h, hostId, clusterId)
 	jsonOut3(w, r, "", res)
 }
 
@@ -321,29 +317,12 @@ func setHostComp(h Hub, w http.ResponseWriter, r *http.Request) {
 		ErrOut4(w, r, "HC_NOT_FOUND", msg)
 		return
 	}
-
-	oldCompStatus, _ := getComponentStatus(h, compId)
-	oldServStatus, _ := getServiceStatus(h, hc.Cluster, hc.Service)
-	oldClusterStatus := getClusterStatus(h, hc.Cluster)
-	oldHCStatus, _ := h.HostComponentStorage.get(hostId, compId)
-
-	res := h.HostComponentStorage.set(hostId, compId, status)
-
-	newCompStatus, _ := getComponentStatus(h, compId)
-	newServStatus, _ := getServiceStatus(h, hc.Cluster, hc.Service)
-	newClusterStatus := getClusterStatus(h, hc.Cluster)
-	if oldHCStatus.Status != status {
-		h.EventWS.send2ws(newEventMsg4(status, "hostcomponent", hostId, compId))
+	h.StatusEvent.save_hc(h, hostId, compId, hc)
+	clear := func() {
+		h.StatusEvent.check_hc(h, hostId, compId, hc)
 	}
-	if oldCompStatus.Status != newCompStatus.Status {
-		h.EventWS.send2ws(newEventMsg(newCompStatus.Status, "component", compId))
-	}
-	if oldServStatus.Status != newServStatus.Status {
-		h.EventWS.send2ws(newEventMsg(newServStatus.Status, "service", hc.Service))
-	}
-	if oldClusterStatus != newClusterStatus {
-		h.EventWS.send2ws(newEventMsg(status, "cluster", hc.Cluster))
-	}
+	res := h.HostComponentStorage.set(hostId, compId, status, clear)
+	h.StatusEvent.check_hc(h, hostId, compId, hc)
 	jsonOut3(w, r, "", res)
 }
 
