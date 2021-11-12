@@ -43,16 +43,17 @@ from tests.ui_tests.app.page.service.page import (
     ServiceConfigPage,
     ServiceImportPage,
 )
+from tests.ui_tests.test_cluster_list_page import (
+    CLUSTER_NAME,
+    SERVICE_NAME,
+    PROVIDER_NAME,
+    HOST_NAME,
+    COMPONENT_NAME,
+    BUNDLE_REQUIRED_FIELDS,
+    BUNDLE_IMPORT,
+    BUNDLE_COMMUNITY,
+)
 
-BUNDLE_COMMUNITY = "cluster_community"
-CLUSTER_NAME = "Test cluster"
-SERVICE_NAME = "test_service"
-PROVIDER_NAME = 'test_provider'
-HOST_NAME = 'test-host'
-PROVIDER_WITH_ISSUE_NAME = 'provider_with_issue'
-COMPONENT_NAME = "first"
-BUNDLE_REQUIRED_FIELDS = "cluster_and_service_with_required_string"
-BUNDLE_IMPORT = "cluster_to_import"
 
 # pylint: disable=redefined-outer-name,no-self-use,unused-argument
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
@@ -81,7 +82,7 @@ def create_community_cluster_with_host_and_service(sdk_client_fs: ADCMClient, cr
     return cluster, cluster.service_add(name=SERVICE_NAME), cluster.host_add(create_host)
 
 
-@pytest.fixture()
+@pytest.fixture(params=["provider"])
 @allure.title("Create host")
 def create_host(request: SubRequest, sdk_client_fs: ADCMClient):
     """Create default host using API"""
@@ -305,16 +306,12 @@ class TestServiceStatusPage:
         successful = 'successful 1/1'
         negative = 'successful 0/1'
         success_status = [
-            StatusRowInfo(
-                icon=True, group_name='test_service', state=successful, state_color=SUCCESS_COLOR, link=None
-            ),
+            StatusRowInfo(icon=True, group_name='test_service', state=successful, state_color=SUCCESS_COLOR, link=None),
             StatusRowInfo(icon=True, group_name='first', state=successful, state_color=SUCCESS_COLOR, link=None),
             StatusRowInfo(icon=True, group_name=None, state=None, state_color=None, link='test-host'),
         ]
         component_negative_status = [
-            StatusRowInfo(
-                icon=True, group_name='test_service', state=negative, state_color=NEGATIVE_COLOR, link=None
-            ),
+            StatusRowInfo(icon=True, group_name='test_service', state=negative, state_color=NEGATIVE_COLOR, link=None),
             StatusRowInfo(icon=True, group_name='first', state=negative, state_color=NEGATIVE_COLOR, link=None),
             StatusRowInfo(icon=True, group_name=None, state=None, state_color=None, link='test-host'),
         ]
