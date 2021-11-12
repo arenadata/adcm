@@ -60,13 +60,6 @@ pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
 
 @pytest.fixture()
-def create_community_cluster(sdk_client_fs: ADCMClient):
-    """Create community edition cluster"""
-    bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
-    return bundle.cluster_create(name=CLUSTER_NAME)
-
-
-@pytest.fixture()
 def create_community_cluster_with_service(sdk_client_fs: ADCMClient):
     """Create community edition cluster and add service"""
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
@@ -92,16 +85,6 @@ def provider_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
 def upload_and_create_provider(provider_bundle) -> Provider:
     """Create provider from uploaded bundle"""
     return provider_bundle.provider_create(PROVIDER_NAME)
-
-
-@pytest.fixture()
-@allure.title("Create community cluster and add host")
-def create_community_cluster_with_host(app_fs, sdk_client_fs: ADCMClient, upload_and_create_provider, create_host):
-    """Create community cluster and add host"""
-    bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
-    cluster = bundle.cluster_create(name=CLUSTER_NAME)
-    host = cluster.host_add(create_host)
-    return cluster, host
 
 
 @pytest.fixture()
