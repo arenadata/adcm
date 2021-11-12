@@ -19,7 +19,6 @@ from _pytest.fixtures import SubRequest
 from adcm_client.objects import (
     ADCMClient,
     Bundle,
-    Provider,
 )
 from adcm_pytest_plugin import params
 from adcm_pytest_plugin import utils
@@ -60,7 +59,7 @@ pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
 
 @pytest.fixture()
-def create_community_cluster_with_service(sdk_client_fs: ADCMClient):
+def create_cluster_with_service(sdk_client_fs: ADCMClient):
     """Create community edition cluster and add service"""
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)
@@ -71,20 +70,6 @@ def create_community_cluster_with_service(sdk_client_fs: ADCMClient):
 def cluster_bundle(sdk_client_fs: ADCMClient, data_dir_name: str) -> Bundle:
     """Upload cluster bundle"""
     return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), data_dir_name))
-
-
-@pytest.fixture(params=["provider"])
-@allure.title("Upload provider bundle")
-def provider_bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
-    """Upload provider bundle"""
-    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
-
-
-@pytest.fixture()
-@allure.title("Create provider")
-def upload_and_create_provider(provider_bundle) -> Provider:
-    """Create provider from uploaded bundle"""
-    return provider_bundle.provider_create(PROVIDER_NAME)
 
 
 @pytest.fixture()
@@ -98,9 +83,10 @@ def create_community_cluster_with_host_and_service(sdk_client_fs: ADCMClient, cr
 
 @pytest.fixture()
 @allure.title("Create host")
-def create_host(upload_and_create_provider):
+def create_host(request: SubRequest, sdk_client_fs: ADCMClient):
     """Create default host using API"""
-    provider = upload_and_create_provider
+    provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
+    provider = provider_bundle.provider_create(PROVIDER_NAME)
     return provider.host_create(HOST_NAME)
 
 
@@ -126,39 +112,39 @@ class TestServiceMainPage:
     """Tests for the /cluster/{}/service/{}/main page"""
 
     @pytest.mark.smoke()
-    def test_open_service_main_page_by_tab(self, app_fs, create_community_cluster_with_service):
+    def test_open_service_main_page_by_tab(self, app_fs, create_cluster_with_service):
         """Test open /cluster/{}/service/{}/main page from left menu"""
 
-        cluster, service = create_community_cluster_with_service
+        cluster, service = create_cluster_with_service
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_main_page = service_config_page.open_main_tab()
         service_main_page.wait_page_is_opened()
         service_main_page.check_all_elements()
 
-    def test_open_admin_page_by_toolbar_in_service(self, app_fs, create_community_cluster_with_service):
+    def test_open_admin_page_by_toolbar_in_service(self, app_fs, create_cluster_with_service):
         """Test open admin/intro page from service toolbar"""
 
-        cluster, service = create_community_cluster_with_service
+        cluster, service = create_cluster_with_service
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_main_page.toolbar.click_admin_link()
         AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
 
-    def test_open_service_main_page_by_toolbar(self, app_fs, create_community_cluster_with_service):
+    def test_open_service_main_page_by_toolbar(self, app_fs, create_cluster_with_service):
         """Test open /cluster/{}/service/{}/main page from service toolbar"""
 
         params = {"service_list_name": "SERVICES"}
 
-        cluster, service = create_community_cluster_with_service
+        cluster, service = create_cluster_with_service
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_main_page.toolbar.click_link_by_name(params["service_list_name"])
         ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).wait_page_is_opened()
 
-    def test_run_action_on_service_page_by_toolbar(self, app_fs, create_community_cluster_with_service):
+    def test_run_action_on_service_page_by_toolbar(self, app_fs, create_cluster_with_service):
         """Test run action from the /cluster/{}/service/{}/main page toolbar"""
 
         params = {"action_name": "test_action"}
 
-        cluster, service = create_community_cluster_with_service
+        cluster, service = create_cluster_with_service
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_main_page.toolbar.run_action(CLUSTER_NAME, params["action_name"])
         with allure.step("Check success job"):
@@ -171,10 +157,10 @@ class TestServiceComponentPage:
     """Tests for the /cluster/{}/service/{}/component page"""
 
     @pytest.mark.smoke()
-    def test_open_service_component_page_by_tab(self, app_fs, create_community_cluster_with_service):
+    def test_open_service_component_page_by_tab(self, app_fs, create_cluster_with_service):
         """Test open /cluster/{}/service/{}/component page from left menu"""
 
-        cluster, service = create_community_cluster_with_service
+        cluster, service = create_cluster_with_service
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_component_page = service_main_page.open_components_tab()
         service_component_page.wait_page_is_opened()
@@ -182,12 +168,12 @@ class TestServiceComponentPage:
 
     @params.including_https
     @pytest.mark.smoke()
-    def test_run_action_from_service_component_page(self, app_fs, create_community_cluster_with_service):
+    def test_run_action_from_service_component_page(self, app_fs, create_cluster_with_service):
         """Test run action from the row on /cluster/{}/service/{}/component page"""
 
         params = {"action_name": "switch_component_state", "expected_state": "installed"}
 
-        cluster, service = create_community_cluster_with_service
+        cluster, service = create_cluster_with_service
         service_component_page = ServiceComponentPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         row = service_component_page.table.get_all_rows()[0]
         with service_component_page.wait_component_state_change(row):
@@ -205,21 +191,21 @@ class TestServiceComponentPage:
 class TestServiceConfigPage:
     """Tests for the /cluster/{}/service/{}/config page"""
 
-    def test_open_service_config_page_by_tab(self, app_fs, create_community_cluster_with_service):
+    def test_open_service_config_page_by_tab(self, app_fs, create_cluster_with_service):
         """Test open /cluster/{}/service/{}/config from left menu"""
 
-        cluster, service = create_community_cluster_with_service
+        cluster, service = create_cluster_with_service
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_config_page = service_main_page.open_config_tab()
         service_config_page.wait_page_is_opened()
         service_config_page.check_all_elements()
 
-    def test_filter_config_on_service_config_page(self, app_fs, create_community_cluster_with_service):
+    def test_filter_config_on_service_config_page(self, app_fs, create_cluster_with_service):
         """Test config filtration on /cluster/{}/service/{}/config page"""
 
         params = {"search_param": "param1", "group_name": "core-site"}
 
-        cluster, service = create_community_cluster_with_service
+        cluster, service = create_cluster_with_service
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         with service_config_page.config.wait_rows_change():
             service_config_page.config.search(params["search_param"])
@@ -237,7 +223,7 @@ class TestServiceConfigPage:
         with service_config_page.config.wait_rows_change(expected_rows_amount=0):
             service_config_page.config.click_on_group(params["group_name"])
 
-    def test_save_custom_config_on_service_config_page(self, app_fs, create_community_cluster_with_service):
+    def test_save_custom_config_on_service_config_page(self, app_fs, create_cluster_with_service):
         """Test config save on /cluster/{}/service/{}/config page"""
 
         params = {
@@ -247,7 +233,7 @@ class TestServiceConfigPage:
             "config_name_old": "init",
         }
 
-        cluster, service = create_community_cluster_with_service
+        cluster, service = create_cluster_with_service
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         config_row = service_config_page.config.get_all_config_rows()[0]
         service_config_page.config.type_in_config_field(row=config_row, value=params["row_value_new"], clear=True)
@@ -259,12 +245,12 @@ class TestServiceConfigPage:
             row_with_history = service_config_page.config.get_all_config_rows()[0]
             service_config_page.config.wait_history_row_with_value(row_with_history, params["row_value_old"])
 
-    def test_reset_config_in_row_on_service_config_page(self, app_fs, create_community_cluster_with_service):
+    def test_reset_config_in_row_on_service_config_page(self, app_fs, create_cluster_with_service):
         """Test config reset on /cluster/{}/service/{}/config page"""
 
         params = {"row_name": "param1", "row_value_new": "test", "row_value_old": "", "config_name": "test_name"}
 
-        cluster, service = create_community_cluster_with_service
+        cluster, service = create_cluster_with_service
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         config_row = service_config_page.config.get_all_config_rows()[0]
         service_config_page.config.type_in_config_field(row=config_row, value=params["row_value_new"], clear=True)
@@ -302,10 +288,10 @@ class TestServiceConfigPage:
 class TestServiceStatusPage:
     """Tests for the /cluster/{}/service/{}/status page"""
 
-    def test_open_by_tab_service_status_page(self, app_fs, create_community_cluster_with_service):
+    def test_open_by_tab_service_status_page(self, app_fs, create_cluster_with_service):
         """Test open /cluster/{}/service/{}/status from left menu"""
 
-        cluster, service = create_community_cluster_with_service
+        cluster, service = create_cluster_with_service
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_status_page = service_main_page.open_status_tab()
         service_status_page.wait_page_is_opened()
@@ -355,10 +341,10 @@ class TestServiceStatusPage:
 class TestServiceImportPage:
     """Tests for the /cluster/{}/service/{}/import page"""
 
-    def test_open_by_tab_service_import_page(self, app_fs, create_community_cluster_with_service):
+    def test_open_by_tab_service_import_page(self, app_fs, create_cluster_with_service):
         """Test open /cluster/{}/service/{}/import from left menu"""
 
-        cluster, service = create_community_cluster_with_service
+        cluster, service = create_cluster_with_service
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_import_page = service_main_page.open_import_tab()
         service_import_page.wait_page_is_opened()
