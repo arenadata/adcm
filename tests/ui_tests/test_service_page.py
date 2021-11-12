@@ -333,18 +333,20 @@ class TestServiceStatusPage:
     ):
         """Changes status on /cluster/{}/service/{}/status page"""
 
+        successful = 'successful 1/1'
+        negative = 'successful 0/1'
         success_status = [
             StatusRowInfo(
-                icon=True, group_name='test_service', state='successful 1/1', state_color=SUCCESS_COLOR, link=None
+                icon=True, group_name='test_service', state=successful, state_color=SUCCESS_COLOR, link=None
             ),
-            StatusRowInfo(icon=True, group_name='first', state='successful 1/1', state_color=SUCCESS_COLOR, link=None),
+            StatusRowInfo(icon=True, group_name='first', state=successful, state_color=SUCCESS_COLOR, link=None),
             StatusRowInfo(icon=True, group_name=None, state=None, state_color=None, link='test-host'),
         ]
         component_negative_status = [
             StatusRowInfo(
-                icon=True, group_name='test_service', state='successful 0/1', state_color=NEGATIVE_COLOR, link=None
+                icon=True, group_name='test_service', state=negative, state_color=NEGATIVE_COLOR, link=None
             ),
-            StatusRowInfo(icon=True, group_name='first', state='successful 0/1', state_color=NEGATIVE_COLOR, link=None),
+            StatusRowInfo(icon=True, group_name='first', state=negative, state_color=NEGATIVE_COLOR, link=None),
             StatusRowInfo(icon=True, group_name=None, state=None, state_color=None, link='test-host'),
         ]
         cluster, service, host = create_community_cluster_with_host_and_service
