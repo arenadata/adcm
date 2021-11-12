@@ -20,6 +20,7 @@ from typing import (
 )
 
 import allure
+import coreapi
 import pytest
 from adcm_client.objects import (
     ADCMClient,
@@ -865,3 +866,32 @@ class TestChangeGroupsConfig:
             )
             run_cluster_action_and_assert_result(cluster, action=ACTION_NAME, timeout=30)
             run_cluster_action_and_assert_result(cluster, action=ACTION_MULTIJOB_NAME, timeout=30)
+
+    @pytest.mark.parametrize(
+        "cluster_bundle",
+        [pytest.param(get_data_dir(__file__, "cluster_with_readonly_field"), id="readonly_param")],
+        indirect=True,
+    )
+    @allure.issue("https://arenadata.atlassian.net/browse/ADCM-2295")
+    def test_changing_group_with_readonly_in_group_param(self, cluster_bundle, cluster_with_two_hosts_on_it):
+        """
+        Test that readonly field doesn't break config group save when it's value isn't passed in "config" dict
+        """
+        with allure.step("Prepare config group"):
+            host, _, cluster = cluster_with_two_hosts_on_it
+            cluster_group = _create_group_and_add_host(cluster, host)
+        with allure.step("Change config group by passing 'frontend-like' config"):
+            try:
+                cluster_group.config_set(
+                    {
+                        "config": {
+                            "visible_param": "something",
+                        },
+                        "attr": {
+                            "group_keys": {"visible_param": True, "problem_group": {"problem_param": False}},
+                            "custom_group_keys": {"visible_param": True, "problem_group": {"problem_param": False}},
+                        },
+                    }
+                )
+            except coreapi.exceptions.ErrorMessage as e:
+                raise AssertionError("Config group should be saved without error") from e
