@@ -3,6 +3,7 @@ import { LabelMenuItemComponent } from '../shared/details/left-menu-items/label-
 import { StatusMenuItemComponent } from '@app/shared/details/left-menu-items/status-menu-item/status-menu-item.component';
 import { LogMenuItemComponent } from '@app/shared/details/left-menu-items/log-menu-item/log-menu-item.component';
 import { TypeName } from '@app/core/types';
+import { ConcernMenuItemComponent } from '@app/shared/details/left-menu-items/concern-menu-item/concern-menu-item.component';
 
 export class DetailsFactory {
 
@@ -11,6 +12,15 @@ export class DetailsFactory {
       label,
       link,
       component: LabelMenuItemComponent,
+    };
+  }
+
+  static concernMenuItem(label: string, link: string, cause: string): LeftMenuItem {
+    return {
+      label,
+      link,
+      data: { cause },
+      component: ConcernMenuItemComponent,
     };
   }
 
