@@ -60,7 +60,6 @@ class GroupSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSer
     """Group serializer"""
 
     permissions = PermissionSerializer(many=True, read_only=True)
-    roles = serializers.SerializerMethodField(read_only=True)
     add_role = serializers.HyperlinkedIdentityField(
         view_name='rbac_group_role:list', lookup_field='id'
     )
@@ -70,7 +69,6 @@ class GroupSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSer
         fields = (
             'id',
             'name',
-            'roles',
             'permissions',
             'add_role',
             'url',
@@ -78,11 +76,6 @@ class GroupSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSer
         extra_kwargs = {
             'url': {'view_name': 'rbac_group:group-detail', 'lookup_field': 'id'},
         }
-
-    def get_roles(self, obj):
-        """Get all user's roles"""
-        self.context['group'] = obj
-        return GroupRoleSerializer(obj.role_set.all(), many=True, context=self.context).data
 
 
 # pylint: disable=too-many-ancestors

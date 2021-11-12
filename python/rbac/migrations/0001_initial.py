@@ -125,6 +125,12 @@ class Migration(migrations.Migration):
                 ),
             ],
         ),
+        migrations.AddConstraint(
+            model_name='PolicyObject',
+            constraint=models.UniqueConstraint(
+                fields=['content_type', 'object_id'], name='unique_policy_object'
+            ),
+        ),
         migrations.CreateModel(
             name='Policy',
             fields=[

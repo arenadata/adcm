@@ -13,7 +13,7 @@
 
 from rest_framework_extensions.routers import ExtendedDefaultRouter as DefaultRouter
 
-from .views import PolicyViewSet, PolicyUserViewSet
+from .views import PolicyViewSet, PolicyUserViewSet, PolicyGroupViewSet
 
 router = DefaultRouter()
 
@@ -21,5 +21,7 @@ policy = router.register(r'', PolicyViewSet, basename='policy')
 policy.register(
     r'user', PolicyUserViewSet, basename='policy-user', parents_query_lookups=['policy']
 )
-
+policy.register(
+    r'group', PolicyGroupViewSet, basename='policy-group', parents_query_lookups=['policy']
+)
 urlpatterns = router.urls

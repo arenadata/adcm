@@ -21,6 +21,7 @@ pyyaml
 ruyaml
 toml
 uwsgi
+jsonschema
 version_utils
 ruyaml
 yspec
