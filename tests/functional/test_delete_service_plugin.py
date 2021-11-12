@@ -94,3 +94,10 @@ def test_delete_service_with_host(sdk_client_fs: ADCMClient):
         assert len(cluster.service_list()) == 1, "It should be 1 service"
         assert cluster.service_list()[0].name == "second_service", "It should be only second service left"
         assert len(cluster.hostcomponent()) == 1, "HC map should contain 1 mapping"
+    with allure.step("Check that there is no issues on objects"):
+        cluster.reread()
+        assert not cluster.concerns(), "It should be no concerns on cluster"
+        host_1.reread()
+        assert not host_1.concerns(), "It should be no concerns on host"
+        host_2.reread()
+        assert not host_2.concerns(), "It should be no concerns on host"
