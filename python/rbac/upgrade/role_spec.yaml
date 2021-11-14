@@ -14,3 +14,43 @@ roles:
               codenames:
                 - view
                 - self_change_password
+
+    - name: create Host
+      description: The ability to add new host
+      apps:
+        - label: cm
+          models:
+            - name: host
+              codenames:
+                - view
+                - add
+
+    - name: create HostProvider
+      description: The ability to add new provider
+      apps:
+        - label: cm
+          models:
+            - name: hostprovider
+              codenames:
+                - view
+                - add
+
+    - name: create Cluster
+      description: The ability to add new cluster
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - view
+                - add
+
+    - name: upload Bundle
+      description: The ability to upload Bundle
+      apps:
+        - label: cm
+          models:
+            - name: bundle
+              codenames:
+                - view
+                - add
