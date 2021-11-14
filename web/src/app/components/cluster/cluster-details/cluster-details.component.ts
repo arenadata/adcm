@@ -27,7 +27,7 @@ export class ClusterDetailsComponent extends DetailAbstractDirective<ICluster> {
     DetailsFactory.concernMenuItem('Configuration', 'config', 'config'),
     DetailsFactory.labelMenuItem('Configuration groups', 'group_config'),
     DetailsFactory.statusMenuItem('Status', 'status', 'cluster'),
-    DetailsFactory.labelMenuItem('Import', 'import'),
+    DetailsFactory.concernMenuItem('Import', 'import', 'import'),
   ];
 
   constructor(
