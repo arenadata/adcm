@@ -57,20 +57,6 @@ class ClusterServicesLocators:
         config = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(7) button", "Service config")
 
 
-class ClusterImportLocators:
-    """Cluster import page elements locators"""
-
-    save_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Save button")
-    import_item_block = Locator(By.CSS_SELECTOR, ".items div[class*='group']", "Import item block")
-
-    class ImportItem:
-        """Cluster import page import item elements locators"""
-
-        name = Locator(By.CSS_SELECTOR, "h3", "Import item name")
-        import_chbx = Locator(By.CSS_SELECTOR, "mat-checkbox", "Import checkbox")
-        description = Locator(By.CSS_SELECTOR, "app-exports>div>div", "Description text")
-
-
 class ClusterHostLocators:
     """Cluster host page elements locators"""
 
@@ -114,24 +100,6 @@ class ClusterComponentsLocators:
 
             name = Locator(By.CSS_SELECTOR, "div>span", "Related item name")
             delete_btn = Locator(By.CSS_SELECTOR, "button", "Delete item button")
-
-
-class ClusterStatusLocators:
-    """Cluster status page elements locators"""
-
-    collapse_btn = Locator(By.CSS_SELECTOR, "mat-card mat-expansion-panel-header", "Collapse list button")
-    group_row = Locator(By.CSS_SELECTOR, "mat-expansion-panel", "Group row")
-
-    class GroupRow:
-        """Cluster status page group row elements locators"""
-
-        service_group = Locator(By.CSS_SELECTOR, "div[class*='mat-expansion-panel-content']", "Service group")
-
-        class ServiceGroupRow:
-            """Cluster status page service group row elements locators"""
-
-            service_name = Locator(By.XPATH, ".//div[not(contains(@class, 'component'))]/span", "Service name")
-            host_name = Locator(By.CSS_SELECTOR, "div[class*='component']>span>span", "Host name")
 
 
 class ClusterActionLocators:
