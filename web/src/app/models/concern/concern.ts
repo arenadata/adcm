@@ -8,4 +8,5 @@ export interface Concern extends Entity {
   reason: ConcernReason;
   type: ConcernType;
   url?: string;
+  cause: string;
 }
