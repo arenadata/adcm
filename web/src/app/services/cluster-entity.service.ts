@@ -31,6 +31,51 @@ export class ClusterEntityService extends EntityService<ICluster> implements Hav
   }
 
   entityStatusTreeToStatusTree(input: ClusterStatusTree): StatusTree[] {
+    let hostsStatus;
+    let servicesStatus;
+
+    const hosts = input.chilren.hosts.map((host) => {
+      hostsStatus = host.status;
+
+      return {
+        subject: {
+          id: host.id,
+          status: host.status,
+          name: host.name,
+          link: (id) => ['/cluster', input.id.toString(), 'host', id.toString(), 'status'],
+        },
+        children: [],
+      };
+    });
+
+    const services = input.chilren.services.map((service) => {
+      servicesStatus = service.status;
+
+      return {
+        subject: {
+          id: service.id,
+          status: service.status,
+          name: service.name,
+        },
+        children: service.hc.map(component => ({
+          subject: {
+            id: component.id,
+            name: component.name,
+            status: component.status,
+          },
+          children: component.hosts.map(host => ({
+            subject: {
+              id: host.id,
+              status: host.status,
+              name: host.name,
+              link: (id) => ['/cluster', input.id.toString(), 'host', id.toString(), 'status'],
+            },
+            children: [],
+          })),
+        })),
+      };
+    });
+
     return [{
       subject: {
         id: input.id,
@@ -41,43 +86,16 @@ export class ClusterEntityService extends EntityService<ICluster> implements Hav
         {
           subject: {
             name: 'Hosts',
+            status: hostsStatus
           },
-          children: input.chilren.hosts.map((host) => ({
-            subject: {
-              id: host.id,
-              status: host.status,
-              name: host.name,
-              link: (id) => ['/cluster', input.id.toString(), 'host', id.toString(), 'status'],
-            },
-            children: [],
-          })),
-        }, {
+          children: hosts,
+        },
+        {
           subject: {
             name: 'Services',
+            status: servicesStatus
           },
-          children: input.chilren.services.map((service) => ({
-            subject: {
-              id: service.id,
-              status: service.status,
-              name: service.name,
-            },
-            children: service.hc.map(component => ({
-              subject: {
-                id: component.id,
-                name: component.name,
-                status: component.status,
-              },
-              children: component.hosts.map(host => ({
-                subject: {
-                  id: host.id,
-                  status: host.status,
-                  name: host.name,
-                  link: (id) => ['/cluster', input.id.toString(), 'host', id.toString(), 'status'],
-                },
-                children: [],
-              })),
-            })),
-          })),
+          children: services,
         }
       ],
     }];
