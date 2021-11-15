@@ -2,6 +2,8 @@ import { LeftMenuItem } from '../shared/details/left-menu/left-menu.component';
 import { LabelMenuItemComponent } from '../shared/details/left-menu-items/label-menu-item/label-menu-item.component';
 import { StatusMenuItemComponent } from '@app/shared/details/left-menu-items/status-menu-item/status-menu-item.component';
 import { LogMenuItemComponent } from '@app/shared/details/left-menu-items/log-menu-item/log-menu-item.component';
+import { TypeName } from '@app/core/types';
+import { ConcernMenuItemComponent } from '@app/shared/details/left-menu-items/concern-menu-item/concern-menu-item.component';
 
 export class DetailsFactory {
 
@@ -13,10 +15,20 @@ export class DetailsFactory {
     };
   }
 
-  static statusMenuItem(label: string, link: string): LeftMenuItem {
+  static concernMenuItem(label: string, link: string, cause: string): LeftMenuItem {
     return {
       label,
       link,
+      data: { cause },
+      component: ConcernMenuItemComponent,
+    };
+  }
+
+  static statusMenuItem(label: string, link: string, entityType: TypeName): LeftMenuItem {
+    return {
+      label,
+      link,
+      data: { entityType },
       component: StatusMenuItemComponent,
     };
   }

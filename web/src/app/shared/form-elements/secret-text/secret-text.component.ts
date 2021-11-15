@@ -12,7 +12,7 @@
 import { Component, OnChanges, OnInit, } from '@angular/core';
 
 import { FieldDirective } from '../field.directive';
-import { FormControl } from '@angular/forms';
+import { FormControl, Validators } from '@angular/forms';
 
 @Component({
   selector: 'app-fields-secret-text',
@@ -29,12 +29,11 @@ export class SecretTextComponent extends FieldDirective implements OnInit, OnCha
 
   ngOnInit(): void {
     this._initDummyControl();
-
   }
 
   onBlur(): void {
     this.control.setValue(this.dummyControl.value || this.value);
-    this.dummyControl.setValue(this.dummy);
+    this.dummyControl.setValue(this.dummyControl.value ? this.dummy : '');
   }
 
   onFocus(): void {
@@ -42,8 +41,11 @@ export class SecretTextComponent extends FieldDirective implements OnInit, OnCha
   }
 
   private _initDummyControl(): void {
-    this.dummyControl = new FormControl({ value: this.dummy, disabled: this.control.disabled });
-    this.control.markAllAsTouched();
+    this.dummyControl = new FormControl(
+      { value: this.control.value ? this.dummy : '', disabled: this.control.disabled },
+      Validators.compose(this.field.required ? [Validators.required] : [])
+    );
+    this.dummyControl.markAllAsTouched();
 
 
     this.control.statusChanges.pipe(this.takeUntil()).subscribe((status) => {

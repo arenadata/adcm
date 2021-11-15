@@ -24,10 +24,10 @@ export class ClusterDetailsComponent extends DetailAbstractDirective<ICluster> {
     DetailsFactory.labelMenuItem('Services', 'service'),
     DetailsFactory.labelMenuItem('Hosts', 'host'),
     DetailsFactory.labelMenuItem('Hosts - Components', 'host_component'),
-    DetailsFactory.labelMenuItem('Configuration', 'config'),
+    DetailsFactory.concernMenuItem('Configuration', 'config', 'config'),
     DetailsFactory.labelMenuItem('Configuration groups', 'group_config'),
-    DetailsFactory.statusMenuItem('Status', 'status'),
-    DetailsFactory.labelMenuItem('Import', 'import'),
+    DetailsFactory.statusMenuItem('Status', 'status', 'cluster'),
+    DetailsFactory.concernMenuItem('Import', 'import', 'import'),
   ];
 
   constructor(
