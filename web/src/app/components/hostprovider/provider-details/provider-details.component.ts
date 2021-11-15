@@ -9,6 +9,7 @@ import { SocketState } from '@app/core/store';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ChannelService } from '@app/core/services';
 import { ProviderService } from '@app/services/provider.service';
+import { ConcernEventType } from '@app/models/concern/concern-reason';
 
 @Component({
   selector: 'app-provider-details',
@@ -21,7 +22,7 @@ export class ProviderDetailsComponent extends DetailAbstractDirective<Provider> 
 
   leftMenu = [
     DetailsFactory.labelMenuItem('Main', 'main'),
-    DetailsFactory.labelMenuItem('Configuration', 'config'),
+    DetailsFactory.concernMenuItem('Configuration', 'config', 'config', ConcernEventType.HostProvider, 'provider'),
     DetailsFactory.labelMenuItem('Configuration groups', 'group_config'),
   ];
 

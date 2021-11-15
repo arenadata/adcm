@@ -4,6 +4,7 @@ import { StatusMenuItemComponent } from '@app/shared/details/left-menu-items/sta
 import { LogMenuItemComponent } from '@app/shared/details/left-menu-items/log-menu-item/log-menu-item.component';
 import { TypeName } from '@app/core/types';
 import { ConcernMenuItemComponent } from '@app/shared/details/left-menu-items/concern-menu-item/concern-menu-item.component';
+import { ConcernEventType } from '@app/models/concern/concern-reason';
 
 export class DetailsFactory {
 
@@ -15,11 +16,11 @@ export class DetailsFactory {
     };
   }
 
-  static concernMenuItem(label: string, link: string, cause: string): LeftMenuItem {
+  static concernMenuItem(label: string, link: string, cause: string, type: ConcernEventType, owner_type: TypeName): LeftMenuItem {
     return {
       label,
       link,
-      data: { cause },
+      data: { cause, type, owner_type },
       component: ConcernMenuItemComponent,
     };
   }

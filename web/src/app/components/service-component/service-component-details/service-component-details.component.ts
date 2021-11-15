@@ -9,6 +9,7 @@ import { ChannelService } from '@app/core/services';
 import { ServiceComponentService } from '@app/services/service-component.service';
 import { DetailsFactory } from '@app/factories/details.factory';
 import { IServiceComponent } from '@app/models/service-component';
+import { ConcernEventType } from '@app/models/concern/concern-reason';
 
 @Component({
   selector: 'app-service-component-details',
@@ -21,7 +22,7 @@ export class ServiceComponentDetailsComponent extends DetailAbstractDirective<IS
 
   leftMenu = [
     DetailsFactory.labelMenuItem('Main', 'main'),
-    DetailsFactory.labelMenuItem('Configuration', 'config'),
+    DetailsFactory.concernMenuItem('Configuration', 'config', 'config', ConcernEventType.ServiceComponent, 'component'),
     DetailsFactory.labelMenuItem('Configuration groups', 'group_config'),
     DetailsFactory.statusMenuItem('Status', 'status', 'component'),
   ];

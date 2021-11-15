@@ -1,9 +1,9 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { MenuItemAbstractDirective } from '@app/abstract-directives/menu-item.abstract.directive';
 import { BaseEntity } from '@app/core/types';
-import { selectMessage, SocketState } from '@app/core/store';
-import { Store } from '@ngrx/store';
-import { filter } from 'rxjs/operators';
+import { ApiService } from '@app/core/api';
+import { ConcernService } from '@app/services/concern.service';
+import { environment } from '@env/environment';
 
 @Component({
   selector: 'app-concern-menu-item',
@@ -14,22 +14,22 @@ import { filter } from 'rxjs/operators';
        routerLinkActive="active"
     >
       <span>{{ label }}</span>&nbsp;
-      <ng-container *ngIf="isConcern">
+      <ng-container *ngIf="concernsPresent">
         <mat-icon color="warn">
-          error_outline
+          priority_hight
         </mat-icon>
       </ng-container>
     </a>
   `,
   styles: ['a span { white-space: nowrap; }'],
 })
-export class ConcernMenuItemComponent extends MenuItemAbstractDirective<BaseEntity> {
+export class ConcernMenuItemComponent extends MenuItemAbstractDirective<BaseEntity> implements OnInit {
 
-  isConcern = false;
+  concernsPresent = false;
 
   @Input() set entity(entity: BaseEntity) {
     this._entity = entity;
-    this.listenToConcernChanges();
+    this.getConcernStatus();
   }
 
   get entity(): BaseEntity {
@@ -37,20 +37,25 @@ export class ConcernMenuItemComponent extends MenuItemAbstractDirective<BaseEnti
   }
 
   constructor(
-    private store: Store<SocketState>,
+    private api: ApiService,
+    private concernService: ConcernService
   ) {
     super();
   }
 
-  private listenToConcernChanges() {
-    this.store.pipe(
-      selectMessage,
-      filter(event => event?.object?.id && this.entity?.id && event.object.id === this.entity.id),
-      filter(event => event?.event === 'concern'),
-      filter(event => event?.object?.details.type === this.data.cause),
-      this.takeUntil(),
-    ).subscribe((event) => {
-      this.isConcern = event.object.details.value;
-    });
+  ngOnInit(): void {
+    this.concernService.events({ types: [this.data.type] })
+      .subscribe(_ => this.getConcernStatus());
+  }
+
+  private getConcernStatus(): void {
+    const params = {
+      owner_type: this.data.owner_type,
+      owner_id: this.entity.id + '',
+      cause: this.data.cause
+    };
+
+    this.api.get(`${environment.apiRoot}/concern`, params)
+      .subscribe((concerns: any[]) => this.concernsPresent = !!concerns?.length);
   }
 }
