@@ -270,7 +270,7 @@ export class FieldService {
    * Output form, cast to source type
    */
   public parseValue(output: IOutput, source: ISource[]): IOutput {
-    const findField = (name: string, p?: string): Partial<IFieldStack> => source.find((a) => (p ? a.name === p && a.subname === name : a.name === name) && !a.read_only);
+    const findField = (name: string, p?: string): Partial<IFieldStack> => source.find((a) => (p ? a.name === p && a.subname === name : a.name === name));
 
     const runYspecParse = (v: any, f: Partial<IFieldOptions>) => ((!v || !Object.keys(v).length) && !f.value ? f.value : this.runYspec(v, f.limits.rules));
 
