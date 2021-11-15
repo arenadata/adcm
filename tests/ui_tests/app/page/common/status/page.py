@@ -10,14 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from selenium.webdriver.remote.webdriver import WebElement
 
+from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.status.locators import StatusLocators
 
@@ -26,7 +27,7 @@ from tests.ui_tests.app.page.common.status.locators import StatusLocators
 class StatusRowInfo:
     """Information from status row"""
 
-    icon: bool
+    has_icon: bool
     group_name: Optional[str]
     state: Optional[str]
     state_color: Optional[str]
@@ -41,24 +42,24 @@ class StatusPage(BasePageObject):
         """Click on collapse all button"""
         self.find_and_click(StatusLocators.expand_collapse_btn)
 
-    def get_all_rows(self):
+    def get_all_rows(self) -> [WebElement]:
         """Get all config groups"""
-        return [r for r in self.find_elements(StatusLocators.group_row) if r.is_displayed()]
+        return self.find_elements(StatusLocators.group_row)
 
-    def get_page_info(self):
+    def get_page_info(self) -> [StatusRowInfo]:
         """ "Get group info by row"""
         row_elements = StatusLocators.StatusRow
         page_rows = self.get_all_rows()
         components_items = []
+
+        def get_child_text(row: WebElement, locator: Locator) -> str:
+            return self.find_child(row, locator).text if self.is_child_displayed(row, locator, timeout=1) else None
+
         for row in page_rows:
             row_item = StatusRowInfo(
-                icon=self.is_child_displayed(row, row_elements.icon, timeout=1),
-                group_name=self.find_child(row, row_elements.group_name).text
-                if self.is_child_displayed(row, row_elements.group_name, timeout=1)
-                else None,
-                state=self.find_child(row, row_elements.state).text
-                if self.is_child_displayed(row, row_elements.state, timeout=1)
-                else None,
+                has_icon=self.is_child_displayed(row, row_elements.icon, timeout=1),
+                group_name=get_child_text(row, row_elements.group_name),
+                state=get_child_text(row, row_elements.state),
                 state_color=self.find_child(row, row_elements.state)
                 .value_of_css_property('color')
                 .split("(")[1]
@@ -66,9 +67,7 @@ class StatusPage(BasePageObject):
                 .split(")")[0]
                 if self.is_child_displayed(row, row_elements.state, timeout=1)
                 else None,
-                link=self.find_child(row, row_elements.link).text
-                if self.is_child_displayed(row, row_elements.link, timeout=1)
-                else None,
+                link=get_child_text(row, row_elements.link),
             )
             components_items.append(row_item)
         return components_items

@@ -73,7 +73,7 @@ class ServicePageMixin(BasePageObject):
         self.table = CommonTableObj(self.driver, self.base_url)
 
     @allure.step("Open Main tab by menu click")
-    def open_main_tab(self):
+    def open_main_tab(self) -> "ServiceMainPage":
         """Open Main tab by menu click"""
         self.find_and_click(ObjectPageMenuLocators.main_tab)
         page = ServiceMainPage(self.driver, self.base_url, self.cluster_id, self.service_id)
@@ -81,7 +81,7 @@ class ServicePageMixin(BasePageObject):
         return page
 
     @allure.step("Open Components tab by menu click")
-    def open_components_tab(self):
+    def open_components_tab(self) -> "ServiceComponentPage":
         """Open Components tab by menu click"""
         self.find_and_click(ObjectPageMenuLocators.service_components_tab)
         page = ServiceComponentPage(self.driver, self.base_url, self.cluster_id, self.service_id)
@@ -89,7 +89,7 @@ class ServicePageMixin(BasePageObject):
         return page
 
     @allure.step("Open Configuration tab by menu click")
-    def open_config_tab(self):
+    def open_config_tab(self) -> "ServiceConfigPage":
         """Open Configuration tab by menu click"""
         self.find_and_click(ObjectPageMenuLocators.config_tab)
         page = ServiceConfigPage(self.driver, self.base_url, self.cluster_id, self.service_id)
@@ -97,7 +97,7 @@ class ServicePageMixin(BasePageObject):
         return page
 
     @allure.step("Open Status tab by menu click")
-    def open_status_tab(self):
+    def open_status_tab(self) -> "ServiceStatusPage":
         """Open Status tab by menu click"""
         self.find_and_click(ObjectPageMenuLocators.status_tab)
         page = ServiceStatusPage(self.driver, self.base_url, self.cluster_id, self.service_id)
@@ -105,7 +105,7 @@ class ServicePageMixin(BasePageObject):
         return page
 
     @allure.step("Open Import tab by menu click")
-    def open_import_tab(self):
+    def open_import_tab(self) -> "ServiceImportPage":
         """Open Import tab by menu click"""
         self.find_and_click(ObjectPageMenuLocators.import_tab)
         page = ServiceImportPage(self.driver, self.base_url, self.cluster_id, self.service_id)

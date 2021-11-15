@@ -792,53 +792,31 @@ class TestClusterStatusPage:
         one_negative = 'successful 0/1'
 
         success_status = [
-            StatusRowInfo(
-                icon=True, group_name=CLUSTER_NAME, state='successful 2/2', state_color=SUCCESS_COLOR, link=None
-            ),
-            StatusRowInfo(icon=False, group_name='Hosts', state=one_successful, state_color=SUCCESS_COLOR, link=None),
-            StatusRowInfo(icon=True, group_name=None, state=None, state_color=None, link='test-host'),
-            StatusRowInfo(
-                icon=False, group_name='Services', state=one_successful, state_color=SUCCESS_COLOR, link=None
-            ),
-            StatusRowInfo(
-                icon=True, group_name=SERVICE_NAME, state=one_successful, state_color=SUCCESS_COLOR, link=None
-            ),
-            StatusRowInfo(icon=True, group_name='first', state=one_successful, state_color=SUCCESS_COLOR, link=None),
-            StatusRowInfo(icon=True, group_name=None, state=None, state_color=None, link='test-host'),
+            StatusRowInfo(True, CLUSTER_NAME, 'successful 2/2', SUCCESS_COLOR, None),
+            StatusRowInfo(True, 'Hosts', one_successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, None, None, None, 'test-host'),
+            StatusRowInfo(True, 'Services', one_successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, SERVICE_NAME, one_successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, 'first', one_successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, None, None, None, 'test-host'),
         ]
         host_negative_status = [
-            StatusRowInfo(
-                icon=True, group_name=CLUSTER_NAME, state='successful 1/2', state_color=NEGATIVE_COLOR, link=None
-            ),
-            StatusRowInfo(
-                icon=False, group_name='Hosts', state=one_negative, state_color=NEGATIVE_COLOR, link=None
-            ),
-            StatusRowInfo(icon=True, group_name=None, state=None, state_color=None, link='test-host'),
-            StatusRowInfo(
-                icon=False, group_name='Services', state=one_successful, state_color=SUCCESS_COLOR, link=None
-            ),
-            StatusRowInfo(
-                icon=True, group_name=SERVICE_NAME, state=one_successful, state_color=SUCCESS_COLOR, link=None
-            ),
-            StatusRowInfo(icon=True, group_name='first', state=one_successful, state_color=SUCCESS_COLOR, link=None),
-            StatusRowInfo(icon=True, group_name=None, state=None, state_color=None, link='test-host'),
+            StatusRowInfo(True, CLUSTER_NAME, 'successful 1/2', NEGATIVE_COLOR, None),
+            StatusRowInfo(True, 'Hosts', one_negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(True, None, None, None, 'test-host'),
+            StatusRowInfo(True, 'Services', one_successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, SERVICE_NAME, one_successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, 'first', one_successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, None, None, None, 'test-host'),
         ]
         host_and_component_negative_status = [
-            StatusRowInfo(
-                icon=True, group_name=CLUSTER_NAME, state='successful 0/2', state_color=NEGATIVE_COLOR, link=None
-            ),
-            StatusRowInfo(
-                icon=False, group_name='Hosts', state=one_negative, state_color=NEGATIVE_COLOR, link=None
-            ),
-            StatusRowInfo(icon=True, group_name=None, state=None, state_color=None, link='test-host'),
-            StatusRowInfo(
-                icon=False, group_name='Services', state=one_negative, state_color=NEGATIVE_COLOR, link=None
-            ),
-            StatusRowInfo(
-                icon=True, group_name=SERVICE_NAME, state=one_negative, state_color=NEGATIVE_COLOR, link=None
-            ),
-            StatusRowInfo(icon=True, group_name='first', state=one_negative, state_color=NEGATIVE_COLOR, link=None),
-            StatusRowInfo(icon=True, group_name=None, state=None, state_color=None, link='test-host'),
+            StatusRowInfo(True, CLUSTER_NAME, 'successful 0/2', NEGATIVE_COLOR, None),
+            StatusRowInfo(True, 'Hosts', one_negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(True, None, None, None, 'test-host'),
+            StatusRowInfo(True, 'Services', one_negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(True, SERVICE_NAME, one_negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(True, 'first', one_negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(True, None, None, None, 'test-host'),
         ]
         cluster, host = create_community_cluster_with_host_and_service
         cluster_component = cluster.service(name=SERVICE_NAME).component(name=COMPONENT_NAME)

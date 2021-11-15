@@ -20,6 +20,11 @@ from adcm_client.objects import (
     ADCMClient,
     Bundle,
 )
+from adcm_client.objects import (
+    Cluster,
+    Service,
+    Host,
+)
 from adcm_pytest_plugin import params
 from adcm_pytest_plugin import utils
 
@@ -54,13 +59,12 @@ from tests.ui_tests.test_cluster_list_page import (
     BUNDLE_COMMUNITY,
 )
 
-
 # pylint: disable=redefined-outer-name,no-self-use,unused-argument
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
 
 @pytest.fixture()
-def create_cluster_with_service(sdk_client_fs: ADCMClient):
+def create_cluster_with_service(sdk_client_fs: ADCMClient) -> [Cluster, Service]:
     """Create community edition cluster and add service"""
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)
@@ -75,7 +79,7 @@ def cluster_bundle(sdk_client_fs: ADCMClient, data_dir_name: str) -> Bundle:
 
 @pytest.fixture()
 @allure.title("Create community cluster with service and add host")
-def create_community_cluster_with_host_and_service(sdk_client_fs: ADCMClient, create_host):
+def create_community_cluster_with_host_and_service(sdk_client_fs: ADCMClient, create_host) -> [Cluster, Service, Host]:
     """Create community cluster with service and add host"""
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)
@@ -84,7 +88,7 @@ def create_community_cluster_with_host_and_service(sdk_client_fs: ADCMClient, cr
 
 @pytest.fixture(params=["provider"])
 @allure.title("Create host")
-def create_host(request: SubRequest, sdk_client_fs: ADCMClient):
+def create_host(request: SubRequest, sdk_client_fs: ADCMClient) -> Host:
     """Create default host using API"""
     provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
     provider = provider_bundle.provider_create(PROVIDER_NAME)
@@ -92,7 +96,7 @@ def create_host(request: SubRequest, sdk_client_fs: ADCMClient):
 
 
 @pytest.fixture()
-def create_import_cluster_with_service(sdk_client_fs: ADCMClient):
+def create_import_cluster_with_service(sdk_client_fs: ADCMClient) -> [Cluster, Service, Cluster, Service]:
     """Create clusters and services for further import"""
     params = {
         "import_cluster_name": "Import cluster",
@@ -106,7 +110,7 @@ def create_import_cluster_with_service(sdk_client_fs: ADCMClient):
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_IMPORT)
         cluster_import = bundle.cluster_create(name=params["import_cluster_name"])
         service_import = cluster_import.service_add(name=params["import_service_name"])
-        return cluster_main, service_main, cluster_import, service_import
+    return cluster_main, service_main, cluster_import, service_import
 
 
 class TestServiceMainPage:
@@ -306,14 +310,14 @@ class TestServiceStatusPage:
         successful = 'successful 1/1'
         negative = 'successful 0/1'
         success_status = [
-            StatusRowInfo(icon=True, group_name='test_service', state=successful, state_color=SUCCESS_COLOR, link=None),
-            StatusRowInfo(icon=True, group_name='first', state=successful, state_color=SUCCESS_COLOR, link=None),
-            StatusRowInfo(icon=True, group_name=None, state=None, state_color=None, link='test-host'),
+            StatusRowInfo(True, 'test_service', successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, 'first', successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, None, None, None, 'test-host'),
         ]
         component_negative_status = [
-            StatusRowInfo(icon=True, group_name='test_service', state=negative, state_color=NEGATIVE_COLOR, link=None),
-            StatusRowInfo(icon=True, group_name='first', state=negative, state_color=NEGATIVE_COLOR, link=None),
-            StatusRowInfo(icon=True, group_name=None, state=None, state_color=None, link='test-host'),
+            StatusRowInfo(True, 'test_service', negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(True, 'first', negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(True, None, None, None, 'test-host'),
         ]
         cluster, service, host = create_community_cluster_with_host_and_service
         cluster_component = cluster.service(name=SERVICE_NAME).component(name=COMPONENT_NAME)
