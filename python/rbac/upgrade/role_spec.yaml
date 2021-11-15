@@ -17,6 +17,8 @@ roles:
 
     - name: create Host
       description: The ability to add new host
+      module_name: rbac.roles
+      class_name: ModelRole
       apps:
         - label: cm
           models:
@@ -27,6 +29,8 @@ roles:
 
     - name: create HostProvider
       description: The ability to add new provider
+      module_name: rbac.roles
+      class_name: ModelRole
       apps:
         - label: cm
           models:
@@ -37,6 +41,8 @@ roles:
 
     - name: create Cluster
       description: The ability to add new cluster
+      module_name: rbac.roles
+      class_name: ModelRole
       apps:
         - label: cm
           models:
@@ -47,6 +53,8 @@ roles:
 
     - name: upload Bundle
       description: The ability to upload Bundle
+      module_name: rbac.roles
+      class_name: ModelRole
       apps:
         - label: cm
           models:
