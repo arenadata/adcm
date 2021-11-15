@@ -23,7 +23,7 @@ export class ClusterDetailsComponent extends DetailAbstractDirective<ICluster> {
     DetailsFactory.labelMenuItem('Main', 'main'),
     DetailsFactory.labelMenuItem('Services', 'service'),
     DetailsFactory.labelMenuItem('Hosts', 'host'),
-    DetailsFactory.labelMenuItem('Hosts - Components', 'host_component'),
+    DetailsFactory.concernMenuItem('Hosts - Components', 'host_component', 'host-component'),
     DetailsFactory.concernMenuItem('Configuration', 'config', 'config'),
     DetailsFactory.labelMenuItem('Configuration groups', 'group_config'),
     DetailsFactory.statusMenuItem('Status', 'status', 'cluster'),
