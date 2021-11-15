@@ -1,7 +1,8 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { MenuItemAbstractDirective } from '@app/abstract-directives/menu-item.abstract.directive';
 import { BaseEntity } from '@app/core/types';
 import { ApiService } from '@app/core/api';
+import { ConcernService } from '@app/services/concern.service';
 import { environment } from '@env/environment';
 
 @Component({
@@ -22,7 +23,7 @@ import { environment } from '@env/environment';
   `,
   styles: ['a span { white-space: nowrap; }'],
 })
-export class ConcernMenuItemComponent extends MenuItemAbstractDirective<BaseEntity> {
+export class ConcernMenuItemComponent extends MenuItemAbstractDirective<BaseEntity> implements OnInit {
 
   concernsPresent = false;
 
@@ -35,21 +36,26 @@ export class ConcernMenuItemComponent extends MenuItemAbstractDirective<BaseEnti
     return this._entity;
   }
 
-  constructor(private api: ApiService) {
+  constructor(
+    private api: ApiService,
+    private concernService: ConcernService
+  ) {
     super();
+  }
+
+  ngOnInit(): void {
+    this.concernService.events({ types: [this.data.type] })
+      .subscribe(_ => this.getConcernStatus());
   }
 
   private getConcernStatus(): void {
     const params = {
-      owner_type: 'cluster',
+      owner_type: this.data.owner_type,
       owner_id: this.entity.id + '',
       cause: this.data.cause
     };
 
     this.api.get(`${environment.apiRoot}/concern`, params)
-      .pipe(this.takeUntil()).subscribe((concerns: any[]) => {
-      this.concernsPresent = !!concerns?.length;
-    });
-
+      .subscribe((concerns: any[]) => this.concernsPresent = !!concerns?.length);
   }
 }
