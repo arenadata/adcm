@@ -10,7 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Mapping
+
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.db.transaction import atomic
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
@@ -129,6 +132,18 @@ class GroupConfigSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializ
             'host_candidate': (HostFlexFieldsSerializer, {'many': True}),
         }
 
+    def validate(self, attrs):
+        object_type = attrs.get('object_type')
+        object_id = attrs.get('object_id')
+        if object_type is not None and object_id is not None:
+            obj_model = object_type.model_class()
+            try:
+                obj_model.objects.get(id=object_id)
+            except obj_model.DoesNotExist:
+                error_dict = {'object_id': [f'Invalid pk "{object_id}" - object does not exist.']}
+                raise ValidationError(error_dict, 'does_not_exist') from None
+        return super().validate(attrs)
+
 
 class GroupConfigHostSerializer(serializers.ModelSerializer):
     """Serializer for hosts in group config"""
@@ -232,6 +247,22 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
         model = ConfigLog
         fields = ('id', 'date', 'description', 'config', 'attr', 'url')
         extra_kwargs = {'config': {'required': True}}
+
+    def validate(self, attrs):
+        def check_value_unselected_field(cc, nc, gk):
+            for k, v in gk.items():
+                if isinstance(v, Mapping):
+                    check_value_unselected_field(cc[k], nc[k], gk[k])
+                else:
+                    if not v and k in cc and k in nc and cc[k] != nc[k]:
+                        raise AdcmEx('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD')
+
+        obj_ref = self.context['obj_ref']
+        current_config = ConfigLog.objects.get(id=obj_ref.current).config
+        new_config = attrs.get('config')
+        group_keys = attrs.get('attr', {}).get('group_keys', {})
+        check_value_unselected_field(current_config, new_config, group_keys)
+        return super().validate(attrs)
 
     @atomic
     def create(self, validated_data):

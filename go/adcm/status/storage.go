@@ -19,11 +19,12 @@ type Status struct {
 }
 
 type storageReq struct {
-	command string
-	key1    int
-	key2    int
-	val     int
-	counter int
+	command   string
+	key1      int
+	key2      int
+	val       int
+	counter   int
+	clearFunc func()
 }
 
 type storageResp struct {
@@ -90,6 +91,9 @@ func (s *Storage) run() {
 			s.out <- storageResp{code: v}
 		case cmdClear:
 			s.dbMap.clear(c.key1, c.key2, c.counter)
+			if c.clearFunc != nil {
+				go c.clearFunc()
+			}
 		case cmdPure:
 			s.dbMap = s.dbMap.create()
 			s.out <- storageResp{ok: true}
@@ -107,8 +111,8 @@ func (s *Storage) run() {
 
 // Interface
 
-func (s *Storage) set(key1 int, key2 int, val int) int {
-	req := storageReq{command: cmdSet, key1: key1, key2: key2, val: val}
+func (s *Storage) set(key1 int, key2 int, val int, clear func()) int {
+	req := storageReq{command: cmdSet, key1: key1, key2: key2, val: val, clearFunc: clear}
 	s.in <- req
 	resp := <-s.out
 	return resp.code

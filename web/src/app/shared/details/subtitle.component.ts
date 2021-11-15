@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input } from '@angular/core';
-import { IDetails } from './navigation.service';
+import { IDetails } from '@app/models/details';
 
 @Component({
   selector: 'app-details-subtitle',

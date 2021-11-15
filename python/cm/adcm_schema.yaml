@@ -634,8 +634,6 @@ import_dict_item:
     required: boolean
     multibind: boolean
     default: list_of_string
-  required_items:
-    - versions
 
 # Actions. Actions could be in two forms: job or task
 actions_dict:
@@ -691,7 +689,7 @@ task_action:
     script_type: action_script_type
     display_name: string
     params: json
-    on_fail: string
+    on_fail: post_action_or_string
   required_items:
     - name
     - script
@@ -771,6 +769,12 @@ unavailability_set:
   match: dict
   items:
     unavailable: any_or_list
+
+post_action_or_string:
+  match: one_of
+  variants:
+    - string
+    - post_action
 
 post_action:
   match: dict

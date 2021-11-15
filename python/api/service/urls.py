@@ -39,6 +39,7 @@ urlpatterns = [
                 ),
                 path('config/', include('api.config.urls'), {'object_type': 'service'}),
                 path('action/', include('api.action.urls'), {'object_type': 'service'}),
+                path('status/', views.StatusList.as_view(), name='service-status'),
             ]
         ),
     ),

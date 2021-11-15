@@ -51,7 +51,7 @@ def _generate_fields():
 
 FIELDS = _generate_fields()
 
-TYPES = ('string', 'password', 'integer', 'text', 'boolean', 'float', 'list', 'map', 'json', 'file')
+TYPES = ('string', 'password', 'integer', 'text', 'boolean', 'float', 'list', 'map', 'json', 'file', 'secrettext')
 
 
 DEFAULT_VALUE = {
@@ -65,6 +65,7 @@ DEFAULT_VALUE = {
     "map": {"name": "Joe", "age": "24", "sex": "m"},
     "list": ['/dev/rdisk0s1', '/dev/rdisk0s2', '/dev/rdisk0s3'],
     "file": "./file.txt",
+    "secrettext": "sec\nret\ntext",
 }
 
 

@@ -49,6 +49,12 @@ def obj_to_dict(obj, keys):
     return dictionary
 
 
+def dict_to_obj(dictionary, obj, keys):
+    for key in keys:
+        setattr(obj, key, dictionary[key])
+    return obj
+
+
 def to_flat_dict(conf, spec):
     flat = {}
     for c1 in conf:
@@ -486,7 +492,21 @@ def check_read_only(obj, spec, conf, old_conf):
                 err('CONFIG_VALUE_ERROR', msg.format(s, proto_ref(obj.prototype)))
 
 
-def restore_read_only(obj, spec, conf, old_conf):
+def restore_read_only(obj, spec, conf, old_conf):   # # pylint: disable=too-many-branches
+    # Do not remove!
+    # This patch fix old error when sometimes group config values can be lost
+    # during bundle upgrade
+    for key in spec:
+        if 'type' in spec[key]:
+            continue
+        if old_conf[key] is None:
+            old_conf[key] = {}
+            for subkey in spec[key]:
+                old_conf[subkey] = get_default(
+                    dict_to_obj(spec[key][subkey], PrototypeConfig(), ('type', 'default', 'limits'))
+                )
+    # end of patch
+
     for key in spec:  # pylint: disable=too-many-nested-blocks
         if 'type' in spec[key]:
             if config_is_ro(obj, key, spec[key]['limits']) and key not in conf:
