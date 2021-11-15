@@ -15,6 +15,7 @@ from rest_framework.schemas import get_schema_view
 from rest_framework_swagger.views import get_swagger_view
 
 from api import views, docs
+from rbac.endpoints import token
 
 register_converter(views.NameConverter, 'name')
 swagger_view = get_swagger_view(title='ArenaData Chapel API')
@@ -44,4 +45,5 @@ urlpatterns = [
     path('docs/md/', docs.docs_md),
     path('docs/', docs.docs_html),
     path('', views.APIRoot.as_view()),
+    path('token/', token.GetAuthToken.as_view(), name='rbac-token'),
 ]
