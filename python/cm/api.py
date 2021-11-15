@@ -307,7 +307,9 @@ def delete_service(service):
     if ClusterBind.objects.filter(source_service=service).exists():
         err('SERVICE_CONFLICT', f'Service #{service.id} has exports(s)')
     service_id = service.id
+    cluster = service.cluster
     service.delete()
+    cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.post_event('delete', 'service', service_id)
     load_service_map()
     log.info(f'service #{service_id} is deleted')

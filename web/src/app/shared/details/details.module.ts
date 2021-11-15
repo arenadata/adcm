@@ -42,6 +42,8 @@ import { ServiceComponentDetailsComponent } from '@app/components/service-compon
 import { JobDetailsComponent } from '@app/components/job/job-details/job-details.component';
 import { ClusterDetailsComponent } from '@app/components/cluster/cluster-details/cluster-details.component';
 import { LogMenuItemComponent } from './left-menu-items/log-menu-item/log-menu-item.component';
+import { ConcernMenuItemComponent } from '@app/shared/details/left-menu-items/concern-menu-item/concern-menu-item.component';
+import { ConcernMenuItemPipe } from './left-menu-items/concern-menu-item/concern-menu-item.pipe';
 
 @NgModule({
   imports: [
@@ -95,6 +97,8 @@ import { LogMenuItemComponent } from './left-menu-items/log-menu-item/log-menu-i
     LabelMenuItemComponent,
     StatusMenuItemComponent,
     LogMenuItemComponent,
+    ConcernMenuItemComponent,
+    ConcernMenuItemPipe,
   ],
 })
 export class DetailsModule {}

@@ -48,6 +48,7 @@ INIT_ACTION = 'Init'
 REGULAR_FIELD_NAME = 'Just item'
 REQUIRED_FIELD_NAME = 'Required item'
 PASSWORD_FIELD_NAME = 'Important password'
+SECRETTEXT_FIELD_NAME = 'secrettext'
 ADVANCED_FIELD_NAME = 'Advanced option'
 
 
@@ -336,6 +337,7 @@ def test_filter_config(
         host_page.config.check_config_fields_visibility(set(), {ADVANCED_FIELD_NAME})
 
 
+@pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2281")
 @pytest.mark.smoke()
 @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
 @pytest.mark.usefixtures('_create_host')
@@ -345,10 +347,12 @@ def test_custom_name_config(
     """Change configuration, save with custom name, compare changes"""
     params = {
         'password': 'awesomepass',
+        'secrettext': 'awesome secrettext',
         'description': 'my own config description',
         'type_in_required': '12',
         'required_expected': 'null',
         'password_expected': '****',
+        'secrettext_expected': '****',
     }
     host_page = open_config(page)
     with allure.step('Change config description'):
@@ -357,6 +361,8 @@ def test_custom_name_config(
         required_row = host_page.config.get_config_row(REQUIRED_FIELD_NAME)
         host_page.config.type_in_config_field(params['type_in_required'], row=required_row)
         host_page.config.fill_password_and_confirm_fields(params['password'], params['password'], PASSWORD_FIELD_NAME)
+        secrettext_row = host_page.config.get_config_row(SECRETTEXT_FIELD_NAME)
+        host_page.config.type_in_config_field(params['secrettext'], row=secrettext_row, clear=True)
         host_page.config.save_config()
     with allure.step('Compare configurations'):
         host_page.config.compare_versions(init_config_desc)
@@ -364,6 +370,8 @@ def test_custom_name_config(
         host_page.config.wait_history_row_with_value(required_row, params['required_expected'])
         password_row = host_page.config.get_config_row(PASSWORD_FIELD_NAME)
         host_page.config.wait_history_row_with_value(password_row, params['password_expected'])
+        secrettext_row = host_page.config.get_config_row(SECRETTEXT_FIELD_NAME)
+        host_page.config.wait_history_row_with_value(secrettext_row, params['secrettext_expected'])
 
 
 @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)

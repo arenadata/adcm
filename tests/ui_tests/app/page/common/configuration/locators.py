@@ -47,7 +47,7 @@ class CommonConfigMenu:
         "//app-field[.//div[@adcm_test='{}']]//mat-list-item//span[contains(text(), '{}')]",
         'Config diff of option "{}" with "{}" in text',
     )
-    config_row = Locator(By.XPATH, "//app-field", "Configuration row")
+    config_row = Locator(By.CSS_SELECTOR, "app-field", "Configuration row")
 
     field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
     loading_text = Locator(By.XPATH, "//span[text()='Loading...']", "Loading text")
@@ -56,7 +56,7 @@ class CommonConfigMenu:
         """Configuration menu configuration row locators"""
 
         name = Locator(By.CSS_SELECTOR, "label", "Row name")
-        value = Locator(By.CSS_SELECTOR, "input", "Row value")
+        value = Locator(By.CSS_SELECTOR, "input,textarea", "Row value")
         password = Locator(
             By.XPATH,
             "(.//app-fields-password/div[not(contains(@style, 'none'))]//input)[1]",

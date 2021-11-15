@@ -201,14 +201,14 @@ class StatusList(GenericAPIPermView, InterfaceView):
             comp_list.append(
                 {
                     'id': comp['component'].id,
-                    'name': comp['component'].name,
+                    'name': comp['component'].display_name,
                     'status': cm.status_api.get_component_status(comp['component']),
                     'hosts': host_list,
                 }
             )
         return {
             'id': service.id,
-            'name': service.name,
+            'name': service.display_name,
             'status': 32 if service_map is None else service_map.get('status', 0),
             'hc': comp_list,
         }

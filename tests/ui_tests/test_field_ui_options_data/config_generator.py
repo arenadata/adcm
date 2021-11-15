@@ -18,7 +18,22 @@ TYPES = (
     'map',
     'json',
     'file',
+    'secrettext',
 )
+
+template_secrettext = """
+- type: cluster
+  name: {0}_{1}_{2}_{3}_{4}
+  version: 1
+  config:
+    - name: {4}
+      type: {4}
+      default: {4}
+      ui_options:
+         {0}: {1}
+         {2}: {3}
+"""
+
 template_textboxes = """
 - type: cluster
   name: {0}_{1}_{2}_{3}_{4}
@@ -165,6 +180,7 @@ TEMPLATES = {
     'map': template_map,
     'json': template_json,
     'file': template_file,
+    'secrettext': template_secrettext,
 }
 
 
