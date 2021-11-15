@@ -29,6 +29,7 @@ from adcm_pytest_plugin import params
 from adcm_pytest_plugin import utils
 
 from tests.library.status import ADCMObjectStatusChanger
+from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
     ClusterServicesPage,
@@ -93,24 +94,6 @@ def create_host(request: SubRequest, sdk_client_fs: ADCMClient) -> Host:
     provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
     provider = provider_bundle.provider_create(PROVIDER_NAME)
     return provider.host_create(HOST_NAME)
-
-
-@pytest.fixture()
-def create_import_cluster_with_service(sdk_client_fs: ADCMClient) -> [Cluster, Service, Cluster, Service]:
-    """Create clusters and services for further import"""
-    params = {
-        "import_cluster_name": "Import cluster",
-        "import_service_name": "Pre-uploaded Dummy service to import",
-    }
-    with allure.step("Create main cluster"):
-        bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
-        cluster_main = bundle.cluster_create(name=CLUSTER_NAME)
-        service_main = cluster_main.service_add(name=SERVICE_NAME)
-    with allure.step("Create cluster to import"):
-        bundle = cluster_bundle(sdk_client_fs, BUNDLE_IMPORT)
-        cluster_import = bundle.cluster_create(name=params["import_cluster_name"])
-        service_import = cluster_import.service_add(name=params["import_service_name"])
-    return cluster_main, service_main, cluster_import, service_import
 
 
 class TestServiceMainPage:
@@ -351,12 +334,22 @@ class TestServiceImportPage:
         service_import_page.wait_page_is_opened()
         service_import_page.check_all_elements()
 
-    def test_import_from_service_import_page(self, app_fs, create_import_cluster_with_service):
+    def test_import_from_service_import_page(self, app_fs: ADCMTest, sdk_client_fs: ADCMClient):
         """Test service import on /cluster/{}/service/{}/import page"""
 
-        params = {"message": "Successfully saved"}
-
-        cluster, service, _, _ = create_import_cluster_with_service
+        params = {
+            "message": "Successfully saved",
+            "import_cluster_name": "Import cluster",
+            "import_service_name": "Pre-uploaded Dummy service to import",
+        }
+        with allure.step("Create main cluster"):
+            cluster = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY).cluster_create(name=CLUSTER_NAME)
+            service = cluster.service_add(name=SERVICE_NAME)
+        with allure.step("Create cluster to import"):
+            cluster_import = cluster_bundle(sdk_client_fs, BUNDLE_IMPORT).cluster_create(
+                name=params["import_cluster_name"]
+            )
+            cluster_import.service_add(name=params["import_service_name"])
         service_import_page = ServiceImportPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         import_item = service_import_page.get_import_items()[0]
         with allure.step("Check import on import page"):
