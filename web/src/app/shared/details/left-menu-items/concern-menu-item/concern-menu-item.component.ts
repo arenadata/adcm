@@ -1,9 +1,8 @@
 import { Component, Input } from '@angular/core';
 import { MenuItemAbstractDirective } from '@app/abstract-directives/menu-item.abstract.directive';
 import { BaseEntity } from '@app/core/types';
-import { selectMessage, SocketState } from '@app/core/store';
-import { Store } from '@ngrx/store';
-import { filter } from 'rxjs/operators';
+import { ApiService } from '@app/core/api';
+import { environment } from '@env/environment';
 
 @Component({
   selector: 'app-concern-menu-item',
@@ -14,7 +13,7 @@ import { filter } from 'rxjs/operators';
        routerLinkActive="active"
     >
       <span>{{ label }}</span>&nbsp;
-      <ng-container *ngIf="isConcern">
+      <ng-container *ngIf="concernsPresent">
         <mat-icon color="warn">
           error_outline
         </mat-icon>
@@ -25,32 +24,32 @@ import { filter } from 'rxjs/operators';
 })
 export class ConcernMenuItemComponent extends MenuItemAbstractDirective<BaseEntity> {
 
-  isConcern = false;
+  concernsPresent = false;
 
   @Input() set entity(entity: BaseEntity) {
     this._entity = entity;
-    this.listenToConcernChanges();
+    this.getConcernStatus();
   }
 
   get entity(): BaseEntity {
     return this._entity;
   }
 
-  constructor(
-    private store: Store<SocketState>,
-  ) {
+  constructor(private api: ApiService) {
     super();
   }
 
-  private listenToConcernChanges() {
-    this.store.pipe(
-      selectMessage,
-      filter(event => event?.object?.id && this.entity?.id && event.object.id === this.entity.id),
-      filter(event => event?.event === 'concern'),
-      filter(event => event?.object?.details.type === this.data.cause),
-      this.takeUntil(),
-    ).subscribe((event) => {
-      this.isConcern = event.object.details.value;
+  private getConcernStatus(): void {
+    const params = {
+      owner_type: 'cluster',
+      owner_id: this.entity.id + '',
+      cause: this.data.cause
+    };
+
+    this.api.get(`${environment.apiRoot}/concern`, params)
+      .pipe(this.takeUntil()).subscribe((concerns: any[]) => {
+      this.concernsPresent = !!concerns?.length;
     });
+
   }
 }
