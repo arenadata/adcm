@@ -101,6 +101,7 @@ class ProviderListPage(BasePageObject):
         self.find_and_click(self.table.locators.ActionPopup.button(action_name))
         self.wait_element_visible(ActionDialog.body)
         self.find_and_click(ActionDialog.run)
+        self.wait_element_hide(ActionDialog.body)
 
     @contextmanager
     def wait_provider_state_change(self, row: WebElement):

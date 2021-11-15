@@ -49,6 +49,7 @@ class CommonToolbar(BasePageObject):
         self.find_and_click(CommonToolbarLocators.Popup.item(action_name))
         self.wait_element_visible(ActionDialog.body)
         self.find_and_click(ActionDialog.run)
+        self.wait_element_hide(ActionDialog.body)
 
     @allure.step("Run upgrade {upgrade_name} in {tab_name}")
     def run_upgrade(self, tab_name: str, upgrade_name: str):
@@ -59,3 +60,4 @@ class CommonToolbar(BasePageObject):
         self.find_and_click(CommonToolbarLocators.Popup.item(upgrade_name))
         self.wait_element_visible(ActionDialog.body)
         self.find_and_click(ActionDialog.run)
+        self.wait_element_hide(ActionDialog.body)

@@ -12,6 +12,7 @@
 
 """UI tests for /service page"""
 import os
+from typing import Tuple
 
 import allure
 import pytest
@@ -65,7 +66,7 @@ pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
 
 @pytest.fixture()
-def create_cluster_with_service(sdk_client_fs: ADCMClient) -> [Cluster, Service]:
+def create_cluster_with_service(sdk_client_fs: ADCMClient) -> Tuple[Cluster, Service]:
     """Create community edition cluster and add service"""
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)
@@ -80,7 +81,9 @@ def cluster_bundle(sdk_client_fs: ADCMClient, data_dir_name: str) -> Bundle:
 
 @pytest.fixture()
 @allure.title("Create community cluster with service and add host")
-def create_community_cluster_with_host_and_service(sdk_client_fs: ADCMClient, create_host) -> [Cluster, Service, Host]:
+def create_community_cluster_with_host_and_service(
+    sdk_client_fs: ADCMClient, create_host
+) -> Tuple[Cluster, Service, Host]:
     """Create community cluster with service and add host"""
     bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
     cluster = bundle.cluster_create(name=CLUSTER_NAME)

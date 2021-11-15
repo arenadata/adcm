@@ -152,6 +152,7 @@ class ServiceComponentPage(ServicePageMixin):
         self.find_and_click(self.table.locators.ActionPopup.button(action_name))
         self.wait_element_visible(ActionDialog.body)
         self.find_and_click(ActionDialog.run)
+        self.wait_element_hide(ActionDialog.body)
 
     def get_component_state_from_row(self, row: WebElement):
         """Get component state from the row"""
