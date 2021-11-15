@@ -12,15 +12,30 @@
 
 """Service page PageObjects classes"""
 
+
+from contextlib import contextmanager
+
+import allure
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from selenium.webdriver.remote.webdriver import WebElement
+
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
     PageHeader,
     PageFooter,
 )
+from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
+from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
+from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
+from tests.ui_tests.app.page.common.dialogs_locators import ActionDialog
+from tests.ui_tests.app.page.common.import_page.locators import ImportLocators
+from tests.ui_tests.app.page.common.import_page.page import ImportPage
+from tests.ui_tests.app.page.common.status.page import StatusPage
+from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
-from tests.ui_tests.app.page.service.locators import ServiceImportLocators
+from tests.ui_tests.app.page.service.locators import ServiceComponentLocators
 
 
 class ServicePageMixin(BasePageObject):
@@ -28,6 +43,7 @@ class ServicePageMixin(BasePageObject):
 
     # /action /main etc.
     MENU_SUFFIX: str
+    MAIN_ELEMENTS: list
     cluster_id: int
     service_id: int
     header: PageHeader
@@ -56,24 +72,146 @@ class ServicePageMixin(BasePageObject):
         self.toolbar = CommonToolbar(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url)
 
+    @allure.step("Open Main tab by menu click")
+    def open_main_tab(self) -> "ServiceMainPage":
+        """Open Main tab by menu click"""
+        self.find_and_click(ObjectPageMenuLocators.main_tab)
+        page = ServiceMainPage(self.driver, self.base_url, self.cluster_id, self.service_id)
+        page.wait_page_is_opened()
+        return page
+
+    @allure.step("Open Components tab by menu click")
+    def open_components_tab(self) -> "ServiceComponentPage":
+        """Open Components tab by menu click"""
+        self.find_and_click(ObjectPageMenuLocators.service_components_tab)
+        page = ServiceComponentPage(self.driver, self.base_url, self.cluster_id, self.service_id)
+        page.wait_page_is_opened()
+        return page
+
+    @allure.step("Open Configuration tab by menu click")
+    def open_config_tab(self) -> "ServiceConfigPage":
+        """Open Configuration tab by menu click"""
+        self.find_and_click(ObjectPageMenuLocators.config_tab)
+        page = ServiceConfigPage(self.driver, self.base_url, self.cluster_id, self.service_id)
+        page.wait_page_is_opened()
+        return page
+
+    @allure.step("Open Status tab by menu click")
+    def open_status_tab(self) -> "ServiceStatusPage":
+        """Open Status tab by menu click"""
+        self.find_and_click(ObjectPageMenuLocators.status_tab)
+        page = ServiceStatusPage(self.driver, self.base_url, self.cluster_id, self.service_id)
+        page.wait_page_is_opened()
+        return page
+
+    @allure.step("Open Import tab by menu click")
+    def open_import_tab(self) -> "ServiceImportPage":
+        """Open Import tab by menu click"""
+        self.find_and_click(ObjectPageMenuLocators.import_tab)
+        page = ServiceImportPage(self.driver, self.base_url, self.cluster_id, self.service_id)
+        page.wait_page_is_opened()
+        return page
+
+    @allure.step("Assert that all main elements on the page are presented")
+    def check_all_elements(self):
+        """Assert all main elements presence"""
+        self.assert_displayed_elements(self.MAIN_ELEMENTS)
+
 
 class ServiceMainPage(ServicePageMixin):
     """Service page Main menu"""
 
     MENU_SUFFIX = 'main'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ObjectPageLocators.text,
+    ]
+
+
+class ServiceComponentPage(ServicePageMixin):
+    """Service page component menu"""
+
+    MENU_SUFFIX = 'component'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        CommonTable.header,
+        CommonTable.row,
+    ]
+
+    def click_action_btn_in_row(self, row: WebElement):
+        """Click on Action button from the row"""
+        self.find_child(row, ServiceComponentLocators.ComponentRow.actions).click()
+
+    @allure.step("Run action {action_name} for component")
+    def run_action_in_component_row(self, row: WebElement, action_name: str):
+        """Run Action by Action button from the row"""
+        self.click_action_btn_in_row(row)
+        self.wait_element_visible(self.table.locators.ActionPopup.block)
+        self.find_and_click(self.table.locators.ActionPopup.button(action_name))
+        self.wait_element_visible(ActionDialog.body)
+        self.find_and_click(ActionDialog.run)
+        self.wait_element_hide(ActionDialog.body)
+
+    def get_component_state_from_row(self, row: WebElement):
+        """Get component state from the row"""
+        return self.find_child(row, ServiceComponentLocators.ComponentRow.state).text
+
+    @contextmanager
+    def wait_component_state_change(self, row: WebElement):
+        """Wait for component state to change"""
+        state_before = self.get_component_state_from_row(row)
+        yield
+
+        def _wait_state():
+            state_after = self.get_component_state_from_row(row)
+            assert state_after != state_before
+            assert state_after != self.table.LOADING_STATE_TEXT
+
+        wait_until_step_succeeds(_wait_state, period=1, timeout=self.default_loc_timeout)
 
 
 class ServiceConfigPage(ServicePageMixin):
     """Service page Main menu"""
 
     MENU_SUFFIX = 'config'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ObjectPageLocators.text,
+        CommonConfigMenu.description_input,
+        CommonConfigMenu.search_input,
+        CommonConfigMenu.advanced_label,
+        CommonConfigMenu.save_btn,
+        CommonConfigMenu.history_btn,
+    ]
 
 
-class ServiceImportPage(ServicePageMixin):
+class ServiceGroupConfigPage(ServicePageMixin):
+    """Service page GroupConfig menu"""
+
+    MENU_SUFFIX = 'group_config'
+
+
+class ServiceStatusPage(ServicePageMixin, StatusPage):
+    """Service page GroupConfig menu"""
+
+    MENU_SUFFIX = 'status'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ObjectPageLocators.text,
+    ]
+
+
+class ServiceImportPage(ServicePageMixin, ImportPage):
     """Service page Main menu"""
 
     MENU_SUFFIX = 'import'
-
-    def get_import_items(self):
-        """Get import items"""
-        return self.find_elements(ServiceImportLocators.import_item_block)
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ImportLocators.save_btn,
+        ImportLocators.import_item_block,
+    ]
