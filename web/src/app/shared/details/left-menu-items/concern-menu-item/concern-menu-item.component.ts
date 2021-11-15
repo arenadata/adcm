@@ -15,7 +15,7 @@ import { environment } from '@env/environment';
       <span>{{ label }}</span>&nbsp;
       <ng-container *ngIf="concernsPresent">
         <mat-icon color="warn">
-          error_outline
+          priority_hight
         </mat-icon>
       </ng-container>
     </a>
