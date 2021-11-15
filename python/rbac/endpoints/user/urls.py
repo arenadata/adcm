@@ -52,7 +52,7 @@ urlpatterns = [
                     'change_password/', ChangePassword.as_view(), name='rbac-user-change-password'
                 ),
                 path('group/', include((group_urls, 'rbac_user_group'))),
-                path('role/', include((role_urls, 'rbac_user_role'))),
+                # path('role/', include((role_urls, 'rbac_user_role'))),
             ]
         ),
     ),
