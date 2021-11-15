@@ -20,21 +20,22 @@ from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.ui_tests.app.page.cluster.locators import (
-    ClusterImportLocators,
     ClusterServicesLocators,
     ClusterHostLocators,
     ClusterComponentsLocators,
-    ClusterStatusLocators,
 )
 from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators, ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs_locators import ActionDialog, DeleteDialog
+from tests.ui_tests.app.page.common.import_page.locators import ImportLocators
+from tests.ui_tests.app.page.common.import_page.page import ImportPage
 from tests.ui_tests.app.page.common.popups.locator import HostAddPopupLocators
 from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
 from tests.ui_tests.app.page.common.popups.locator import PageConcernPopupLocators, ListConcernPopupLocators
 from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
+from tests.ui_tests.app.page.common.status.page import StatusPage
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
@@ -55,14 +56,6 @@ class StatusGroupInfo:
 
     service: str
     hosts: list
-
-
-@dataclass
-class ImportItemInfo:
-    """Information from import item on Import page"""
-
-    name: str
-    description: str
 
 
 class ClusterPageMixin(BasePageObject):
@@ -200,6 +193,7 @@ class ClusterServicesPage(ClusterPageMixin):
         self.find_and_click(self.table.locators.ActionPopup.button(action_name))
         self.wait_element_visible(ActionDialog.body)
         self.find_and_click(ActionDialog.run)
+        self.wait_element_hide(ActionDialog.body)
 
     @contextmanager
     def wait_service_state_change(self, row: WebElement):
@@ -209,47 +203,24 @@ class ClusterServicesPage(ClusterPageMixin):
 
         def _wait_state():
             state_after = self.get_service_state_from_row(row)
-            assert state_after != state_before
-            assert state_after != self.table.LOADING_STATE_TEXT
+            assert state_after != state_before, f"State should not be equal {state_before}"
+            assert (
+                state_after != self.table.LOADING_STATE_TEXT
+            ), f"State should not be equal {self.table.LOADING_STATE_TEXT}"
 
         wait_until_step_succeeds(_wait_state, period=1, timeout=self.default_loc_timeout)
 
 
-class ClusterImportPage(ClusterPageMixin):
+class ClusterImportPage(ClusterPageMixin, ImportPage):
     """Cluster page import menu"""
 
     MENU_SUFFIX = 'import'
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
         ObjectPageLocators.subtitle,
-        ClusterImportLocators.save_btn,
-        ClusterImportLocators.import_item_block,
+        ImportLocators.save_btn,
+        ImportLocators.import_item_block,
     ]
-
-    def get_import_items(self):
-        """Get import items"""
-        return self.find_elements(ClusterImportLocators.import_item_block)
-
-    def click_checkbox_in_import_item(self, import_item: WebElement):
-        """Click on checkbox in import items"""
-        self.find_child(import_item, ClusterImportLocators.ImportItem.import_chbx).click()
-
-    def is_chxb_in_item_checked(self, import_item: WebElement) -> bool:
-        """Get checkbox element checked state"""
-        return "checked" in self.find_child(import_item, ClusterImportLocators.ImportItem.import_chbx).get_attribute(
-            "class"
-        )
-
-    def click_save_btn(self):
-        """Click on Save button"""
-        self.find_and_click(ClusterImportLocators.save_btn)
-
-    def get_import_item_info(self, import_item: WebElement):
-        """Get Import item info"""
-        return ImportItemInfo(
-            name=self.find_child(import_item, ClusterImportLocators.ImportItem.name).text,
-            description=self.find_child(import_item, ClusterImportLocators.ImportItem.description).text,
-        )
 
 
 class ClusterConfigPage(ClusterPageMixin):
@@ -291,7 +262,6 @@ class ClusterHostPage(ClusterPageMixin):
         so to open creating host popup you need again to click on
         a special button for creating hosts.
         In case there are no hosts at all, creating hosts popup will be open instantly.
-
         :param is_not_first_host: flag to indicate if there are any created hosts in adcm.
         """
 
@@ -304,7 +274,6 @@ class ClusterHostPage(ClusterPageMixin):
     def get_host_info_from_row(self, row_num: int = 0, table_has_cluster_column: bool = True) -> HostRowInfo:
         """
         Compile the values of the fields describing the host.
-
         :param table_has_cluster_column: flag to define if there is a cluster column in the table
         (e.g. there are no such column in cluster host page).
         :param row_num: row number in the table.
@@ -376,6 +345,7 @@ class ClusterHostPage(ClusterPageMixin):
         self.find_and_click(self.table.locators.ActionPopup.button(action_name))
         self.wait_element_visible(ActionDialog.body)
         self.find_and_click(ActionDialog.run)
+        self.wait_element_hide(ActionDialog.body)
 
     @allure.step("Delete host")
     def delete_host_by_row(self, row: WebElement):
@@ -486,7 +456,7 @@ class ClusterComponentsPage(ClusterPageMixin):
         return self.find_element(ClusterComponentsLocators.save_btn).get_attribute("disabled") == "true"
 
 
-class ClusterStatusPage(ClusterPageMixin):
+class ClusterStatusPage(ClusterPageMixin, StatusPage):
     """Cluster page config menu"""
 
     MENU_SUFFIX = 'status'
@@ -495,50 +465,3 @@ class ClusterStatusPage(ClusterPageMixin):
         ObjectPageLocators.subtitle,
         ObjectPageLocators.text,
     ]
-
-    @allure.step("Click on collapse all button")
-    def click_collapse_all_btn(self):
-        """Click on collapse all button"""
-        self.find_and_click(ClusterStatusLocators.collapse_btn)
-
-    def get_all_config_groups(self):
-        """Get all config groups"""
-        return [r for r in self.find_elements(ClusterStatusLocators.group_row) if r.is_displayed()]
-
-    def get_config_group_info(self, row: WebElement):
-        """ "Get group info by row"""
-        components_items = []
-        self.wait_group_opened(row)
-        for item in self.find_children(row, ClusterStatusLocators.GroupRow.service_group):
-            components_items.append(
-                StatusGroupInfo(
-                    service=self.find_child(
-                        item, ClusterStatusLocators.GroupRow.ServiceGroupRow.service_name
-                    ).text.split("\n")[0],
-                    hosts=[
-                        h.text
-                        for h in self.find_children(item, ClusterStatusLocators.GroupRow.ServiceGroupRow.host_name)
-                    ],
-                )
-            )
-        return components_items
-
-    def wait_group_opened(self, group_row):
-        """Wait when group info is visible."""
-
-        def _wait_visible():
-            assert "visibility: visible;" in self.find_child(
-                group_row, ClusterStatusLocators.GroupRow.service_group
-            ).get_attribute("style"), "Group has not been opened"
-
-        wait_until_step_succeeds(_wait_visible, period=1, timeout=10)
-
-    def wait_group_closed(self, group_row):
-        """Wait when group info is not visible."""
-
-        def _wait_hide():
-            assert "visibility: hidden;" in self.find_child(
-                group_row, ClusterStatusLocators.GroupRow.service_group
-            ).get_attribute("style"), "Group has not been hidden"
-
-        wait_until_step_succeeds(_wait_hide, period=1, timeout=10)
