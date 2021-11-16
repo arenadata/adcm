@@ -17,7 +17,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cm', '0077_job_lock_message_tpl'),
+        ('cm', '0080_subaction_multi_states'),
     ]
 
     operations = [
