@@ -26,7 +26,7 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
   }
 
   ngOnInit() {
-    if (!Object.keys(this.field.value || {}).length) this.control.setValue('');
+    if (!Object.keys(this.field.value || {}).length) this.control.setValue(this.field.value);
     this.reload();
     this.items.valueChanges.pipe(
       this.takeUntil()

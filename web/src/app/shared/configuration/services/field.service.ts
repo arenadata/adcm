@@ -317,7 +317,8 @@ export class FieldService {
   }
 
   checkValue(value: resultTypes, type: TNForm): resultTypes {
-    if (value === '' || value === null || isEmptyObject(value)) return null;
+    if (value === '' || value === null || isEmptyObject(value)) return value;
+
     if (typeof value === 'boolean') return value;
     else if (typeof value === 'string')
       switch (type) {
