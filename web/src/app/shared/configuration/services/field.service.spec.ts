@@ -211,7 +211,7 @@ describe('Configuration fields service', () => {
 
     expect(service.parseValue(value, source.config)).toEqual({
       field_string_0: 'a',
-      field_group_1: { subname_integer_0: 12, subname_float_1: 1, subname_float_2: 1.2, subname_string_3: '' },
+      field_group_1: { subname_integer_0: 12, subname_float_1: 1, subname_float_2: 1.2, subname_string_3: null },
       field_group_2: {
         subname_map_0: null,
         subname_list_1: null,
@@ -219,8 +219,11 @@ describe('Configuration fields service', () => {
         subname_list_3: 'str',
         subname_option_4: 0
       },
-      field_group_3: {}
     });
+  });
+
+  it('checkValue("", "string") should return null', () => {
+    expect(checkValue('', 'string')).toBeNull();
   });
 
   it('checkValue("2.0", "float") should return 2', () => {
@@ -235,12 +238,20 @@ describe('Configuration fields service', () => {
     expect(checkValue('0', 'float')).toBe(0);
   });
 
+  it('checkValue("", "float") should return null', () => {
+    expect(checkValue('', 'float')).toBeNull();
+  });
+
   it('checkValue("23456778", "integer") should return 23456778', () => {
     expect(checkValue('23456778', 'integer')).toBe(23456778);
   });
 
   it('checkValue("0", "integer") should return 0', () => {
     expect(checkValue('0', 'integer')).toBe(0);
+  });
+
+  it('checkValue("", "integer") should return null', () => {
+    expect(checkValue('', 'integer')).toBeNull();
   });
 
   it('checkValue("12345678", "option") should return 12345678', () => {
@@ -259,6 +270,10 @@ describe('Configuration fields service', () => {
     expect(checkValue('0', 'option')).toBe(0);
   });
 
+  it('checkValue("", "option") should return null', () => {
+    expect(checkValue('', 'option')).toBeNull();
+  });
+
   it('checkValue(true, "boolean") should return true', () => {
     expect(checkValue(true, 'boolean')).toBeTrue();
   });
@@ -271,8 +286,16 @@ describe('Configuration fields service', () => {
     expect(checkValue(null, 'boolean')).toBeNull();
   });
 
+  it('checkValue("", "boolean") should return null', () => {
+    expect(checkValue('', 'boolean')).toBeNull();
+  });
+
   it('checkValue("{}", "json") should return {}', () => {
     expect(checkValue('{}', 'json')).toEqual({});
+  });
+
+  it('checkValue("", "json") should return null', () => {
+    expect(checkValue('', 'json')).toBeNull();
   });
 
   it('checkValue(null, "json") should return null', () => {
@@ -285,6 +308,10 @@ describe('Configuration fields service', () => {
 
   it('List fieldType :: checkValue("some string", "list") should return "some string"', () => {
     expect(checkValue('some string', 'list')).toEqual('some string');
+  });
+
+  it('List fieldType :: checkValue("[]", "list") should return null', () => {
+    expect(checkValue([], 'list')).toBeNull();
   });
 
   it('List fieldType :: checkValue(["string1", "", "string2"], "list") should return ["string1", "string2"]', () => {
@@ -312,6 +339,10 @@ describe('Configuration fields service', () => {
 
   it('Map fieldType :: checkValue("some string", "map") should return "some string"', () => {
     expect(checkValue('some string', 'map')).toEqual('some string');
+  });
+
+  it('Map fieldType :: checkValue("{}", "map") should return null', () => {
+    expect(checkValue({}, 'map')).toBeNull();
   });
 
   /**
