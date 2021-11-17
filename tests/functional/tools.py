@@ -12,7 +12,7 @@
 """
 Common functions and helpers for testing ADCM
 """
-from typing import List, Tuple, Callable, Union
+from typing import List, Tuple, Callable, Union, Iterable
 
 import allure
 import pytest
@@ -20,7 +20,7 @@ import pytest
 from _pytest.outcomes import Failed
 from coreapi.exceptions import ErrorMessage
 from adcm_client.base import ObjectNotFound, PagingEnds
-from adcm_client.objects import Host, Task, Job, Cluster, Service, Component, Provider
+from adcm_client.objects import Host, Task, Job, Cluster, Service, Component, Provider, GroupConfig
 from adcm_pytest_plugin.utils import catch_failed
 
 
@@ -90,3 +90,14 @@ def actions_in_objects_are_absent(actions_to_obj: List[Tuple[str, AnyADCMObject]
 
 def _get_object_represent(obj: AnyADCMObject) -> str:
     return f"host {obj.fqdn}" if isinstance(obj, Host) else f"{obj.__class__.__name__.lower()} {obj.name}"
+
+
+def create_config_group_and_add_host(
+    group_name: str, object_with_group: Union[ClusterRelatedObject, Provider], *hosts: Iterable[Host]
+) -> GroupConfig:
+    """Create config group with given name and add all passed hosts"""
+    with allure.step(f"Create config group '{group_name}' and add hosts: {' '.join((h.fqdn for h in hosts))}"):
+        group = object_with_group.group_config_create(name=group_name)
+        for host in hosts:
+            group.host_add(host)
+        return group

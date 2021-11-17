@@ -1,7 +1,7 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
 import { AdcmTypedEntity } from '@app/models/entity';
-import { IStyledNavItem } from '@app/shared/details/navigation.service';
+import { IStyledNavItem } from '@app/models/details';
 import { ApiFlat, TypeName } from '@app/core/types';
 
 @Pipe({

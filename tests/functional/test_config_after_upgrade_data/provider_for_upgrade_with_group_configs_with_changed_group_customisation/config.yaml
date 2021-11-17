@@ -103,6 +103,17 @@
         age: '24'
         name: Joe
         sex: m
+    - name: json
+      type: json
+      required: false
+      default:
+        key: "default value"
+        boolean: true
+    - name: secrettext
+      type: secrettext
+      required: false
+      default: "sec\nret\ntext"
+      group_customization: true
 
 - type: host
   name: host_from_provider

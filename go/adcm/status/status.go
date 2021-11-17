@@ -40,9 +40,11 @@ type eventMsg struct {
 }
 
 type eventDetail struct {
-	Id    string      `json:"id,omitempty"`
-	Type  string      `json:"type"`
-	Value interface{} `json:"value"`
+	Id          string      `json:"id,omitempty"`
+	HostId      string      `json:"host_id,omitempty"`
+	ComponentId string      `json:"component_id,omitempty"`
+	Type        string      `json:"type"`
+	Value       interface{} `json:"value"`
 }
 
 func (e eventMsg) encode() ([]byte, error) {
@@ -55,9 +57,11 @@ func newEventMsg4(status int, objType string, objId int, id2 int) eventMsg {
 	em.Object.Type = objType
 	em.Object.Id = objId
 	em.Object.Details = eventDetail{
-		Type:  "status",
-		Value: strconv.Itoa(status),
-		Id:    strconv.Itoa(id2),
+		Type:        "status",
+		Value:       strconv.Itoa(status),
+		Id:          strconv.Itoa(id2),
+		HostId:      strconv.Itoa(objId),
+		ComponentId: strconv.Itoa(id2),
 	}
 	return em
 }
@@ -164,8 +168,8 @@ func cookClusterStatus(serviceStatus int, hostStatus int) int {
 	return 0
 }
 
-func getClusterStatus(h Hub, clusterId int) int {
+func getClusterStatus(h Hub, clusterId int) Status {
 	serviceStatus, _ := getClusterServiceStatus(h, clusterId)
 	hostStatus, _ := getClusterHostStatus(h, clusterId)
-	return cookClusterStatus(serviceStatus, hostStatus)
+	return Status{Status: cookClusterStatus(serviceStatus, hostStatus)}
 }

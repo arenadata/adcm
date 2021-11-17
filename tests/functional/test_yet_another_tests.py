@@ -49,4 +49,4 @@ def test_shouldnt_load_same_bundle_twice(sdk_client_fs):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             sdk_client_fs.upload_from_fs(bundle_tar_path)
     with allure.step('Check error: bundle directory already exists'):
-        BUNDLE_ERROR.equal(e, 'bundle directory', 'already exists')
+        BUNDLE_ERROR.equal(e, 'already exists')

@@ -8,7 +8,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input } from '@angular/core';
-import { INavItem } from '../details/navigation.service';
+import { INavItem } from '@app/models/details';
 
 @Component({
   selector: 'app-crumbs',
