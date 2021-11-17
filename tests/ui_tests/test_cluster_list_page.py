@@ -771,6 +771,10 @@ class TestClusterConfigPage:
         config_row = cluster_config_page.config.get_all_config_rows()[0]
         cluster_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
         cluster_config_page.config.check_field_is_invalid(params['not_req_name'])
+        cluster_config_page.config.check_config_warn_icon_on_left_menu()
+        cluster_config_page.toolbar.check_warn_button(
+            tab_name="test cluster", expected_warn_text=['Test cluster has an issue with its config']
+        )
 
 
 class TestClusterStatusPage:

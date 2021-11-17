@@ -23,6 +23,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
+from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 
 
@@ -274,3 +275,15 @@ class CommonConfigMenuObj(BasePageObject):
             assert self.get_history_in_row(row)[0] == value, "History row should contain old value"
 
         wait_until_step_succeeds(_assert_value, timeout=4, period=0.5)
+
+    @allure.step("Check warn icon on the left menu Configuration element")
+    def check_config_warn_icon_on_left_menu(self):
+        assert self.is_child_displayed(self.find_element(ObjectPageMenuLocators.config_tab), ObjectPageMenuLocators.warn_icon), "No warn icon near Configuration left menu element"
+
+    @allure.step("Check warn icon on the left menu Import element")
+    def check_import_warn_icon_on_left_menu(self):
+        assert self.is_child_displayed(self.find_element(ObjectPageMenuLocators.import_tab), ObjectPageMenuLocators.warn_icon), "No warn icon near Import left menu element"
+
+    @allure.step("Check warn icon on the left menu Host-Components element")
+    def check_hostcomponents_warn_icon_on_left_menu(self):
+        assert self.is_child_displayed(self.find_element(ObjectPageMenuLocators.components_tab), ObjectPageMenuLocators.warn_icon), "No warn icon near Host-Components left menu element"
