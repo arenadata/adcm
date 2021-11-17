@@ -230,11 +230,16 @@ LOGGING = {
             'format': '{asctime} {levelname} {module} {message}',
             'style': '{',
         },
+        'django_debug': {
+            'format': '{asctime} {levelname} {module} {message}',
+            'style': '{',
+        },
     },
     'handlers': {
         'file': {
             'level': 'DEBUG',
             'filters': ['require_debug_false'],
+            'formatter': 'django_debug',
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'data/log/adcm_debug.log'),
         },
