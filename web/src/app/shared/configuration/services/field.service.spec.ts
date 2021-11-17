@@ -310,8 +310,8 @@ describe('Configuration fields service', () => {
     expect(checkValue('some string', 'list')).toEqual('some string');
   });
 
-  it('List fieldType :: checkValue("[]", "list") should return []', () => {
-    expect(checkValue([], 'list')).toEqual([]);
+  it('List fieldType :: checkValue("[]", "list") should return null', () => {
+    expect(checkValue([], 'list')).toEqual(null);
   });
 
   it('List fieldType :: checkValue(["string1", "", "string2"], "list") should return ["string1", "string2"]', () => {
@@ -341,8 +341,8 @@ describe('Configuration fields service', () => {
     expect(checkValue('some string', 'map')).toEqual('some string');
   });
 
-  it('Map fieldType :: checkValue("{}", "map") should return {}', () => {
-    expect(checkValue({}, 'map')).toEqual({});
+  it('Map fieldType :: checkValue("{}", "map") should return null', () => {
+    expect(checkValue({}, 'map')).toEqual(null);
   });
 
   /**
