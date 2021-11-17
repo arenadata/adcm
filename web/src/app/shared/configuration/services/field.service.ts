@@ -317,7 +317,12 @@ export class FieldService {
   }
 
   checkValue(value: resultTypes, type: TNForm): resultTypes {
+    if (type === 'map' && isEmptyObject(value)) return {};
+
+    if (type === 'list' && isEmptyObject(value)) return [];
+
     if (value === '' || value === null || isEmptyObject(value)) return null;
+
     if (typeof value === 'boolean') return value;
     else if (typeof value === 'string')
       switch (type) {
