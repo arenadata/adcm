@@ -28,7 +28,7 @@ from tests.ui_tests.app.pages import BasePage
 
 def _make_request(adcm_credentials, app_fs, method: str, path: str, **kwargs) -> requests.Response:
     def check_response(response):
-        assert response.status_code == 200
+        assert response.status_code == 200, f"Response status is {response.status_code}"
 
     token = requests.post(f'{app_fs.adcm.url}/api/v1/token/', json=adcm_credentials)
     check_response(token)
@@ -79,15 +79,13 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
             if 'group' in current_config_dict:
                 if field in current_config_dict['group']:
                     return current_config_dict['group'][field]
-                else:
-                    return current_config_dict['group']['structure_property'][field]
+                return current_config_dict['group']['structure_property'][field]
             else:
                 if field in current_config_dict:
                     return current_config_dict[field]
-                else:
-                    return current_config_dict['structure_property'][field]
-        except KeyError:
-            raise AssertionError(f"No parameter {field} found by api")
+                return current_config_dict['structure_property'][field]
+        except KeyError as error:
+            raise AssertionError(f"No parameter {field} found by api") from error
 
     # pylint:disable=too-many-arguments
     @allure.step('Assert field: {field} to have value: {expected_value}')
