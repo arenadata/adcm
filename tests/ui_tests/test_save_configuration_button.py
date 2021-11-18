@@ -228,7 +228,9 @@ def _update_config_property(config_page: Configuration, field, field_type: str):
     assert config_page.save_button_status()
 
 
-def _test_save_configuration_button(config_page: Configuration, prop_types: list, group_name=None, use_advanced=False):
+def _test_save_configuration_button(
+    adcm_credentials, app_fs, config_page: Configuration, prop_types: list, group_name=None, use_advanced=False
+):
     if use_advanced:
         config_page.click_advanced()
     if group_name:
@@ -259,7 +261,7 @@ def _test_save_configuration_button(config_page: Configuration, prop_types: list
                     field_type = "string"
                     field = config_page.get_form_field(field)
                     value_to_check = _get_test_value(field_type)
-                config_page.assert_field_content_equal(field_type, field, value_to_check)
+                config_page.assert_field_content_equal(adcm_credentials, app_fs, field_type, field, value_to_check)
 
 
 def _get_default_props_list() -> list:
@@ -277,10 +279,12 @@ def _get_default_props_list() -> list:
     entity_type="cluster",
     prop_types=_get_default_props_list(),
 )
-def test_cluster_configuration_save_button(bundle_content, cluster_config_page):
+def test_cluster_configuration_save_button(adcm_credentials, app_fs, bundle_content, cluster_config_page):
     """Test cluster configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
+        adcm_credentials,
+        app_fs,
         cluster_config_page,
         group_name=GROUP_NAME if CONFIG_USE_GROUP in selected_opts else None,
         use_advanced=CONFIG_USE_ADVANCED in selected_opts,
@@ -293,10 +297,12 @@ def test_cluster_configuration_save_button(bundle_content, cluster_config_page):
     entity_type="service",
     prop_types=_get_default_props_list(),
 )
-def test_service_configuration_save_button(bundle_content, service_config_page):
+def test_service_configuration_save_button(adcm_credentials, app_fs, bundle_content, service_config_page):
     """Test service configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
+        adcm_credentials,
+        app_fs,
         service_config_page,
         group_name=GROUP_NAME if CONFIG_USE_GROUP in selected_opts else None,
         use_advanced=CONFIG_USE_ADVANCED in selected_opts,
@@ -309,10 +315,12 @@ def test_service_configuration_save_button(bundle_content, service_config_page):
     entity_type="provider",
     prop_types=_get_default_props_list(),
 )
-def test_provider_configuration_save_button(bundle_content, provider_config_page):
+def test_provider_configuration_save_button(adcm_credentials, app_fs, bundle_content, provider_config_page):
     """Test provider configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
+        adcm_credentials,
+        app_fs,
         provider_config_page,
         group_name=GROUP_NAME if CONFIG_USE_GROUP in selected_opts else None,
         use_advanced=CONFIG_USE_ADVANCED in selected_opts,
@@ -325,10 +333,12 @@ def test_provider_configuration_save_button(bundle_content, provider_config_page
     entity_type="host",
     prop_types=_get_default_props_list(),
 )
-def test_host_configuration_save_button(bundle_content, host_config_page):
+def test_host_configuration_save_button(adcm_credentials, app_fs, bundle_content, host_config_page):
     """Test host configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
+        adcm_credentials,
+        app_fs,
         host_config_page,
         group_name=GROUP_NAME if CONFIG_USE_GROUP in selected_opts else None,
         use_advanced=CONFIG_USE_ADVANCED in selected_opts,

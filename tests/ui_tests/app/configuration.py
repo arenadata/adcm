@@ -15,6 +15,7 @@
 import json
 
 import allure
+import requests
 from adcm_client.objects import Service
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
@@ -23,6 +24,18 @@ from selenium.webdriver.remote.webelement import WebElement
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.locators import Common, ConfigurationLocators
 from tests.ui_tests.app.pages import BasePage
+
+
+def _make_request(adcm_credentials, app_fs, method: str, path: str, **kwargs) -> requests.Response:
+    def check_response(response):
+        assert response.status_code == 200
+
+    token = requests.post(f'{app_fs.adcm.url}/api/v1/token/', json=adcm_credentials)
+    check_response(token)
+    header = {'Authorization': f'Token {token.json()["token"]}'}
+    response = requests.request(method=method, url=app_fs.adcm.url + path, headers=header, **kwargs)
+    check_response(response)
+    return response
 
 
 class Configuration(BasePage):  # pylint: disable=too-many-public-methods
@@ -55,16 +68,29 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
             self.is_element_editable(field_element) == editable
         ), f"Field {field_element} should {'be editable' if editable else 'not be editable'}"
 
+    def get_api_value(self, adcm_credentials, app_fs, field: str):
+        current_config = _make_request(
+            adcm_credentials, app_fs, "GET", f"/api/v1/{self.driver.current_url.strip(app_fs.adcm.url)}/current"
+        ).text
+        current_config_dict = json.loads(current_config)['config']
+        try:
+            return current_config_dict[field]
+        except KeyError:
+            raise AssertionError(f"No parameter {field} found by api")
+
     @allure.step('Assert field: {field} to have value: {expected_value}')
-    def assert_field_content_equal(self, field_type, field, expected_value):
+    def assert_field_content_equal(self, adcm_credentials, app_fs, field_type, field, expected_value):
         """Assert field value based on field type and name"""
         current_value = self.get_field_value_by_type(field, field_type)
+        current_api_value = self.get_api_value(adcm_credentials, app_fs, field_type)
         if field_type in ('password', 'secrettext'):
             # In case of password we have no raw password in API after writing.
             if expected_value is not None and expected_value != "":
                 assert current_value is not None, "Password field expected to be filled"
+                assert current_api_value is not None, "Password field expected to be filled"
             else:
                 assert current_value is None or current_value == "", "Password have to be empty"
+                assert current_api_value is None or current_api_value == "", "Password have to be empty"
         else:
             if field_type == 'file':
                 expected_value = 'test'
@@ -74,6 +100,7 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
                 assert set(map_config.values()) == set(map_config.values())
             else:
                 assert current_value == expected_value, f"Field value with type {field_type} doesn't equal expected"
+                assert current_api_value == expected_value, f"Field value with type {field_type} doesn't equal expected"
 
     @allure.step('Assert frontend errors presence and text')
     def assert_alerts_presented(self, field_type):
