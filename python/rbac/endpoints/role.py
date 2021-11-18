@@ -36,7 +36,7 @@ class RoleSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
             'url',
         )
         extra_kwargs = {
-            'url': {'view_name': 'rbac_role:role-detail', 'lookup_field': 'id'},
+            'url': {'view_name': 'rbac:role-detail', 'lookup_field': 'id'},
         }
 
     def get_childs(self, obj):

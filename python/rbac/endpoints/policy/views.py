@@ -70,12 +70,12 @@ class PolicyUserViewSet(
             if policy is None:
                 kwargs = {'id': obj.id}
                 return reverse(
-                    'rbac-user-detail', kwargs=kwargs, request=request, format=request_format
+                    'rbac:user-detail', kwargs=kwargs, request=request, format=request_format
                 )
             else:
                 kwargs = {'parent_lookup_policy': self.context['policy'].id, 'pk': obj.id}
                 return reverse(
-                    'policy-user-detail',
+                    'rbac:policy-user-detail',
                     kwargs=kwargs,
                     request=request,
                     format=request_format,
@@ -116,12 +116,12 @@ class PolicyGroupViewSet(
             if policy is None:
                 kwargs = {'id': obj.id}
                 return reverse(
-                    'rbac_group:group-detail', kwargs=kwargs, request=request, format=request_format
+                    'rbac:group-detail', kwargs=kwargs, request=request, format=request_format
                 )
             else:
                 kwargs = {'parent_lookup_policy': self.context['policy'].id, 'pk': obj.id}
                 return reverse(
-                    'policy-group-detail',
+                    'rbac:policy-group-detail',
                     kwargs=kwargs,
                     request=request,
                     format=request_format,
@@ -140,7 +140,7 @@ class PolicyGroupViewSet(
         return context
 
 
-class RoleSerializer(serializers.ModelSerializer):
+class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
 
     url = serializers.SerializerMethodField()
 
@@ -205,24 +205,53 @@ class ObjectField(serializers.JSONField):
         return super().to_representation(data)
 
 
+class PolicyRoleSerializer(serializers.Serializer):
+    id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail', lookup_field='id')
+
+    def to_internal_value(self, data):
+        data = super().to_internal_value(data)
+        return data['id']
+
+
+class PolicyUserSerializer(serializers.Serializer):
+    id = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail', lookup_field='id')
+
+    def to_internal_value(self, data):
+        data = super().to_internal_value(data)
+        return data['id']
+
+
+class PolicyGroupSerializer(serializers.Serializer):
+    id = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all())
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail', lookup_field='id')
+
+    def to_internal_value(self, data):
+        return data['id']
+
+
 class PolicyViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
     class PolicySerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
-        url = serializers.HyperlinkedIdentityField(view_name='policy-detail')
+        url = serializers.HyperlinkedIdentityField(view_name='rbac:policy-detail')
         user_url = serializers.HyperlinkedRelatedField(
-            view_name='policy-user-list',
+            view_name='rbac:policy-user-list',
             read_only=True,
             source='*',
             lookup_field='pk',
             lookup_url_kwarg='parent_lookup_policy',
         )
         group_url = serializers.HyperlinkedRelatedField(
-            view_name='policy-group-list',
+            view_name='rbac:policy-group-list',
             read_only=True,
             source='*',
             lookup_field='pk',
             lookup_url_kwarg='parent_lookup_policy',
         )
         object = ObjectField()
+        role = PolicyRoleSerializer()
+        user = PolicyUserSerializer(many=True)
+        group = PolicyGroupSerializer(many=True)
 
         class Meta:
             model = Policy

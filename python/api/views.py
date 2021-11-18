@@ -44,11 +44,11 @@ class APIRoot(routers.APIRootView):
         'stack': 'stack',
         'stats': 'stats',
         'task': 'task',
-        'token': 'token',
         'logout': 'logout',
-        'rbac': 'rbac-root',
         'info': 'adcm-info',
         'concern': 'concern',
+        'rbac': 'rbac:root',
+        'token': 'token',
     }
 
 

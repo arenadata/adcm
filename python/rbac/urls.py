@@ -17,11 +17,11 @@ from django.urls import path, include
 from .endpoints import logout, root, token
 
 urlpatterns = [
-    path('', root.RBACRoot.as_view(), name='rbac-root'),
+    path('', root.RBACRoot.as_view(), name='root'),
     path('user/', include('rbac.endpoints.user.urls')),
     path('group/', include('rbac.endpoints.group_urls')),
     path('role/', include('rbac.endpoints.role_urls')),
     path(r'policy/', include('rbac.endpoints.policy.urls')),
-    path('logout/', logout.LogOut.as_view(), name='rbac-logout'),
-    path('token/', token.GetAuthToken.as_view(), name='rbac-token'),
+    path('logout/', logout.LogOut.as_view(), name='logout'),
+    path('token/', token.GetAuthToken.as_view(), name='token'),
 ]
