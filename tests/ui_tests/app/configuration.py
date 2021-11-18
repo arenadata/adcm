@@ -80,10 +80,10 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
                 if field in current_config_dict['group']:
                     return current_config_dict['group'][field]
                 return current_config_dict['group']['structure_property'][field]
-            else:
-                if field in current_config_dict:
-                    return current_config_dict[field]
-                return current_config_dict['structure_property'][field]
+
+            if field in current_config_dict:
+                return current_config_dict[field]
+            return current_config_dict['structure_property'][field]
         except KeyError as error:
             raise AssertionError(f"No parameter {field} found by api") from error
 
