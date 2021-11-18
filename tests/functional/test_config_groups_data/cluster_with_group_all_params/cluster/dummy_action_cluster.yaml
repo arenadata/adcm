@@ -22,6 +22,7 @@
           - job.config.map[inventory_hostname].boolean == cluster.config.boolean
           - job.config.map[inventory_hostname].integer == cluster.config.integer
           - job.config.map[inventory_hostname].password == cluster.config.password
+          - job.config.map[inventory_hostname].secrettext == cluster.config.secrettext
           - job.config.map[inventory_hostname].string == cluster.config.string
           - job.config.map[inventory_hostname].list == cluster.config.list
           - job.config.map[inventory_hostname].text == cluster.config.text

@@ -13,12 +13,23 @@
 from rest_framework import status
 from rest_framework.response import Response
 
-from api.api_views import PageView, create, check_obj, DetailViewRO, ListView, DetailViewDelete
+import cm.status_api
+from api.api_views import (
+    PageView,
+    create,
+    check_obj,
+    DetailViewRO,
+    ListView,
+    DetailViewDelete,
+    GenericAPIPermView,
+    InterfaceView,
+)
 from api.stack.serializers import ImportSerializer
 from api.cluster.serializers import BindSerializer
 
 from cm.api import delete_service, get_import, unbind
-from cm.models import Cluster, ClusterObject, Prototype, ClusterBind
+from cm.models import Cluster, ClusterObject, Prototype, ClusterBind, HostComponent
+
 from . import serializers
 
 
@@ -161,3 +172,55 @@ class ServiceBindDetailView(DetailViewDelete):
         bind = self.get_obj(kwargs, kwargs['bind_id'])
         unbind(bind)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class StatusList(GenericAPIPermView, InterfaceView):
+    queryset = HostComponent.objects.all()
+    serializer_class = serializers.StatusSerializer
+
+    def ui_status(self, service, host_components):
+        service_map = cm.status_api.get_object_map(service, 'service')
+
+        component_map = {}
+        for hc in host_components:
+            if hc.component.id not in component_map:
+                component_map[hc.component.id] = {'component': hc.component, 'hosts': []}
+            component_map[hc.component.id]['hosts'].append(hc.host)
+
+        comp_list = []
+        for comp in component_map.values():
+            host_list = []
+            for host in comp['hosts']:
+                host_list.append(
+                    {
+                        'id': host.id,
+                        'name': host.fqdn,
+                        'status': cm.status_api.get_host_comp_status(host, comp['component'])
+                    }
+                )
+            comp_list.append(
+                {
+                    'id': comp['component'].id,
+                    'name': comp['component'].display_name,
+                    'status': cm.status_api.get_component_status(comp['component']),
+                    'hosts': host_list,
+                }
+            )
+        return {
+            'id': service.id,
+            'name': service.display_name,
+            'status': 32 if service_map is None else service_map.get('status', 0),
+            'hc': comp_list,
+        }
+
+    def get(self, request, service_id, cluster_id=None):
+        """
+        Show all hosts and components in a specified cluster
+        """
+        service = check_obj(ClusterObject, service_id)
+        obj = self.get_queryset().filter(service=service)
+        if self.for_ui(request):
+            return Response(self.ui_status(service, obj))
+        else:
+            serializer = self.serializer_class(service, context={'request': request})
+            return Response(serializer.data)

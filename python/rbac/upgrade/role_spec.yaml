@@ -14,3 +14,51 @@ roles:
               codenames:
                 - view
                 - self_change_password
+
+    - name: create Host
+      description: The ability to add new host
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: host
+              codenames:
+                - view
+                - add
+
+    - name: create HostProvider
+      description: The ability to add new provider
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: hostprovider
+              codenames:
+                - view
+                - add
+
+    - name: create Cluster
+      description: The ability to add new cluster
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - view
+                - add
+
+    - name: upload Bundle
+      description: The ability to upload Bundle
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: bundle
+              codenames:
+                - view
+                - add

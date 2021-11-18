@@ -56,5 +56,5 @@ role_urls = [
 
 urlpatterns = [
     path('', include((router.urls, 'rbac_group'))),
-    path('<int:id>/role/', include((role_urls, 'rbac_group_role'))),
+    # path('<int:id>/role/', include((role_urls, 'rbac_group_role'))),
 ]
