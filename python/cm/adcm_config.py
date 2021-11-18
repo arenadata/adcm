@@ -492,7 +492,7 @@ def check_read_only(obj, spec, conf, old_conf):
                 err('CONFIG_VALUE_ERROR', msg.format(s, proto_ref(obj.prototype)))
 
 
-def restore_read_only(obj, spec, conf, old_conf):   # # pylint: disable=too-many-branches
+def restore_read_only(obj, spec, conf, old_conf):  # # pylint: disable=too-many-branches
     # Do not remove!
     # This patch fix old error when sometimes group config values can be lost
     # during bundle upgrade
@@ -735,7 +735,11 @@ def check_config_type(
             )
             err('CONFIG_VALUE_ERROR', msg)
 
-    if value is None:
+    if (
+        value is None
+        or (spec['type'] == "map" and value == {})
+        or (spec['type'] == "list" and value == [])
+    ):
         if inactive:
             return
         if 'required' in spec and spec['required']:
