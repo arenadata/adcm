@@ -20,6 +20,9 @@ import functools
 from version_utils import rpm
 from django.db import transaction
 from django.db import IntegrityError
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
+from rbac.models import Role
 
 from adcm.settings import ADCM_VERSION
 from cm.logger import log
@@ -63,6 +66,7 @@ def load_bundle(bundle_file):
         bundle = copy_stage(bundle_hash, bundle_proto)
         order_versions()
         clear_stage()
+        cook_roles(bundle)
         cm.status_api.post_event('create', 'bundle', bundle.id)
         return bundle
     except:
@@ -242,6 +246,31 @@ def copy_obj(orig, clone, fields):
 def update_obj(dest, source, fields):
     for f in fields:
         setattr(dest, f, getattr(source, f))
+
+
+def cook_roles(bundle):
+    roles = {}
+    ct = ContentType.objects.get(app_label='cm', model='action')
+    perm, _ = Permission.objects.get_or_create(
+        content_type=ct, codename='run_action', name='Can run action'
+    )
+    for act in Action.objects.filter(prototype__bundle=bundle):
+        roles[act.display_name] = act
+    for name in roles:
+        role = Role(
+            name=f'run_action_{name}',
+            description=f'run action {name}',
+            bundle=bundle,
+            module_name='rbac.roles',
+            class_name='ObjectRole',
+            init_params={
+                'app_name': 'cm',
+                'model': 'Action',
+                'filter': {'name': name, 'prototype__bundle_id': bundle.id},
+            },
+        )
+        role.save()
+        role.permissions.add(perm)
 
 
 def re_check_actions():

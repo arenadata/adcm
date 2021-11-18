@@ -22,6 +22,7 @@ from django.db import models
 from guardian.models import UserObjectPermission
 
 from adwp_base.errors import raise_AdwpEx as err
+from cm.models import Bundle
 
 
 class Role(models.Model):
@@ -31,14 +32,18 @@ class Role(models.Model):
     Also Role can have childs and so produce acyclic graph of linked roles
     """
 
-    name = models.CharField(max_length=32, unique=True)
+    name = models.CharField(max_length=128)
     description = models.TextField(blank=True)
     childs = models.ManyToManyField("self", symmetrical=False, blank=True)
     permissions = models.ManyToManyField(Permission, blank=True)
     module_name = models.CharField(max_length=32)
     class_name = models.CharField(max_length=32)
     init_params = models.JSONField(default=dict)
+    bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE, null=True, default=None)
     __obj__ = None
+
+    class Meta:
+        unique_together = (('name', 'bundle',))
 
     def get_role_obj(self):
         """Returns object with related role based on classes from roles.py"""
