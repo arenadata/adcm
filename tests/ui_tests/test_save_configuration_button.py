@@ -12,7 +12,7 @@
 
 """UI tests for save configuration button"""
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,too-many-arguments
 import itertools
 import os
 import shutil

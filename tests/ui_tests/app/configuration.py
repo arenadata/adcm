@@ -69,20 +69,33 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
         ), f"Field {field_element} should {'be editable' if editable else 'not be editable'}"
 
     def get_api_value(self, adcm_credentials, app_fs, field: str):
+        """Gets field value by api"""
+
         current_config = _make_request(
-            adcm_credentials, app_fs, "GET", f"/api/v1/{self.driver.current_url.strip(app_fs.adcm.url)}/current"
+            adcm_credentials, app_fs, "GET", f"/api/v1/{self.driver.current_url.replace(app_fs.adcm.url, '')}/current"
         ).text
         current_config_dict = json.loads(current_config)['config']
         try:
-            return current_config_dict[field]
+            if 'group' in current_config_dict:
+                if field in current_config_dict['group']:
+                    return current_config_dict['group'][field]
+                else:
+                    return current_config_dict['group']['structure_property'][field]
+            else:
+                if field in current_config_dict:
+                    return current_config_dict[field]
+                else:
+                    return current_config_dict['structure_property'][field]
         except KeyError:
             raise AssertionError(f"No parameter {field} found by api")
 
+    # pylint:disable=too-many-arguments
     @allure.step('Assert field: {field} to have value: {expected_value}')
     def assert_field_content_equal(self, adcm_credentials, app_fs, field_type, field, expected_value):
         """Assert field value based on field type and name"""
+
         current_value = self.get_field_value_by_type(field, field_type)
-        current_api_value = self.get_api_value(adcm_credentials, app_fs, field_type)
+        current_api_value = self.get_api_value(adcm_credentials, app_fs, field.text.split(":")[0])
         if field_type in ('password', 'secrettext'):
             # In case of password we have no raw password in API after writing.
             if expected_value is not None and expected_value != "":
