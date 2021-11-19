@@ -245,7 +245,7 @@ class BasePage:
         except TimeoutException:
             return False
 
-    def assert_no_popups_displayed(self, timeout: int = 2):
+    def assert_no_popups_displayed(self, timeout: int = 3):
         """Assert there is no popups displayed"""
         assert not self.is_popup_presented_on_page(timeout=timeout), "There is a popup with error on the page"
 
