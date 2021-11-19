@@ -360,7 +360,12 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs, adcm_cre
     fields = ui_config.get_app_fields()
     with allure.step('Check save button status'):
         save_err_mess = f"Correct status for save button {[expected['save']]}"
-        assert expected['save'] == ui_config.save_button_status(), save_err_mess
+        button_state = ui_config.save_button_status()
+        assert expected['save'] == button_state, save_err_mess
+        if expected['save']:
+            ui_config.save_configuration()
+            ui_config.save_configuration()
+            ui_config.assert_no_popups_displayed()
     with allure.step('Check field configuration'):
         if expected['visible']:
             if expected['visible_advanced']:
