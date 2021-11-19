@@ -364,7 +364,6 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs, adcm_cre
         assert expected['save'] == button_state, save_err_mess
         if expected['save']:
             ui_config.save_configuration()
-            ui_config.save_configuration()
             ui_config.assert_no_popups_displayed()
     with allure.step('Check field configuration'):
         if expected['visible']:
@@ -420,6 +419,9 @@ def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, a
     with allure.step('Check save button status'):
         save_err_mess = f"Correct status for save button {[expected['save']]}"
         assert expected['save'] == ui_config.save_button_status(), save_err_mess
+        if expected['save']:
+            ui_config.save_configuration()
+            ui_config.assert_no_popups_displayed()
     with allure.step('Check configuration'):
         if expected['group_visible'] and not expected['field_visible']:
             if expected['group_visible_advanced']:
