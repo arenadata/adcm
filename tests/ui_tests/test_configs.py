@@ -332,7 +332,7 @@ def _prepare_group_config(config):
 
 @pytest.mark.parametrize("config_dict", generate_configs())
 @pytest.mark.usefixtures("login_to_adcm_over_api")
-def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs, adcm_credentials):
+def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs):
     """Test UI configuration page without groups. Before start test actions
     we always create configuration and expected result. All logic for test
     expected result in functions before this test function.
@@ -355,7 +355,7 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs, adcm_cre
     )
     field_type = config['config'][0]['type']
 
-    _, ui_config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
+    cluster, ui_config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
 
     fields = ui_config.get_app_fields()
     with allure.step('Check save button status'):
@@ -376,9 +376,7 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs, adcm_cre
             for field in fields:
                 ui_config.assert_field_is_editable(field, expected['editable'])
             if expected['content']:
-                ui_config.assert_field_content_equal(
-                    adcm_credentials, app_fs, field_type, fields[0], config['config'][0]['default']
-                )
+                ui_config.assert_field_content_equal(cluster, field_type, fields[0], config['config'][0]['default'])
             if expected['alerts']:
                 ui_config.assert_alerts_presented(field_type)
         else:
@@ -387,7 +385,7 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs, adcm_cre
 
 @pytest.mark.parametrize(("config_dict", "expected"), generate_group_configs())
 @pytest.mark.usefixtures("login_to_adcm_over_api")
-def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, app_fs, adcm_credentials):
+def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, app_fs):
     """Test for configuration fields with groups. Before start test actions
     we always create configuration and expected result. All logic for test
     expected result in functions before this test function. If we have
@@ -412,7 +410,7 @@ def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, a
 
     field_type = config['config'][0]['subs'][0]['type']
 
-    _, ui_config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
+    cluster, ui_config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
 
     groups = ui_config.get_group_elements()
     fields = ui_config.get_app_fields()
@@ -450,7 +448,7 @@ def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, a
                 ui_config.assert_field_is_editable(field, expected['editable'])
             if expected['content']:
                 default_value = config['config'][0]['subs'][0]['default']
-                ui_config.assert_field_content_equal(adcm_credentials, app_fs, field_type, fields[0], default_value)
+                ui_config.assert_field_content_equal(cluster, field_type, fields[0], default_value)
             if expected['alerts']:
                 ui_config.assert_alerts_presented(field_type)
             if "activatable" in config['config'][0].keys():

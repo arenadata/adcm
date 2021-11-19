@@ -13,10 +13,16 @@
 """Page objects for ConfigurationPage"""
 
 import json
+from typing import Union
 
 import allure
-import requests
-from adcm_client.objects import Service
+from adcm_client.objects import (
+    Service,
+    Component,
+    Cluster,
+    Host,
+    Provider,
+)
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webelement import WebElement
@@ -24,18 +30,6 @@ from selenium.webdriver.remote.webelement import WebElement
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.locators import Common, ConfigurationLocators
 from tests.ui_tests.app.pages import BasePage
-
-
-def _make_request(adcm_credentials, app_fs, method: str, path: str, **kwargs) -> requests.Response:
-    def check_response(response):
-        assert response.status_code == 200, f"Response status is {response.status_code}"
-
-    token = requests.post(f'{app_fs.adcm.url}/api/v1/token/', json=adcm_credentials)
-    check_response(token)
-    header = {'Authorization': f'Token {token.json()["token"]}'}
-    response = requests.request(method=method, url=app_fs.adcm.url + path, headers=header, **kwargs)
-    check_response(response)
-    return response
 
 
 class Configuration(BasePage):  # pylint: disable=too-many-public-methods
@@ -68,32 +62,29 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
             self.is_element_editable(field_element) == editable
         ), f"Field {field_element} should {'be editable' if editable else 'not be editable'}"
 
-    def get_api_value(self, adcm_credentials, app_fs, field: str):
+    def get_config_field_value_by_api(self, item: Union[Cluster, Service, Component, Host, Provider], field: str):
         """Gets field value by api"""
-
-        current_config = _make_request(
-            adcm_credentials, app_fs, "GET", f"/api/v1/{self.driver.current_url.replace(app_fs.adcm.url, '')}/current"
-        ).text
-        current_config_dict = json.loads(current_config)['config']
+        current_config = item.config()
         try:
-            if 'group' in current_config_dict:
-                if field in current_config_dict['group']:
-                    return current_config_dict['group'][field]
-                return current_config_dict['group']['structure_property'][field]
+            if 'group' in current_config:
+                if field in current_config['group']:
+                    return current_config['group'][field]
+                return current_config['group']['structure_property'][field]
 
-            if field in current_config_dict:
-                return current_config_dict[field]
-            return current_config_dict['structure_property'][field]
+            if field in current_config:
+                return current_config[field]
+            return current_config['structure_property'][field]
         except KeyError as error:
             raise AssertionError(f"No parameter {field} found by api") from error
 
-    # pylint:disable=too-many-arguments
     @allure.step('Assert field: {field} to have value: {expected_value}')
-    def assert_field_content_equal(self, adcm_credentials, app_fs, field_type, field, expected_value):
+    def assert_field_content_equal(
+        self, item: Union[Cluster, Service, Component, Host, Provider], field_type, field, expected_value
+    ):
         """Assert field value based on field type and name"""
 
         current_value = self.get_field_value_by_type(field, field_type)
-        current_api_value = self.get_api_value(adcm_credentials, app_fs, field.text.split(":")[0])
+        current_api_value = self.get_config_field_value_by_api(item, field.text.split(":")[0])
         if field_type in ('password', 'secrettext'):
             # In case of password we have no raw password in API after writing.
             if expected_value is not None and expected_value != "":
