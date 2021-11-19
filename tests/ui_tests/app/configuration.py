@@ -62,7 +62,8 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
             self.is_element_editable(field_element) == editable
         ), f"Field {field_element} should {'be editable' if editable else 'not be editable'}"
 
-    def get_config_field_value_by_api(self, item: Union[Cluster, Service, Component, Host, Provider], field: str):
+    @staticmethod
+    def get_config_field_value(item: Union[Cluster, Service, Component, Host, Provider], field: str):
         """Gets field value by api"""
         current_config = item.config()
         try:
@@ -84,7 +85,7 @@ class Configuration(BasePage):  # pylint: disable=too-many-public-methods
         """Assert field value based on field type and name"""
 
         current_value = self.get_field_value_by_type(field, field_type)
-        current_api_value = self.get_config_field_value_by_api(item, field.text.split(":")[0])
+        current_api_value = self.get_config_field_value(item, field.text.split(":")[0])
         if field_type in ('password', 'secrettext'):
             # In case of password we have no raw password in API after writing.
             if expected_value is not None and expected_value != "":
