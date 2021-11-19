@@ -487,6 +487,14 @@ def check_read_only(obj, spec, conf, old_conf):
     flat_old_conf = to_flat_dict(old_conf, spec)
     for s in spec:
         if config_is_ro(obj, s, spec[s].limits) and s in flat_conf:
+
+            if spec[s].type == 'list':
+                if isinstance(flat_conf[s], list) and not flat_conf[s]:
+                    continue
+            if spec[s].type == 'map':
+                if isinstance(flat_conf[s], dict) and not flat_conf[s]:
+                    continue
+
             if flat_conf[s] != flat_old_conf[s]:
                 msg = 'config key {} of {} is read only'
                 err('CONFIG_VALUE_ERROR', msg.format(s, proto_ref(obj.prototype)))
