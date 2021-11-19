@@ -46,15 +46,15 @@ router = GroupRouter()
 router.register('', GroupViewSet, basename='group')
 
 role_urls = [
-    path('', GroupRoleViewSet.as_view({'get': 'list', 'post': 'create'}), name='list'),
+    path('', GroupRoleViewSet.as_view({'get': 'list', 'post': 'create'}), name='group-role-list'),
     path(
         '<int:role_id>/',
         GroupRoleViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}),
-        name='detail',
+        name='group-role-detail',
     ),
 ]
 
 urlpatterns = [
-    path('', include((router.urls, 'rbac_group'))),
-    # path('<int:id>/role/', include((role_urls, 'rbac_group_role'))),
+    path('', include(router.urls)),
+    path('<int:id>/role/', include(role_urls)),
 ]

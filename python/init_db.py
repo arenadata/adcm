@@ -19,7 +19,11 @@ import adcm.init_django  # pylint: disable=unused-import
 
 from django.contrib.auth.models import User
 
+
 from cm import issue
+from cm.bundle import load_adcm
+from cm.config import SECRETS_FILE
+from cm.job import abort_all
 from cm.logger import log
 from cm.models import (
     UserProfile,
@@ -31,10 +35,23 @@ from cm.models import (
     ConcernType,
     ConcernItem,
 )
-from cm.bundle import load_adcm
-from cm.config import SECRETS_FILE
-from cm.job import abort_all
 from cm.status_api import Event
+
+try:
+    from rbac.models import UserProfile as RbacUserProfile
+except ImportError:
+    pass
+
+
+def create_profile(user: User = None, login: str = None):
+    """Create user profile"""
+    try:
+        if user is not None:
+            RbacUserProfile.objects.get_or_create(user=user)
+    except NameError:
+        pass
+    if login is not None:
+        UserProfile.objects.get_or_create(login=login)
 
 
 def random_string(strlen=10):
@@ -44,13 +61,15 @@ def random_string(strlen=10):
 def create_status_user():
     user = "status"
     try:
-        User.objects.get(username=user)
+        status_user = User.objects.get(username=user)
+        create_profile(status_user, user)
         return
     except User.DoesNotExist:
         pass
     password = random_string(40)
     token = random_string(40)
-    User.objects.create_superuser(user, "", password)
+    status_user = User.objects.create_superuser(user, "", password)
+    create_profile(status_user, user)
     with open(SECRETS_FILE, 'w', encoding='utf_8') as f:
         json.dump({'adcmuser': {'user': user, 'password': password}, 'token': token}, f)
     log.info('Update secret file %s OK', SECRETS_FILE)
@@ -84,13 +103,10 @@ def recheck_issues():
 def init():
     log.info("Start initializing ADCM DB...")
     try:
-        User.objects.get(username='admin')
+        admin = User.objects.get(username='admin')
     except User.DoesNotExist:
-        User.objects.create_superuser('admin', 'admin@example.com', 'admin')
-    try:
-        UserProfile.objects.get(login='admin')
-    except UserProfile.DoesNotExist:
-        UserProfile.objects.create(login='admin')
+        admin = User.objects.create_superuser('admin', 'admin@example.com', 'admin')
+    create_profile(admin, 'admin')
     create_status_user()
     event = Event()
     abort_all(event)

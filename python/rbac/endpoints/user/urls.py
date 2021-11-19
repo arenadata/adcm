@@ -18,25 +18,25 @@ from .views import UserViewSet, UserGroupViewSet, UserRoleViewSet, ChangePasswor
 
 
 role_urls = [
-    path('', UserRoleViewSet.as_view({'get': 'list', 'post': 'create'}), name='list'),
+    path('', UserRoleViewSet.as_view({'get': 'list', 'post': 'create'}), name='user-role-list'),
     path(
         '<int:role_id>/',
         UserRoleViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}),
-        name='detail',
+        name='user-role-detail',
     ),
 ]
 
 group_urls = [
-    path('', UserGroupViewSet.as_view({'get': 'list', 'post': 'create'}), name='list'),
+    path('', UserGroupViewSet.as_view({'get': 'list', 'post': 'create'}), name='user-group-list'),
     path(
         '<int:group_id>/',
         UserGroupViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}),
-        name='detail',
+        name='user-group-detail',
     ),
 ]
 
 urlpatterns = [
-    path('', UserViewSet.as_view({'get': 'list', 'post': 'create'}), name='rbac-user-list'),
+    path('', UserViewSet.as_view({'get': 'list', 'post': 'create'}), name='user-list'),
     path(
         '<int:id>/',
         include(
@@ -46,13 +46,11 @@ urlpatterns = [
                     UserViewSet.as_view(
                         {'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy'}
                     ),
-                    name='rbac-user-detail',
+                    name='user-detail',
                 ),
-                path(
-                    'change_password/', ChangePassword.as_view(), name='rbac-user-change-password'
-                ),
-                path('group/', include((group_urls, 'rbac_user_group'))),
-                # path('role/', include((role_urls, 'rbac_user_role'))),
+                path('change_password/', ChangePassword.as_view(), name='user-change-password'),
+                path('group/', include(group_urls)),
+                path('role/', include(role_urls)),
             ]
         ),
     ),

@@ -20,9 +20,10 @@ class RBACRoot(routers.APIRootView):
 
     permission_classes = (permissions.AllowAny,)
     api_root_dict = {
-        'user': 'rbac-user-list',
-        'group': 'rbac_group:group-list',
-        'role': 'rbac_role:role-list',
-        'logout': 'rbac-logout',
-        'token': 'rbac-token',
+        'user': 'user-list',
+        'group': 'group-list',
+        'role': 'role-list',
+        'policy': 'policy-list',
+        'logout': 'logout',
+        'token': 'token',
     }

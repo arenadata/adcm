@@ -44,5 +44,5 @@ router = RoleRouter()
 router.register('', RoleViewSet, basename='role')
 
 urlpatterns = [
-    path('', include((router.urls, 'rbac_role'))),
+    path('', include(router.urls)),
 ]

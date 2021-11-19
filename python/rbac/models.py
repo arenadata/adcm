@@ -101,6 +101,13 @@ class PolicyObject(models.Model):
     object_id = models.PositiveIntegerField()
     object = GenericForeignKey('content_type', 'object_id')
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['content_type', 'object_id'], name='unique_policy_object'
+            )
+        ]
+
 
 class PolicyPermission(models.Model):
     """Reference to Policy model level Permissions"""
@@ -113,6 +120,7 @@ class PolicyPermission(models.Model):
 class Policy(models.Model):
     """Policy connect role, users and (maybe) objects"""
 
+    name = models.CharField(max_length=255)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
     object = models.ManyToManyField(PolicyObject, blank=True)
     user = models.ManyToManyField(User, blank=True)
@@ -135,11 +143,6 @@ class Policy(models.Model):
         for obj in self.object.all():
             obj_list.append(obj.object)
         return obj_list
-
-    def add_object(self, obj):
-        po = PolicyObject(object=obj)
-        po.save()
-        self.object.add(po)
 
     def filter(self):
         return self.role.filter()

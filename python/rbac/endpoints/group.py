@@ -46,7 +46,7 @@ class GroupRoleSerializer(serializers.ModelSerializer):
     def get_url(self, obj):
         """get role URL rbac/group/1/role/1/"""
         kwargs = {'id': self.context['group'].id, 'role_id': obj.id}
-        return reverse('rbac_group_role:detail', kwargs=kwargs, request=self.context['request'])
+        return reverse('rbac:group-role-detail', kwargs=kwargs, request=self.context['request'])
 
     def create(self, validated_data):
         """Add role to group"""
@@ -60,9 +60,8 @@ class GroupSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSer
     """Group serializer"""
 
     permissions = PermissionSerializer(many=True, read_only=True)
-    roles = serializers.SerializerMethodField(read_only=True)
     add_role = serializers.HyperlinkedIdentityField(
-        view_name='rbac_group_role:list', lookup_field='id'
+        view_name='rbac:group-role-list', lookup_field='id'
     )
 
     class Meta:
@@ -70,19 +69,13 @@ class GroupSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSer
         fields = (
             'id',
             'name',
-            'roles',
             'permissions',
             'add_role',
             'url',
         )
         extra_kwargs = {
-            'url': {'view_name': 'rbac_group:group-detail', 'lookup_field': 'id'},
+            'url': {'view_name': 'rbac:group-detail', 'lookup_field': 'id'},
         }
-
-    def get_roles(self, obj):
-        """Get all user's roles"""
-        self.context['group'] = obj
-        return GroupRoleSerializer(obj.role_set.all(), many=True, context=self.context).data
 
 
 # pylint: disable=too-many-ancestors
@@ -126,9 +119,9 @@ class GroupRoleViewSet(
         role.remove_group(group)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def get_queryset(self):
-        """Filter user's roles"""
-        return self.queryset.filter(group__id=self.kwargs.get('id'))
+    # def get_queryset(self):
+    #     """Filter user's roles"""
+    #     return self.queryset.filter(group__id=self.kwargs.get('id'))
 
     def get_serializer_context(self):
         """Add group to context"""

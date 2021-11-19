@@ -36,13 +36,13 @@ class PasswordField(serializers.CharField):
 def get_group_url(self, obj):
     """get group URL rbac/user/1/group/1/"""
     kwargs = {'id': self.context['user'].id, 'group_id': obj.id}
-    return reverse('rbac_user_group:detail', kwargs=kwargs, request=self.context['request'])
+    return reverse('rbac:user-group-detail', kwargs=kwargs, request=self.context['request'])
 
 
 def get_role_url(self, obj):
     """get role URL rbac/user/1/role/1/"""
     kwargs = {'id': self.context['user'].id, 'role_id': obj.id}
-    return reverse('rbac_user_role:detail', kwargs=kwargs, request=self.context['request'])
+    return reverse('rbac:user-role-detail', kwargs=kwargs, request=self.context['request'])
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -71,7 +71,7 @@ class RoleSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
             'url',
         )
         extra_kwargs = {
-            'url': {'view_name': 'rbac_role:role-detail', 'lookup_field': 'id'},
+            'url': {'view_name': 'rbac:role-detail', 'lookup_field': 'id'},
         }
 
 
@@ -95,13 +95,6 @@ class PermissionSerializer(serializers.ModelSerializer):
 
     def get_model(self, obj):
         return obj.content_type.model
-
-
-class ProfileField(serializers.JSONField):
-    """Get profile field from one to one model UserProfile"""
-
-    def get_attribute(self, instance):
-        return instance.userprofile.profile
 
 
 class UserGroupSerializer(serializers.ModelSerializer):
@@ -156,17 +149,17 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
     """User serializer"""
 
     password = PasswordField()
-    profile = ProfileField(required=False)
+    profile = serializers.JSONField(source='userprofile.profile', allow_null=True)
     groups = serializers.SerializerMethodField(read_only=True)
     permissions = PermissionSerializer(many=True, source='user_permissions', read_only=True)
     add_group = serializers.HyperlinkedIdentityField(
-        view_name='rbac_user_group:list', lookup_field='id'
+        view_name='rbac:user-group-list', lookup_field='id'
     )
     add_role = serializers.HyperlinkedIdentityField(
-        view_name='rbac_user_role:list', lookup_field='id'
+        view_name='rbac:user-role-list', lookup_field='id'
     )
     change_password = serializers.HyperlinkedIdentityField(
-        view_name='rbac-user-change-password', lookup_field='id'
+        view_name='rbac:user-change-password', lookup_field='id'
     )
 
     class Meta:
@@ -188,7 +181,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
             'change_password',
         )
         extra_kwargs = {
-            'url': {'view_name': 'rbac-user-detail', 'lookup_field': 'id'},
+            'url': {'view_name': 'rbac:user-detail', 'lookup_field': 'id'},
             'is_superuser': {'required': False},
         }
 
