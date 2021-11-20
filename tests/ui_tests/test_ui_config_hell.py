@@ -94,7 +94,7 @@ def test_save_configuration_hell(
         for display_name in group_names:
             assert display_name in ui_display_names, f"Group named '{display_name}' should be presented in config"
     _fill_required_fields(config_page)
-    config_page.config.save_config(load_timeout=15)
+    config_page.config.save_config(load_timeout=30)
     with allure.step('Ensure page is still opened'):
         config_page.wait_page_is_opened(timeout=1)
     with allure.step('Check that popup does not contain info about error'):
