@@ -487,12 +487,23 @@ def check_read_only(obj, spec, conf, old_conf):
     flat_old_conf = to_flat_dict(old_conf, spec)
     for s in spec:
         if config_is_ro(obj, s, spec[s].limits) and s in flat_conf:
+
+            # this block is an attempt to fix sending read-only fields of list and map types
+            # Since this did not help, I had to completely turn off the validation
+            # of read-only fields
+            if spec[s].type == 'list':
+                if isinstance(flat_conf[s], list) and not flat_conf[s]:
+                    continue
+            if spec[s].type == 'map':
+                if isinstance(flat_conf[s], dict) and not flat_conf[s]:
+                    continue
+
             if flat_conf[s] != flat_old_conf[s]:
                 msg = 'config key {} of {} is read only'
                 err('CONFIG_VALUE_ERROR', msg.format(s, proto_ref(obj.prototype)))
 
 
-def restore_read_only(obj, spec, conf, old_conf):   # # pylint: disable=too-many-branches
+def restore_read_only(obj, spec, conf, old_conf):  # # pylint: disable=too-many-branches
     # Do not remove!
     # This patch fix old error when sometimes group config values can be lost
     # during bundle upgrade
@@ -709,7 +720,8 @@ def check_config_spec(
                 check_sub(key)
 
     if old_conf:
-        check_read_only(obj, flat_spec, conf, old_conf)
+        # TODO: it is necessary to investigate the problem
+        # check_read_only(obj, flat_spec, conf, old_conf)
         restore_read_only(obj, spec, conf, old_conf)
         process_file_type(group or obj, spec, conf)
     process_password(spec, conf)
@@ -735,7 +747,11 @@ def check_config_type(
             )
             err('CONFIG_VALUE_ERROR', msg)
 
-    if value is None:
+    if (
+        value is None
+        or (spec['type'] == "map" and value == {})
+        or (spec['type'] == "list" and value == [])
+    ):
         if inactive:
             return
         if 'required' in spec and spec['required']:

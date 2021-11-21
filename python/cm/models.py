@@ -693,7 +693,11 @@ class GroupConfig(ADCMModel):
             group_customization = field.group_customization
             if group_customization is None:
                 group_customization = self.object.prototype.config_group_customization
-            field_spec = {'type': field.type, 'group_customization': group_customization}
+            field_spec = {
+                'type': field.type,
+                'group_customization': group_customization,
+                'limits': field.limits,
+            }
             if field.subname == '':
                 if field.type == 'group':
                     field_spec.update({'fields': {}})

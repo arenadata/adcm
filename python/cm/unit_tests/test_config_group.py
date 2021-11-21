@@ -95,20 +95,24 @@ class GroupConfigTest(TestCase):
             'group': {
                 'type': 'group',
                 'group_customization': False,
+                'limits': {},
                 'fields': {
                     'string': {
                         'type': 'string',
                         'group_customization': False,
+                        'limits': {},
                     }
                 },
             },
             'activatable_group': {
                 'type': 'group',
                 'group_customization': False,
+                'limits': {},
                 'fields': {
                     'integer': {
                         'type': 'integer',
                         'group_customization': False,
+                        'limits': {},
                     }
                 },
             },
