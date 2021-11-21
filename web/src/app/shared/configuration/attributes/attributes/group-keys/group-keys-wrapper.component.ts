@@ -62,15 +62,10 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
     let disabled = this._attributeSrv.attributes.get(ConfigAttributeNames.CUSTOM_GROUP_KEYS).value;
     let text = this._attributeSrv.attributes.get(ConfigAttributeNames.CUSTOM_GROUP_KEYS).options.tooltipText;
 
+    const path = fieldOptions.key?.split('/').reverse();
 
-    fieldOptions.key?.split('/').reverse().forEach((key) => {
-      parameterControl = parameterControl.controls[key] as FormGroup;
-      attributeControl = attributeControl.controls[key] as FormGroup;
-      disabled = disabled[key];
-    });
-
-    this.groupControl = attributeControl as unknown as FormControl;
-    this.parameterControl = parameterControl as unknown as FormControl;
+    this.groupControl = attributeControl.get(path) as FormControl;
+    this.parameterControl = parameterControl.get(path) as FormControl;
 
     if (!disabled) {
       attributeControl.disable();
