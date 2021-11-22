@@ -113,6 +113,10 @@ class BasePageObject:
             self.find_and_click(CommonPopupLocators.hide_btn)
             self.wait_element_hide(CommonPopupLocators.block)
 
+    def is_popup_presented_on_page(self) -> bool:
+        """Check if popup is presented on page"""
+        return self.is_element_displayed(CommonPopupLocators.block, timeout=5)
+
     def get_info_popup_text(self):
         """Get text from info popup"""
         self.wait_element_visible(CommonPopupLocators.block)
@@ -153,10 +157,13 @@ class BasePageObject:
 
         loc_timeout = timeout or self.default_loc_timeout
         with allure.step(f'Find element "{child.name}" on page'):
-            return WDW(element, loc_timeout).until(
-                EC.presence_of_all_elements_located([child.by, child.value]),
-                message=f"Can't find {child.name} on page " f"{self.driver.current_url} for {loc_timeout} seconds",
-            )
+            try:
+                return WDW(element, loc_timeout).until(
+                    EC.presence_of_all_elements_located([child.by, child.value]),
+                    message=f"Can't find {child.name} on page " f"{self.driver.current_url} for {loc_timeout} seconds",
+                )
+            except TimeoutException:
+                return []
 
     def find_elements(self, locator: Locator, timeout: int = None) -> [WebElement]:
         """Find elements on current page."""
@@ -179,7 +186,8 @@ class BasePageObject:
             )
 
         element_name = element.name if isinstance(element, Locator) else element.text
-        return self._is_displayed(element_name, _find_element)
+        with allure.step(f'Check if {element_name} is displayed'):
+            return self._is_displayed(_find_element)
 
     def is_child_displayed(self, parent: WebElement, child: Locator, timeout: Optional[int] = None) -> bool:
         """Checks if child element is displayed"""
@@ -187,7 +195,8 @@ class BasePageObject:
         def _find_child():
             return self.find_child(parent, child, timeout=timeout or self.default_loc_timeout)
 
-        return self._is_displayed(child.name, _find_child)
+        with allure.step(f'Check if {child.name} is displayed'):
+            return self._is_displayed(_find_child)
 
     def assert_displayed_elements(self, locators: List[Locator]) -> None:
         """Asserts that list of elements is displayed."""
@@ -353,11 +362,10 @@ class BasePageObject:
         hover.perform()
 
     @staticmethod
-    def _is_displayed(element_name: str, find_element_func: Callable[[], WebElement]) -> bool:
+    def _is_displayed(find_element_func: Callable[[], WebElement]) -> bool:
         """Calls `is_displayed` method on element returned by passed function"""
         try:
-            with allure.step(f'Check {element_name}'):
-                return find_element_func().is_displayed()
+            return find_element_func().is_displayed()
         except (
             TimeoutException,
             NoSuchElementException,
@@ -370,6 +378,18 @@ class BasePageObject:
     def click_back_button_in_browser(self):
         """Click back button in browser"""
         self.driver.back()
+
+    @allure.step('Scroll to element')
+    def scroll_to(self, locator: Optional[Locator] = None, element: Optional[WebElement] = None) -> WebElement:
+        """Scroll to element"""
+        element = element or self.find_element(locator)
+        # Hack for firefox because of move_to_element does not scroll to the element
+        # https://github.com/mozilla/geckodriver/issues/776
+        if self.driver.capabilities['browserName'] == 'firefox':
+            self.driver.execute_script('arguments[0].scrollIntoView(true)', element)
+        action = ActionChains(self.driver)
+        action.move_to_element(element).perform()
+        return element
 
 
 class PageHeader(BasePageObject):
