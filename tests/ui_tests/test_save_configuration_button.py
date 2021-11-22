@@ -16,11 +16,19 @@
 import itertools
 import os
 import shutil
+from typing import Union
 
 import allure
 import pytest
 import yaml
-from adcm_client.objects import ADCMClient, Service, Host, Cluster, Bundle, Provider
+from adcm_client.objects import ADCMClient, Bundle
+from adcm_client.objects import (
+    Service,
+    Component,
+    Cluster,
+    Host,
+    Provider,
+)
 from adcm_pytest_plugin.utils import random_string, get_data_dir
 
 from tests.ui_tests.app.configuration import Configuration
@@ -228,7 +236,13 @@ def _update_config_property(config_page: Configuration, field, field_type: str):
     assert config_page.save_button_status()
 
 
-def _test_save_configuration_button(config_page: Configuration, prop_types: list, group_name=None, use_advanced=False):
+def _test_save_configuration_button(
+    item: Union[Cluster, Service, Component, Host, Provider],
+    config_page: Configuration,
+    prop_types: list,
+    group_name=None,
+    use_advanced=False,
+):
     if use_advanced:
         config_page.click_advanced()
     if group_name:
@@ -259,7 +273,7 @@ def _test_save_configuration_button(config_page: Configuration, prop_types: list
                     field_type = "string"
                     field = config_page.get_form_field(field)
                     value_to_check = _get_test_value(field_type)
-                config_page.assert_field_content_equal(field_type, field, value_to_check)
+                config_page.assert_field_content_equal(item, field_type, field, value_to_check)
 
 
 def _get_default_props_list() -> list:
@@ -277,10 +291,11 @@ def _get_default_props_list() -> list:
     entity_type="cluster",
     prop_types=_get_default_props_list(),
 )
-def test_cluster_configuration_save_button(bundle_content, cluster_config_page):
+def test_cluster_configuration_save_button(bundle_content, cluster_config_page, cluster):
     """Test cluster configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
+        cluster,
         cluster_config_page,
         group_name=GROUP_NAME if CONFIG_USE_GROUP in selected_opts else None,
         use_advanced=CONFIG_USE_ADVANCED in selected_opts,
@@ -293,10 +308,11 @@ def test_cluster_configuration_save_button(bundle_content, cluster_config_page):
     entity_type="service",
     prop_types=_get_default_props_list(),
 )
-def test_service_configuration_save_button(bundle_content, service_config_page):
+def test_service_configuration_save_button(bundle_content, service_config_page, service):
     """Test service configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
+        service,
         service_config_page,
         group_name=GROUP_NAME if CONFIG_USE_GROUP in selected_opts else None,
         use_advanced=CONFIG_USE_ADVANCED in selected_opts,
@@ -309,10 +325,11 @@ def test_service_configuration_save_button(bundle_content, service_config_page):
     entity_type="provider",
     prop_types=_get_default_props_list(),
 )
-def test_provider_configuration_save_button(bundle_content, provider_config_page):
+def test_provider_configuration_save_button(bundle_content, provider_config_page, provider):
     """Test provider configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
+        provider,
         provider_config_page,
         group_name=GROUP_NAME if CONFIG_USE_GROUP in selected_opts else None,
         use_advanced=CONFIG_USE_ADVANCED in selected_opts,
@@ -325,10 +342,11 @@ def test_provider_configuration_save_button(bundle_content, provider_config_page
     entity_type="host",
     prop_types=_get_default_props_list(),
 )
-def test_host_configuration_save_button(bundle_content, host_config_page):
+def test_host_configuration_save_button(bundle_content, host_config_page, host):
     """Test host configuration save button"""
     (selected_opts, prop_types), _ = bundle_content
     _test_save_configuration_button(
+        host,
         host_config_page,
         group_name=GROUP_NAME if CONFIG_USE_GROUP in selected_opts else None,
         use_advanced=CONFIG_USE_ADVANCED in selected_opts,
