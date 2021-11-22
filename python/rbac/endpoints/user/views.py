@@ -131,9 +131,9 @@ class UserRoleViewSet(
         role.remove_user(user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def get_queryset(self):
-        """Filter user's roles"""
-        return self.queryset.filter(user__id=self.kwargs.get('id'))
+    # def get_queryset(self):
+    #     """Filter user's roles"""
+    #     return self.queryset.filter(user__id=self.kwargs.get('id'))
 
     def get_serializer_context(self):
         """Add user to context"""
