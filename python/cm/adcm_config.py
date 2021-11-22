@@ -24,7 +24,7 @@ import cm.variant
 from cm import config
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
-from cm.models import ADCM, PrototypeConfig, ObjectConfig, ConfigLog, GroupConfig
+from cm.models import ADCM, PrototypeConfig, ObjectConfig, ConfigLog, GroupConfig, Prototype
 
 
 def proto_ref(proto):
@@ -72,6 +72,8 @@ def to_flat_dict(conf, spec):
 
 def get_default(c, proto=None):  # pylint: disable=too-many-branches
     value = c.default
+    if proto is None:
+        proto = Prototype.objects.get(id=c.prototype_id)
     if c.default == '':
         value = None
     elif c.type == 'string':
