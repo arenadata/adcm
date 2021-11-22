@@ -9,6 +9,7 @@ import { ClusterService } from '@app/core/services/cluster.service';
 import { ChannelService } from '@app/core/services';
 import { HostService } from '@app/services/host.service';
 import { DetailAbstractDirective } from '@app/abstract-directives/detail.abstract.directive';
+import { ConcernEventType } from '@app/models/concern/concern-reason';
 
 @Component({
   selector: 'app-host-details',
@@ -21,8 +22,8 @@ export class HostDetailsComponent extends DetailAbstractDirective<IHost> {
 
   leftMenu = [
     DetailsFactory.labelMenuItem('Main', 'main'),
-    DetailsFactory.labelMenuItem('Configuration', 'config'),
-    DetailsFactory.statusMenuItem('Status', 'status'),
+    DetailsFactory.concernMenuItem('Configuration', 'config', 'config', ConcernEventType.Host, 'host'),
+    DetailsFactory.statusMenuItem('Status', 'status', 'host'),
   ];
 
   constructor(

@@ -15,7 +15,7 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { FieldService, getValue, IOutput, ISource } from './field.service';
 import { Configuration, FieldFactory, setValue, toFormOptions } from '../tests/configuration';
 import { IFieldStack, resultTypes, TNForm } from '../types';
-import { IYspec, IYContainer, IYField } from '../yspec/yspec.service';
+import { IYContainer, IYField, IYspec } from '../yspec/yspec.service';
 
 /**
  * inputData - data from backend for configuration IConfig.config : FieldStack[]
@@ -175,21 +175,6 @@ describe('Configuration fields service', () => {
     ]);
   });
 
-  it('parseValue should miss the read_only field', () => {
-    const source = new Configuration(FieldFactory.add(['string']));
-    const value = setValue(source.config, ['some string']);
-    source.config[0].read_only = true;
-    expect(service.parseValue(value, source.config)).toEqual({});
-  });
-
-  it('parseValue should miss the read_only field, in case when config have group', () => {
-    const source = new Configuration(FieldFactory.add([['string']]));
-    const value = setValue(source.config, [['some string']]);
-    // the first it's group
-    source.config[1].read_only = true;
-    expect(service.parseValue(value, source.config)).toEqual({});
-  });
-
   it('parseValue(empty, empty) should return {}', () => {
     const source: IFieldStack[] = [];
     const value: IOutput = {};
@@ -227,7 +212,13 @@ describe('Configuration fields service', () => {
     expect(service.parseValue(value, source.config)).toEqual({
       field_string_0: 'a',
       field_group_1: { subname_integer_0: 12, subname_float_1: 1, subname_float_2: 1.2, subname_string_3: null },
-      field_group_2: { subname_map_0: null, subname_list_1: null, subname_map_2: 'str', subname_list_3: 'str', subname_option_4: 0 },
+      field_group_2: {
+        subname_map_0: null,
+        subname_list_1: null,
+        subname_map_2: 'str',
+        subname_list_3: 'str',
+        subname_option_4: 0
+      },
     });
   });
 
@@ -320,7 +311,7 @@ describe('Configuration fields service', () => {
   });
 
   it('List fieldType :: checkValue("[]", "list") should return null', () => {
-    expect(checkValue([], 'list')).toBeNull();
+    expect(checkValue([], 'list')).toEqual([]);
   });
 
   it('List fieldType :: checkValue(["string1", "", "string2"], "list") should return ["string1", "string2"]', () => {
@@ -328,7 +319,10 @@ describe('Configuration fields service', () => {
   });
 
   it('Map fieldType :: checkValue({"string1": "value1", "string2": "value2"}, "map") should return {"string1": "value1", "string2": "value2"}', () => {
-    expect(checkValue({ string1: 'value1', string2: 'value2' }, 'map')).toEqual({ string1: 'value1', string2: 'value2' });
+    expect(checkValue({ string1: 'value1', string2: 'value2' }, 'map')).toEqual({
+      string1: 'value1',
+      string2: 'value2'
+    });
   });
 
   it('Map fieldType :: checkValue({"string1": "", "string2": "value2"}, "map") should return { "string1": "","string2": "value2"}', () => {
@@ -348,7 +342,7 @@ describe('Configuration fields service', () => {
   });
 
   it('Map fieldType :: checkValue("{}", "map") should return null', () => {
-    expect(checkValue({}, 'map')).toBeNull();
+    expect(checkValue({}, 'map')).toEqual({});
   });
 
   /**
@@ -357,7 +351,14 @@ describe('Configuration fields service', () => {
    *
    */
   it('parseValue - for structure: after init with empty field and not required', () => {
-    const source: ISource[] = [{ type: 'structure', name: 'field', subname: '', read_only: false, value: null, limits: { rules: {} } }];
+    const source: ISource[] = [{
+      type: 'structure',
+      name: 'field',
+      subname: '',
+      read_only: false,
+      value: null,
+      limits: { rules: {} }
+    }];
     const output: IOutput = { field: {} };
 
     const result = service.parseValue(output, source);
@@ -426,6 +427,6 @@ describe('Configuration fields service', () => {
     const output = { field_structure_0: [{ name: 'DEFAULT', port: '9092' }] };
     const result = service.parseValue(output, source.config);
 
-    expect(result).toEqual({ field_structure_0: [ Object({ name: 'DEFAULT', port: 9092 }) ] });
+    expect(result).toEqual({ field_structure_0: [Object({ name: 'DEFAULT', port: 9092 })] });
   });
 });

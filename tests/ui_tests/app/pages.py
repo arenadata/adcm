@@ -238,6 +238,17 @@ class BasePage:
             raise InvalidElementStateException
         return self._click_element(locator)
 
+    def is_popup_presented_on_page(self, timeout: int = 5):
+        """Get popup displayed status"""
+        try:
+            return self._getelement(Common.common_popup, timer=timeout).is_displayed()
+        except TimeoutException:
+            return False
+
+    def assert_no_popups_displayed(self, timeout: int = 3):
+        """Assert there is no popups displayed"""
+        assert not self.is_popup_presented_on_page(timeout=timeout), "There is a popup with error on the page"
+
 
 class Ui(BasePage):
     """This class describes main menu and returns specified page in POM"""

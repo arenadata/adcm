@@ -16,9 +16,13 @@ import allure
 import coreapi
 import pytest
 from adcm_client.objects import ADCMClient
-from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
+from adcm_pytest_plugin.utils import parametrize_by_data_subdirs, get_data_dir
 
 from tests.library import errorcodes as err
+from tests.library.errorcodes import BIND_ERROR
+from tests.functional.conftest import only_clean_adcm
+
+pytestmark = [only_clean_adcm]
 
 
 @parametrize_by_data_subdirs(__file__, "service_import_check_negative")
@@ -37,11 +41,11 @@ def test_service_import_negative(sdk_client_fs: ADCMClient, path):
     with allure.step('Create cluster with def import'):
         bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
         cluster_import = bundle_import.cluster_create("cluster_import")
-    with allure.step('Bind service from cluster with export to cluster with import'):
+    with allure.step('Bind cluster from cluster with export to cluster with import'):
         cluster_import.bind(cluster)
-    with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        cluster_import.bind(service)
-    with allure.step('Expect backend error because incorrect version for import'):
+    with allure.step('Import service and expect backend error because incorrect version for import'):
+        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+            cluster_import.bind(service)
         err.BIND_ERROR.equal(e)
 
 
@@ -61,11 +65,11 @@ def test_cluster_import_negative(sdk_client_fs: ADCMClient, path):
     with allure.step('Create default cluster with import'):
         bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
         cluster_import = bundle_import.cluster_create("cluster_import")
-    with allure.step('Bind cluster from cluster with export to cluster with import'):
+    with allure.step('Bind service from cluster with export to cluster with import'):
         cluster_import.bind(service)
-    with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        cluster_import.bind(cluster)
-    with allure.step('Check error because incorrect version for import'):
+    with allure.step('Bind cluster and check error because incorrect version for import'):
+        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+            cluster_import.bind(cluster)
         err.BIND_ERROR.equal(e)
 
 
@@ -94,3 +98,22 @@ def test_cluster_import(sdk_client_fs: ADCMClient, path):
         cluster_import = bundle_import.cluster_create("cluster_import")
     with allure.step('Bind cluster from cluster with export to cluster with import'):
         cluster_import.bind(cluster)
+
+
+@pytest.mark.xfail(reason='https://arenadata.atlassian.net/browse/ADCM-2292')
+def test_import_with_zero_range(sdk_client_fs: ADCMClient):
+    """Import cluster with range where min is greater than max"""
+    with allure.step('Prepare clusters'):
+        import_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_empty_range", "import"))
+        export_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_empty_range", "export"))
+        import_cluster = import_bundle.cluster_create('import')
+        export_cluster = export_bundle.cluster_create('export')
+        service_in_middle_of_range = export_cluster.service_add(name='in_the_middle')
+        service_above_range = export_cluster.service_add(name='above')
+    for adcm_object in (export_cluster, service_above_range, service_in_middle_of_range):
+        with allure.step(f'Try to import {adcm_object} and expect error'), pytest.raises(
+            coreapi.exceptions.ErrorMessage
+        ) as e:
+            import_cluster.bind(adcm_object)
+        with allure.step('Check that error is correct'):
+            BIND_ERROR.equal(e)

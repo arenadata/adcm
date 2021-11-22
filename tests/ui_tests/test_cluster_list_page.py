@@ -11,7 +11,6 @@
 # limitations under the License.
 
 """UI tests for /cluster page"""
-
 import os
 
 import allure
@@ -22,9 +21,10 @@ from adcm_client.objects import (
     Bundle,
     Provider,
 )
-from adcm_pytest_plugin import utils
 from adcm_pytest_plugin import params
+from adcm_pytest_plugin import utils
 
+from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
     ClusterImportPage,
@@ -35,9 +35,14 @@ from tests.ui_tests.app.page.cluster.page import (
     ClusterComponentsPage,
     ComponentsHostRowInfo,
     ClusterStatusPage,
-    ImportItemInfo,
 )
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
+from tests.ui_tests.app.page.common.import_page.page import (
+    ImportItemInfo,
+    SUCCESS_COLOR,
+    NEGATIVE_COLOR,
+)
+from tests.ui_tests.app.page.common.status.page import StatusRowInfo
 from tests.ui_tests.app.page.host.page import (
     HostMainPage,
     HostConfigPage,
@@ -202,7 +207,7 @@ class TestClusterListPage:
         with allure.step("Create 11 clusters"):
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
             for i in range(11):
-                bundle.cluster_create(name=f"Test cluster {i}")
+                bundle.cluster_create(name=f"{CLUSTER_NAME} {i}")
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         cluster_page.close_info_popup()
         cluster_page.table.check_pagination(second_page_item_amount=1)
@@ -779,30 +784,61 @@ class TestClusterStatusPage:
         cluster_status_page.wait_page_is_opened()
         cluster_status_page.check_all_elements()
 
-    def test_filter_cluster_status_page(self, app_fs, create_community_cluster_with_host_and_service):
-        """Test filtration on cluster/{}/status page"""
+    def test_status_on_cluster_status_page(
+        self, app_fs, adcm_fs, sdk_client_fs, create_community_cluster_with_host_and_service
+    ):
+        """Changes status on cluster/{}/status page"""
+        one_successful = 'successful 1/1'
+        one_negative = 'successful 0/1'
+
+        success_status = [
+            StatusRowInfo(True, CLUSTER_NAME, 'successful 2/2', SUCCESS_COLOR, None),
+            StatusRowInfo(True, 'Hosts', one_successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, None, None, None, 'test-host'),
+            StatusRowInfo(True, 'Services', one_successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, SERVICE_NAME, one_successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, 'first', one_successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, None, None, None, 'test-host'),
+        ]
+        host_negative_status = [
+            StatusRowInfo(True, CLUSTER_NAME, 'successful 1/2', NEGATIVE_COLOR, None),
+            StatusRowInfo(True, 'Hosts', one_negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(True, None, None, None, 'test-host'),
+            StatusRowInfo(True, 'Services', one_successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, SERVICE_NAME, one_successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, 'first', one_successful, SUCCESS_COLOR, None),
+            StatusRowInfo(True, None, None, None, 'test-host'),
+        ]
+        host_and_component_negative_status = [
+            StatusRowInfo(True, CLUSTER_NAME, 'successful 0/2', NEGATIVE_COLOR, None),
+            StatusRowInfo(True, 'Hosts', one_negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(True, None, None, None, 'test-host'),
+            StatusRowInfo(True, 'Services', one_negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(True, SERVICE_NAME, one_negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(True, 'first', one_negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(True, None, None, None, 'test-host'),
+        ]
         cluster, host = create_community_cluster_with_host_and_service
-        cluster.hostcomponent_set((host, cluster.service(name=SERVICE_NAME).component(name=COMPONENT_NAME)))
+        cluster_component = cluster.service(name=SERVICE_NAME).component(name=COMPONENT_NAME)
+        cluster.hostcomponent_set((host, cluster_component))
         cluster_status_page = ClusterStatusPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
-        group_rows = cluster_status_page.get_all_config_groups()
-        with allure.step("Check that there is one group"):
-            assert len(group_rows) == 1, "There should be 1 group"
-        group_row = group_rows[0]
-        cluster_status_page.click_collapse_all_btn()
-        cluster_status_page.wait_group_opened(group_row)
-        cluster_status_page.click_collapse_all_btn()
-        cluster_status_page.wait_group_closed(group_row)
-        cluster_status_page.config.click_on_group(title=SERVICE_NAME)
-        with allure.step("Check group rows"):
-            group_info = cluster_status_page.get_config_group_info(group_row)
-            with allure.step("Check that there is one item in group"):
-                assert len(group_info) == 1, "There should be one item in group"
-            assert (
-                group_info[0].service == COMPONENT_NAME
-            ), f"Component name should be {COMPONENT_NAME} and not {group_info[0].service}"
-            assert (
-                group_info[0].hosts[0] == HOST_NAME
-            ), f"Host name should be {HOST_NAME} and not {group_info[0].hosts[0]}"
+        status_changer = ADCMObjectStatusChanger(sdk_client_fs, adcm_fs)
+        with allure.step("Check positive status"):
+            status_changer.enable_cluster(cluster)
+            cluster_status_page.driver.refresh()
+            cluster_status_page.compare_current_and_expected_state(success_status)
+        with allure.step("Check negative status on host"):
+            status_changer.set_host_negative_status(host)
+            cluster_status_page.driver.refresh()
+            cluster_status_page.compare_current_and_expected_state(host_negative_status)
+        with allure.step("Check negative status on service"):
+            status_changer.set_component_negative_status((host, cluster_component))
+            cluster_status_page.driver.refresh()
+            cluster_status_page.compare_current_and_expected_state(host_and_component_negative_status)
+        with allure.step("Check collapse button"):
+            with cluster_status_page.wait_rows_collapsed():
+                cluster_status_page.click_collapse_all_btn()
+            assert len(cluster_status_page.get_all_rows()) == 1, "Status rows should have been collapsed"
 
 
 class TestClusterImportPage:

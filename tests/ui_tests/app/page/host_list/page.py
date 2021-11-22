@@ -140,6 +140,7 @@ class HostListPage(BasePageObject):
         init_action.click()
         self.wait_element_visible(ActionDialog.body)
         self.find_and_click(ActionDialog.run)
+        self.wait_element_hide(ActionDialog.body)
 
     @allure.step('Delete host in row {host_row_num}')
     def delete_host(self, host_row_num: int):

@@ -13,7 +13,7 @@ import { AuthService } from '../app/core/auth/auth.service';
 import { PopoverDirective } from '../app/directives/popover.directive';
 
 export default {
-  title: 'ADCM/Custom components',
+  title: 'ADCM/Custom Components',
   decorators: [
     moduleMetadata({
       providers: [

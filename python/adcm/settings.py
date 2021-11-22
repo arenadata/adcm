@@ -235,6 +235,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'filters': ['require_debug_false'],
+            'formatter': 'adwp',
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'data/log/adcm_debug.log'),
         },
