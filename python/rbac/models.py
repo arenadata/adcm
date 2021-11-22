@@ -14,14 +14,36 @@
 
 import importlib
 
+from adwp_base.errors import raise_AdwpEx as err
 from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.db.transaction import atomic
 from django.db import models
+from django.db.transaction import atomic
 from guardian.models import UserObjectPermission
+from rest_framework.exceptions import ValidationError
 
-from adwp_base.errors import raise_AdwpEx as err
+
+class ObjectType(models.TextChoices):
+    cluster = 'Cluster', 'Cluster'
+    service = 'Service', 'Service'
+    component = 'Component', 'Component'
+    provider = 'Provider', 'Provider'
+    host = 'Host', 'Host'
+
+
+def validate_object_type(value):
+    if not isinstance(value, list):
+        raise ValidationError('Invalid field type `parametrized_by_type`')
+    if not all((v in ObjectType.values for v in value)):
+        raise ValidationError('Invalid object type')
+
+
+def validate_category(value):
+    if not isinstance(value, list):
+        raise ValidationError('Invalid field type `category`')
+    if not all(isinstance(v, str) for v in value):
+        raise ValidationError('Invalid object type in parametrized list')
 
 
 class Role(models.Model):
@@ -31,14 +53,22 @@ class Role(models.Model):
     Also Role can have childs and so produce acyclic graph of linked roles
     """
 
-    name = models.CharField(max_length=32, unique=True)
-    description = models.TextField(blank=True)
-    childs = models.ManyToManyField("self", symmetrical=False, blank=True)
+    name = models.CharField(max_length=160)
+    description = models.TextField(null=True, blank=False)
+    child = models.ManyToManyField("self", symmetrical=False, blank=True)
     permissions = models.ManyToManyField(Permission, blank=True)
     module_name = models.CharField(max_length=32)
     class_name = models.CharField(max_length=32)
     init_params = models.JSONField(default=dict)
+    built_in = models.BooleanField(default=True, null=False)
+    category = models.JSONField(default=list, null=False, validators=[validate_category])
+    parametrized_by_type = models.JSONField(
+        default=list, null=False, validators=[validate_object_type]
+    )
     __obj__ = None
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['name', 'built_in'], name='unique_role')]
 
     def get_role_obj(self):
         """Returns object with related role based on classes from roles.py"""
@@ -80,7 +110,7 @@ class Role(models.Model):
             for p in role.permissions.all():
                 if p not in perm_list:
                     perm_list.append(p)
-            for child in role.childs.all():
+            for child in role.child.all():
                 get_perm(child, perm_list, role_list)
 
         get_perm(role, perm_list, role_list)

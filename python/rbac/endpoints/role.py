@@ -40,7 +40,7 @@ class RoleSerializer(FlexFieldsSerializerMixin, serializers.HyperlinkedModelSeri
         }
 
     def get_childs(self, obj):
-        return RoleSerializer(obj.childs.all(), many=True, context=self.context).data
+        return RoleSerializer(obj.child.all(), many=True, context=self.context).data
 
 
 # pylint: disable=too-many-ancestors

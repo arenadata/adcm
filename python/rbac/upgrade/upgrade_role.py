@@ -35,12 +35,12 @@ def upgrade(data: dict):
 
     for role in data['roles']:
         role_obj = new_roles[role['name']]
-        role_obj.childs.clear()
+        role_obj.child.clear()
         if 'childs' not in role:
             continue
         for child in role['childs']:
             child_role = new_roles[child]
-            role_obj.childs.add(child_role)
+            role_obj.child.add(child_role)
         role_obj.save()
 
     for policy in Policy.objects.all():
