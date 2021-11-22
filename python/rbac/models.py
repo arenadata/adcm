@@ -32,26 +32,26 @@ class ObjectType(models.TextChoices):
     host = 'Host', 'Host'
 
 
+def validate_object_type(value):
+    if not isinstance(value, list):
+        raise ValidationError('Invalid field type `parametrized_by_type`')
+    if not all((v in ObjectType.values for v in value)):
+        raise ValidationError('Invalid object type')
+
+
+def validate_category(value):
+    if not isinstance(value, list):
+        raise ValidationError('Invalid field type `category`')
+    if not all(isinstance(v, str) for v in value):
+        raise ValidationError('Invalid object type in parametrized list')
+
+
 class Role(models.Model):
     """
     Role is a list of Django permissions.
     Role can be assigned to user or to group of users
     Also Role can have childs and so produce acyclic graph of linked roles
     """
-
-    @staticmethod
-    def validate_object_type(value):
-        if not isinstance(value, list):
-            raise ValidationError('Invalid field type `parametrized_by_type`')
-        if not all((v in ObjectType.values for v in value)):
-            raise ValidationError('Invalid object type')
-
-    @staticmethod
-    def validate_category(value):
-        if not isinstance(value, list):
-            raise ValidationError('Invalid field type `category`')
-        if not all(isinstance(v, str) for v in value):
-            raise ValidationError('Invalid object type in parametrized list')
 
     name = models.CharField(max_length=160)
     description = models.TextField(null=True, blank=False)

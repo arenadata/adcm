@@ -56,4 +56,9 @@ class Migration(migrations.Migration):
             model_name='role',
             constraint=models.UniqueConstraint(fields=('name', 'built_in'), name='unique_role'),
         ),
+        migrations.AlterField(
+            model_name='role',
+            name='category',
+            field=models.JSONField(default=list, validators=[rbac.models.validate_category]),
+        ),
     ]
