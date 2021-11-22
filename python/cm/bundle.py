@@ -31,7 +31,7 @@ import cm.stack
 import cm.status_api
 from cm.adcm_config import proto_ref, get_prototype_config, init_object_config, switch_config
 from cm.errors import raise_AdcmEx as err
-from cm.models import Cluster, Host, Upgrade, StageUpgrade, ADCM
+from cm.models import Cluster, Host, Upgrade, StageUpgrade, ADCM, get_model_by_type
 from cm.models import Bundle, Prototype, Action, SubAction, PrototypeConfig
 from cm.models import StagePrototype, StageAction
 from cm.models import StageSubAction, StagePrototypeConfig
@@ -249,27 +249,31 @@ def update_obj(dest, source, fields):
 
 
 def cook_roles(bundle):
-    roles = {}
-    ct = ContentType.objects.get(app_label='cm', model='action')
-    perm, _ = Permission.objects.get_or_create(
-        content_type=ct, codename='run_action', name='Can run action'
-    )
     for act in Action.objects.filter(prototype__bundle=bundle):
-        roles[act.display_name] = act
-    for name in roles:
+        name = act.display_name
+        model = get_model_by_type(act.prototype.type)
         role = Role(
-            name=f'run_action_{name}',
-            description=f'run action {name}',
+            name=f'{name}_{act.prototype.type}_{act.prototype.display_name}',
+            description=f'run action {name} of {act.prototype.type} {act.prototype.display_name}',
             bundle=bundle,
             module_name='rbac.roles',
-            class_name='ObjectRole',
+            class_name='ActionRole',
             init_params={
+                'action_id': act.id,
                 'app_name': 'cm',
-                'model': 'Action',
-                'filter': {'name': name, 'prototype__bundle_id': bundle.id},
+                'model': model.__name__,
+                'filter': {
+                    'prototype__name': act.prototype.name,
+                    'prototype__type': act.prototype.type,
+                    'prototype__bundle_id': bundle.id
+                },
             },
         )
         role.save()
+        ct = ContentType.objects.get_for_model(model)
+        perm, _ = Permission.objects.get_or_create(
+            content_type=ct, codename='run_object_action', name='Can run actions'
+        )
         role.permissions.add(perm)
 
 
