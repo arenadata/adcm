@@ -186,7 +186,8 @@ class BasePageObject:
             )
 
         element_name = element.name if isinstance(element, Locator) else element.text
-        return self._is_displayed(element_name, _find_element)
+        with allure.step(f'Check if {element_name} is displayed'):
+            return self._is_displayed(_find_element)
 
     def is_child_displayed(self, parent: WebElement, child: Locator, timeout: Optional[int] = None) -> bool:
         """Checks if child element is displayed"""
@@ -194,7 +195,8 @@ class BasePageObject:
         def _find_child():
             return self.find_child(parent, child, timeout=timeout or self.default_loc_timeout)
 
-        return self._is_displayed(child.name, _find_child)
+        with allure.step(f'Check if {child.name} is displayed'):
+            return self._is_displayed(_find_child)
 
     def assert_displayed_elements(self, locators: List[Locator]) -> None:
         """Asserts that list of elements is displayed."""
@@ -360,11 +362,10 @@ class BasePageObject:
         hover.perform()
 
     @staticmethod
-    def _is_displayed(element_name: str, find_element_func: Callable[[], WebElement]) -> bool:
+    def _is_displayed(find_element_func: Callable[[], WebElement]) -> bool:
         """Calls `is_displayed` method on element returned by passed function"""
         try:
-            with allure.step(f'Check {element_name}'):
-                return find_element_func().is_displayed()
+            return find_element_func().is_displayed()
         except (
             TimeoutException,
             NoSuchElementException,
