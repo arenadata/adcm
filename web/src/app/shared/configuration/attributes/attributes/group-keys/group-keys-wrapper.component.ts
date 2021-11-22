@@ -5,7 +5,7 @@ import {
   ConfigAttributeNames,
   ConfigAttributeOptions
 } from '@app/shared/configuration/attributes/attribute.service';
-import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
+import { FormControl, FormGroup } from '@angular/forms';
 import { IFieldOptions } from '@app/shared/configuration/types';
 import { BaseDirective } from '@adwp-ui/widgets';
 import { MatCheckboxChange } from '@angular/material/checkbox';
@@ -57,19 +57,19 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
   }
 
   private _resolveAndSetupControls(attributeForm: FormGroup, parametersForm: FormGroup, fieldOptions: IFieldOptions): void {
-    let attributeControl: AbstractControl = attributeForm;
-    let parameterControl: AbstractControl = parametersForm;
+    let attributeControl: FormGroup = attributeForm;
+    let parameterControl: FormGroup = parametersForm;
     let disabled = this._attributeSrv.attributes.get(ConfigAttributeNames.CUSTOM_GROUP_KEYS).value;
     let text = this._attributeSrv.attributes.get(ConfigAttributeNames.CUSTOM_GROUP_KEYS).options.tooltipText;
 
-    fieldOptions.key?.split('/').reverse().forEach((key) => {
-      attributeControl = attributeControl.get(key);
-      parameterControl = parameterControl.get(key);
-      disabled = disabled[key];
-    });
+    const path = fieldOptions.key?.split('/').reverse();
 
-    this.groupControl = attributeControl as FormControl;
-    this.parameterControl = parameterControl as FormControl;
+    this.groupControl = attributeControl.get(path) as FormControl;
+    this.parameterControl = parameterControl.get(path) as FormControl;
+
+    path.forEach((part) => {
+      disabled = disabled[part];
+    });
 
     if (!disabled) {
       attributeControl.disable();
