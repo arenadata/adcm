@@ -38,6 +38,12 @@ UI_OPTIONS_PAIRS_GROUPS = [
 ]
 
 
+@pytest.fixture()
+def adcm_fs(adcm_ms):
+    """Module scope ADCM instance"""
+    return adcm_ms
+
+
 def _generate_fields():
     fields = []
     for read_only in True, False:
@@ -238,7 +244,6 @@ def generate_group_configs() -> list:
             }
             cluster_config['subs'] = [sub_config]
             config_dict['config'] = [cluster_config]
-            config_dict['name'] = random_string()
             config = ListWithoutRepr([config_dict])
             expected_result = generate_group_expected_result(data)
             group_configs.append((config, expected_result))
@@ -252,7 +257,7 @@ def generate_configs() -> list:
     configs = []
     for _type in TYPES:
         for data in config_data:
-            config_dict = {"type": "cluster", "name": random_string(), "version": "1", "config": []}
+            config_dict = {"type": "cluster", "version": "1", "config": []}
             unsupported_options = all([data['read_only'], data['required']])
             if not data['default'] and unsupported_options:
                 continue
@@ -288,6 +293,7 @@ def _prepare_config(config):
     d_name = f"{temdir}/configs/fields/{config[0][0]['config'][0]['type']}/{config_folder_name}"
 
     os.makedirs(d_name)
+    config[0][0]["name"] = random_string()
     if config[0][0]['config'][0]['name'] == 'file':
         with open(f"{d_name}/file.txt", 'w', encoding='utf_8') as file:
             file.write("test")
@@ -322,6 +328,7 @@ def _prepare_group_config(config):
     temdir = tempfile.mkdtemp()
     d_name = f"{temdir}/configs/groups/{config_folder_name}"
     os.makedirs(d_name)
+    config[0]["name"] = random_string()
     if config[0]['config'][0]['subs'][0]['name'] == 'file':
         with open(f"{d_name}/file.txt", 'w', encoding='utf_8') as file:
             file.write("test")
@@ -344,10 +351,7 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs):
     5. Check save button status
     6. Check field configuration (depends on expected result dict and bundle configuration"""
 
-    data = _prepare_config(config_dict)
-    config = data[0]
-    expected = data[1]
-    path = data[2]
+    config, expected, path = _prepare_config(config_dict)
     allure.attach.file(
         "/".join([path, 'config.yaml']),
         attachment_type=allure.attachment_type.YAML,
