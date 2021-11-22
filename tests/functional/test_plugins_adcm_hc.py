@@ -24,8 +24,6 @@ from adcm_pytest_plugin.steps.actions import (
     run_component_action_and_assert_result,
 )
 
-from tests.functional.tools import ClusterRelatedObject
-
 # pylint: disable=redefined-outer-name,no-self-use
 
 
@@ -99,12 +97,12 @@ class TestPluginWorksFromAllADCMObjects:
     @pytest.mark.usefixtures('set_hc_map', 'cluster_with_services', 'provider_with_hosts')
     def test_hc_map_change_by_adcm_hc_plugin(
         self,
-        get_object: Callable[[ADCMClient], ClusterRelatedObject],
+        get_object: Callable,
         run_action_and_wait_result: Callable,
         sdk_client_fs: ADCMClient,
     ):
         """Check that hc_map works as expected on cluster/service/component"""
-        action_owner_object = get_object(sdk_client_fs)
+        action_owner_object = get_object(self, sdk_client_fs)
         with allure.step(f'Change Host-Component map from action on {action_owner_object.__class__.__name__}'):
             run_action_and_wait_result(action_owner_object, self.HC_CHANGE_ACTION_NAME)
         self._check_hc_map_is_correct(sdk_client_fs)
