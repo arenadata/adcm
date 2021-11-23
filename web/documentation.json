@@ -29287,7 +29287,7 @@
             "selector": "app-root",
             "styleUrls": [],
             "styles": [],
-            "template": "<app-top></app-top>\n<main>\n  <app-progress></app-progress>\n  <router-outlet></router-outlet>\n</main>\n<footer>\n  <div>\n    <span class=\"left\">\n      <span>VERSION: </span>\n      <a target=\"_blank\" rel=\"noopener\" href=\"https://docs.arenadata.io/adcm/notes.html#{{ versionData.version }}\"\n        >{{ versionData.version }}-{{ versionData.commit_id }}</a\n      >\n    </span>\n    <span>ARENADATA &copy; {{ currentYear }}</span>\n  </div>\n</footer>\n<div class=\"console hidden\"></div>\n",
+            "template": "<app-top></app-top>\n<main>\n  <app-progress></app-progress>\n  <router-outlet></router-outlet>\n</main>\n<footer>\n  <div>\n    <span class=\"left\">\n      <span>VERSION: </span>\n      <a target=\"_blank\" rel=\"noopener\" href=\"https://docs.arenadata.io/adcm/notes.html#ver-{{ versionData.version }}\"\n        >{{ versionData.version }}-{{ versionData.commit_id }}</a\n      >\n    </span>\n    <span>ARENADATA &copy; {{ currentYear }}</span>\n  </div>\n</footer>\n<div class=\"console hidden\"></div>\n",
             "templateUrl": [],
             "viewProviders": [],
             "inputsClass": [],
