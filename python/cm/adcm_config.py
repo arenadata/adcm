@@ -72,8 +72,6 @@ def to_flat_dict(conf, spec):
 
 def get_default(c, proto=None):  # pylint: disable=too-many-branches
     value = c.default
-    if proto is None:
-        proto = Prototype.objects.get(id=c.prototype_id)
     if c.default == '':
         value = None
     elif c.type == 'string':
@@ -438,7 +436,7 @@ def ui_config(obj, cl):
         item['activatable'] = bool(group_is_activatable(spec[key]))
         if item['type'] == 'variant':
             item['limits']['source']['value'] = cm.variant.get_variant(obj, obj_conf, limits)
-        item['default'] = get_default(spec[key])
+        item['default'] = get_default(spec[key], obj.prototype)
         if key in flat_conf:
             item['value'] = flat_conf[key]
         else:
