@@ -24,7 +24,7 @@ import cm.variant
 from cm import config
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
-from cm.models import ADCM, PrototypeConfig, ObjectConfig, ConfigLog, GroupConfig, Prototype
+from cm.models import ADCM, PrototypeConfig, ObjectConfig, ConfigLog, GroupConfig
 
 
 def proto_ref(proto):
