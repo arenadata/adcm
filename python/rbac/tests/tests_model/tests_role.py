@@ -10,18 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""RBAC root URLs"""
+import pytest
 
-from django.urls import path, include
+from rbac.models import Role
 
-from .endpoints import logout, root, token
 
-urlpatterns = [
-    path('', root.RBACRoot.as_view(), name='root'),
-    path('user/', include('rbac.endpoints.user.urls')),
-    path('group/', include('rbac.endpoints.group_urls')),
-    path('role/', include('rbac.endpoints.role.urls')),
-    path(r'policy/', include('rbac.endpoints.policy.urls')),
-    path('logout/', logout.LogOut.as_view(), name='logout'),
-    path('token/', token.GetAuthToken.as_view(), name='token'),
-]
+# pylint: disable=protected-access
+@pytest.mark.django_db
+def test_max_length():
+    role = Role.objects.create(name='name', class_name='class', module_name='module')
+    name_max_length = role._meta.get_field('name').max_length
+    assert name_max_length == 160
+    class_name_max_length = role._meta.get_field('class_name').max_length
+    assert class_name_max_length == 32
+    module_name_max_length = role._meta.get_field('module_name').max_length
+    assert module_name_max_length == 32

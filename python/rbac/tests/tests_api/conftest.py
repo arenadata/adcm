@@ -10,18 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""RBAC root URLs"""
+"""Common pytest fixtures"""
 
-from django.urls import path, include
+import pytest
+from rest_framework.test import APIClient
 
-from .endpoints import logout, root, token
 
-urlpatterns = [
-    path('', root.RBACRoot.as_view(), name='root'),
-    path('user/', include('rbac.endpoints.user.urls')),
-    path('group/', include('rbac.endpoints.group_urls')),
-    path('role/', include('rbac.endpoints.role.urls')),
-    path(r'policy/', include('rbac.endpoints.policy.urls')),
-    path('logout/', logout.LogOut.as_view(), name='logout'),
-    path('token/', token.GetAuthToken.as_view(), name='token'),
-]
+@pytest.fixture
+def admin_api_client(admin_user):  # pylint: disable=unused-argument
+    """Superuser API client"""
+    client = APIClient()
+    client.login(username='admin', password='password')
+    return client
