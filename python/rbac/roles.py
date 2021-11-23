@@ -79,7 +79,7 @@ class ActionRole:
     def apply(self, policy: Policy, role: Role, user: User, group: Group = None):
         action = Action.obj.get(id=self.params['action_id'])
         ct = ContentType.objects.get_for_model(Action)
-        run_action = Permission.objects.get(content_type=ct, codename='run_action')
+        run_action, _ = Permission.objects.get_or_create(content_type=ct, codename='run_action')
         for obj in policy.get_objects():
             if user is not None:
                 uop = UserObjectPermission.objects.assign_perm(run_action, user, action)

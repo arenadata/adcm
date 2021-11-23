@@ -248,10 +248,10 @@ class PolicyViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestor
             lookup_field='pk',
             lookup_url_kwarg='parent_lookup_policy',
         )
-        object = ObjectField()
+        object = ObjectField(required=False)
         role = PolicyRoleSerializer()
         user = PolicyUserSerializer(many=True)
-        group = PolicyGroupSerializer(many=True)
+        group = PolicyGroupSerializer(many=True, required=False)
 
         class Meta:
             model = Policy
