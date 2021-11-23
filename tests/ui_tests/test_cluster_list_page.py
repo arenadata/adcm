@@ -704,7 +704,7 @@ class TestClusterComponentsPage:
         cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_components_page.config.check_hostcomponents_warn_icon_on_left_menu()
         cluster_components_page.toolbar.check_warn_button(
-            tab_name="test cluster", expected_warn_text=['Test cluster has an issue with host-component mapping']
+            tab_name=CLUSTER_NAME, expected_warn_text=['Test cluster has an issue with host-component mapping']
         )
 
 
@@ -792,7 +792,7 @@ class TestClusterConfigPage:
         cluster_config_page.config.check_field_is_invalid(params['not_req_name'])
         cluster_config_page.config.check_config_warn_icon_on_left_menu()
         cluster_config_page.toolbar.check_warn_button(
-            tab_name="test cluster", expected_warn_text=['Test cluster has an issue with its config']
+            tab_name=CLUSTER_NAME, expected_warn_text=['Test cluster has an issue with its config']
         )
 
 
@@ -901,5 +901,5 @@ class TestClusterImportPage:
         import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         import_page.config.check_import_warn_icon_on_left_menu()
         import_page.toolbar.check_warn_button(
-            tab_name="test cluster", expected_warn_text=['Test cluster has an issue with required import']
+            tab_name=CLUSTER_NAME, expected_warn_text=['Test cluster has an issue with required import']
         )
