@@ -63,7 +63,7 @@ class CommonToolbar(BasePageObject):
         self.wait_element_hide(ActionDialog.body)
 
     @allure.step("Click warn button in {tab_name}")
-    def check_warn_button(self, tab_name: str, expected_warn_text: str):
+    def check_warn_button(self, tab_name: str, expected_warn_text: list):
         """Click warn button from toolbar"""
         self.wait_element_visible(CommonToolbarLocators.admin_link)
         self.find_and_click(CommonToolbarLocators.warn_btn(tab_name.upper().strip("_")))

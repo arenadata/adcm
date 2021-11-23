@@ -52,7 +52,11 @@ from tests.ui_tests.app.page.service.page import (
     ServiceConfigPage,
     ServiceImportPage,
 )
-from tests.ui_tests.utils import wait_and_assert_ui_info, check_host_value, wrap_in_dict
+from tests.ui_tests.utils import (
+    wait_and_assert_ui_info,
+    check_host_value,
+    wrap_in_dict,
+)
 
 BUNDLE_COMMUNITY = "cluster_community"
 BUNDLE_ENTERPRISE = "cluster_enterprise"
@@ -67,6 +71,8 @@ HOST_NAME = 'test-host'
 PROVIDER_WITH_ISSUE_NAME = 'provider_with_issue'
 COMPONENT_NAME = "first"
 BUNDLE_WITH_REQUIRED_FIELDS = "cluster_required_fields"
+BUNDLE_WITH_REQUIRED_IMPORT = "cluster_required_import"
+BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
 
 
 # pylint: disable=redefined-outer-name,no-self-use,unused-argument
@@ -688,6 +694,19 @@ class TestClusterComponentsPage:
         with allure.step("Check that save button is disabled when not all required amount of hosts are linked"):
             assert cluster_components_page.check_that_save_btn_disabled(), "Save button should be disabled"
 
+    def test_warning_on_cluster_components_page(self, app_fs, sdk_client_fs):
+        """Test components warning !"""
+
+        with allure.step("Create cluster and add service"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_REQUIRED_COMPONENT)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            cluster.service_add(name=SERVICE_NAME)
+        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+        cluster_components_page.config.check_hostcomponents_warn_icon_on_left_menu()
+        cluster_components_page.toolbar.check_warn_button(
+            tab_name="test cluster", expected_warn_text=['Test cluster has an issue with host-component mapping']
+        )
+
 
 class TestClusterConfigPage:
     """Tests for the /cluster/{}/config page"""
@@ -872,3 +891,15 @@ class TestClusterImportPage:
         with allure.step("Check that import is saved"):
             assert import_page.get_info_popup_text() == params["message"], "No message about success"
             assert import_page.is_chxb_in_item_checked(import_item), "Checkbox with import should have been checked"
+
+    def test_warning_on_cluster_import_page(self, app_fs, sdk_client_fs):
+        """Test import warning !"""
+
+        with allure.step("Create cluster"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_REQUIRED_IMPORT)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+        import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+        import_page.config.check_import_warn_icon_on_left_menu()
+        import_page.toolbar.check_warn_button(
+            tab_name="test cluster", expected_warn_text=['Test cluster has an issue with required import']
+        )
