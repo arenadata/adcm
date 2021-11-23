@@ -29,6 +29,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='role',
+            name='bundle',
+            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.bundle'),
+        ),
+        migrations.AddField(
+            model_name='role',
             name='built_in',
             field=models.BooleanField(default=True),
         ),
@@ -54,7 +59,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='role',
-            constraint=models.UniqueConstraint(fields=('name', 'built_in'), name='unique_role'),
+            constraint=models.UniqueConstraint(fields=('name', 'bundle', 'built_in'), name='unique_role'),
         ),
         migrations.AlterField(
             model_name='role',
