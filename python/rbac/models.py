@@ -25,6 +25,7 @@ from rest_framework.exceptions import ValidationError
 
 from cm.models import Bundle
 
+
 class ObjectType(models.TextChoices):
     cluster = 'Cluster', 'Cluster'
     service = 'Service', 'Service'
@@ -32,7 +33,7 @@ class ObjectType(models.TextChoices):
     provider = 'Provider', 'Provider'
     host = 'Host', 'Host'
 
-    
+
 def validate_object_type(value):
     if not isinstance(value, list):
         raise ValidationError('Invalid field type `parametrized_by_type`')
@@ -53,7 +54,7 @@ class Role(models.Model):
     Role can be assigned to user or to group of users
     Also Role can have childs and so produce acyclic graph of linked roles
     """
-    
+
     name = models.CharField(max_length=160)
     description = models.TextField(null=True, blank=False)
     child = models.ManyToManyField("self", symmetrical=False, blank=True)
@@ -70,7 +71,9 @@ class Role(models.Model):
     __obj__ = None
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=['name', 'bundle', 'built_in'], name='unique_role')]
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'bundle', 'built_in'], name='unique_role')
+        ]
 
     def get_role_obj(self):
         """Returns object with related role based on classes from roles.py"""
