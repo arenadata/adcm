@@ -20,3 +20,5 @@ def test_create_role(admin_api_client):
     url = reverse('rbac:role-list')
     response = admin_api_client.post(url, data={})
     assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.data['name'][0] == 'This field is required.'
+    assert response.data['parametrized_by_type'][0] == 'This field is required.'

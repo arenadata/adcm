@@ -18,23 +18,27 @@ from rest_framework.response import Response
 
 from rbac.models import Role
 from rbac.services.role import role_create, role_update
-from rbac.utils import BaseRelatedSerializer, create_model_serializer_class
+from rbac.utils import BaseRelatedSerializer
 
-ExpandedRoleSerializer = create_model_serializer_class(
-    'ExpandedRoleSerializer',
-    Role,
-    (
-        'id',
-        'name',
-        'description',
-        'built_in',
-        'category',
-        'parametrized_by_type',
-        'child',
-        'url',
-    ),
-    {'url': serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')},
-)
+
+class ExpandedRoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
+
+    class Meta:
+        model = Role
+        fields = (
+            'id',
+            'name',
+            'description',
+            'built_in',
+            'category',
+            'parametrized_by_type',
+            'child',
+            'url',
+        )
+        expandable_fields = {
+            'child': ('rbac.endpoints.role.views.ExpandedRoleSerializer', {'many': True})
+        }
 
 
 class RoleChildSerializer(BaseRelatedSerializer):
@@ -63,7 +67,9 @@ class RoleView(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
                 'parametrized_by_type': {'required': True},
                 'built_in': {'read_only': True},
             }
-            expandable_fields = {'child': (ExpandedRoleSerializer, {'many': True})}
+            expandable_fields = {
+                'child': ('rbac.endpoints.role.views.ExpandedRoleSerializer', {'many': True})
+            }
 
     queryset = Role.objects.all()
     serializer_class = RoleSerializer

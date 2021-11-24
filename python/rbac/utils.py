@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Type
+from typing import Type, Tuple
 
 from django.db.models import Model
 from rest_framework import serializers
@@ -39,7 +39,7 @@ def update_m2m_field(m2m, instances) -> None:
 
 
 def create_model_serializer_class(
-    name: str, model: Type[Model], meta_fields: tuple[str, ...], fields: dict = None
+    name: str, model: Type[Model], meta_fields: Tuple[str, ...], fields: dict = None
 ):
     """
     Creating serializer class for model

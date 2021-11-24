@@ -10,13 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import List
+
 from rest_framework.exceptions import ValidationError
 
 from rbac.models import Role
 from rbac.utils import update_m2m_field
 
 
-def check_role_child(child: list[Role]) -> None:
+def check_role_child(child: List[Role]) -> None:
     for item in child:
         if not item.built_in:
             errors = {'child': ['Only built-in roles allowed to be included as children.']}

@@ -25,3 +25,18 @@ def test_max_length():
     assert class_name_max_length == 32
     module_name_max_length = role._meta.get_field('module_name').max_length
     assert module_name_max_length == 32
+
+
+@pytest.mark.django_db
+def test_default():
+    role = Role.objects.create()
+    assert role.name == ''
+    assert role.description is None
+    assert role.child.exists() is False
+    assert role.permissions.exists() is False
+    assert role.module_name == ''
+    assert role.class_name == ''
+    assert role.init_params == {}
+    assert role.built_in is True
+    assert role.category == []
+    assert role.parametrized_by_type == []

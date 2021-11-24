@@ -24,34 +24,27 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from cm.models import Cluster, ClusterObject, ServiceComponent, HostProvider, Host
 from rbac.models import Policy, User, Group, Role
 from rbac.services.policy import policy_create, policy_update
-from rbac.utils import BaseRelatedSerializer, create_model_serializer_class
+from rbac.utils import BaseRelatedSerializer
 
 
-RoleChildSerializer = create_model_serializer_class(
-    'RoleChildSerializer',
-    Role,
-    ('id', 'url'),
-    {'url': serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')},
-)
+class ExpandedRoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
 
-ExpandedRoleSerializer = create_model_serializer_class(
-    'ExpandedRoleSerializer',
-    Role,
-    (
-        'id',
-        'name',
-        'description',
-        'built_in',
-        'category',
-        'parametrized_by_type',
-        'child',
-        'url',
-    ),
-    {
-        'url': serializers.HyperlinkedIdentityField(view_name='rbac:role-detail'),
-        'child': RoleChildSerializer(many=True),
-    },
-)
+    class Meta:
+        model = Role
+        fields = (
+            'id',
+            'name',
+            'description',
+            'built_in',
+            'category',
+            'parametrized_by_type',
+            'child',
+            'url',
+        )
+        expandable_fields = {
+            'child': ('rbac.endpoints.policy.views.ExpandedRoleSerializer', {'many': True})
+        }
 
 
 # pylint: disable=too-many-ancestors
