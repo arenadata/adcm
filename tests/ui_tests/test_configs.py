@@ -40,7 +40,12 @@ UI_OPTIONS_PAIRS_GROUPS = [
 
 @pytest.fixture()
 def adcm_fs(adcm_ms):
-    """Module scope ADCM instance"""
+    """
+    ADCM instance with a module scope
+    This fixture override a base adcm_fs.
+    It allows do not duplicate all depended fixtures like `app_fs` with browser instance
+    Note that all depended fixtures will still be called on each function
+    """
     return adcm_ms
 
 
