@@ -10,18 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""RBAC root URLs"""
+from rest_framework.routers import DefaultRouter
 
-from django.urls import path, include
+from .views import RoleView
 
-from .endpoints import logout, root, token
+router = DefaultRouter()
 
-urlpatterns = [
-    path('', root.RBACRoot.as_view(), name='root'),
-    path('user/', include('rbac.endpoints.user.urls')),
-    path('group/', include('rbac.endpoints.group_urls')),
-    path('role/', include('rbac.endpoints.role.urls')),
-    path(r'policy/', include('rbac.endpoints.policy.urls')),
-    path('logout/', logout.LogOut.as_view(), name='logout'),
-    path('token/', token.GetAuthToken.as_view(), name='token'),
-]
+router.register(r'', RoleView, basename='role')
+
+urlpatterns = router.urls

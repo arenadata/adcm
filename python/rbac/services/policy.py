@@ -18,6 +18,7 @@ from django.db.transaction import atomic
 
 from cm.models import Cluster, ClusterObject, ServiceComponent, HostProvider, Host
 from rbac.models import User, Policy, PolicyObject, Role
+from rbac.utils import update_m2m_field
 
 
 def user_add(policy: Policy, user: User) -> None:
@@ -91,22 +92,6 @@ def policy_create(name: str, role: Role, **kwargs):
 
     policy.apply()
     return policy
-
-
-def update_m2m_field(m2m, instances) -> None:
-    """
-    Update m2m field for object
-
-    :param m2m: ManyToManeField
-    :type m2m: ManyRelatedManager
-    :param instances: list of objects
-    :type instances: list
-    """
-    if instances:
-        m2m.clear()
-        m2m.add(*instances)
-    else:
-        m2m.clear()
 
 
 def policy_update(policy: Policy, **kwargs) -> Policy:

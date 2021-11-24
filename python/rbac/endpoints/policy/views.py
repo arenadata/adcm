@@ -23,7 +23,28 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from cm.models import Cluster, ClusterObject, ServiceComponent, HostProvider, Host
 from rbac.models import Policy, User, Group, Role
-from .services import policy_create, policy_update
+from rbac.services.policy import policy_create, policy_update
+from rbac.utils import BaseRelatedSerializer
+
+
+class ExpandedRoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
+
+    class Meta:
+        model = Role
+        fields = (
+            'id',
+            'name',
+            'description',
+            'built_in',
+            'category',
+            'parametrized_by_type',
+            'child',
+            'url',
+        )
+        expandable_fields = {
+            'child': ('rbac.endpoints.policy.views.ExpandedRoleSerializer', {'many': True})
+        }
 
 
 # pylint: disable=too-many-ancestors
@@ -140,29 +161,6 @@ class PolicyGroupViewSet(
         return context
 
 
-class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
-
-    url = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Role
-        fields = (
-            'id',
-            'name',
-            'description',
-            'permissions',
-            'url',
-        )
-
-    def get_url(self, obj):
-        request = self.context.get('request')
-        request_format = self.context.get('format')
-        kwargs = {'id': obj.id}
-        return reverse(
-            'rbac_role:role-detail', kwargs=kwargs, request=request, format=request_format
-        )
-
-
 class ObjectField(serializers.JSONField):
     def schema_validate(self, value):
         schema = {
@@ -205,30 +203,19 @@ class ObjectField(serializers.JSONField):
         return super().to_representation(data)
 
 
-class PolicyRoleSerializer(serializers.Serializer):
+class PolicyRoleSerializer(BaseRelatedSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail', lookup_field='id')
-
-    def to_internal_value(self, data):
-        data = super().to_internal_value(data)
-        return data['id']
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
 
 
-class PolicyUserSerializer(serializers.Serializer):
+class PolicyUserSerializer(BaseRelatedSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
     url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail', lookup_field='id')
 
-    def to_internal_value(self, data):
-        data = super().to_internal_value(data)
-        return data['id']
 
-
-class PolicyGroupSerializer(serializers.Serializer):
+class PolicyGroupSerializer(BaseRelatedSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all())
     url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail', lookup_field='id')
-
-    def to_internal_value(self, data):
-        return data['id']
 
 
 class PolicyViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
@@ -269,7 +256,7 @@ class PolicyViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestor
             expandable_fields = {
                 'user': (PolicyUserViewSet.UserSerializer, {'many': True}),
                 'group': (PolicyGroupViewSet.GroupSerializer, {'many': True}),
-                'role': RoleSerializer,
+                'role': ExpandedRoleSerializer,
             }
 
     queryset = Policy.objects.all()
