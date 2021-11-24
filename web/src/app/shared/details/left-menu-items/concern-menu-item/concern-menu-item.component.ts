@@ -45,6 +45,7 @@ export class ConcernMenuItemComponent extends MenuItemAbstractDirective<BaseEnti
 
   ngOnInit(): void {
     this.concernService.events({ types: [this.data.type] })
+      .pipe(this.takeUntil())
       .subscribe(_ => this.getConcernStatus());
   }
 
