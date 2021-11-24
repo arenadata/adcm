@@ -10,48 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""User URL's"""
+"""User URLs"""
 
-from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 
-from .views import UserViewSet, UserGroupViewSet, UserRoleViewSet, ChangePassword
+from .views import UserViewSet
 
-
-role_urls = [
-    path('', UserRoleViewSet.as_view({'get': 'list', 'post': 'create'}), name='user-role-list'),
-    path(
-        '<int:role_id>/',
-        UserRoleViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}),
-        name='user-role-detail',
-    ),
-]
-
-group_urls = [
-    path('', UserGroupViewSet.as_view({'get': 'list', 'post': 'create'}), name='user-group-list'),
-    path(
-        '<int:group_id>/',
-        UserGroupViewSet.as_view({'get': 'retrieve', 'delete': 'destroy'}),
-        name='user-group-detail',
-    ),
-]
-
-urlpatterns = [
-    path('', UserViewSet.as_view({'get': 'list', 'post': 'create'}), name='user-list'),
-    path(
-        '<int:id>/',
-        include(
-            [
-                path(
-                    '',
-                    UserViewSet.as_view(
-                        {'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy'}
-                    ),
-                    name='user-detail',
-                ),
-                path('change_password/', ChangePassword.as_view(), name='user-change-password'),
-                path('group/', include(group_urls)),
-                path('role/', include(role_urls)),
-            ]
-        ),
-    ),
-]
+router = DefaultRouter()
+router.register('', UserViewSet, basename='user')
+urlpatterns = router.urls

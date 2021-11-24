@@ -254,6 +254,9 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'django.utils.autoreload': {
+            'level': 'INFO',
+        },
         'adwp': {
             'handlers': ['adwp_file'],
             'level': 'DEBUG',
