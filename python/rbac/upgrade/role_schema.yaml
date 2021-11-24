@@ -20,6 +20,7 @@ role:
   items:
     name: string
     description: string
+    parametrized_by: object_list
     module_name: module_name
     class_name: class_name
     init_params: json
@@ -40,6 +41,19 @@ class_name:
   variants:
     - ModelRole
     - ObjectRole
+
+object_list:
+  match: list
+  item: object_type
+
+object_type:
+  match: set
+  variants:
+    - cluster
+    - service
+    - component
+    - provider
+    - host
 
 child_list:
   match: list
