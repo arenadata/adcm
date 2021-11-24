@@ -89,6 +89,7 @@ def policy_create(name: str, role: Role, **kwargs):
     groups = kwargs.get('group', ())
     policy.group.add(*groups)
 
+    policy.apply()
     return policy
 
 

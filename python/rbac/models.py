@@ -23,6 +23,8 @@ from django.db.transaction import atomic
 from guardian.models import UserObjectPermission
 from rest_framework.exceptions import ValidationError
 
+from cm.models import Bundle
+
 
 class ObjectType(models.TextChoices):
     cluster = 'Cluster', 'Cluster'
@@ -60,6 +62,7 @@ class Role(models.Model):
     module_name = models.CharField(max_length=32)
     class_name = models.CharField(max_length=32)
     init_params = models.JSONField(default=dict)
+    bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE, null=True, default=None)
     built_in = models.BooleanField(default=True, null=False)
     category = models.JSONField(default=list, null=False, validators=[validate_category])
     parametrized_by_type = models.JSONField(
@@ -68,7 +71,9 @@ class Role(models.Model):
     __obj__ = None
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=['name', 'built_in'], name='unique_role')]
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'bundle', 'built_in'], name='unique_role')
+        ]
 
     def get_role_obj(self):
         """Returns object with related role based on classes from roles.py"""
