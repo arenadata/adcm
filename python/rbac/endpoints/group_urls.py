@@ -12,6 +12,8 @@
 
 from django.urls import path, include
 from rest_framework.routers import SimpleRouter, Route
+from rest_framework_extensions.routers import ExtendedDefaultRouter
+
 
 from .group import GroupViewSet, GroupRoleViewSet
 
@@ -42,7 +44,8 @@ class GroupRouter(SimpleRouter):
     ]
 
 
-router = GroupRouter()
+# router = GroupRouter()
+router = ExtendedDefaultRouter()
 router.register('', GroupViewSet, basename='group')
 
 role_urls = [
@@ -54,7 +57,9 @@ role_urls = [
     ),
 ]
 
-urlpatterns = [
-    path('', include(router.urls)),
-    path('<int:id>/role/', include(role_urls)),
-]
+urlpatterns = router.urls
+# urlpatterns.append(path('<int:id>/role/', include(role_urls)))
+# urlpatterns = [
+#     path('', include(router.urls)),
+#     path('<int:id>/role/', include(role_urls)),
+# ]
