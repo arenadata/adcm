@@ -24,10 +24,7 @@ class UserSerializer(serializers.Serializer):
     """Simple User serializer"""
 
     id = serializers.IntegerField()
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail', lookup_field='pk')
-
-    class Meta:
-        model = models.User
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
 
 
 class ExpandedUserSerializer(UserSerializer):
@@ -50,7 +47,6 @@ class GroupSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
     url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
 
     class Meta:
-        model = models.Group
         expandable_fields = {'user': (ExpandedUserSerializer, {'many': True, 'source': 'user_set'})}
 
     def update(self, instance, validated_data):

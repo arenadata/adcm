@@ -83,6 +83,7 @@ def _regenerate_token(user: models.User) -> Token:
 @transaction.atomic
 def update(
     user: models.User,
+    context_user: models.User = None,  # None is for use outside of web context
     *,
     partial: bool = False,
     username: str = Empty,
@@ -101,10 +102,12 @@ def update(
     set_not_empty_attr(user, partial, 'first_name', first_name, '')
     set_not_empty_attr(user, partial, 'last_name', last_name, '')
     set_not_empty_attr(user, partial, 'email', email, '')
-    set_not_empty_attr(user, partial, 'is_superuser', is_superuser, False)
     _set_password(user, password)
     _update_profile(user, profile)
-    _update_groups(user, groups)
+
+    if context_user is None or context_user.is_superuser:
+        set_not_empty_attr(user, partial, 'is_superuser', is_superuser, False)
+        _update_groups(user, groups)
     user.save()
     return user
 
