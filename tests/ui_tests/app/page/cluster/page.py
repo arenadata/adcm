@@ -281,7 +281,7 @@ class ClusterConfigPage(ClusterPageMixin):
 
 
 class ClusterGroupConfigPage(ClusterPageMixin):
-    """Component page group config menu"""
+    """Cluster page group config menu"""
 
     MENU_SUFFIX = 'group_config'
     MAIN_ELEMENTS = [
@@ -290,8 +290,8 @@ class ClusterGroupConfigPage(ClusterPageMixin):
         ObjectPageLocators.text,
         GroupConfigListLocators.header_item,
         GroupConfigListLocators.add_btn,
-        GroupConfigListLocators.Pagination.next_page,
-        GroupConfigListLocators.Pagination.previous_page,
+        GroupConfigListLocators.GroupConfigPagination.next_page,
+        GroupConfigListLocators.GroupConfigPagination.previous_page,
     ]
 
 

@@ -108,7 +108,7 @@ class ProviderConfigPage(ProviderPageMixin):
 
 
 class ProviderGroupConfigPage(ProviderPageMixin):
-    """Component page group config menu"""
+    """Provider page group config menu"""
 
     MENU_SUFFIX = 'group_config'
     MAIN_ELEMENTS = [

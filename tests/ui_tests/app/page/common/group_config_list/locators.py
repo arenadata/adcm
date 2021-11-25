@@ -32,7 +32,7 @@ class GroupConfigListLocators:
         description = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Row description")
         delete_btn = Locator(By.CSS_SELECTOR, "button", "Row delete button")
 
-    Pagination = CommonTable.Pagination
+    GroupConfigPagination = CommonTable.Pagination
 
     class CreateGroupPopup:
         block = Locator(By.CSS_SELECTOR, "app-dialog", "Popup block")
