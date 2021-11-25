@@ -16,7 +16,6 @@ import os
 
 import allure
 import pytest
-
 from _pytest.fixtures import SubRequest
 from adcm_client.objects import ADCMClient, Bundle, Provider
 from adcm_pytest_plugin import utils
@@ -302,3 +301,7 @@ class TestProviderConfigPage:
         config_row = provider_config_page.config.get_all_config_rows()[0]
         provider_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
         provider_config_page.config.check_field_is_invalid(params['not_req_name'])
+        provider_config_page.config.check_config_warn_icon_on_left_menu()
+        provider_config_page.toolbar.check_warn_button(
+            tab_name="test_provider", expected_warn_text=['test_provider has an issue with its config']
+        )
