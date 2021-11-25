@@ -34,7 +34,9 @@ WATCHED_CM_MODELS = (
 def filter_out_event(module, name, obj):
     # We filter the sending of events only for cm, rbac and django.contrib.auth applications
     if module in ['rbac.models', 'django.contrib.auth.models']:
-        if name == 'user' and obj.id == 1:
+        if name == 'user' and obj.username in ['AnonymousUser', 'status', 'admin']:
+            return True
+        if name == 'user-profile' and obj.user.username in ['status', 'admin']:
             return True
         return False
     if module in ['cm.models'] and name in WATCHED_CM_MODELS:
