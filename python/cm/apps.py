@@ -89,8 +89,9 @@ _watched_m2m_links = (
 )
 
 
-def filter_out_event(module, name):
+def filter_out_event(*args):
     # We filter the sending of events only for the cm application
+    module, name, *_ = args
     if module[0:2] != 'cm':
         return True
     if name not in _watched_m2m_links:
