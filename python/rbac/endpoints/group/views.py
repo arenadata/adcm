@@ -15,7 +15,7 @@
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 
-from rbac import models, log
+from rbac import models
 from rbac.services import group as group_services
 from rbac.viewsets import ModelPermViewSet
 
@@ -54,14 +54,11 @@ class GroupSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
         expandable_fields = {'user': (ExpandedUserSerializer, {'many': True, 'source': 'user_set'})}
 
     def update(self, instance, validated_data):
-        log.debug(validated_data)
         if 'user_set' in validated_data:
             validated_data['user'] = validated_data.pop('user_set')
-        log.debug(validated_data)
         return group_services.update(instance, partial=self.partial, **validated_data)
 
     def create(self, validated_data):
-        log.debug(validated_data)
         if 'user_set' in validated_data:
             validated_data['user'] = validated_data.pop('user_set')
         return group_services.create(**validated_data)
