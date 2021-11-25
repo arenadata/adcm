@@ -11,6 +11,7 @@
 # limitations under the License.
 
 """Module contains all field types and it special values"""
+import random
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -210,13 +211,24 @@ class PositiveInt(BaseType):
         return randint(self._min_int64, self._max_int64)
 
 
+class Boolean(BaseType):
+    """Boolean field type"""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._sp_vals_negative = [PreparedFieldValue(f_type=Type[String]), PreparedFieldValue(f_type=Type[PositiveInt])]
+
+    def generate(self, **kwargs):
+        return random.choice([True, False])
+
+
 class String(BaseType):
     """String field type"""
 
-    def __init__(self, max_length=1024, **kwargs):
+    def __init__(self, max_length=1024, special_chars=r"!@#$%^&*\/{}[]", **kwargs):
         super().__init__(**kwargs)
         self.max_length = max_length
-        self._sp_vals_positive = ['s', r'!@#$%^&*\/{}[]', random_string(max_length)]
+        self._sp_vals_positive = ['s', special_chars, random_string(max_length)]
 
         self._sp_vals_negative = [
             generate_json_from_schema(json_schema=None),
@@ -249,6 +261,17 @@ class Text(BaseType):
 
     def generate(self, **kwargs):
         return random_string(randint(64, 200))
+
+
+class Email(BaseType):
+    """Email field type"""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._sp_vals_negative = [PreparedFieldValue(f_type=Type[String]), PreparedFieldValue(f_type=Type[PositiveInt])]
+
+    def generate(self, **kwargs):
+        return f"{random_string(10)}@{random_string(5)}.com"
 
 
 class DateTime(BaseType):
