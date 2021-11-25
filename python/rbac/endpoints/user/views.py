@@ -47,11 +47,27 @@ class GroupSerializer(serializers.Serializer):
     url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
 
 
-class ExpandedGroupSerializer(GroupSerializer):
+class GroupUserSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
+
+
+class ExpandedGroupSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
     """Expanded Group serializer"""
 
-    name = serializers.CharField()
-    # description = serializers.CharField()  TODO: enable after replacing User model
+    description = serializers.CharField(source='group.description')
+    user = GroupUserSerializer(many=True, source='user_set')
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
+
+    class Meta:
+        model = models.Group
+        fields = ('id', 'name', 'description', 'user', 'url')
+        expandable_fields = {
+            'user': (
+                'rbac.endpoints.user.views.UserSerializer',
+                {'many': True, 'source': 'user_set'},
+            )
+        }
 
 
 class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
