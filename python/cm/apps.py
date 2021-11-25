@@ -18,7 +18,7 @@ from django.apps import AppConfig
 from django.db.models.signals import post_save, post_delete, m2m_changed
 
 
-_watched_m2m_links = (
+WATCHED_CM_MODELS = (
     # 'cluster',
     'group-config',
     'group-config-hosts',
@@ -32,12 +32,12 @@ _watched_m2m_links = (
 
 
 def filter_out_event(module, name):
-    # We filter the sending of events only for the cm application
-    if module[0:2] != 'cm':
-        return True
-    if name not in _watched_m2m_links:
-        return True
-    return False
+    # We filter the sending of events only for cm, rbac and django.contrib.auth applications
+    if module in ['rbac.models', 'django.contrib.auth.models']:
+        return False
+    if module in ['cm.models'] and name in WATCHED_CM_MODELS:
+        return False
+    return True
 
 
 class CmConfig(AppConfig):
