@@ -12,39 +12,41 @@
 
 """User view sets"""
 
-from django.contrib.auth.models import User, Group
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 
-from rbac import log
+from rbac import models
 from rbac.services import user as user_services
 from rbac.viewsets import ModelPermViewSet
 
 
 class PasswordField(serializers.CharField):
+    """Text field with content masking for passwords"""
+
     def to_representation(self, value):
-        return user_services.PASSWORD_MASK
+        return user_services.PW_MASK
 
 
 class GroupSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail', lookup_field='id')
+    """Simple Group representation serializer"""
+
+    id = serializers.IntegerField()
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail', lookup_field='pk')
 
     class Meta:
-        model = Group
-
-    def update(self, instance, validated_data):
-        ...
-
-    def create(self, validated_data):
-        ...
+        model = models.Group
 
 
 class ExpandedGroupSerializer(GroupSerializer):
+    """Expanded Group serializer"""
+
     name = serializers.CharField()
+    description = serializers.CharField()
 
 
 class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
+    """User serializer"""
+
     id = serializers.IntegerField(read_only=True)
     username = serializers.CharField()
     first_name = serializers.CharField(allow_blank=True, default='')
@@ -57,44 +59,24 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
     groups = GroupSerializer(many=True, required=False)
 
     class Meta:
-        model = User
+        model = models.User
         expandable_fields = {'groups': (ExpandedGroupSerializer, {'many': True})}
 
     def update(self, instance, validated_data):
-        log.info(validated_data)
         if 'userprofile' in validated_data:
             validated_data['profile'] = validated_data.pop('userprofile')['profile']
         return user_services.update(instance, partial=self.partial, **validated_data)
 
     def create(self, validated_data):
-        log.info(validated_data)
         if 'userprofile' in validated_data:
             validated_data['profile'] = validated_data.pop('userprofile')['profile']
         return user_services.create(**validated_data)
 
 
-class UserViewSet(ModelPermViewSet):
+class UserViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
     """User view set"""
 
-    queryset = User.objects.all()
+    queryset = models.User.objects.all()
     serializer_class = UserSerializer
     filterset_fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser']
     ordering_fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser']
-
-
-# class SelfChangePasswordPerm(DjangoModelPerm):
-#     """
-#     User self change password permissions class.
-#     Use codename self_change_password to check permissions
-#     """
-#
-#     def __init__(self, *args, **kwargs):
-#         """Replace PUT permissions from "change" to "self_change_password"""
-#         super().__init__(*args, **kwargs)
-#         self.perms_map['PUT'] = ['%(app_label)s.self_change_password_%(model_name)s']
-#
-#     def has_object_permission(self, request, view, obj):
-#         """Check that user change his/her own password"""
-#         # if request.user != obj:
-#         #     return False
-#         return True

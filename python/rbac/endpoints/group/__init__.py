@@ -9,13 +9,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""User URLs"""
-
-from rest_framework.routers import SimpleRouter
-
-from .views import UserViewSet
-
-router = SimpleRouter()
-router.register('', UserViewSet, basename='user')
-urlpatterns = router.urls
