@@ -44,6 +44,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='role',
+            name='business_permit',
+            field=models.BooleanField(default=True),
+        ),
+        migrations.AddField(
+            model_name='role',
             name='category',
             field=models.JSONField(default=list),
         ),
