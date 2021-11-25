@@ -15,13 +15,15 @@
 from typing import Optional
 
 import allure
-
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
+from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
+from tests.ui_tests.app.page.common.status.page import StatusPage
+from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.host.locators import HostLocators
 
 
@@ -30,9 +32,11 @@ class HostPageMixin(BasePageObject):
 
     # /action /main etc.
     MENU_SUFFIX: str
+    MAIN_ELEMENTS: list
     host_id: int
     cluster_id: int
     header: PageHeader
+    toolbar: CommonToolbar
     footer: PageFooter
     config: CommonConfigMenuObj
 
@@ -51,6 +55,7 @@ class HostPageMixin(BasePageObject):
             host_id=host_id,
         )
         self.header = PageHeader(self.driver, self.base_url)
+        self.toolbar = CommonToolbar(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.host_id = host_id
@@ -103,20 +108,45 @@ class HostPageMixin(BasePageObject):
         menu_class = menu_link.get_attribute("class")
         return self.__ACTIVE_MENU_CLASS in menu_class
 
+    @allure.step("Assert that all main elements on the page are presented")
+    def check_all_elements(self):
+        """Assert all main elements presence"""
+        self.assert_displayed_elements(self.MAIN_ELEMENTS)
+
 
 class HostMainPage(HostPageMixin):
     """Host page Main menu"""
 
     MENU_SUFFIX = 'main'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ObjectPageLocators.text,
+    ]
 
 
 class HostConfigPage(HostPageMixin):
     """Host page config menu"""
 
     MENU_SUFFIX = 'config'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ObjectPageLocators.text,
+        CommonConfigMenu.description_input,
+        CommonConfigMenu.search_input,
+        CommonConfigMenu.advanced_label,
+        CommonConfigMenu.save_btn,
+        CommonConfigMenu.history_btn,
+    ]
 
 
-class HostStatusPage(HostPageMixin):
+class HostStatusPage(HostPageMixin, StatusPage):
     """Host page status menu"""
 
     MENU_SUFFIX = 'status'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ObjectPageLocators.text,
+    ]

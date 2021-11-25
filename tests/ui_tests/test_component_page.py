@@ -10,7 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=redefined-outer-name,no-self-use,unused-argument
+
 """UI tests for /cluster page"""
+
 import os
 from typing import (
     Tuple,
@@ -29,7 +32,7 @@ from adcm_pytest_plugin import utils
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
-from tests.ui_tests.app.page.common.import_page.page import (
+from tests.ui_tests.app.page.common.status.page import (
     SUCCESS_COLOR,
     NEGATIVE_COLOR,
 )

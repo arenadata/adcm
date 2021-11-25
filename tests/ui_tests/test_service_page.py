@@ -36,8 +36,8 @@ from tests.ui_tests.app.page.cluster.page import (
     ClusterServicesPage,
 )
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
-from tests.ui_tests.app.page.common.import_page.page import (
-    ImportItemInfo,
+from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
+from tests.ui_tests.app.page.common.status.page import (
     SUCCESS_COLOR,
     NEGATIVE_COLOR,
 )
