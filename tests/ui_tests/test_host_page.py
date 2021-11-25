@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=redefined-outer-name,no-self-use,unused-argument
+
 """UI tests for /host page"""
 
 import os
-
-# pylint:disable=redefined-outer-name
 from typing import Tuple
 
 import allure
