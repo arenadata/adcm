@@ -210,8 +210,8 @@ class ServiceGroupConfigPage(ServicePageMixin):
         ObjectPageLocators.text,
         GroupConfigListLocators.header_item,
         GroupConfigListLocators.add_btn,
-        GroupConfigListLocators.Pagination.next_page,
-        GroupConfigListLocators.Pagination.previous_page,
+        CommonTable.Pagination.next_page,
+        CommonTable.Pagination.previous_page,
     ]
 
 

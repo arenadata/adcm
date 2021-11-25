@@ -290,8 +290,8 @@ class ClusterGroupConfigPage(ClusterPageMixin):
         ObjectPageLocators.text,
         GroupConfigListLocators.header_item,
         GroupConfigListLocators.add_btn,
-        GroupConfigListLocators.GroupConfigPagination.next_page,
-        GroupConfigListLocators.GroupConfigPagination.previous_page,
+        CommonTable.Pagination.next_page,
+        CommonTable.Pagination.previous_page,
     ]
 
 

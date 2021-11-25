@@ -20,6 +20,7 @@ from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMe
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.group_config_list.locators import GroupConfigListLocators
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigList
+from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 
@@ -117,6 +118,6 @@ class ProviderGroupConfigPage(ProviderPageMixin):
         ObjectPageLocators.text,
         GroupConfigListLocators.header_item,
         GroupConfigListLocators.add_btn,
-        GroupConfigListLocators.Pagination.next_page,
-        GroupConfigListLocators.Pagination.previous_page,
+        CommonTable.Pagination.next_page,
+        CommonTable.Pagination.previous_page,
     ]

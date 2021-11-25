@@ -15,7 +15,6 @@
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.table.locator import CommonTable
 
 
 class GroupConfigListLocators:
@@ -31,8 +30,6 @@ class GroupConfigListLocators:
         name = Locator(By.CSS_SELECTOR, "mat-cell:first-child", "Row name")
         description = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Row description")
         delete_btn = Locator(By.CSS_SELECTOR, "button", "Row delete button")
-
-    GroupConfigPagination = CommonTable.Pagination
 
     class CreateGroupPopup:
         block = Locator(By.CSS_SELECTOR, "app-dialog", "Popup block")
