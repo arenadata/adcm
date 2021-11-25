@@ -436,7 +436,7 @@ def ui_config(obj, cl):
         item['activatable'] = bool(group_is_activatable(spec[key]))
         if item['type'] == 'variant':
             item['limits']['source']['value'] = cm.variant.get_variant(obj, obj_conf, limits)
-        item['default'] = get_default(spec[key])
+        item['default'] = get_default(spec[key], obj.prototype)
         if key in flat_conf:
             item['value'] = flat_conf[key]
         else:
