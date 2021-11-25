@@ -17,7 +17,16 @@ from rest_framework import serializers
 
 from rbac import models
 from rbac.services import user as user_services
-from rbac.viewsets import ModelPermViewSet
+from rbac.viewsets import ModelPermViewSet, DjangoModelPerm
+
+
+class UserPermissions(DjangoModelPerm):
+    """
+    Special permission class for User to allow user change own properties
+    such as password and profile, except groups membership
+    """
+
+    # TODO: make it work
 
 
 class PasswordField(serializers.CharField):
@@ -80,3 +89,4 @@ class UserViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
     serializer_class = UserSerializer
     filterset_fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser']
     ordering_fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser']
+    permission_classes = (UserPermissions,)
