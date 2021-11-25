@@ -21,12 +21,16 @@ from rbac.viewsets import ModelPermViewSet, DjangoModelPerm
 
 
 class UserPermissions(DjangoModelPerm):
-    """
-    Special permission class for User to allow user change own properties
-    such as password and profile, except groups membership
-    """
+    """Special permission class for User to allow user change own properties"""
 
-    # TODO: make it work
+    def has_permission(self, request, view):
+        if not all((request.user, request.user.is_active, request.user.is_authenticated)):
+            return False
+        if request.user.is_superuser:
+            return True
+        if view.action not in ('retrieve', 'update', 'partial_update'):
+            return False
+        return int(view.kwargs.get('pk', 0)) == request.user.pk
 
 
 class PasswordField(serializers.CharField):
@@ -40,17 +44,14 @@ class GroupSerializer(serializers.Serializer):
     """Simple Group representation serializer"""
 
     id = serializers.IntegerField()
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail', lookup_field='pk')
-
-    class Meta:
-        model = models.Group
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
 
 
 class ExpandedGroupSerializer(GroupSerializer):
     """Expanded Group serializer"""
 
     name = serializers.CharField()
-    description = serializers.CharField()
+    # description = serializers.CharField()  TODO: enable after replacing User model
 
 
 class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
@@ -64,17 +65,17 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
     is_superuser = serializers.BooleanField(default=False)
     password = PasswordField(trim_whitespace=False)
     url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
-    profile = serializers.JSONField(source='userprofile.profile', required=False)
+    profile = serializers.JSONField(source='userprofile.profile', required=False, default='')
     groups = GroupSerializer(many=True, required=False)
 
     class Meta:
-        model = models.User
         expandable_fields = {'groups': (ExpandedGroupSerializer, {'many': True})}
 
     def update(self, instance, validated_data):
         if 'userprofile' in validated_data:
             validated_data['profile'] = validated_data.pop('userprofile')['profile']
-        return user_services.update(instance, partial=self.partial, **validated_data)
+        context_user = self.context['request'].user
+        return user_services.update(instance, context_user, partial=self.partial, **validated_data)
 
     def create(self, validated_data):
         if 'userprofile' in validated_data:
