@@ -5,6 +5,7 @@ version: 1
 roles:
     - name: base
       description: Base user role
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -17,6 +18,7 @@ roles:
 
     - name: create Host
       description: The ability to add new host
+      business_permit: False
       module_name: rbac.roles
       class_name: ModelRole
       apps:
