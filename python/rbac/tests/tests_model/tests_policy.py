@@ -12,11 +12,10 @@
 
 import pytest
 
-from django.contrib.auth.models import User, Permission
 from django.contrib.contenttypes.models import ContentType
 from adwp_base.errors import AdwpEx
 
-from rbac.models import Role, Policy
+from rbac.models import Role, Policy, User, Permission
 from rbac.roles import ModelRole
 from cm.models import Bundle, Prototype, Action
 

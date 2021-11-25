@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""User URLs"""
+"""Group URLs"""
 
 from rest_framework.routers import SimpleRouter
 
-from .views import UserViewSet
+from .views import GroupViewSet
 
 router = SimpleRouter()
-router.register('', UserViewSet, basename='user')
+router.register('', GroupViewSet, basename='group')
 urlpatterns = router.urls

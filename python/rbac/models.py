@@ -15,7 +15,7 @@
 import importlib
 
 from adwp_base.errors import raise_AdwpEx as err
-from django.contrib.auth.models import User, Group, Permission
+from django.contrib.auth.models import User, Group as AuthGroup, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -48,11 +48,20 @@ def validate_category(value):
         raise ValidationError('Invalid object type in parametrized list')
 
 
+class Group(AuthGroup):
+    """
+    Beware the Multi-table inheritance
+    Original Group model extended with description field
+    """
+
+    description = models.CharField(max_length=255, null=True)
+
+
 class Role(models.Model):
     """
     Role is a list of Django permissions.
     Role can be assigned to user or to group of users
-    Also Role can have childs and so produce acyclic graph of linked roles
+    Also Role can have children and so produce acyclic graph of linked roles
     """
 
     name = models.CharField(max_length=160)

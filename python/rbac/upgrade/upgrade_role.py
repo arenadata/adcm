@@ -16,7 +16,6 @@ from typing import List
 import ruyaml
 
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.auth.models import Permission
 
 from adwp_base.errors import raise_AdwpEx as err
 
@@ -24,7 +23,7 @@ import cm.checker
 
 from rbac import log
 from rbac.settings import api_settings
-from rbac.models import Role, RoleMigration, Policy
+from rbac.models import Role, RoleMigration, Policy, Permission
 
 
 def upgrade(data: dict):

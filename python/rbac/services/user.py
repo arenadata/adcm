@@ -16,34 +16,18 @@ from typing import Any, List
 
 from adwp_base.errors import AdwpEx
 from django.contrib.auth.hashers import make_password
-from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 from rest_framework.authtoken.models import Token
 
 from rbac import models, log
+from rbac.utils import Empty, set_not_empty_attr
 
-PASSWORD_MASK = '*****'
-
-
-class _Empty:
-    """Same as None but useful when None is valid value"""
-
-    def __bool__(self):
-        return False
+PW_MASK = '*****'
 
 
-def _set_not_empty_attr(obj, partial: bool, attr: str, value: Any, default: Any = None) -> None:
-    if partial:
-        if value is not _Empty:
-            setattr(obj, attr, value)
-    else:
-        value = value if value is not _Empty else default
-        setattr(obj, attr, value)
-
-
-def _set_password(user: AbstractUser, value: str) -> None:
-    if value is _Empty or value == PASSWORD_MASK:
+def _set_password(user: models.User, value: str) -> None:
+    if value is Empty or value == PW_MASK:
         return
 
     if not value:
@@ -57,16 +41,16 @@ def _set_password(user: AbstractUser, value: str) -> None:
     _regenerate_token(user)
 
 
-def _update_profile(user: AbstractUser, profile_data: Any) -> None:
-    if profile_data is _Empty:
+def _update_profile(user: models.User, profile_data: Any) -> None:
+    if profile_data is Empty:
         return
     profile, _ = models.UserProfile.objects.get_or_create(user=user)
     profile.profile = profile_data if profile_data is not None else ''
     profile.save()
 
 
-def _update_groups(user: AbstractUser, groups: [_Empty, List[dict]]) -> None:
-    if groups is _Empty:
+def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
+    if groups is Empty:
         return
 
     user_groups = {g.id: g for g in user.groups.all()}
@@ -89,7 +73,7 @@ def _update_groups(user: AbstractUser, groups: [_Empty, List[dict]]) -> None:
         user.groups.remove(group)
 
 
-def _regenerate_token(user: AbstractUser) -> Token:
+def _regenerate_token(user: models.User) -> Token:
     Token.objects.filter(user=user).delete()
     token = Token(user=user)
     token.save()
@@ -98,25 +82,26 @@ def _regenerate_token(user: AbstractUser) -> Token:
 
 @transaction.atomic
 def update(
-    user: AbstractUser,
+    user: models.User,
     *,
     partial: bool = False,
-    username: str = _Empty,
-    first_name: str = _Empty,
-    last_name: str = _Empty,
-    email: str = _Empty,
-    is_superuser: bool = _Empty,
-    password: str = _Empty,
-    profile: dict = _Empty,
-    groups: list = _Empty,
-) -> AbstractUser:
-    if (partial and username is not _Empty) or (not partial and username != user.username):
+    username: str = Empty,
+    first_name: str = Empty,
+    last_name: str = Empty,
+    email: str = Empty,
+    is_superuser: bool = Empty,
+    password: str = Empty,
+    profile: dict = Empty,
+    groups: list = Empty,
+) -> models.User:
+    """Full or partial User update"""
+    if (partial and username is not Empty) or (not partial and username != user.username):
         raise AdwpEx('USER_UPDATE_ERROR', msg='Username could not be changed')
 
-    _set_not_empty_attr(user, partial, 'first_name', first_name, '')
-    _set_not_empty_attr(user, partial, 'last_name', last_name, '')
-    _set_not_empty_attr(user, partial, 'email', email, '')
-    _set_not_empty_attr(user, partial, 'is_superuser', is_superuser, False)
+    set_not_empty_attr(user, partial, 'first_name', first_name, '')
+    set_not_empty_attr(user, partial, 'last_name', last_name, '')
+    set_not_empty_attr(user, partial, 'email', email, '')
+    set_not_empty_attr(user, partial, 'is_superuser', is_superuser, False)
     _set_password(user, password)
     _update_profile(user, profile)
     _update_groups(user, groups)
@@ -135,7 +120,8 @@ def create(
     is_superuser: bool = None,
     profile: dict = None,
     groups: list = None,
-) -> AbstractUser:
+) -> models.User:
+    """Create User"""
     if is_superuser:
         func = models.User.objects.create_superuser
     else:
