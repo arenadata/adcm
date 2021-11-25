@@ -104,7 +104,13 @@ class BasePageObject:
                     )
 
         wait_until_step_succeeds(_open_page, period=0.5, timeout=timeout or self.default_page_timeout)
+        if self.is_popup_presented_on_page(popup_text='Connection established.', timeout=2):
+            self.close_connection_established_popup()
         return self
+
+    def close_connection_established_popup(self):
+        self.wait_element_visible(CommonPopupLocators.block_by_text('Connection established.'))
+        self.find_and_click(CommonPopupLocators.hide_btn)
 
     @allure.step("Close popup at the bottom of the page")
     def close_info_popup(self):
@@ -113,9 +119,11 @@ class BasePageObject:
             self.find_and_click(CommonPopupLocators.hide_btn)
             self.wait_element_hide(CommonPopupLocators.block)
 
-    def is_popup_presented_on_page(self) -> bool:
+    def is_popup_presented_on_page(self, popup_text: Optional[str] = None, timeout: int = 5) -> bool:
         """Check if popup is presented on page"""
-        return self.is_element_displayed(CommonPopupLocators.block, timeout=5)
+        if popup_text:
+            return self.is_element_displayed(CommonPopupLocators.block_by_text(popup_text), timeout=timeout)
+        return self.is_element_displayed(CommonPopupLocators.block, timeout=timeout)
 
     def get_info_popup_text(self):
         """Get text from info popup"""

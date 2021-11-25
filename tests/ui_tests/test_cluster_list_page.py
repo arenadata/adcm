@@ -29,6 +29,7 @@ from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
     ClusterImportPage,
     ClusterConfigPage,
+    ClusterGroupConfigPage,
     ClusterMainPage,
     ClusterHostPage,
     ClusterServicesPage,
@@ -37,6 +38,7 @@ from tests.ui_tests.app.page.cluster.page import (
     ClusterStatusPage,
 )
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
+from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
 from tests.ui_tests.app.page.common.import_page.page import (
     ImportItemInfo,
     SUCCESS_COLOR,
@@ -276,12 +278,10 @@ class TestClusterMainPage:
     """Tests for the /cluster/{}/main page"""
 
     @pytest.mark.smoke()
-    def test_check_cluster_main_page_open_by_tab(self, app_fs, create_community_cluster):
+    def test_open_by_tab_cluster_main_page(self, app_fs, create_community_cluster):
         """Test open /cluter/{}/main page from left menu"""
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        cluster_config_page.open_main_tab()
-        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
-        cluster_main_page.wait_page_is_opened()
+        cluster_main_page = cluster_config_page.open_main_tab()
         cluster_main_page.check_all_elements()
 
     def test_check_cluster_admin_page_open_by_toolbar(self, app_fs, create_community_cluster):
@@ -340,9 +340,7 @@ class TestClusterServicePage:
     def test_check_cluster_service_page_open_by_tab(self, app_fs, create_community_cluster):
         """Test open /cluter/{}/service page from left menu"""
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        cluster_config_page.open_services_tab()
-        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
-        cluster_service_page.wait_page_is_opened()
+        cluster_service_page = cluster_config_page.open_services_tab()
         cluster_service_page.check_all_elements()
 
     @pytest.mark.smoke()
@@ -576,9 +574,7 @@ class TestClusterComponentsPage:
     def test_check_cluster_components_page_open_by_tab(self, app_fs, create_community_cluster):
         """Test open /cluter/{}/component page from left menu"""
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        cluster_config_page.open_components_tab()
-        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
-        cluster_components_page.wait_page_is_opened()
+        cluster_components_page = cluster_config_page.open_components_tab()
         cluster_components_page.check_all_elements()
 
     def test_check_cluster_components_page_open_service_page(self, app_fs, create_community_cluster):
@@ -695,9 +691,7 @@ class TestClusterConfigPage:
     def test_cluster_config_page_open_by_tab(self, app_fs, create_community_cluster):
         """Test open /cluster/{}/config from left menu"""
         cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        cluster_main_page.open_config_tab()
-        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1)
-        cluster_config_page.wait_page_is_opened()
+        cluster_config_page = cluster_main_page.open_config_tab()
         cluster_config_page.check_all_elements()
 
     def test_filter_config_on_cluster_config_page(self, app_fs, create_community_cluster):
@@ -773,15 +767,62 @@ class TestClusterConfigPage:
         cluster_config_page.config.check_field_is_invalid(params['not_req_name'])
 
 
+class TestClusterGroupConfigPage:
+    """Tests for the cluster/{}/group_config page"""
+
+    def test_open_by_tab_group_config_cluster_page(self, app_fs, create_community_cluster):
+        """Test open cluster/{}/group_config from left menu"""
+
+        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
+        cluster_groupconf_page = cluster_main_page.open_group_config_tab()
+        cluster_groupconf_page.check_all_elements()
+
+    def test_create_group_config_cluster(self, app_fs, create_community_cluster):
+        """Test create group config on cluster/{}/group_config"""
+
+        params = {
+            'name': 'Test name',
+            'description': 'Test description',
+        }
+
+        group_conf_page = ClusterGroupConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
+        with group_conf_page.group_config.wait_rows_change(expected_rows_amount=1):
+            group_conf_page.group_config.create_group(name=params['name'], description=params['description'])
+        group_row = group_conf_page.group_config.get_all_config_rows()[0]
+        with allure.step("Check created row"):
+            group_info = group_conf_page.group_config.get_config_row_info(group_row)
+            assert group_info == GroupConfigRowInfo(
+                name=params['name'], description=params['description']
+            ), "Row value differs"
+        with group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
+            group_conf_page.group_config.delete_row(group_row)
+
+    def test_check_pagination_on_group_config_component_page(self, app_fs, create_community_cluster):
+        """Test pagination on cluster/{}/group_config page"""
+
+        params = {
+            'name': 'Test name',
+            'description': 'Test description',
+        }
+
+        group_conf_page = ClusterGroupConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
+        with allure.step("Create 11 groups"):
+            for i in range(11):
+                with group_conf_page.group_config.wait_rows_change():
+                    group_conf_page.group_config.create_group(
+                        name=f"{params['name']}_{i}", description=params['description']
+                    )
+
+        group_conf_page.table.check_pagination(second_page_item_amount=1)
+
+
 class TestClusterStatusPage:
     """Tests for the /cluster/{}/status page"""
 
     def test_open_by_tab_cluster_status_page(self, app_fs, create_community_cluster):
         """Test open /cluster/{}/config from left menu"""
         cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        cluster_main_page.open_status_tab()
-        cluster_status_page = ClusterStatusPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
-        cluster_status_page.wait_page_is_opened()
+        cluster_status_page = cluster_main_page.open_status_tab()
         cluster_status_page.check_all_elements()
 
     def test_status_on_cluster_status_page(
@@ -847,9 +888,7 @@ class TestClusterImportPage:
     def test_open_by_tab_cluster_import_page(self, app_fs, create_community_cluster):
         """Test open /cluster/{}/config from left menu"""
         cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        cluster_main_page.open_import_tab()
-        cluster_status_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
-        cluster_status_page.wait_page_is_opened()
+        cluster_status_page = cluster_main_page.open_import_tab()
         cluster_status_page.check_all_elements()
 
     def test_cluster_import_from_cluster_import_page(self, app_fs, create_import_cluster_with_service):

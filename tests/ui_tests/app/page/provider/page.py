@@ -18,6 +18,8 @@ from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader,
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators, ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
+from tests.ui_tests.app.page.common.group_config_list.locators import GroupConfigListLocators
+from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigList
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 
@@ -34,6 +36,7 @@ class ProviderPageMixin(BasePageObject):
     config: CommonConfigMenuObj
     toolbar: CommonToolbar
     table: CommonTableObj
+    group_config = GroupConfigList
 
     def __init__(self, driver, base_url, provider_id: int):
         if self.MENU_SUFFIX is None:
@@ -45,6 +48,7 @@ class ProviderPageMixin(BasePageObject):
         self.provider_id = provider_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url)
+        self.group_config = GroupConfigList(self.driver, self.base_url)
 
     @allure.step("Open 'Main' tab")
     def open_main_tab(self):
@@ -61,6 +65,14 @@ class ProviderPageMixin(BasePageObject):
         provider_conf_page = ProviderConfigPage(self.driver, self.base_url, self.provider_id)
         provider_conf_page.wait_page_is_opened()
         return provider_conf_page
+
+    @allure.step("Open Group Configuration tab by menu click")
+    def open_group_config_tab(self) -> "ProviderGroupConfigPage":
+        """Open Group Configuration tab by menu click"""
+        self.find_and_click(ObjectPageMenuLocators.group_config_tab)
+        page = ProviderGroupConfigPage(self.driver, self.base_url, self.provider_id)
+        page.wait_page_is_opened()
+        return page
 
     @allure.step("Check all main elements on the page are presented")
     def check_all_elements(self):
@@ -92,4 +104,19 @@ class ProviderConfigPage(ProviderPageMixin):
         CommonConfigMenu.advanced_label,
         CommonConfigMenu.save_btn,
         CommonConfigMenu.history_btn,
+    ]
+
+
+class ProviderGroupConfigPage(ProviderPageMixin):
+    """Component page group config menu"""
+
+    MENU_SUFFIX = 'group_config'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ObjectPageLocators.text,
+        GroupConfigListLocators.header_item,
+        GroupConfigListLocators.add_btn,
+        GroupConfigListLocators.Pagination.next_page,
+        GroupConfigListLocators.Pagination.previous_page,
     ]

@@ -29,6 +29,8 @@ from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators, O
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs_locators import ActionDialog, DeleteDialog
+from tests.ui_tests.app.page.common.group_config_list.locators import GroupConfigListLocators
+from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigList
 from tests.ui_tests.app.page.common.import_page.locators import ImportLocators
 from tests.ui_tests.app.page.common.import_page.page import ImportPage
 from tests.ui_tests.app.page.common.popups.locator import HostAddPopupLocators
@@ -71,6 +73,7 @@ class ClusterPageMixin(BasePageObject):
     toolbar: CommonToolbar
     table: CommonTableObj
     host_popup: HostCreatePopupObj
+    group_config = GroupConfigList
 
     def __init__(self, driver, base_url, cluster_id: int):
         if self.MENU_SUFFIX is None:
@@ -83,34 +86,72 @@ class ClusterPageMixin(BasePageObject):
         self.toolbar = CommonToolbar(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url)
         self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
+        self.group_config = GroupConfigList(self.driver, self.base_url)
 
     def open_main_tab(self):
         """Open Main tab by menu click"""
+
         self.find_and_click(ObjectPageMenuLocators.main_tab)
+        page = ClusterMainPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
 
     def open_services_tab(self):
         """Open Services tab by menu click"""
+
         self.find_and_click(ObjectPageMenuLocators.services_tab)
+        page = ClusterServicesPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
 
     def open_hosts_tab(self):
         """Open Hosts tab by menu click"""
+
         self.find_and_click(ObjectPageMenuLocators.hosts_tab)
+        page = ClusterHostPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
 
     def open_components_tab(self):
         """Open Components tab by menu click"""
+
         self.find_and_click(ObjectPageMenuLocators.components_tab)
+        page = ClusterComponentsPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
+
+    @allure.step("Open Group Configuration tab by menu click")
+    def open_group_config_tab(self) -> "ClusterGroupConfigPage":
+        """Open Group Configuration tab by menu click"""
+
+        self.find_and_click(ObjectPageMenuLocators.group_config_tab)
+        page = ClusterGroupConfigPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
 
     def open_config_tab(self):
         """Open Configuration tab by menu click"""
+
         self.find_and_click(ObjectPageMenuLocators.config_tab)
+        page = ClusterConfigPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
 
     def open_status_tab(self):
         """Open Status tab by menu click"""
+
         self.find_and_click(ObjectPageMenuLocators.status_tab)
+        page = ClusterStatusPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
 
     def open_import_tab(self):
         """Open Import tab by menu click"""
+
         self.find_and_click(ObjectPageMenuLocators.import_tab)
+        page = ClusterImportPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
 
     @allure.step("Assert that all main elements on the page are presented")
     def check_all_elements(self):
@@ -236,6 +277,21 @@ class ClusterConfigPage(ClusterPageMixin):
         CommonConfigMenu.advanced_label,
         CommonConfigMenu.save_btn,
         CommonConfigMenu.history_btn,
+    ]
+
+
+class ClusterGroupConfigPage(ClusterPageMixin):
+    """Component page group config menu"""
+
+    MENU_SUFFIX = 'group_config'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ObjectPageLocators.text,
+        GroupConfigListLocators.header_item,
+        GroupConfigListLocators.add_btn,
+        GroupConfigListLocators.Pagination.next_page,
+        GroupConfigListLocators.Pagination.previous_page,
     ]
 
 

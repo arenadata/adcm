@@ -16,13 +16,21 @@ import os
 
 import allure
 import pytest
-
 from _pytest.fixtures import SubRequest
-from adcm_client.objects import ADCMClient, Bundle, Provider
+from adcm_client.objects import (
+    ADCMClient,
+    Bundle,
+    Provider,
+)
 from adcm_pytest_plugin import utils
 
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
-from tests.ui_tests.app.page.provider.page import ProviderMainPage, ProviderConfigPage
+from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
+from tests.ui_tests.app.page.provider.page import (
+    ProviderMainPage,
+    ProviderConfigPage,
+    ProviderGroupConfigPage,
+)
 from tests.ui_tests.app.page.provider_list.page import ProviderListPage
 
 # pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-few-public-methods
@@ -302,3 +310,56 @@ class TestProviderConfigPage:
         config_row = provider_config_page.config.get_all_config_rows()[0]
         provider_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
         provider_config_page.config.check_field_is_invalid(params['not_req_name'])
+
+
+class TestProviderGroupConfigPage:
+    """Tests for the /provider/{}/group_config page"""
+
+    def test_open_by_tab_group_config_provider_page(self, app_fs, upload_and_create_test_provider):
+        """Test open provider group_config from left menu"""
+
+        provider_main_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).open()
+        group_conf_page = provider_main_page.open_group_config_tab()
+        group_conf_page.check_all_elements()
+
+    def test_create_group_config_provider(self, app_fs, upload_and_create_test_provider):
+        """Test create group config on /provider/{}/group_config page"""
+
+        params = {
+            'name': 'Test name',
+            'description': 'Test description',
+        }
+
+        group_conf_page = ProviderGroupConfigPage(
+            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+        ).open()
+        with group_conf_page.group_config.wait_rows_change(expected_rows_amount=1):
+            group_conf_page.group_config.create_group(name=params['name'], description=params['description'])
+        group_row = group_conf_page.group_config.get_all_config_rows()[0]
+        with allure.step("Check created row"):
+            group_info = group_conf_page.group_config.get_config_row_info(group_row)
+            assert group_info == GroupConfigRowInfo(
+                name=params['name'], description=params['description']
+            ), "Row value differs"
+        with group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
+            group_conf_page.group_config.delete_row(group_row)
+
+    def test_check_pagination_on_group_config_provider_page(self, app_fs, upload_and_create_test_provider):
+        """Test pagination on /cluster/{}/service/{}/component/{}/group_config page"""
+
+        params = {
+            'name': 'Test name',
+            'description': 'Test description',
+        }
+
+        group_conf_page = ProviderGroupConfigPage(
+            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+        ).open()
+        with allure.step("Create 11 groups"):
+            for i in range(11):
+                with group_conf_page.group_config.wait_rows_change():
+                    group_conf_page.group_config.create_group(
+                        name=f"{params['name']}_{i}", description=params['description']
+                    )
+
+        group_conf_page.table.check_pagination(second_page_item_amount=1)
