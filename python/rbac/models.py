@@ -64,6 +64,7 @@ class Role(models.Model):
     init_params = models.JSONField(default=dict)
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE, null=True, default=None)
     built_in = models.BooleanField(default=True, null=False)
+    business_permit = models.BooleanField(default=True, null=False)
     category = models.JSONField(default=list, null=False, validators=[validate_category])
     parametrized_by_type = models.JSONField(
         default=list, null=False, validators=[validate_object_type]

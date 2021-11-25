@@ -58,6 +58,7 @@ class RoleView(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
                 'name',
                 'description',
                 'built_in',
+                'business_permit',
                 'category',
                 'parametrized_by_type',
                 'child',
@@ -66,6 +67,7 @@ class RoleView(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
             extra_kwargs = {
                 'parametrized_by_type': {'required': True},
                 'built_in': {'read_only': True},
+                'business_permit': {'read_only': True},
             }
             expandable_fields = {
                 'child': ('rbac.endpoints.role.views.ExpandedRoleSerializer', {'many': True})
