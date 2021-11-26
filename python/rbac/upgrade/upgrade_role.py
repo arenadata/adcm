@@ -103,6 +103,8 @@ def upgrade_role(role: dict, data: dict) -> Role:
         new_role.description = role['description']
     if 'parametrized_by' in role:
         new_role.parametrized_by_type = role['parametrized_by']
+    if 'business_permit' in role:
+        new_role.business_permit = role['business_permit']
     for perm in perm_list:
         new_role.permissions.add(perm)
     new_role.save()
