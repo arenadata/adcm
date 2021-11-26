@@ -24,7 +24,6 @@ from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMe
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.status.page import StatusPage
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
-from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.host.locators import HostLocators
 
 

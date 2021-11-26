@@ -79,7 +79,7 @@ def upload_and_create_provider(provider_bundle) -> Tuple[Bundle, Provider]:
 
 @pytest.fixture()
 @allure.title("Create host")
-def _create_host(upload_and_create_provider: Tuple[Bundle, Provider]):
+def create_host(upload_and_create_provider: Tuple[Bundle, Provider]):
     """Create default host using API"""
     provider = upload_and_create_provider[1]
     return provider.host_create(HOST_FQDN)
@@ -246,7 +246,7 @@ class TestHostListPage:
             pytest.param('config', 'config_tab', id='open_config_menu'),
         ],
     )
-    @pytest.mark.usefixtures('_create_host')
+    @pytest.mark.usefixtures('create_host')
     def test_open_host_from_host_list(self, page: HostListPage, row_child_name: str, menu_item_name: str):
         """Test open host page from host list"""
 
@@ -259,7 +259,7 @@ class TestHostListPage:
             assert main_host_page.active_menu_is(menu_item_locator)
 
     @pytest.mark.smoke()
-    @pytest.mark.usefixtures("_create_host", "upload_and_create_provider")
+    @pytest.mark.usefixtures("create_host", "upload_and_create_provider")
     def test_delete_host(self, page: HostListPage):
         """Create host and delete it"""
 
@@ -286,14 +286,14 @@ class TestHostListPage:
 
     @pytest.mark.smoke()
     @pytest.mark.parametrize('menu', ['main', 'config', 'status'])
-    @pytest.mark.usefixtures('_create_host')
+    @pytest.mark.usefixtures('create_host')
     def test_open_menu(self, upload_and_create_provider: Tuple[Bundle, Provider], page: HostListPage, menu: str):
         """Open detailed host page and open menu from side navigation"""
 
         _check_menu(menu, upload_and_create_provider[0], page)
 
     @pytest.mark.smoke()
-    @pytest.mark.usefixtures('_create_host')
+    @pytest.mark.usefixtures('create_host')
     def test_run_action_on_new_host(self, page: HostListPage):
         """Create host and run action on it"""
 
@@ -307,38 +307,38 @@ class TestHostMainPage:
     """Tests for the /host/{}/config page"""
 
     @pytest.mark.smoke()
-    def test_open_by_tab_host_main_page(self, app_fs, _create_host):
+    def test_open_by_tab_host_main_page(self, app_fs, create_host):
         """Test open /host/{}/main page from left menu"""
 
-        host_config_page = HostConfigPage(app_fs.driver, app_fs.adcm.url, _create_host.host_id).open()
+        host_config_page = HostConfigPage(app_fs.driver, app_fs.adcm.url, create_host.host_id).open()
         host_main_page = host_config_page.open_main_menu()
         host_main_page.check_all_elements()
 
-    def test_check_host_admin_page_open_by_toolbar(self, app_fs, _create_host):
+    def test_check_host_admin_page_open_by_toolbar(self, app_fs, create_host):
         """Test open admin/intro page from host toolbar"""
 
-        host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, _create_host.host_id).open()
+        host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, create_host.host_id).open()
         host_main_page.toolbar.click_admin_link()
         AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
 
-    def test_check_host_main_page_open_by_toolbar(self, app_fs, _create_host):
+    def test_check_host_main_page_open_by_toolbar(self, app_fs, create_host):
         """Test open /host/{}/main page from host toolbar"""
 
         params = {"host_list_name": "HOSTS"}
 
-        host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, _create_host.host_id).open()
+        host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, create_host.host_id).open()
         host_main_page.toolbar.click_link_by_name(params["host_list_name"])
         HostListPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
-        host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, _create_host.host_id).open()
+        host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, create_host.host_id).open()
         host_main_page.toolbar.click_link_by_name(HOST_FQDN)
         host_main_page.wait_page_is_opened()
 
-    def test_check_cluster_run_action_on_host_page_by_toolbar(self, app_fs, _create_host):
+    def test_check_cluster_run_action_on_host_page_by_toolbar(self, app_fs, create_host):
         """Test run action from the /cluster/{}/main page toolbar"""
 
         params = {"action_name": "Init"}
 
-        host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, _create_host.host_id).open()
+        host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, create_host.host_id).open()
         host_main_page.toolbar.run_action(HOST_FQDN, params["action_name"])
         with allure.step("Check success job"):
             assert (
@@ -350,7 +350,7 @@ class TestHostConfigPage:
     """Tests for the /host/{}/config page"""
 
     @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
-    @pytest.mark.usefixtures('_create_host')
+    @pytest.mark.usefixtures('create_host')
     def test_filter_config(self, page: HostListPage):
         """Use filters on host configuration page"""
 
@@ -388,7 +388,7 @@ class TestHostConfigPage:
 
     @pytest.mark.smoke()
     @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
-    @pytest.mark.usefixtures('_create_host')
+    @pytest.mark.usefixtures('create_host')
     def test_custom_name_config(self, page: HostListPage):
         """Change configuration, save with custom name, compare changes"""
         params = {
@@ -422,7 +422,7 @@ class TestHostConfigPage:
             host_page.config.wait_history_row_with_value(secrettext_row, params['secrettext_expected'])
 
     @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
-    @pytest.mark.usefixtures('_create_host')
+    @pytest.mark.usefixtures('create_host')
     def test_reset_configuration(self, page: HostListPage):
         """Change configuration, save, reset to defaults"""
         params = {
@@ -448,7 +448,7 @@ class TestHostConfigPage:
         )
 
     @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
-    @pytest.mark.usefixtures('_create_host')
+    @pytest.mark.usefixtures('create_host')
     def test_field_validation(self, page: HostListPage):
         """Inputs are validated correctly"""
         wrong_value = 'etonechislo'
@@ -468,14 +468,14 @@ class TestHostConfigPage:
 class TestHostStatusPage:
     """Tests for the /host/{}/status page"""
 
-    def test_open_by_tab_host_status_page(self, app_fs, _create_host):
+    def test_open_by_tab_host_status_page(self, app_fs, create_host):
         """Test open /host/{}/config from left menu"""
 
-        host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, _create_host.id).open()
+        host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, create_host.id).open()
         host_status_page = host_main_page.open_status_menu()
         host_status_page.check_all_elements()
 
-    def test_status_on_host_status_page(self, app_fs, adcm_fs, sdk_client_fs, _create_host, upload_and_create_cluster):
+    def test_status_on_host_status_page(self, app_fs, adcm_fs, sdk_client_fs, create_host, upload_and_create_cluster):
         """Changes status on cluster/{}/status page"""
 
         success_status = [
@@ -493,11 +493,11 @@ class TestHostStatusPage:
 
         with allure.step("Create hostcomponent"):
             _, cluster = upload_and_create_cluster
-            cluster.host_add(_create_host)
+            cluster.host_add(create_host)
             service = cluster.service_add(name="test_service")
-            cluster.hostcomponent_set((_create_host, service.component(name="first")))
+            cluster.hostcomponent_set((create_host, service.component(name="first")))
 
-        host_status_page = HostStatusPage(app_fs.driver, app_fs.adcm.url, _create_host.id).open()
+        host_status_page = HostStatusPage(app_fs.driver, app_fs.adcm.url, create_host.id).open()
         status_changer = ADCMObjectStatusChanger(sdk_client_fs, adcm_fs)
         with allure.step("Check positive status"):
             status_changer.enable_cluster(cluster)
@@ -505,12 +505,12 @@ class TestHostStatusPage:
             host_status_page.compare_current_and_expected_state(success_status)
         with allure.step("Check negative status on component"):
             status_changer.set_component_negative_status(
-                (_create_host, cluster.service(name="test_service").component(name="first"))
+                (create_host, cluster.service(name="test_service").component(name="first"))
             )
             host_status_page.driver.refresh()
             host_status_page.compare_current_and_expected_state(negative_status)
         with allure.step("Check negative status on host"):
-            status_changer.set_host_negative_status(_create_host)
+            status_changer.set_host_negative_status(create_host)
             host_status_page.driver.refresh()
             host_status_page.compare_current_and_expected_state(negative_status)
         with allure.step("Check collapse button"):
