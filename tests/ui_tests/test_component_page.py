@@ -280,19 +280,19 @@ class TestComponentGroupConfigPage:
 
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
-        group_conf_page = ComponentGroupConfigPage(
+        component_group_conf_page = ComponentGroupConfigPage(
             app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
         ).open()
-        with group_conf_page.group_config.wait_rows_change(expected_rows_amount=1):
-            group_conf_page.group_config.create_group(name=params['name'], description=params['description'])
-        group_row = group_conf_page.group_config.get_all_config_rows()[0]
-        with allure.step("Check created row"):
-            group_info = group_conf_page.group_config.get_config_row_info(group_row)
+        with component_group_conf_page.group_config.wait_rows_change(expected_rows_amount=1):
+            component_group_conf_page.group_config.create_group(name=params['name'], description=params['description'])
+        group_row = component_group_conf_page.group_config.get_all_config_rows()[0]
+        with allure.step("Check created row in component"):
+            group_info = component_group_conf_page.group_config.get_config_row_info(group_row)
             assert group_info == GroupConfigRowInfo(
                 name=params['name'], description=params['description']
-            ), "Row value differs"
-        with group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
-            group_conf_page.group_config.delete_row(group_row)
+            ), "Row value differs in component groups"
+        with component_group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
+            component_group_conf_page.group_config.delete_row(group_row)
 
     def test_check_pagination_on_group_config_component_page(self, app_fs, create_cluster_with_service):
         """Test pagination on /cluster/{}/service/{}/component/{}/group_config page"""
