@@ -337,7 +337,6 @@ def test_filter_config(
         host_page.config.check_config_fields_visibility(set(), {ADVANCED_FIELD_NAME})
 
 
-@pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2281")
 @pytest.mark.smoke()
 @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
 @pytest.mark.usefixtures('_create_host')
@@ -416,6 +415,10 @@ def test_field_validation(
     host_page.config.check_field_is_required(REQUIRED_FIELD_NAME)
     host_page.config.type_in_config_field(wrong_value, row=regular_row)
     host_page.config.check_field_is_invalid(REGULAR_FIELD_NAME)
+    host_page.config.check_config_warn_icon_on_left_menu()
+    host_page.toolbar.check_warn_button(
+        tab_name="best-host", expected_warn_text=['best-host has an issue with its config']
+    )
 
 
 @pytest.mark.usefixtures('_create_host')

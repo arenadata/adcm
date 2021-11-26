@@ -15,13 +15,13 @@
 from typing import Optional
 
 import allure
-
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
+from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.host.locators import HostLocators
 
 
@@ -35,7 +35,7 @@ class HostPageMixin(BasePageObject):
     header: PageHeader
     footer: PageFooter
     config: CommonConfigMenuObj
-
+    toolbar: CommonToolbar
     __ACTIVE_MENU_CLASS = 'active'
 
     def __init__(self, driver, base_url, host_id: int, cluster_id: Optional[int] = None):
@@ -54,6 +54,7 @@ class HostPageMixin(BasePageObject):
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.host_id = host_id
+        self.toolbar = CommonToolbar(self.driver, self.base_url)
 
     @allure.step('Check FQDN is equal to {fqdn}')
     def check_fqdn_equal_to(self, fqdn: str):
