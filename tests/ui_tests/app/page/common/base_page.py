@@ -110,7 +110,11 @@ class BasePageObject:
 
     def close_connection_established_popup(self):
         self.wait_element_visible(CommonPopupLocators.block_by_text('Connection established.'))
-        self.find_and_click(CommonPopupLocators.hide_btn)
+        try:
+            self.find_and_click(CommonPopupLocators.hide_btn, timeout=1)
+        except (StaleElementReferenceException, TimeoutException):
+            # popups changes fast, it could hide already
+            pass
 
     @allure.step("Close popup at the bottom of the page")
     def close_info_popup(self):
@@ -230,7 +234,7 @@ class BasePageObject:
         except TimeoutException as e:
             raise AssertionError(e.msg)
 
-    def find_and_click(self, locator: Locator, is_js: bool = False) -> None:
+    def find_and_click(self, locator: Locator, is_js: bool = False, timeout: int = None) -> None:
         """Find element on current page and click on it."""
 
         if is_js:
@@ -239,7 +243,7 @@ class BasePageObject:
                 self.driver.execute_script("arguments[0].click()", loc)
         else:
             with allure.step(f'Click on "{locator.name}"'):
-                self.wait_element_clickable(locator)
+                self.wait_element_clickable(locator, timeout=timeout)
                 self.find_element(locator).click()
 
     def wait_element_clickable(self, locator: Locator, timeout: int = None) -> WebElement:
