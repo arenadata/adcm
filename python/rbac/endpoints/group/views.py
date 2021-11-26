@@ -31,10 +31,11 @@ class ExpandedUserSerializer(UserSerializer):
     """Expanded User serializer"""
 
     username = serializers.CharField()
-    first_name = serializers.CharField(allow_blank=True, default='')
-    last_name = serializers.CharField(allow_blank=True, default='')
-    email = serializers.EmailField(allow_blank=True, required=False)
-    is_superuser = serializers.BooleanField(default=False)
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    email = serializers.EmailField()
+    is_superuser = serializers.BooleanField()
+    profile = serializers.JSONField()
 
 
 class GroupSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
@@ -43,11 +44,11 @@ class GroupSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField()
     description = serializers.CharField(allow_blank=True, default='')
-    user = UserSerializer(source='user_set', many=True, required=False)
+    user = UserSerializer(many=True, required=False)
     url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
 
     class Meta:
-        expandable_fields = {'user': (ExpandedUserSerializer, {'many': True, 'source': 'user_set'})}
+        expandable_fields = {'user': (ExpandedUserSerializer, {'many': True})}
 
     def update(self, instance, validated_data):
         if 'user_set' in validated_data:
