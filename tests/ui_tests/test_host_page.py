@@ -311,7 +311,7 @@ class TestHostMainPage:
         """Test open /host/{}/main page from left menu"""
 
         host_config_page = HostConfigPage(app_fs.driver, app_fs.adcm.url, _create_host.host_id).open()
-        host_main_page = host_config_page.open_main_tab()
+        host_main_page = host_config_page.open_main_menu()
         host_main_page.check_all_elements()
 
     def test_check_host_admin_page_open_by_toolbar(self, app_fs, _create_host):
@@ -458,6 +458,10 @@ class TestHostConfigPage:
         host_page.config.check_field_is_required(REQUIRED_FIELD_NAME)
         host_page.config.type_in_config_field(wrong_value, row=regular_row)
         host_page.config.check_field_is_invalid(REGULAR_FIELD_NAME)
+        host_page.config.check_config_warn_icon_on_left_menu()
+        host_page.toolbar.check_warn_button(
+            tab_name=HOST_FQDN, expected_warn_text=[f'{HOST_FQDN} has an issue with its config']
+        )
 
 
 @pytest.mark.usefixtures('login_to_adcm_over_api')

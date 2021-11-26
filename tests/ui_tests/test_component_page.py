@@ -249,6 +249,10 @@ class TestComponentConfigPage:
         config_row = component_config_page.config.get_all_config_rows()[0]
         component_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
         component_config_page.config.check_field_is_invalid(params['not_req_name'])
+        component_config_page.config.check_config_warn_icon_on_left_menu()
+        component_config_page.toolbar.check_warn_button(
+            tab_name=FIRST_COMPONENT_NAME, expected_warn_text=[f'{FIRST_COMPONENT_NAME} has an issue with its config']
+        )
 
 
 @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
