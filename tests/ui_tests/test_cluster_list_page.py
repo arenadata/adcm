@@ -808,17 +808,19 @@ class TestClusterGroupConfigPage:
             'description': 'Test description',
         }
 
-        group_conf_page = ClusterGroupConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        with group_conf_page.group_config.wait_rows_change(expected_rows_amount=1):
-            group_conf_page.group_config.create_group(name=params['name'], description=params['description'])
-        group_row = group_conf_page.group_config.get_all_config_rows()[0]
-        with allure.step("Check created row"):
-            group_info = group_conf_page.group_config.get_config_row_info(group_row)
+        cluster_group_conf_page = ClusterGroupConfigPage(
+            app_fs.driver, app_fs.adcm.url, create_community_cluster.id
+        ).open()
+        with cluster_group_conf_page.group_config.wait_rows_change(expected_rows_amount=1):
+            cluster_group_conf_page.group_config.create_group(name=params['name'], description=params['description'])
+        group_row = cluster_group_conf_page.group_config.get_all_config_rows()[0]
+        with allure.step("Check created row in cluster"):
+            group_info = cluster_group_conf_page.group_config.get_config_row_info(group_row)
             assert group_info == GroupConfigRowInfo(
                 name=params['name'], description=params['description']
-            ), "Row value differs"
-        with group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
-            group_conf_page.group_config.delete_row(group_row)
+            ), "Row value differs in cluster groups"
+        with cluster_group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
+            cluster_group_conf_page.group_config.delete_row(group_row)
 
     def test_check_pagination_on_group_config_component_page(self, app_fs, create_community_cluster):
         """Test pagination on cluster/{}/group_config page"""
