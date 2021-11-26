@@ -63,6 +63,9 @@ from tests.ui_tests.test_cluster_list_page import (
     BUNDLE_COMMUNITY,
 )
 
+BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
+BUNDLE_WITH_REQUIRED_IMPORT = "cluster_required_import"
+
 # pylint: disable=redefined-outer-name,no-self-use,unused-argument
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
@@ -273,6 +276,14 @@ class TestServiceConfigPage:
         config_row = service_config_page.config.get_all_config_rows()[0]
         service_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
         service_config_page.config.check_field_is_invalid(params['not_req_name'])
+        service_config_page.config.check_config_warn_icon_on_left_menu()
+        service_config_page.toolbar.check_warn_button(
+            tab_name="test_service",
+            expected_warn_text=[
+                'Test cluster has an issue with its config',
+                'test_service has an issue with its config',
+            ],
+        )
 
 
 class TestServiceGroupConfigPage:
@@ -417,3 +428,20 @@ class TestServiceImportPage:
             assert service_import_page.is_chxb_in_item_checked(
                 import_item
             ), "Checkbox with import should have been checked"
+
+    def test_warning_on_service_import_page(self, app_fs, sdk_client_fs):
+        """Test import warning !"""
+
+        with allure.step("Create cluster"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_REQUIRED_IMPORT)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            service = cluster.service_add(name=SERVICE_NAME)
+        service_import_page = ServiceImportPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        service_import_page.config.check_import_warn_icon_on_left_menu()
+        service_import_page.toolbar.check_warn_button(
+            tab_name="test cluster",
+            expected_warn_text=[
+                'Test cluster has an issue with required import',
+                'test_service has an issue with required import',
+            ],
+        )

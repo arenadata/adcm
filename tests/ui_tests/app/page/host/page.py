@@ -24,6 +24,7 @@ from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMe
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.status.page import StatusPage
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
+from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.host.locators import HostLocators
 
 
@@ -36,10 +37,9 @@ class HostPageMixin(BasePageObject):
     host_id: int
     cluster_id: int
     header: PageHeader
-    toolbar: CommonToolbar
     footer: PageFooter
     config: CommonConfigMenuObj
-
+    toolbar: CommonToolbar
     __ACTIVE_MENU_CLASS = 'active'
 
     def __init__(self, driver, base_url, host_id: int, cluster_id: Optional[int] = None):
@@ -55,10 +55,10 @@ class HostPageMixin(BasePageObject):
             host_id=host_id,
         )
         self.header = PageHeader(self.driver, self.base_url)
-        self.toolbar = CommonToolbar(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.host_id = host_id
+        self.toolbar = CommonToolbar(self.driver, self.base_url)
 
     @allure.step('Check FQDN is equal to {fqdn}')
     def check_fqdn_equal_to(self, fqdn: str):
