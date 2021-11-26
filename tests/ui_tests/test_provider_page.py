@@ -351,19 +351,8 @@ class TestProviderGroupConfigPage:
     def test_check_pagination_on_group_config_provider_page(self, app_fs, upload_and_create_test_provider):
         """Test pagination on /cluster/{}/service/{}/component/{}/group_config page"""
 
-        params = {
-            'name': 'Test name',
-            'description': 'Test description',
-        }
-
         group_conf_page = ProviderGroupConfigPage(
             app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
         ).open()
-        with allure.step("Create 11 groups"):
-            for i in range(11):
-                with group_conf_page.group_config.wait_rows_change():
-                    group_conf_page.group_config.create_group(
-                        name=f"{params['name']}_{i}", description=params['description']
-                    )
-
+        group_conf_page.group_config.create_few_groups(11)
         group_conf_page.table.check_pagination(second_page_item_amount=1)

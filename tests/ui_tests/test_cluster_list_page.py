@@ -823,19 +823,8 @@ class TestClusterGroupConfigPage:
     def test_check_pagination_on_group_config_component_page(self, app_fs, create_community_cluster):
         """Test pagination on cluster/{}/group_config page"""
 
-        params = {
-            'name': 'Test name',
-            'description': 'Test description',
-        }
-
         group_conf_page = ClusterGroupConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        with allure.step("Create 11 groups"):
-            for i in range(11):
-                with group_conf_page.group_config.wait_rows_change():
-                    group_conf_page.group_config.create_group(
-                        name=f"{params['name']}_{i}", description=params['description']
-                    )
-
+        group_conf_page.group_config.create_few_groups(11)
         group_conf_page.table.check_pagination(second_page_item_amount=1)
 
 
