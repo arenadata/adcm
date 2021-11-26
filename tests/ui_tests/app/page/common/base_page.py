@@ -44,6 +44,7 @@ from tests.ui_tests.app.page.common.header_locators import (
 from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.utils import assert_enough_rows
+from tests.ui_tests.utils import ignore_flaky_errors
 
 
 class BasePageObject:
@@ -90,6 +91,7 @@ class BasePageObject:
         self.default_loc_timeout = default_loc_timeout
         allure.dynamic.label("page_url", path_template)
 
+    @ignore_flaky_errors
     def open(self, timeout: int = None):
         """Open page by its url and path."""
 
@@ -105,16 +107,8 @@ class BasePageObject:
 
         wait_until_step_succeeds(_open_page, period=0.5, timeout=timeout or self.default_page_timeout)
         if self.is_popup_presented_on_page(popup_text='Connection established.', timeout=2):
-            self.close_connection_established_popup()
-        return self
-
-    def close_connection_established_popup(self):
-        self.wait_element_visible(CommonPopupLocators.block_by_text('Connection established.'))
-        try:
             self.find_and_click(CommonPopupLocators.hide_btn, timeout=1)
-        except (StaleElementReferenceException, TimeoutException):
-            # popups changes fast, it could hide already
-            pass
+        return self
 
     @allure.step("Close popup at the bottom of the page")
     def close_info_popup(self):
