@@ -19,6 +19,11 @@ import { IntroComponent } from './intro.component';
 import { PatternComponent } from './pattern.component';
 import { SettingsComponent } from './settings.component';
 import { UsersComponent } from './users/users.component';
+import { AdwpFormElementModule } from '../../../../../adwp_ui/projects/widgets/src/lib/form-element/form-element.module';
+import { RbacGroupModule } from '../components/rbac/group/rbac-group.module';
+import { RbacUserModule } from '../components/rbac/user/rbac-user.module';
+import { RbacRoleModule } from '../components/rbac/role/rbac-role.module';
+
 
 const routes: Routes = [
   {
@@ -52,10 +57,12 @@ const routes: Routes = [
   imports: [RouterModule.forChild(routes)],
   exports: [RouterModule],
 })
-export class AdminRoutingModule {}
+export class AdminRoutingModule {
+}
 
 @NgModule({
-  imports: [CommonModule, AdminRoutingModule, SharedModule],
+  imports: [CommonModule, AdminRoutingModule, SharedModule, AdwpFormElementModule, RbacUserModule, RbacGroupModule, RbacUserModule, RbacRoleModule],
   declarations: [IntroComponent, SettingsComponent, UsersComponent, PatternComponent],
 })
-export class AdminModule {}
+export class AdminModule {
+}

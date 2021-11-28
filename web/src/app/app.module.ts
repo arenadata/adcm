@@ -87,4 +87,5 @@ import { AdwpPortalHostModule } from '../../../../adwp_ui/projects/widgets/src/l
     },
   ],
 })
-export class AppModule {}
+export class AppModule {
+}
