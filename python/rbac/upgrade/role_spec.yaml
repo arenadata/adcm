@@ -361,16 +361,16 @@ roles:
                 - add
                 - change
 
-    - name: View configurations
-      description: The ability to view all configurations
+    - name: Edit configurations
+      description: The ability to edit all configurations
       module_name: rbac.roles
       class_name: ModelRole
       child:
-        - View cluster configurations
-        - View service configurations
-        - View component configurations
-        - View provider configurations
-        - View host configurations
+        - Edit cluster configurations
+        - Edit service configurations
+        - Edit component configurations
+        - Edit provider configurations
+        - Edit host configurations
 
     - name: View cluster imports
       description: The ability to view the cluster import page
@@ -571,6 +571,14 @@ roles:
             - name: upgrade
               codenames:
                 - add
+
+    - name: Upgrade bundle
+      description: Update all type of bundles
+      module_name: rbac.roles
+      class_name: ModelRole
+      child:
+        - Upgrade cluster bundle
+        - Upgrade provider bundle
 
     - name: Remove cluster
       description: The ability to remove cluster
