@@ -17,8 +17,9 @@ from typing import List
 from adwp_base.errors import AdwpEx
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
+from rest_framework import status
 
-from rbac import models, log
+from rbac import models
 from rbac.utils import Empty, set_not_empty_attr
 
 
@@ -34,9 +35,11 @@ def _update_users(group: models.Group, users: [Empty, List[dict]]) -> None:
             continue
         try:
             user = models.User.objects.get(id=user_id)
-        except ObjectDoesNotExist:
-            log.error('Attempt to add non-existing user %s to group %s', user_id, group)
-            continue
+        except ObjectDoesNotExist as exc:
+            msg = f'User with ID {user_id} was not found'
+            raise AdwpEx(
+                'GROUP_UPDATE_ERROR', msg=msg, http_code=status.HTTP_400_BAD_REQUEST
+            ) from exc
         group.user.add(user)
         group_users[user_id] = user
 
