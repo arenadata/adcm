@@ -12,6 +12,7 @@
 
 """ADCM API POST body tests"""
 from copy import deepcopy
+
 # pylint: disable=redefined-outer-name
 from typing import List
 
