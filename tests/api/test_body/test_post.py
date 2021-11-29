@@ -11,26 +11,24 @@
 # limitations under the License.
 
 """ADCM API POST body tests"""
+from copy import deepcopy
 # pylint: disable=redefined-outer-name
 from typing import List
-from copy import deepcopy
 
 import allure
 import pytest
 
+from tests.api.test_body import generate_body_for_checks
+from tests.api.testdata.db_filler import DbFiller
 from tests.api.testdata.generators import (
     get_positive_data_for_post_body_check,
     get_negative_data_for_post_body_check,
     TestData,
     TestDataWithPreparedBody,
 )
-from tests.api.testdata.db_filler import DbFiller
-
+from tests.api.utils.api_objects import ADCMTestApiWrapper
 from tests.api.utils.methods import Methods
-from tests.api.utils.tools import not_set
 from tests.api.utils.types import get_fields
-
-from tests.api.utils.api_objects import ADCMTestApiWrapper, ExpectedBody
 
 pytestmark = [
     allure.suite("POST"),
@@ -78,12 +76,7 @@ def test_post_body_positive(prepare_post_body_data):
     """
     adcm, test_data_list = prepare_post_body_data
     for test_data in test_data_list:
-        # Set expected response fields values
-        test_data.response.body = ExpectedBody()
-        for field in get_fields(test_data.request.endpoint.data_class):
-            test_data.response.body.fields[field.name] = not_set
-            if (expected_field_value := test_data.request.data.get(field.name)) and field.postable:
-                test_data.response.body.fields[field.name] = expected_field_value
+        test_data.response.body = generate_body_for_checks(test_data)
         with allure.step(f'Assert - {test_data.description}'):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)
 

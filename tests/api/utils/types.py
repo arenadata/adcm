@@ -249,6 +249,20 @@ class String(BaseType):
         return random_string(randint(1, self.max_length))
 
 
+class Password(BaseType):
+    """
+    Password field type
+    placeholder - it is expected value for all requests
+    """
+
+    def __init__(self, placeholder="*****", **kwargs):
+        super().__init__(**kwargs)
+        self.placeholder = placeholder
+
+    def generate(self, **kwargs):
+        return random_string()
+
+
 class Text(BaseType):
     """Text field type"""
 
@@ -271,7 +285,7 @@ class Email(BaseType):
         self._sp_vals_negative = [PreparedFieldValue(f_type=Type[String]), PreparedFieldValue(f_type=Type[PositiveInt])]
 
     def generate(self, **kwargs):
-        return f"{random_string(10)}@{random_string(5)}.com"
+        return f"{random_string(10)}@{random_string(5).lower()}.com"
 
 
 class DateTime(BaseType):
@@ -376,6 +390,21 @@ class BackReferenceFK(BaseType):
 class ForeignKeyM2M(ForeignKey):
     """Foreign key many to many field type"""
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._sp_vals_negative = [
+            PreparedFieldValue(
+                [{"id": 100}],
+                f_type=self,
+                error_messages=["Invalid pk \"100\" - object does not exist."],
+            ),
+            PreparedFieldValue(
+                [{"id": 2 ** 63}],
+                f_type=self,
+                error_messages=[f"Invalid pk \"{2 ** 63}\" - object does not exist."],
+            ),
+        ]
+
 
 @attr.dataclass
 class Field:  # pylint: disable=too-few-public-methods
@@ -407,6 +436,11 @@ def get_fields(data_class: type, predicate: Callable = None) -> List[Field]:
     if predicate is None:
         predicate = dummy_predicate
     return [value for (key, value) in data_class.__dict__.items() if isinstance(value, Field) and predicate(value)]
+
+
+def is_password_field(field: Field) -> bool:
+    """Predicate for password fields selection"""
+    return isinstance(field.f_type, Password)
 
 
 def is_fk_field(field: Field) -> bool:

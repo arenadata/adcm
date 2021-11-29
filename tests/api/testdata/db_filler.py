@@ -42,12 +42,13 @@ from tests.api.utils.api_objects import ADCMTestApiWrapper
 class DbFiller:
     """Utils to prepare data in DB before test"""
 
-    __slots__ = ("adcm", "_available_fkeys", "_used_fkeys")
+    __slots__ = ("adcm", "_available_fkeys", "_used_fkeys", "_endpoints_stack")
 
     def __init__(self, adcm: ADCMTestApiWrapper):
         self.adcm = adcm
         self._available_fkeys = defaultdict(set)
         self._used_fkeys = {}
+        self._endpoints_stack = []
 
     @allure.step("Generate valid request data")
     def generate_valid_request_data(self, endpoint: Endpoints, method: Methods) -> dict:
@@ -107,7 +108,7 @@ class DbFiller:
         """
         Get data for endpoint with data preparation
         """
-
+        self._endpoints_stack.append(endpoint)
         for data_class in endpoint.data_class.predefined_dependencies:
             # If this is 'object' endpoint (for example, group-config/{id}/host)
             # we don't force create object and try to get one (first) of current created
@@ -149,6 +150,8 @@ class DbFiller:
             if "{id}" not in fk_endpoint.path:
                 fk_data = get_endpoint_data(adcm=self.adcm, endpoint=fk_endpoint)
             if not fk_data or force:
+                if fk_endpoint in self._endpoints_stack:
+                    return []
                 fk_data = self._get_or_create_data_for_endpoint(endpoint=fk_endpoint, force=force)
             return self._choose_fk_field_value(field=field, fk_data=fk_data)
         return self._generate_field_value(field=field)

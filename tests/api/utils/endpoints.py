@@ -221,7 +221,6 @@ class Endpoints(Enum):
     )
 
     RbacGroup = Endpoint(
-        technical=True,
         path="rbac/group",
         methods=[
             Methods.GET,
