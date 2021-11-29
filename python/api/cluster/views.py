@@ -21,7 +21,7 @@ import cm.bundle
 import cm.job
 import cm.status_api
 from api.api_views import ListView, PageView, PageViewAdd, InterfaceView, DetailViewDelete
-from api.api_views import create, update, check_obj, GenericAPIPermView
+from api.api_views import create, update, check_obj, GenericAPIPermView, GenericAPIPermStatusView
 from cm.errors import AdcmEx
 from cm.models import Cluster, Host, HostComponent, Prototype
 from cm.models import ClusterObject, Upgrade, ClusterBind
@@ -235,8 +235,9 @@ class DoClusterUpgrade(GenericAPIPermView):
         return create(serializer, upgrade_id=int(upgrade_id), obj=cluster)
 
 
-class StatusList(GenericAPIPermView, InterfaceView):
+class StatusList(GenericAPIPermStatusView, InterfaceView):
     queryset = HostComponent.objects.all()
+    model_name = Cluster
     serializer_class = serializers.StatusSerializer
 
     def ui_status(self, cluster, host_component):

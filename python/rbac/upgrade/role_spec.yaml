@@ -854,3 +854,81 @@ roles:
             - name: policy
               codenames:
                 - delete
+
+    - name: View cluster status page
+      description: The ability to view status page of exact cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      parametrized_by:
+        - cluster
+      init_params:
+        init_params:
+          app_name: cm
+          model: Cluster
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - status_view
+
+    - name: View service status page
+      description: The ability to view status page of exact service
+      module_name: rbac.roles
+      class_name: ObjectRole
+      parametrized_by:
+        - service
+      init_params:
+        init_params:
+          app_name: cm
+          model: ClusterObject
+      apps:
+        - label: cm
+          models:
+            - name: clusterobject
+              codenames:
+                - status_view
+
+    - name: View component status page
+      description: The ability to view status page of exact component
+      module_name: rbac.roles
+      class_name: ObjectRole
+      parametrized_by:
+        - component
+      init_params:
+        init_params:
+          app_name: cm
+          model: ServiceComponent
+      apps:
+        - label: cm
+          models:
+            - name: servicecomponent
+              codenames:
+                - status_view
+
+    - name: View host status page
+      description: The ability to view status page of exact host
+      module_name: rbac.roles
+      class_name: ObjectRole
+      parametrized_by:
+        - host
+      init_params:
+        init_params:
+          app_name: cm
+          model: Host
+      apps:
+        - label: cm
+          models:
+            - name: host
+              codenames:
+                - status_view
+
+    - name: View status page
+      description: Ability to view all status pages
+      module_name: rbac.roles
+      class_name: ModelRole
+      child:
+        - View cluster status page
+        - View service status page
+        - View component status page
+        - View host status page

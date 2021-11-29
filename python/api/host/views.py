@@ -17,10 +17,10 @@ from rest_framework.response import Response
 from api.api_views import (
     create,
     check_obj,
-    GenericAPIPermView,
     PageView,
     DetailViewDelete,
     InterfaceView,
+    GenericAPIPermStatusView,
 )
 from cm.api import remove_host_from_cluster, delete_host
 from cm.errors import AdcmEx
@@ -194,8 +194,9 @@ class HostDetail(DetailViewDelete):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class StatusList(GenericAPIPermView, InterfaceView):
+class StatusList(GenericAPIPermStatusView, InterfaceView):
     serializer_class = serializers.StatusSerializer
+    model_name = Host
     queryset = HostComponent.objects.all()
 
     def ui_status(self, host, host_components):
