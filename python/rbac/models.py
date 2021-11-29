@@ -183,6 +183,11 @@ class Policy(models.Model):
         for pp in self.object_perm.all():
             pp.delete()
 
+    def add_object(self, obj):
+        po = PolicyObject(object=obj)
+        po.save()
+        self.object.add(po)
+
     def get_objects(self, param_obj=None):
         if param_obj is not None:
             return [param_obj]

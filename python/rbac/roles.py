@@ -102,7 +102,7 @@ class ParentRole:
     def apply_role_to_obj(self, obj, policy, role, user, group=None):
         for r in role.child.all():
             if obj.prototype.type == r.parametrized_by_type[0]:
-                r.apply(policy, r, user, group, obj)
+                r.apply(policy, user, group, obj)
 
     def apply(self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None):
         for obj in policy.get_objects(param_obj):
@@ -124,4 +124,4 @@ class ParentRole:
 
         if not policy.get_objects():
             for r in role.child.all():
-                r.apply(policy, r, user, group)
+                r.apply(policy, user, group)
