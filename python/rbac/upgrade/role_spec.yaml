@@ -154,6 +154,17 @@ roles:
               codenames:
                 - view
 
+    - name: Compare configurations
+      description: The ability to see the history of all configuration
+      module_name: rbac.roles
+      class_name: ModelRole
+      child:
+        - Compare cluster configurations
+        - Compare service configurations
+        - Compare component configurations
+        - Compare provider configurations
+        - Compare host configurations
+
     - name: View cluster configurations
       description: The ability to view the cluster configuration page
       parametrized_by:
@@ -233,6 +244,17 @@ roles:
             - name: objectconfig
               codenames:
                 - view
+
+    - name: View configurations
+      description: The ability to view all configurations
+      module_name: rbac.roles
+      class_name: ModelRole
+      child:
+        - View cluster configurations
+        - View service configurations
+        - View component configurations
+        - View provider configurations
+        - View host configurations
 
     - name: Edit cluster configurations
       description: The ability to change and add new cluster configuration
@@ -339,6 +361,17 @@ roles:
                 - add
                 - change
 
+    - name: View configurations
+      description: The ability to view all configurations
+      module_name: rbac.roles
+      class_name: ModelRole
+      child:
+        - View cluster configurations
+        - View service configurations
+        - View component configurations
+        - View provider configurations
+        - View host configurations
+
     - name: View cluster imports
       description: The ability to view the cluster import page
       parametrized_by:
@@ -370,6 +403,14 @@ roles:
             - name: clusterbind
               codenames:
                 - view
+
+    - name: View imports
+      description: The ability to view all imports page on cluster and service
+      module_name: rbac.roles
+      class_name: ModelRole
+      child:
+        - View cluster imports
+        - View service imports
 
     - name: Manage cluster imports
       description: The ability to change cluster imports
@@ -404,6 +445,14 @@ roles:
               codenames:
                 - add
                 - change
+
+    - name: Manage imports
+      description: The ability to manage all imports page on cluster and service
+      module_name: rbac.roles
+      class_name: ModelRole
+      child:
+        - Manage cluster imports
+        - Manage service imports
 
     - name: Add service
       description: The ability to add service to cluster
@@ -467,7 +516,7 @@ roles:
           models:
             - name: host
               codenames:
-                - add
+                - change
             - name: cluster
               codenames:
                 - change
@@ -486,7 +535,7 @@ roles:
           models:
             - name: host
               codenames:
-                - delete
+                - change
             - name: cluster
               codenames:
                 - change
@@ -594,6 +643,9 @@ roles:
       apps:
         - label: cm
           models:
+            - name: objectconfig
+              codenames:
+                - view
             - name: configlog
               codenames:
                 - view
@@ -611,6 +663,10 @@ roles:
         - label: cm
           models:
             - name: objectconfig
+              codenames:
+                - add
+                - change
+            - name: configlog
               codenames:
                 - add
                 - change

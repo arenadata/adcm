@@ -25,7 +25,7 @@ role:
     class_name: class_name
     init_params: json
     apps: app_list
-    childs: child_list
+    child: child_list
   required_items:
     - name
     - module_name

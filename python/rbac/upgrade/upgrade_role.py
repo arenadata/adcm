@@ -36,9 +36,9 @@ def upgrade(data: dict):
     for role in data['roles']:
         role_obj = new_roles[role['name']]
         role_obj.child.clear()
-        if 'childs' not in role:
+        if 'child' not in role:
             continue
-        for child in role['childs']:
+        for child in role['child']:
             child_role = new_roles[child]
             role_obj.child.add(child_role)
         role_obj.save()
@@ -55,11 +55,11 @@ def find_role(name: str, roles: list):
     return err('INVALID_ROLE_SPEC', f'child role "{name}" is absent')
 
 
-def check_roles_childs(data: dict):
-    """Check if role childs name are exist in specification file"""
+def check_roles_child(data: dict):
+    """Check if role child name are exist in specification file"""
     for role in data['roles']:
-        if 'childs' in role:
-            for child in role['childs']:
+        if 'child' in role:
+            for child in role['child']:
                 find_role(child, data['roles'])
 
 
@@ -148,7 +148,7 @@ def init_roles():
     manage.py upgarderole
     """
     role_data = get_role_spec(api_settings.ROLE_SPEC, api_settings.ROLE_SCHEMA)
-    check_roles_childs(role_data)
+    check_roles_child(role_data)
 
     rm = RoleMigration.objects.last()
     if rm is None:
