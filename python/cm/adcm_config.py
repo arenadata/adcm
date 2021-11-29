@@ -204,6 +204,7 @@ def switch_config(
     if not obj.config:
         spec, _, conf, attr = get_prototype_config(new_proto)
         obj_conf = init_object_config(spec, conf, attr)
+        process_file_type(obj, spec, conf)
         if obj_conf:
             obj.config = obj_conf
             obj.save()
