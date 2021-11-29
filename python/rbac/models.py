@@ -105,11 +105,11 @@ class Role(models.Model):
             self.__obj__ = self.get_role_obj()
         return self.__obj__.filter()
 
-    def apply(self, policy: 'Policy', user: User, group: Group = None):
+    def apply(self, policy: 'Policy', user: User, group: Group = None, obj=None):
         """apply policy to user and/or group"""
         if self.__obj__ is None:
             self.__obj__ = self.get_role_obj()
-        return self.__obj__.apply(policy, self, user, group)
+        return self.__obj__.apply(policy, self, user, group, obj)
 
     def get_permissions(self, role: 'Role' = None):
         """Recursively get permissions of role and all her childs"""
@@ -183,7 +183,9 @@ class Policy(models.Model):
         for pp in self.object_perm.all():
             pp.delete()
 
-    def get_objects(self):
+    def get_objects(self, param_obj=None):
+        if param_obj is not None:
+            return [param_obj]
         obj_list = []
         for obj in self.object.all():
             obj_list.append(obj.object)

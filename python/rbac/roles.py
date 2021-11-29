@@ -17,14 +17,14 @@ from django.contrib.contenttypes.models import ContentType
 from guardian.models import UserObjectPermission
 from adwp_base.errors import raise_AdwpEx as err
 from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
-from cm.models import Action
+from cm.models import Action, ClusterObject, ServiceComponent, Host
 
 
 class ModelRole:
     def __init__(self, **kwargs):
         pass
 
-    def apply(self, policy: Policy, role: Role, user: User, group: Group = None):
+    def apply(self, policy: Policy, role: Role, user: User, group: Group = None, obj=None):
         for perm in role.get_permissions():
             if group is not None:
                 group.permissions.add(perm)
@@ -51,8 +51,8 @@ class ObjectRole:
             err('ROLE_FILTER_ERROR', str(e))
         return model.objects.filter(**self.params['filter'])
 
-    def apply(self, policy: Policy, role: Role, user: User, group: Group = None):
-        for obj in policy.get_objects():
+    def apply(self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None):
+        for obj in policy.get_objects(param_obj):
             for perm in role.get_permissions():
                 if user is not None:
                     uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
@@ -75,11 +75,11 @@ class ActionRole:
             err('ROLE_FILTER_ERROR', str(e))
         return model.objects.filter(**self.params['filter'])
 
-    def apply(self, policy: Policy, role: Role, user: User, group: Group = None):
+    def apply(self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None):
         action = Action.obj.get(id=self.params['action_id'])
         ct = ContentType.objects.get_for_model(Action)
         run_action, _ = Permission.objects.get_or_create(content_type=ct, codename='run_action')
-        for obj in policy.get_objects():
+        for obj in policy.get_objects(param_obj):
             if user is not None:
                 uop = UserObjectPermission.objects.assign_perm(run_action, user, action)
                 policy.object_perm.add(uop)
@@ -93,3 +93,35 @@ class ActionRole:
                 if group is not None:
                     uop = UserObjectPermission.objects.assign_perm(perm, group, obj)
                     policy.object_perm.add(uop)
+
+
+class ParentRole:
+    def __init__(self, **kwargs):
+        self.params = kwargs
+
+    def apply_role_to_obj(self, obj, policy, role, user, group=None):
+        for r in role.child.all():
+            if obj.prototype.type == r.parametrized_by_type[0]:
+                r.apply(policy, r, user, group, obj)
+
+    def apply(self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None):
+        for obj in policy.get_objects(param_obj):
+            self.apply_role_to_obj(obj, policy, role, user, group)
+
+            if obj.prototype.type == 'cluster':
+                for service in ClusterObject.obj.filter(cluster=obj):
+                    self.apply_role_to_obj(service, policy, role, user, group)
+                    for comp in ServiceComponent.obj.filter(service=service):
+                        self.apply_role_to_obj(comp, policy, role, user, group)
+
+            elif obj.prototype.type == 'service':
+                for comp in ServiceComponent.obj.filter(service=obj):
+                    self.apply_role_to_obj(comp, policy, role, user, group)
+
+            elif obj.prototype.type == 'provider':
+                for host in Host.obj.filter(provider=obj):
+                    self.apply_role_to_obj(host, policy, role, user, group)
+
+        if not policy.get_objects():
+            for r in role.child.all():
+                r.apply(policy, r, user, group)
