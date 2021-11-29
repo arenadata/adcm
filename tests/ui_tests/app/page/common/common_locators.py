@@ -16,6 +16,7 @@ from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.helpers.locator import Locator
 
+
 # pylint: disable=too-few-public-methods
 
 
@@ -44,11 +45,14 @@ class ObjectPageMenuLocators:
     components_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_host_component']", "Tab components")
     service_components_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_component']", "Tab service components")
     config_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_config']", "Tab config")
+    group_config_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_group_config']", "Tab group config")
     status_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_status']", "Tab status")
     import_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_import']", "Tab import")
     intro_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_intro']", "Tab admin intro")
     settings_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_settings']", "Tab admin settings")
     users_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_users']", "Tab admin users")
+
+    warn_icon = Locator(By.CSS_SELECTOR, "mat-icon[color='warn']", 'Icon "!"')
 
 
 class CommonActionLocators:
