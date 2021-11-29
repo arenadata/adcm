@@ -12,7 +12,6 @@
 
 """Methods for generate test data"""
 # pylint: disable=invalid-name
-
 from collections import ChainMap
 from http import HTTPStatus
 from typing import NamedTuple, List, Optional
@@ -86,7 +85,7 @@ def _fill_pytest_param(
         positive_str = "negative"
     if endpoint.spec_link:
         marks.append(allure.link(url=endpoint.spec_link, name="Endpoint spec"))
-    param_id = f"{endpoint.path.replace('/', '_')}_{method.name}_{positive_str}"
+    param_id = f"{endpoint.endpoint_id}_{method.name}_{positive_str}"
     if addition:
         param_id += f"_{addition}"
     return pytest.param(value, marks=marks, id=param_id)

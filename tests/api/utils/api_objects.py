@@ -12,7 +12,7 @@
 
 """Module contains api objects for executing and checking requests"""
 from dataclasses import field, dataclass
-from typing import Optional
+from typing import Optional, Union
 from urllib.parse import urlencode
 
 import allure
@@ -88,14 +88,16 @@ class ADCMTestApiWrapper:
 
         return response
 
-    def get_url_for_endpoint(self, endpoint: Endpoints, method: Methods, object_id: int):
+    def get_url_for_endpoint(self, endpoint: Endpoints, method: Methods, object_id: Union[int, dict]):
         """
-        Return direct link for endpoint object
+        Return direct link for endpoint object.
+        object_id can be dict if it's complex "object" id like `{'id': 4, 'url': 'blahblah.com'}`
         """
         if "{id}" in method.url_template:
             if object_id is None:
                 raise ValueError("Request template requires 'id', but 'request.object_id' is None")
-            url = method.url_template.format(name=endpoint.path, id=object_id)
+            real_id = object_id if isinstance(object_id, int) else object_id['id']
+            url = method.url_template.format(name=endpoint.path, id=real_id)
         else:
             url = method.url_template.format(name=endpoint.path)
 
