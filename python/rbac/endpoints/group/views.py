@@ -42,8 +42,10 @@ class GroupSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
     """Group serializer"""
 
     id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField()
-    description = serializers.CharField(allow_blank=True, default='')
+    name = serializers.RegexField(r'^[^\n]+$', max_length=150)
+    description = serializers.CharField(
+        max_length=255, allow_blank=True, required=False, default=''
+    )
     user = UserSerializer(many=True, required=False)
     url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
 
