@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- type: cluster
-  name: test_cluster
-  version: 1.5
-  edition: community
+"""Component page locators"""
 
-- type: service
-  name: test_service
-  description: Test service
-  version: '1.2'
-  components:
-    first:
+from selenium.webdriver.common.by import By
+
+from tests.ui_tests.app.helpers.locator import Locator
+
+
+class ComponentMainLocators:
+    """Component main page elements locators"""
+
+    text = Locator(By.CSS_SELECTOR, "app-service-component-details .mat-card-content", "Component main page text")

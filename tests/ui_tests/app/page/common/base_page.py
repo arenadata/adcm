@@ -113,9 +113,11 @@ class BasePageObject:
             self.find_and_click(CommonPopupLocators.hide_btn)
             self.wait_element_hide(CommonPopupLocators.block)
 
-    def is_popup_presented_on_page(self) -> bool:
+    def is_popup_presented_on_page(self, popup_text: Optional[str] = None, timeout: int = 5) -> bool:
         """Check if popup is presented on page"""
-        return self.is_element_displayed(CommonPopupLocators.block, timeout=5)
+        if popup_text:
+            return self.is_element_displayed(CommonPopupLocators.block_by_text(popup_text), timeout=timeout)
+        return self.is_element_displayed(CommonPopupLocators.block, timeout=timeout)
 
     def get_info_popup_text(self):
         """Get text from info popup"""
@@ -222,7 +224,7 @@ class BasePageObject:
         except TimeoutException as e:
             raise AssertionError(e.msg)
 
-    def find_and_click(self, locator: Locator, is_js: bool = False) -> None:
+    def find_and_click(self, locator: Locator, is_js: bool = False, timeout: int = None) -> None:
         """Find element on current page and click on it."""
 
         if is_js:
@@ -231,7 +233,7 @@ class BasePageObject:
                 self.driver.execute_script("arguments[0].click()", loc)
         else:
             with allure.step(f'Click on "{locator.name}"'):
-                self.wait_element_clickable(locator)
+                self.wait_element_clickable(locator, timeout=timeout)
                 self.find_element(locator).click()
 
     def wait_element_clickable(self, locator: Locator, timeout: int = None) -> WebElement:

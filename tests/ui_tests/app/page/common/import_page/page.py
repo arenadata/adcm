@@ -18,9 +18,6 @@ from selenium.webdriver.remote.webdriver import WebElement
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.import_page.locators import ImportLocators
 
-SUCCESS_COLOR = '0, 230, 118'
-NEGATIVE_COLOR = '255, 152, 0'
-
 
 @dataclass
 class ImportItemInfo:
