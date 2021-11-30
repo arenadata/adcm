@@ -63,6 +63,8 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
     '/admin/settings': { title: 'Global configuration', crumbs: [{ path: '/admin/settings', name: 'settings' }] },
     '/admin/users': { title: 'User list', crumbs: [{ path: '/admin/users', name: 'users' }] },
     '/admin/groups': { title: 'Group list', crumbs: [{ path: '/admin/groups', name: 'groups' }] },
+    '/admin/roles': { title: 'Role list', crumbs: [{ path: '/admin/roles', name: 'roles' }] },
+    '/admin/policies': { title: 'Policy list', crumbs: [{ path: '/admin/policies', name: 'policies' }] },
   };
 
   constructor(private store: Store<State>, private api: ApiService, private router: Router) {
