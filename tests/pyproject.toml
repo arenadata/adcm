@@ -33,7 +33,8 @@ min-similarity-lines=5
 
 [tool.pylint.message_control]
 disable=[
-    "fixme"
+    "fixme",
+    "use-implicit-booleaness-not-comparison"
 ]
 
 [tool.pylint.basic]
