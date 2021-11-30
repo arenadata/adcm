@@ -110,7 +110,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'adcm.wsgi.application'
-LOGIN_URL = '/admin/login/'
+LOGIN_URL = '/api/v1/auth/login/'
 
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
@@ -186,7 +186,7 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.user.user_details',
     'cm.views.get_token',
 )
-
+SOCIAL_AUTH_USER_MODEL = 'rbac.User'
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/'
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_WHITELISTED_DOMAINS = []
