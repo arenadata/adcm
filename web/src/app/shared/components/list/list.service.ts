@@ -66,6 +66,10 @@ export class ListService implements IListService<Entities> {
         return this.api.getList<Bundle>(`${environment.apiRoot}stack/bundle/`, p);
       case 'servicecomponent':
         return this.api.getList(`${environment.apiRoot}cluster/${(this.detail.Current as Service).cluster_id}/service/${this.detail.Current.id}/component`, p);
+      case 'rbac_user':
+        return this.api.getList(`${environment.apiRoot}rbac/user/`, p);
+      case 'rbac_group':
+        return this.api.getList(`${environment.apiRoot}rbac/group/`, p);
       default:
         return this.api.root.pipe(switchMap((root) => this.api.getList<Entities>(root[this.current.typeName], p)));
     }

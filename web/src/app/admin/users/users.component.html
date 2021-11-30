@@ -59,40 +59,15 @@
   </mat-card-content>
 </mat-card>
 
-<mat-table #table [dataSource]="users" style="margin-right: 300px;">
-
-  <mat-header-row *matHeaderRowDef="['username', 'password', 'action']"></mat-header-row>
-  <mat-row *matRowDef="let row; columns: ['username', 'password', 'action'];"></mat-row>
-
-  <ng-container matColumnDef="username">
-    <mat-header-cell *matHeaderCellDef> UserName </mat-header-cell>
-    <mat-cell *matCellDef="let row">
-      <div class="overflow">{{ row.username }}</div>
-    </mat-cell>
-  </ng-container>
-
-  <ng-container matColumnDef="password">
-    <mat-header-cell *matHeaderCellDef> Password </mat-header-cell>
-    <mat-cell *matCellDef="let row" style="flex-basis: 260px;">
-      <mat-form-field>
-        <input type="password" matInput placeholder="Password" [(ngModel)]="row.password" required #pass="ngModel">
-      </mat-form-field>
-      &nbsp;
-      <mat-form-field>
-        <input type="password" matInput placeholder="Confirm Password" [(ngModel)]="row.confirm" required #cpass="ngModel">
-      </mat-form-field>
-      <button mat-icon-button (click)="changePassword(row)" [disabled]="!validRow(pass, cpass)">
-        <mat-icon>done</mat-icon>
-      </button>
-    </mat-cell>
-  </ng-container>
-
-  <ng-container matColumnDef="action">
-    <mat-header-cell *matHeaderCellDef></mat-header-cell>
-    <mat-cell *matCellDef="let row" style="text-align: right; width: 100px;">
-      <button *ngIf="row.username !== currentUserName" mat-icon-button (click)="clearUser(row)" [disabled]="row.username=== 'status'">
-        <mat-icon>delete</mat-icon>
-      </button>
-    </mat-cell>
-  </ng-container>
-</mat-table>
+<adwp-list
+  [columns]="listColumns"
+  [dataSource]="data$ | async"
+  [paging]="paging | async"
+  [sort]="sorting | async"
+  [defaultSort]="defaultSort"
+  [currentId]="current ? current.id : undefined"
+  (clickRow)="clickRow($event)"
+  (auxclickRow)="auxclickRow($event)"
+  (changePaging)="onChangePaging($event)"
+  (changeSort)="onChangeSort($event)"
+></adwp-list>

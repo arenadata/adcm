@@ -19,6 +19,7 @@ import { IntroComponent } from './intro.component';
 import { PatternComponent } from './pattern.component';
 import { SettingsComponent } from './settings.component';
 import { UsersComponent } from './users/users.component';
+import { GroupsComponent } from './groups/groups.component';
 
 const routes: Routes = [
   {
@@ -44,6 +45,10 @@ const routes: Routes = [
         path: 'users',
         component: UsersComponent,
       },
+      {
+        path: 'groups',
+        component: GroupsComponent,
+      }
     ],
   },
 ];
@@ -55,7 +60,17 @@ const routes: Routes = [
 export class AdminRoutingModule {}
 
 @NgModule({
-  imports: [CommonModule, AdminRoutingModule, SharedModule],
-  declarations: [IntroComponent, SettingsComponent, UsersComponent, PatternComponent],
+  imports: [
+    CommonModule,
+    AdminRoutingModule,
+    SharedModule,
+  ],
+  declarations: [
+    IntroComponent,
+    SettingsComponent,
+    UsersComponent,
+    PatternComponent,
+    GroupsComponent,
+  ],
 })
 export class AdminModule {}

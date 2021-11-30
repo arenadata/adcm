@@ -11,12 +11,13 @@
 // limitations under the License.
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
-import { ApiService } from '@app/core/api';
-import { getProfileSelector, settingsSave, State } from '@app/core/store';
-import { BaseDirective } from '@app/shared/directives';
-import { IConfig } from '@app/shared/configuration/types';
 import { select, Store } from '@ngrx/store';
 import { exhaustMap, filter } from 'rxjs/operators';
+import { BaseDirective } from '@adwp-ui/widgets';
+
+import { ApiService } from '@app/core/api';
+import { getProfileSelector, settingsSave, State } from '@app/core/store';
+import { IConfig } from '@app/shared/configuration/types';
 
 @Component({
   selector: 'app-pattern',
@@ -52,12 +53,16 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
     { url: 'intro', title: 'Intro' },
     { url: 'settings', title: 'Settings' },
     { url: 'users', title: 'Users' },
+    { url: 'groups', title: 'Groups' },
+    { url: 'roles', title: 'Roles' },
+    { url: 'policies', title: 'Policies' },
   ];
   data = {
     '/admin': { title: 'Hi there!', crumbs: [{ path: '/admin/', name: 'intro' }] },
     '/admin/intro': { title: 'Hi there!', crumbs: [{ path: '/admin/', name: 'intro' }] },
     '/admin/settings': { title: 'Global configuration', crumbs: [{ path: '/admin/settings', name: 'settings' }] },
-    '/admin/users': { title: 'User management', crumbs: [{ path: '/admin/users', name: 'users' }] },
+    '/admin/users': { title: 'User list', crumbs: [{ path: '/admin/users', name: 'users' }] },
+    '/admin/groups': { title: 'Group list', crumbs: [{ path: '/admin/groups', name: 'groups' }] },
   };
 
   constructor(private store: Store<State>, private api: ApiService, private router: Router) {
@@ -95,7 +100,8 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
   }
 
   getContext(url: string) {
-    const a = this.data[url];
+    const uri = url.split(';')[0];
+    const a = this.data[uri];
     this.title = a.title;
     this.crumbs = a.crumbs;
   }
