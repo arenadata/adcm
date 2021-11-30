@@ -18,9 +18,10 @@ from adwp_base.errors import AdwpEx
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
+from rest_framework import status
 from rest_framework.authtoken.models import Token
 
-from rbac import models, log
+from rbac import models
 from rbac.utils import Empty, set_not_empty_attr
 
 PW_MASK = '*****'
@@ -53,9 +54,11 @@ def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
             continue
         try:
             group = models.Group.objects.get(id=group_id)
-        except ObjectDoesNotExist:
-            log.error('Attempt to add user %s to non-existing group %s', user, group_id)
-            continue
+        except ObjectDoesNotExist as exc:
+            msg = f'Group with ID {group_id} was not found'
+            raise AdwpEx(
+                'USER_UPDATE_ERROR', msg=msg, http_code=status.HTTP_400_BAD_REQUEST
+            ) from exc
         user.group.add(group)
         user_groups[group_id] = group
 
@@ -88,8 +91,12 @@ def update(
     group: list = Empty,
 ) -> models.User:
     """Full or partial User update"""
-    if (partial and username is not Empty) or (not partial and username != user.username):
+    if (username is not Empty) and (username != user.username):
         raise AdwpEx('USER_UPDATE_ERROR', msg='Username could not be changed')
+
+    args = (username, first_name, last_name, email, is_superuser)
+    if not partial and not all((arg is not Empty for arg in args)):
+        raise AdwpEx('USER_UPDATE_ERROR', msg='Full User update with partial argset is forbidden')
 
     set_not_empty_attr(user, partial, 'first_name', first_name, '')
     set_not_empty_attr(user, partial, 'last_name', last_name, '')

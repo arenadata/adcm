@@ -69,10 +69,14 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
     """User serializer"""
 
     id = serializers.IntegerField(read_only=True)
-    username = serializers.CharField()
-    first_name = serializers.CharField(allow_blank=True, default='')
-    last_name = serializers.CharField(allow_blank=True, default='')
-    email = serializers.EmailField(allow_blank=True, required=False)
+    username = serializers.RegexField(r'^[^\n]+$', max_length=150)
+    first_name = serializers.RegexField(
+        r'^[^\n]*$', max_length=150, allow_blank=True, required=False, default=''
+    )
+    last_name = serializers.RegexField(
+        r'^[^\n]*$', max_length=150, allow_blank=True, required=False, default=''
+    )
+    email = serializers.EmailField(allow_blank=True, required=False, default='')
     is_superuser = serializers.BooleanField(default=False)
     password = PasswordField(trim_whitespace=False)
     url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
