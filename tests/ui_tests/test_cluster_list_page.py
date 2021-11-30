@@ -29,6 +29,7 @@ from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
     ClusterImportPage,
     ClusterConfigPage,
+    ClusterGroupConfigPage,
     ClusterMainPage,
     ClusterHostPage,
     ClusterServicesPage,
@@ -37,8 +38,9 @@ from tests.ui_tests.app.page.cluster.page import (
     ClusterStatusPage,
 )
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
-from tests.ui_tests.app.page.common.import_page.page import (
-    ImportItemInfo,
+from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
+from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
+from tests.ui_tests.app.page.common.status.page import (
     SUCCESS_COLOR,
     NEGATIVE_COLOR,
 )
@@ -52,7 +54,11 @@ from tests.ui_tests.app.page.service.page import (
     ServiceConfigPage,
     ServiceImportPage,
 )
-from tests.ui_tests.utils import wait_and_assert_ui_info, check_host_value, wrap_in_dict
+from tests.ui_tests.utils import (
+    wait_and_assert_ui_info,
+    check_host_value,
+    wrap_in_dict,
+)
 
 BUNDLE_COMMUNITY = "cluster_community"
 BUNDLE_ENTERPRISE = "cluster_enterprise"
@@ -67,6 +73,8 @@ HOST_NAME = 'test-host'
 PROVIDER_WITH_ISSUE_NAME = 'provider_with_issue'
 COMPONENT_NAME = "first"
 BUNDLE_WITH_REQUIRED_FIELDS = "cluster_required_fields"
+BUNDLE_WITH_REQUIRED_IMPORT = "cluster_required_import"
+BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
 
 
 # pylint: disable=redefined-outer-name,no-self-use,unused-argument
@@ -276,12 +284,10 @@ class TestClusterMainPage:
     """Tests for the /cluster/{}/main page"""
 
     @pytest.mark.smoke()
-    def test_check_cluster_main_page_open_by_tab(self, app_fs, create_community_cluster):
+    def test_open_by_tab_cluster_main_page(self, app_fs, create_community_cluster):
         """Test open /cluter/{}/main page from left menu"""
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        cluster_config_page.open_main_tab()
-        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
-        cluster_main_page.wait_page_is_opened()
+        cluster_main_page = cluster_config_page.open_main_tab()
         cluster_main_page.check_all_elements()
 
     def test_check_cluster_admin_page_open_by_toolbar(self, app_fs, create_community_cluster):
@@ -340,9 +346,7 @@ class TestClusterServicePage:
     def test_check_cluster_service_page_open_by_tab(self, app_fs, create_community_cluster):
         """Test open /cluter/{}/service page from left menu"""
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        cluster_config_page.open_services_tab()
-        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
-        cluster_service_page.wait_page_is_opened()
+        cluster_service_page = cluster_config_page.open_services_tab()
         cluster_service_page.check_all_elements()
 
     @pytest.mark.smoke()
@@ -576,9 +580,7 @@ class TestClusterComponentsPage:
     def test_check_cluster_components_page_open_by_tab(self, app_fs, create_community_cluster):
         """Test open /cluter/{}/component page from left menu"""
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        cluster_config_page.open_components_tab()
-        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
-        cluster_components_page.wait_page_is_opened()
+        cluster_components_page = cluster_config_page.open_components_tab()
         cluster_components_page.check_all_elements()
 
     def test_check_cluster_components_page_open_service_page(self, app_fs, create_community_cluster):
@@ -688,6 +690,19 @@ class TestClusterComponentsPage:
         with allure.step("Check that save button is disabled when not all required amount of hosts are linked"):
             assert cluster_components_page.check_that_save_btn_disabled(), "Save button should be disabled"
 
+    def test_warning_on_cluster_components_page(self, app_fs, sdk_client_fs):
+        """Test components warning !"""
+
+        with allure.step("Create cluster and add service"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_REQUIRED_COMPONENT)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            cluster.service_add(name=SERVICE_NAME)
+        cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+        cluster_components_page.config.check_hostcomponents_warn_icon_on_left_menu()
+        cluster_components_page.toolbar.check_warn_button(
+            tab_name=CLUSTER_NAME, expected_warn_text=['Test cluster has an issue with host-component mapping']
+        )
+
 
 class TestClusterConfigPage:
     """Tests for the /cluster/{}/config page"""
@@ -695,9 +710,7 @@ class TestClusterConfigPage:
     def test_cluster_config_page_open_by_tab(self, app_fs, create_community_cluster):
         """Test open /cluster/{}/config from left menu"""
         cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        cluster_main_page.open_config_tab()
-        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, 1)
-        cluster_config_page.wait_page_is_opened()
+        cluster_config_page = cluster_main_page.open_config_tab()
         cluster_config_page.check_all_elements()
 
     def test_filter_config_on_cluster_config_page(self, app_fs, create_community_cluster):
@@ -771,6 +784,50 @@ class TestClusterConfigPage:
         config_row = cluster_config_page.config.get_all_config_rows()[0]
         cluster_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
         cluster_config_page.config.check_field_is_invalid(params['not_req_name'])
+        cluster_config_page.config.check_config_warn_icon_on_left_menu()
+        cluster_config_page.toolbar.check_warn_button(
+            tab_name=CLUSTER_NAME, expected_warn_text=['Test cluster has an issue with its config']
+        )
+
+
+class TestClusterGroupConfigPage:
+    """Tests for the cluster/{}/group_config page"""
+
+    def test_open_by_tab_group_config_cluster_page(self, app_fs, create_community_cluster):
+        """Test open cluster/{}/group_config from left menu"""
+
+        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
+        cluster_groupconf_page = cluster_main_page.open_group_config_tab()
+        cluster_groupconf_page.check_all_elements()
+
+    def test_create_group_config_cluster(self, app_fs, create_community_cluster):
+        """Test create group config on cluster/{}/group_config"""
+
+        params = {
+            'name': 'Test name',
+            'description': 'Test description',
+        }
+
+        cluster_group_conf_page = ClusterGroupConfigPage(
+            app_fs.driver, app_fs.adcm.url, create_community_cluster.id
+        ).open()
+        with cluster_group_conf_page.group_config.wait_rows_change(expected_rows_amount=1):
+            cluster_group_conf_page.group_config.create_group(name=params['name'], description=params['description'])
+        group_row = cluster_group_conf_page.group_config.get_all_config_rows()[0]
+        with allure.step("Check created row in cluster"):
+            group_info = cluster_group_conf_page.group_config.get_config_row_info(group_row)
+            assert group_info == GroupConfigRowInfo(
+                name=params['name'], description=params['description']
+            ), "Row value differs in cluster groups"
+        with cluster_group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
+            cluster_group_conf_page.group_config.delete_row(group_row)
+
+    def test_check_pagination_on_group_config_component_page(self, app_fs, create_community_cluster):
+        """Test pagination on cluster/{}/group_config page"""
+
+        group_conf_page = ClusterGroupConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
+        group_conf_page.group_config.create_few_groups(11)
+        group_conf_page.table.check_pagination(second_page_item_amount=1)
 
 
 class TestClusterStatusPage:
@@ -779,9 +836,7 @@ class TestClusterStatusPage:
     def test_open_by_tab_cluster_status_page(self, app_fs, create_community_cluster):
         """Test open /cluster/{}/config from left menu"""
         cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        cluster_main_page.open_status_tab()
-        cluster_status_page = ClusterStatusPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
-        cluster_status_page.wait_page_is_opened()
+        cluster_status_page = cluster_main_page.open_status_tab()
         cluster_status_page.check_all_elements()
 
     def test_status_on_cluster_status_page(
@@ -847,9 +902,7 @@ class TestClusterImportPage:
     def test_open_by_tab_cluster_import_page(self, app_fs, create_community_cluster):
         """Test open /cluster/{}/config from left menu"""
         cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
-        cluster_main_page.open_import_tab()
-        cluster_status_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id)
-        cluster_status_page.wait_page_is_opened()
+        cluster_status_page = cluster_main_page.open_import_tab()
         cluster_status_page.check_all_elements()
 
     def test_cluster_import_from_cluster_import_page(self, app_fs, create_import_cluster_with_service):
@@ -868,3 +921,15 @@ class TestClusterImportPage:
         with allure.step("Check that import is saved"):
             assert import_page.get_info_popup_text() == params["message"], "No message about success"
             assert import_page.is_chxb_in_item_checked(import_item), "Checkbox with import should have been checked"
+
+    def test_warning_on_cluster_import_page(self, app_fs, sdk_client_fs):
+        """Test import warning !"""
+
+        with allure.step("Create cluster"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_REQUIRED_IMPORT)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+        import_page = ClusterImportPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+        import_page.config.check_import_warn_icon_on_left_menu()
+        import_page.toolbar.check_warn_button(
+            tab_name=CLUSTER_NAME, expected_warn_text=['Test cluster has an issue with required import']
+        )

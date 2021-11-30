@@ -38,6 +38,17 @@ UI_OPTIONS_PAIRS_GROUPS = [
 ]
 
 
+@pytest.fixture()
+def adcm_fs(adcm_ms):
+    """
+    ADCM instance with a module scope
+    This fixture override a base adcm_fs.
+    It allows do not duplicate all depended fixtures like `app_fs` with browser instance
+    Note that all depended fixtures will still be called on each function
+    """
+    return adcm_ms
+
+
 def _generate_fields():
     fields = []
     for read_only in True, False:
@@ -238,7 +249,6 @@ def generate_group_configs() -> list:
             }
             cluster_config['subs'] = [sub_config]
             config_dict['config'] = [cluster_config]
-            config_dict['name'] = random_string()
             config = ListWithoutRepr([config_dict])
             expected_result = generate_group_expected_result(data)
             group_configs.append((config, expected_result))
@@ -252,7 +262,7 @@ def generate_configs() -> list:
     configs = []
     for _type in TYPES:
         for data in config_data:
-            config_dict = {"type": "cluster", "name": random_string(), "version": "1", "config": []}
+            config_dict = {"type": "cluster", "version": "1", "config": []}
             unsupported_options = all([data['read_only'], data['required']])
             if not data['default'] and unsupported_options:
                 continue
@@ -288,6 +298,7 @@ def _prepare_config(config):
     d_name = f"{temdir}/configs/fields/{config[0][0]['config'][0]['type']}/{config_folder_name}"
 
     os.makedirs(d_name)
+    config[0][0]["name"] = random_string()
     if config[0][0]['config'][0]['name'] == 'file':
         with open(f"{d_name}/file.txt", 'w', encoding='utf_8') as file:
             file.write("test")
@@ -322,6 +333,7 @@ def _prepare_group_config(config):
     temdir = tempfile.mkdtemp()
     d_name = f"{temdir}/configs/groups/{config_folder_name}"
     os.makedirs(d_name)
+    config[0]["name"] = random_string()
     if config[0]['config'][0]['subs'][0]['name'] == 'file':
         with open(f"{d_name}/file.txt", 'w', encoding='utf_8') as file:
             file.write("test")
@@ -344,10 +356,7 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs):
     5. Check save button status
     6. Check field configuration (depends on expected result dict and bundle configuration"""
 
-    data = _prepare_config(config_dict)
-    config = data[0]
-    expected = data[1]
-    path = data[2]
+    config, expected, path = _prepare_config(config_dict)
     allure.attach.file(
         "/".join([path, 'config.yaml']),
         attachment_type=allure.attachment_type.YAML,
@@ -355,12 +364,16 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs):
     )
     field_type = config['config'][0]['type']
 
-    _, ui_config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
+    cluster, ui_config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
 
     fields = ui_config.get_app_fields()
     with allure.step('Check save button status'):
         save_err_mess = f"Correct status for save button {[expected['save']]}"
-        assert expected['save'] == ui_config.save_button_status(), save_err_mess
+        button_state = ui_config.save_button_status()
+        assert expected['save'] == button_state, save_err_mess
+        if expected['save']:
+            ui_config.save_configuration()
+            ui_config.assert_no_popups_displayed()
     with allure.step('Check field configuration'):
         if expected['visible']:
             if expected['visible_advanced']:
@@ -372,7 +385,7 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs):
             for field in fields:
                 ui_config.assert_field_is_editable(field, expected['editable'])
             if expected['content']:
-                ui_config.assert_field_content_equal(field_type, fields[0], config['config'][0]['default'])
+                ui_config.assert_field_content_equal(cluster, field_type, fields[0], config['config'][0]['default'])
             if expected['alerts']:
                 ui_config.assert_alerts_presented(field_type)
         else:
@@ -406,13 +419,16 @@ def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, a
 
     field_type = config['config'][0]['subs'][0]['type']
 
-    _, ui_config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
+    cluster, ui_config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
 
     groups = ui_config.get_group_elements()
     fields = ui_config.get_app_fields()
     with allure.step('Check save button status'):
         save_err_mess = f"Correct status for save button {[expected['save']]}"
         assert expected['save'] == ui_config.save_button_status(), save_err_mess
+        if expected['save']:
+            ui_config.save_configuration()
+            ui_config.assert_no_popups_displayed()
     with allure.step('Check configuration'):
         if expected['group_visible'] and not expected['field_visible']:
             if expected['group_visible_advanced']:
@@ -441,7 +457,7 @@ def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, a
                 ui_config.assert_field_is_editable(field, expected['editable'])
             if expected['content']:
                 default_value = config['config'][0]['subs'][0]['default']
-                ui_config.assert_field_content_equal(field_type, fields[0], default_value)
+                ui_config.assert_field_content_equal(cluster, field_type, fields[0], default_value)
             if expected['alerts']:
                 ui_config.assert_alerts_presented(field_type)
             if "activatable" in config['config'][0].keys():
