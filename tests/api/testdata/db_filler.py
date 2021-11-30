@@ -54,7 +54,6 @@ class DbFiller:
         """
         Return valid request body and url params for endpoint and method combination
         """
-        # POST
         if method == Methods.POST:
             return {
                 "data": self._get_or_create_data_for_endpoint(
@@ -64,7 +63,7 @@ class DbFiller:
                 )[0],
                 "url_params": {},
             }
-        # LIST
+
         if method == Methods.LIST:
             self._get_or_create_multiple_data_for_endpoint(endpoint=endpoint, count=3)
             return {"data": None, "url_params": {}}
@@ -74,10 +73,10 @@ class DbFiller:
             endpoint=endpoint,
             object_id=self._get_or_create_data_for_endpoint(endpoint=endpoint)[0]['id'],
         )
-        # GET, DELETE
+
         if method in (Methods.GET, Methods.DELETE):
             return {"data": None, "url_params": {}, "object_id": full_item["id"]}
-        # PUT, PATCH
+
         if method in (Methods.PUT, Methods.PATCH):
             changed_fields = {}
             for field in get_fields(endpoint.data_class, predicate=lambda x: x.changeable):

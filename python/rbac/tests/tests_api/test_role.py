@@ -10,20 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+from rest_framework import status
+from rest_framework.reverse import reverse
 
-from django.urls import path, include
-from . import views
 
-
-urlpatterns = [
-    path('', views.ProfileList.as_view(), name='profile-list'),
-    path(
-        '<name:username>/',
-        include(
-            [
-                path('', views.ProfileDetail.as_view(), name='profile-details'),
-                path('password/', views.UserPasswd.as_view(), name='profile-passwd'),
-            ]
-        ),
-    ),
-]
+@pytest.mark.django_db
+def test_create_role(admin_api_client):
+    url = reverse('rbac:role-list')
+    response = admin_api_client.post(url, data={})
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.data['name'][0] == 'This field is required.'
+    assert response.data['parametrized_by_type'][0] == 'This field is required.'

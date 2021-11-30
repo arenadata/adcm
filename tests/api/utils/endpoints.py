@@ -30,6 +30,8 @@ from tests.api.utils.data_classes import (
     ObjectConfigFields,
     ConfigLogFields,
     GroupConfigHostCandidatesFields,
+    RbacUserFields,
+    RbacGroupFields,
 )
 from tests.api.utils.methods import Methods
 from tests.api.utils.types import get_fields
@@ -202,4 +204,33 @@ class Endpoints(Enum):
         ],
         data_class=GroupConfigHostCandidatesFields,
         spec_link="https://spec.adsw.io/adcm_core/objects.html",
+    )
+
+    RbacUser = Endpoint(
+        path="rbac/user",
+        methods=[
+            Methods.GET,
+            Methods.LIST,
+            Methods.POST,
+            Methods.PUT,
+            Methods.PATCH,
+            Methods.DELETE,
+        ],
+        data_class=RbacUserFields,
+        spec_link="",
+    )
+
+    RbacGroup = Endpoint(
+        technical=True,
+        path="rbac/group",
+        methods=[
+            Methods.GET,
+            Methods.LIST,
+            Methods.POST,
+            Methods.PUT,
+            Methods.PATCH,
+            Methods.DELETE,
+        ],
+        data_class=RbacGroupFields,
+        spec_link="",
     )

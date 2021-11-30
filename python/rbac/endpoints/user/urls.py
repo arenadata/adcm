@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""User URLs"""
 
-from django.urls import path
-from . import views
+from rest_framework.routers import SimpleRouter
 
+from .views import UserViewSet
 
-urlpatterns = [
-    path('', views.RoleList.as_view(), name='role-list'),
-    path('<int:role_id>/', views.RoleDetail.as_view(), name='role-details'),
-]
+router = SimpleRouter()
+router.register('', UserViewSet, basename='user')
+urlpatterns = router.urls

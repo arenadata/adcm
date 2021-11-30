@@ -50,9 +50,13 @@ def body_should_be(response: Response, expected_body: ExpectedBody):
     }
     with allure.step("Body should contains fields"):
         try:
-            assert set(actual_body.keys()) == set(expected_body.fields.keys()), (
+            actual_set = set(actual_body.keys())
+            expected_set = set(expected_body.fields.keys())
+            assert actual_set == expected_set, (
                 f"Response body fields assertion failed! "
-                f"Body fields are not as expected: {', '.join(expected_body.fields)}"
+                f"Body fields are not as expected.\n"
+                f"Actual is {', '.join(actual_set)}\n"
+                f"But expected {','.join(expected_set)}"
             )
         except AssertionError as error:
             raise BodyAssertionError(error) from error
