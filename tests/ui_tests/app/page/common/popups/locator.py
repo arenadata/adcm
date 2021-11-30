@@ -24,6 +24,7 @@ class CommonPopupLocators:
     """ADCM popup locators"""
 
     block = Locator(By.CSS_SELECTOR, "simple-snack-bar", "Popup block")
+    block_by_text = TemplateLocator(By.XPATH, "//simple-snack-bar//span[text()='{}']", "Popup block with text {}")
     text = Locator(By.CSS_SELECTOR, "simple-snack-bar>span", "Popup info message")
     hide_btn = Locator(By.XPATH, "//button[./span[text()='Hide']]", "Hide pop up button")
 

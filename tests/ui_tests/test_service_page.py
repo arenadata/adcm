@@ -35,8 +35,9 @@ from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
     ClusterServicesPage,
 )
-from tests.ui_tests.app.page.common.import_page.page import (
-    ImportItemInfo,
+from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
+from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
+from tests.ui_tests.app.page.common.status.page import (
     SUCCESS_COLOR,
     NEGATIVE_COLOR,
 )
@@ -48,6 +49,7 @@ from tests.ui_tests.app.page.service.page import (
 from tests.ui_tests.app.page.service.page import (
     ServiceMainPage,
     ServiceConfigPage,
+    ServiceGroupConfigPage,
     ServiceImportPage,
 )
 from tests.ui_tests.test_cluster_list_page import (
@@ -60,6 +62,9 @@ from tests.ui_tests.test_cluster_list_page import (
     BUNDLE_IMPORT,
     BUNDLE_COMMUNITY,
 )
+
+BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
+BUNDLE_WITH_REQUIRED_IMPORT = "cluster_required_import"
 
 # pylint: disable=redefined-outer-name,no-self-use,unused-argument
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
@@ -109,7 +114,6 @@ class TestServiceMainPage:
         cluster, service = create_cluster_with_service
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_main_page = service_config_page.open_main_tab()
-        service_main_page.wait_page_is_opened()
         service_main_page.check_all_elements()
 
     def test_open_admin_page_by_toolbar_in_service(self, app_fs, create_cluster_with_service):
@@ -154,7 +158,6 @@ class TestServiceComponentPage:
         cluster, service = create_cluster_with_service
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_component_page = service_main_page.open_components_tab()
-        service_component_page.wait_page_is_opened()
         service_component_page.check_all_elements()
 
     @params.including_https
@@ -188,7 +191,6 @@ class TestServiceConfigPage:
         cluster, service = create_cluster_with_service
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_config_page = service_main_page.open_config_tab()
-        service_config_page.wait_page_is_opened()
         service_config_page.check_all_elements()
 
     def test_filter_config_on_service_config_page(self, app_fs, create_cluster_with_service):
@@ -274,6 +276,56 @@ class TestServiceConfigPage:
         config_row = service_config_page.config.get_all_config_rows()[0]
         service_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
         service_config_page.config.check_field_is_invalid(params['not_req_name'])
+        service_config_page.config.check_config_warn_icon_on_left_menu()
+        service_config_page.toolbar.check_warn_button(
+            tab_name="test_service",
+            expected_warn_text=[
+                'Test cluster has an issue with its config',
+                'test_service has an issue with its config',
+            ],
+        )
+
+
+class TestServiceGroupConfigPage:
+    """Tests for the /cluster/{}/service/{}/group_config page"""
+
+    def test_open_by_tab_group_config_service_page(self, app_fs, create_cluster_with_service):
+        """Test open /cluster/{}/service/{}/group_config from left menu"""
+
+        cluster, service = create_cluster_with_service
+        service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        group_conf_page = service_main_page.open_group_config_tab()
+        group_conf_page.check_all_elements()
+
+    def test_create_group_config_service(self, app_fs, create_cluster_with_service):
+        """Test create group config on /cluster/{}/service/{}/group_config"""
+
+        params = {
+            'name': 'Test name',
+            'description': 'Test description',
+        }
+
+        cluster, service = create_cluster_with_service
+
+        service_group_conf_page = ServiceGroupConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        with service_group_conf_page.group_config.wait_rows_change(expected_rows_amount=1):
+            service_group_conf_page.group_config.create_group(name=params['name'], description=params['description'])
+        group_row = service_group_conf_page.group_config.get_all_config_rows()[0]
+        with allure.step("Check created row in service"):
+            group_info = service_group_conf_page.group_config.get_config_row_info(group_row)
+            assert group_info == GroupConfigRowInfo(
+                name=params['name'], description=params['description']
+            ), "Row value differs in service groups"
+        with service_group_conf_page.group_config.wait_rows_change(expected_rows_amount=0):
+            service_group_conf_page.group_config.delete_row(group_row)
+
+    def test_check_pagination_on_group_config_service_page(self, app_fs, create_cluster_with_service):
+        """Test pagination on /cluster/{}/service/{}/group_config page"""
+
+        cluster, service = create_cluster_with_service
+        group_conf_page = ServiceGroupConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        group_conf_page.group_config.create_few_groups(11)
+        group_conf_page.table.check_pagination(second_page_item_amount=1)
 
 
 class TestServiceStatusPage:
@@ -285,7 +337,6 @@ class TestServiceStatusPage:
         cluster, service = create_cluster_with_service
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_status_page = service_main_page.open_status_tab()
-        service_status_page.wait_page_is_opened()
         service_status_page.check_all_elements()
 
     def test_status_on_service_status_page(
@@ -334,7 +385,6 @@ class TestServiceImportPage:
         cluster, service = create_cluster_with_service
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_import_page = service_main_page.open_import_tab()
-        service_import_page.wait_page_is_opened()
         service_import_page.check_all_elements()
 
     def test_import_from_service_import_page(self, app_fs: ADCMTest, sdk_client_fs: ADCMClient):
@@ -367,3 +417,20 @@ class TestServiceImportPage:
             assert service_import_page.is_chxb_in_item_checked(
                 import_item
             ), "Checkbox with import should have been checked"
+
+    def test_warning_on_service_import_page(self, app_fs, sdk_client_fs):
+        """Test import warning !"""
+
+        with allure.step("Create cluster"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_REQUIRED_IMPORT)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            service = cluster.service_add(name=SERVICE_NAME)
+        service_import_page = ServiceImportPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        service_import_page.config.check_import_warn_icon_on_left_menu()
+        service_import_page.toolbar.check_warn_button(
+            tab_name="test cluster",
+            expected_warn_text=[
+                'Test cluster has an issue with required import',
+                'test_service has an issue with required import',
+            ],
+        )

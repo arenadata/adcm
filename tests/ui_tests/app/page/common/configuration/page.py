@@ -23,6 +23,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
+from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
+from tests.ui_tests.app.page.common.configuration.fields import ConfigFieldsManipulator
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 
 
@@ -40,27 +42,30 @@ class CommonConfigMenuObj(BasePageObject):
     def __init__(self, driver, base_url, config_class_locators=CommonConfigMenu):
         super().__init__(driver, base_url)
         self.locators = config_class_locators
+        self.fields = ConfigFieldsManipulator(self.driver, self.base_url)
 
-    def get_all_config_rows(self) -> List[WebElement]:
+    def get_all_config_rows(self, *, displayed_only: bool = True) -> List[WebElement]:
         """Return all config field rows"""
         try:
-            return [r for r in self.find_elements(CommonConfigMenu.config_row, timeout=5) if r.is_displayed()]
+            if displayed_only:
+                return [r for r in self.find_elements(CommonConfigMenu.config_row, timeout=5) if r.is_displayed()]
+            return self.find_elements(CommonConfigMenu.config_row, timeout=5)
         except TimeoutException:
             return []
 
     def get_config_row(self, display_name: str) -> WebElement:
         """Return config field row with provided display name"""
-        row_name = f'{display_name}:'
+        row_name = f'{display_name}:' if not display_name.endswith(':') else display_name
         for row in self.get_all_config_rows():
             if self.find_child(row, CommonConfigMenu.ConfigRow.name).text == row_name:
                 return row
         raise AssertionError(f'Configuration field with name {display_name} was not found')
 
     @allure.step('Saving configuration')
-    def save_config(self):
+    def save_config(self, load_timeout: int = 2):
         """Save current configuration"""
         self.find_and_click(self.locators.save_btn)
-        self.wait_element_hide(self.locators.loading_text, timeout=2)
+        self.wait_element_hide(self.locators.loading_text, timeout=load_timeout)
 
     @allure.step('Setting configuration description to {description}')
     def set_description(self, description: str) -> str:
@@ -86,6 +91,11 @@ class CommonConfigMenuObj(BasePageObject):
             self.find_and_click(self.locators.config_version_option(compare_with))
             # to hide select panel so it won't block other actions
             self.find_element(self.locators.compare_to_select).send_keys(Keys.ESCAPE)
+
+    def click_on_advanced(self):
+        """Click on advanced button and wait rows changed"""
+        with self.wait_rows_change():
+            self.find_and_click(CommonConfigMenu.advanced_label)
 
     def get_input_value(
         self,
@@ -175,7 +185,7 @@ class CommonConfigMenuObj(BasePageObject):
             group.click()
             assert (
                 _is_group_expanded(self.find_element(self.locators.group_btn(title))) != is_expanded
-            ), f"Group should be{'' if _is_group_expanded else ' not '}expanded"
+            ), f"Group should be{'' if is_expanded else ' not '}expanded"
 
         wait_until_step_succeeds(_click_group, period=1, timeout=10)
 
@@ -274,3 +284,38 @@ class CommonConfigMenuObj(BasePageObject):
             assert self.get_history_in_row(row)[0] == value, "History row should contain old value"
 
         wait_until_step_succeeds(_assert_value, timeout=4, period=0.5)
+
+    @allure.step('Scroll to group "{display_name}"')
+    def scroll_to_group(self, display_name: str) -> WebElement:
+        """Scroll to parameter group by display name"""
+        return self.scroll_to(CommonConfigMenu.group_btn(display_name))
+
+    @allure.step('Scroll to field "{display_name}"')
+    def scroll_to_field(self, display_name: str) -> WebElement:
+        """Scroll to parameter field by display name"""
+        row = self.get_config_row(display_name)
+        return self.scroll_to(element=row)
+
+    @allure.step("Check warn icon on the left menu Configuration element")
+    def check_config_warn_icon_on_left_menu(self):
+        assert self.is_child_displayed(
+            self.find_element(ObjectPageMenuLocators.config_tab), ObjectPageMenuLocators.warn_icon
+        ), "No warn icon near Configuration left menu element"
+
+    @allure.step("Check warn icon on the left menu Import element")
+    def check_import_warn_icon_on_left_menu(self):
+        assert self.is_child_displayed(
+            self.find_element(ObjectPageMenuLocators.import_tab), ObjectPageMenuLocators.warn_icon
+        ), "No warn icon near Import left menu element"
+
+    @allure.step("Check warn icon on the left menu Host-Components element")
+    def check_hostcomponents_warn_icon_on_left_menu(self):
+        assert self.is_child_displayed(
+            self.find_element(ObjectPageMenuLocators.components_tab), ObjectPageMenuLocators.warn_icon
+        ), "No warn icon near Host-Components left menu element"
+
+    @allure.step("Check warn icon on the left menu Host-Components element")
+    def check_service_components_warn_icon_on_left_menu(self):
+        assert self.is_child_displayed(
+            self.find_element(ObjectPageMenuLocators.service_components_tab), ObjectPageMenuLocators.warn_icon
+        ), "No warn icon near Host-Components left menu element"

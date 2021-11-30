@@ -12,134 +12,98 @@
 
 """User view sets"""
 
-from django.contrib.auth.models import User, Group
-from rest_framework import serializers, status
-from rest_framework.generics import GenericAPIView
-from rest_framework.response import Response
-from rest_framework.mixins import (
-    ListModelMixin,
-    CreateModelMixin,
-    RetrieveModelMixin,
-    DestroyModelMixin,
-    UpdateModelMixin,
-)
+from rest_flex_fields.serializers import FlexFieldsSerializerMixin
+from rest_framework import serializers
 
-from rbac.models import Role
-from rbac.viewsets import ModelPermViewSet, GenericPermViewSet, DjangoModelPerm
-from .serializers import UserSerializer, UserGroupSerializer, UserRoleSerializer
+from rbac import models
+from rbac.services import user as user_services
+from rbac.viewsets import ModelPermViewSet, DjangoModelPerm
 
 
-class SelfChangePasswordPerm(DjangoModelPerm):
-    """
-    User self change password permissions class.
-    Use codename self_change_password to check permissions
-    """
+class UserPermissions(DjangoModelPerm):
+    """Special permission class for User to allow user change own properties"""
 
-    def __init__(self, *args, **kwargs):
-        """Replace PUT permissions from "change" to "self_change_password"""
-        super().__init__(*args, **kwargs)
-        self.perms_map['PUT'] = ['%(app_label)s.self_change_password_%(model_name)s']
-
-    def has_object_permission(self, request, view, obj):
-        """Check that user change his/her own password"""
-        if request.user != obj:
+    def has_permission(self, request, view):
+        if not all((request.user, request.user.is_active, request.user.is_authenticated)):
             return False
-        return True
+        if request.user.is_superuser:
+            return True
+        if view.action not in ('retrieve', 'update', 'partial_update'):
+            return False
+        return int(view.kwargs.get('pk', 0)) == request.user.pk
 
 
-class PasswordSerializer(UserSerializer):  # pylint: disable=too-many-ancestors
-    """UserSerializer with only one changable field - password"""
+class PasswordField(serializers.CharField):
+    """Text field with content masking for passwords"""
 
-    username = serializers.CharField(read_only=True)
-
-
-class ChangePassword(GenericAPIView, UpdateModelMixin):
-    """User self change password view"""
-
-    queryset = User.objects.all()
-    serializer_class = PasswordSerializer
-    lookup_field = 'id'
-    permission_classes = (SelfChangePasswordPerm,)
-
-    def put(self, request, *args, **kwargs):
-        """Update password"""
-        return self.update(request, *args, **kwargs)
+    def to_representation(self, value):
+        return user_services.PW_MASK
 
 
-# pylint: disable=too-many-ancestors
-class UserViewSet(ModelPermViewSet):
+class GroupSerializer(serializers.Serializer):
+    """Simple Group representation serializer"""
+
+    id = serializers.IntegerField()
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
+
+
+class GroupUserSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
+
+
+class ExpandedGroupSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
+    """Expanded Group serializer"""
+
+    description = serializers.CharField(source='group.description')
+    user = GroupUserSerializer(many=True, source='user_set')
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
+
+    class Meta:
+        model = models.Group
+        fields = ('id', 'name', 'description', 'user', 'url')
+        expandable_fields = {
+            'user': (
+                'rbac.endpoints.user.views.UserSerializer',
+                {'many': True, 'source': 'user_set'},
+            )
+        }
+
+
+class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
+    """User serializer"""
+
+    id = serializers.IntegerField(read_only=True)
+    username = serializers.CharField()
+    first_name = serializers.CharField(allow_blank=True, default='')
+    last_name = serializers.CharField(allow_blank=True, default='')
+    email = serializers.EmailField(allow_blank=True, required=False)
+    is_superuser = serializers.BooleanField(default=False)
+    password = PasswordField(trim_whitespace=False)
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
+    profile = serializers.JSONField(source='userprofile.profile', required=False, default='')
+    groups = GroupSerializer(many=True, required=False)
+
+    class Meta:
+        expandable_fields = {'groups': (ExpandedGroupSerializer, {'many': True})}
+
+    def update(self, instance, validated_data):
+        if 'userprofile' in validated_data:
+            validated_data['profile'] = validated_data.pop('userprofile')['profile']
+        context_user = self.context['request'].user
+        return user_services.update(instance, context_user, partial=self.partial, **validated_data)
+
+    def create(self, validated_data):
+        if 'userprofile' in validated_data:
+            validated_data['profile'] = validated_data.pop('userprofile')['profile']
+        return user_services.create(**validated_data)
+
+
+class UserViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
     """User view set"""
 
-    queryset = User.objects.all()
+    queryset = models.User.objects.all()
     serializer_class = UserSerializer
-    lookup_field = 'id'
     filterset_fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser']
     ordering_fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser']
-
-
-class UserGroupViewSet(
-    ListModelMixin,
-    CreateModelMixin,
-    RetrieveModelMixin,
-    DestroyModelMixin,
-    GenericPermViewSet,
-):  # pylint: disable=too-many-ancestors
-    """User group view set"""
-
-    queryset = Group.objects.all()
-    serializer_class = UserGroupSerializer
-    lookup_url_kwarg = 'group_id'
-
-    def destroy(self, request, *args, **kwargs):
-        """Remove user"""
-        user = User.objects.get(id=self.kwargs.get('id'))
-        group = self.get_object()
-        user.groups.remove(group)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    def get_queryset(self):
-        """Filter user's groups"""
-        return self.queryset.filter(user__id=self.kwargs.get('id'))
-
-    def get_serializer_context(self):
-        """Add user to context"""
-        context = super().get_serializer_context()
-        user_id = self.kwargs.get('id')
-        if user_id is not None:
-            user = User.objects.get(id=user_id)
-            context.update({'user': user})
-        return context
-
-
-class UserRoleViewSet(
-    ListModelMixin,
-    CreateModelMixin,
-    RetrieveModelMixin,
-    DestroyModelMixin,
-    GenericPermViewSet,
-):  # pylint: disable=too-many-ancestors
-    """User role view set"""
-
-    queryset = Role.objects.all()
-    serializer_class = UserRoleSerializer
-    lookup_url_kwarg = 'role_id'
-
-    def destroy(self, request, *args, **kwargs):
-        """Remove role from user"""
-        user = User.objects.get(id=self.kwargs.get('id'))
-        role = self.get_object()
-        role.remove_user(user)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    # def get_queryset(self):
-    #     """Filter user's roles"""
-    #     return self.queryset.filter(user__id=self.kwargs.get('id'))
-
-    def get_serializer_context(self):
-        """Add user to context"""
-        context = super().get_serializer_context()
-        user_id = self.kwargs.get('id')
-        if user_id is not None:
-            user = User.objects.get(id=user_id)
-            context.update({'user': user})
-        return context
+    permission_classes = (UserPermissions,)

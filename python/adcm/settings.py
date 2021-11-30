@@ -238,6 +238,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'filters': ['require_debug_false'],
+            'formatter': 'adwp',
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'data/log/adcm_debug.log'),
         },
@@ -253,6 +254,9 @@ LOGGING = {
             'handlers': ['file'],
             'level': 'DEBUG',
             'propagate': True,
+        },
+        'django.utils.autoreload': {
+            'level': 'INFO',
         },
         'adwp': {
             'handlers': ['adwp_file'],

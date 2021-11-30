@@ -30,11 +30,11 @@ def check_role_child(child: List[Role]) -> None:
             raise ValidationError(errors)
 
 
-def role_create(built_in=False, **kwargs) -> Role:
+def role_create(built_in=False, business_permit=False, **kwargs) -> Role:
     """Creating Role object"""
     child = kwargs.pop('child', [])
     check_role_child(child)
-    role = Role.objects.create(built_in=built_in, **kwargs)
+    role = Role.objects.create(built_in=built_in, business_permit=business_permit, **kwargs)
     role.child.add(*child)
     return role
 

@@ -13,11 +13,10 @@
 """RBAC Role classes"""
 
 from django.apps import apps
-from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from guardian.models import UserObjectPermission
 from adwp_base.errors import raise_AdwpEx as err
-from rbac.models import Policy, PolicyPermission, Role
+from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
 from cm.models import Action
 
 

@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Type, Tuple
+from typing import Type, Tuple, Any
 
 from django.db.models import Model
 from rest_framework import serializers
@@ -58,3 +58,20 @@ def create_model_serializer_class(
         _dict.update(fields)
 
     return type(name, _bases, _dict)
+
+
+class Empty:
+    """Same as None but useful when None is valid value"""
+
+    def __bool__(self):
+        return False
+
+
+def set_not_empty_attr(obj, partial: bool, attr: str, value: Any, default: Any = None) -> None:
+    """Update object attribute if not empty in some abstract way"""
+    if partial:
+        if value is not Empty:
+            setattr(obj, attr, value)
+    else:
+        value = value if value is not Empty else default
+        setattr(obj, attr, value)

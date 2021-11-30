@@ -19,7 +19,7 @@ from .endpoints import logout, root, token
 urlpatterns = [
     path('', root.RBACRoot.as_view(), name='root'),
     path('user/', include('rbac.endpoints.user.urls')),
-    path('group/', include('rbac.endpoints.group_urls')),
+    path('group/', include('rbac.endpoints.group.urls')),
     path('role/', include('rbac.endpoints.role.urls')),
     path(r'policy/', include('rbac.endpoints.policy.urls')),
     path('logout/', logout.LogOut.as_view(), name='logout'),

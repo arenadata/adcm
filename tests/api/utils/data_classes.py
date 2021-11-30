@@ -30,6 +30,7 @@ from tests.api.utils.types import (
     Boolean,
     ForeignKeyM2M,
     Email,
+    Password,
 )
 
 
@@ -254,11 +255,12 @@ class RbacUserFields(BaseClass):
     first_name = Field(name="first_name", f_type=String(max_length=150), required=True, postable=True, changeable=True)
     last_name = Field(name="last_name", f_type=String(max_length=150), nullable=True, postable=True, changeable=True)
     email = Field(name="email", f_type=Email(), nullable=True, postable=True, changeable=True)
-    password = Field(name="password", f_type=String(max_length=150), required=True, postable=True, changeable=True)
+    password = Field(name="password", f_type=Password(), required=True, postable=True, changeable=True)
     is_superuser = Field(
         name="is_superuser", f_type=Boolean(), default_value=False, required=True, postable=True, changeable=True
     )
     profile = Field(name="profile", f_type=Json(), default_value={}, postable=True, changeable=True)
+    url = Field(name="url", f_type=String(), default_value="auto")
 
 
 class RbacGroupFields(BaseClass):
@@ -272,12 +274,11 @@ class RbacGroupFields(BaseClass):
         default_value="auto",
     )
     user = Field(
-        name="user", f_type=BackReferenceFK(fk_link=RbacUserFields), nullable=True, postable=True, changeable=True
+        name="user", f_type=ForeignKeyM2M(fk_link=RbacUserFields), nullable=True, postable=True, changeable=True
     )
     name = Field(name="name", f_type=String(max_length=150), required=True, postable=True, changeable=True)
-    description = Field(
-        name="description", f_type=String(max_length=150), nullable=True, postable=True, changeable=True
-    )
+    description = Field(name="description", f_type=Text(), nullable=True, postable=True, changeable=True)
+    url = Field(name="url", f_type=String(), default_value="auto")
 
 
 RbacUserFields.groups = Field(

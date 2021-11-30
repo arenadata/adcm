@@ -52,7 +52,7 @@ def assert_events(websocket_connection, *expected_events):
     expected_list = list(expected_events)
     count = 1
     try:
-        while expected_list != [] and count < 100:
+        while expected_list and count < 100:
             data = json.loads(websocket_connection.recv())
             for event in expected_list:
                 if event == data:
@@ -61,7 +61,7 @@ def assert_events(websocket_connection, *expected_events):
             count = count + 1
     except websocket.WebSocketTimeoutException:
         pass
-    assert expected_list == []
+    assert not expected_list
 
 
 @pytest.fixture()

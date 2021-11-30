@@ -16,7 +16,6 @@ from typing import List
 import ruyaml
 
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.auth.models import Permission
 
 from adwp_base.errors import raise_AdwpEx as err
 
@@ -24,7 +23,7 @@ import cm.checker
 
 from rbac import log
 from rbac.settings import api_settings
-from rbac.models import Role, RoleMigration, Policy
+from rbac.models import Role, RoleMigration, Policy, Permission
 
 
 def upgrade(data: dict):
@@ -104,6 +103,8 @@ def upgrade_role(role: dict, data: dict) -> Role:
         new_role.description = role['description']
     if 'parametrized_by' in role:
         new_role.parametrized_by_type = role['parametrized_by']
+    if 'business_permit' in role:
+        new_role.business_permit = role['business_permit']
     for perm in perm_list:
         new_role.permissions.add(perm)
     new_role.save()

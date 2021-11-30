@@ -1,0 +1,12 @@
+<adwp-list
+  [columns]="listColumns"
+  [dataSource]="data$ | async"
+  [paging]="paging | async"
+  [sort]="sorting | async"
+  [defaultSort]="defaultSort"
+  [currentId]="current ? current.id : undefined"
+  (clickRow)="clickRow($event)"
+  (auxclickRow)="auxclickRow($event)"
+  (changePaging)="onChangePaging($event)"
+  (changeSort)="onChangeSort($event)"
+></adwp-list>

@@ -12,13 +12,16 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { AuthGuard } from '../core/auth/auth.guard';
-import { SharedModule } from '@app/shared/shared.module';
 
+import { SharedModule } from '@app/shared/shared.module';
+import { AuthGuard } from '@app/core/auth/auth.guard';
 import { IntroComponent } from './intro.component';
 import { PatternComponent } from './pattern.component';
 import { SettingsComponent } from './settings.component';
 import { UsersComponent } from './users/users.component';
+import { GroupsComponent } from './groups/groups.component';
+import { RolesComponent } from './roles/roles.component';
+import { PoliciesComponent } from './policies/policies.component';
 
 const routes: Routes = [
   {
@@ -44,18 +47,36 @@ const routes: Routes = [
         path: 'users',
         component: UsersComponent,
       },
+      {
+        path: 'groups',
+        component: GroupsComponent,
+      },
+      {
+        path: 'roles',
+        component: RolesComponent,
+      },
+      {
+        path: 'policies',
+        component: PoliciesComponent,
+      }
     ],
   },
 ];
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule],
-})
-export class AdminRoutingModule {}
-
-@NgModule({
-  imports: [CommonModule, AdminRoutingModule, SharedModule],
-  declarations: [IntroComponent, SettingsComponent, UsersComponent, PatternComponent],
+  imports: [
+    CommonModule,
+    RouterModule.forChild(routes),
+    SharedModule,
+  ],
+  declarations: [
+    IntroComponent,
+    SettingsComponent,
+    UsersComponent,
+    PatternComponent,
+    GroupsComponent,
+    RolesComponent,
+    PoliciesComponent,
+  ],
 })
 export class AdminModule {}
