@@ -104,6 +104,16 @@ class DbFiller:
             return result
         raise ValueError(f"No such method {method}")
 
+    def _clear_context(self):
+        """
+        Clear the current db filler context
+        It should be called after an endpoint's data generation cycle
+        """
+        self._available_fkeys = defaultdict(set)
+        self._used_fkeys = {}
+        self._endpoints_stack = []
+        Endpoints.clear_endpoints_paths()
+
     def _get_or_create_data_for_endpoint(self, endpoint: Endpoints, force=False, prepare_data_only=False):
         """
         Get data for endpoint with data preparation
@@ -218,15 +228,14 @@ class DbFiller:
         current_ep_data = get_endpoint_data(adcm=self.adcm, endpoint=endpoint)
         if len(current_ep_data) < count:
             for _ in range(count - len(current_ep_data)):
-                # clean up context before generating new element
-                self._available_fkeys = defaultdict(set)
-                self._used_fkeys = {}
-                self._get_or_create_data_for_endpoint(
-                    endpoint=endpoint,
-                    force=True,
-                )
-                if len(get_endpoint_data(adcm=self.adcm, endpoint=endpoint)) > count:
-                    break
+                with allure.step(f"Create {endpoint.path} data"):
+                    self._clear_context()
+                    self._get_or_create_data_for_endpoint(
+                        endpoint=endpoint,
+                        force=True,
+                    )
+                    if len(get_endpoint_data(adcm=self.adcm, endpoint=endpoint)) > count:
+                        break
 
     @staticmethod
     def _generate_field_value(field: Field, old_value=None):
