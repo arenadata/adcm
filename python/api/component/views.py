@@ -12,8 +12,7 @@
 
 from rest_framework.response import Response
 
-from api.api_views import PageView, check_obj, DetailViewRO, GenericAPIPermView, InterfaceView
-from api.api_views import GenericAPIPermStatusView
+from api.api_views import PageView, check_obj, DetailViewRO, InterfaceView, GenericAPIPermStatusView
 from cm.models import ServiceComponent, ClusterObject, Cluster, HostComponent
 from . import serializers
 import cm.status_api

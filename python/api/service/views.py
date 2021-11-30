@@ -21,7 +21,6 @@ from api.api_views import (
     DetailViewRO,
     ListView,
     DetailViewDelete,
-    GenericAPIPermView,
     InterfaceView,
     GenericAPIPermStatusView,
 )

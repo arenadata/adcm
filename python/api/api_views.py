@@ -33,7 +33,6 @@ import cm.upgrade
 from cm import config
 from cm.errors import AdcmEx
 from cm.models import Action, ADCMEntity, PrototypeConfig, ConcernType
-from cm.logger import log
 
 
 def check_obj(model, req, error=None):

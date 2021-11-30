@@ -30,6 +30,7 @@ roles:
 
     - name: create HostProvider
       description: The ability to add new provider
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -41,6 +42,7 @@ roles:
 
     - name: create Cluster
       description: The ability to add new cluster
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -52,6 +54,7 @@ roles:
 
     - name: upload Bundle
       description: The ability to upload Bundle
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -158,8 +161,9 @@ roles:
 
     - name: Compare configurations
       description: The ability to see the history of all configuration
+      business_permit: True
       module_name: rbac.roles
-      class_name: ModelRole
+      class_name: ParentRole
       child:
         - Compare cluster configurations
         - Compare service configurations
@@ -249,8 +253,9 @@ roles:
 
     - name: View configurations
       description: The ability to view all configurations
+      business_permit: True
       module_name: rbac.roles
-      class_name: ModelRole
+      class_name: ParentRole
       child:
         - View cluster configurations
         - View service configurations
@@ -365,8 +370,9 @@ roles:
 
     - name: Edit configurations
       description: The ability to edit all configurations
+      business_permit: True
       module_name: rbac.roles
-      class_name: ModelRole
+      class_name: ParentRole
       child:
         - Edit cluster configurations
         - Edit service configurations
@@ -408,8 +414,9 @@ roles:
 
     - name: View imports
       description: The ability to view all imports page on cluster and service
+      business_permit: True
       module_name: rbac.roles
-      class_name: ModelRole
+      class_name: ParentRole
       child:
         - View cluster imports
         - View service imports
@@ -450,14 +457,16 @@ roles:
 
     - name: Manage imports
       description: The ability to manage all imports page on cluster and service
+      business_permit: True
       module_name: rbac.roles
-      class_name: ModelRole
+      class_name: ParentRole
       child:
         - Manage cluster imports
         - Manage service imports
 
     - name: Add service
       description: The ability to add service to cluster
+      business_permit: True
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -474,6 +483,7 @@ roles:
 
     - name: Remove service
       description: The ability to remove service from cluster
+      business_permit: True
       parametrized_by:
         - service
       module_name: rbac.roles
@@ -490,6 +500,7 @@ roles:
 
     - name: Remove host
       description: The ability to remove host
+      business_permit: True
       parametrized_by:
         - host
       module_name: rbac.roles
@@ -506,6 +517,7 @@ roles:
 
     - name: Map hosts
       description: The ability to map hosts to the Cluster
+      business_permit: True
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -525,6 +537,7 @@ roles:
 
     - name: Unmap hosts
       description: The ability to unmap hosts to the Cluster
+      business_permit: True
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -576,14 +589,16 @@ roles:
 
     - name: Upgrade bundle
       description: Update all type of bundles
+      business_permit: True
       module_name: rbac.roles
-      class_name: ModelRole
+      class_name: ParentRole
       child:
         - Upgrade cluster bundle
         - Upgrade provider bundle
 
     - name: Remove cluster
       description: The ability to remove cluster
+      business_permit: True
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -600,6 +615,7 @@ roles:
 
     - name: Remove provider
       description: The ability to remove provider
+      business_permit: True
       parametrized_by:
         - provider
       module_name: rbac.roles
@@ -616,6 +632,7 @@ roles:
 
     - name: Remove bundle
       description: The ability to remove bundle
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -627,6 +644,7 @@ roles:
 
     - name: View ADCM settings
       description: View purely adcm config
+      business_permit: True
       module_name: rbac.roles
       class_name: ObjectRole
       init_params:
@@ -643,6 +661,7 @@ roles:
 
     - name: Compare ADCM settings
       description: compare settings purely adcm config
+      business_permit: True
       module_name: rbac.roles
       class_name: ObjectRole
       init_params:
@@ -662,6 +681,7 @@ roles:
 
     - name: Edit ADCM settings
       description: Edit purely adcm config
+      business_permit: True
       module_name: rbac.roles
       class_name: ObjectRole
       init_params:
@@ -683,6 +703,7 @@ roles:
 
     - name: View users
       description: The ability to view Users page
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -694,6 +715,7 @@ roles:
 
     - name: Create user
       description: The ability to create new user
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -705,6 +727,7 @@ roles:
 
     - name: Edit user
       description: The ability to change information about existed user
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -716,6 +739,7 @@ roles:
 
     - name: Remove users
       description: The ability to delete existed user
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -727,6 +751,7 @@ roles:
 
     - name: View roles
       description: The ability to view roles page
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -738,6 +763,7 @@ roles:
 
     - name: Create custom role
       description: The ability to create new role
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -749,6 +775,7 @@ roles:
 
     - name: Edit role
       description: The ability to change your custom role
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -760,6 +787,7 @@ roles:
 
     - name: Remove roles
       description: The ability to delete custom roles
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -771,6 +799,7 @@ roles:
 
     - name: View group
       description: The ability to view group page
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -782,6 +811,7 @@ roles:
 
     - name: Create group
       description: The ability to create new group
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -793,6 +823,7 @@ roles:
 
     - name: Edit group
       description: The ability to change group
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -804,6 +835,7 @@ roles:
 
     - name: Remove group
       description: The ability to delete roles
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -815,6 +847,7 @@ roles:
 
     - name: View policy
       description: The ability to policy group page
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -826,6 +859,7 @@ roles:
 
     - name: Create policy
       description: The ability to create new policy
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -837,6 +871,7 @@ roles:
 
     - name: Edit policy
       description: The ability to change policies
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -848,6 +883,7 @@ roles:
 
     - name: Remove policy
       description: The ability to delete policies
+      business_permit: True
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -927,8 +963,9 @@ roles:
 
     - name: View status page
       description: Ability to view all status pages
+      business_permit: True
       module_name: rbac.roles
-      class_name: ModelRole
+      class_name: ParentRole
       child:
         - View cluster status page
         - View service status page
