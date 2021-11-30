@@ -14,17 +14,38 @@
 
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
-from guardian.models import UserObjectPermission
+from guardian.models import UserObjectPermission, GroupObjectPermission
 from adwp_base.errors import raise_AdwpEx as err
 from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
 from cm.models import Action, ClusterObject, ServiceComponent, Host
 
 
-class ModelRole:
-    def __init__(self, **kwargs):
-        pass
+class AbstractRole:
+    """Abstract class for custom Role handlers"""
 
-    def apply(self, policy: Policy, role: Role, user: User, group: Group = None, obj=None):
+    class Meta:
+        abstract = True
+
+    def __init__(self, **kwargs):
+        self.params = kwargs
+
+    def apply(self, policy: Policy, role: Role, user: User, group: Group, param_obj=None):
+        """
+        This method should apply Role to User and/or Group.
+        Generaly this means that you should assign permissions from Role to User and/or Group
+        and save links to these permissions in Policy model.
+        If Role is parametrized_by_type than parametrized objects shouls be obtained from
+        Policy.object field.
+        Optional parameter param_obj can be used to specify the object in complex cases
+        (see ParentRole below)
+        """
+        raise NotImplementedError("You must provide apply method")
+
+
+class ModelRole(AbstractRole):
+    """This Role apply Django model level permissions"""
+
+    def apply(self, policy: Policy, role: Role, user: User, group: Group, param_obj=None):
         for perm in role.get_permissions():
             if group is not None:
                 group.permissions.add(perm)
@@ -38,9 +59,8 @@ class ModelRole:
                 policy.model_perm.add(pp)
 
 
-class ObjectRole:
-    def __init__(self, **kwargs):
-        self.params = kwargs
+class ObjectRole(AbstractRole):
+    """This Role apply django-guardian object level permissions"""
 
     def filter(self):
         if 'model' not in self.params:
@@ -51,20 +71,20 @@ class ObjectRole:
             err('ROLE_FILTER_ERROR', str(e))
         return model.objects.filter(**self.params['filter'])
 
-    def apply(self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None):
+    def apply(self, policy: Policy, role: Role, user: User, group: Group, param_obj=None):
         for obj in policy.get_objects(param_obj):
             for perm in role.get_permissions():
                 if user is not None:
                     uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
                     policy.object_perm.add(uop)
                 if group is not None:
-                    uop = UserObjectPermission.objects.assign_perm(perm, group, obj)
-                    policy.object_perm.add(uop)
+                    gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
+                    # To do !!!
+                    # policy.object_perm.add(gop)
 
 
-class ActionRole:
-    def __init__(self, **kwargs):
-        self.params = kwargs
+class ActionRole(AbstractRole):
+    """This Role apply permissions to run ADCM action"""
 
     def filter(self):
         if 'model' not in self.params:
@@ -95,9 +115,8 @@ class ActionRole:
                     policy.object_perm.add(uop)
 
 
-class ParentRole:
-    def __init__(self, **kwargs):
-        self.params = kwargs
+class ParentRole(AbstractRole):
+    """This Role is used for complex Roles that can include other Roles"""
 
     def apply_role_to_obj(self, obj, policy, role, user, group=None):
         for r in role.child.all():

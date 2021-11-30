@@ -105,7 +105,7 @@ class Role(models.Model):
             self.__obj__ = self.get_role_obj()
         return self.__obj__.filter()
 
-    def apply(self, policy: 'Policy', user: User, group: Group = None, obj=None):
+    def apply(self, policy: 'Policy', user: User, group: Group, obj=None):
         """apply policy to user and/or group"""
         if self.__obj__ is None:
             self.__obj__ = self.get_role_obj()
@@ -204,9 +204,9 @@ class Policy(models.Model):
         """This function apply role over"""
         self.remove_permissions()
         for user in self.user.all():
-            self.role.apply(self, user)
+            self.role.apply(self, user, None)
         for group in self.group.all():
-            self.role.apply(self, None, group=group)
+            self.role.apply(self, None, group)
 
 
 class UserProfile(models.Model):

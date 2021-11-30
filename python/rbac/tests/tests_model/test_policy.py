@@ -15,7 +15,7 @@ import pytest
 from django.contrib.contenttypes.models import ContentType
 from adwp_base.errors import AdwpEx
 
-from rbac.models import Role, Policy, User, Permission
+from rbac.models import Role, Policy, User, Group, Permission
 from rbac.roles import ModelRole
 from cm.models import Bundle, Prototype, Action, Cluster, ClusterObject, ServiceComponent
 
@@ -38,9 +38,11 @@ def test_role_class():
 
 
 def cook_user(name):
-    user = User(username='Joe', is_active=True, is_superuser=False)
-    user.save()
-    return user
+    return User.objects.create(username=name, is_active=True, is_superuser=False)
+
+
+def cook_group(name):
+    return Group.objects.create(name=name)
 
 
 def cook_perm(app, codename, model):
@@ -58,32 +60,56 @@ def cook_role(name, class_name, obj_type=None):
 
 
 def clear_perm_cache(user):
-    delattr(user, '_perm_cache')
-    delattr(user, '_user_perm_cache')
-    delattr(user, '_group_perm_cache')
+    if hasattr(user, '_perm_cache'):
+        delattr(user, '_perm_cache')
+    if hasattr(user, '_user_perm_cache'):
+        delattr(user, '_user_perm_cache')
+    if hasattr(user, '_group_perm_cache'):
+        delattr(user, '_group_perm_cache')
 
 
 @pytest.mark.django_db
-def test_policy():
+def test_model_policy():
     user = cook_user('Joe')
-    r = Role(
-        name='add',
-        module_name='rbac.roles',
-        class_name='ModelRole',
-    )
-    r.save()
+    r = cook_role('add', 'ModelRole')
     perm = cook_perm('adcm', 'add', 'host')
     r.permissions.add(perm)
-    p = Policy(role=r)
-    p.save()
+
+    p = Policy.objects.create(name='MyPolicy', role=r)
     p.user.add(user)
 
-    # assert perm not in user.user_permissions.all()
+    assert perm not in user.user_permissions.all()
     assert not user.has_perm('adcm.add_host')
     clear_perm_cache(user)
 
     p.apply()
-    # assert perm in user.user_permissions.all()
+    assert perm in user.user_permissions.all()
+    assert user.has_perm('adcm.add_host')
+
+    clear_perm_cache(user)
+    p.apply()
+    assert user.has_perm('adcm.add_host')
+
+
+@pytest.mark.django_db
+def test_model_policy4group():
+    group = cook_group('Ops')
+    user = cook_user('Joe')
+    group.user_set.add(user)
+
+    r = cook_role('add', 'ModelRole')
+    perm = cook_perm('adcm', 'add', 'host')
+    r.permissions.add(perm)
+
+    p = Policy.objects.create(name='MyPolicy', role=r)
+    p.group.add(group)
+
+    assert perm not in group.permissions.all()
+    assert not user.has_perm('adcm.add_host')
+    clear_perm_cache(user)
+
+    p.apply()
+    assert perm in group.permissions.all()
     assert user.has_perm('adcm.add_host')
 
     clear_perm_cache(user)
@@ -94,23 +120,43 @@ def test_policy():
 @pytest.mark.django_db
 def test_object_policy():
     user = cook_user('Joe')
-    r = Role(
-        name='view',
-        module_name='rbac.roles',
-        class_name='ObjectRole',
-    )
-    r.save()
-    perm = Permission.objects.get(codename='view_bundle')
-    r.permissions.add(perm)
-    p = Policy(role=r)
-    p.save()
+    r = cook_role('view', 'ObjectRole')
+    r.permissions.add(cook_perm('cm', 'view', 'bundle'))
+
+    p = Policy.objects.create(name='MyPolicy', role=r)
     p.user.add(user)
 
-    b1 = Bundle(name='ADH', version='1.0')
-    b1.save()
+    b1 = Bundle.objects.create(name='ADH', version='1.0')
+    b2 = Bundle.objects.create(name='ADH', version='2.0')
 
-    b2 = Bundle(name='ADH', version='2.0')
-    b2.save()
+    p.add_object(b1)
+    assert not user.has_perm('cm.view_bundle', b1)
+
+    p.apply()
+
+    assert user.has_perm('cm.view_bundle', b1)
+    assert not user.has_perm('cm.view_bundle', b2)
+
+    p.apply()
+
+    assert user.has_perm('cm.view_bundle', b1)
+    assert not user.has_perm('cm.view_bundle', b2)
+
+
+@pytest.mark.django_db
+def test_object_policy4group():
+    group = cook_group('Ops')
+    user = cook_user('Joe')
+    group.user_set.add(user)
+
+    r = cook_role('view', 'ObjectRole')
+    r.permissions.add(cook_perm('cm', 'view', 'bundle'))
+
+    p = Policy.objects.create(name='MyPolicy', role=r)
+    p.group.add(group)
+
+    b1 = Bundle.objects.create(name='ADH', version='1.0')
+    b2 = Bundle.objects.create(name='ADH', version='2.0')
 
     p.add_object(b1)
     assert not user.has_perm('cm.view_bundle', b1)
