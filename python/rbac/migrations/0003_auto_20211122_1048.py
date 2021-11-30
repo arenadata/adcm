@@ -21,7 +21,7 @@ import rbac.models
 class Migration(migrations.Migration):
     dependencies = [
         ('cm', '0081_remove_role'),
-        ('rbac', '0002_copy_profile'),
+        ('rbac', '0001_initial'),
     ]
 
     operations = [
