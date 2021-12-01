@@ -166,8 +166,8 @@
         integer default
 
         integer default'
-      display_name: integer default
-      name: integer_default
+      display_name: integer default no minmax
+      name: integer_default_no_minmax
       type: integer
     - &id016
       default: 7
@@ -379,10 +379,10 @@
         integer default
 
         integer default'
-      display_name: integer default
+      display_name: integer default readonly
       max: 100500
       min: -4
-      name: integer_default
+      name: integer_default_readonly
       read_only: any
       type: integer
     - &empty_readonly_int
@@ -396,10 +396,10 @@
                 integer default readonly
 
                 integer default readonly'
-      display_name: integer not default readonly
+      display_name: integer not default not required readonly
       max: 100500
       min: -4
-      name: integer_not_default_readonly
+      name: integer_not_default_not_required_readonly
       read_only: any
       type: integer
     - &id029
@@ -630,10 +630,10 @@
         float default
 
         float default'
-      display_name: float default
+      display_name: float default readonly
       max: 9000
       min: -8
-      name: float_default
+      name: float_default_readonly
       read_only: any
       type: float
     - &empty_readonly_float
@@ -647,10 +647,10 @@
            float default
 
            float default'
-      display_name: float not default
+      display_name: float not default not required readonly
       max: 9000
       min: -8
-      name: float_not_default
+      name: float_not_default_not_required_readonly
       read_only: any
       type: float
     - &id044
@@ -843,8 +843,8 @@
         string default
 
         string default'
-      display_name: string default
-      name: string_default
+      display_name: string default readonly
+      name: string_default_readonly
       read_only: any
       type: string
     - &empty_readonly_string
@@ -858,8 +858,8 @@
             string default
 
             string default'
-      display_name: string not default
-      name: string_not_default
+      display_name: string not default not required readonly
+      name: string_not_default_not_required_readonly
       read_only: any
       type: string
     - &id058
@@ -1071,8 +1071,8 @@
         password default no confirm
 
         password default no confirm'
-      display_name: password default no confirm
-      name: password_default_no_confirm
+      display_name: password default required no confirm
+      name: password_default_required_no_confirm
       read_only: any
       type: password
       ui_options: *id009
@@ -1088,8 +1088,8 @@
             password default no confirm
 
             password default no confirm'
-      display_name: password not default no confirm
-      name: password_not_default_no_confirm
+      display_name: password not default not required readonly no confirm
+      name: password_not_default_not_required_readonly_no_confirm
       read_only: any
       type: password
       ui_options: *id009
@@ -1283,8 +1283,8 @@
         text default
 
         text default'
-      display_name: text default
-      name: text_default
+      display_name: text default readonly
+      name: text_default_readonly
       read_only: any
       type: text
     - &empty_readonly_text
@@ -1298,8 +1298,8 @@
             text default
 
             text default'
-      display_name: text not default
-      name: text_not_default
+      display_name: text not default not required readonly
+      name: text_not_default_not_required_readonly
       read_only: any
       type: text
     - &id087
@@ -1492,8 +1492,8 @@
         file default
 
         file default'
-      display_name: file default
-      name: file_default
+      display_name: file default readonly
+      name: file_default_readonly
       read_only: any
       type: file
     - &empty_readonly_file
@@ -1507,8 +1507,8 @@
             file default
 
             file default'
-      display_name: file not default
-      name: file_not_default
+      display_name: file not default not required readonly
+      name: file_not_default_not_required_readonly
       read_only: any
       type: file
     - &id101
@@ -1706,8 +1706,8 @@
         json default
 
         json default'
-      display_name: json default
-      name: json_default
+      display_name: json default readonly
+      name: json_default_readonly
       read_only: any
       type: json
     - &empty_readonly_json
@@ -1721,8 +1721,8 @@
             json default
 
             json default'
-      display_name: json not default
-      name: json_not_default
+      display_name: json not default not required readonly
+      name: json_not_default_not_required_readonly
       read_only: any
       type: json
     - &id115
@@ -1917,8 +1917,8 @@
         map default
 
         map default'
-      display_name: map default
-      name: map_default
+      display_name: map default readonly
+      name: map_default_readonly
       read_only: any
       type: map
     - &empty_readonly_map
@@ -1932,8 +1932,8 @@
             map default
 
             map default'
-      display_name: map not default
-      name: map_not_default
+      display_name: map not default not required readonly
+      name: map_not_default_not_required_readonly
       read_only: any
       type: map
     - &id129
@@ -2130,8 +2130,8 @@
         list default
 
         list default'
-      display_name: list default
-      name: list_default
+      display_name: list default required
+      name: list_default_required
       read_only: any
       type: list
     - &empty_readonly_list
@@ -2145,8 +2145,8 @@
             list default
 
             list default'
-      display_name: list not default
-      name: list_not_default
+      display_name: list not default not required readonly
+      name: list_not_default_not_required_readonly
       read_only: any
       type: list
     type: group
