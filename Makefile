@@ -34,11 +34,6 @@ buildss: ## Build status server
 buildjs: ## Build client side js/html/css in directory wwwroot
 	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./build.sh
 
-buildbase: ## Build base image for ADCM's container. That is alpine with all packages.
-	cd assemble/base && docker build --pull=true --no-cache=true \
-	-t $(ADCMBASE_IMAGE):$$(date '+%Y%m%d%H%M%S') -t $(ADCMBASE_IMAGE):latest \
-	.
-
 build: describe buildss buildjs ## Build final docker image and all depended targets except baseimage.
 	@docker build --no-cache=true \
 	-f assemble/app/Dockerfile \
