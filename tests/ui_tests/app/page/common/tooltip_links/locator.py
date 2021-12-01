@@ -28,9 +28,16 @@ class CommonToolbarLocators:
     text_link = TemplateLocator(By.XPATH, "//a[text()='{}']", "Link to {}")
     action_btn = TemplateLocator(By.XPATH, "//span[.//a[text()='{}']]//app-action-list/button", "Action button to {}")
     upgrade_btn = TemplateLocator(By.XPATH, "//*[.//a[text()='{}']]//app-upgrade/button", "Upgrade button to {}")
+    warn_btn = TemplateLocator(By.XPATH, "//span[.//a[text()='{}']]//app-concern-list-ref/button", "Warn button to {}")
 
     class Popup:
         """Popup to choose action or import"""
 
         popup_block = Locator(By.CSS_SELECTOR, "*.mat-menu-content", "Header popup block")
         item = TemplateLocator(By.XPATH, "//button[@role='menuitem' and ./*[text()='{}']]", "Item {}")
+
+    class WarnPopup:
+        """Warning Popup"""
+
+        popup_block = Locator(By.CSS_SELECTOR, "app-popover", "Warning popup block")
+        item = Locator(By.CSS_SELECTOR, "app-popover app-concern", "Item with warning")

@@ -16,6 +16,7 @@
 # pylint: disable=missing-function-docstring, missing-class-docstring
 
 from time import sleep
+from typing import Optional
 
 import allure
 from deprecated import deprecated
@@ -35,6 +36,7 @@ from selenium.webdriver.support.ui import WebDriverWait as WDW
 
 from tests.ui_tests.app.helpers import bys
 from tests.ui_tests.app.locators import Menu, Common, Cluster, Provider, Host, Service
+from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
 
 
 def element_text(element):
@@ -238,15 +240,25 @@ class BasePage:
             raise InvalidElementStateException
         return self._click_element(locator)
 
-    def is_popup_presented_on_page(self, timeout: int = 5):
+    def is_popup_presented_on_page(self, popup_text: Optional[str] = None, timeout: int = 5):
         """Get popup displayed status"""
         try:
+            if popup_text:
+                self._getelement(
+                    [
+                        CommonPopupLocators.block_by_text(popup_text).by,
+                        CommonPopupLocators.block_by_text(popup_text).value,
+                    ],
+                    timer=timeout,
+                ).is_displayed()
             return self._getelement(Common.common_popup, timer=timeout).is_displayed()
         except TimeoutException:
             return False
 
     def assert_no_popups_displayed(self, timeout: int = 3):
         """Assert there is no popups displayed"""
+        if self.is_popup_presented_on_page(popup_text='Connection established.', timeout=2):
+            self._click_element(CommonPopupLocators.hide_btn)
         assert not self.is_popup_presented_on_page(timeout=timeout), "There is a popup with error on the page"
 
 

@@ -9,15 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+---
+- name: Dummy action
+  hosts: all
+  connection: local
+  gather_facts: no
 
-- type: cluster
-  name: test_cluster
-  version: 1.5
-  edition: community
-
-- type: service
-  name: test_service
-  description: Test service
-  version: '1.2'
-  components:
-    first:
+  tasks:
+    - name: Dummy?
+      debug:
+        msg: "Some message"

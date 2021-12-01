@@ -15,9 +15,14 @@
   version: 1.5
   edition: community
 
+
 - type: service
   name: test_service
   description: Test service
   version: '1.2'
   components:
     first:
+      requires:
+        - component: Metastore
+    Metastore:
+      constraint: [0,1]
