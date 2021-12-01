@@ -78,7 +78,7 @@ class ObjectRole(AbstractRole):
                     uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
                     policy.object_perm.add(uop)
                 if group is not None:
-                    gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
+                    GroupObjectPermission.objects.assign_perm(perm, group, obj)
                     # To do !!!
                     # policy.object_perm.add(gop)
 
