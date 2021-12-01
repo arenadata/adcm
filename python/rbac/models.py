@@ -115,11 +115,11 @@ class Role(models.Model):
             self.__obj__ = self.get_role_obj()
         return self.__obj__.filter()
 
-    def apply(self, policy: 'Policy', user: User, group: Group = None):
+    def apply(self, policy: 'Policy', user: User, group: Group, obj=None):
         """apply policy to user and/or group"""
         if self.__obj__ is None:
             self.__obj__ = self.get_role_obj()
-        return self.__obj__.apply(policy, self, user, group)
+        return self.__obj__.apply(policy, self, user, group, obj)
 
     def get_permissions(self, role: 'Role' = None):
         """Recursively get permissions of role and all her childs"""
@@ -193,7 +193,14 @@ class Policy(models.Model):
         for pp in self.object_perm.all():
             pp.delete()
 
-    def get_objects(self):
+    def add_object(self, obj):
+        po = PolicyObject(object=obj)
+        po.save()
+        self.object.add(po)
+
+    def get_objects(self, param_obj=None):
+        if param_obj is not None:
+            return [param_obj]
         obj_list = []
         for obj in self.object.all():
             obj_list.append(obj.object)
@@ -207,6 +214,13 @@ class Policy(models.Model):
         """This function apply role over"""
         self.remove_permissions()
         for user in self.user.all():
-            self.role.apply(self, user)
+            self.role.apply(self, user, None)
         for group in self.group.all():
             self.role.apply(self, None, group=group)
+
+
+class UserProfile(models.Model):
+    """Arbitrary information about user for frontend"""
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    profile = models.JSONField(default=str)

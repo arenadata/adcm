@@ -35,9 +35,9 @@ def upgrade(data: dict):
     for role in data['roles']:
         role_obj = new_roles[role['name']]
         role_obj.child.clear()
-        if 'childs' not in role:
+        if 'child' not in role:
             continue
-        for child in role['childs']:
+        for child in role['child']:
             child_role = new_roles[child]
             role_obj.child.add(child_role)
         role_obj.save()

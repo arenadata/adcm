@@ -31,7 +31,7 @@ def test_max_length():
 def test_default():
     role = Role.objects.create()
     assert role.name == ''
-    assert role.description is None
+    assert role.description == ''
     assert role.child.exists() is False
     assert role.permissions.exists() is False
     assert role.module_name == ''
