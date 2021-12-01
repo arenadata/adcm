@@ -1,6 +1,6 @@
 ---
 
-version: 1
+version: 3
 
 roles:
     - name: base
@@ -16,7 +16,7 @@ roles:
                 - view
                 - self_change_password
 
-    - name: create Host
+    - name: Create Host
       description: The ability to add new host
       business_permit: False
       module_name: rbac.roles
@@ -28,7 +28,7 @@ roles:
               codenames:
                 - add
 
-    - name: create HostProvider
+    - name: Create provider
       description: The ability to add new provider
       business_permit: True
       module_name: rbac.roles
@@ -40,7 +40,7 @@ roles:
               codenames:
                 - add
 
-    - name: create Cluster
+    - name: Create cluster
       description: The ability to add new cluster
       business_permit: True
       module_name: rbac.roles
@@ -52,7 +52,7 @@ roles:
               codenames:
                 - add
 
-    - name: upload Bundle
+    - name: Upload bundle
       description: The ability to upload Bundle
       business_permit: True
       module_name: rbac.roles
@@ -498,8 +498,8 @@ roles:
               codenames:
                 - delete
 
-    - name: Remove host
-      description: The ability to remove host
+    - name: Remove hosts
+      description: The ability to remove hosts
       business_permit: True
       parametrized_by:
         - host
@@ -737,7 +737,7 @@ roles:
               codenames:
                 - change
 
-    - name: Remove users
+    - name: Remove user
       description: The ability to delete existed user
       business_permit: True
       module_name: rbac.roles
@@ -961,7 +961,7 @@ roles:
               codenames:
                 - status_view
 
-    - name: View status page
+    - name: View status information
       description: Ability to view all status pages
       business_permit: True
       module_name: rbac.roles
@@ -1123,4 +1123,72 @@ roles:
               codenames:
                 - view
 
+    - name: ADCM User
+      business_permit: False
+      module_name: rbac.roles
+      class_name: ParentRole
+      child:
+        - Base role
+        - Compare configurations
+        - View configurations
+        - View status information
+        - View imports
 
+    - name: Service Administrator
+      business_permit: False
+      paramtrized_by:
+        - service
+      module_name: rbac.roles
+      class_name: ParentRole
+      child:
+        - ADCM User
+        - Edit configurations
+        - Manage imports
+
+    - name: Cluster Administrator
+      business_permit: False
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ParentRole
+      child:
+        - Service Administrator
+        - Add service
+        - Remove service
+        - Remove hosts
+        - Map hosts
+        - Unmap hosts
+        - Upgrade bundle
+        - Create Host
+        - Upload bundle
+        - Remove bundle
+
+    - name: ADCM Administrator
+      business_permit: False
+      module_name: rbac.roles
+      class_name: ParentRole
+      child:
+        - Cluster Administrator
+        - Create provider
+        - Remove provider
+        - Create cluster
+        - Remove cluster
+        - View ADCM settings
+        - Compare ADCM settings
+        - Edit ADCM settings
+        - View users
+        - Create user
+        - Remove user
+        - Edit user
+        - View roles
+        - Create custom role
+        - Remove roles
+        - Edit role
+        - View group
+        - Create group
+        - Remove group
+        - Edit group
+        - View policy
+        - Create policy
+        - Remove policy
+        - Edit policy
