@@ -70,7 +70,6 @@ class RoleView(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
 
-        # TODO: this check needs to be removed somewhere
         if instance.built_in:
             return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 

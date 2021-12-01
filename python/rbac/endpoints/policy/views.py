@@ -37,6 +37,8 @@ class ObjectField(serializers.JSONField):
                         'pattern': '^(cluster|service|component|provider|host)$',
                     },
                 },
+                'additionalProperties': False,
+                'required': ['id', 'type'],
             },
         }
         try:
@@ -127,6 +129,10 @@ class PolicyViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestor
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         policy = self.get_object()
+
+        if policy.built_in:
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
         serializer = self.get_serializer(policy, data=request.data, partial=partial)
         if serializer.is_valid(raise_exception=True):
 
@@ -135,3 +141,9 @@ class PolicyViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestor
             return Response(data=self.get_serializer(policy).data)
         else:
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        policy = self.get_object()
+        if policy.built_in:
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return super().destroy(request, *args, **kwargs)
