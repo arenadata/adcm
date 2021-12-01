@@ -1,22 +1,26 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RbacGroupComponent } from './rbac-group.component';
+import { RbacPolicyComponent } from './rbac-policy.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { AdwpFormElementModule } from '../../../../../../../adwp_ui/projects/widgets/src/lib/form-element/form-element.module';
+import { MatStepperModule } from '@angular/material/stepper';
+import { MatButtonModule } from '@angular/material/button';
 
 
 @NgModule({
   declarations: [
-    RbacGroupComponent
+    RbacPolicyComponent
   ],
   exports: [
-    RbacGroupComponent
+    RbacPolicyComponent
   ],
   imports: [
     CommonModule,
     AdwpFormElementModule,
     ReactiveFormsModule,
+    MatStepperModule,
+    MatButtonModule,
   ]
 })
-export class RbacGroupModule {
+export class RbacPolicyModule {
 }
