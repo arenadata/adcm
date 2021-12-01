@@ -20,7 +20,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.transaction import atomic
-from guardian.models import UserObjectPermission
+from guardian.models import UserObjectPermission, GroupObjectPermission
 from rest_framework.exceptions import ValidationError
 
 from cm.models import Bundle
@@ -181,7 +181,8 @@ class Policy(models.Model):
     user = models.ManyToManyField(User, blank=True)
     group = models.ManyToManyField(Group, blank=True)
     model_perm = models.ManyToManyField(PolicyPermission, blank=True)
-    object_perm = models.ManyToManyField(UserObjectPermission, blank=True)
+    user_object_perm = models.ManyToManyField(UserObjectPermission, blank=True)
+    group_object_perm = models.ManyToManyField(GroupObjectPermission, blank=True)
 
     def remove_permissions(self):
         for pp in self.model_perm.all():
@@ -190,7 +191,9 @@ class Policy(models.Model):
             if pp.group:
                 pp.group.permissions.remove(pp.permission)
             pp.delete()
-        for pp in self.object_perm.all():
+        for pp in self.user_object_perm.all():
+            pp.delete()
+        for pp in self.group_object_perm.all():
             pp.delete()
 
     def add_object(self, obj):
@@ -217,10 +220,3 @@ class Policy(models.Model):
             self.role.apply(self, user, None)
         for group in self.group.all():
             self.role.apply(self, None, group=group)
-
-
-class UserProfile(models.Model):
-    """Arbitrary information about user for frontend"""
-
-    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
-    profile = models.JSONField(default=str)

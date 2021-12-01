@@ -34,7 +34,7 @@ class AbstractRole:
         This method should apply Role to User and/or Group.
         Generaly this means that you should assign permissions from Role to User and/or Group
         and save links to these permissions in Policy model.
-        If Role is parametrized_by_type than parametrized objects shouls be obtained from
+        If Role is parametrized_by_type than parametrized objects should be obtained from
         Policy.object field.
         Optional parameter param_obj can be used to specify the object in complex cases
         (see ParentRole below)
@@ -46,6 +46,7 @@ class ModelRole(AbstractRole):
     """This Role apply Django model level permissions"""
 
     def apply(self, policy: Policy, role: Role, user: User, group: Group, param_obj=None):
+        """Apply Role to User and/or Group"""
         for perm in role.get_permissions():
             if group is not None:
                 group.permissions.add(perm)
@@ -72,15 +73,15 @@ class ObjectRole(AbstractRole):
         return model.objects.filter(**self.params['filter'])
 
     def apply(self, policy: Policy, role: Role, user: User, group: Group, param_obj=None):
+        """Apply Role to User and/or Group"""
         for obj in policy.get_objects(param_obj):
             for perm in role.get_permissions():
                 if user is not None:
                     uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
-                    policy.object_perm.add(uop)
+                    policy.user_object_perm.add(uop)
                 if group is not None:
-                    GroupObjectPermission.objects.assign_perm(perm, group, obj)
-                    # To do !!!
-                    # policy.object_perm.add(gop)
+                    gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
+                    policy.group_object_perm.add(gop)
 
 
 class ActionRole(AbstractRole):
@@ -96,50 +97,53 @@ class ActionRole(AbstractRole):
         return model.objects.filter(**self.params['filter'])
 
     def apply(self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None):
+        """Apply Role to User and/or Group"""
         action = Action.obj.get(id=self.params['action_id'])
         ct = ContentType.objects.get_for_model(Action)
         run_action, _ = Permission.objects.get_or_create(content_type=ct, codename='run_action')
         for obj in policy.get_objects(param_obj):
             if user is not None:
                 uop = UserObjectPermission.objects.assign_perm(run_action, user, action)
-                policy.object_perm.add(uop)
+                policy.user_object_perm.add(uop)
             if group is not None:
-                uop = UserObjectPermission.objects.assign_perm(run_action, group, action)
-                policy.object_perm.add(uop)
+                gop = GroupObjectPermission.objects.assign_perm(run_action, group, action)
+                policy.group_object_perm.add(gop)
             for perm in role.get_permissions():
                 if user is not None:
                     uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
-                    policy.object_perm.add(uop)
+                    policy.user_object_perm.add(uop)
                 if group is not None:
-                    uop = UserObjectPermission.objects.assign_perm(perm, group, obj)
-                    policy.object_perm.add(uop)
+                    gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
+                    policy.group_object_perm.add(gop)
 
 
 class ParentRole(AbstractRole):
     """This Role is used for complex Roles that can include other Roles"""
 
-    def apply_role_to_obj(self, obj, policy, role, user, group=None):
+    def find_and_apply(self, obj, policy, role, user, group=None):
+        """Find Role of appropriate type and apply it fo specified object"""
         for r in role.child.all():
             if obj.prototype.type == r.parametrized_by_type[0]:
                 r.apply(policy, user, group, obj)
 
     def apply(self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None):
+        """Apply Role to User and/or Group"""
         for obj in policy.get_objects(param_obj):
-            self.apply_role_to_obj(obj, policy, role, user, group)
+            self.find_and_apply(obj, policy, role, user, group)
 
             if obj.prototype.type == 'cluster':
                 for service in ClusterObject.obj.filter(cluster=obj):
-                    self.apply_role_to_obj(service, policy, role, user, group)
+                    self.find_and_apply(service, policy, role, user, group)
                     for comp in ServiceComponent.obj.filter(service=service):
-                        self.apply_role_to_obj(comp, policy, role, user, group)
+                        self.find_and_apply(comp, policy, role, user, group)
 
             elif obj.prototype.type == 'service':
                 for comp in ServiceComponent.obj.filter(service=obj):
-                    self.apply_role_to_obj(comp, policy, role, user, group)
+                    self.find_and_apply(comp, policy, role, user, group)
 
             elif obj.prototype.type == 'provider':
                 for host in Host.obj.filter(provider=obj):
-                    self.apply_role_to_obj(host, policy, role, user, group)
+                    self.find_and_apply(host, policy, role, user, group)
 
         if not policy.get_objects():
             for r in role.child.all():
