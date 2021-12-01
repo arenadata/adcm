@@ -171,7 +171,7 @@ def test_create_policy(admin_api_client):
             {"object": ["the field does not match the scheme"]},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": [{"id": 2}], "object": [{"id": 1}]},
+            {"name": "test", "role": {"id": 1}, "user": [{"id": 3}], "object": [{"id": 1}]},
             {"object": ["the field does not match the scheme"]},
         ),
     ]
