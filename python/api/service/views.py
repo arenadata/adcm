@@ -21,8 +21,8 @@ from api.api_views import (
     DetailViewRO,
     ListView,
     DetailViewDelete,
-    GenericAPIPermView,
     InterfaceView,
+    GenericAPIPermStatusView,
 )
 from api.stack.serializers import ImportSerializer
 from api.cluster.serializers import BindSerializer
@@ -174,8 +174,9 @@ class ServiceBindDetailView(DetailViewDelete):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class StatusList(GenericAPIPermView, InterfaceView):
+class StatusList(GenericAPIPermStatusView, InterfaceView):
     queryset = HostComponent.objects.all()
+    model_name = ClusterObject
     serializer_class = serializers.StatusSerializer
 
     def ui_status(self, service, host_components):

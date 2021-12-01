@@ -25,7 +25,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView
 from rest_framework.utils.urls import replace_query_param
-from rest_framework.permissions import DjangoModelPermissions
+from rest_framework.permissions import DjangoModelPermissions, DjangoObjectPermissions
 
 from adcm.settings import REST_FRAMEWORK
 
@@ -141,6 +141,27 @@ class DjangoModelPerm(DjangoModelPermissions):
         'PATCH': ['%(app_label)s.change_%(model_name)s'],
         'DELETE': ['%(app_label)s.delete_%(model_name)s'],
     }
+
+
+class StatusPerm(DjangoModelPerm):
+    """
+    Self view status page permissions class.
+    Use codename status_view to check permissions
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Replace GET permissions from "view" to "status_view"""
+        super().__init__(*args, **kwargs)
+        self.perms_map['GET'] = ['%(app_label)s.status_view_%(model_name)s']
+
+    def has_permission(self, request, view):
+        """Check that user has allowed to view status page"""
+        model_name = view.model_name.__name__.lower()
+        return request.user.has_perm(f'cm.status_view_{model_name}')
+
+
+class GenericAPIPermStatusView(GenericAPIView):
+    permission_classes = (StatusPerm,)
 
 
 class GenericAPIPermView(GenericAPIView):

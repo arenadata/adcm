@@ -54,11 +54,11 @@ def find_role(name: str, roles: list):
     return err('INVALID_ROLE_SPEC', f'child role "{name}" is absent')
 
 
-def check_roles_childs(data: dict):
-    """Check if role childs name are exist in specification file"""
+def check_roles_child(data: dict):
+    """Check if role child name are exist in specification file"""
     for role in data['roles']:
-        if 'childs' in role:
-            for child in role['childs']:
+        if 'child' in role:
+            for child in role['child']:
                 find_role(child, data['roles'])
 
 
@@ -149,7 +149,7 @@ def init_roles():
     manage.py upgarderole
     """
     role_data = get_role_spec(api_settings.ROLE_SPEC, api_settings.ROLE_SCHEMA)
-    check_roles_childs(role_data)
+    check_roles_child(role_data)
 
     rm = RoleMigration.objects.last()
     if rm is None:
