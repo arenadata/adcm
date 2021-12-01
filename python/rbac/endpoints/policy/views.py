@@ -15,150 +15,13 @@ from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework import status
 from rest_framework import viewsets
-from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
 from rest_framework.validators import ValidationError
-from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from cm.models import Cluster, ClusterObject, ServiceComponent, HostProvider, Host
 from rbac.models import Policy, User, Group, Role
 from rbac.services.policy import policy_create, policy_update
 from rbac.utils import BaseRelatedSerializer
-
-
-class ExpandedRoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
-
-    class Meta:
-        model = Role
-        fields = (
-            'id',
-            'name',
-            'description',
-            'built_in',
-            'category',
-            'parametrized_by_type',
-            'child',
-            'url',
-        )
-        expandable_fields = {
-            'child': ('rbac.endpoints.policy.views.ExpandedRoleSerializer', {'many': True})
-        }
-
-
-# pylint: disable=too-many-ancestors
-class PolicyUserViewSet(
-    NestedViewSetMixin, ListModelMixin, RetrieveModelMixin, viewsets.GenericViewSet
-):
-    class UserSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
-        permissions = serializers.RelatedField(source='user_permissions', many=True, read_only=True)
-        profile = serializers.PrimaryKeyRelatedField(source='userprofile', read_only=True)
-        url = serializers.SerializerMethodField()
-
-        class Meta:
-            model = User
-            fields = (
-                'id',
-                'username',
-                'password',
-                'first_name',
-                'last_name',
-                'email',
-                'is_superuser',
-                'groups',
-                'permissions',
-                'profile',
-                'url',
-            )
-            read_only_fields = (
-                'username',
-                'password',
-                'first_name',
-                'last_name',
-                'email',
-                'is_superuser',
-                'groups',
-                'permissions',
-                'profile',
-                'url',
-            )
-
-        def get_url(self, obj):
-            request = self.context.get('request')
-            request_format = self.context.get('format')
-            policy = self.context.get('policy')
-            if policy is None:
-                kwargs = {'id': obj.id}
-                return reverse(
-                    'rbac:user-detail', kwargs=kwargs, request=request, format=request_format
-                )
-            else:
-                kwargs = {'parent_lookup_policy': self.context['policy'].id, 'pk': obj.id}
-                return reverse(
-                    'rbac:policy-user-detail',
-                    kwargs=kwargs,
-                    request=request,
-                    format=request_format,
-                )
-
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    fiterset_fields = '__all__'
-    ordering_fields = '__all__'
-
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        policy_id = self.kwargs.get('parent_lookup_policy')
-        if policy_id is not None:
-            context.update({'policy': Policy.objects.get(id=policy_id)})
-        return context
-
-
-class PolicyGroupViewSet(
-    NestedViewSetMixin, ListModelMixin, RetrieveModelMixin, viewsets.GenericViewSet
-):
-    class GroupSerializer(serializers.ModelSerializer):
-        url = serializers.SerializerMethodField()
-
-        class Meta:
-            model = Group
-            fields = (
-                'id',
-                'name',
-                'permissions',
-                'url',
-            )
-
-        def get_url(self, obj):
-            request = self.context.get('request')
-            request_format = self.context.get('format')
-            policy = self.context.get('policy')
-            if policy is None:
-                kwargs = {'id': obj.id}
-                return reverse(
-                    'rbac:group-detail', kwargs=kwargs, request=request, format=request_format
-                )
-            else:
-                kwargs = {'parent_lookup_policy': self.context['policy'].id, 'pk': obj.id}
-                return reverse(
-                    'rbac:policy-group-detail',
-                    kwargs=kwargs,
-                    request=request,
-                    format=request_format,
-                )
-
-    queryset = Group.objects.all()
-    serializer_class = GroupSerializer
-    filterset_fields = '__all__'
-    ordering_fields = '__all__'
-
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        policy_id = self.kwargs.get('parent_lookup_policy')
-        if policy_id is not None:
-            context.update({'policy': Policy.objects.get(id=policy_id)})
-        return context
 
 
 class ObjectField(serializers.JSONField):
@@ -174,6 +37,8 @@ class ObjectField(serializers.JSONField):
                         'pattern': '^(cluster|service|component|provider|host)$',
                     },
                 },
+                'additionalProperties': False,
+                'required': ['id', 'type'],
             },
         }
         try:
@@ -210,55 +75,42 @@ class PolicyRoleSerializer(BaseRelatedSerializer):
 
 class PolicyUserSerializer(BaseRelatedSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail', lookup_field='id')
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
 
 
 class PolicyGroupSerializer(BaseRelatedSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all())
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail', lookup_field='id')
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
+
+
+class PolicySerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:policy-detail')
+    object = ObjectField(required=False)
+    built_in = serializers.BooleanField(read_only=True)
+    role = PolicyRoleSerializer()
+    user = PolicyUserSerializer(many=True)
+    group = PolicyGroupSerializer(many=True, required=False)
+
+    class Meta:
+        model = Policy
+        fields = (
+            'id',
+            'name',
+            'object',
+            'built_in',
+            'role',
+            'user',
+            'group',
+            'url',
+        )
+        expandable_fields = {
+            'user': ('rbac.endpoints.user.views.UserSerializer', {'many': True}),
+            'group': ('rbac.endpoints.group.views.GroupSerializer', {'many': True}),
+            'role': 'rbac.endpoints.role.views.RoleSerializer',
+        }
 
 
 class PolicyViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
-    class PolicySerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
-        url = serializers.HyperlinkedIdentityField(view_name='rbac:policy-detail')
-        user_url = serializers.HyperlinkedRelatedField(
-            view_name='rbac:policy-user-list',
-            read_only=True,
-            source='*',
-            lookup_field='pk',
-            lookup_url_kwarg='parent_lookup_policy',
-        )
-        group_url = serializers.HyperlinkedRelatedField(
-            view_name='rbac:policy-group-list',
-            read_only=True,
-            source='*',
-            lookup_field='pk',
-            lookup_url_kwarg='parent_lookup_policy',
-        )
-        object = ObjectField(required=False)
-        role = PolicyRoleSerializer()
-        user = PolicyUserSerializer(many=True)
-        group = PolicyGroupSerializer(many=True, required=False)
-
-        class Meta:
-            model = Policy
-            fields = (
-                'id',
-                'name',
-                'object',
-                'role',
-                'user',
-                'user_url',
-                'group',
-                'group_url',
-                'url',
-            )
-            expandable_fields = {
-                'user': (PolicyUserViewSet.UserSerializer, {'many': True}),
-                'group': (PolicyGroupViewSet.GroupSerializer, {'many': True}),
-                'role': ExpandedRoleSerializer,
-            }
-
     queryset = Policy.objects.all()
     serializer_class = PolicySerializer
     filterset_fields = '__all__'
@@ -277,6 +129,10 @@ class PolicyViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestor
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         policy = self.get_object()
+
+        if policy.built_in:
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
         serializer = self.get_serializer(policy, data=request.data, partial=partial)
         if serializer.is_valid(raise_exception=True):
 
@@ -285,3 +141,9 @@ class PolicyViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestor
             return Response(data=self.get_serializer(policy).data)
         else:
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        policy = self.get_object()
+        if policy.built_in:
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return super().destroy(request, *args, **kwargs)

@@ -36,16 +36,16 @@ class ObjectType(models.TextChoices):
 
 def validate_object_type(value):
     if not isinstance(value, list):
-        raise ValidationError('Invalid field type `parametrized_by_type`')
+        raise ValidationError('Not a valid list.')
     if not all((v in ObjectType.values for v in value)):
-        raise ValidationError('Invalid object type')
+        raise ValidationError('Not a valid object type.')
 
 
 def validate_category(value):
     if not isinstance(value, list):
-        raise ValidationError('Invalid field type `category`')
+        raise ValidationError('Not a valid list.')
     if not all(isinstance(v, str) for v in value):
-        raise ValidationError('Invalid object type in parametrized list')
+        raise ValidationError('Not a valid string in list.')
 
 
 class User(AuthUser):
@@ -178,6 +178,7 @@ class Policy(models.Model):
     name = models.CharField(max_length=255)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
     object = models.ManyToManyField(PolicyObject, blank=True)
+    built_in = models.BooleanField(default=True)
     user = models.ManyToManyField(User, blank=True)
     group = models.ManyToManyField(Group, blank=True)
     model_perm = models.ManyToManyField(PolicyPermission, blank=True)

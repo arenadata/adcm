@@ -21,8 +21,14 @@ from rbac.services.role import role_create, role_update
 from rbac.utils import BaseRelatedSerializer
 
 
-class ExpandedRoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
+class RoleChildSerializer(BaseRelatedSerializer):
+    id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
     url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
+
+
+class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
+    child = RoleChildSerializer(many=True, required=False)
 
     class Meta:
         model = Role
@@ -31,47 +37,21 @@ class ExpandedRoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSeriali
             'name',
             'description',
             'built_in',
+            'business_permit',
             'category',
             'parametrized_by_type',
             'child',
             'url',
         )
-        expandable_fields = {
-            'child': ('rbac.endpoints.role.views.ExpandedRoleSerializer', {'many': True})
+        extra_kwargs = {
+            'parametrized_by_type': {'required': True},
+            'built_in': {'read_only': True},
+            'business_permit': {'read_only': True},
         }
-
-
-class RoleChildSerializer(BaseRelatedSerializer):
-    id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
+        expandable_fields = {'child': ('rbac.endpoints.role.views.RoleSerializer', {'many': True})}
 
 
 class RoleView(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
-    class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
-        url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
-        child = RoleChildSerializer(many=True, required=False)
-
-        class Meta:
-            model = Role
-            fields = (
-                'id',
-                'name',
-                'description',
-                'built_in',
-                'business_permit',
-                'category',
-                'parametrized_by_type',
-                'child',
-                'url',
-            )
-            extra_kwargs = {
-                'parametrized_by_type': {'required': True},
-                'built_in': {'read_only': True},
-                'business_permit': {'read_only': True},
-            }
-            expandable_fields = {
-                'child': ('rbac.endpoints.role.views.ExpandedRoleSerializer', {'many': True})
-            }
 
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
@@ -90,7 +70,6 @@ class RoleView(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
 
-        # TODO: this check needs to be removed somewhere
         if instance.built_in:
             return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 

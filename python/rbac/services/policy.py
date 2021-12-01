@@ -65,7 +65,7 @@ def object_policy_add(policy: Policy, obj: ObjectType) -> None:
 
 
 @atomic
-def policy_create(name: str, role: Role, **kwargs):
+def policy_create(name: str, role: Role, built_in: bool = False, **kwargs):
     """
     Creating Policy object
 
@@ -73,12 +73,14 @@ def policy_create(name: str, role: Role, **kwargs):
     :type name: str
     :param role: Role
     :type role: Role
+    :param built_in: Sing built in Policy
+    :type built_in: bool
     :param kwargs: Other parameters for Policy object
     :type kwargs: dict
     :return: Policy
     :rtype: Policy
     """
-    policy = Policy.objects.create(name=name, role=role)
+    policy = Policy.objects.create(name=name, role=role, built_in=built_in)
     objects = kwargs.get('object', [])
 
     for obj in objects:
