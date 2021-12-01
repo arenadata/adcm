@@ -971,3 +971,156 @@ roles:
         - View service status page
         - View component status page
         - View host status page
+
+    - name: Base role
+      description: Default list of view permissions for all objects
+      business_permit: False
+      module_name: rbac.roles
+      class_name: ParentRole
+      child:
+        - Get ADCM Object
+        - Get Provider
+        - Get Cluster
+        - Get Host
+        - Get Service
+        - Get Component
+        - Get Task and Jobs
+        - Get stack
+        - Get concerns
+
+    - name: Get ADCM Object
+      description: Read access to ADCM
+      business_permit: False
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: adcm
+              codenames:
+                - view
+
+    - name: Get Provider
+      description: Read access to Provider
+      business_permit: False
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: hostprovider
+              codenames:
+                - view
+
+    - name: Get Cluster
+      description: Read access to Clusters
+      business_permit: False
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - view
+
+    - name: Get Host
+      description: Read access to Host
+      business_permit: False
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: host
+              codenames:
+                - view
+
+    - name: Get Service
+      description: Read access to Service
+      business_permit: False
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: clusterobject
+              codenames:
+                - view
+
+    - name: Get Component
+      description: Read access to Component
+      business_permit: False
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: servicecomponent
+              codenames:
+                - view
+
+    - name: Get Task and Jobs
+      description: Read access to job execution information
+      business_permit: False
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: tasklog
+              codenames:
+                - view
+            - name: joblog
+              codenames:
+                - view
+            - name: logstorage
+              codenames:
+                - view
+
+    - name: Get stack
+      description: Read access to all prototypes
+      business_permit: False
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: prototype
+              codenames:
+                - view
+            - name: bundle
+              codenames:
+                - view
+            - name: action
+              codenames:
+                - view
+            - name: prototypeconfig
+              codenames:
+                - view
+            - name: prototypeexport
+              codenames:
+                - view
+            - name: prototypeimport
+              codenames:
+                - view
+
+    - name: Get concerns
+      description: Read access to all concerns
+      business_permit: False
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: concernitem
+              codenames:
+                - view
+            - name: bundle
+              codenames:
+                - view
+            - name: action
+              codenames:
+                - view
+
+
