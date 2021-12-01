@@ -60,6 +60,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'rbac',  # keep it above 'django.contrib.auth' in order to keep 'createsuperuser' working
     'django_generate_secret_key',
     'django_filters',
     'django.contrib.auth',
@@ -75,7 +76,6 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'social_django',
     'guardian',
-    'rbac',
     'adwp_events',
     'cm.apps.CmConfig',
 ]
@@ -151,6 +151,8 @@ DATABASES = {
         },
     }
 }
+# does not work for multi-table inherited model, but works fine as-is without user model swapping
+# AUTH_USER_MODEL = 'rbac.User'
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -238,6 +240,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'filters': ['require_debug_false'],
+            'formatter': 'adwp',
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'data/log/adcm_debug.log'),
         },

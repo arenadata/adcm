@@ -311,7 +311,7 @@ describe('Configuration fields service', () => {
   });
 
   it('List fieldType :: checkValue("[]", "list") should return null', () => {
-    expect(checkValue([], 'list')).toBeNull();
+    expect(checkValue([], 'list')).toEqual([]);
   });
 
   it('List fieldType :: checkValue(["string1", "", "string2"], "list") should return ["string1", "string2"]', () => {
@@ -342,7 +342,7 @@ describe('Configuration fields service', () => {
   });
 
   it('Map fieldType :: checkValue("{}", "map") should return null', () => {
-    expect(checkValue({}, 'map')).toBeNull();
+    expect(checkValue({}, 'map')).toEqual({});
   });
 
   /**

@@ -15,7 +15,7 @@
 import importlib
 
 from adwp_base.errors import raise_AdwpEx as err
-from django.contrib.auth.models import User, Group as AuthGroup, Permission
+from django.contrib.auth.models import User as AuthUser, Group as AuthGroup, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -46,6 +46,16 @@ def validate_category(value):
         raise ValidationError('Invalid field type `category`')
     if not all(isinstance(v, str) for v in value):
         raise ValidationError('Invalid object type in parametrized list')
+
+
+class User(AuthUser):
+    """
+    Beware the Multi-table inheritance
+    Original User model extended with profile and replaced groups m2m
+    """
+
+    profile = models.JSONField(default=str)
+    group = models.ManyToManyField('Group', related_name='user')
 
 
 class Group(AuthGroup):
@@ -206,7 +216,7 @@ class Policy(models.Model):
         for user in self.user.all():
             self.role.apply(self, user, None)
         for group in self.group.all():
-            self.role.apply(self, None, group)
+            self.role.apply(self, None, group=group)
 
 
 class UserProfile(models.Model):

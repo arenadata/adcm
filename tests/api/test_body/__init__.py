@@ -18,8 +18,10 @@ import allure
 import pytest
 
 from tests.api.steps.asserts import ExpectedBody
+from tests.api.testdata.generators import TestData
+from tests.api.utils.methods import Methods
 from tests.api.utils.tools import not_set
-from tests.api.utils.types import get_fields
+from tests.api.utils.types import get_fields, is_fk_field, is_password_field
 
 pytestmark = [
     pytest.mark.allure_label("API Tests", label_type="layer"),
@@ -34,11 +36,26 @@ def _test_patch_put_body_positive(prepare_body_data: Tuple):
     """
     adcm, test_data_list = prepare_body_data
     for test_data in test_data_list:
-        # Set expected response fields values
-        test_data.response.body = ExpectedBody()
-        for field in get_fields(test_data.request.endpoint.data_class):
-            test_data.response.body.fields[field.name] = not_set
-            if expected_field_value := test_data.request.data.get(field.name):
-                test_data.response.body.fields[field.name] = expected_field_value
+        test_data.response.body = generate_body_for_checks(test_data)
         with allure.step(f'Assert - {test_data.description}'):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)
+
+
+def generate_body_for_checks(test_data: TestData):
+    """
+    Generate expected response fields values by test data
+    """
+    body = ExpectedBody()
+    for field in get_fields(test_data.request.endpoint.data_class):
+        body.fields[field.name] = not_set
+        if test_data.request.method == Methods.POST and not field.postable:
+            continue
+        if is_fk_field(field):
+            # TODO add fk field check
+            continue
+
+        if is_password_field(field):
+            body.fields[field.name] = field.f_type.placeholder
+        elif expected_field_value := test_data.request.data.get(field.name):
+            body.fields[field.name] = expected_field_value
+    return body

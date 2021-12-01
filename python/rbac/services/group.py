@@ -26,7 +26,7 @@ def _update_users(group: models.Group, users: [Empty, List[dict]]) -> None:
     if users is Empty:
         return
 
-    group_users = {u.id: u for u in group.user_set.all()}
+    group_users = {u.id: u for u in group.user.all()}
     new_users = [u['id'] for u in users]
 
     for user_id in new_users:
@@ -37,13 +37,13 @@ def _update_users(group: models.Group, users: [Empty, List[dict]]) -> None:
         except ObjectDoesNotExist:
             log.error('Attempt to add non-existing user %s to group %s', user_id, group)
             continue
-        group.user_set.add(user)
+        group.user.add(user)
         group_users[user_id] = user
 
     for user_id, user in group_users.items():
         if user_id in new_users:
             continue
-        group.user_set.remove(user)
+        group.user.remove(user)
 
 
 @transaction.atomic

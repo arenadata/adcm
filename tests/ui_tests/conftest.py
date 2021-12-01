@@ -14,16 +14,14 @@
 
 # pylint:disable=redefined-outer-name
 
-import os
 import json
+import os
 import tempfile
-
 from typing import Generator
 
-import requests
 import allure
 import pytest
-
+import requests
 from _pytest.fixtures import SubRequest
 from adcm_client.wrappers.docker import ADCM
 from selenium.common.exceptions import WebDriverException
@@ -32,7 +30,6 @@ from tests.ui_tests.app.api import ADCMDirectAPIClient
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage
-
 
 SELENOID_DOWNLOADS_PATH = '/home/selenium/Downloads'
 

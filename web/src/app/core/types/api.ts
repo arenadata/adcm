@@ -36,7 +36,11 @@ export type TypeName =
   'servicecomponent' |
   'component' |
   'group_config' |
-  'group_config_hosts';
+  'group_config_hosts' |
+  'rbac_user' |
+  'rbac_group' |
+  'rbac_role' |
+  'rbac_policy';
 export type Entities = ICluster | Service | Host | Provider | Job | Task | Bundle;
 
 /**

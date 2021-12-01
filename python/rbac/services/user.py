@@ -12,7 +12,7 @@
 
 """Service functions for working with User model"""
 
-from typing import Any, List
+from typing import List
 
 from adwp_base.errors import AdwpEx
 from django.contrib.auth.hashers import make_password
@@ -41,19 +41,11 @@ def _set_password(user: models.User, value: str) -> None:
     _regenerate_token(user)
 
 
-def _update_profile(user: models.User, profile_data: Any) -> None:
-    if profile_data is Empty:
-        return
-    profile, _ = models.UserProfile.objects.get_or_create(user=user)
-    profile.profile = profile_data if profile_data is not None else ''
-    profile.save()
-
-
 def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
     if groups is Empty:
         return
 
-    user_groups = {g.id: g for g in user.groups.all()}
+    user_groups = {g.id: g for g in user.group.all()}
     new_groups = [g['id'] for g in groups]
 
     for group_id in new_groups:
@@ -64,13 +56,13 @@ def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
         except ObjectDoesNotExist:
             log.error('Attempt to add user %s to non-existing group %s', user, group_id)
             continue
-        user.groups.add(group)
+        user.group.add(group)
         user_groups[group_id] = group
 
     for group_id, group in user_groups.items():
         if group_id in new_groups:
             continue
-        user.groups.remove(group)
+        user.group.remove(group)
 
 
 def _regenerate_token(user: models.User) -> Token:
@@ -93,7 +85,7 @@ def update(
     is_superuser: bool = Empty,
     password: str = Empty,
     profile: dict = Empty,
-    groups: list = Empty,
+    group: list = Empty,
 ) -> models.User:
     """Full or partial User update"""
     if (partial and username is not Empty) or (not partial and username != user.username):
@@ -102,12 +94,12 @@ def update(
     set_not_empty_attr(user, partial, 'first_name', first_name, '')
     set_not_empty_attr(user, partial, 'last_name', last_name, '')
     set_not_empty_attr(user, partial, 'email', email, '')
+    set_not_empty_attr(user, partial, 'profile', profile, '')
     _set_password(user, password)
-    _update_profile(user, profile)
 
     if context_user is None or context_user.is_superuser:
         set_not_empty_attr(user, partial, 'is_superuser', is_superuser, False)
-        _update_groups(user, groups)
+        _update_groups(user, group)
     user.save()
     return user
 
@@ -122,7 +114,7 @@ def create(
     email: str = None,
     is_superuser: bool = None,
     profile: dict = None,
-    groups: list = None,
+    group: list = None,
 ) -> models.User:
     """Create User"""
     if is_superuser:
@@ -136,11 +128,11 @@ def create(
             first_name=first_name,
             last_name=last_name,
             email=email,
+            profile=profile,
         )
     except IntegrityError as exc:
         raise AdwpEx('USER_CREATE_ERROR', msg=f'User creation failed with error {exc}') from exc
 
-    _update_groups(user, groups or [])
-    _update_profile(user, profile)
+    _update_groups(user, group or [])
     _regenerate_token(user)
     return user

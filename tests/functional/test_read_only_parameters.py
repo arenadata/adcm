@@ -54,6 +54,7 @@ def cluster_config(cluster):
     return cluster.config()
 
 
+@pytest.mark.xfail(reason="Disabled due to temporary fix in https://arenadata.atlassian.net/browse/ADCM-2353")
 @pytest.mark.parametrize(
     ('key', 'input_value', 'expected', 'action', 'group', 'check_exception'),
     TEST_DATA,

@@ -55,19 +55,14 @@ class GroupUserSerializer(serializers.Serializer):
 class ExpandedGroupSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
     """Expanded Group serializer"""
 
-    description = serializers.CharField(source='group.description')
-    user = GroupUserSerializer(many=True, source='user_set')
+    description = serializers.CharField()
+    user = GroupUserSerializer(many=True)
     url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
 
     class Meta:
         model = models.Group
         fields = ('id', 'name', 'description', 'user', 'url')
-        expandable_fields = {
-            'user': (
-                'rbac.endpoints.user.views.UserSerializer',
-                {'many': True, 'source': 'user_set'},
-            )
-        }
+        expandable_fields = {'user': ('rbac.endpoints.user.views.UserSerializer', {'many': True})}
 
 
 class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
@@ -81,21 +76,17 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
     is_superuser = serializers.BooleanField(default=False)
     password = PasswordField(trim_whitespace=False)
     url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
-    profile = serializers.JSONField(source='userprofile.profile', required=False, default='')
-    groups = GroupSerializer(many=True, required=False)
+    profile = serializers.JSONField(required=False, default='')
+    group = GroupSerializer(many=True, required=False)
 
     class Meta:
-        expandable_fields = {'groups': (ExpandedGroupSerializer, {'many': True})}
+        expandable_fields = {'group': (ExpandedGroupSerializer, {'many': True})}
 
     def update(self, instance, validated_data):
-        if 'userprofile' in validated_data:
-            validated_data['profile'] = validated_data.pop('userprofile')['profile']
         context_user = self.context['request'].user
         return user_services.update(instance, context_user, partial=self.partial, **validated_data)
 
     def create(self, validated_data):
-        if 'userprofile' in validated_data:
-            validated_data['profile'] = validated_data.pop('userprofile')['profile']
         return user_services.create(**validated_data)
 
 
