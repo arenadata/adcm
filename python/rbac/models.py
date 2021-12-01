@@ -217,10 +217,3 @@ class Policy(models.Model):
             self.role.apply(self, user, None)
         for group in self.group.all():
             self.role.apply(self, None, group=group)
-
-
-class UserProfile(models.Model):
-    """Arbitrary information about user for frontend"""
-
-    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
-    profile = models.JSONField(default=str)
