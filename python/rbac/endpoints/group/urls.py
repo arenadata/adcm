@@ -10,20 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Group URLs"""
 
-from django.urls import path, include
-from . import views
+from rest_framework.routers import SimpleRouter
 
+from .views import GroupViewSet
 
-urlpatterns = [
-    path('', views.GroupList.as_view(), name='group-list'),
-    path(
-        '<name:name>/',
-        include(
-            [
-                path('', views.GroupDetail.as_view(), name='group-details'),
-                path('role/', views.ChangeGroupRole.as_view(), name='change-group-role'),
-            ]
-        ),
-    ),
-]
+router = SimpleRouter()
+router.register('', GroupViewSet, basename='group')
+urlpatterns = router.urls

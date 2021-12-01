@@ -332,7 +332,9 @@ class DetailViewRO(GenericAPIView, InterfaceView):
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         kw_req = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        return self.check_obj(kw_req)
+        obj = self.check_obj(kw_req)
+        self.check_object_permissions(self.request, obj)
+        return obj
 
     def get(self, request, *args, **kwargs):
         obj = self.get_object()

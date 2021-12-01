@@ -47,7 +47,6 @@ from cm.models import (
     Prototype,
     PrototypeExport,
     PrototypeImport,
-    Role,
     ServiceComponent,
 )
 from cm.upgrade import check_license, version_in
@@ -390,70 +389,6 @@ def add_components_to_service(cluster, service):
         sc.save()
         process_file_type(sc, spec, conf)
         cm.issue.update_hierarchy_issues(sc)
-
-
-def add_user_role(user, role):
-    if Role.objects.filter(id=role.id, user=user):
-        err('ROLE_ERROR', f'User "{user.username}" already has role "{role.name}"')
-    with transaction.atomic():
-        role.user.add(user)
-        role.save()
-        for perm in role.permissions.all():
-            user.user_permissions.add(perm)
-    log.info('Add role "%s" to user "%s"', role.name, user.username)
-    role.role_id = role.id
-    return role
-
-
-def add_group_role(group, role):
-    if Role.objects.filter(id=role.id, group=group):
-        err('ROLE_ERROR', f'Group "{group.name}" already has role "{role.name}"')
-    with transaction.atomic():
-        role.group.add(group)
-        role.save()
-        for perm in role.permissions.all():
-            group.permissions.add(perm)
-    log.info('Add role "%s" to group "%s"', role.name, group.name)
-    role.role_id = role.id
-    return role
-
-
-def cook_perm_list(role, role_list):
-    perm_list = {}
-    for r in role_list:
-        if r == role:
-            continue
-        for perm in r.permissions.all():
-            perm_list[perm.codename] = True
-    return perm_list
-
-
-def remove_user_role(user, role):
-    user_roles = Role.objects.filter(user=user)
-    if role not in user_roles:
-        err('ROLE_ERROR', f'User "{user.username}" does not has role "{role.name}"')
-    perm_list = cook_perm_list(role, user_roles)
-    with transaction.atomic():
-        role.user.remove(user)
-        role.save()
-        for perm in role.permissions.all():
-            if perm.codename not in perm_list:
-                user.user_permissions.remove(perm)
-    log.info('Remove role "%s" from user "%s"', role.name, user.username)
-
-
-def remove_group_role(group, role):
-    group_roles = Role.objects.filter(group=group)
-    if role not in group_roles:
-        err('ROLE_ERROR', f'Group "{group.name}" does not has role "{role.name}"')
-    perm_list = cook_perm_list(role, group_roles)
-    with transaction.atomic():
-        role.group.remove(group)
-        role.save()
-        for perm in role.permissions.all():
-            if perm.codename not in perm_list:
-                group.permissions.remove(perm)
-    log.info('Remove role "%s" from group "%s"', role.name, group.name)
 
 
 def get_bundle_proto(bundle):

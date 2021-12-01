@@ -15,20 +15,16 @@ from rest_framework.schemas import get_schema_view
 from rest_framework_swagger.views import get_swagger_view
 
 from api import views, docs
+from rbac.endpoints import token
 
 register_converter(views.NameConverter, 'name')
 swagger_view = get_swagger_view(title='ArenaData Chapel API')
 schema_view = get_schema_view(title='ArenaData Chapel API')
 
 urlpatterns = [
+    path('', views.APIRoot.as_view()),
     path('info/', views.ADCMInfo.as_view(), name='adcm-info'),
     path('stats/', include('api.stats.urls')),
-    path('token/', views.GetAuthToken.as_view(), name='token'),
-    path('logout/', views.LogOut.as_view(), name='logout'),
-    path('user/', include('api.user.urls')),
-    path('group/', include('api.user.group_urls')),
-    path('role/', include('api.user.role_urls')),
-    path('profile/', include('api.user.profile_urls')),
     path('stack/', include('api.stack.urls')),
     path('cluster/', include('api.cluster.urls')),
     path('service/', include('api.service.urls')),
@@ -48,5 +44,6 @@ urlpatterns = [
     path('auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('docs/md/', docs.docs_md),
     path('docs/', docs.docs_html),
-    path('', views.APIRoot.as_view()),
+    path('rbac/', include(('rbac.urls', 'rbac'))),
+    path('token/', token.GetAuthToken.as_view(), name='token'),
 ]

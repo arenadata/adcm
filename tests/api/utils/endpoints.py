@@ -30,6 +30,8 @@ from tests.api.utils.data_classes import (
     ObjectConfigFields,
     ConfigLogFields,
     GroupConfigHostCandidatesFields,
+    RbacUserFields,
+    RbacGroupFields,
 )
 from tests.api.utils.methods import Methods
 from tests.api.utils.types import get_fields
@@ -51,6 +53,18 @@ class Endpoint:
     data_class: Type[BaseClass]
     spec_link: str
     technical: bool = False
+    _base_path = None
+
+    def set_path(self, value):
+        """Dynamically change a path, for example, insert parent object id into path"""
+        if not self._base_path:
+            self._base_path = self.path
+        self.path = value
+
+    def clear_path(self):
+        """Revert path to initial generic value"""
+        if self._base_path:
+            self.path = self._base_path
 
 
 class Endpoints(Enum):
@@ -66,7 +80,7 @@ class Endpoints(Enum):
 
     @path.setter
     def path(self, value):
-        self.endpoint.path = value
+        self.endpoint.set_path(value)
 
     @property
     def methods(self):
@@ -104,8 +118,14 @@ class Endpoints(Enum):
                 return endpoint
         return None
 
+    @classmethod
+    def clear_endpoints_paths(cls):
+        """Revert endpoints path on initial value"""
+        for endpoint in cls:
+            endpoint.value.clear_path()
+
     def get_child_endpoint_by_fk_name(self, field_name: str) -> Optional["Endpoints"]:
-        """Get endpoint instance by data class"""
+        """Get child endpoint instance by data class"""
         for field in get_fields(self.value.data_class):  # pylint: disable=no-member
             if field.name == field_name:
                 try:
@@ -202,4 +222,32 @@ class Endpoints(Enum):
         ],
         data_class=GroupConfigHostCandidatesFields,
         spec_link="https://spec.adsw.io/adcm_core/objects.html",
+    )
+
+    RbacUser = Endpoint(
+        path="rbac/user",
+        methods=[
+            Methods.GET,
+            Methods.LIST,
+            Methods.POST,
+            Methods.PUT,
+            Methods.PATCH,
+            Methods.DELETE,
+        ],
+        data_class=RbacUserFields,
+        spec_link="",
+    )
+
+    RbacGroup = Endpoint(
+        path="rbac/group",
+        methods=[
+            Methods.GET,
+            Methods.LIST,
+            Methods.POST,
+            Methods.PUT,
+            Methods.PATCH,
+            Methods.DELETE,
+        ],
+        data_class=RbacGroupFields,
+        spec_link="",
     )

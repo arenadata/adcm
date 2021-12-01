@@ -21,6 +21,7 @@ from adcm_pytest_plugin.utils import get_or_add_service
 from tests.api.steps.asserts import BodyAssertionError
 from tests.api.steps.common import assume_step
 from tests.api.utils.api_objects import ADCMTestApiWrapper
+from tests.api.utils.endpoints import Endpoints
 
 
 def pytest_addoption(parser):
@@ -85,3 +86,13 @@ def flexible_assert_step(cmd_opts):
         return assume_step(title, assertion_error)
 
     return _flexible_assert_step
+
+
+@pytest.fixture(autouse=True)
+def clear_endpoints_data():
+    """
+    Clear endpoint paths
+    # TODO it could be done better
+    """
+    yield
+    Endpoints.clear_endpoints_paths()

@@ -11,13 +11,19 @@
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup, NgModel, Validators } from '@angular/forms';
-import { map } from 'rxjs/operators';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
+import { IColumns } from '@adwp-ui/widgets';
+import { Store } from '@ngrx/store';
 
-import { AuthService } from '../../core/auth/auth.service';
+import { AuthService } from '@app/core/auth/auth.service';
 import { DialogComponent } from '@app/shared/components';
 import { User, UsersService } from './users.service';
+import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
+import { RbacUserModel } from '@app/models/rbac/rbac-user.model';
+import { ListService } from '@app/shared/components/list/list.service';
+import { SocketState } from '@app/core/store';
+import { TypeName } from '@app/core/types';
 
 @Component({
   selector: 'app-users',
@@ -25,8 +31,28 @@ import { User, UsersService } from './users.service';
   styleUrls: ['users.component.scss'],
   providers: [UsersService],
 })
-export class UsersComponent implements OnInit {
-  users: User[];
+export class UsersComponent extends AdwpListDirective<RbacUserModel> implements OnInit {
+
+  listColumns = [
+    {
+      label: 'Username',
+      sort: 'username',
+      value: (row) => row.username,
+    },
+    {
+      label: 'Email',
+      sort: 'email',
+      value: (row) => row.email,
+    },
+    {
+      label: 'Groups',
+      value: (row) => row.groups.join(', '),
+    }
+  ] as IColumns<RbacUserModel>;
+
+  type: TypeName = 'rbac_user';
+
+  // users: User[];
   hideLeft = true;
   showChangePassword = false;
   currentUserName: string;
@@ -41,7 +67,18 @@ export class UsersComponent implements OnInit {
     xxx: this.chPassword,
   });
 
-  constructor(private us: UsersService, private auth: AuthService, private router: Router, private dialog: MatDialog) {}
+  constructor(
+    protected service: ListService,
+    protected store: Store<SocketState>,
+    public route: ActivatedRoute,
+    public router: Router,
+    public dialog: MatDialog,
+
+    private us: UsersService,
+    private auth: AuthService,
+  ) {
+    super(service, store, route, router, dialog);
+  }
 
   get username() {
     return this.addForm.get('username');
@@ -56,17 +93,18 @@ export class UsersComponent implements OnInit {
   }
 
   ngOnInit() {
+    super.ngOnInit();
     this.currentUserName = this.auth.auth.login;
-    this.us
-      .getUsers()
-      .pipe(map((u) => u.filter((a) => a.username !== 'status')))
-      .subscribe((users) => (this.users = users));
+    // this.us
+    //   .getUsers()
+    //   .pipe(map((u) => u.filter((a) => a.username !== 'status')))
+    //   .subscribe((users) => (this.users = users));
   }
 
   addUser() {
     if (this.addForm.valid)
       this.us.addUser(this.addForm.get('username').value, this.addForm.get('xxx').get('password').value).subscribe((user) => {
-        this.users = this.users.concat(user);
+        // this.users = this.users.concat(user);
         this.addForm.reset();
         this.hideLeft = true;
       });
@@ -83,7 +121,7 @@ export class UsersComponent implements OnInit {
 
     dialogRef.beforeClosed().subscribe((yes) => {
       if (yes) {
-        this.us.clearUser(user).subscribe((_) => (this.users = this.users.filter((u) => u !== user)));
+        // this.us.clearUser(user).subscribe((_) => (this.users = this.users.filter((u) => u !== user)));
       }
     });
   }

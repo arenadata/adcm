@@ -10,22 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""RBAC root URLs"""
 
 from django.urls import path, include
-from . import views
 
+from .endpoints import logout, root, token
 
 urlpatterns = [
-    path('', views.UserList.as_view(), name='user-list'),
-    path(
-        '<name:username>/',
-        include(
-            [
-                path('', views.UserDetail.as_view(), name='user-details'),
-                path('role/', views.ChangeUserRole.as_view(), name='change-user-role'),
-                path('group/', views.AddUser2Group.as_view(), name='add-user-group'),
-                path('password/', views.UserPasswd.as_view(), name='user-passwd'),
-            ]
-        ),
-    ),
+    path('', root.RBACRoot.as_view(), name='root'),
+    path('user/', include('rbac.endpoints.user.urls')),
+    path('group/', include('rbac.endpoints.group.urls')),
+    path('role/', include('rbac.endpoints.role.urls')),
+    path(r'policy/', include('rbac.endpoints.policy.urls')),
+    path('logout/', logout.LogOut.as_view(), name='logout'),
+    path('token/', token.GetAuthToken.as_view(), name='token'),
 ]
