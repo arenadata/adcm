@@ -256,7 +256,7 @@ def cook_roles(bundle):
         role = Role(
             name=f'{name}_{act.prototype.type}_{act.prototype.display_name}',
             description=f'run action {name} of {act.prototype.type} {act.prototype.display_name}',
-            category=f'{bundle.name}',
+            category=[f'{bundle.name}'],
             bundle=bundle,
             business_permit=False,
             module_name='rbac.roles',
@@ -286,7 +286,7 @@ def cook_roles(bundle):
         role = Role(
             name=f'{name}',
             description=f'action(s) {name}',
-            category=f'{bundle.name}',
+            category=[f'{bundle.name}'],
             bundle=bundle,
             business_permit=True,
             module_name='rbac.roles',
