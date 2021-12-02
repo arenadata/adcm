@@ -1,11 +1,11 @@
 ---
 
-version: 1
+version: 6
 
 roles:
     - name: Create host
       description: The ability to add new host
-      business_permit: False
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -17,7 +17,7 @@ roles:
 
     - name: Create provider
       description: The ability to add new provider
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -29,7 +29,7 @@ roles:
 
     - name: Create cluster
       description: The ability to add new cluster
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -41,7 +41,7 @@ roles:
 
     - name: Upload bundle
       description: The ability to upload Bundle
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -53,6 +53,7 @@ roles:
 
     - name: Compare cluster configurations
       description: The ability to view the history of cluster configuration page
+      type: hidden
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -72,6 +73,7 @@ roles:
 
     - name: Compare service configurations
       description: The ability to view the history of service configuration page
+      type: hidden
       parametrized_by:
         - service
       module_name: rbac.roles
@@ -91,6 +93,7 @@ roles:
 
     - name: Compare component configurations
       description: The ability to view the history of component configuration page
+      type: hidden
       parametrized_by:
         - component
       module_name: rbac.roles
@@ -110,6 +113,7 @@ roles:
 
     - name: Compare provider configurations
       description: The ability to view the history of provider configuration page
+      type: hidden
       parametrized_by:
         - provider
       module_name: rbac.roles
@@ -129,6 +133,7 @@ roles:
 
     - name: Compare host configurations
       description: The ability to view the history of host configuration page
+      type: hidden
       parametrized_by:
         - host
       module_name: rbac.roles
@@ -148,7 +153,7 @@ roles:
 
     - name: Compare configurations
       description: The ability to see the history of all configuration
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ParentRole
       child:
@@ -160,6 +165,7 @@ roles:
 
     - name: View cluster configurations
       description: The ability to view the cluster configuration page
+      type: hidden
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -176,6 +182,7 @@ roles:
 
     - name: View service configurations
       description: The ability to view the service configuration page
+      type: hidden
       parametrized_by:
         - service
       module_name: rbac.roles
@@ -192,6 +199,7 @@ roles:
 
     - name: View component configurations
       description: The ability to view the component configuration page
+      type: hidden
       parametrized_by:
         - component
       module_name: rbac.roles
@@ -208,6 +216,7 @@ roles:
 
     - name: View provider configurations
       description: The ability to view the provider configuration page
+      type: hidden
       parametrized_by:
         - provider
       module_name: rbac.roles
@@ -224,6 +233,7 @@ roles:
 
     - name: View host configurations
       description: The ability to view the host configuration page
+      type: hidden
       parametrized_by:
         - host
       module_name: rbac.roles
@@ -240,7 +250,7 @@ roles:
 
     - name: View configurations
       description: The ability to view all configurations
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ParentRole
       child:
@@ -252,6 +262,7 @@ roles:
 
     - name: Edit cluster configurations
       description: The ability to change and add new cluster configuration
+      type: hidden
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -273,6 +284,7 @@ roles:
 
     - name: Edit service configurations
       description: The ability to change and add new service configuration
+      type: hidden
       parametrized_by:
         - service
       module_name: rbac.roles
@@ -294,6 +306,7 @@ roles:
 
     - name: Edit component configurations
       description: The ability to change and add new component configuration
+      type: hidden
       parametrized_by:
         - component
       module_name: rbac.roles
@@ -315,6 +328,7 @@ roles:
 
     - name: Edit provider configurations
       description: The ability to change and add new provider configuration
+      type: hidden
       parametrized_by:
         - provider
       module_name: rbac.roles
@@ -336,6 +350,7 @@ roles:
 
     - name: Edit host configurations
       description: The ability to change and add new host configuration
+      type: hidden
       parametrized_by:
         - host
       module_name: rbac.roles
@@ -357,7 +372,7 @@ roles:
 
     - name: Edit configurations
       description: The ability to edit all configurations
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ParentRole
       child:
@@ -369,6 +384,7 @@ roles:
 
     - name: View cluster imports
       description: The ability to view the cluster import page
+      type: hidden
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -385,6 +401,7 @@ roles:
 
     - name: View service imports
       description: The ability to view the service import page
+      type: hidden
       parametrized_by:
         - service
       module_name: rbac.roles
@@ -401,7 +418,7 @@ roles:
 
     - name: View imports
       description: The ability to view all imports page on cluster and service
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ParentRole
       child:
@@ -410,6 +427,7 @@ roles:
 
     - name: Manage cluster imports
       description: The ability to change cluster imports
+      type: hidden
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -427,6 +445,7 @@ roles:
 
     - name: Manage service imports
       description: The ability to change service imports
+      type: hidden
       parametrized_by:
         - service
       module_name: rbac.roles
@@ -444,7 +463,7 @@ roles:
 
     - name: Manage imports
       description: The ability to manage all imports page on cluster and service
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ParentRole
       child:
@@ -453,7 +472,7 @@ roles:
 
     - name: Add service
       description: The ability to add service to cluster
-      business_permit: True
+      type: business
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -470,7 +489,7 @@ roles:
 
     - name: Remove service
       description: The ability to remove service from cluster
-      business_permit: True
+      type: business
       parametrized_by:
         - service
       module_name: rbac.roles
@@ -487,7 +506,7 @@ roles:
 
     - name: Remove hosts
       description: The ability to remove hosts
-      business_permit: True
+      type: business
       parametrized_by:
         - host
       module_name: rbac.roles
@@ -504,7 +523,7 @@ roles:
 
     - name: Map hosts
       description: The ability to map hosts to the Cluster
-      business_permit: True
+      type: business
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -524,7 +543,7 @@ roles:
 
     - name: Unmap hosts
       description: The ability to unmap hosts to the Cluster
-      business_permit: True
+      type: business
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -544,6 +563,7 @@ roles:
 
     - name: Upgrade cluster bundle
       description: Update the cluster bundle
+      type: hidden
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -560,6 +580,7 @@ roles:
 
     - name: Upgrade provider bundle
       description: Update the provider bundle
+      type: hidden
       parametrized_by:
         - provider
       module_name: rbac.roles
@@ -576,7 +597,7 @@ roles:
 
     - name: Upgrade bundle
       description: Update all type of bundles
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ParentRole
       child:
@@ -585,7 +606,7 @@ roles:
 
     - name: Remove cluster
       description: The ability to remove cluster
-      business_permit: True
+      type: business
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -602,7 +623,7 @@ roles:
 
     - name: Remove provider
       description: The ability to remove provider
-      business_permit: True
+      type: business
       parametrized_by:
         - provider
       module_name: rbac.roles
@@ -619,7 +640,7 @@ roles:
 
     - name: Remove bundle
       description: The ability to remove bundle
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -631,7 +652,7 @@ roles:
 
     - name: View ADCM settings
       description: View purely adcm config
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ObjectRole
       init_params:
@@ -648,7 +669,7 @@ roles:
 
     - name: Compare ADCM settings
       description: compare settings purely adcm config
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ObjectRole
       init_params:
@@ -668,7 +689,7 @@ roles:
 
     - name: Edit ADCM settings
       description: Edit purely adcm config
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ObjectRole
       init_params:
@@ -690,7 +711,7 @@ roles:
 
     - name: View users
       description: The ability to view Users page
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -702,7 +723,7 @@ roles:
 
     - name: Create user
       description: The ability to create new user
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -714,7 +735,7 @@ roles:
 
     - name: Edit user
       description: The ability to change information about existed user
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -726,7 +747,7 @@ roles:
 
     - name: Remove user
       description: The ability to delete existed user
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -738,7 +759,7 @@ roles:
 
     - name: View roles
       description: The ability to view roles page
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -750,7 +771,7 @@ roles:
 
     - name: Create custom role
       description: The ability to create new role
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -762,7 +783,7 @@ roles:
 
     - name: Edit role
       description: The ability to change your custom role
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -774,7 +795,7 @@ roles:
 
     - name: Remove roles
       description: The ability to delete custom roles
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -786,7 +807,7 @@ roles:
 
     - name: View group
       description: The ability to view group page
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -798,7 +819,7 @@ roles:
 
     - name: Create group
       description: The ability to create new group
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -810,7 +831,7 @@ roles:
 
     - name: Edit group
       description: The ability to change group
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -822,7 +843,7 @@ roles:
 
     - name: Remove group
       description: The ability to delete roles
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -834,7 +855,7 @@ roles:
 
     - name: View policy
       description: The ability to policy group page
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -846,7 +867,7 @@ roles:
 
     - name: Create policy
       description: The ability to create new policy
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -858,7 +879,7 @@ roles:
 
     - name: Edit policy
       description: The ability to change policies
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -870,7 +891,7 @@ roles:
 
     - name: Remove policy
       description: The ability to delete policies
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -882,6 +903,7 @@ roles:
 
     - name: View cluster status page
       description: The ability to view status page of exact cluster
+      type: hidden
       module_name: rbac.roles
       class_name: ObjectRole
       parametrized_by:
@@ -899,6 +921,7 @@ roles:
 
     - name: View service status page
       description: The ability to view status page of exact service
+      type: hidden
       module_name: rbac.roles
       class_name: ObjectRole
       parametrized_by:
@@ -916,6 +939,7 @@ roles:
 
     - name: View component status page
       description: The ability to view status page of exact component
+      type: hidden
       module_name: rbac.roles
       class_name: ObjectRole
       parametrized_by:
@@ -933,6 +957,7 @@ roles:
 
     - name: View host status page
       description: The ability to view status page of exact host
+      type: hidden
       module_name: rbac.roles
       class_name: ObjectRole
       parametrized_by:
@@ -950,7 +975,7 @@ roles:
 
     - name: View status information
       description: Ability to view all status pages
-      business_permit: True
+      type: business
       module_name: rbac.roles
       class_name: ParentRole
       child:
@@ -961,7 +986,7 @@ roles:
 
     - name: Base role
       description: Default list of view permissions for all objects
-      business_permit: False
+      type: business
       module_name: rbac.roles
       class_name: ParentRole
       child:
@@ -977,7 +1002,7 @@ roles:
 
     - name: Get ADCM object
       description: Read access to ADCM
-      business_permit: False
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -989,7 +1014,7 @@ roles:
 
     - name: Get provider
       description: Read access to Provider
-      business_permit: False
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -1001,7 +1026,7 @@ roles:
 
     - name: Get cluster
       description: Read access to Clusters
-      business_permit: False
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -1013,7 +1038,7 @@ roles:
 
     - name: Get host
       description: Read access to Host
-      business_permit: False
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -1025,7 +1050,7 @@ roles:
 
     - name: Get service
       description: Read access to Service
-      business_permit: False
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -1037,7 +1062,7 @@ roles:
 
     - name: Get component
       description: Read access to Component
-      business_permit: False
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -1049,7 +1074,7 @@ roles:
 
     - name: Get task and jobs
       description: Read access to job execution information
-      business_permit: False
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -1067,7 +1092,7 @@ roles:
 
     - name: Get stack
       description: Read access to all prototypes
-      business_permit: False
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -1094,7 +1119,7 @@ roles:
 
     - name: Get concerns
       description: Read access to all concerns
-      business_permit: False
+      type: business
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -1111,7 +1136,7 @@ roles:
                 - view
 
     - name: ADCM User
-      business_permit: False
+      type: role
       module_name: rbac.roles
       class_name: ParentRole
       child:
@@ -1122,7 +1147,7 @@ roles:
         - View imports
 
     - name: Service Administrator
-      business_permit: False
+      type: role
       parametrized_by:
         - service
       init_params:
@@ -1136,7 +1161,7 @@ roles:
         - Manage imports
 
     - name: Cluster Administrator
-      business_permit: False
+      type: role
       parametrized_by:
         - cluster
       init_params:
@@ -1157,7 +1182,7 @@ roles:
         - Remove bundle
 
     - name: ADCM Administrator
-      business_permit: False
+      type: role
       module_name: rbac.roles
       class_name: ParentRole
       child:

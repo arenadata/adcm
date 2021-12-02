@@ -74,7 +74,13 @@ class Role(models.Model):
     Also Role can have children and so produce acyclic graph of linked roles
     """
 
+    ROLE_TYPES = [
+        ('business', 'business'),
+        ('role', 'role'),
+        ('hidden', 'hidden'),
+    ]
     name = models.CharField(max_length=160)
+#    display_name = models.CharField(max_length=160)
     description = models.TextField(blank=True)
     child = models.ManyToManyField("self", symmetrical=False, blank=True)
     permissions = models.ManyToManyField(Permission, blank=True)
@@ -83,7 +89,7 @@ class Role(models.Model):
     init_params = models.JSONField(default=dict)
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE, null=True, default=None)
     built_in = models.BooleanField(default=True, null=False)
-    business_permit = models.BooleanField(default=True, null=False)
+    type = models.CharField(max_length=32, choices=ROLE_TYPES, null=False, default='business')
     category = models.JSONField(default=list, null=False, validators=[validate_category])
     parametrized_by_type = models.JSONField(
         default=list, null=False, validators=[validate_object_type]
