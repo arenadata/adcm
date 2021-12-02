@@ -37,15 +37,19 @@ class MaxRetriesError(Exception):
     """Raise when limit of retries exceeded"""
 
 
+class DoNotDiscover:  # pylint: disable=too-few-public-methods
+    """Will not be discovered as a test class"""
+
+    __test__ = False
+
+
 @attr.dataclass(repr=False)
-class TestData:  # pylint: disable=too-few-public-methods
+class TestData(DoNotDiscover):  # pylint: disable=too-few-public-methods
     """Pair of request and expected response for api tests"""
 
     request: Request
     response: ExpectedResponse
     description: Optional[str] = None
-    # Will not be discovered as a test class
-    __test__ = False
 
     def __repr__(self):
         return (
@@ -54,15 +58,22 @@ class TestData:  # pylint: disable=too-few-public-methods
         )
 
 
-class TestDataWithPreparedBody(NamedTuple):
+class TestDataWithPreparedBody(NamedTuple, DoNotDiscover):
     """
     Class for separating request body and data needed to send and assert it
     """
 
     test_data: TestData
     test_body: dict
-    # Will not be discovered as a test class
-    __test__ = False
+
+
+class TestDataWithPreparedPath(NamedTuple, DoNotDiscover):
+    """
+    Class for testing with custom request endpoint path
+    """
+
+    test_data: TestData
+    request_path: str
 
 
 def _fill_pytest_param(
@@ -143,6 +154,37 @@ def get_data_for_params_check(method=Methods.GET, fields_predicate=None):
                 positive=True,
             )
         )
+    return test_data
+
+
+def get_data_for_urls_check() -> List[TestDataWithPreparedPath]:
+    """
+    Get test data for requests with invalid url data with parent object id - /api/v1/parent/{id}/object
+    """
+    test_data = []
+    for endpoint in Endpoints:
+        if endpoint.technical:
+            continue
+        if "{id}" not in endpoint.path:
+            continue
+        for method in Methods:
+            if method not in endpoint.methods:
+                continue
+            request = Request(method=method, endpoint=endpoint)
+            response = ExpectedResponse(status_code=HTTPStatus.NOT_FOUND)
+            test_data.append(
+                _fill_pytest_param(
+                    [
+                        TestDataWithPreparedPath(
+                            TestData(request=request, response=response),
+                            request_path=endpoint.path.format(id="unexpected"),
+                        )
+                    ],
+                    endpoint=endpoint,
+                    method=method,
+                    positive=False,
+                ),
+            )
     return test_data
 
 
