@@ -1,22 +1,9 @@
 ---
 
-version: 3
+version: 1
 
 roles:
-    - name: base
-      description: Base user role
-      business_permit: True
-      module_name: rbac.roles
-      class_name: ModelRole
-      apps:
-        - label: auth
-          models:
-            - name: user
-              codenames:
-                - view
-                - self_change_password
-
-    - name: Create Host
+    - name: Create host
       description: The ability to add new host
       business_permit: False
       module_name: rbac.roles
@@ -978,17 +965,17 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       child:
-        - Get ADCM Object
-        - Get Provider
-        - Get Cluster
-        - Get Host
-        - Get Service
-        - Get Component
-        - Get Task and Jobs
+        - Get ADCM object
+        - Get provider
+        - Get cluster
+        - Get host
+        - Get service
+        - Get component
+        - Get task and jobs
         - Get stack
         - Get concerns
 
-    - name: Get ADCM Object
+    - name: Get ADCM object
       description: Read access to ADCM
       business_permit: False
       module_name: rbac.roles
@@ -1000,7 +987,7 @@ roles:
               codenames:
                 - view
 
-    - name: Get Provider
+    - name: Get provider
       description: Read access to Provider
       business_permit: False
       module_name: rbac.roles
@@ -1012,7 +999,7 @@ roles:
               codenames:
                 - view
 
-    - name: Get Cluster
+    - name: Get cluster
       description: Read access to Clusters
       business_permit: False
       module_name: rbac.roles
@@ -1024,7 +1011,7 @@ roles:
               codenames:
                 - view
 
-    - name: Get Host
+    - name: Get host
       description: Read access to Host
       business_permit: False
       module_name: rbac.roles
@@ -1036,7 +1023,7 @@ roles:
               codenames:
                 - view
 
-    - name: Get Service
+    - name: Get service
       description: Read access to Service
       business_permit: False
       module_name: rbac.roles
@@ -1048,7 +1035,7 @@ roles:
               codenames:
                 - view
 
-    - name: Get Component
+    - name: Get component
       description: Read access to Component
       business_permit: False
       module_name: rbac.roles
@@ -1060,7 +1047,7 @@ roles:
               codenames:
                 - view
 
-    - name: Get Task and Jobs
+    - name: Get task and jobs
       description: Read access to job execution information
       business_permit: False
       module_name: rbac.roles
@@ -1136,7 +1123,7 @@ roles:
 
     - name: Service Administrator
       business_permit: False
-      paramtrized_by:
+      parametrized_by:
         - service
       init_params:
         app_name: cm
@@ -1165,7 +1152,7 @@ roles:
         - Map hosts
         - Unmap hosts
         - Upgrade bundle
-        - Create Host
+        - Create host
         - Upload bundle
         - Remove bundle
 
