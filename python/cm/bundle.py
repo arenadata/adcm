@@ -249,13 +249,16 @@ def update_obj(dest, source, fields):
 
 
 def cook_roles(bundle):
+    parent = {}
     for act in Action.objects.filter(prototype__bundle=bundle):
         name = act.display_name
         model = get_model_by_type(act.prototype.type)
         role = Role(
             name=f'{name}_{act.prototype.type}_{act.prototype.display_name}',
             description=f'run action {name} of {act.prototype.type} {act.prototype.display_name}',
+            category=[f'{bundle.name}'],
             bundle=bundle,
+            business_permit=False,
             module_name='rbac.roles',
             class_name='ActionRole',
             init_params={
@@ -270,11 +273,28 @@ def cook_roles(bundle):
             },
         )
         role.save()
+        if name not in parent:
+            parent[name] = []
+        parent[name].append(role)
         ct = ContentType.objects.get_for_model(model)
         perm, _ = Permission.objects.get_or_create(
             content_type=ct, codename='run_object_action', name='Can run actions'
         )
         role.permissions.add(perm)
+
+    for name, children in parent.items():
+        role = Role(
+            name=f'{name}',
+            description=f'action(s) {name}',
+            category=[f'{bundle.name}'],
+            bundle=bundle,
+            business_permit=True,
+            module_name='rbac.roles',
+            class_name='ParentRole',
+        )
+        role.save()
+        for action_role in children:
+            role.child.add(action_role)
 
 
 def re_check_actions():
