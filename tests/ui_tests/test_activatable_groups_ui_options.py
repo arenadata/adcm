@@ -69,7 +69,7 @@ class TestActivatableGroupConfigs:
 
         config_page = create_cluster_and_open_config_page
         group_name = path.split("/")[-1]
-        assert not config_page.config.group_is_active_by_name(group_name), "Group should not be active by default"
+        config_page.config.check_group_is_active(group_name=group_name, is_active=False)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )
@@ -93,7 +93,7 @@ class TestActivatableGroupConfigs:
 
         config_page = create_cluster_and_open_config_page
         group_name = path.split("/")[-1]
-        assert not config_page.config.group_is_active_by_name(group_name), "Group should not be active by default"
+        config_page.config.check_group_is_active(group_name=group_name, is_active=False)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )
@@ -117,7 +117,7 @@ class TestActivatableGroupConfigs:
 
         config_page = create_cluster_and_open_config_page
         group_name = path.split("/")[-1]
-        assert config_page.config.group_is_active_by_name(group_name), "Group should be active by default"
+        config_page.config.check_group_is_active(group_name=group_name)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )
@@ -141,7 +141,7 @@ class TestActivatableGroupConfigs:
 
         config_page = create_cluster_and_open_config_page
         group_name = path.split("/")[-1]
-        assert config_page.config.group_is_active_by_name(group_name), "Group should be active by default"
+        config_page.config.check_group_is_active(group_name=group_name)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )
@@ -168,7 +168,7 @@ class TestActivatableGroupConfigs:
         config_page.config.check_no_rows_or_groups_on_page()
         with config_page.config.wait_config_groups_change():
             config_page.config.click_on_advanced()
-        assert not config_page.config.group_is_active_by_name(group_name), "Group should not be active by default"
+        config_page.config.check_group_is_active(group_name=group_name, is_active=False)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )
@@ -194,7 +194,7 @@ class TestActivatableGroupConfigs:
         config_page.config.check_no_rows_or_groups_on_page()
         with config_page.config.wait_config_groups_change():
             config_page.config.click_on_advanced()
-        assert config_page.config.group_is_active_by_name(group_name), "Group should be active by default"
+        config_page.config.check_group_is_active(group_name=group_name)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )
@@ -444,7 +444,7 @@ class TestActivatableGroupConfigs:
         config_page.config.check_no_rows_or_groups_on_page()
         with config_page.config.wait_config_groups_change():
             config_page.config.click_on_advanced()
-        assert config_page.config.group_is_active_by_name(group_name), "Group should be active by default"
+        config_page.config.check_group_is_active(group_name=group_name)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )
@@ -470,7 +470,7 @@ class TestActivatableGroupConfigs:
         config_page.config.check_no_rows_or_groups_on_page()
         with config_page.config.wait_config_groups_change():
             config_page.config.click_on_advanced()
-        assert config_page.config.group_is_active_by_name(group_name), "Group should be active by default"
+        config_page.config.check_group_is_active(group_name=group_name)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )
@@ -493,7 +493,7 @@ class TestActivatableGroupConfigs:
 
         config_page = create_cluster_and_open_config_page
         group_name = path.split("/")[-1]
-        assert not config_page.config.group_is_active_by_name(group_name), "Group should not be active by default"
+        config_page.config.check_group_is_active(group_name=group_name, is_active=False)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )
@@ -517,7 +517,7 @@ class TestActivatableGroupConfigs:
 
         config_page = create_cluster_and_open_config_page
         group_name = path.split("/")[-1]
-        assert config_page.config.group_is_active_by_name(group_name), "Group should be active by default"
+        config_page.config.check_group_is_active(group_name=group_name)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )
@@ -541,7 +541,7 @@ class TestActivatableGroupConfigs:
 
         config_page = create_cluster_and_open_config_page
         group_name = path.split("/")[-1]
-        assert not config_page.config.group_is_active_by_name(group_name), "Group should not be active by default"
+        config_page.config.check_group_is_active(group_name=group_name, is_active=False)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )
@@ -568,7 +568,7 @@ class TestActivatableGroupConfigs:
 
         config_page = create_cluster_and_open_config_page
         group_name = path.split("/")[-1]
-        assert config_page.config.group_is_active_by_name(group_name), "Group should be active by default"
+        config_page.config.check_group_is_active(group_name=group_name)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )
@@ -598,7 +598,7 @@ class TestActivatableGroupConfigs:
         config_page.config.check_no_rows_or_groups_on_page()
         with config_page.config.wait_config_groups_change():
             config_page.config.click_on_advanced()
-        assert not config_page.config.group_is_active_by_name(group_name), "Group should not be active by default"
+        config_page.config.check_group_is_active(group_name=group_name, is_active=False)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )
@@ -624,7 +624,7 @@ class TestActivatableGroupConfigs:
         config_page.config.check_no_rows_or_groups_on_page()
         with config_page.config.wait_config_groups_change():
             config_page.config.click_on_advanced()
-        assert not config_page.config.group_is_active_by_name(group_name), "Group should not be active by default"
+        config_page.config.check_group_is_active(group_name=group_name, is_active=False)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )
@@ -650,7 +650,7 @@ class TestActivatableGroupConfigs:
         config_page.config.check_no_rows_or_groups_on_page()
         with config_page.config.wait_config_groups_change():
             config_page.config.click_on_advanced()
-        assert config_page.config.group_is_active_by_name(group_name), "Group should be active by default"
+        config_page.config.check_group_is_active(group_name=group_name)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )
@@ -676,7 +676,7 @@ class TestActivatableGroupConfigs:
         config_page.config.check_no_rows_or_groups_on_page()
         with config_page.config.wait_config_groups_change():
             config_page.config.click_on_advanced()
-        assert not config_page.config.group_is_active_by_name(group_name), "Group should not be active by default"
+        config_page.config.check_group_is_active(group_name=group_name, is_active=False)
         config_page.check_groups(
             group_names=[group_name], is_group_visible=True, is_group_active=False, is_subs_visible=False
         )

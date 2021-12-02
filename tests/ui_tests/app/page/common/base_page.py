@@ -257,7 +257,7 @@ class BasePageObject:
             return (
                 WDW(self.driver, loc_timeout).until(
                     EC.visibility_of_element_located([element.by, element.value]),
-                    message=f"locator {el_name} hasn't become visible " f"for {loc_timeout} seconds",
+                    message=f"locator {el_name} hasn't become visible for {loc_timeout} seconds",
                 )
                 if isinstance(element, Locator)
                 else WDW(self.driver, loc_timeout).until(

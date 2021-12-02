@@ -279,15 +279,15 @@ class CommonConfigMenuObj(BasePageObject):
         assert len(falsely_visible) == 0, f"Those fields shouldn't be visible in configuration: {falsely_visible}"
         assert len(visible_fields) == 0, f"Those fields should be visible: {visible_fields}"
 
-    @allure.step('Check that group is active')
-    def group_is_active_by_name(self, group_name):
+    @allure.step('Check that group is active = {is_active}')
+    def check_group_is_active(self, group_name, is_active: bool = True):
         """Get group activity state"""
 
         group = self.find_element(self.locators.group_btn(group_name))
         toogle = self.find_child(group, CommonLocators.mat_slide_toggle)
-        if 'mat-checked' in toogle.get_attribute("class"):
-            return True
-        return False
+        toogle_is_active = 'mat-checked' in toogle.get_attribute("class")
+        assert toogle_is_active if is_active else not toogle_is_active, \
+            f"Group should{'' if is_active else ' not '}be active by default"
 
     def get_items_in_group(self, group: WebElement):
         """Get item rows in the group"""
