@@ -1138,6 +1138,9 @@ roles:
       business_permit: False
       paramtrized_by:
         - service
+      init_params:
+        app_name: cm
+        model: ClusterObject
       module_name: rbac.roles
       class_name: ParentRole
       child:
@@ -1149,6 +1152,9 @@ roles:
       business_permit: False
       parametrized_by:
         - cluster
+      init_params:
+        app_name: cm
+        model: Cluster
       module_name: rbac.roles
       class_name: ParentRole
       child:
