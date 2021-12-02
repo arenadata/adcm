@@ -14,14 +14,12 @@
 
 from dataclasses import dataclass
 
-from selenium.webdriver.common.by import By
-
 
 @dataclass
 class Locator:
     """Describes a locator on a webpage"""
 
-    by: By
+    by: str
     value: str
     name: str
 

@@ -11,7 +11,6 @@
 # limitations under the License.
 
 """Config page PageObjects classes"""
-
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import List, Collection, Optional
@@ -23,7 +22,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
-from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
+from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators, CommonLocators
 from tests.ui_tests.app.page.common.configuration.fields import ConfigFieldsManipulator
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 
@@ -44,12 +43,12 @@ class CommonConfigMenuObj(BasePageObject):
         self.locators = config_class_locators
         self.fields = ConfigFieldsManipulator(self.driver, self.base_url)
 
-    def get_all_config_rows(self, *, displayed_only: bool = True) -> List[WebElement]:
+    def get_all_config_rows(self, *, displayed_only: bool = True, timeout: int = 5) -> List[WebElement]:
         """Return all config field rows"""
         try:
             if displayed_only:
-                return [r for r in self.find_elements(CommonConfigMenu.config_row, timeout=5) if r.is_displayed()]
-            return self.find_elements(CommonConfigMenu.config_row, timeout=5)
+                return [r for r in self.find_elements(CommonConfigMenu.config_row, timeout=timeout) if r.is_displayed()]
+            return self.find_elements(CommonConfigMenu.config_row, timeout=timeout)
         except TimeoutException:
             return []
 
@@ -92,10 +91,20 @@ class CommonConfigMenuObj(BasePageObject):
             # to hide select panel so it won't block other actions
             self.find_element(self.locators.compare_to_select).send_keys(Keys.ESCAPE)
 
-    def click_on_advanced(self):
+    @allure.step('Click on advanced button')
+    def click_on_advanced(self, is_rows_changes=False):
         """Click on advanced button and wait rows changed"""
-        with self.wait_rows_change():
+        if is_rows_changes:
+            with self.wait_rows_change():
+                self.find_and_click(CommonConfigMenu.advanced_label)
+        else:
             self.find_and_click(CommonConfigMenu.advanced_label)
+
+    @property
+    def advanced(self):
+        """Get advanced checkbox status"""
+
+        return "checked" in self.find_element(CommonConfigMenu.advanced_label).get_attribute("class")
 
     def get_input_value(
         self,
@@ -189,6 +198,33 @@ class CommonConfigMenuObj(BasePageObject):
 
         wait_until_step_succeeds(_click_group, period=1, timeout=10)
 
+    @contextmanager
+    def wait_group_changed(self, group_name: str):
+        group_state_before = self.find_element(self.locators.group_btn(group_name)).get_attribute("class")
+        yield
+
+        def check_group_clicked():
+            group_state_after = self.find_element(self.locators.group_btn(group_name)).get_attribute("class")
+            assert group_state_before != group_state_after, "Group has not changed"
+
+        wait_until_step_succeeds(check_group_clicked, period=1, timeout=10)
+
+    @allure.step('Click on group {group_name} expanded toggle')
+    def expand_or_close_group(self, group_name: str, expand: bool = True):
+        """Click on group with given title"""
+
+        group = self.find_element(self.locators.group_btn(group_name))
+
+        def click_on_group():
+            with self.wait_group_changed(group_name):
+                self.find_child(group, CommonLocators.mat_slide_toggle).click()
+            is_expand = "expanded" in self.find_element(self.locators.group_btn(group_name)).get_attribute("class")
+            assert (
+                is_expand if expand else not is_expand
+            ), f"Group {group_name} should{' ' if expand else ' not '}be expanded"
+
+        wait_until_step_succeeds(click_on_group, period=1, timeout=10)
+
     @allure.step('Search for {keys}')
     def search(self, keys: str):
         """Clear search and send keys"""
@@ -243,6 +279,44 @@ class CommonConfigMenuObj(BasePageObject):
         assert len(falsely_visible) == 0, f"Those fields shouldn't be visible in configuration: {falsely_visible}"
         assert len(visible_fields) == 0, f"Those fields should be visible: {visible_fields}"
 
+    @allure.step('Check that group is active')
+    def group_is_active_by_name(self, group_name):
+        """Get group activity state"""
+
+        group = self.find_element(self.locators.group_btn(group_name))
+        toogle = self.find_child(group, CommonLocators.mat_slide_toggle)
+        if 'mat-checked' in toogle.get_attribute("class"):
+            return True
+        return False
+
+    def get_items_in_group(self, group: WebElement):
+        """Get item rows in the group"""
+
+        try:
+            return self.find_children(group, self.locators.ConfigGroup.item_row, timeout=2)
+        except TimeoutException:
+            return []
+
+    @allure.step('Check that subs in group {group_name} is visible = {is_visible}')
+    def check_subs_visability(self, group_name: str, is_visible: bool = True):
+        """Get config field group elements"""
+
+        item_rows = self.get_items_in_group(self.find_element(self.locators.group_row(group_name)))
+        if is_visible:
+            assert item_rows, "There should be items in the group"
+            for item in item_rows:
+                self.check_element_should_be_visible(item)
+        else:
+            for item in item_rows:
+                self.check_element_should_be_hidden(item)
+
+    def get_group_names(self):
+        """Wait for group elements to be displayed and get them"""
+        try:
+            return self.find_elements(self.locators.ConfigGroup.name, timeout=2)
+        except TimeoutException:
+            return []
+
     @contextmanager
     def wait_rows_change(self, expected_rows_amount: Optional[int] = None):
         """Wait changing rows amount."""
@@ -259,6 +333,34 @@ class CommonConfigMenuObj(BasePageObject):
                 ), f"Amount of rows on the page should be {expected_rows_amount}"
 
         wait_until_step_succeeds(_wait_changing_rows_amount, period=1, timeout=10)
+
+    @allure.step('Check that there are no rows or groups on config page')
+    def check_no_rows_or_groups_on_page(self):
+        assert len(self.get_group_names()) == 0, "Config group should not be visible"
+        assert len(self.get_all_config_rows(timeout=1)) == 0, "There should not be any rows"
+
+    @allure.step('Check that there are no rows or groups on config page with advanced settings')
+    def check_no_rows_or_groups_on_page_with_advanced(self):
+        self.check_no_rows_or_groups_on_page()
+        self.click_on_advanced()
+        self.check_no_rows_or_groups_on_page()
+
+    @contextmanager
+    def wait_config_groups_change(self, expected_rows_amount: Optional[int] = None):
+        """Wait changing config groups amount."""
+
+        amount_before = len(self.get_group_names())
+        yield
+
+        def _wait_changing_groups_amount():
+            amount_after = len(self.get_group_names())
+            assert amount_after != amount_before, "Amount of groups on the page hasn't changed"
+            if expected_rows_amount:
+                assert (
+                    amount_after == expected_rows_amount
+                ), f"Amount of groups on the page should be {expected_rows_amount}"
+
+        wait_until_step_succeeds(_wait_changing_groups_amount, period=1, timeout=10)
 
     def get_config_row_info(self, row: WebElement):
         """Get info by row"""
