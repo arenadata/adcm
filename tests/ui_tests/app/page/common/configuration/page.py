@@ -286,8 +286,9 @@ class CommonConfigMenuObj(BasePageObject):
         group = self.find_element(self.locators.group_btn(group_name))
         toogle = self.find_child(group, CommonLocators.mat_slide_toggle)
         toogle_is_active = 'mat-checked' in toogle.get_attribute("class")
-        assert toogle_is_active if is_active else not toogle_is_active, \
-            f"Group should{'' if is_active else ' not '}be active by default"
+        assert (
+            toogle_is_active if is_active else not toogle_is_active
+        ), f"Group should{'' if is_active else ' not '}be active by default"
 
     def get_items_in_group(self, group: WebElement):
         """Get item rows in the group"""
