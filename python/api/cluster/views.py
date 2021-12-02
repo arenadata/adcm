@@ -16,15 +16,18 @@ from rest_framework import status
 from rest_framework.response import Response
 
 import api.serializers
-import cm.api
 import cm.bundle
 import cm.job
 import cm.status_api
+from api.api_views import GenericAPIPermStatusView
 from api.api_views import ListView, PageView, PageViewAdd, InterfaceView, DetailViewDelete
-from api.api_views import create, update, check_obj, GenericAPIPermView, GenericAPIPermStatusView
+from api.api_views import create, update, check_obj, GenericAPIPermView
+from api.stack.serializers import ServiceSerializer, BundleServiceUISerializer
+from cm.api import delete_cluster
 from cm.errors import AdcmEx
 from cm.models import Cluster, Host, HostComponent, Prototype
 from cm.models import ClusterObject, Upgrade, ClusterBind
+from cm.upgrade import get_upgrade
 from . import serializers
 
 
@@ -87,14 +90,14 @@ class ClusterDetail(DetailViewDelete):
         Remove cluster
         """
         cluster = self.get_object()
-        cm.api.delete_cluster(cluster)
+        delete_cluster(cluster)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ClusterBundle(ListView):
     queryset = Prototype.objects.filter(type='service')
-    serializer_class = api.stack.serializers.ServiceSerializer
-    serializer_class_ui = api.stack.serializers.BundleServiceUISerializer
+    serializer_class = ServiceSerializer
+    serializer_class_ui = BundleServiceUISerializer
 
     def get(self, request, cluster_id):  # pylint: disable=arguments-differ
         """
@@ -199,7 +202,7 @@ class ClusterUpgrade(PageView):
         List all avaliable upgrades for specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
-        obj = cm.upgrade.get_upgrade(cluster, self.get_ordering(request, self.queryset, self))
+        obj = get_upgrade(cluster, self.get_ordering(request, self.queryset, self))
         serializer = self.serializer_class(
             obj, many=True, context={'cluster_id': cluster.id, 'request': request}
         )

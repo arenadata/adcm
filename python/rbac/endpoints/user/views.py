@@ -14,6 +14,7 @@
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
+from rest_framework.schemas.openapi import AutoSchema
 
 from rbac import models
 from rbac.services import user as user_services
@@ -102,3 +103,4 @@ class UserViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
     filterset_fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser']
     ordering_fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser']
     permission_classes = (UserPermissions,)
+    schema = AutoSchema()

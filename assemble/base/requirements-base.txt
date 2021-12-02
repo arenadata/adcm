@@ -4,7 +4,6 @@ coreapi
 django
 django-cors-headers
 django-filter
-django-rest-swagger
 djangorestframework
 drf-flex-fields==0.9.1
 drf-extensions

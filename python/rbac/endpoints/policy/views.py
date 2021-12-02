@@ -16,6 +16,7 @@ from rest_framework import serializers
 from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.response import Response
+from rest_framework.schemas.openapi import AutoSchema
 from rest_framework.validators import ValidationError
 
 from cm.models import Cluster, ClusterObject, ServiceComponent, HostProvider, Host
@@ -115,6 +116,7 @@ class PolicyViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestor
     serializer_class = PolicySerializer
     filterset_fields = '__all__'
     ordering_fields = '__all__'
+    schema = AutoSchema()
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

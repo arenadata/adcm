@@ -14,6 +14,7 @@
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
+from rest_framework.schemas.openapi import AutoSchema
 
 from rbac import models
 from rbac.services import group as group_services
@@ -70,3 +71,4 @@ class GroupViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
     serializer_class = GroupSerializer
     filterset_fields = ['id', 'name']
     ordering_fields = ['id', 'name']
+    schema = AutoSchema()

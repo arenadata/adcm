@@ -15,6 +15,7 @@ from rest_framework import serializers
 from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.response import Response
+from rest_framework.schemas.openapi import AutoSchema
 
 from rbac.models import Role
 from rbac.services.role import role_create, role_update
@@ -55,6 +56,7 @@ class RoleView(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
 
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
+    schema = AutoSchema()
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

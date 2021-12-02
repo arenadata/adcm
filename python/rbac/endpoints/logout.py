@@ -13,11 +13,11 @@
 """Logout view and serializer"""
 
 import django.contrib.auth
-
+from rest_framework import serializers
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from rest_framework import serializers
+from rest_framework.schemas.openapi import AutoSchema
 
 
 class LogOutSerializer(serializers.Serializer):
@@ -28,6 +28,7 @@ class LogOut(GenericAPIView):
     """Logout view"""
 
     serializer_class = LogOutSerializer
+    schema = AutoSchema()
 
     def post(self, request, *args, **kwargs):
         """
