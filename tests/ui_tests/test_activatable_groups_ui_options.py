@@ -45,6 +45,8 @@ def create_cluster_and_open_config_page(sdk_client_fs: ADCMClient, path, app_fs)
 
 @allure.step("Prepare cluster")
 def prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
+    """Create cluster"""
+
     bundle = sdk_client.upload_from_fs(path)
     cluster_name = "_".join(path.split("/")[-1:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
@@ -55,6 +57,8 @@ def prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
 
 
 class TestActivatableGroupConfigs:
+    """Tests for activatable configs in cluster"""
+
     @parametrize_by_data_subdirs(
         __file__,
         "group_advanced_false_invisible_false_field_advanced_true_invisible_true_activiatable_false",
