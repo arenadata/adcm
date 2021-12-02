@@ -252,14 +252,14 @@ class RbacUserFields(BaseClass):
     username = Field(
         name="username", f_type=String(max_length=150, special_chars="@.+-_"), required=True, postable=True
     )
-    first_name = Field(name="first_name", f_type=String(max_length=150), required=True, postable=True, changeable=True)
-    last_name = Field(name="last_name", f_type=String(max_length=150), nullable=True, postable=True, changeable=True)
-    email = Field(name="email", f_type=Email(), nullable=True, postable=True, changeable=True)
-    password = Field(name="password", f_type=Password(), required=True, postable=True, changeable=True)
-    is_superuser = Field(
-        name="is_superuser", f_type=Boolean(), default_value=False, required=True, postable=True, changeable=True
+    first_name = Field(
+        name="first_name", default_value="", f_type=String(max_length=150), postable=True, changeable=True
     )
-    profile = Field(name="profile", f_type=Json(), default_value={}, postable=True, changeable=True)
+    last_name = Field(name="last_name", default_value="", f_type=String(max_length=150), postable=True, changeable=True)
+    email = Field(name="email", default_value="", f_type=Email(), postable=True, changeable=True)
+    password = Field(name="password", f_type=Password(), required=True, postable=True, changeable=True)
+    is_superuser = Field(name="is_superuser", f_type=Boolean(), default_value=False, postable=True, changeable=True)
+    profile = Field(name="profile", f_type=Json(), default_value="", postable=True, changeable=True)
     url = Field(name="url", f_type=String(), default_value="auto")
 
 
@@ -274,13 +274,13 @@ class RbacGroupFields(BaseClass):
         default_value="auto",
     )
     user = Field(
-        name="user", f_type=ForeignKeyM2M(fk_link=RbacUserFields), nullable=True, postable=True, changeable=True
+        name="user", f_type=ForeignKeyM2M(fk_link=RbacUserFields), postable=True, changeable=True, default_value=[]
     )
     name = Field(name="name", f_type=String(max_length=150), required=True, postable=True, changeable=True)
-    description = Field(name="description", f_type=Text(), nullable=True, postable=True, changeable=True)
+    description = Field(name="description", f_type=Text(), postable=True, changeable=True, default_value="")
     url = Field(name="url", f_type=String(), default_value="auto")
 
 
-RbacUserFields.groups = Field(
-    name="groups", f_type=ForeignKeyM2M(fk_link=RbacGroupFields), nullable=True, postable=True, changeable=True
+RbacUserFields.group = Field(
+    name="group", f_type=ForeignKeyM2M(fk_link=RbacGroupFields), postable=True, changeable=True, default_value=[]
 )
