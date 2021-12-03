@@ -1,18 +1,30 @@
 import { Component } from '@angular/core';
 import { IColumns } from '@adwp-ui/widgets';
+import { Store } from '@ngrx/store';
+import { ActivatedRoute, Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 
 import { TypeName } from '@app/core/types';
-import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
 import { RbacRoleModel } from '@app/models/rbac/rbac-role.model';
+import { RbacEntityListDirective } from '@app/abstract-directives/rbac-entity-list.directive';
+import { ListService } from '@app/shared/components/list/list.service';
+import { SocketState } from '@app/core/store';
+import { RbacRoleService } from '@app/services/rbac-role.service';
 
 @Component({
   selector: 'app-roles',
   templateUrl: './roles.component.html',
   styleUrls: ['./roles.component.scss']
 })
-export class RolesComponent extends AdwpListDirective<RbacRoleModel> {
+export class RolesComponent extends RbacEntityListDirective<RbacRoleModel> {
 
   listColumns = [
+    {
+      type: 'choice',
+      modelKey: 'checked',
+      className: 'choice-column',
+      headerClassName: 'choice-column',
+    },
     {
       label: 'Role name',
       sort: 'name',
@@ -26,5 +38,20 @@ export class RolesComponent extends AdwpListDirective<RbacRoleModel> {
   ] as IColumns<RbacRoleModel>;
 
   type: TypeName = 'rbac_role';
+
+  constructor(
+    protected service: ListService,
+    protected store: Store<SocketState>,
+    public route: ActivatedRoute,
+    public router: Router,
+    public dialog: MatDialog,
+    protected entityService: RbacRoleService,
+  ) {
+    super(service, store, route, router, dialog, entityService);
+  }
+
+  getTitle(row: RbacRoleModel): string {
+    return row.name;
+  }
 
 }
