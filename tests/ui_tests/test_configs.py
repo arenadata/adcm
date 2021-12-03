@@ -23,6 +23,8 @@ from adcm_pytest_plugin.utils import random_string
 
 from tests.ui_tests.utils import prepare_cluster_and_get_config
 
+pytestmark = [pytest.mark.full()]
+
 PAIR = (True, False)
 UI_OPTIONS_PAIRS = ((False, False), (False, True), (True, False))
 UI_OPTIONS_PAIRS_GROUPS = [

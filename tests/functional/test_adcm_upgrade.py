@@ -230,6 +230,7 @@ class TestUpgradeFilledADCM:
     # Test itself
 
     @params.including_https
+    @pytest.mark.full()
     @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
     @pytest.mark.parametrize("image", [previous_adcm_version_tag()], indirect=True)
     def test_upgrade_dirty_adcm(

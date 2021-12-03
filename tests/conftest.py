@@ -68,6 +68,12 @@ def pytest_runtest_setup(item: Function):
     _override_allure_test_parameters(item)
 
 
+@pytest.hookimpl(trylast=True)
+def pytest_collection_modifyitems(session, config, items):  # pylint: disable=unused-argument
+    """Run tests with id "adcm_with_dummy_data" after everything else"""
+    items.sort(key=lambda x: 'adcm_with_dummy_data' in x.name)
+
+
 def _override_allure_test_parameters(item: Function):
     """
     Overrides all pytest parameters in allure report with test ID
