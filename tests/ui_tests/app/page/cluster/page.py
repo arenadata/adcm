@@ -293,7 +293,7 @@ class ClusterConfigPage(ClusterPageMixin):
             assert group_names_on_page, "There are should be groups on the page"
             for group_name in group_names:
                 self.config.expand_or_close_group(group_name, expand=is_group_active)
-                self.config.check_subs_visability(group_name, is_subs_visible)
+                self.config.check_subs_visibility(group_name, is_subs_visible)
                 assert group_name in group_names_on_page, f"There is no {group_name} group on the page"
         else:
             for group_name in group_names:

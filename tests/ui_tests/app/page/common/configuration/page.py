@@ -92,13 +92,10 @@ class CommonConfigMenuObj(BasePageObject):
             self.find_element(self.locators.compare_to_select).send_keys(Keys.ESCAPE)
 
     @allure.step('Click on advanced button')
-    def click_on_advanced(self, is_rows_changes=False):
-        """Click on advanced button and wait rows changed"""
-        if is_rows_changes:
-            with self.wait_rows_change():
-                self.find_and_click(CommonConfigMenu.advanced_label)
-        else:
-            self.find_and_click(CommonConfigMenu.advanced_label)
+    def click_on_advanced(self):
+        """Click on advanced button"""
+
+        self.find_and_click(CommonConfigMenu.advanced_label)
 
     @property
     def advanced(self):
@@ -200,6 +197,8 @@ class CommonConfigMenuObj(BasePageObject):
 
     @contextmanager
     def wait_group_changed(self, group_name: str):
+        """Wait while group is opened or closed"""
+
         group_state_before = self.find_element(self.locators.group_btn(group_name)).get_attribute("class")
         yield
 
@@ -299,7 +298,7 @@ class CommonConfigMenuObj(BasePageObject):
             return []
 
     @allure.step('Check that subs in group {group_name} is visible = {is_visible}')
-    def check_subs_visability(self, group_name: str, is_visible: bool = True):
+    def check_subs_visibility(self, group_name: str, is_visible: bool = True):
         """Get config field group elements"""
 
         item_rows = self.get_items_in_group(self.find_element(self.locators.group_row(group_name)))
