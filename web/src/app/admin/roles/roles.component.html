@@ -1,3 +1,9 @@
+<div class="controls">
+  <button mat-raised-button color="primary" (click)="deleteEntities()" [disabled]="!(data$ | async | hasSelected)">
+    <mat-icon>delete</mat-icon> Delete
+  </button>
+</div>
+
 <adwp-list
   [columns]="listColumns"
   [dataSource]="data$ | async"
@@ -9,4 +15,5 @@
   (auxclickRow)="auxclickRow($event)"
   (changePaging)="onChangePaging($event)"
   (changeSort)="onChangeSort($event)"
+  (chooseAll)="chooseAll($event)"
 ></adwp-list>

@@ -55,6 +55,10 @@ import { EntityStatusToStatusTreePipe } from '@app/pipes/entity-status-to-status
 import { ServiceStatusComponent } from '@app/components/service/service-status/service-status.component';
 import { ServiceComponentStatusComponent } from '@app/components/service-component/service-component-status/service-component-status.component';
 import { StatusTreeLinkPipe } from '@app/pipes/status-tree-link.pipe';
+import { RbacUserService } from '@app/services/rbac-user.service';
+import { RbacGroupService } from '@app/services/rbac-group.service';
+import { RbacRoleService } from '@app/services/rbac-role.service';
+import { RbacPolicyService } from '@app/services/rbac-policy.service';
 
 @NgModule({
   imports: [
@@ -143,6 +147,10 @@ import { StatusTreeLinkPipe } from '@app/pipes/status-tree-link.pipe';
   providers: [
     JobService,
     TaskService,
+    RbacUserService,
+    RbacGroupService,
+    RbacRoleService,
+    RbacPolicyService,
   ],
 })
 export class SharedModule {

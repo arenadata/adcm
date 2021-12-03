@@ -1,6 +1,11 @@
-<button mat-raised-button color="accent" (click)="hideLeft=!hideLeft" class="add-button">
-    <mat-icon>library_add</mat-icon> Add user
-</button>
+<div class="controls">
+  <button mat-raised-button color="accent" (click)="hideLeft=!hideLeft">
+      <mat-icon>library_add</mat-icon> Add user
+  </button>
+  <button mat-raised-button color="primary" (click)="deleteEntities()" [disabled]="!(data$ | async | hasSelected)">
+      <mat-icon>delete</mat-icon> Delete
+  </button>
+</div>
 
 <mat-card class="users-add-card" [class.hidden]="hideLeft">
   <mat-card-content>
@@ -70,4 +75,5 @@
   (auxclickRow)="auxclickRow($event)"
   (changePaging)="onChangePaging($event)"
   (changeSort)="onChangeSort($event)"
+  (chooseAll)="chooseAll($event)"
 ></adwp-list>

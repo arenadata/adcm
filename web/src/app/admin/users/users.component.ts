@@ -10,20 +10,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
-import { FormControl, FormGroup, NgModel, Validators } from '@angular/forms';
+import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { IColumns } from '@adwp-ui/widgets';
 import { Store } from '@ngrx/store';
 
 import { AuthService } from '@app/core/auth/auth.service';
-import { DialogComponent } from '@app/shared/components';
-import { User, UsersService } from './users.service';
-import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
+import { UsersService } from './users.service';
 import { RbacUserModel } from '@app/models/rbac/rbac-user.model';
 import { ListService } from '@app/shared/components/list/list.service';
 import { SocketState } from '@app/core/store';
 import { TypeName } from '@app/core/types';
+import { RbacUserService } from '@app/services/rbac-user.service';
+import { RbacEntityListDirective } from '@app/abstract-directives/rbac-entity-list.directive';
 
 @Component({
   selector: 'app-users',
@@ -31,9 +31,15 @@ import { TypeName } from '@app/core/types';
   styleUrls: ['users.component.scss'],
   providers: [UsersService],
 })
-export class UsersComponent extends AdwpListDirective<RbacUserModel> implements OnInit {
+export class UsersComponent extends RbacEntityListDirective<RbacUserModel> implements OnInit {
 
   listColumns = [
+    {
+      type: 'choice',
+      modelKey: 'checked',
+      className: 'choice-column',
+      headerClassName: 'choice-column',
+    },
     {
       label: 'Username',
       sort: 'username',
@@ -73,11 +79,11 @@ export class UsersComponent extends AdwpListDirective<RbacUserModel> implements 
     public route: ActivatedRoute,
     public router: Router,
     public dialog: MatDialog,
-
+    protected entityService: RbacUserService,
     private us: UsersService,
     private auth: AuthService,
   ) {
-    super(service, store, route, router, dialog);
+    super(service, store, route, router, dialog, entityService);
   }
 
   get username() {
@@ -101,6 +107,10 @@ export class UsersComponent extends AdwpListDirective<RbacUserModel> implements 
     //   .subscribe((users) => (this.users = users));
   }
 
+  getTitle(row: RbacUserModel): string {
+    return row.username;
+  }
+
   addUser() {
     if (this.addForm.valid)
       this.us.addUser(this.addForm.get('username').value, this.addForm.get('xxx').get('password').value).subscribe((user) => {
@@ -110,31 +120,4 @@ export class UsersComponent extends AdwpListDirective<RbacUserModel> implements 
       });
   }
 
-  clearUser(user: User) {
-    const dialogRef = this.dialog.open(DialogComponent, {
-      width: '250px',
-      data: {
-        text: `Delete [ ${user.username} ]? Are you sure?`,
-        controls: ['Yes', 'No'],
-      },
-    });
-
-    dialogRef.beforeClosed().subscribe((yes) => {
-      if (yes) {
-        // this.us.clearUser(user).subscribe((_) => (this.users = this.users.filter((u) => u !== user)));
-      }
-    });
-  }
-
-  validRow(pass: NgModel, cpass: NgModel): boolean {
-    return pass.valid && cpass.valid && pass.value === cpass.value;
-  }
-
-  changePassword(user: User) {
-    this.us.changePassword(user.password, user.change_password).subscribe((_) => {
-      user.password = '';
-      user.confirm = '';
-      if (user.username === this.currentUserName) this.router.navigate(['/login']);
-    });
-  }
 }
