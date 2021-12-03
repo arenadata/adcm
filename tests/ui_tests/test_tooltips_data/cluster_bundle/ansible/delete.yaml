@@ -1,0 +1,12 @@
+---
+- name: delete installed items
+  hosts: all
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: emulation install all item of the cluster
+      pause:
+        seconds: 5
+    - debug:
+        msg: "Unstucked now"

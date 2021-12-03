@@ -1,0 +1,12 @@
+
+  gather_facts: no
+---
+- name: run cluster
+  hosts: all
+  connection: local
+  tasks:
+    - name: emulation run all item of the cluster
+      pause:
+        seconds: 5
+    - debug:
+        msg: "Unstucked now"

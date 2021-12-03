@@ -1,0 +1,22 @@
+---
+- name: Do nothing playbook
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  tasks:
+    - name: Writing result in check log
+      tags: skip_ansible_lint
+      adcm_check:
+        title: "ADB cluster status"
+        msg: >-
+          "print some text here"
+        result: yes
+    - name: memory check
+      adcm_check:
+        title: "Memory check"
+        msg: "640K is ok for everyone"
+        result: no
+
+    - debug:
+        msg: "Unstucked now"
