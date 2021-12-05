@@ -67,6 +67,12 @@ class Group(AuthGroup):
     description = models.CharField(max_length=255, null=True)
 
 
+class RoleTypes(models.TextChoices):
+    business = 'business', 'business'
+    role = 'role', 'role'
+    hidden = 'hidden', 'hidden'
+
+
 class Role(models.Model):
     """
     Role is a list of Django permissions.
@@ -83,7 +89,9 @@ class Role(models.Model):
     init_params = models.JSONField(default=dict)
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE, null=True, default=None)
     built_in = models.BooleanField(default=True, null=False)
-    business_permit = models.BooleanField(default=True, null=False)
+    type = models.CharField(
+        max_length=32, choices=RoleTypes.choices, null=False, default=RoleTypes.role
+    )
     category = models.JSONField(default=list, null=False, validators=[validate_category])
     parametrized_by_type = models.JSONField(
         default=list, null=False, validators=[validate_object_type]

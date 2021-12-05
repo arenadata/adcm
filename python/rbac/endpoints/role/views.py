@@ -37,7 +37,7 @@ class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
             'name',
             'description',
             'built_in',
-            'business_permit',
+            'type',
             'category',
             'parametrized_by_type',
             'child',
@@ -46,7 +46,7 @@ class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
         extra_kwargs = {
             'parametrized_by_type': {'required': True},
             'built_in': {'read_only': True},
-            'business_permit': {'read_only': True},
+            'type': {'read_only': True},
         }
         expandable_fields = {'child': ('rbac.endpoints.role.views.RoleSerializer', {'many': True})}
 

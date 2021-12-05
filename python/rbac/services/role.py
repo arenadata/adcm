@@ -14,7 +14,7 @@ from typing import List
 
 from rest_framework.exceptions import ValidationError
 
-from rbac.models import Role
+from rbac.models import Role, RoleTypes
 from rbac.utils import update_m2m_field
 
 
@@ -23,18 +23,16 @@ def check_role_child(child: List[Role]) -> None:
         if not item.built_in:
             errors = {'child': ['Only built-in roles allowed to be included as children.']}
             raise ValidationError(errors)
-        if item.child.all():
-            errors = {
-                'child': ['Only 2 levels allowed, so you can’t connect to role who has a child.']
-            }
+        if item.type != RoleTypes.business:
+            errors = {'child': ['Only business roles allowed to be included as children.']}
             raise ValidationError(errors)
 
 
-def role_create(built_in=False, business_permit=False, **kwargs) -> Role:
+def role_create(built_in=False, type_of_role=RoleTypes.role, **kwargs) -> Role:
     """Creating Role object"""
     child = kwargs.pop('child', [])
     check_role_child(child)
-    role = Role.objects.create(built_in=built_in, business_permit=business_permit, **kwargs)
+    role = Role.objects.create(built_in=built_in, type=type_of_role, **kwargs)
     role.child.add(*child)
     return role
 

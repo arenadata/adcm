@@ -20,7 +20,7 @@ role:
   items:
     name: string
     description: string
-    business_permit: boolean
+    type: type
     parametrized_by: object_list
     module_name: module_name
     class_name: class_name
@@ -43,6 +43,13 @@ class_name:
     - ModelRole
     - ObjectRole
     - ParentRole
+
+type:
+  match: set
+  variants:
+    - business
+    - role
+    - hidden
 
 object_list:
   match: list
