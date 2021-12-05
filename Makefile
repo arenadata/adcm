@@ -2,7 +2,8 @@
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 ADCMBASE_IMAGE ?= hub.arenadata.io/adcm/base
-ADCMBASE_TAG ?= 20211201202114
+ADCMTEST_IMAGE ?= hub.arenadata.io/adcm/test
+ADCMBASE_TAG ?= 20211205195158
 
 APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
@@ -72,9 +73,9 @@ ng_tests: ## Run Angular tests
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster-x64 ./ng_test.sh
 
 linters : ## Run linters
-	docker pull hub.adsw.io/library/pr-builder:3-x64
-	docker run -i --rm -v $(CURDIR)/:/source -w /source hub.adsw.io/library/pr-builder:3-x64 \
-        /bin/bash -xeo pipefail -c "/linters.sh shellcheck pylint pep8 && \
+	docker pull $(ADCMTEST_IMAGE):$(ADCMBASE_TAG)
+	docker run -i --rm -v $(CURDIR)/:/source -w /source $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) \
+        /bin/sh -xeo pipefail -c "/linters.sh shellcheck pylint && \
         /linters.sh -b ./tests -f ../tests pylint && \
         /linters.sh -f ./tests black && \
         /linters.sh -f ./tests/functional flake8_pytest_style && \
