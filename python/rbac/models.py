@@ -89,7 +89,9 @@ class Role(models.Model):
     init_params = models.JSONField(default=dict)
     bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE, null=True, default=None)
     built_in = models.BooleanField(default=True, null=False)
-    type = models.CharField(max_length=32, choices=RoleTypes.choices, null=False, default=RoleTypes.role)
+    type = models.CharField(
+        max_length=32, choices=RoleTypes.choices, null=False, default=RoleTypes.role
+    )
     category = models.JSONField(default=list, null=False, validators=[validate_category])
     parametrized_by_type = models.JSONField(
         default=list, null=False, validators=[validate_object_type]
