@@ -23,4 +23,9 @@ class Migration(migrations.Migration):
                 max_length=32,
             ),
         ),
+        migrations.AddField(
+            model_name='role',
+            name='display_name',
+            field=models.CharField(default='', max_length=160),
+        ),
     ]

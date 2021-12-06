@@ -101,6 +101,10 @@ def upgrade_role(role: dict, data: dict) -> Role:
         new_role.init_params = role['init_params']
     if 'description' in role:
         new_role.description = role['description']
+    if 'display_name' in role:
+        new_role.display_name = role['display_name']
+    else:
+        new_role.display_name = role['name']
     if 'parametrized_by' in role:
         new_role.parametrized_by_type = role['parametrized_by']
     if 'type' in role:
