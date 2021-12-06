@@ -20,12 +20,9 @@ from tests.ui_tests.app.helpers.locator import Locator, TemplateLocator
 class CommonConfigMenu:
     """Configuration menu locators"""
 
-    group_btn = TemplateLocator(
-        By.XPATH,
-        "//mat-expansion-panel-header[.//span[text()='{}']]",
-        'Group "{}" button',
-    )
-    advanced_label = Locator(By.XPATH, "//mat-checkbox//span[text()='Advanced']", "Advanced label")
+    group_btn = TemplateLocator(By.XPATH, "//mat-expansion-panel-header[.//span[text()='{}']]", 'Group "{}" button')
+    group_row = TemplateLocator(By.XPATH, "//mat-expansion-panel[.//span[text()='{}']]", 'Group "{}" row')
+    advanced_label = Locator(By.XPATH, "//mat-checkbox[.//span[text()='Advanced']]", "Advanced label")
     search_input = Locator(By.CSS_SELECTOR, "#config_search_input", "Search input")
     search_input_clear_btn = Locator(
         By.CSS_SELECTOR, "app-search button[aria-label='Clear']", "Clear search input button"
@@ -48,7 +45,6 @@ class CommonConfigMenu:
         'Config diff of option "{}" with "{}" in text',
     )
     config_row = Locator(By.CSS_SELECTOR, "app-field", "Configuration row")
-
     field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
     loading_text = Locator(By.XPATH, "//span[text()='Loading...']", "Loading text")
 
@@ -83,6 +79,7 @@ class CommonConfigMenu:
 
         name = Locator(By.CSS_SELECTOR, "mat-panel-title>span", "Group name")
         expansion_btn = Locator(By.CSS_SELECTOR, "mat-expansion-panel-header", "Expansion button")
+        item_row = Locator(By.CSS_SELECTOR, "app-field", "Item in group")
 
     class HistoryRow:
         """Configuration menu history row locators"""
