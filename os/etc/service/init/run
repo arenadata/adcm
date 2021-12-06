@@ -50,6 +50,7 @@ fi
 
 "${adcmroot}"/python/backupdb.py
 "${adcmroot}"/python/manage.py migrate
+"${adcmroot}"/python/manage.py upgraderole
 "${adcmroot}"/python/init_db.py
 touch "${initreadyfile}"
 
