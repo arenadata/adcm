@@ -72,3 +72,22 @@ class CommonToolbar(BasePageObject):
         assert (
             expected_warn_text == warn_text_popup
         ), f"Expected warning is {expected_warn_text}, but actual is {warn_text_popup}"
+
+    def check_toolbar_elements(self, tab_names: [str]):
+        self.assert_displayed_elements([CommonToolbarLocators.admin_link])
+        tab_names_upper = [tab_name.upper().strip("_") for tab_name in tab_names]
+
+        for tab_name in tab_names_upper:
+            self.assert_displayed_elements([CommonToolbarLocators.text_link(tab_name)])
+
+        tab_names_actual = (
+            self.find_element(CommonToolbarLocators.all_links)
+            .text.replace("\n", "")
+            .replace("play_circle_outline", "")
+            .replace("sync_problem", "")
+            .replace("priority_hight", "")
+        )
+        tab_names_expected = 'apps / ' + ' / '.join(tab_names_upper)
+        assert (
+            tab_names_actual == tab_names_expected
+        ), f'Expected tab names: "{tab_names_expected}", but was "{tab_names_actual}'

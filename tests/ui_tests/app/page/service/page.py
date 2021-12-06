@@ -129,6 +129,9 @@ class ServicePageMixin(BasePageObject):
         """Assert all main elements presence"""
         self.assert_displayed_elements(self.MAIN_ELEMENTS)
 
+    def check_service_tooltip(self, cluster_name: str, service_name: str):
+        self.toolbar.check_toolbar_elements(["CLUSTERS", cluster_name, "SERVICES", service_name])
+
 
 class ServiceMainPage(ServicePageMixin):
     """Service page Main menu"""

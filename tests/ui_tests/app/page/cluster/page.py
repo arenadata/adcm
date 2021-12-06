@@ -14,7 +14,6 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import List
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -159,6 +158,9 @@ class ClusterPageMixin(BasePageObject):
         """Assert all main elements presence"""
         self.assert_displayed_elements(self.MAIN_ELEMENTS)
 
+    def check_cluster_toolbar(self, cluster_name: str):
+        self.toolbar.check_toolbar_elements(["CLUSTERS", cluster_name])
+
 
 class ClusterMainPage(ClusterPageMixin):
     """Cluster page Main menu"""
@@ -279,25 +281,6 @@ class ClusterConfigPage(ClusterPageMixin):
         CommonConfigMenu.save_btn,
         CommonConfigMenu.history_btn,
     ]
-
-    @allure.step('Check that group field is visible = {is_group_visible} if group is active = {is_group_active}')
-    def check_groups(
-        self,
-        group_names: List[str],
-        is_group_visible: bool = True,
-        is_group_active: bool = True,
-        is_subs_visible: bool = True,
-    ):
-        group_names_on_page = [name.text for name in self.config.get_group_names()]
-        if is_group_visible:
-            assert group_names_on_page, "There are should be groups on the page"
-            for group_name in group_names:
-                self.config.expand_or_close_group(group_name, expand=is_group_active)
-                self.config.check_subs_visibility(group_name, is_subs_visible)
-                assert group_name in group_names_on_page, f"There is no {group_name} group on the page"
-        else:
-            for group_name in group_names:
-                assert group_name not in group_names_on_page, f"There is visible '{group_name}' group on the page"
 
 
 class ClusterGroupConfigPage(ClusterPageMixin):
@@ -430,6 +413,9 @@ class ClusterHostPage(ClusterPageMixin):
         self.wait_element_visible(DeleteDialog.body)
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
+
+    def check_cluster_hosts_toolbar(self, cluster_name: str, host_name: str):
+        self.toolbar.check_toolbar_elements(["CLUSTERS", cluster_name, "HOSTS", host_name])
 
 
 class ClusterComponentsPage(ClusterPageMixin):
