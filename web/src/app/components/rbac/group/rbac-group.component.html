@@ -1,6 +1,9 @@
 <ng-container [formGroup]="form">
   <adwp-input [form]="form" label='Group name' controlName='name'></adwp-input>
   <adwp-input [form]="form" label='Description' controlName='description'></adwp-input>
-  <adwp-input-select [form]="form" label="Select users" controlName="users" [options]="options"></adwp-input-select>
-  <adwp-controls [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></adwp-controls>
+  <adwp-input-select [form]="form" label="Select users" controlName="user" labelKey="username"
+                     appRbacUsersAsOptions
+                     #users="rbacUsers"
+                     [options]="users.options$ | async"></adwp-input-select>
+  <adwp-controls [title]="title" [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></adwp-controls>
 </ng-container>

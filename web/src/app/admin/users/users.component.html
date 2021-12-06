@@ -1,68 +1,11 @@
 <div class="controls">
-  <button mat-raised-button color="accent" (click)="hideLeft=!hideLeft">
-      <mat-icon>library_add</mat-icon> Add user
-  </button>
+  <app-add-button class="add-button" [name]="type" [component]="component" (added)="current = $event">
+    Create {{ type }}</app-add-button>
   <button mat-raised-button color="primary" (click)="deleteEntities()" [disabled]="!(data$ | async | hasSelected)">
-      <mat-icon>delete</mat-icon> Delete
+    <mat-icon>delete</mat-icon>
+    Delete
   </button>
 </div>
-
-<mat-card class="users-add-card" [class.hidden]="hideLeft">
-  <mat-card-content>
-    <div [formGroup]="addForm">
-      <div style="display: flex">
-        <mat-form-field class="full-width">
-          <input matInput placeholder="Username" formControlName="username">
-          <mat-error *ngIf="username.invalid && (username.dirty || username.touched)">
-            <mat-error *ngIf="username.hasError('required')">
-              Username is
-              <b>required</b>
-            </mat-error>
-            <mat-error *ngIf="username.hasError('pattern')">
-              Username is
-              <b>not valid</b>
-            </mat-error>
-          </mat-error>
-        </mat-form-field>
-      </div>
-      <div>
-        <div formGroupName="xxx">
-          <div style="display: flex">
-            <mat-form-field class="full-width">
-              <input type="password" matInput formControlName="password" placeholder="Password" (input)="cpassword.updateValueAndValidity()">
-              <mat-error *ngIf="password.invalid && (password.dirty || password.touched)">
-                <mat-error *ngIf="password.hasError('required')">
-                  Password is
-                  <b>required</b>
-                </mat-error>
-              </mat-error>
-            </mat-form-field>
-          </div>
-          <div style="display: flex">
-            <mat-form-field class="full-width">
-              <input type="password" matInput formControlName="cpassword" appConfirmEqualValidator="password"
-                placeholder="Confirm Password">
-              <mat-error *ngIf="cpassword.invalid && (cpassword.dirty || cpassword.touched)">
-                <mat-error *ngIf="cpassword.hasError('required')">
-                  Confirm password is
-                  <b>required</b>
-                </mat-error>
-                <mat-error *ngIf="cpassword.hasError('notEqual')">
-                  Password and confirm password does not match
-                </mat-error>
-              </mat-error>
-            </mat-form-field>
-          </div>
-        </div>
-        <p class="controls">
-          <button mat-raised-button (click)="addUser()" [disabled]="!addForm.valid" color="primary">
-            Save
-          </button>
-        </p>
-      </div>
-    </div>
-  </mat-card-content>
-</mat-card>
 
 <adwp-list
   [columns]="listColumns"

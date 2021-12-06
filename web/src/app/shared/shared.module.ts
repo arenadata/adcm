@@ -32,7 +32,7 @@ import { ActionMasterConfigComponent } from './components/actions/master/action-
 import { MultiSortDirective } from './components/list/multi-sort.directive';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { DetailsModule } from './details/details.module';
-import { DynamicDirective, HoverDirective } from './directives';
+import { HoverDirective } from './directives';
 import { FormElementsModule } from './form-elements/form-elements.module';
 import { HostComponentsMapModule } from './host-components-map/host-components-map.module';
 import { MaterialModule } from './material.module';
@@ -59,6 +59,7 @@ import { RbacUserService } from '@app/services/rbac-user.service';
 import { RbacGroupService } from '@app/services/rbac-group.service';
 import { RbacRoleService } from '@app/services/rbac-role.service';
 import { RbacPolicyService } from '@app/services/rbac-policy.service';
+import { DynamicModule } from '@app/shared/directives/dynamic/dynamic.module';
 
 @NgModule({
   imports: [
@@ -76,12 +77,12 @@ import { RbacPolicyService } from '@app/services/rbac-policy.service';
     TranslateModule,
     TooltipModule,
     MatTreeModule,
+    DynamicModule,
   ],
   declarations: [
     DialogComponent,
     BreakRowPipe,
     HoverDirective,
-    DynamicDirective,
     ButtonSpinnerComponent,
     TagEscPipe,
     IssueInfoComponent,
@@ -120,7 +121,6 @@ import { RbacPolicyService } from '@app/services/rbac-policy.service';
     DialogComponent,
     BreakRowPipe,
     HoverDirective,
-    DynamicDirective,
     ButtonSpinnerComponent,
     UpgradeComponent,
     TagEscPipe,

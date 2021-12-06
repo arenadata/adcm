@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { BaseFormDirective } from '../../../shared/add-component';
-import { FormArray, FormControl, FormGroup } from '@angular/forms';
+import { FormControl, FormGroup } from '@angular/forms';
 import { adwpDefaultProp } from '../../../../../../../adwp_ui/projects/widgets/src/lib/cdk';
+import { clearEmptyField } from '../../../core/types';
+import { take } from 'rxjs/operators';
 
 
 interface IRbacRoleView<T> {
@@ -21,6 +23,9 @@ const INITIAL_STATE: IRbacRoleView<any> = {
   selector: 'app-rbac-role',
   templateUrl: './rbac-role.component.html',
   styleUrls: ['./rbac-role.component.scss'],
+  // providers: [
+  //   { provide: ADD_SERVICE_PROVIDER, useExisting: RbacRoleService }
+  // ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RbacRoleComponent<T> extends BaseFormDirective implements OnChanges {
@@ -33,10 +38,20 @@ export class RbacRoleComponent<T> extends BaseFormDirective implements OnChanges
   @adwpDefaultProp()
   options: T[] = [];
 
+  parametrizedOptions: ('Cluster' | 'Service' | 'Component' | 'Provider' | 'Host')[] = [
+    'Cluster',
+    'Service',
+    'Component',
+    'Provider',
+    'Host',
+  ];
+
   form = new FormGroup({
     name: new FormControl(null),
     description: new FormControl(null),
-    child: new FormArray([])
+    category: new FormControl(['adcm']),
+    parametrized_by_type: new FormControl([]),
+    child: new FormControl([])
   });
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -48,7 +63,12 @@ export class RbacRoleComponent<T> extends BaseFormDirective implements OnChanges
   }
 
   save(): void {
-    console.error('RbacRoleComponent | method SAVE not implemented yet  ');
+    const data = clearEmptyField(this.form.value);
+
+    this.service
+      .add(data)
+      .pipe(take(1))
+      .subscribe((_) => this.onCancel());
   }
 
 }

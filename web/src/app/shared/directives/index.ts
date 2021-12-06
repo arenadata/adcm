@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-export * from './dynamic.directive';
+export * from './dynamic/dynamic.directive';
 export * from './for-test.directive';
 export * from './hover.directive';
 export * from './m-textarea.directive';
