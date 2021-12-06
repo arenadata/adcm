@@ -83,7 +83,7 @@ class CommonToolbar(BasePageObject):
         tab_names_actual = (
             self.find_element(CommonToolbarLocators.all_links)
             .text.replace("\n", "")
-            .replace("play_circle_outline", "")
+            .replace("play_circle_outline", "")  # delete all extra text from toolbar
             .replace("sync_problem", "")
             .replace("priority_hight", "")
         )
