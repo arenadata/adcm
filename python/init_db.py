@@ -32,7 +32,7 @@ from cm.models import (
     ConcernItem,
 )
 from cm.status_api import Event
-from rbac.models import User, Policy, Role
+from rbac.models import User
 
 
 def random_string(strlen=10):
@@ -50,15 +50,6 @@ def create_status_user():
     with open(SECRETS_FILE, 'w', encoding='utf_8') as f:
         json.dump({'adcmuser': {'user': username, 'password': password}, 'token': token}, f)
     log.info('Update secret file %s OK', SECRETS_FILE)
-
-
-def create_default_policy():
-    policy_name = 'default'
-    if Policy.objects.filter(name=policy_name).exists():
-        return
-
-    role = Role.objects.get(name='Base role')
-    Policy.objects.create(name=policy_name, role_id=role.id, built_in=True)
 
 
 def create_dummy_data():
@@ -97,7 +88,6 @@ def init():
     event.send_state()
     load_adcm()
     create_dummy_data()
-    create_default_policy()
     drop_locks()
     recheck_issues()
     log.info("ADCM DB is initialized")
