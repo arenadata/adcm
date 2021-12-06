@@ -36,6 +36,7 @@ class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
             'id',
             'name',
             'description',
+            'display_name',
             'built_in',
             'type',
             'category',

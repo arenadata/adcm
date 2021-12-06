@@ -82,6 +82,7 @@ class Role(models.Model):
 
     name = models.CharField(max_length=160)
     description = models.TextField(blank=True)
+    display_name = models.CharField(max_length=160, null=False, default="")
     child = models.ManyToManyField("self", symmetrical=False, blank=True)
     permissions = models.ManyToManyField(Permission, blank=True)
     module_name = models.CharField(max_length=32)

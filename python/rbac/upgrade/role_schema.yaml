@@ -20,6 +20,7 @@ role:
   items:
     name: string
     description: string
+    display_name: string
     type: type
     parametrized_by: object_list
     module_name: module_name
