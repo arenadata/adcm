@@ -25,6 +25,8 @@ import { Host2clusterComponent } from './host2cluster.component';
 import { ProviderComponent } from './provider.component';
 import { ServiceComponent } from './service.component';
 import { ControlsComponent } from './controls.component';
+import { DynamicModule } from '@app/shared/directives/dynamic/dynamic.module';
+import { FormWithRelationDirective } from '@app/shared/add-component/form-with-relation.directive';
 
 @NgModule({
   declarations: [
@@ -36,9 +38,10 @@ import { ControlsComponent } from './controls.component';
     ProviderComponent,
     ServiceComponent,
     BaseFormDirective,
+    FormWithRelationDirective,
     ControlsComponent,
   ],
-  imports: [CommonModule, MaterialModule, StuffModule, FormsModule, ReactiveFormsModule, FormElementsModule],
+  imports: [CommonModule, MaterialModule, StuffModule, FormsModule, ReactiveFormsModule, FormElementsModule, DynamicModule],
   exports: [
     AddButtonComponent,
     ProviderComponent,
@@ -47,6 +50,7 @@ import { ControlsComponent } from './controls.component';
     ServiceComponent,
     Host2clusterComponent,
     BaseFormDirective,
+    FormWithRelationDirective,
     ControlsComponent,
   ],
   entryComponents: [AddFormComponent]

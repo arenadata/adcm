@@ -8,5 +8,5 @@ export interface RbacUserModel {
   password: string;
   url: string;
   profile: unknown;
-  groups: unknown[];
+  group: unknown[];
 }

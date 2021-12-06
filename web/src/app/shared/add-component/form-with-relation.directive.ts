@@ -10,25 +10,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Directive, Inject } from '@angular/core';
-import { FormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
-import { BaseDirective } from '@adwp-ui/widgets';
 
 import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add-service-model';
+import { BaseFormDirective } from './base-form.directive';
 
 @Directive({
-  selector: '[appBaseForm]',
+  selector: '[appRelationForm]',
 })
-export class BaseFormDirective extends BaseDirective {
-  form = new FormGroup({});
-
-  value?: any;
+export class FormWithRelationDirective<T extends IAddService = IAddService> extends BaseFormDirective {
+  value: any;
 
   constructor(
-    @Inject(ADD_SERVICE_PROVIDER) public service: IAddService,
+    @Inject(ADD_SERVICE_PROVIDER) public service: T,
     public dialog: MatDialog,
   ) {
-    super();
+    super(service, dialog);
   }
 
   onCancel(): void {
@@ -37,4 +34,5 @@ export class BaseFormDirective extends BaseDirective {
   }
 
   save() {}
+
 }

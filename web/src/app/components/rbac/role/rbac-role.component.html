@@ -1,6 +1,8 @@
 <ng-container [formGroup]="form">
   <adwp-input [form]="form" label='Role name' controlName='name'></adwp-input>
   <adwp-input [form]="form" label='Description' controlName='description'></adwp-input>
-  <adwp-input-select [form]="form" label="Permissions" controlName="child" [options]="options"></adwp-input-select>
+  <adwp-input-select [form]="form" label="Parametrized by" controlName="parametrized_by_type"
+                     [options]="parametrizedOptions"></adwp-input-select>
+  <adwp-input-select [form]="form" label="Permissions" controlName="child"></adwp-input-select>
   <adwp-controls [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></adwp-controls>
 </ng-container>

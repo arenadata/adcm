@@ -13,7 +13,6 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AuthGuard } from '../core/auth/auth.guard';
-import { SharedModule } from '@app/shared/shared.module';
 
 import { IntroComponent } from './intro.component';
 import { PatternComponent } from './pattern.component';
@@ -22,6 +21,16 @@ import { UsersComponent } from './users/users.component';
 import { GroupsComponent } from './groups/groups.component';
 import { RolesComponent } from './roles/roles.component';
 import { PoliciesComponent } from './policies/policies.component';
+import { AdwpListModule } from '@adwp-ui/widgets';
+import { RbacGroupModule } from '../components/rbac/group/rbac-group.module';
+import { RbacRoleModule } from '../components/rbac/role/rbac-role.module';
+import { RbacUserModule } from '../components/rbac/user/rbac-user.module';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatListModule } from '@angular/material/list';
+import { MatCardModule } from '@angular/material/card';
+import { StuffModule } from '../shared/stuff.module';
+import { AddingModule } from '../shared/add-component/adding.module';
 
 const routes: Routes = [
   {
@@ -67,7 +76,16 @@ const routes: Routes = [
   imports: [
     CommonModule,
     RouterModule.forChild(routes),
-    SharedModule,
+    AdwpListModule,
+    RbacGroupModule,
+    RbacRoleModule,
+    RbacUserModule,
+    MatToolbarModule,
+    MatSidenavModule,
+    MatListModule,
+    MatCardModule,
+    StuffModule,
+    AddingModule
   ],
   declarations: [
     IntroComponent,
@@ -79,4 +97,5 @@ const routes: Routes = [
     PoliciesComponent,
   ],
 })
-export class AdminModule {}
+export class AdminModule {
+}

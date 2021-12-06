@@ -32,7 +32,7 @@ import { ActionMasterConfigComponent } from './components/actions/master/action-
 import { MultiSortDirective } from './components/list/multi-sort.directive';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { DetailsModule } from './details/details.module';
-import { DynamicDirective, HoverDirective } from './directives';
+import { HoverDirective } from './directives';
 import { FormElementsModule } from './form-elements/form-elements.module';
 import { HostComponentsMapModule } from './host-components-map/host-components-map.module';
 import { MaterialModule } from './material.module';
@@ -55,6 +55,7 @@ import { EntityStatusToStatusTreePipe } from '@app/pipes/entity-status-to-status
 import { ServiceStatusComponent } from '@app/components/service/service-status/service-status.component';
 import { ServiceComponentStatusComponent } from '@app/components/service-component/service-component-status/service-component-status.component';
 import { StatusTreeLinkPipe } from '@app/pipes/status-tree-link.pipe';
+import { DynamicModule } from '@app/shared/directives/dynamic/dynamic.module';
 
 @NgModule({
   imports: [
@@ -72,12 +73,12 @@ import { StatusTreeLinkPipe } from '@app/pipes/status-tree-link.pipe';
     TranslateModule,
     TooltipModule,
     MatTreeModule,
+    DynamicModule,
   ],
   declarations: [
     DialogComponent,
     BreakRowPipe,
     HoverDirective,
-    DynamicDirective,
     ButtonSpinnerComponent,
     TagEscPipe,
     IssueInfoComponent,
@@ -116,7 +117,6 @@ import { StatusTreeLinkPipe } from '@app/pipes/status-tree-link.pipe';
     DialogComponent,
     BreakRowPipe,
     HoverDirective,
-    DynamicDirective,
     ButtonSpinnerComponent,
     UpgradeComponent,
     TagEscPipe,
