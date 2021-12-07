@@ -68,5 +68,5 @@ class GroupViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
 
     queryset = models.Group.objects.all()
     serializer_class = GroupSerializer
-    filterset_fields = ['id', 'name']
-    ordering_fields = ['id', 'name']
+    filterset_fields = ('id', 'name', 'user')
+    ordering_fields = ('id', 'name')
