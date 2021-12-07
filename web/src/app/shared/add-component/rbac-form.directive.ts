@@ -37,18 +37,12 @@ export class RbacFormDirective extends BaseFormDirective implements OnInit {
   save(): void {
     const data = clearEmptyField(this.form.value);
 
-    console.log('save: ', this.value);
-    console.log(this.service);
-
     if (this.value) {
       this.service
         .update(this.value.url, data)
         .pipe(take(1))
         .subscribe((_) => this.onCancel());
     } else {
-
-      console.log(this.service);
-
       this.service
         .add(data)
         .pipe(take(1))
