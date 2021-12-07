@@ -71,7 +71,7 @@ export class ListService implements IListService<Entities> {
       case 'rbac_group':
         return this.api.getList(`${environment.apiRoot}rbac/group/`, p);
       case 'rbac_role':
-        return this.api.getList(`${environment.apiRoot}rbac/role/`, p);
+        return this.api.getList(`${environment.apiRoot}rbac/role/`, p, { type: 'role' });
       case 'rbac_policy':
         return this.api.getList(`${environment.apiRoot}rbac/policy/`, p);
       default:
