@@ -463,6 +463,46 @@ class TestHostConfigPage:
             tab_name=HOST_FQDN, expected_warn_text=[f'{HOST_FQDN} has an issue with its config']
         )
 
+    @pytest.mark.parametrize('provider_bundle', ["host_with_default_string"], indirect=True)
+    @pytest.mark.usefixtures('create_host')
+    def test_field_validation_on_host_config_page_with_default_value(self, page: HostListPage):
+        """Test config fields validation on host config page"""
+
+        params = {'field_name': 'string', 'new_value': 'test', "config_name": "test_name"}
+
+        host_page = open_config(page)
+        host_page.config.clear_field_by_keys(params['field_name'])
+        host_page.config.check_field_is_required(params['field_name'])
+        host_page.config.type_in_config_field(params['new_value'], row=host_page.config.get_all_config_rows()[0])
+        host_page.config.save_config()
+        host_page.config.assert_input_value_is(expected_value=params["new_value"], display_name=params["field_name"])
+
+    @pytest.mark.parametrize('provider_bundle', ["host_with_all_config_params"], indirect=True)
+    @pytest.mark.usefixtures('create_host')
+    def test_field_tooltips_on_host_config_page(self, page: HostListPage):
+        """Test config fields tooltips on host config page"""
+
+        config_items = [
+            'float',
+            'boolean',
+            'integer',
+            'password',
+            'string',
+            'list',
+            'file',
+            'option',
+            'text',
+            'structure',
+            'map',
+            'secrettext',
+            'json',
+            'usual_port',
+            'transport_port',
+        ]
+        host_page = open_config(page)
+        for item in config_items:
+            host_page.config.check_text_in_tooltip(item, f"Test description {item}")
+
 
 @pytest.mark.usefixtures('login_to_adcm_over_api')
 class TestHostStatusPage:

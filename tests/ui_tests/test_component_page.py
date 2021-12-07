@@ -47,6 +47,8 @@ from tests.ui_tests.app.page.service.page import ServiceComponentPage
 
 BUNDLE_COMMUNITY = "cluster_community"
 COMPONENT_WITH_REQUIRED_FIELDS = "component_with_required_string"
+COMPONENT_WITH_DESCRIPTION_FIELDS = "component_with_all_config_params"
+COMPONENT_WITH_DEFAULT_FIELDS = "component_with_default_string"
 CLUSTER_NAME = "Test cluster"
 SERVICE_NAME = "test_service"
 PROVIDER_NAME = 'test_provider'
@@ -253,6 +255,62 @@ class TestComponentConfigPage:
         component_config_page.toolbar.check_warn_button(
             tab_name=FIRST_COMPONENT_NAME, expected_warn_text=[f'{FIRST_COMPONENT_NAME} has an issue with its config']
         )
+
+    @pytest.mark.parametrize(
+        "bundle_archive", [utils.get_data_dir(__file__, COMPONENT_WITH_DEFAULT_FIELDS)], indirect=True
+    )
+    def test_field_validation_on_component_config_page_with_default_value(
+        self, app_fs, create_cluster_with_service, create_bundle_archives
+    ):
+        """Test config fields validation on /cluster/{}/service/{}/component/{}/config page"""
+
+        params = {'field_name': 'string', 'new_value': 'test', "config_name": "test_name"}
+
+        cluster, service = create_cluster_with_service
+        component = service.component(name=FIRST_COMPONENT_NAME)
+        component_config_page = ComponentConfigPage(
+            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+        ).open()
+        component_config_page.config.clear_field_by_keys(params['field_name'])
+        component_config_page.config.check_field_is_required(params['field_name'])
+        component_config_page.config.type_in_config_field(
+            params['new_value'], row=component_config_page.config.get_all_config_rows()[0]
+        )
+        component_config_page.config.save_config()
+        component_config_page.config.assert_input_value_is(
+            expected_value=params["new_value"], display_name=params["field_name"]
+        )
+
+    @pytest.mark.parametrize(
+        "bundle_archive", [utils.get_data_dir(__file__, COMPONENT_WITH_DESCRIPTION_FIELDS)], indirect=True
+    )
+    def test_field_tooltips_on_component_config_page(self, app_fs, create_cluster_with_service, create_bundle_archives):
+        """Test config fields tooltips on /cluster/{}/service/{}/component/{}/config page"""
+
+        config_items = [
+            'float',
+            'boolean',
+            'integer',
+            'password',
+            'string',
+            'list',
+            'file',
+            'option',
+            'text',
+            'structure',
+            'map',
+            'secrettext',
+            'json',
+            'usual_port',
+            'transport_port',
+        ]
+        cluster, service = create_cluster_with_service
+        component = service.component(name=FIRST_COMPONENT_NAME)
+        component_config_page = ComponentConfigPage(
+            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+        ).open()
+        for item in config_items:
+            component_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
 
 @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)

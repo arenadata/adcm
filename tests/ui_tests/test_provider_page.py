@@ -315,6 +315,55 @@ class TestProviderConfigPage:
             tab_name="test_provider", expected_warn_text=['test_provider has an issue with its config']
         )
 
+    @pytest.mark.parametrize("bundle", ["provider_default_fields"], indirect=True)
+    def test_field_validation_on_provider_config_page_with_default_value(
+        self, app_fs, bundle, upload_and_create_test_provider
+    ):
+        """Test config field validation on provider config page"""
+
+        params = {'field_name': 'string', 'new_value': 'test', "config_name": "test_name"}
+
+        provider_config_page = ProviderConfigPage(
+            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+        ).open()
+        provider_config_page.config.clear_field_by_keys(params['field_name'])
+        provider_config_page.config.check_field_is_required(params['field_name'])
+        provider_config_page.config.type_in_config_field(
+            params['new_value'], row=provider_config_page.config.get_all_config_rows()[0]
+        )
+        provider_config_page.config.save_config()
+        provider_config_page.config.assert_input_value_is(
+            expected_value=params["new_value"], display_name=params["field_name"]
+        )
+
+    @pytest.mark.parametrize("bundle", ["provider_with_all_config_params"], indirect=True)
+    def test_field_tooltips_on_provider_config_page(self, app_fs, bundle, upload_and_create_test_provider):
+        """Test config fields tooltips on provider config page"""
+
+        config_items = [
+            'float',
+            'boolean',
+            'integer',
+            'password',
+            'string',
+            'list',
+            'file',
+            'option',
+            'text',
+            'structure',
+            'map',
+            'secrettext',
+            'json',
+            'usual_port',
+            'transport_port',
+        ]
+
+        provider_config_page = ProviderConfigPage(
+            app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
+        ).open()
+        for item in config_items:
+            provider_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
+
 
 class TestProviderGroupConfigPage:
     """Tests for the /provider/{}/group_config page"""

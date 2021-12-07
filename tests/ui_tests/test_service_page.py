@@ -65,6 +65,9 @@ from tests.ui_tests.test_cluster_list_page import (
 
 BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
 BUNDLE_WITH_REQUIRED_IMPORT = "cluster_required_import"
+BUNDLE_DEFAULT_FIELDS = "cluster_and_service_with_default_string"
+BUNDLE_WITH_DESCRIPTION_FIELDS = "service_with_all_config_params"
+
 
 # pylint: disable=redefined-outer-name,no-self-use,unused-argument
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
@@ -212,7 +215,7 @@ class TestServiceConfigPage:
             service_config_page.config.clear_search_input()
         with allure.step("Check that rows are not filtered"):
             config_rows = service_config_page.config.get_all_config_rows()
-            assert len(config_rows) == 2, "Rows are filtered: there should be 4 row"
+            assert len(config_rows) == 2, "Rows are filtered: there should be 2 row"
         with service_config_page.config.wait_rows_change(expected_rows_amount=0):
             service_config_page.config.click_on_group(params["group_name"])
 
@@ -284,6 +287,55 @@ class TestServiceConfigPage:
                 'test_service has an issue with its config',
             ],
         )
+
+    def test_field_validation_on_service_config_page_with_default_value(self, app_fs, sdk_client_fs):
+        """Test config fields validation on /cluster/{}/service/{}/config page"""
+
+        params = {'field_name': 'string', 'new_value': 'test', "config_name": "test_name"}
+
+        with allure.step("Create cluster and service"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_DEFAULT_FIELDS)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            service = cluster.service_add(name=SERVICE_NAME)
+        service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        service_config_page.config.clear_field_by_keys(params['field_name'])
+        service_config_page.config.check_field_is_required(params['field_name'])
+        service_config_page.config.type_in_config_field(
+            params['new_value'], row=service_config_page.config.get_all_config_rows()[0]
+        )
+        service_config_page.config.save_config()
+        service_config_page.config.assert_input_value_is(
+            expected_value=params["new_value"], display_name=params["field_name"]
+        )
+
+    def test_field_tooltips_on_service_config_page(self, app_fs, sdk_client_fs):
+        """Test config fields tooltips on /cluster/{}/service/{}/config page"""
+
+        config_items = [
+            'float',
+            'boolean',
+            'integer',
+            'password',
+            'string',
+            'list',
+            'file',
+            'option',
+            'text',
+            'structure',
+            'map',
+            'secrettext',
+            'json',
+            'usual_port',
+            'transport_port',
+        ]
+
+        with allure.step("Create cluster and service"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_DESCRIPTION_FIELDS)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            service = cluster.service_add(name=SERVICE_NAME)
+        service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        for item in config_items:
+            service_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
 
 class TestServiceGroupConfigPage:
