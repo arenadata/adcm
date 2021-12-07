@@ -31,6 +31,7 @@ from adcm_pytest_plugin import utils
 
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
+from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
 from tests.ui_tests.app.page.common.status.page import (
     SUCCESS_COLOR,
@@ -287,29 +288,12 @@ class TestComponentConfigPage:
     def test_field_tooltips_on_component_config_page(self, app_fs, create_cluster_with_service, create_bundle_archives):
         """Test config fields tooltips on /cluster/{}/service/{}/component/{}/config page"""
 
-        config_items = [
-            'float',
-            'boolean',
-            'integer',
-            'password',
-            'string',
-            'list',
-            'file',
-            'option',
-            'text',
-            'structure',
-            'map',
-            'secrettext',
-            'json',
-            'usual_port',
-            'transport_port',
-        ]
         cluster, service = create_cluster_with_service
         component = service.component(name=FIRST_COMPONENT_NAME)
         component_config_page = ComponentConfigPage(
             app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
         ).open()
-        for item in config_items:
+        for item in CONFIG_ITEMS:
             component_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
 

@@ -32,6 +32,7 @@ from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
+from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.status.page import (
     SUCCESS_COLOR,
     NEGATIVE_COLOR,
@@ -482,25 +483,8 @@ class TestHostConfigPage:
     def test_field_tooltips_on_host_config_page(self, page: HostListPage):
         """Test config fields tooltips on host config page"""
 
-        config_items = [
-            'float',
-            'boolean',
-            'integer',
-            'password',
-            'string',
-            'list',
-            'file',
-            'option',
-            'text',
-            'structure',
-            'map',
-            'secrettext',
-            'json',
-            'usual_port',
-            'transport_port',
-        ]
         host_page = open_config(page)
-        for item in config_items:
+        for item in CONFIG_ITEMS:
             host_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
 

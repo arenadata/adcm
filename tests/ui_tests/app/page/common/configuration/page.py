@@ -443,3 +443,22 @@ class CommonConfigMenuObj(BasePageObject):
         assert self.is_child_displayed(
             self.find_element(ObjectPageMenuLocators.service_components_tab), ObjectPageMenuLocators.warn_icon
         ), "No warn icon near Host-Components left menu element"
+
+
+CONFIG_ITEMS = [
+    'float',
+    'boolean',
+    'integer',
+    'password',
+    'string',
+    'list',
+    'file',
+    'option',
+    'text',
+    'structure',
+    'map',
+    'secrettext',
+    'json',
+    'usual_port',
+    'transport_port',
+]

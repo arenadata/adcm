@@ -35,6 +35,7 @@ from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
     ClusterServicesPage,
 )
+from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
 from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
 from tests.ui_tests.app.page.common.status.page import (
@@ -311,30 +312,12 @@ class TestServiceConfigPage:
     def test_field_tooltips_on_service_config_page(self, app_fs, sdk_client_fs):
         """Test config fields tooltips on /cluster/{}/service/{}/config page"""
 
-        config_items = [
-            'float',
-            'boolean',
-            'integer',
-            'password',
-            'string',
-            'list',
-            'file',
-            'option',
-            'text',
-            'structure',
-            'map',
-            'secrettext',
-            'json',
-            'usual_port',
-            'transport_port',
-        ]
-
         with allure.step("Create cluster and service"):
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_DESCRIPTION_FIELDS)
             cluster = bundle.cluster_create(name=CLUSTER_NAME)
             service = cluster.service_add(name=SERVICE_NAME)
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
-        for item in config_items:
+        for item in CONFIG_ITEMS:
             service_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
 

@@ -25,6 +25,7 @@ from adcm_client.objects import (
 from adcm_pytest_plugin import utils
 
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
+from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
 from tests.ui_tests.app.page.provider.page import (
     ProviderMainPage,
@@ -340,28 +341,10 @@ class TestProviderConfigPage:
     def test_field_tooltips_on_provider_config_page(self, app_fs, bundle, upload_and_create_test_provider):
         """Test config fields tooltips on provider config page"""
 
-        config_items = [
-            'float',
-            'boolean',
-            'integer',
-            'password',
-            'string',
-            'list',
-            'file',
-            'option',
-            'text',
-            'structure',
-            'map',
-            'secrettext',
-            'json',
-            'usual_port',
-            'transport_port',
-        ]
-
         provider_config_page = ProviderConfigPage(
             app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
         ).open()
-        for item in config_items:
+        for item in CONFIG_ITEMS:
             provider_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
 
