@@ -17,7 +17,7 @@ import { StoreModule } from '@ngrx/store';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { TranslateLoader, TranslateModule, TranslateService } from '@ngx-translate/core';
 import { HttpClient } from '@angular/common/http';
-import { AdwpUiWidgetsModule } from '@adwp-ui/widgets';
+import { AdwpPortalHostModule, AdwpUiWidgetsModule } from '@adwp-ui/widgets';
 
 import { CoreModule } from '@app/core/core.module';
 import { ConfigService } from '@app/core/services';
@@ -34,7 +34,6 @@ import { ListService } from '@app/shared/components/list/list.service';
 import { LIST_SERVICE_PROVIDER } from '@app/shared/components/list/list-service-token';
 import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
 import { AddService } from '@app/shared/add-component/add.service';
-import { AdwpPortalHostModule } from '../../../../adwp_ui/projects/widgets/src/lib/cdk';
 
 @NgModule({
   declarations: [

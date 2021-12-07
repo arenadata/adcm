@@ -12,17 +12,17 @@
 import { Directive, Input, OnInit } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { clearEmptyField } from '@app/core/types';
-import { take } from 'rxjs/operators';
 import { BaseFormDirective } from '@app/shared/add-component/base-form.directive';
+import { take } from 'rxjs/operators';
 
 @Directive({
   selector: '[appRbacForm]',
 })
-export class RbacFormDirective extends BaseFormDirective implements OnInit {
+export class RbacFormDirective<T extends { url: string } = { url: string }> extends BaseFormDirective implements OnInit {
   form = new FormGroup({});
 
   @Input()
-  value: any;
+  value: T;
 
   get title(): string {
     return this.value ? 'Update' : 'Create';
@@ -34,8 +34,12 @@ export class RbacFormDirective extends BaseFormDirective implements OnInit {
     }
   }
 
+  rbacBeforeSave(value: T): Partial<T> {
+    return value;
+  }
+
   save(): void {
-    const data = clearEmptyField(this.form.value);
+    const data = clearEmptyField(this.rbacBeforeSave(this.form.value));
 
     if (this.value) {
       this.service

@@ -419,3 +419,11 @@ mat-cell.control {
 adwp-dropdown-box {
   z-index: 2000 !important;
 }
+
+.mat-select-panel {
+  .mat-selection-list {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+}
+
