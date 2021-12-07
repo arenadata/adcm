@@ -146,6 +146,17 @@ def get_role_spec(data: str, schema: str) -> dict:
     return data
 
 
+def create_default_policy():
+    policy_name = 'default'
+    role = Role.objects.get(name='Base role')
+    try:
+        policy = Policy.objects.get(name=policy_name)
+        policy.role = role
+        policy.save()
+    except Policy.DoesNotExist:
+        Policy.objects.create(name=policy_name, role_id=role.id, built_in=True)
+
+
 def init_roles():
     """
     Init or upgrade roles and permissions in DB
@@ -162,6 +173,7 @@ def init_roles():
         upgrade(role_data)
         rm.version = role_data['version']
         rm.save()
+        create_default_policy()
         msg = f'Roles are upgraded to version {rm.version}'
         log.info(msg)
     else:
