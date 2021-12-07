@@ -26,7 +26,7 @@ import { ProviderComponent } from './provider.component';
 import { ServiceComponent } from './service.component';
 import { ControlsComponent } from './controls.component';
 import { DynamicModule } from '@app/shared/directives/dynamic/dynamic.module';
-import { FormWithRelationDirective } from '@app/shared/add-component/form-with-relation.directive';
+import { RbacFormDirective } from '@app/shared/add-component/rbac-form.directive';
 
 @NgModule({
   declarations: [
@@ -38,7 +38,7 @@ import { FormWithRelationDirective } from '@app/shared/add-component/form-with-r
     ProviderComponent,
     ServiceComponent,
     BaseFormDirective,
-    FormWithRelationDirective,
+    RbacFormDirective,
     ControlsComponent,
   ],
   imports: [CommonModule, MaterialModule, StuffModule, FormsModule, ReactiveFormsModule, FormElementsModule, DynamicModule],
@@ -50,7 +50,7 @@ import { FormWithRelationDirective } from '@app/shared/add-component/form-with-r
     ServiceComponent,
     Host2clusterComponent,
     BaseFormDirective,
-    FormWithRelationDirective,
+    RbacFormDirective,
     ControlsComponent,
   ],
   entryComponents: [AddFormComponent]

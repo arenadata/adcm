@@ -1,18 +1,17 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RbacGroupComponent } from './rbac-group.component';
+import { RbacGroupFormComponent } from './rbac-group-form.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { AdwpFormElementModule } from '../../../../../../../adwp_ui/projects/widgets/src/lib/form-element/form-element.module';
-import { RbacGroupService } from './rbac-group.service';
-import { RbacUsersAsOptionsModule } from '../user/options/rbac-users-as-options.module';
+import { RbacUsersAsOptionsModule } from '../user-form/options/rbac-users-as-options.module';
 
 
 @NgModule({
   declarations: [
-    RbacGroupComponent,
+    RbacGroupFormComponent,
   ],
   exports: [
-    RbacGroupComponent,
+    RbacGroupFormComponent,
   ],
   imports: [
     CommonModule,
@@ -20,9 +19,6 @@ import { RbacUsersAsOptionsModule } from '../user/options/rbac-users-as-options.
     ReactiveFormsModule,
     RbacUsersAsOptionsModule,
   ],
-  providers: [
-    RbacGroupService,
-  ],
 })
-export class RbacGroupModule {
+export class RbacGroupFormModule {
 }

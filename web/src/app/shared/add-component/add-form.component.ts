@@ -15,6 +15,7 @@ import { ChannelService, keyChannelStrim } from '@app/core/services';
 import { DynamicComponent, DynamicDirective } from '@app/shared/directives';
 import { BaseFormDirective } from './base-form.directive';
 import { FormModel } from '@app/shared/add-component/add-service-model';
+import { RbacFormDirective } from '@app/shared/add-component/rbac-form.directive';
 
 @Component({
   selector: 'app-add-form',
@@ -73,7 +74,9 @@ export class AddFormComponent implements DynamicComponent, AfterViewInit {
 
       const componentRef = viewContainerRef.createComponent(componentFactory);
       this.instance = componentRef.instance;
-      this.instance.value = this.model.value;
+      if (this.instance instanceof RbacFormDirective) {
+        this.instance.value = this.model.value;
+      }
     }
   }
 

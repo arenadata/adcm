@@ -17,8 +17,8 @@ import { IntroComponent } from './intro.component';
 import { PatternComponent } from './pattern.component';
 import { SettingsComponent } from './settings.component';
 import { UsersComponent } from './users/users.component';
-import { RbacGroupModule } from '../components/rbac/group/rbac-group.module';
-import { RbacUserModule } from '../components/rbac/user/rbac-user.module';
+import { RbacGroupFormModule } from '../components/rbac/group-form/rbac-group-form.module';
+import { RbacUserFormModule } from '../components/rbac/user-form/rbac-user-form.module';
 import { RbacRoleModule } from '../components/rbac/role/rbac-role.module';
 
 import { GroupsComponent } from './groups/groups.component';
@@ -79,9 +79,9 @@ const routes: Routes = [
     CommonModule,
     RouterModule.forChild(routes),
     AdwpListModule,
-    RbacGroupModule,
+    RbacGroupFormModule,
     RbacRoleModule,
-    RbacUserModule,
+    RbacUserFormModule,
     MatToolbarModule,
     MatSidenavModule,
     MatListModule,

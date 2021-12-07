@@ -1,5 +1,12 @@
-<app-add-button class="add-button" [name]="type" [component]="component">
-  Create {{ type }}</app-add-button>
+<div class="controls">
+  <app-add-button class="add-button">
+    Create {{ type }}
+  </app-add-button>
+  <button mat-raised-button color="primary" (click)="deleteEntities()" [disabled]="!(data$ | async | hasSelected)">
+    <mat-icon>delete</mat-icon>
+    Delete
+  </button>
+</div>
 
 <adwp-list
   [columns]="listColumns"

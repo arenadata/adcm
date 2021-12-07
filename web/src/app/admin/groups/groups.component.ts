@@ -5,13 +5,17 @@ import { MatDialog } from '@angular/material/dialog';
 import { Store } from '@ngrx/store';
 import { RbacGroupModel } from '@app/models/rbac/rbac-group.model';
 import { TypeName } from '../../core/types';
-import { RbacGroupComponent } from '../../components/rbac/group/rbac-group.component';
+import { RbacGroupFormComponent } from '../../components/rbac/group-form/rbac-group-form.component';
 import { ADD_SERVICE_PROVIDER } from '../../shared/add-component/add-service-model';
-import { RbacGroupService } from '../../components/rbac/group/rbac-group.service';
 import { AddButtonComponent } from '../../shared/add-component';
 import { ListService } from '@app/shared/components/list/list.service';
 import { SocketState } from '@app/core/store';
 import { RbacEntityListDirective } from '@app/abstract-directives/rbac-entity-list.directive';
+import { RbacGroupService } from '../../services/rbac-group.service';
+
+const userNameMapper = (group: RbacGroupModel) => {
+  return group.user.map((u) => u.username).join(', ');
+};
 
 @Component({
   selector: 'app-groups',
@@ -23,7 +27,7 @@ import { RbacEntityListDirective } from '@app/abstract-directives/rbac-entity-li
 })
 export class GroupsComponent extends RbacEntityListDirective<RbacGroupModel> {
 
-  component = RbacGroupComponent;
+  component = RbacGroupFormComponent;
 
   @ViewChild(AddButtonComponent) addButton: AddButtonComponent;
 
@@ -46,7 +50,7 @@ export class GroupsComponent extends RbacEntityListDirective<RbacGroupModel> {
     },
     {
       label: 'Users',
-      value: (row) => row.user.map(i => i['id']).join(', '),
+      value: userNameMapper,
     }
   ] as IColumns<RbacGroupModel>;
 
@@ -72,11 +76,7 @@ export class GroupsComponent extends RbacEntityListDirective<RbacGroupModel> {
   }
 
   showForm(data: RowEventData): void {
-    this.addButton.showForm({
-      name: 'Edit group',
-      component: this.component,
-      value: data.row
-    });
+    this.addButton.showForm(this.entityService.model(data.row));
   }
 
 }

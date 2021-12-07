@@ -57,6 +57,8 @@ export class ListService implements IListService<Entities> {
       } else localStorage.setItem('list:param', JSON.stringify({ [typeName]: param }));
     }
 
+    let params = { ...(p || {}) };
+
     switch (typeName) {
       case 'host2cluster':
         return this.detail.getHosts(p);
@@ -67,9 +69,11 @@ export class ListService implements IListService<Entities> {
       case 'servicecomponent':
         return this.api.getList(`${environment.apiRoot}cluster/${(this.detail.Current as Service).cluster_id}/service/${this.detail.Current.id}/component`, p);
       case 'rbac_user':
-        return this.api.getList(`${environment.apiRoot}rbac/user/`, p);
+        params = { ...params, 'expand': 'group' };
+        return this.api.getList(`${environment.apiRoot}rbac/user/`, convertToParamMap(params));
       case 'rbac_group':
-        return this.api.getList(`${environment.apiRoot}rbac/group/`, p);
+        params = { ...params, 'expand': 'user' };
+        return this.api.getList(`${environment.apiRoot}rbac/group/`, convertToParamMap(params));
       case 'rbac_role':
         return this.api.getList(`${environment.apiRoot}rbac/role/`, p);
       case 'rbac_policy':

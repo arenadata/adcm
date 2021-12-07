@@ -1,16 +1,16 @@
 import { Directive, Inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { RbacUserModel } from '../../../../models/rbac/rbac-user.model';
-import { RbacGroupService } from '../rbac-group.service';
+import { RbacUserService } from '../../../../services/rbac-user.service';
 
 @Directive({
-  selector: '[appRbacGroupsAsOptions]',
-  exportAs: 'rbacGroups'
+  selector: '[appRbacUsersAsOptions]',
+  exportAs: 'rbacUsers'
 })
-export class RbacGroupsAsOptionsDirective {
+export class RbacUsersAsOptionsDirective {
   options$: Observable<RbacUserModel[]>;
 
-  constructor(@Inject(RbacGroupService) public service: RbacGroupService) {
+  constructor(@Inject(RbacUserService) public service: RbacUserService) {
     this.options$ = service.getList();
   }
 }

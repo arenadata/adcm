@@ -1,13 +1,15 @@
 import { Observable } from 'rxjs';
 import { Params } from '@angular/router';
+import { FormModel } from '@app/shared/add-component/add-service-model';
 
 export abstract class EntityAbstractService {
+  abstract model(): FormModel;
 
   abstract delete(id: number): Observable<any>;
 
-  abstract add<T>(param: Partial<T>): Observable<T>;
+  abstract add(param: any): Observable<any>;
 
-  abstract update<T>(url: string, params?: Partial<T>): Observable<T>
+  abstract update(url: string, params?: Partial<any>): Observable<any>;
 
-  abstract getList<T>(param?: Params): Observable<T[]>;
+  abstract getList(param?: Params): Observable<any[]>;
 }

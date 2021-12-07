@@ -22,8 +22,6 @@ import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add
 export class BaseFormDirective extends BaseDirective {
   form = new FormGroup({});
 
-  value?: any;
-
   constructor(
     @Inject(ADD_SERVICE_PROVIDER) public service: IAddService,
     public dialog: MatDialog,

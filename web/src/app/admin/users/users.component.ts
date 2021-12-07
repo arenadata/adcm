@@ -19,10 +19,13 @@ import { ListService } from '@app/shared/components/list/list.service';
 import { SocketState } from '@app/core/store';
 import { TypeName } from '@app/core/types';
 import { RbacEntityListDirective } from '@app/abstract-directives/rbac-entity-list.directive';
-import { RbacUserComponent } from '../../components/rbac/user/rbac-user.component';
 import { ADD_SERVICE_PROVIDER } from '../../shared/add-component/add-service-model';
 import { AddButtonComponent } from '../../shared/add-component';
 import { RbacUserService } from '../../services/rbac-user.service';
+
+const groupNameMapper = (user: RbacUserModel) => {
+  return user.group.map((group) => group.name).join(', ');
+};
 
 @Component({
   selector: 'app-users',
@@ -33,8 +36,6 @@ import { RbacUserService } from '../../services/rbac-user.service';
   ],
 })
 export class UsersComponent extends RbacEntityListDirective<RbacUserModel> implements OnInit {
-
-  component = RbacUserComponent;
 
   @ViewChild(AddButtonComponent) addButton: AddButtonComponent;
 
@@ -57,7 +58,7 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
     },
     {
       label: 'Groups',
-      value: (row) => row.group.map((item) => item['id']).join(', '), //ToDo
+      value: groupNameMapper,
     }
   ] as IColumns<RbacUserModel>;
 
@@ -74,19 +75,17 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
     super(service, store, route, router, dialog, entityService);
   }
 
+  getTitle(row: RbacUserModel): string {
+    return row.username;
+  }
+
   clickRow(data: RowEventData) {
     this.showForm(data);
   }
 
   showForm(data: RowEventData): void {
-    this.addButton.showForm({
-      name: 'Edit user',
-      component: this.component,
-      value: data.row
-    });
+    this.addButton.showForm(this.entityService.model(data.row));
   }
 
-  getTitle(row: RbacUserModel): string {
-    return row.username;
-  }
+
 }
