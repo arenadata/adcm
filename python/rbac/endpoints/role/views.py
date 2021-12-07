@@ -13,12 +13,12 @@
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework import status
-from rest_framework import viewsets
 from rest_framework.response import Response
 
 from rbac.models import Role
 from rbac.services.role import role_create, role_update
 from rbac.utils import BaseRelatedSerializer
+from rbac.viewsets import ModelPermViewSet
 
 
 class RoleChildSerializer(BaseRelatedSerializer):
@@ -52,7 +52,7 @@ class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
         expandable_fields = {'child': ('rbac.endpoints.role.views.RoleSerializer', {'many': True})}
 
 
-class RoleView(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
+class RoleView(ModelPermViewSet):  # pylint: disable=too-many-ancestors
 
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
