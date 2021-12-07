@@ -257,6 +257,7 @@ class TestHostListPage:
         with allure.step('Check correct menu is opened'):
             main_host_page.check_fqdn_equal_to(HOST_FQDN)
             assert main_host_page.active_menu_is(menu_item_locator)
+            main_host_page.check_host_toolbar(HOST_FQDN)
 
     @pytest.mark.smoke()
     @pytest.mark.usefixtures("create_host", "upload_and_create_provider")
@@ -313,6 +314,7 @@ class TestHostMainPage:
         host_config_page = HostConfigPage(app_fs.driver, app_fs.adcm.url, create_host.host_id).open()
         host_main_page = host_config_page.open_main_menu()
         host_main_page.check_all_elements()
+        host_main_page.check_host_toolbar(HOST_FQDN)
 
     def test_check_host_admin_page_open_by_toolbar(self, app_fs, create_host):
         """Test open admin/intro page from host toolbar"""
@@ -332,6 +334,7 @@ class TestHostMainPage:
         host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, create_host.host_id).open()
         host_main_page.toolbar.click_link_by_name(HOST_FQDN)
         host_main_page.wait_page_is_opened()
+        host_main_page.check_host_toolbar(HOST_FQDN)
 
     def test_check_cluster_run_action_on_host_page_by_toolbar(self, app_fs, create_host):
         """Test run action from the /cluster/{}/main page toolbar"""
@@ -356,6 +359,7 @@ class TestHostConfigPage:
 
         params = {'group': 'group_one', 'search_text': 'Adv'}
         host_page = open_config(page)
+        host_page.check_host_toolbar(HOST_FQDN)
         get_rows_func = host_page.config.get_all_config_rows
         with allure.step('Check unfiltered configuration'):
             host_page.config.check_config_fields_visibility(
@@ -401,6 +405,7 @@ class TestHostConfigPage:
             'secrettext_expected': '****',
         }
         host_page = open_config(page)
+        host_page.check_host_toolbar(HOST_FQDN)
         with allure.step('Change config description'):
             init_config_desc = host_page.config.set_description(params['description'])
         with allure.step('Change config values'):
@@ -474,6 +479,7 @@ class TestHostStatusPage:
         host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, create_host.id).open()
         host_status_page = host_main_page.open_status_menu()
         host_status_page.check_all_elements()
+        host_status_page.check_host_toolbar(HOST_FQDN)
 
     def test_status_on_host_status_page(self, app_fs, adcm_fs, sdk_client_fs, create_host, upload_and_create_cluster):
         """Changes status on cluster/{}/status page"""

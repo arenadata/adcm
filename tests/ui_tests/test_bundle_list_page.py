@@ -175,6 +175,7 @@ def test_accept_license_with_two_bundles_upload_at_once(create_bundle_archives: 
         page.accept_licence(row_num=1)
 
 
+@pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2385")
 @pytest.mark.smoke()
 def test_open_bundle_from_table(page: BundleListPage, upload_bundles: List[Bundle]):
     """Test open bundle object page from list of bundles"""
@@ -183,8 +184,10 @@ def test_open_bundle_from_table(page: BundleListPage, upload_bundles: List[Bundl
     with allure.step('Check object page is opened'):
         object_page = BundlePage(page.driver, page.base_url, upload_bundles[0].id)
         object_page.wait_page_is_opened()
+        object_page.check_bundle_toolbar(CLUSTER_CE_CONFIG[0]["name"].upper())
 
 
+@pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2385")
 @pytest.mark.smoke()
 def test_open_main_menu_on_bundle_page(page: BundleListPage, upload_bundles: List[Bundle]):
     """Open main menu on bundle detailed page"""
@@ -193,12 +196,13 @@ def test_open_main_menu_on_bundle_page(page: BundleListPage, upload_bundles: Lis
         object_page.open()
     object_page.open_main_menu()
     object_page.check_all_main_menu_fields_are_presented()
+    object_page.check_bundle_toolbar(CLUSTER_CE_CONFIG[0]["name"].upper())
 
 
 @pytest.mark.usefixtures('upload_bundles')
 def test_open_adcm_main_menu(page: BundleListPage):
     """Open main menu by clicking on the menu icon in toolbar"""
-    page.click_on_home_button_on_tooltip()
+    page.click_on_home_button_on_toolbar()
     AdminIntroPage(page.driver, page.base_url).wait_page_is_opened()
 
 
