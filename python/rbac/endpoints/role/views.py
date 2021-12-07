@@ -56,6 +56,15 @@ class RoleView(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
 
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
+    filterset_fields = (
+        'id',
+        'name',
+        'display_name',
+        'built_in',
+        'type',
+        'child',
+    )
+    ordering_fields = ('id', 'name', 'display_name', 'built_in', 'type')
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
