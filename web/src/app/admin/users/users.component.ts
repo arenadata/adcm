@@ -52,7 +52,7 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
     },
     {
       label: 'Groups',
-      value: (row) => row.groups.join(', '),
+      value: (row) => row.groups?.join(', '),
     }
   ] as IColumns<RbacUserModel>;
 
