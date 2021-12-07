@@ -176,9 +176,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: objectconfig
+            - name: cluster
               codenames:
-                - view
+                - view_config_of
 
     - name: View service configurations
       description: The ability to view the service configuration page
@@ -193,9 +193,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: objectconfig
+            - name: clusterobject
               codenames:
-                - view
+                - view_config_of
 
     - name: View component configurations
       description: The ability to view the component configuration page
@@ -210,9 +210,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: objectconfig
+            - name: servicecomponent
               codenames:
-                - view
+                - view_config_of
 
     - name: View provider configurations
       description: The ability to view the provider configuration page
@@ -227,9 +227,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: objectconfig
+            - name: hostprovider
               codenames:
-                - view
+                - view_config_of
 
     - name: View host configurations
       description: The ability to view the host configuration page
@@ -244,9 +244,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: objectconfig
+            - name: host
               codenames:
-                - view
+                - view_config_of
 
     - name: View configurations
       description: The ability to view all configurations
@@ -273,14 +273,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: objectconfig
+            - name: cluster
               codenames:
-                - add
-                - change
-            - name: configlog
-              codenames:
-                - add
-                - change
+                - change_config_of
 
     - name: Edit service configurations
       description: The ability to change and add new service configuration
@@ -295,14 +290,10 @@ roles:
       apps:
         - label: cm
           models:
-            - name: objectconfig
+            - name: clusterobject
               codenames:
-                - add
-                - change
-            - name: configlog
-              codenames:
-                - add
-                - change
+                - view_config_of
+                - change_config_of
 
     - name: Edit component configurations
       description: The ability to change and add new component configuration
@@ -317,14 +308,10 @@ roles:
       apps:
         - label: cm
           models:
-            - name: objectconfig
+            - name: servicecomponent
               codenames:
-                - add
-                - change
-            - name: configlog
-              codenames:
-                - add
-                - change
+                - view_config_of
+                - change_config_of
 
     - name: Edit provider configurations
       description: The ability to change and add new provider configuration
@@ -339,14 +326,10 @@ roles:
       apps:
         - label: cm
           models:
-            - name: objectconfig
+            - name: hostprovider
               codenames:
-                - add
-                - change
-            - name: configlog
-              codenames:
-                - add
-                - change
+                - view_config_of
+                - change_config_of
 
     - name: Edit host configurations
       description: The ability to change and add new host configuration
@@ -361,14 +344,10 @@ roles:
       apps:
         - label: cm
           models:
-            - name: objectconfig
+            - name: host
               codenames:
-                - add
-                - change
-            - name: configlog
-              codenames:
-                - add
-                - change
+                - view_config_of
+                - change_config_of
 
     - name: Edit configurations
       description: The ability to edit all configurations
