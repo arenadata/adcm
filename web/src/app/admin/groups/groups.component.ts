@@ -1,22 +1,35 @@
-import { Component } from '@angular/core';
-import { IColumns } from '@adwp-ui/widgets';
+import { Component, ViewChild } from '@angular/core';
+import { IColumns, RowEventData } from '@adwp-ui/widgets';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { Store } from '@ngrx/store';
-
 import { RbacGroupModel } from '@app/models/rbac/rbac-group.model';
-import { TypeName } from '@app/core/types';
+import { TypeName } from '../../core/types';
+import { RbacGroupFormComponent } from '../../components/rbac/group-form/rbac-group-form.component';
+import { ADD_SERVICE_PROVIDER } from '../../shared/add-component/add-service-model';
+import { AddButtonComponent } from '../../shared/add-component';
 import { ListService } from '@app/shared/components/list/list.service';
 import { SocketState } from '@app/core/store';
-import { RbacGroupService } from '@app/services/rbac-group.service';
 import { RbacEntityListDirective } from '@app/abstract-directives/rbac-entity-list.directive';
+import { RbacGroupService } from '../../services/rbac-group.service';
+
+const userNameMapper = (group: RbacGroupModel) => {
+  return group.user.map((u) => u.username).join(', ');
+};
 
 @Component({
   selector: 'app-groups',
   templateUrl: './groups.component.html',
-  styleUrls: ['./groups.component.scss']
+  styleUrls: ['./groups.component.scss'],
+  providers: [
+    { provide: ADD_SERVICE_PROVIDER, useExisting: RbacGroupService }
+  ],
 })
 export class GroupsComponent extends RbacEntityListDirective<RbacGroupModel> {
+
+  component = RbacGroupFormComponent;
+
+  @ViewChild(AddButtonComponent) addButton: AddButtonComponent;
 
   listColumns = [
     {
@@ -37,7 +50,7 @@ export class GroupsComponent extends RbacEntityListDirective<RbacGroupModel> {
     },
     {
       label: 'Users',
-      value: (row) => row.user.join(', '),
+      value: userNameMapper,
     }
   ] as IColumns<RbacGroupModel>;
 
@@ -56,6 +69,14 @@ export class GroupsComponent extends RbacEntityListDirective<RbacGroupModel> {
 
   getTitle(row: RbacGroupModel): string {
     return row.name;
+  }
+
+  clickRow(data: RowEventData) {
+    this.showForm(data);
+  }
+
+  showForm(data: RowEventData): void {
+    this.addButton.showForm(this.entityService.model(data.row));
   }
 
 }
