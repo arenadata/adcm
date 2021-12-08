@@ -43,7 +43,7 @@ class ConfigFieldsManipulator(BasePageObject):
         add_button = self.find_child(row, CommonConfigMenu.ConfigRow.add_item_btn)
         for value in values:
             with self._with_items_added(row):
-                self.scroll_to(element=add_button)
+                self.scroll_to(add_button)
                 add_button.click()
             item_to_fill = self._get_first_empty_input(row)
             item_to_fill.send_keys(value)
@@ -53,7 +53,7 @@ class ConfigFieldsManipulator(BasePageObject):
         add_button = self.find_child(row, CommonConfigMenu.ConfigRow.add_item_btn)
         for key, value in values.items():
             with self._with_items_added(row):
-                self.scroll_to(element=add_button)
+                self.scroll_to(add_button)
                 add_button.click()
             item_to_fill = self._get_first_empty_map_input(row)
             key_input = self.find_child(item_to_fill, CommonConfigMenu.ConfigRow.map_input_key)

@@ -418,7 +418,7 @@ class CommonConfigMenuObj(BasePageObject):
     def scroll_to_field(self, display_name: str) -> WebElement:
         """Scroll to parameter field by display name"""
         row = self.get_config_row(display_name)
-        return self.scroll_to(element=row)
+        return self.scroll_to(row)
 
     @allure.step("Check warn icon on the left menu Configuration element")
     def check_config_warn_icon_on_left_menu(self):
