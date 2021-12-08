@@ -1,4 +1,5 @@
-export interface RbacPolicyModel {
-  id: number;
+import { Entity } from '@adwp-ui/widgets';
+
+export interface RbacPolicyModel extends Entity {
   name: string;
 }

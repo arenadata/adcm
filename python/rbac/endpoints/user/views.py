@@ -100,7 +100,15 @@ class UserViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
 
     queryset = models.User.objects.all()
     serializer_class = UserSerializer
-    filterset_fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser']
-    ordering_fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_superuser']
+    filterset_fields = (
+        'id',
+        'username',
+        'first_name',
+        'last_name',
+        'email',
+        'is_superuser',
+        'group',
+    )
+    ordering_fields = ('id', 'username', 'first_name', 'last_name', 'email', 'is_superuser')
     permission_classes = (UserPermissions,)
     schema = AutoSchema()

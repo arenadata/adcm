@@ -1,5 +1,6 @@
-export interface RbacRoleModel {
-  id: number;
+import { Entity } from '@adwp-ui/widgets';
+
+export interface RbacRoleModel extends Entity {
   name: string;
   description: string;
   built_in: boolean;

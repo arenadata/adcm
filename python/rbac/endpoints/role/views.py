@@ -13,13 +13,13 @@
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework import status
-from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.schemas.openapi import AutoSchema
 
 from rbac.models import Role
 from rbac.services.role import role_create, role_update
 from rbac.utils import BaseRelatedSerializer
+from rbac.viewsets import ModelPermViewSet
 
 
 class RoleChildSerializer(BaseRelatedSerializer):
@@ -37,8 +37,9 @@ class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
             'id',
             'name',
             'description',
+            'display_name',
             'built_in',
-            'business_permit',
+            'type',
             'category',
             'parametrized_by_type',
             'child',
@@ -47,16 +48,25 @@ class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
         extra_kwargs = {
             'parametrized_by_type': {'required': True},
             'built_in': {'read_only': True},
-            'business_permit': {'read_only': True},
+            'type': {'read_only': True},
         }
         expandable_fields = {'child': ('rbac.endpoints.role.views.RoleSerializer', {'many': True})}
 
 
-class RoleView(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
+class RoleView(ModelPermViewSet):  # pylint: disable=too-many-ancestors
 
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
     schema = AutoSchema()
+    filterset_fields = (
+        'id',
+        'name',
+        'display_name',
+        'built_in',
+        'type',
+        'child',
+    )
+    ordering_fields = ('id', 'name', 'display_name', 'built_in', 'type')
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

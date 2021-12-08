@@ -22,7 +22,7 @@ from django.db import transaction
 from django.db import IntegrityError
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from rbac.models import Role
+from rbac.models import Role, RoleTypes
 
 from adcm.settings import ADCM_VERSION
 from cm.logger import log
@@ -258,7 +258,7 @@ def cook_roles(bundle):
             description=f'run action {name} of {act.prototype.type} {act.prototype.display_name}',
             category=[f'{bundle.name}'],
             bundle=bundle,
-            business_permit=False,
+            type=RoleTypes.role,
             module_name='rbac.roles',
             class_name='ActionRole',
             init_params={
@@ -288,7 +288,7 @@ def cook_roles(bundle):
             description=f'action(s) {name}',
             category=[f'{bundle.name}'],
             bundle=bundle,
-            business_permit=True,
+            type=RoleTypes.business,
             module_name='rbac.roles',
             class_name='ParentRole',
         )

@@ -101,10 +101,14 @@ def upgrade_role(role: dict, data: dict) -> Role:
         new_role.init_params = role['init_params']
     if 'description' in role:
         new_role.description = role['description']
+    if 'display_name' in role:
+        new_role.display_name = role['display_name']
+    else:
+        new_role.display_name = role['name']
     if 'parametrized_by' in role:
         new_role.parametrized_by_type = role['parametrized_by']
-    if 'business_permit' in role:
-        new_role.business_permit = role['business_permit']
+    if 'type' in role:
+        new_role.type = role['type']
     for perm in perm_list:
         new_role.permissions.add(perm)
     new_role.save()
@@ -142,6 +146,17 @@ def get_role_spec(data: str, schema: str) -> dict:
     return data
 
 
+def create_default_policy():
+    policy_name = 'default'
+    role = Role.objects.get(name='Base role')
+    try:
+        policy = Policy.objects.get(name=policy_name)
+        policy.role = role
+        policy.save()
+    except Policy.DoesNotExist:
+        Policy.objects.create(name=policy_name, role_id=role.id, built_in=True)
+
+
 def init_roles():
     """
     Init or upgrade roles and permissions in DB
@@ -158,6 +173,7 @@ def init_roles():
         upgrade(role_data)
         rm.version = role_data['version']
         rm.save()
+        create_default_policy()
         msg = f'Roles are upgraded to version {rm.version}'
         log.info(msg)
     else:
