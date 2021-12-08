@@ -114,8 +114,6 @@ class PolicySerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
 class PolicyViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
     queryset = Policy.objects.all()
     serializer_class = PolicySerializer
-    filterset_fields = '__all__'
-    ordering_fields = '__all__'
     schema = AutoSchema()
     filterset_fields = ('id', 'name', 'built_in', 'role', 'user', 'group')
     ordering_fields = ('id', 'name', 'built_in', 'role')
