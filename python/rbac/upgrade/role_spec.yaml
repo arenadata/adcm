@@ -534,26 +534,6 @@ roles:
               codenames:
                 - view
 
-    - name: Compare ADCM settings
-      description: compare settings purely adcm config
-      type: business
-      module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: ADCM
-        filter:
-          name: ADCM
-      apps:
-        - label: cm
-          models:
-            - name: objectconfig
-              codenames:
-                - view
-            - name: configlog
-              codenames:
-                - view
-
     - name: Edit ADCM settings
       description: Edit purely adcm config
       type: business
@@ -1008,7 +988,6 @@ roles:
       class_name: ParentRole
       child:
         - Base role
-        - Compare configurations
         - View configurations
         - View status information
         - View imports
@@ -1059,7 +1038,6 @@ roles:
         - Create cluster
         - Remove cluster
         - View ADCM settings
-        - Compare ADCM settings
         - Edit ADCM settings
         - View users
         - Create user
