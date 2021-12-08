@@ -119,6 +119,7 @@ class TestServiceMainPage:
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_main_page = service_config_page.open_main_tab()
         service_main_page.check_all_elements()
+        service_main_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
     def test_open_admin_page_by_toolbar_in_service(self, app_fs, create_cluster_with_service):
         """Test open admin/intro page from service toolbar"""
@@ -128,7 +129,7 @@ class TestServiceMainPage:
         service_main_page.toolbar.click_admin_link()
         AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
 
-    def test_open_service_main_page_by_toolbar(self, app_fs, create_cluster_with_service):
+    def test_open_cluster_service_page_by_toolbar(self, app_fs, create_cluster_with_service):
         """Test open /cluster/{}/service/{}/main page from service toolbar"""
 
         params = {"service_list_name": "SERVICES"}
@@ -136,7 +137,9 @@ class TestServiceMainPage:
         cluster, service = create_cluster_with_service
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_main_page.toolbar.click_link_by_name(params["service_list_name"])
-        ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).wait_page_is_opened()
+        cluster_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id)
+        cluster_page.wait_page_is_opened()
+        cluster_page.check_cluster_toolbar(CLUSTER_NAME)
 
     def test_run_action_on_service_page_by_toolbar(self, app_fs, create_cluster_with_service):
         """Test run action from the /cluster/{}/service/{}/main page toolbar"""
@@ -163,6 +166,7 @@ class TestServiceComponentPage:
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_component_page = service_main_page.open_components_tab()
         service_component_page.check_all_elements()
+        service_component_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
     @params.including_https
     @pytest.mark.smoke()
@@ -196,6 +200,7 @@ class TestServiceConfigPage:
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_config_page = service_main_page.open_config_tab()
         service_config_page.check_all_elements()
+        service_config_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
     def test_filter_config_on_service_config_page(self, app_fs, create_cluster_with_service):
         """Test config filtration on /cluster/{}/service/{}/config page"""
@@ -331,6 +336,7 @@ class TestServiceGroupConfigPage:
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         group_conf_page = service_main_page.open_group_config_tab()
         group_conf_page.check_all_elements()
+        group_conf_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
     def test_create_group_config_service(self, app_fs, create_cluster_with_service):
         """Test create group config on /cluster/{}/service/{}/group_config"""
@@ -373,6 +379,7 @@ class TestServiceStatusPage:
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_status_page = service_main_page.open_status_tab()
         service_status_page.check_all_elements()
+        service_status_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
     def test_status_on_service_status_page(
         self, app_fs, adcm_fs, sdk_client_fs, create_community_cluster_with_host_and_service
@@ -421,6 +428,7 @@ class TestServiceImportPage:
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_import_page = service_main_page.open_import_tab()
         service_import_page.check_all_elements()
+        service_import_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
     def test_import_from_service_import_page(self, app_fs: ADCMTest, sdk_client_fs: ADCMClient):
         """Test service import on /cluster/{}/service/{}/import page"""

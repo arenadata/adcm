@@ -101,6 +101,7 @@ class TestComponentMainPage:
         ).open()
         component_main_page = component_config_page.open_main_tab()
         component_main_page.check_all_elements()
+        component_main_page.check_component_toolbar(CLUSTER_NAME, SERVICE_NAME, FIRST_COMPONENT_NAME)
 
     def test_open_by_toolbar_admin_page(self, app_fs, create_cluster_with_service):
         """Test open admin/intro page from component toolbar"""
@@ -124,6 +125,7 @@ class TestComponentMainPage:
         component_config_page.click_link_by_name(FIRST_COMPONENT_NAME)
         component_main_page = ComponentMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id)
         component_main_page.wait_page_is_opened()
+        component_main_page.check_component_toolbar(CLUSTER_NAME, SERVICE_NAME, FIRST_COMPONENT_NAME)
 
     def test_open_by_toolbar_main_component_list_page(self, app_fs, create_cluster_with_service):
         """Test open /cluster/{}/service/{}/component page from toolbar"""
@@ -136,6 +138,7 @@ class TestComponentMainPage:
         component_main_page.click_link_by_name("COMPONENTS")
         service_comp_page = ServiceComponentPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id)
         service_comp_page.wait_page_is_opened()
+        service_comp_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
 
 class TestComponentConfigPage:
@@ -152,6 +155,7 @@ class TestComponentConfigPage:
         ).open()
         component_config_page = component_main_page.open_config_tab()
         component_config_page.check_all_elements()
+        component_config_page.check_component_toolbar(CLUSTER_NAME, SERVICE_NAME, FIRST_COMPONENT_NAME)
 
     @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
     def test_filter_config_on_component_config_page(self, app_fs, create_cluster_with_service):
@@ -311,6 +315,7 @@ class TestComponentGroupConfigPage:
         ).open()
         component_groupconf_page = component_main_page.open_group_config_tab()
         component_groupconf_page.check_all_elements()
+        component_groupconf_page.check_component_toolbar(CLUSTER_NAME, SERVICE_NAME, FIRST_COMPONENT_NAME)
 
     def test_create_group_config_component(self, app_fs, create_cluster_with_service):
         """Test create group config on /cluster/{}/service/{}/component/{}/group_config"""
@@ -362,6 +367,7 @@ class TestComponentStatusPage:
         ).open()
         component_status_page = component_config_page.open_status_tab()
         component_status_page.check_all_elements()
+        component_status_page.check_component_toolbar(CLUSTER_NAME, SERVICE_NAME, FIRST_COMPONENT_NAME)
 
     def test_status_on_component_status_page(self, app_fs, adcm_fs, sdk_client_fs, create_cluster_with_hostcomponents):
         """Changes status on /cluster/{}/service/{}/component/{}/status"""

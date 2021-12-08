@@ -24,6 +24,7 @@ class CommonToolbarLocators:
     """Common toolbar elements locators"""
 
     progress_bar = Locator(By.CSS_SELECTOR, "*.mat-progress-bar-background", "Loading info")
+    all_links = Locator(By.CSS_SELECTOR, "app-navigation mat-nav-list", "Link to /admin")
     admin_link = Locator(By.CSS_SELECTOR, "a[routerlink='/admin']", "Link to /admin")
     text_link = TemplateLocator(By.XPATH, "//a[text()='{}']", "Link to {}")
     action_btn = TemplateLocator(By.XPATH, "//span[.//a[text()='{}']]//app-action-list/button", "Action button to {}")
