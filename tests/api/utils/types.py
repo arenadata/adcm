@@ -443,9 +443,6 @@ class GenericForeignKeyList(BaseType):
 
     payload: List[dict]
 
-    def __init__(self, relates_on: Relation, **kwargs):
-        super().__init__(relates_on=relates_on, **kwargs)
-
     def generate(self, **kwargs):
         """No need to directly generate such a field, payload should be set during "relates_on" resolving"""
         return self.payload

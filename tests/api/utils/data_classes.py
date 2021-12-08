@@ -342,7 +342,7 @@ class RbacBuiltInRoleFields(BaseClass):
         postable=True,
         changeable=True,
     )
-    description = Field(name="description", f_type=Text(), default_value="", nullable=False)
+    description = Field(name="description", f_type=Text(), default_value="")
     category = Field(name="category", f_type=ListOf(String()), default_value=[])
     parametrized_by_type = Field(
         name="parametrized_by_type",
@@ -419,4 +419,27 @@ class RbacNotBuiltInPolicyFields(BaseClass):
     group = Field(
         name="group", f_type=ForeignKeyM2M(fk_link=RbacGroupFields), default_value=[], postable=True, changeable=True
     )
+    url = Field(name="url", f_type=String(), default_value="auto")
+
+
+class RbacBuiltInPolicyFields(BaseClass):
+    """
+    Data type class for RbacBuiltinPolicyFields
+    """
+
+    id = Field(name="id", f_type=PositiveInt(), default_value="auto")
+    name = Field(name="name", f_type=String(max_length=160))
+    role = Field(name="role", f_type=ObjectForeignKey(RbacAnyRoleFields), required=True)
+    # Field made postable and required for reasons of (dis)allowed methods testing
+    # so POST will try to create not built_in role
+    built_in = Field(
+        name="built_in", f_type=StaticBoolean(value=True), default_value=False, postable=True, required=True
+    )
+    object = Field(
+        name="object",
+        f_type=GenericForeignKeyList(relates_on=Relation(field=role)),
+        default_value=[],
+    )
+    user = Field(name="user", f_type=ForeignKeyM2M(fk_link=RbacUserFields), default_value=[])
+    group = Field(name="group", f_type=ForeignKeyM2M(fk_link=RbacGroupFields), default_value=[])
     url = Field(name="url", f_type=String(), default_value="auto")

@@ -43,7 +43,7 @@ from tests.api.utils.data_classes import (
     RbacSimpleRoleFields,
     RbacBuiltInRoleFields,
     RbacAnyRoleFields,
-    RbacBusinessRoleFields,
+    RbacBusinessRoleFields, RbacBuiltInPolicyFields,
 )
 from tests.api.utils.methods import Methods
 from tests.api.utils.types import get_fields
@@ -331,4 +331,13 @@ class Endpoints(Enum):
         data_class=RbacNotBuiltInPolicyFields,
         spec_link="",
         filter_predicate=is_not_built_in,
+    )
+
+    # Test logic for "built_in"
+    RbacBuiltInPolicy = Endpoint(
+        path="rbac/policy",
+        methods=[Methods.GET, Methods.LIST],
+        data_class=RbacBuiltInPolicyFields,
+        spec_link="",
+        filter_predicate=is_built_in,
     )
