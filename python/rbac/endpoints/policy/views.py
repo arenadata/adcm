@@ -124,9 +124,11 @@ class PolicyViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
     ordering_fields = ('id', 'name', 'built_in', 'role')
 
     def create(self, request, *args, **kwargs):
+        built_in = request.data.get('built_in', False)
+        if built_in:
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-
             policy = policy_create(**serializer.validated_data)
 
             return Response(data=self.get_serializer(policy).data, status=status.HTTP_201_CREATED)
