@@ -29,6 +29,7 @@ class RoleChildSerializer(BaseRelatedSerializer):
 class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
     child = RoleChildSerializer(many=True, required=False)
+    name = serializers.RegexField(r'^[^\n]*$', max_length=150)
 
     class Meta:
         model = Role
@@ -67,6 +68,9 @@ class RoleView(ModelPermViewSet):  # pylint: disable=too-many-ancestors
     ordering_fields = ('id', 'name', 'display_name', 'built_in', 'type')
 
     def create(self, request, *args, **kwargs):
+        built_in = request.data.get('built_in', False)
+        if built_in:
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
 

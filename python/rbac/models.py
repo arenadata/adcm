@@ -27,11 +27,11 @@ from cm.models import Bundle
 
 
 class ObjectType(models.TextChoices):
-    cluster = 'Cluster', 'Cluster'
-    service = 'Service', 'Service'
-    component = 'Component', 'Component'
-    provider = 'Provider', 'Provider'
-    host = 'Host', 'Host'
+    cluster = 'cluster', 'cluster'
+    service = 'service', 'service'
+    component = 'component', 'component'
+    provider = 'provider', 'provider'
+    host = 'host', 'host'
 
 
 def validate_object_type(value):
