@@ -38,6 +38,7 @@ from tests.ui_tests.app.page.cluster.page import (
     ClusterStatusPage,
 )
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
+from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
 from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
 from tests.ui_tests.app.page.common.status.page import (
@@ -65,6 +66,7 @@ BUNDLE_ENTERPRISE = "cluster_enterprise"
 BUNDLE_IMPORT = "cluster_to_import"
 BUNDLE_UPGRADE = "upgradable_cluster"
 BUNDLE_REQUIRED_FIELDS = "cluster_and_service_with_required_string"
+BUNDLE_DEFAULT_FIELDS = "cluster_and_service_with_default_string"
 BUNDLE_WITH_SERVICES = "cluster_with_services"
 CLUSTER_NAME = "Test cluster"
 SERVICE_NAME = "test_service"
@@ -73,6 +75,7 @@ HOST_NAME = 'test-host'
 PROVIDER_WITH_ISSUE_NAME = 'provider_with_issue'
 COMPONENT_NAME = "first"
 BUNDLE_WITH_REQUIRED_FIELDS = "cluster_required_fields"
+BUNDLE_WITH_DESCRIPTION_FIELDS = "cluster_with_all_config_params"
 BUNDLE_WITH_REQUIRED_IMPORT = "cluster_required_import"
 BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
 
@@ -811,6 +814,35 @@ class TestClusterConfigPage:
         cluster_config_page.toolbar.check_warn_button(
             tab_name=CLUSTER_NAME, expected_warn_text=['Test cluster has an issue with its config']
         )
+
+    def test_field_validation_on_cluster_config_page_with_default_value(self, app_fs, sdk_client_fs):
+        """Test config fields validation on /cluster/{}/service/{}/config page"""
+
+        params = {'field_name': 'string', 'new_value': 'test', "config_name": "test_name"}
+
+        with allure.step("Create cluster"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_DEFAULT_FIELDS)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+        cluster_config_page.config.clear_field_by_keys(params['field_name'])
+        cluster_config_page.config.check_field_is_required(params['field_name'])
+        cluster_config_page.config.type_in_config_field(
+            params['new_value'], row=cluster_config_page.config.get_all_config_rows()[0]
+        )
+        cluster_config_page.config.save_config()
+        cluster_config_page.config.assert_input_value_is(
+            expected_value=params["new_value"], display_name=params["field_name"]
+        )
+
+    def test_field_tooltips_on_cluster_config_page(self, app_fs, sdk_client_fs):
+        """Test config fields tooltips on cluster/{}/config page"""
+
+        with allure.step("Create cluster"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_DESCRIPTION_FIELDS)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+        for item in CONFIG_ITEMS:
+            cluster_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
 
 class TestClusterGroupConfigPage:
