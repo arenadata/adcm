@@ -39,7 +39,7 @@ import cm.status_api
 
 
 def has_host_perm(user, action_type, obj):
-    if user.has_perm(f'cm.{action_type}_cluster', obj):
+    if user.has_perm(f'cm.{action_type}_host_cluster', obj):
         return True
     return False
 
