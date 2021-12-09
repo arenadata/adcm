@@ -394,9 +394,9 @@ class ObjectForeignKey(ForeignKey):
         super().__init__(fk_link=fk_link, **kwargs)
         self._sp_vals_negative = [
             PreparedFieldValue(
-                {'id': 100},
+                {'id': 1000},
                 f_type=self,
-                error_messages=["Invalid pk \"100\" - object does not exist."],
+                error_messages=["Invalid pk \"1000\" - object does not exist."],
             ),
             PreparedFieldValue(
                 {'id': 2 ** 63},
@@ -444,8 +444,10 @@ class GenericForeignKeyList(BaseType):
     payload: List[dict]
 
     def generate(self, **kwargs):
-        """No need to directly generate such a field, payload should be set during "relates_on" resolving"""
-        return self.payload
+        """
+        No need to directly generate such a field,
+        payload should be set during "relates_on" resolving and requested directly
+        """
 
 
 class ListOf(BaseType):

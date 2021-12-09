@@ -43,7 +43,8 @@ from tests.api.utils.data_classes import (
     RbacSimpleRoleFields,
     RbacBuiltInRoleFields,
     RbacAnyRoleFields,
-    RbacBusinessRoleFields, RbacBuiltInPolicyFields,
+    RbacBusinessRoleFields,
+    RbacBuiltInPolicyFields,
 )
 from tests.api.utils.methods import Methods
 from tests.api.utils.types import get_fields

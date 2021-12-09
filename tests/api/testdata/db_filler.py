@@ -169,7 +169,7 @@ class DbFiller:
                     return []
                 fk_data = self._get_or_create_data_for_endpoint(endpoint=fk_endpoint, force=force)
             return self._choose_fk_field_value(field=field, fk_data=fk_data)
-        if isinstance(field, GenericForeignKeyList):
+        if isinstance(field.f_type, GenericForeignKeyList):
             return field.payload
         return self._generate_field_value(field=field)
 
@@ -206,13 +206,14 @@ class DbFiller:
             if field.name == "object":
                 role_fk = _data[related_field_name]
                 role = get_object_data(adcm=self.adcm, endpoint=endpoint.RbacAnyRole, object_id=role_fk)
-                _data[field.name] = field.f_type.payload = [
+                field.f_type.payload = [
                     {
                         "id": self._get_adcm_object_id_by_object_type(object_type),
                         "type": object_type,
                     }
                     for object_type in role["parametrized_by_type"]
                 ]
+                _data[field.name] = field.f_type.payload
 
         else:
             raise NotImplementedError(f"Relations logic needs to be implemented for {endpoint} for field {field.name}")
