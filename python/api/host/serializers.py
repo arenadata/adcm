@@ -19,7 +19,7 @@ from api.api_views import hlink, check_obj, filter_actions, CommonAPIURL, Object
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
 from cm.errors import AdcmEx
-from cm.models import Cluster, Host, HostProvider, Prototype, Action
+from cm.models import HostProvider, Prototype, Action
 
 
 class HostSerializer(serializers.Serializer):
