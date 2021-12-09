@@ -147,10 +147,13 @@ DATABASES = {
         # 'HOST': 'localhost',
         # 'USER': 'adcm',
         # 'PASSWORD': 'adcm',
+        # 'TEST': {
+        #     'NAME': os.path.join(BASE_DIR, 'data/var/test.db'),
+        # },
         'OPTIONS': {
             'timeout': 20,
         },
-    }
+    },
 }
 # does not work for multi-table inherited model, but works fine as-is without user model swapping
 # AUTH_USER_MODEL = 'rbac.User'

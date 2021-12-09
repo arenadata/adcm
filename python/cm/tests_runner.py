@@ -19,6 +19,7 @@ from django.utils import timezone
 import job_runner
 import task_runner
 from cm import config
+from cm.bundle import load_adcm
 from cm.logger import log
 from cm.models import TaskLog, JobLog, Bundle, Prototype, Action
 
@@ -35,6 +36,7 @@ class PreparationData:
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle, type='cluster')
         action = Action.objects.create(prototype=prototype, name='do')
+        load_adcm()
         for task_id in range(1, self.number_tasks + 1):
             task_log_data = {
                 'action': action,
@@ -186,18 +188,27 @@ class TestJobRunner(TestCase):
         event = Mock()
         mock_event.return_value = event
 
-        job_runner.run_ansible(1)
+        pd = PreparationData(1, 1)
+        task_runner.run_task(pd.get_task(1))
+        job_id = pd.get_job(1)
 
-        mock_read_config.assert_called_once_with(1)
+        job_runner.run_ansible(job_id)
+
+        mock_read_config.assert_called_once_with(job_id)
 
         mock_open_file.assert_has_calls(
-            [call(config.RUN_DIR, 'ansible-stdout', 1), call(config.RUN_DIR, 'ansible-stderr', 1)]
+            [
+                call(config.RUN_DIR, 'ansible-stdout', job_id),
+                call(config.RUN_DIR, 'ansible-stderr', job_id),
+            ]
         )
         mock_chdir.assert_called_with(conf['env']['stack_dir'])
 
         mock_set_job_status.assert_called_once_with(1, 0, 1, event)
         mock_subprocess_popen.assert_called_once_with(
             [
+                '/adcm/python/job_venv_wrapper.sh',
+                'default',
                 'ansible-playbook',
                 '--vault-password-file',
                 f'{config.CODE_DIR}/ansible_secret.py',

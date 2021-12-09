@@ -23,7 +23,7 @@ from cm import config
 from cm.ansible_plugin import finish_check
 import cm.job
 from cm.logger import log
-from cm.models import LogStorage
+from cm.models import LogStorage, JobLog
 from cm.status_api import Event
 
 
@@ -95,6 +95,10 @@ def post_log(job_id, log_type, log_name):
         )
 
 
+def get_venv(job_id: int) -> str:
+    return JobLog.objects.get(id=job_id).action.venv
+
+
 def run_ansible(job_id):
     log.debug("job_runner.py called as: %s", sys.argv)
     conf = read_config(job_id)
@@ -107,6 +111,8 @@ def run_ansible(job_id):
 
     os.chdir(conf['env']['stack_dir'])
     cmd = [
+        '/adcm/python/job_venv_wrapper.sh',
+        get_venv(int(job_id)),
         'ansible-playbook',
         '--vault-password-file',
         f'{config.CODE_DIR}/ansible_secret.py',
@@ -122,8 +128,8 @@ def run_ansible(job_id):
     if 'verbose' in conf['job'] and conf['job']['verbose']:
         cmd.append('-vvvv')
 
+    log.info("job run cmd: %s", ' '.join(cmd))
     proc = subprocess.Popen(cmd, env=env_configuration(conf), stdout=out_file, stderr=err_file)
-    log.info("job #%s run cmd: %s", job_id, ' '.join(cmd))
     cm.job.set_job_status(job_id, config.Job.RUNNING, event, proc.pid)
     event.send_state()
     log.info("run ansible job #%s, pid %s, playbook %s", job_id, proc.pid, playbook)
