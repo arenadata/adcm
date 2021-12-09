@@ -401,12 +401,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: host
-              codenames:
-                - change
             - name: cluster
               codenames:
-                - change
+                - map
 
     - name: Unmap hosts
       description: The ability to unmap hosts to the Cluster
@@ -421,12 +418,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: host
-              codenames:
-                - change
             - name: cluster
               codenames:
-                - change
+                - unmap
 
     - name: Upgrade cluster bundle
       description: Update the cluster bundle

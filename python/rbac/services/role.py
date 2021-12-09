@@ -32,7 +32,13 @@ def role_create(built_in=False, type_of_role=RoleTypes.role, **kwargs) -> Role:
     """Creating Role object"""
     child = kwargs.pop('child', [])
     check_role_child(child)
-    role = Role.objects.create(built_in=built_in, type=type_of_role, **kwargs)
+    role = Role.objects.create(
+        built_in=built_in,
+        type=type_of_role,
+        module_name='rbac.roles',
+        class_name='ParentRole',
+        **kwargs,
+    )
     role.child.add(*child)
     return role
 

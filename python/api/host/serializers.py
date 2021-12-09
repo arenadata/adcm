@@ -73,12 +73,6 @@ class ClusterHostSerializer(HostSerializer):
     provider_id = serializers.IntegerField(read_only=True)
     fqdn = serializers.CharField(read_only=True)
 
-    def create(self, validated_data):
-        cluster = check_obj(Cluster, self.context.get('cluster_id'))
-        host = check_obj(Host, validated_data.get('id'))
-        cm.api.add_host_to_cluster(cluster, host)
-        return host
-
 
 class ProvideHostSerializer(HostSerializer):
     prototype_id = serializers.IntegerField(read_only=True)
