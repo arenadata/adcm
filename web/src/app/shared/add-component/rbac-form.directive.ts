@@ -10,7 +10,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Directive, Input, OnInit } from '@angular/core';
-import { FormGroup } from '@angular/forms';
 import { clearEmptyField } from '@app/core/types';
 import { BaseFormDirective } from '@app/shared/add-component/base-form.directive';
 import { take } from 'rxjs/operators';
@@ -19,8 +18,6 @@ import { take } from 'rxjs/operators';
   selector: '[appRbacForm]',
 })
 export class RbacFormDirective<T extends { url: string } = { url: string }> extends BaseFormDirective implements OnInit {
-  form = new FormGroup({});
-
   @Input()
   value: T;
 

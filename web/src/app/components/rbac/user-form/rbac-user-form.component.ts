@@ -20,6 +20,7 @@ export const passwordsConfirmValidator: ValidatorFn = (control: AbstractControl)
   providers: [
     { provide: ADD_SERVICE_PROVIDER, useExisting: forwardRef(() => RbacUserService) }
   ],
+  styles: ['.rbac-user-form__password { display: flex; gap: 5px } .rbac-user-form__password > adwp-input { flex: 1 }']
 })
 export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
   private _isFirstTouch = true;
@@ -59,7 +60,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
   }
 
   rbacBeforeSave(value: any): Partial<RbacUserModel> {
-    return this._clearPasswordIfNotTouched(value.user);
+    return value.user;
   }
 
   /**
@@ -93,23 +94,6 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
   }
 
   /**
-   * An object with a user comes from the server and the password is changed to "*****".
-   * If the user does not change anything and submits the form as it is, the password will be sent as "*****".
-   * Therefore, before submitting, we delete the key with the password if the user has not touched the form.
-   *
-   * @param value
-   * @private
-   */
-  private _clearPasswordIfNotTouched(value: RbacUserModel): Partial<RbacUserModel> {
-    if (!this.userForm.get('password').touched && !this.confirmForm.get('password').touched) {
-      const { password: remove, ...valueWithoutPassword } = value;
-      return valueWithoutPassword;
-    }
-
-    return value;
-  }
-
-  /**
    * Our adwp-input does not know how to work with nested forms, therefore, in this case,
    * it does not display an error message if the control with the password is "invalid".
    * Therefore, we need to manually install and remove the desired error message.
@@ -122,7 +106,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
     this.form.statusChanges.subscribe(_ => {
       if (this.form.errors && this.form.errors.passwordsNotMatch) {
         controls.forEach((control) => {
-          control.setErrors({ pattern: true }, { emitEvent: false });
+          control.setErrors({ passwordsNotMatch: true }, { emitEvent: false });
         });
       } else {
         controls.forEach((control) => {

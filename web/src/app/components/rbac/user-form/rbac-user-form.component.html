@@ -11,7 +11,7 @@
   <adwp-input [form]="userForm" label='First name' controlName='first_name'></adwp-input>
   <adwp-input [form]="userForm" label='Last name' controlName='last_name'></adwp-input>
   <adwp-input [form]="userForm" label='Email' controlName='email'></adwp-input>
-  <adwp-input-select [form]="userForm" label="Select groups" controlName="group" labelKey="name"
+  <adwp-input-select [form]="userForm" label="Select groups" controlName="group" [handler]="groups.label"
                      appRbacGroupsAsOptions
                      #groups="rbacGroups"
                      [options]="groups.options$ | async"></adwp-input-select>
