@@ -1,27 +1,23 @@
 """Common fixtures for the functional tests"""
 import pytest
-import allure
 
-only_clean_adcm = pytest.mark.parametrize(
-    "additional_adcm_init_config",
-    [pytest.param({}, id="clean_adcm")],
-    indirect=True,
-)
+from tests.conftest import CLEAN_ADCM_PARAM, DUMMY_DATA_PARAM
+
+only_clean_adcm = pytest.mark.only_clean_adcm
 
 
-@allure.title("Additional ADCM init config")
-@pytest.fixture(
-    scope="session",
-    params=[
-        pytest.param({}, id="clean_adcm"),
-        pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data", marks=[pytest.mark.full]),
-    ],
-)
-def additional_adcm_init_config(request) -> dict:
+CLEAN_ADCM_PARAMS = [CLEAN_ADCM_PARAM]
+CLEAN_AND_DIRTY_PARAMS = [CLEAN_ADCM_PARAM, DUMMY_DATA_PARAM]
+
+
+def pytest_generate_tests(metafunc):
     """
-    Add options for ADCM init.
-    Redefine this fixture in the actual project to alter additional options of ADCM initialisation.
-    Ex. If this fixture will return {"fill_dummy_data": True}
-    then on the init stage dummy objects will be added to ADCM image
+    Parametrize tests
     """
-    return request.param
+    if "additional_adcm_init_config" in metafunc.fixturenames:
+        if "only_clean_adcm" in metafunc.definition.own_markers:
+            values = CLEAN_ADCM_PARAMS
+        else:
+            values = CLEAN_AND_DIRTY_PARAMS
+
+        metafunc.parametrize("additional_adcm_init_config", values, scope="session")

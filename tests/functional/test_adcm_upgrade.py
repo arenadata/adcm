@@ -102,7 +102,7 @@ def _check_encryption(obj: Union[Cluster, Service]) -> None:
 
 
 @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
-@pytest.mark.parametrize("image", old_adcm_images(), ids=repr, indirect=True)
+@pytest.mark.parametrize("image", old_adcm_images(), ids=repr)
 def test_upgrade_adcm(
     adcm_fs: ADCM,
     sdk_client_fs: ADCMClient,
@@ -121,7 +121,8 @@ def test_upgrade_adcm(
 
 
 @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
-@pytest.mark.parametrize("image", old_adcm_images(), ids=repr, indirect=True)
+@pytest.mark.parametrize("image", old_adcm_images(), ids=repr)
+@pytest.mark.skip()
 def test_pass_in_config_encryption_after_upgrade(
     adcm_fs: ADCM,
     sdk_client_fs: ADCMClient,
@@ -144,6 +145,7 @@ def test_pass_in_config_encryption_after_upgrade(
 
 @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
 @pytest.mark.parametrize("image", [["hub.arenadata.io/adcm/adcm", "2021.06.17.06"]], ids=repr, indirect=True)
+@pytest.mark.skip()
 def test_actions_availability_after_upgrade(
     adcm_fs: ADCM,
     sdk_client_fs: ADCMClient,

@@ -15,26 +15,17 @@
 import allure
 import pytest
 
+from tests.conftest import DUMMY_DATA_PARAM
 from tests.api.steps.asserts import BodyAssertionError
 from tests.api.steps.common import assume_step
 from tests.api.utils.api_objects import ADCMTestApiWrapper
 
 
-@allure.title("Additional ADCM init config")
-@pytest.fixture(
-    scope="session",
-    params=[
-        pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data"),
-    ],
-)
-def additional_adcm_init_config(request) -> dict:
+def pytest_generate_tests(metafunc):
     """
-    Add options for ADCM init.
-    Redefine this fixture in the actual project to alter additional options of ADCM initialisation.
-    Ex. If this fixture will return {"fill_dummy_data": True}
-    then on the init stage dummy objects will be added to ADCM image
+    Parametrize tests to use ADCM with dummy data
     """
-    return request.param
+    metafunc.parametrize("additional_adcm_init_config", [DUMMY_DATA_PARAM], scope="session")
 
 
 def pytest_addoption(parser):

@@ -31,8 +31,8 @@ def get_endpoint_data(adcm: ADCMTestApiWrapper, endpoint: Endpoints) -> list:
     )
     if isinstance(res.json(), list):
         return res.json()
-        # New endpoints always return a response with pagination.
-        # In the future all endpoints will return that
+    # New endpoints always return a response with pagination.
+    # In the future all endpoints will return that
     return res.json().get("results")
 
 
