@@ -268,7 +268,7 @@ class Password(BaseType):
     placeholder - it is expected value for all requests
     """
 
-    def __init__(self, placeholder="*****", **kwargs):
+    def __init__(self, placeholder="******", **kwargs):
         super().__init__(**kwargs)
         self.placeholder = placeholder
 
