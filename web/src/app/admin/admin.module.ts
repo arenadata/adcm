@@ -19,7 +19,7 @@ import { SettingsComponent } from './settings.component';
 import { UsersComponent } from './users/users.component';
 import { RbacGroupFormModule } from '../components/rbac/group-form/rbac-group-form.module';
 import { RbacUserFormModule } from '../components/rbac/user-form/rbac-user-form.module';
-import { RbacRoleModule } from '../components/rbac/role/rbac-role.module';
+import { RbacRoleFormModule } from '../components/rbac/role-form/rbac-role-form.module';
 
 import { GroupsComponent } from './groups/groups.component';
 import { RolesComponent } from './roles/roles.component';
@@ -80,7 +80,7 @@ const routes: Routes = [
     RouterModule.forChild(routes),
     AdwpListModule,
     RbacGroupFormModule,
-    RbacRoleModule,
+    RbacRoleFormModule,
     RbacUserFormModule,
     MatToolbarModule,
     MatSidenavModule,

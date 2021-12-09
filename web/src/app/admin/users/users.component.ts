@@ -79,13 +79,12 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
     return row.username;
   }
 
-  clickRow(data: RowEventData) {
+  clickRow(data: RowEventData): void {
     this.showForm(data);
   }
 
   showForm(data: RowEventData): void {
     this.addButton.showForm(this.entityService.model(data.row));
   }
-
 
 }

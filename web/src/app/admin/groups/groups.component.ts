@@ -71,7 +71,7 @@ export class GroupsComponent extends RbacEntityListDirective<RbacGroupModel> {
     return row.name;
   }
 
-  clickRow(data: RowEventData) {
+  clickRow(data: RowEventData): void {
     this.showForm(data);
   }
 

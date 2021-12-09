@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, forwardRef } from '@angular/core';
+import { Component, forwardRef } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { RbacFormDirective } from '@app/shared/add-component/rbac-form.directive';
 import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
@@ -16,7 +16,6 @@ export const passwordsConfirmValidator: ValidatorFn = (control: AbstractControl)
 @Component({
   selector: 'app-rbac-user-form',
   templateUrl: './rbac-user-form.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     { provide: ADD_SERVICE_PROVIDER, useExisting: forwardRef(() => RbacUserService) }
   ],
