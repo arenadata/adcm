@@ -12,7 +12,7 @@
 
 from itertools import chain
 
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.response import Response
 
 import api.serializers
@@ -21,7 +21,8 @@ import cm.bundle
 import cm.job
 import cm.status_api
 from api.api_views import ListView, PageView, PageViewAdd, InterfaceView, DetailViewDelete
-from api.api_views import create, update, check_obj, GenericAPIPermView, GenericAPIPermStatusView
+from api.api_views import GenericAPIPermView, GenericAPIPermStatusView
+from api.api_views import create, update, check_obj, check_import_perm
 from cm.errors import AdcmEx
 from cm.models import Cluster, Host, HostComponent, Prototype
 from cm.models import ClusterObject, Upgrade, ClusterBind
@@ -114,12 +115,15 @@ class ClusterImport(ListView):
     queryset = Prototype.objects.all()
     serializer_class = api.stack.serializers.ImportSerializer
     post_serializer = serializers.PostImportSerializer
+    check_import_perm = check_import_perm
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, cluster_id):  # pylint: disable=arguments-differ
         """
         List all imports avaliable for specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
+        self.check_import_perm('view', 'cluster', cluster)
         res = cm.api.get_import(cluster)
         return Response(res)
 
@@ -128,6 +132,7 @@ class ClusterImport(ListView):
         Update bind for cluster
         """
         cluster = check_obj(Cluster, cluster_id)
+        self.check_import_perm('change', 'cluster', cluster)
         serializer = self.post_serializer(
             data=request.data, context={'request': request, 'cluster': cluster}
         )
@@ -140,6 +145,8 @@ class ClusterImport(ListView):
 class ClusterBindList(ListView):
     queryset = ClusterBind.objects.all()
     serializer_class = serializers.ClusterBindSerializer
+    check_import_perm = check_import_perm
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_serializer_class(self):
         if self.request and self.request.method == 'POST':
@@ -152,6 +159,7 @@ class ClusterBindList(ListView):
         List all binds of specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
+        self.check_import_perm('view', 'cluster', cluster)
         obj = self.get_queryset().filter(cluster=cluster, service=None)
         serializer = self.get_serializer_class()(obj, many=True, context={'request': request})
         return Response(serializer.data)
@@ -161,6 +169,7 @@ class ClusterBindList(ListView):
         Bind two clusters
         """
         cluster = check_obj(Cluster, cluster_id)
+        self.check_import_perm('change', 'cluster', cluster)
         serializer = self.get_serializer_class()(data=request.data, context={'request': request})
         return create(serializer, cluster=cluster)
 
@@ -168,16 +177,19 @@ class ClusterBindList(ListView):
 class ClusterBindDetail(DetailViewDelete):
     queryset = ClusterBind.objects.all()
     serializer_class = serializers.BindSerializer
+    check_import_perm = check_import_perm
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_obj(self, cluster_id, bind_id):
         cluster = check_obj(Cluster, cluster_id)
-        return check_obj(ClusterBind, {'cluster': cluster, 'id': bind_id})
+        return cluster, check_obj(ClusterBind, {'cluster': cluster, 'id': bind_id})
 
     def get(self, request, cluster_id, bind_id):  # pylint: disable=arguments-differ
         """
         Show specified bind of specified cluster
         """
-        obj = self.get_obj(cluster_id, bind_id)
+        cluster, obj = self.get_obj(cluster_id, bind_id)
+        self.check_import_perm('view', 'cluster', cluster)
         serializer = self.serializer_class(obj, context={'request': request})
         return Response(serializer.data)
 
@@ -185,7 +197,8 @@ class ClusterBindDetail(DetailViewDelete):
         """
         Unbind specified bind of specified cluster
         """
-        bind = self.get_obj(cluster_id, bind_id)
+        cluster, bind = self.get_obj(cluster_id, bind_id)
+        self.check_import_perm('change', 'cluster', cluster)
         cm.api.unbind(bind)
         return Response(status=status.HTTP_204_NO_CONTENT)
 

@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.response import Response
 
 import cm.status_api
@@ -18,6 +18,7 @@ from api.api_views import (
     PageView,
     create,
     check_obj,
+    check_import_perm,
     DetailViewRO,
     ListView,
     DetailViewDelete,
@@ -99,17 +100,21 @@ class ServiceImportView(ListView):
     queryset = Prototype.objects.all()
     serializer_class = ImportSerializer
     post_serializer_class = serializers.ImportPostSerializer
+    check_import_perm = check_import_perm
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         """
         List all imports available for specified service
         """
         service = check_service(kwargs)
+        self.check_import_perm('view', 'clusterobject', service)
         cluster = service.cluster
         return Response(get_import(cluster, service))
 
     def post(self, request, **kwargs):
         service = check_service(kwargs)
+        self.check_import_perm('change', 'clusterobject', service)
         cluster = service.cluster
         serializer = self.post_serializer_class(
             data=request.data, context={'request': request, 'cluster': cluster, 'service': service}
@@ -122,6 +127,8 @@ class ServiceImportView(ListView):
 class ServiceBindView(ListView):
     queryset = ClusterBind.objects.all()
     serializer_class = serializers.ServiceBindSerializer
+    check_import_perm = check_import_perm
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_serializer_class(self):
         if self.request and self.request.method == 'POST':
@@ -134,6 +141,7 @@ class ServiceBindView(ListView):
         List all binds of service
         """
         service = check_service(kwargs)
+        self.check_import_perm('view', 'clusterobject', service)
         binds = self.get_queryset().filter(service=service)
         serializer = self.get_serializer_class()(binds, many=True, context={'request': request})
         return Response(serializer.data)
@@ -143,6 +151,7 @@ class ServiceBindView(ListView):
         Bind two services
         """
         service = check_service(kwargs)
+        self.check_import_perm('change', 'clusterobject', service)
         cluster = service.cluster
         serializer = self.get_serializer_class()(data=request.data, context={'request': request})
         return create(serializer, cluster=cluster, service=service)
@@ -151,17 +160,20 @@ class ServiceBindView(ListView):
 class ServiceBindDetailView(DetailViewDelete):
     queryset = ClusterBind.objects.all()
     serializer_class = BindSerializer
+    check_import_perm = check_import_perm
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_obj(self, kwargs, bind_id):
         service = check_service(kwargs)
         cluster = service.cluster
-        return check_obj(ClusterBind, {'cluster': cluster, 'id': bind_id})
+        return service, check_obj(ClusterBind, {'cluster': cluster, 'id': bind_id})
 
     def get(self, request, *args, **kwargs):
         """
         Show specified bind of service
         """
-        bind = self.get_obj(kwargs, kwargs['bind_id'])
+        service, bind = self.get_obj(kwargs, kwargs['bind_id'])
+        self.check_import_perm('view', 'clusterobject', service)
         serializer = self.serializer_class(bind, context={'request': request})
         return Response(serializer.data)
 
@@ -169,7 +181,8 @@ class ServiceBindDetailView(DetailViewDelete):
         """
         Unbind specified bind of service
         """
-        bind = self.get_obj(kwargs, kwargs['bind_id'])
+        service, bind = self.get_obj(kwargs, kwargs['bind_id'])
+        self.check_import_perm('change', 'clusterobject', service)
         unbind(bind)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
