@@ -15,19 +15,15 @@
 # Created by a1wen at 27.02.19
 
 import os
-
 from typing import Union, Optional
 
 import allure
-
 from adcm_client.wrappers.docker import ADCM
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import ChromeOptions, FirefoxOptions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
-
-from tests.ui_tests.app.pages import Ui
 
 
 class ADCMTest:
@@ -60,7 +56,6 @@ class ADCMTest:
         }
         self._configure_downloads(browser, downloads)
         self.driver = None
-        self.ui = None
         self.adcm = None
 
     @allure.step("Init driver")
@@ -79,7 +74,6 @@ class ADCMTest:
                 else webdriver.Chrome(options=self.opts, desired_capabilities=self.capabilities)
             )
         self.driver.implicitly_wait(1)
-        self.ui = Ui(self.driver)
 
     @allure.step("Attache ADCM")
     def attache_adcm(self, adcm: ADCM):
