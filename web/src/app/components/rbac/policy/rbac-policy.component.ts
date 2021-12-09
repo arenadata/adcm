@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { BaseFormDirective } from '../../../shared/add-component';
 import { AbstractControl, FormArray, FormControl, FormGroup, Validators } from '@angular/forms';
-import { adwpDefaultProp } from '../../../../../../../adwp_ui/projects/widgets/src/lib/cdk';
 
 
 interface IRbacPolicyView<T> {
@@ -32,11 +31,9 @@ const INITIAL_STATE: IRbacPolicyView<any> = {
 export class RbacPolicyComponent<T> extends BaseFormDirective implements OnChanges {
 
   @Input()
-  @adwpDefaultProp()
   value: IRbacPolicyView<T> = INITIAL_STATE;
 
   @Input()
-  @adwpDefaultProp()
   options: T[] = [];
 
   /** Returns a FormArray with the name 'steps'. */

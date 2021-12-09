@@ -39,14 +39,17 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
       url: new FormControl(null),
       profile: new FormControl(null),
       username: new FormControl(null),
-      password: new FormControl(null, [Validators.required, Validators.min(1)]),
+      password: new FormControl(null, [
+        Validators.required, Validators.min(5)
+      ]),
       first_name: new FormControl(null),
       last_name: new FormControl(null),
       email: new FormControl(null, [Validators.email]),
       group: new FormControl([])
     }),
     confirm: new FormGroup({
-      password: new FormControl('', [Validators.required, Validators.min(1)])
+      password: new FormControl('', [
+        Validators.required, Validators.min(5)])
     })
   }, { validators: passwordsConfirmValidator });
 

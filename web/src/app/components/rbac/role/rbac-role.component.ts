@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { BaseFormDirective } from '../../../shared/add-component';
 import { FormControl, FormGroup } from '@angular/forms';
-import { adwpDefaultProp } from '../../../../../../../adwp_ui/projects/widgets/src/lib/cdk';
 import { clearEmptyField } from '../../../core/types';
 import { take } from 'rxjs/operators';
 
@@ -31,11 +30,9 @@ const INITIAL_STATE: IRbacRoleView<any> = {
 export class RbacRoleComponent<T> extends BaseFormDirective implements OnChanges {
 
   @Input()
-  @adwpDefaultProp()
   value: IRbacRoleView<T> = INITIAL_STATE;
 
   @Input()
-  @adwpDefaultProp()
   options: T[] = [];
 
   parametrizedOptions: ('Cluster' | 'Service' | 'Component' | 'Provider' | 'Host')[] = [
