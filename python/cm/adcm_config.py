@@ -14,6 +14,7 @@ import collections
 import copy
 import json
 import os
+from typing import Tuple, Optional
 
 import yspec.checker
 from ansible.parsing.vault import VaultSecret, VaultAES256
@@ -24,7 +25,16 @@ import cm.variant
 from cm import config
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
-from cm.models import ADCM, PrototypeConfig, ObjectConfig, ConfigLog, GroupConfig
+from cm.models import (
+    Action,
+    ADCM,
+    ADCMEntity,
+    ConfigLog,
+    GroupConfig,
+    ObjectConfig,
+    Prototype,
+    PrototypeConfig,
+)
 
 
 def proto_ref(proto):
@@ -133,7 +143,7 @@ def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None):
     return body
 
 
-def init_object_config(spec, conf, attr):
+def init_object_config(spec: dict, conf: dict, attr: dict) -> Optional[ObjectConfig]:
     if not conf:
         return None
     obj_conf = ObjectConfig(current=0, previous=0)
@@ -171,7 +181,7 @@ def load_social_auth():
         log.error('load_social_auth error: %s', e)
 
 
-def get_prototype_config(proto, action=None):
+def get_prototype_config(proto: Prototype, action: Action = None) -> Tuple[dict, dict, dict, dict]:
     spec = {}
     flat_spec = collections.OrderedDict()
     conf = {}
@@ -197,16 +207,23 @@ def get_prototype_config(proto, action=None):
     return (spec, flat_spec, conf, attr)
 
 
-def switch_config(
-    obj, new_proto, old_proto
-):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+def make_object_config(obj: ADCMEntity, prototype: Prototype) -> None:
+    if obj.config:
+        return
+
+    spec, _, conf, attr = get_prototype_config(prototype)
+    obj_conf = init_object_config(spec, conf, attr)
+    if obj_conf:
+        obj.config = obj_conf
+        obj.save()
+
+
+def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    obj: ADCMEntity, new_proto: Prototype, old_proto: Prototype
+) -> None:
     # process objects without config
     if not obj.config:
-        spec, _, conf, attr = get_prototype_config(new_proto)
-        obj_conf = init_object_config(spec, conf, attr)
-        if obj_conf:
-            obj.config = obj_conf
-            obj.save()
+        make_object_config(obj, new_proto)
         return
 
     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)

@@ -60,6 +60,13 @@ class CommonConfigMenuObj(BasePageObject):
                 return row
         raise AssertionError(f'Configuration field with name {display_name} was not found')
 
+    def get_textbox_rows(self, timeout=2) -> List[WebElement]:
+        """Get textbox elements from the page"""
+        try:
+            return [r for r in self.find_elements(CommonConfigMenu.text_row, timeout=timeout) if r.is_displayed()]
+        except TimeoutException:
+            return []
+
     @allure.step('Saving configuration')
     def save_config(self, load_timeout: int = 2):
         """Save current configuration"""
@@ -236,6 +243,13 @@ class CommonConfigMenuObj(BasePageObject):
         """Clear search input with button"""
         self.find_and_click(CommonConfigMenu.search_input_clear_btn)
 
+    @allure.step('Clear field "{display_name}"')
+    def clear_field_by_keys(self, display_name: str):
+        """Clear field by name"""
+
+        row = self.get_config_row(display_name)
+        self.clear_by_keys(self.find_child(row, CommonConfigMenu.ConfigRow.value))
+
     @allure.step("Check {name} required error is presented")
     def check_field_is_required(self, name: str):
         """
@@ -259,6 +273,14 @@ class CommonConfigMenuObj(BasePageObject):
         """
         message = f'Confirm [{name}] is required!'
         self.check_element_should_be_visible(self.locators.field_error(message))
+
+    def check_text_in_tooltip(self, row_name: str, tooltip_text: str):
+        tooltip_icon = self.find_element(self.locators.info_tooltip_icon(row_name, row_name))
+        self.scroll_to(tooltip_icon)
+        self.hover_element(tooltip_icon)
+        tooltip_el = self.find_element(self.locators.tooltip_text)
+        self.wait_element_visible(tooltip_el)
+        assert tooltip_el.text == tooltip_text
 
     @allure.step("Check that correct fields are (in)visible")
     def check_config_fields_visibility(
@@ -396,7 +418,7 @@ class CommonConfigMenuObj(BasePageObject):
     def scroll_to_field(self, display_name: str) -> WebElement:
         """Scroll to parameter field by display name"""
         row = self.get_config_row(display_name)
-        return self.scroll_to(element=row)
+        return self.scroll_to(row)
 
     @allure.step("Check warn icon on the left menu Configuration element")
     def check_config_warn_icon_on_left_menu(self):
@@ -421,3 +443,22 @@ class CommonConfigMenuObj(BasePageObject):
         assert self.is_child_displayed(
             self.find_element(ObjectPageMenuLocators.service_components_tab), ObjectPageMenuLocators.warn_icon
         ), "No warn icon near Host-Components left menu element"
+
+
+CONFIG_ITEMS = [
+    'float',
+    'boolean',
+    'integer',
+    'password',
+    'string',
+    'list',
+    'file',
+    'option',
+    'text',
+    'structure',
+    'map',
+    'secrettext',
+    'json',
+    'usual_port',
+    'transport_port',
+]
