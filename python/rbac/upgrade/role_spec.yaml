@@ -403,7 +403,7 @@ roles:
           models:
             - name: cluster
               codenames:
-                - map
+                - map_host
 
     - name: Unmap hosts
       description: The ability to unmap hosts to the Cluster
@@ -420,7 +420,7 @@ roles:
           models:
             - name: cluster
               codenames:
-                - unmap
+                - unmap_host
 
     - name: Upgrade cluster bundle
       description: Update the cluster bundle
