@@ -216,7 +216,8 @@ class Boolean(BaseType):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._sp_vals_negative = [PreparedFieldValue(f_type=Type[String]), PreparedFieldValue(f_type=Type[PositiveInt])]
+        self.error_message_invalid_data = "Must be a valid boolean."
+        self._sp_vals_negative = ["Invalid string", 321]
 
     def generate(self, **kwargs):
         return random.choice([True, False])
@@ -249,13 +250,23 @@ class String(BaseType):
         return random_string(randint(1, self.max_length))
 
 
+class Username(String):
+    """Username field type"""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._sp_vals_negative.append(
+            PreparedFieldValue(value='string with spaces', error_messages=["Space symbols are not allowed"])
+        )
+
+
 class Password(BaseType):
     """
     Password field type
     placeholder - it is expected value for all requests
     """
 
-    def __init__(self, placeholder="*****", **kwargs):
+    def __init__(self, placeholder="******", **kwargs):
         super().__init__(**kwargs)
         self.placeholder = placeholder
 
@@ -282,7 +293,8 @@ class Email(BaseType):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._sp_vals_negative = [PreparedFieldValue(f_type=Type[String]), PreparedFieldValue(f_type=Type[PositiveInt])]
+        self._sp_vals_negative = ["invalid string", 321]
+        self.error_message_invalid_data = "Enter a valid email address."
 
     def generate(self, **kwargs):
         return f"{random_string(10)}@{random_string(5).lower()}.com"
