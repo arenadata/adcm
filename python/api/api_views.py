@@ -50,9 +50,8 @@ def hlink(view, lookup, lookup_url):
 
 
 def permission_denied(
-        message='You do not have permission to perform this action',
-        code=status.HTTP_403_FORBIDDEN
-    ):
+    message='You do not have permission to perform this action', code=status.HTTP_403_FORBIDDEN
+):
     raise exceptions.PermissionDenied(detail=message, code=code)
 
 

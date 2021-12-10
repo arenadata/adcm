@@ -1,6 +1,6 @@
 ---
 
-version: 2
+version: 1
 
 roles:
     - name: Create host
