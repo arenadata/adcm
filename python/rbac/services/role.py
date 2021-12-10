@@ -32,7 +32,11 @@ def role_create(built_in=False, type_of_role=RoleTypes.role, **kwargs) -> Role:
     """Creating Role object"""
     child = kwargs.pop('child', [])
     check_role_child(child)
-    role = Role.objects.create(built_in=built_in, type=type_of_role, **kwargs)
+    if 'name' in kwargs:
+        name = kwargs['name']
+    else:
+        name = kwargs['display_name']
+    role = Role.objects.create(name=name, built_in=built_in, type=type_of_role, **kwargs)
     role.child.add(*child)
     return role
 
@@ -41,6 +45,7 @@ def role_update(role: Role, **kwargs) -> Role:
     """Updating Role object"""
     child = kwargs.pop('child', None)
     check_role_child(child)
+    kwargs.pop('name', None)
     for key, value in kwargs.items():
         setattr(role, key, value)
     role.save()
