@@ -49,6 +49,7 @@ DUMMY_CLUSTER_BUNDLE = [
 
 CLEAN_ADCM_PARAM = pytest.param({}, id="clean_adcm")
 DUMMY_DATA_PARAM = pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data")
+DUMMY_DATA_FULL_PARAM = pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data", marks=[pytest.mark.full])
 
 
 def pytest_generate_tests(metafunc):
