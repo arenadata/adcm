@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import status, permissions
+from rest_framework import permissions
 from rest_framework.response import Response
 
 from api.api_views import (
@@ -21,6 +21,7 @@ from api.api_views import (
     create,
     check_obj,
     filter_actions,
+    permission_denied,
 )
 from api.job.serializers import RunTaskSerializer
 from cm.models import (
@@ -153,11 +154,7 @@ class RunTask(GenericAPIPermView):
 
     def check_action_perm(self, action, obj):
         if not self.has_action_perm(action, obj):
-            self.permission_denied(
-                self.request,
-                message='You do not have permission to perform this action',
-                code=status.HTTP_403_FORBIDDEN,
-            )
+            permission_denied()
 
     def post(self, request, *args, **kwargs):
         """

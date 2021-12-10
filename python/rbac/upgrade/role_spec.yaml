@@ -262,9 +262,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: clusterbind
+            - name: cluster
               codenames:
-                - view
+                - view_import_of
 
     - name: View service imports
       description: The ability to view the service import page
@@ -279,9 +279,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: clusterbind
+            - name: clusterobject
               codenames:
-                - view
+                - view_import_of
 
     - name: View imports
       description: The ability to view all imports page on cluster and service
@@ -305,10 +305,10 @@ roles:
       apps:
         - label: cm
           models:
-            - name: clusterbind
+            - name: cluster
               codenames:
-                - add
-                - change
+                - view_import_of
+                - change_import_of
 
     - name: Manage service imports
       description: The ability to change service imports
@@ -323,10 +323,10 @@ roles:
       apps:
         - label: cm
           models:
-            - name: clusterbind
+            - name: clusterobject
               codenames:
-                - add
-                - change
+                - view_import_of
+                - change_import_of
 
     - name: Manage imports
       description: The ability to manage all imports page on cluster and service

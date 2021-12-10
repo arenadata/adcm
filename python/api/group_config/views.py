@@ -25,6 +25,7 @@ from rest_framework.mixins import (
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
+from api.api_views import permission_denied
 from api.views import ViewInterfaceGenericViewSet
 from cm.models import GroupConfig, Host, ObjectConfig, ConfigLog
 from . import serializers
@@ -41,11 +42,7 @@ def has_config_perm(user, action_type, obj):
 
 def check_config_perm(self, action_type, obj):
     if not has_config_perm(self.request.user, action_type, obj):
-        self.permission_denied(
-            self.request,
-            message='You do not have permission to perform this action',
-            code=status.HTTP_403_FORBIDDEN,
-        )
+        permission_denied()
 
 
 class GroupConfigFilterSet(FilterSet):
