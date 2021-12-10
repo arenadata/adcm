@@ -15,7 +15,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { DialogComponent } from '@app/shared/components';
 import { BaseDirective } from '@app/shared/directives';
 import { AddFormComponent } from './add-form.component';
-import { ADD_SERVICE_PROVIDER, IAddService } from '@app/shared/add-component/add-service-model';
+import { ADD_SERVICE_PROVIDER, FormModel, IAddService } from '@app/shared/add-component/add-service-model';
 import { BaseFormDirective } from '@app/shared/add-component/base-form.directive';
 
 @Component({
@@ -45,17 +45,28 @@ export class AddButtonComponent extends BaseDirective implements OnDestroy {
     super();
   }
 
-  showForm(): void {
-    const model = this.service.model(this.name);
-    model.component = this.component;
+  showForm(data?: FormModel): void {
+
+    const model = data || this.service?.model(this.name);
+    if (this.component) {
+      model.component = this.component;
+    }
 
     const name = model.title || model.name;
-    const title = ['cluster', 'provider', 'host'];
+    let title;
+
+    if (data) {
+      title = `Update ${name}`;
+    } else {
+      title = `${['cluster', 'provider', 'host'].includes(name) ? 'Create' : 'Add'} ${name}`;
+    }
+
+
     this.dialog.open(DialogComponent, {
       width: '75%',
       maxWidth: '1400px',
       data: {
-        title: `${title.includes(name) ? 'Create' : 'Add'} ${name}`,
+        title,
         component: AddFormComponent,
         model,
       },

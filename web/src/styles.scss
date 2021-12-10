@@ -32,7 +32,7 @@ body {
   background-color: #303030;
 }
 
-app-root {
+app-root adwp-portal-host > .content {
   overflow: hidden;
   position: fixed;
   top: 0;
@@ -415,3 +415,15 @@ mat-cell.control {
 .w100 {
   width: 100%;
 }
+
+adwp-dropdown-box {
+  z-index: 2000 !important;
+}
+
+.mat-select-panel {
+  .mat-selection-list {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+}
+

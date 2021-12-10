@@ -12,7 +12,7 @@
 import { Component, ComponentFactoryResolver, EventEmitter, Inject, OnInit, Type, ViewChild, HostListener } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
-import { DynamicComponent, DynamicDirective, DynamicEvent } from '../directives/dynamic.directive';
+import { DynamicComponent, DynamicDirective, DynamicEvent } from '../directives/dynamic/dynamic.directive';
 import { ChannelService } from '@app/core/services';
 import { keyChannelStrim } from '@app/core/services';
 import { ActionParameters } from '@app/shared/components/actions/actions.directive';

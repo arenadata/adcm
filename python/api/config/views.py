@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import status, permissions
+from rest_framework import permissions
 from rest_framework.response import Response
 
-from api.api_views import ListView, GenericAPIPermView, create, update, check_obj
+from api.api_views import ListView, GenericAPIPermView
+from api.api_views import create, update, check_obj, permission_denied
 
 from cm.adcm_config import ui_config
 from cm.models import get_model_by_type, ConfigLog, ObjectConfig
@@ -72,11 +73,7 @@ def has_config_perm(user, action_type, object_type, obj):
 
 def check_config_perm(self, action_type, object_type, obj):
     if not has_config_perm(self.request.user, action_type, object_type, obj):
-        self.permission_denied(
-            self.request,
-            message='You do not have permission to perform this action',
-            code=status.HTTP_403_FORBIDDEN,
-        )
+        permission_denied()
 
 
 class ConfigView(ListView):

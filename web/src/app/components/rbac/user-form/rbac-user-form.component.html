@@ -1,0 +1,19 @@
+<form [formGroup]="userForm" class="rbac-user-form">
+  <adwp-input [form]="userForm" label='User name' controlName='username'></adwp-input>
+  <div class="rbac-user-form__password">
+    <adwp-input [form]="userForm"
+                label='Password' controlName='password' type="password"
+                (focusin)="clearPasswordControlIfFocusIn()"></adwp-input>
+    <adwp-input [form]="confirmForm"
+                label='Confirm password' controlName='password' type="password"
+                (focusin)="clearPasswordControlIfFocusIn()"></adwp-input>
+  </div>
+  <adwp-input [form]="userForm" label='First name' controlName='first_name'></adwp-input>
+  <adwp-input [form]="userForm" label='Last name' controlName='last_name'></adwp-input>
+  <adwp-input [form]="userForm" label='Email' controlName='email'></adwp-input>
+  <adwp-input-select [form]="userForm" label="Select groups" controlName="group" labelKey="name"
+                     appRbacGroupsAsOptions
+                     #groups="rbacGroups"
+                     [options]="groups.options$ | async"></adwp-input-select>
+  <adwp-controls [title]="title" [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></adwp-controls>
+</form>

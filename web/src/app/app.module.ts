@@ -17,7 +17,7 @@ import { StoreModule } from '@ngrx/store';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { TranslateLoader, TranslateModule, TranslateService } from '@ngx-translate/core';
 import { HttpClient } from '@angular/common/http';
-import { AdwpUiWidgetsModule } from '@adwp-ui/widgets';
+import { AdwpPortalHostModule, AdwpUiWidgetsModule } from '@adwp-ui/widgets';
 
 import { CoreModule } from '@app/core/core.module';
 import { ConfigService } from '@app/core/services';
@@ -60,6 +60,7 @@ import { AddService } from '@app/shared/add-component/add.service';
       }
     }),
     AdwpUiWidgetsModule,
+    AdwpPortalHostModule,
   ],
   bootstrap: [AppComponent],
   providers: [
@@ -85,4 +86,5 @@ import { AddService } from '@app/shared/add-component/add.service';
     },
   ],
 })
-export class AppModule {}
+export class AppModule {
+}

@@ -19,7 +19,7 @@ from django.http.request import QueryDict
 from django_filters import rest_framework as drf_filters
 
 import rest_framework.pagination
-from rest_framework import status, serializers
+from rest_framework import status, serializers, exceptions
 from rest_framework.reverse import reverse
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
@@ -47,6 +47,25 @@ def hlink(view, lookup, lookup_url):
     return serializers.HyperlinkedIdentityField(
         view_name=view, lookup_field=lookup, lookup_url_kwarg=lookup_url
     )
+
+
+def permission_denied(
+    message='You do not have permission to perform this action', code=status.HTTP_403_FORBIDDEN
+):
+    raise exceptions.PermissionDenied(detail=message, code=code)
+
+
+def has_import_perm(user, action_type, model, obj):
+    if user.has_perm(f'cm.{action_type}_clusterbind'):
+        return True
+    if user.has_perm(f'cm.{action_type}_import_of_{model}', obj):
+        return True
+    return False
+
+
+def check_import_perm(self, action_type, model, obj):
+    if not has_import_perm(self.request.user, action_type, model, obj):
+        permission_denied()
 
 
 def save(serializer, code, **kwargs):

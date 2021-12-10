@@ -1,3 +1,5 @@
+import { RbacGroupModel } from '@app/models/rbac/rbac-group.model';
+
 export interface RbacUserModel {
   id: number;
   username: string;
@@ -8,5 +10,5 @@ export interface RbacUserModel {
   password: string;
   url: string;
   profile: unknown;
-  groups: unknown[];
+  group: Pick<RbacGroupModel, 'id' | 'name' | 'url'>[];
 }
