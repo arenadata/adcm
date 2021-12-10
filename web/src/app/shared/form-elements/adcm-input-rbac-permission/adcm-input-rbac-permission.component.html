@@ -1,0 +1,42 @@
+<div class="row" [formGroup]="form">
+
+  <mat-form-field appearance="outline" (click)="$event.stopPropagation();open = true;">
+
+    <mat-label>{{ label }}</mat-label>
+
+    <mat-chip-list #chipList
+                   aria-label="Select permissions"
+                   multiple
+                   formControlName="{{ controlName }}"
+                   [selectable]="false"
+                   [placeholder]="label"
+                   [adwpDropdown]="open"
+                   [adwpDropdownContent]="dropdownContent"
+    >
+      <mat-chip *ngFor="let item of form.controls[controlName].value"
+                removable
+                disableRipple
+                [selectable]="true"
+                [value]="item"
+                [selected]="true"
+      >
+
+        {{ item | adwpMapper:handler }}
+
+        <button matChipRemove>
+          <mat-icon>cancel</mat-icon>
+        </button>
+      </mat-chip>
+
+      <input [matChipInputFor]="chipList" (focus)="$event.stopPropagation();open = true;" />
+    </mat-chip-list>
+    <mat-hint>Click to select</mat-hint>
+  </mat-form-field>
+
+  <ng-template #dropdownContent>
+    <div (adwpClickOutside)="open = !open">
+      <ng-content select="app-rbac-permission-form"></ng-content>
+    </div>
+  </ng-template>
+
+</div>

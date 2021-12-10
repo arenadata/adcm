@@ -1,0 +1,32 @@
+mat-form-field {
+  width: 100%;
+}
+
+::ng-deep {
+
+  .mat-chip-list-wrapper {
+    //max-height: 250px;
+    //overflow-y: auto;
+
+    //mat-chip {
+    //  border-radius: 8px !important;
+    //  padding: 4px 8px;
+    //  background-color: #616161 !important;
+    //  //width: 100%;
+    //  button {
+    //    //background-color: transparent;
+    //  }
+    //
+    //  mat-icon {
+    //    margin-left: -11px;
+    //    margin-top: -6px;
+    //    color: #333
+    //  }
+    //}
+  }
+
+  .mat-form-field-infix {
+    //min-height: 16px !important;
+  }
+}
+

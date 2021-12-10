@@ -1,0 +1,23 @@
+<div [formGroup]="form" class="adcm-rbac-permission">
+  <div class="adcm-rbac-permission__filter">
+    <mat-chip-list multiple selectable>
+      <mat-chip #chip="matChip"
+                *ngFor="let category of ['one', 'two']"
+                (click)="chip.selected = !chip.selected"
+      >
+        {{category}}
+      </mat-chip>
+    </mat-chip-list>
+  </div>
+
+  <mat-divider vertical></mat-divider>
+
+  <div class="adcm-rbac-permission__options">
+    <adwp-selection-list
+      formControlName="{{ controlName }}"
+      multiple
+      [handler]="handler"
+      [options]="options"
+    ></adwp-selection-list>
+  </div>
+</div>

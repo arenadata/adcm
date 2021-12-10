@@ -1,0 +1,22 @@
+.adcm-rbac-permission {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16px;
+
+  &__filter {
+    display: flex;
+    width: 120px;
+    padding-right: 8px;
+  }
+
+  &__options {
+    display: flex;
+    flex: 1;
+    padding-left: 8px;
+
+    adwp-selection-list {
+      width: 100%;
+    }
+  }
+}

@@ -13,6 +13,12 @@ import { SocketState } from '@app/core/store';
 import { DeletableEntityAbstractService } from '@app/abstract/deletable-entity.abstract.service';
 import { DialogComponent } from '@app/shared/components';
 import { AdwpListDirective } from './adwp-list.directive';
+import { AddButtonDialogConfig } from '../shared/add-component';
+
+const ADCM_RBAC_ADD_DIALOG_CONFIG: AddButtonDialogConfig = {
+  width: '75%',
+  maxWidth: '1000px'
+};
 
 @Directive({
   selector: '[appRbacEntityList]',
@@ -20,6 +26,8 @@ import { AdwpListDirective } from './adwp-list.directive';
 export abstract class RbacEntityListDirective<T extends Entity> extends AdwpListDirective<T> {
 
   abstract getTitle(row: T): string;
+
+  dialogConfig: AddButtonDialogConfig = ADCM_RBAC_ADD_DIALOG_CONFIG;
 
   constructor(
     protected service: ListService,

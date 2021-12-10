@@ -2,7 +2,7 @@ import { Directive, Inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { RbacGroupService } from '../../../../services/rbac-group.service';
 import { RbacGroupModel } from '../../../../models/rbac/rbac-group.model';
-import { AdwpStringHandler } from '../../../../../../../../adwp_ui/projects/widgets/src/lib/cdk';
+import { AdwpStringHandler } from '@adwp-ui/widgets';
 
 @Directive({
   selector: '[appRbacGroupsAsOptions]',

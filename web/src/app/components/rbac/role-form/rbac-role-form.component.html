@@ -1,6 +1,14 @@
 <ng-container [formGroup]="form">
   <adwp-input [form]="form" label='Role name' controlName='name'></adwp-input>
   <adwp-input [form]="form" label='Description' controlName='description'></adwp-input>
-  <adwp-input-select [form]="form" label="Permissions" controlName="child"></adwp-input-select>
+  <adcm-input-rbac-permission [form]="form" label='Permissions' controlName='child'
+                              [handler]="permissions.label"
+                              appRbacRolesAsOptions
+                              #permissions="rbacRoles">
+    <ng-container *ngIf="permissions.options$ | async as options" ngProjectAs="app-rbac-permission-form">
+      <app-rbac-permission-form [form]="form" [options]="options"
+                                [handler]="permissions.label" controlName='child'></app-rbac-permission-form>
+    </ng-container>
+  </adcm-input-rbac-permission>
   <adwp-controls [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></adwp-controls>
 </ng-container>

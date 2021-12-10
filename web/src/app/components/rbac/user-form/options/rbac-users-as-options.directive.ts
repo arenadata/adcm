@@ -2,7 +2,7 @@ import { Directive, Inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { RbacUserModel } from '../../../../models/rbac/rbac-user.model';
 import { RbacUserService } from '../../../../services/rbac-user.service';
-import { AdwpStringHandler } from '../../../../../../../../adwp_ui/projects/widgets/src/lib/cdk';
+import { AdwpStringHandler } from '@adwp-ui/widgets';
 
 @Directive({
   selector: '[appRbacUsersAsOptions]',
