@@ -170,7 +170,7 @@ class DbFiller:
                 fk_data = self._get_or_create_data_for_endpoint(endpoint=fk_endpoint, force=force)
             return self._choose_fk_field_value(field=field, fk_data=fk_data)
         if isinstance(field.f_type, GenericForeignKeyList):
-            return field.payload
+            return field.f_type.payload
         return self._generate_field_value(field=field)
 
     def _solve_field_relations(self, endpoint: Endpoints, data: dict, field: Field, force=False):

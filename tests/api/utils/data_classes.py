@@ -300,7 +300,10 @@ class RbacSimpleRoleFields(BaseClass):
     """
 
     id = Field(name="id", f_type=PositiveInt(), default_value="auto")
-    name = Field(name="name", f_type=String(max_length=160), required=True, postable=True, changeable=True)
+    # default_value="auto" because we can't change name after it's set
+    # it's "not postable", because we can only set this field during creation, not change it after
+    # and currently framework can't resolve it correctly
+    name = Field(name="name", f_type=String(max_length=160), default_value="auto")
     display_name = Field(
         name="display_name",
         f_type=String(max_length=160),
@@ -310,7 +313,7 @@ class RbacSimpleRoleFields(BaseClass):
         changeable=True,
     )
     description = Field(
-        name="description", f_type=Text(), default_value="", nullable=False, postable=True, changeable=True
+        name="description", f_type=Text(), default_value="", postable=True, changeable=True
     )
     built_in = Field(name="built_in", f_type=StaticBoolean(value=False), default_value=False)
     # type is actually changeable=True and postable=True, but now it's only value
@@ -348,11 +351,12 @@ class RbacBuiltInRoleFields(BaseClass):
     parametrized_by_type = Field(
         name="parametrized_by_type",
         f_type=ListOf(Enum(PARAMETRIZED_BY_LIST)),
+        required=True,
+        postable=True,
+
     )
-    # Field made postable and required for reasons of (dis)allowed methods testing
-    # so POST will try to create not built_in role
     built_in = Field(
-        name="built_in", f_type=StaticBoolean(value=True), default_value=False, postable=True, required=True
+        name="built_in", f_type=StaticBoolean(value=True), default_value="auto"
     )
     type = Field(name="type", f_type=Enum(['role', 'business', 'hidden']), default_value='role')
     child = Field(name="child", f_type=EmptyList(), default_value=[])
@@ -368,23 +372,22 @@ RbacSimpleRoleFields.child = Field(
 )
 
 
-class RbacAnyRoleFields(BaseClass):
-    """Technical BaseClass for adding it to get unfiltered (business/not-business) role"""
+class RbacRoleFields(BaseClass):
+    """Technical BaseClass for adding it to get roles with type 'role'"""
 
     id = Field(name="id", f_type=PositiveInt(), default_value="auto")
-    name = Field(name="name", f_type=String(max_length=160), required=True, postable=True, changeable=True)
+    name = Field(name="name", f_type=String(max_length=160), nullable=True, postable=True)
     display_name = Field(
         name="display_name",
         f_type=String(max_length=160),
         default_value="",
-        required=True,
         postable=True,
         changeable=True,
     )
     description = Field(
         name="description", f_type=Text(), default_value="", nullable=False, postable=True, changeable=True
     )
-    built_in = Field(name="built_in", f_type=StaticBoolean(value=False), default_value=False)
+    built_in = Field(name="built_in", f_type=StaticBoolean(value=False), default_value="auto")
     type = Field(name="type", f_type=Enum(['role', 'business', 'hidden']), default_value='role')
     category = Field(name="category", f_type=ListOf(String()), default_value=[], postable=True, changeable=True)
     parametrized_by_type = Field(
@@ -404,9 +407,9 @@ class RbacNotBuiltInPolicyFields(BaseClass):
     """
 
     id = Field(name="id", f_type=PositiveInt(), default_value="auto")
-    name = Field(name="name", f_type=String(max_length=255), required=True, postable=True, changeable=True)
-    role = Field(name="role", f_type=ObjectForeignKey(RbacAnyRoleFields), required=True, postable=True, changeable=True)
-    built_in = Field(name="built_in", f_type=StaticBoolean(False), default_value=True)
+    name = Field(name="name", f_type=String(max_length=255), postable=True)
+    role = Field(name="role", f_type=ObjectForeignKey(RbacRoleFields), required=True, postable=True, changeable=True)
+    built_in = Field(name="built_in", f_type=StaticBoolean(False), default_value="auto")
     object = Field(
         name="object",
         f_type=GenericForeignKeyList(relates_on=Relation(field=role)),
@@ -430,11 +433,11 @@ class RbacBuiltInPolicyFields(BaseClass):
 
     id = Field(name="id", f_type=PositiveInt(), default_value="auto")
     name = Field(name="name", f_type=String(max_length=160))
-    role = Field(name="role", f_type=ObjectForeignKey(RbacAnyRoleFields), required=True)
+    role = Field(name="role", f_type=ObjectForeignKey(RbacRoleFields), required=True)
     # Field made postable and required for reasons of (dis)allowed methods testing
     # so POST will try to create not built_in role
     built_in = Field(
-        name="built_in", f_type=StaticBoolean(value=True), default_value=False, postable=True, required=True
+        name="built_in", f_type=StaticBoolean(value=True), default_value="auto", required=True
     )
     object = Field(
         name="object",

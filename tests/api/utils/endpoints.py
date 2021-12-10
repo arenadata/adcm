@@ -23,7 +23,7 @@ from tests.api.utils.filters import (
     is_not_business_role,
     is_built_in,
     is_not_hidden_role,
-    is_not_built_in,
+    is_not_built_in, is_role_type,
 )
 from tests.api.utils.data_classes import (
     BaseClass,
@@ -42,7 +42,7 @@ from tests.api.utils.data_classes import (
     RbacGroupFields,
     RbacSimpleRoleFields,
     RbacBuiltInRoleFields,
-    RbacAnyRoleFields,
+    RbacRoleFields,
     RbacBusinessRoleFields,
     RbacBuiltInPolicyFields,
 )
@@ -302,7 +302,7 @@ class Endpoints(Enum):
     # Test logic for "built_in"
     RbacBuiltInRole = Endpoint(
         path="rbac/role",
-        methods=[Methods.GET, Methods.LIST],
+        methods=[Methods.GET, Methods.LIST, Methods.POST],
         data_class=RbacBuiltInRoleFields,
         spec_link="",
         filter_predicate=is_built_in,
@@ -321,9 +321,10 @@ class Endpoints(Enum):
     RbacAnyRole = Endpoint(
         path="rbac/role",
         methods=ALL,
-        data_class=RbacAnyRoleFields,
+        data_class=RbacRoleFields,
         spec_link="",
         technical=True,
+        filter_predicate=is_role_type,
     )
 
     RbacNotBuiltInPolicy = Endpoint(

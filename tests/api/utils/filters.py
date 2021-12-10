@@ -36,3 +36,8 @@ def is_built_in(item: dict) -> bool:
 def is_not_built_in(item: dict) -> bool:
     """Checks if item is not a built_in role/policy"""
     return not is_built_in(item)
+
+
+def is_role_type(item: dict) -> bool:
+    """Checks if item is role with type='role'"""
+    return (role_type := item.get("type", False)) and role_type == "role"
