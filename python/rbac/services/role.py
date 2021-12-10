@@ -33,7 +33,7 @@ def role_create(built_in=False, type_of_role=RoleTypes.role, **kwargs) -> Role:
     child = kwargs.pop('child', [])
     check_role_child(child)
     if 'name' in kwargs:
-        name = kwargs['name']
+        name = kwargs.pop('name')
     else:
         name = kwargs['display_name']
     role = Role.objects.create(name=name, built_in=built_in, type=type_of_role, **kwargs)
