@@ -15,10 +15,16 @@ import { RbacRoleModel } from '@app/models/rbac/rbac-role.model';
 export class RbacRoleFormComponent extends RbacFormDirective<RbacRoleModel> {
 
   form = new FormGroup({
+    id: new FormControl(null),
     name: new FormControl(null, [Validators.required]),
     description: new FormControl(null),
+    display_name: new FormControl(null),
+    built_in: new FormControl(null),
+    type: new FormControl('role'),
     category: new FormControl(['adcm']),
-    child: new FormControl([])
+    parametrized_by_type: new FormControl([]),
+    child: new FormControl([]),
+    url: new FormControl(null),
   });
 
 }

@@ -2,31 +2,52 @@ mat-form-field {
   width: 100%;
 }
 
-::ng-deep {
+.adcm-role-permissions {
+  &__filter {
+    display: flex;
+    width: 100%;
+    flex-wrap: nowrap;
+    align-items: stretch;
 
-  .mat-chip-list-wrapper {
-    //max-height: 250px;
-    //overflow-y: auto;
-
-    //mat-chip {
-    //  border-radius: 8px !important;
-    //  padding: 4px 8px;
-    //  background-color: #616161 !important;
-    //  //width: 100%;
-    //  button {
-    //    //background-color: transparent;
-    //  }
-    //
-    //  mat-icon {
-    //    margin-left: -11px;
-    //    margin-top: -6px;
-    //    color: #333
-    //  }
-    //}
+    ::ng-deep {
+      input.mat-chip-input {
+        width: 100%;
+        margin: 0;
+        flex: 1;
+      }
+    }
   }
 
-  .mat-form-field-infix {
-    //min-height: 16px !important;
+  &__filter-button {
+    margin-left: auto;
+  }
+
+  ::ng-deep {
+    .mat-chip-list-wrapper {
+      height: 250px;
+      overflow-y: auto;
+      align-items: start;
+      align-content: flex-start;
+
+
+      mat-chip {
+        min-height: 28px;
+        font-size: 12px;
+        border-radius: 4px;
+        padding: 4px 8px;
+        //background-color: #616161 !important;
+        //width: 100%;
+        button {
+          width: 20px;
+          height: 20px;
+          line-height: 20px;
+
+          mat-icon {
+            line-height: 20px;
+          }
+        }
+      }
+    }
+
   }
 }
-

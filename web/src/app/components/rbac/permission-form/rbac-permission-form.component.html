@@ -1,8 +1,8 @@
-<div [formGroup]="form" class="adcm-rbac-permission">
+<div class="adcm-rbac-permission">
   <div class="adcm-rbac-permission__filter">
-    <mat-chip-list multiple selectable>
+    <mat-chip-list multiple selectable class="mat-chip-list-stacked">
       <mat-chip #chip="matChip"
-                *ngFor="let category of ['one', 'two']"
+                *ngFor="let category of ['*', 'adcm']"
                 (click)="chip.selected = !chip.selected"
       >
         {{category}}
@@ -14,10 +14,16 @@
 
   <div class="adcm-rbac-permission__options">
     <adwp-selection-list
-      formControlName="{{ controlName }}"
+      #optionList
+      [ngModel]="form.controls[controlName].value"
       multiple
-      [handler]="handler"
-      [options]="options"
+      [handler]="nameHandler"
+      [options]="options | adwpFilter:matcher:form.controls[controlName].value:idHandler"
+      (ngModelChange)="value = $event"
     ></adwp-selection-list>
+
+    <div class="adcm-rbac-permission__actions">
+      <button mat-flat-button color="accent" [disabled]="!optionList.options?.length" (click)="save()">Select</button>
+    </div>
   </div>
 </div>

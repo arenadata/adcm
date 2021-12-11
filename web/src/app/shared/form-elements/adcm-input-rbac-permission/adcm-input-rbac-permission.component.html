@@ -1,34 +1,38 @@
 <div class="row" [formGroup]="form">
 
-  <mat-form-field appearance="outline" (click)="$event.stopPropagation();open = true;">
+  <mat-form-field appearance="outline" (click)="$event.stopImmediatePropagation();open = true;">
 
     <mat-label>{{ label }}</mat-label>
 
-    <mat-chip-list #chipList
-                   aria-label="Select permissions"
-                   multiple
-                   formControlName="{{ controlName }}"
-                   [selectable]="false"
-                   [placeholder]="label"
-                   [adwpDropdown]="open"
-                   [adwpDropdownContent]="dropdownContent"
+    <mat-chip-list class="adcm-role-permissions" aria-label="Select permissions" multiple
+                   #chipList formControlName="{{ controlName }}"
+                   [selectable]="false" [placeholder]="label"
+                   [adwpDropdown]="open" [adwpDropdownContent]="dropdownContent"
     >
-      <mat-chip *ngFor="let item of form.controls[controlName].value"
-                removable
-                disableRipple
-                [selectable]="true"
-                [value]="item"
-                [selected]="true"
+
+      <div class="adcm-role-permissions__filter">
+        <input #chipListInput [matChipInputFor]="chipList"
+               [placeholder]="chipList.chips?.length ? 'Filter selected permissions...' : 'Select permissions...'"
+               (focus)="$event.stopPropagation();open = true;">
+        <button class="adcm-role-permissions__filter-button" mat-icon-button appTooltip="Clear all selected permissions"
+                (click)="form.controls[controlName].reset([])"
+        >
+          <mat-icon>cancel</mat-icon>
+        </button>
+      </div>
+
+      <mat-chip *ngFor="let item of selectedPermissions | adwpFilter:matcher:chipListInput.value:nameHandler"
+                removable disableRipple [selectable]="true" [value]="item" [selected]="true"
+                (removed)="removeSelectedPermission(item)"
       >
 
-        {{ item | adwpMapper:handler }}
+        {{ item | adwpMapper:nameHandler }}
 
-        <button matChipRemove>
+        <button mat-icon-button matChipRemove>
           <mat-icon>cancel</mat-icon>
         </button>
       </mat-chip>
 
-      <input [matChipInputFor]="chipList" (focus)="$event.stopPropagation();open = true;" />
     </mat-chip-list>
     <mat-hint>Click to select</mat-hint>
   </mat-form-field>
