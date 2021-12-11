@@ -7,11 +7,22 @@
   &__filter {
     display: flex;
     width: 120px;
-    padding-right: 8px;
+    padding-right: 16px;
+
+    .mat-chip-list-stacked {
+      width: 100%;
+
+      .mat-standard-chip {
+        margin-left: 0;
+        margin-right: 0;
+        justify-content: center;
+      }
+    }
   }
 
   &__options {
     display: flex;
+    flex-direction: column;
     flex: 1;
     padding-left: 8px;
 

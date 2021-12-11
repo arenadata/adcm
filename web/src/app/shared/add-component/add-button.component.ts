@@ -18,11 +18,14 @@ import { AddFormComponent } from './add-form.component';
 import { ADD_SERVICE_PROVIDER, FormModel, IAddService } from '@app/shared/add-component/add-service-model';
 import { BaseFormDirective } from '@app/shared/add-component/base-form.directive';
 
-export type AddButtonDialogConfig = Pick<MatDialogConfig, 'width' | 'maxWidth'>;
+export type AddButtonDialogConfig = Pick<MatDialogConfig, 'width' | 'maxWidth' | 'position'>;
 
 const ADCM_DEFAULT_ADD_DIALOG_CONFIG: AddButtonDialogConfig = {
   width: '75%',
-  maxWidth: '1400px'
+  maxWidth: '1400px',
+  position: {
+    top: '50px'
+  }
 };
 
 @Component({

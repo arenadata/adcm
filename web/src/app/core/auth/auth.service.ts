@@ -1,4 +1,4 @@
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,7 +12,6 @@ import { Observable } from 'rxjs';
 // limitations under the License.
 import { Injectable } from '@angular/core';
 import { environment } from '@env/environment';
-import { throwError } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 
 import { ApiService } from '../api';
@@ -37,11 +36,11 @@ export class AuthService {
   constructor(private api: ApiService) {}
 
   checkGoogle() {
-    return this.api.get<{google_oauth: boolean}>(`${environment.apiRoot}info/`).pipe(map(a => a.google_oauth));
+    return this.api.get<{ google_oauth: boolean }>(`${environment.apiRoot}info/`).pipe(map(a => a.google_oauth));
   }
 
   login(login: string, password: string): Observable<{ token: string }> {
-    return this.api.post(`${environment.apiRoot}token/`, { username: login, password }).pipe(
+    return this.api.post(`${environment.apiRoot}/rbac/token/`, { username: login, password }).pipe(
       tap((response: { token: string }) => {
         let token = response && response.token;
         if (token) {

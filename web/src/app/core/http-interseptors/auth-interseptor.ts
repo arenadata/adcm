@@ -18,7 +18,7 @@ import { catchError, finalize } from 'rxjs/operators';
 import { AuthService } from '@app/core/auth/auth.service';
 import { ChannelService, keyChannelStrim, PreloaderService } from '../services';
 
-const EXCLUDE_URLS = ['/api/v1/token/', '/assets/config.json'];
+const EXCLUDE_URLS = ['/api/v1/rbac/token/', '/assets/config.json'];
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
