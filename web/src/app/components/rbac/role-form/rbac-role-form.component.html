@@ -10,5 +10,5 @@
                               [nameHandler]="permissions.label" [idHandler]="permissions.id"
                               controlName='child'></app-rbac-permission-form>
   </adcm-input-rbac-permission>
-  <adwp-controls [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></adwp-controls>
+  <adwp-controls [title]="title" [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></adwp-controls>
 </ng-container>
