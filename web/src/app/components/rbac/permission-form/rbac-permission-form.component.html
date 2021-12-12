@@ -1,7 +1,7 @@
 <div class="adcm-rbac-permission">
   <div class="adcm-rbac-permission__filter">
-    <mat-chip-list multiple selectable class="mat-chip-list-stacked">
-      <mat-chip #chip="matChip"
+    <mat-chip-list class="adcm-rbac-permission__filter-category mat-chip-list-stacked" multiple selectable>
+      <mat-chip class="adcm-rbac-permission__filter-category-item" #chip="matChip"
                 *ngFor="let category of ['*', 'adcm']"
                 (click)="chip.selected = !chip.selected"
       >

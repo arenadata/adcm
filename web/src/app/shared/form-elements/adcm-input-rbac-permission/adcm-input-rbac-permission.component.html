@@ -1,52 +1,51 @@
-<div class="row" [formGroup]="form">
+<div class="adcm-input-rbac-permissions">
+  <div class="row" [formGroup]="form">
 
-  <mat-form-field appearance="outline" (click)="$event.stopImmediatePropagation();open = true;">
+    <mat-form-field class="adcm-input-rbac-permissions__selected-field" appearance="outline">
 
-    <mat-label>{{ label }}</mat-label>
+      <mat-label>{{ label }}</mat-label>
 
-    <mat-chip-list class="adcm-role-permissions" aria-label="Select permissions" multiple
-                   #chipList formControlName="{{ controlName }}"
-                   [selectable]="false" [placeholder]="label"
-                   [adwpDropdown]="open" [adwpDropdownContent]="dropdownContent"
-    >
+      <mat-chip-list class="adcm-input-rbac-permissions__selected-control" aria-label="Select permissions" multiple
+                     #chipList formControlName="{{ controlName }}"
+                     [selectable]="false" [placeholder]="label">
 
-      <div class="adcm-role-permissions__filter">
-        <input #chipListInput [matChipInputFor]="chipList"
-               [placeholder]="chipList.chips?.length ? 'Filter selected permissions...' : 'Select permissions...'"
-               [disabled]="!form.controls[controlName].value?.length"
-               (focus)="$event.stopPropagation();open = true;">
-        <button class="adcm-role-permissions__clear-filter"
-                mat-flat-button
-                [style.display]="chipListInput.value?.length ? 'block' : 'none'"
-                (click)="chipListInput.value = ''"
-        >Clear filter</button>
-        <button class="adcm-role-permissions__clear_value" mat-icon-button appTooltip="Clear all selected permissions"
-                (click)="form.controls[controlName].reset([])"
-        >
-          <mat-icon>cancel</mat-icon>
-        </button>
-      </div>
+        <div class="adcm-input-rbac-permissions__selected-filter">
+          <input #chipListInput [matChipInputFor]="chipList"
+                 [placeholder]="chipList.chips?.length ? 'Filter selected permissions...' : 'Select permissions...'"
+                 [disabled]="!form.controls[controlName].value?.length">
+          <button class="adcm-input-rbac-permissions__selected-clear"
+                  mat-flat-button
+                  [style.display]="chipListInput.value?.length ? 'block' : 'none'"
+                  (click)="chipListInput.value = ''">Clear filter
+          </button>
+          <button class="adcm-input-rbac-permissions__selected-filter-clear" mat-icon-button
+                  appTooltip="Clear all selected permissions"
+                  (click)="form.controls[controlName].reset([])">
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </div>
 
-      <mat-chip *ngFor="let item of selectedPermissions | adwpFilter:matcher:chipListInput.value:nameHandler"
-                removable disableRipple [selectable]="true" [value]="item" [selected]="true"
-                (removed)="removeSelectedPermission(item)"
-      >
+        <mat-chip class="adcm-input-rbac-permissions__selected-permission"
+                  *ngFor="let item of selectedPermissions | adwpFilter:matcher:chipListInput.value:nameHandler"
+                  removable disableRipple [selectable]="true" [value]="item" [selected]="true"
+                  (removed)="removeSelectedPermission(item)">
 
-        {{ item | adwpMapper:nameHandler }}
+          {{ item | adwpMapper:nameHandler }}
 
-        <button mat-icon-button matChipRemove>
-          <mat-icon>cancel</mat-icon>
-        </button>
-      </mat-chip>
+          <button class="adcm-input-rbac-permissions__selected-permission-remove"
+                  mat-icon-button matChipRemove>
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </mat-chip>
 
-    </mat-chip-list>
-    <mat-hint>Click to select</mat-hint>
-  </mat-form-field>
+      </mat-chip-list>
+    </mat-form-field>
 
-  <ng-template #dropdownContent>
-    <div (adwpClickOutside)="open = !open">
+  </div>
+  <div class="row">
+    <div class="adcm-input-rbac-permissions__permission-form-wrapper">
       <ng-content select="app-rbac-permission-form"></ng-content>
     </div>
-  </ng-template>
-
+  </div>
 </div>
+

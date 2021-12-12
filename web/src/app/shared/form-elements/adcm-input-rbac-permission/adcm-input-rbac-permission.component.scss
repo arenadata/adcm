@@ -1,9 +1,21 @@
-mat-form-field {
-  width: 100%;
-}
+.adcm-input-rbac-permissions {
 
-.adcm-role-permissions {
-  &__filter {
+  &__selected-field {
+    width: 100%;
+  }
+
+  &__selected-control {
+    ::ng-deep {
+      .mat-chip-list-wrapper {
+        height: 110px;
+        overflow-y: auto;
+        align-items: start;
+        align-content: flex-start;
+      }
+    }
+  }
+
+  &__selected-filter {
     display: flex;
     width: 100%;
     flex-wrap: nowrap;
@@ -18,34 +30,43 @@ mat-form-field {
     }
   }
 
-  &__clear_value {
+  &__selected-clear {
     margin-left: auto;
   }
 
-  ::ng-deep {
-    .mat-chip-list-wrapper {
-      height: 250px;
-      overflow-y: auto;
-      align-items: start;
-      align-content: flex-start;
-
-
-      mat-chip {
-        min-height: 28px;
-        font-size: 12px;
-        border-radius: 4px;
-        padding: 4px 8px;
-        button {
-          width: 20px;
-          height: 20px;
-          line-height: 20px;
-
-          mat-icon {
-            line-height: 20px;
-          }
-        }
-      }
-    }
+  &__selected-filter-clear {
 
   }
+
+  &__selected-permission {
+    min-height: 28px;
+    font-size: 12px;
+    border-radius: 4px;
+    padding: 4px 8px;
+
+    &:after {
+      background-color: red;
+    }
+  }
+
+  &__selected-permission-remove.mat-chip-remove {
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+
+    ::ng-deep {
+      mat-icon {
+        line-height: 20px;
+      }
+    }
+  }
+
+  &__permission-form-wrapper {
+    display: flex;
+    width: 100%;
+    flex: 1;
+    overflow: hidden;
+    height: 320px;
+  }
+
 }
