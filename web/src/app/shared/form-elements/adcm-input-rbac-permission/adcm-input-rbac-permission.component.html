@@ -13,8 +13,14 @@
       <div class="adcm-role-permissions__filter">
         <input #chipListInput [matChipInputFor]="chipList"
                [placeholder]="chipList.chips?.length ? 'Filter selected permissions...' : 'Select permissions...'"
+               [disabled]="!form.controls[controlName].value?.length"
                (focus)="$event.stopPropagation();open = true;">
-        <button class="adcm-role-permissions__filter-button" mat-icon-button appTooltip="Clear all selected permissions"
+        <button class="adcm-role-permissions__clear-filter"
+                mat-flat-button
+                [style.display]="chipListInput.value?.length ? 'block' : 'none'"
+                (click)="chipListInput.value = ''"
+        >Clear filter</button>
+        <button class="adcm-role-permissions__clear_value" mat-icon-button appTooltip="Clear all selected permissions"
                 (click)="form.controls[controlName].reset([])"
         >
           <mat-icon>cancel</mat-icon>

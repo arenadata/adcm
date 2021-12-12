@@ -18,7 +18,7 @@ mat-form-field {
     }
   }
 
-  &__filter-button {
+  &__clear_value {
     margin-left: auto;
   }
 
@@ -35,8 +35,6 @@ mat-form-field {
         font-size: 12px;
         border-radius: 4px;
         padding: 4px 8px;
-        //background-color: #616161 !important;
-        //width: 100%;
         button {
           width: 20px;
           height: 20px;

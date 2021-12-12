@@ -23,7 +23,9 @@
     ></adwp-selection-list>
 
     <div class="adcm-rbac-permission__actions">
-      <button mat-flat-button color="accent" [disabled]="!optionList.options?.length" (click)="save()">Select</button>
+      <button mat-flat-button color="accent" [disabled]="!optionList.list?.selectedOptions.selected.length"
+              (click)="save()">Select
+      </button>
     </div>
   </div>
 </div>
