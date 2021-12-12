@@ -46,6 +46,8 @@
     overflow: hidden;
 
     adwp-selection-list {
+      display: flex;
+      flex-direction: column;
       width: 100%;
       height: 100%;
       overflow: hidden;
@@ -53,10 +55,16 @@
 
       ::ng-deep {
         .mat-selection-list {
+          padding-top: 0;
           height: 100%;
           overflow-y: auto;
         }
       }
     }
+  }
+
+  &__notification {
+    margin-left: 8px;
+    color: #ff9800;
   }
 }

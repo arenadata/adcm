@@ -1,15 +1,17 @@
 import { Directive, Inject, Input, OnChanges, SimpleChange, SimpleChanges } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, merge, Observable } from 'rxjs';
 import { AdwpStringHandler } from '@adwp-ui/widgets';
 import { RbacRoleModel } from '../../../../models/rbac/rbac-role.model';
 import { RbacRoleService } from '../../../../services/rbac-role.service';
 import { AdwpHandler } from '../../../../../../../../adwp_ui/projects/widgets/src/lib/cdk';
 import { Params } from '@angular/router';
-import { debounceTime, switchMap } from 'rxjs/operators';
+import { debounceTime, filter, first, skip, switchMap } from 'rxjs/operators';
 
 const RBAC_ROLES_INITIAL_PARAMS: Params = {
   type: 'business'
 };
+
+const RBAC_ROLES_FILTERS_DEBOUNCE_TIME = 300;
 
 @Directive({
   selector: '[appRbacRolesAsOptions], [rbac-roles-as-options]',
@@ -32,9 +34,18 @@ export class RbacRolesAsOptionsDirective implements OnChanges {
   constructor(@Inject(RbacRoleService) public service: RbacRoleService) {
     this._params$ = new BehaviorSubject<Params>(RBAC_ROLES_INITIAL_PARAMS);
 
-    this.options$ = this._params$.pipe(
-      debounceTime(300),
-      switchMap((params) => service.getList(params))
+    const initial$ = this._params$.pipe(
+      first()
+    );
+
+    const debounced$ = this._params$.pipe(
+      skip(1),
+      debounceTime(RBAC_ROLES_FILTERS_DEBOUNCE_TIME)
+    );
+
+    this.options$ = merge(initial$, debounced$).pipe(
+      switchMap((params) => service.getList(params)),
+      filter((v) => !!v)
     );
   }
 

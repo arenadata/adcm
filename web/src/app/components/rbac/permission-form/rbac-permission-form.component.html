@@ -16,10 +16,10 @@
   <div class="adcm-rbac-permission__options">
     <adwp-selection-list
       #optionList
-      [ngModel]="form.controls[controlName].value"
+      [ngModel]="form.controls[controlName]?.value"
       multiple
       [handler]="nameHandler"
-      [options]="options | adwpFilter:matcher:form.controls[controlName].value:idHandler"
+      [options]="(options || []) | adwpFilter:matcher:form.controls[controlName].value:idHandler"
       (filter)="updateFilter('name', $event)"
       (ngModelChange)="value = $event"
     ></adwp-selection-list>
@@ -28,6 +28,9 @@
       <button mat-flat-button color="accent" [disabled]="!optionList.list?.selectedOptions.selected.length"
               (click)="save()">Select
       </button>
+      <ng-container *ngIf="options?.length >= 50">
+        <span class="adcm-rbac-permission__notification">50+ matches </span>
+      </ng-container>
     </div>
   </div>
 </div>
