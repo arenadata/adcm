@@ -25,18 +25,24 @@
           </button>
         </div>
 
-        <mat-chip class="adcm-input-rbac-permissions__selected-permission"
-                  *ngFor="let item of selectedPermissions | adwpFilter:matcher:chipListInput.value:nameHandler"
-                  removable disableRipple [selectable]="true" [value]="item" [selected]="true"
-                  (removed)="removeSelectedPermission(item)">
+        <ng-container *ngIf="selectedPermissions | adwpFilter:matcher:chipListInput.value:nameHandler as selected">
+          <ng-container *ngIf="!!selectedPermissions?.length && !selected?.length">
+            <span class="warn">Nothing found</span>
+          </ng-container>
+          <mat-chip class="adcm-input-rbac-permissions__selected-permission"
+                    *ngFor="let item of selected"
+                    removable disableRipple [selectable]="true" [value]="item" [selected]="true"
+                    (removed)="removeSelectedPermission(item)">
 
-          {{ item | adwpMapper:nameHandler }}
+            {{ item | adwpMapper:nameHandler }}
 
-          <button class="adcm-input-rbac-permissions__selected-permission-remove"
-                  mat-icon-button matChipRemove>
-            <mat-icon>cancel</mat-icon>
-          </button>
-        </mat-chip>
+            <button class="adcm-input-rbac-permissions__selected-permission-remove"
+                    mat-icon-button matChipRemove>
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </mat-chip>
+        </ng-container>
+
 
       </mat-chip-list>
     </mat-form-field>
