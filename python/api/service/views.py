@@ -18,7 +18,7 @@ from api.api_views import (
     PageView,
     create,
     check_obj,
-    check_import_perm,
+    check_perm,
     DetailViewRO,
     ListView,
     DetailViewDelete,
@@ -100,7 +100,7 @@ class ServiceImportView(ListView):
     queryset = Prototype.objects.all()
     serializer_class = ImportSerializer
     post_serializer_class = serializers.ImportPostSerializer
-    check_import_perm = check_import_perm
+    check_import_perm = check_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -127,7 +127,7 @@ class ServiceImportView(ListView):
 class ServiceBindView(ListView):
     queryset = ClusterBind.objects.all()
     serializer_class = serializers.ServiceBindSerializer
-    check_import_perm = check_import_perm
+    check_import_perm = check_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_serializer_class(self):
@@ -160,7 +160,7 @@ class ServiceBindView(ListView):
 class ServiceBindDetailView(DetailViewDelete):
     queryset = ClusterBind.objects.all()
     serializer_class = BindSerializer
-    check_import_perm = check_import_perm
+    check_import_perm = check_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_obj(self, kwargs, bind_id):

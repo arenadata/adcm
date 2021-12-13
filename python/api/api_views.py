@@ -55,16 +55,14 @@ def permission_denied(
     raise exceptions.PermissionDenied(detail=message, code=code)
 
 
-def has_import_perm(user, action_type, model, obj):
-    if user.has_perm(f'cm.{action_type}_clusterbind'):
-        return True
-    if user.has_perm(f'cm.{action_type}_import_of_{model}', obj):
+def has_permission(user, action_type, model, obj):
+    if user.has_perm(f'cm.{action_type}_of_{model}', obj):
         return True
     return False
 
 
-def check_import_perm(self, action_type, model, obj):
-    if not has_import_perm(self.request.user, action_type, model, obj):
+def check_perm(self, action_type, model, obj):
+    if not has_permission(self.request.user, action_type, model, obj):
         permission_denied()
 
 

@@ -64,9 +64,9 @@ def get_queryset(self):
 
 def has_config_perm(user, action_type, object_type, obj):
     model = type_to_model(object_type)
-    if user.has_perm(f'cm.{action_type}_configlog'):
-        return True
     if user.has_perm(f'cm.{action_type}_config_of_{model}', obj):
+        return True
+    if user.has_perm(f'cm.{action_type}_config_of_adcm'):
         return True
     return False
 
