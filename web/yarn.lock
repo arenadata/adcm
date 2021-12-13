@@ -7,9 +7,9 @@
   "resolved" "https://rt.adsw.io/artifactory/api/npm/arenadata-npm/@aduh95/viz.js/-/viz.js-3.5.0.tgz"
   "version" "3.5.0"
 
-"@adwp-ui/widgets@file:../../adwp_ui/dist/widgets":
+"@adwp-ui/widgets@0.0.50":
   "resolved" "file:../../adwp_ui/dist/widgets"
-  "version" "0.0.49"
+  "version" "0.0.50"
   dependencies:
     "tslib" "^2.0.0"
 
@@ -250,7 +250,7 @@
   "resolved" "https://rt.adsw.io/artifactory/api/npm/arenadata-npm/@angular/language-service/-/language-service-11.2.14.tgz"
   "version" "11.2.14"
 
-"@angular/material@^11.2.13":
+"@angular/material@^11.2.13", "@angular/material@^8.0.0 || ^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0 || ^13.0.0":
   "integrity" "sha1-mZYDFtPOWKrHSX17uLDAVGj1Ark="
   "resolved" "https://rt.adsw.io/artifactory/api/npm/arenadata-npm/@angular/material/-/material-11.2.13.tgz"
   "version" "11.2.13"
@@ -10039,6 +10039,13 @@
   "integrity" "sha1-yobR/ogoFpsBICCOPchCS524NCw="
   "resolved" "https://rt.adsw.io/artifactory/api/npm/arenadata-npm/next-tick/-/next-tick-1.0.0.tgz"
   "version" "1.0.0"
+
+"ngx-mat-select-search@^3.3.3":
+  "integrity" "sha1-uGfiyK3VijvJnysWNL1/0lrwqDQ="
+  "resolved" "https://rt.adsw.io/artifactory/api/npm/arenadata-npm/ngx-mat-select-search/-/ngx-mat-select-search-3.3.3.tgz"
+  "version" "3.3.3"
+  dependencies:
+    "tslib" "^1.9.0"
 
 "nice-try@^1.0.4":
   "integrity" "sha1-ozeKdpbOfSI+iPybdkvX7xCJ42Y="

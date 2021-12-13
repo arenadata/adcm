@@ -19,7 +19,7 @@
       [ngModel]="form.controls[controlName]?.value"
       multiple
       [handler]="nameHandler"
-      [options]="(options || []) | adwpFilter:matcher:form.controls[controlName].value:idHandler"
+      [options]="options | falseAsEmptyArray | adwpFilter:matcher:(form.controls[controlName].value || []):idHandler"
       (filter)="updateFilter('name', $event)"
       (ngModelChange)="value = $event"
     ></adwp-selection-list>

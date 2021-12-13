@@ -4,6 +4,7 @@ import { RbacGroupFormComponent } from './rbac-group-form.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RbacUsersAsOptionsModule } from '../user-form/options/rbac-users-as-options.module';
 import { AdwpFormElementModule } from '@adwp-ui/widgets';
+import { FalseAsEmptyArrayModule } from '../../../shared/pipes/false-as-empty-array/false-as-empty-array.module';
 
 
 @NgModule({
@@ -18,6 +19,7 @@ import { AdwpFormElementModule } from '@adwp-ui/widgets';
     AdwpFormElementModule,
     ReactiveFormsModule,
     RbacUsersAsOptionsModule,
+    FalseAsEmptyArrayModule,
   ],
 })
 export class RbacGroupFormModule {

@@ -14,6 +14,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { TooltipModule } from '../../components/tooltip/tooltip.module';
+import { FalseAsEmptyArrayModule } from '../../pipes/false-as-empty-array/false-as-empty-array.module';
 
 
 @NgModule({
@@ -35,7 +36,8 @@ import { TooltipModule } from '../../components/tooltip/tooltip.module';
     MatButtonModule,
     PuiFilterPipeModule,
     MatInputModule,
-    TooltipModule
+    TooltipModule,
+    FalseAsEmptyArrayModule
   ]
 })
 export class AdcmInputRbacPermissionModule {
