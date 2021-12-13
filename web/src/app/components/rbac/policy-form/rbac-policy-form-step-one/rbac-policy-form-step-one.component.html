@@ -1,24 +1,38 @@
 <adwp-input [form]="form" controlName="name" label="Policy name"></adwp-input>
+
 <adwp-input [form]="form" controlName="description" label="Description"></adwp-input>
 
-<mat-form-field>
-  <mat-select [formControl]="form.controls['role']" placeholder="Role">
-    <mat-option>
-      <ngx-mat-select-search [(ngModel)]="roleFilter"></ngx-mat-select-search>
-    </mat-option>
-    <ng-container [rbac-roles-as-options]="{name: roleFilter}" #roles="rbacRoles">
-      <mat-option
-        *ngFor="let role of roles.options$ | async | falseAsEmptyArray | adwpFilter:matcher:roleFilter:roles.label"
-        [value]="role">
-        {{ role | adwpMapper:roles.label }}
+<div class="row">
+  <mat-form-field class="full-width">
+    <mat-select [formControl]="form.controls['role']" placeholder="Role">
+      <mat-option>
+        <ngx-mat-select-search noEntriesFoundLabel="No options available" placeholderLabel="Select role"
+                               [(ngModel)]="roleFilter">
+        </ngx-mat-select-search>
       </mat-option>
-    </ng-container>
-  </mat-select>
-</mat-form-field>
+      <ng-container [rbac-roles-as-options]="{name: roleFilter}" #roles="rbacRoles">
+        <mat-option
+          *ngFor="let role of roles.options$ | async | falseAsEmptyArray | adwpFilter:matcher:roleFilter:roles.label"
+          [value]="role">
+          {{ role | adwpMapper:roles.label }}
+        </mat-option>
+      </ng-container>
+    </mat-select>
+  </mat-form-field>
+</div>
 
-<!--<adwp-input-select [form]="form" [multiple]="false" label="Role" controlName="role"-->
-<!--                   [options]="['asd', '222']"></adwp-input-select>-->
+<ng-container [rbac-users-as-options]="{name: userFilter}" #users="rbacUsers">
+  <adwp-input-select [form]="form" label="User" controlName="user"
+                     [options]="users.options$ | async | falseAsEmptyArray"
+                     [handler]="users.label"
+                     (filter)="userFilter = $event"
+  ></adwp-input-select>
+</ng-container>
 
-
-<!--      <adwp-input-select [form]="step1" label="User" controlName="user" [options]="options"></adwp-input-select>-->
-<!--      <adwp-input-select [form]="step1" label="Group" controlName="group" [options]="options"></adwp-input-select>-->
+<ng-container [rbac-groups-as-options]="{name: groupFilter}" #groups="rbacGroups">
+  <adwp-input-select [form]="form" label="Group" controlName="group"
+                     [options]="groups.options$ | async | falseAsEmptyArray"
+                     [handler]="groups.label"
+                     (filter)="groupFilter = $event"
+  ></adwp-input-select>
+</ng-container>

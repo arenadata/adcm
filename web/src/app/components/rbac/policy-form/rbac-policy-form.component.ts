@@ -1,9 +1,10 @@
-import { Component, forwardRef } from '@angular/core';
+import { Component, forwardRef, OnInit } from '@angular/core';
 import { AbstractControl, FormArray, FormControl, FormGroup, Validators } from '@angular/forms';
 import { RbacFormDirective } from '@app/shared/add-component/rbac-form.directive';
 import { RbacPolicyModel } from '@app/models/rbac/rbac-policy.model';
 import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
 import { RbacPolicyService } from '@app/services/rbac-policy.service';
+import { userOrGroupRequire } from '@app/components/rbac/policy-form/rbac-policy-form-step-one/validators/user-or-group-required';
 
 
 @Component({
@@ -13,7 +14,15 @@ import { RbacPolicyService } from '@app/services/rbac-policy.service';
     { provide: ADD_SERVICE_PROVIDER, useExisting: forwardRef(() => RbacPolicyService) }
   ]
 })
-export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> {
+export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> implements OnInit {
+
+
+  ngOnInit(): void {
+    super.ngOnInit();
+    this.form.valueChanges.pipe(this.takeUntil()).subscribe((value) => {
+      console.log('app-rbac-policy-form | value', value);
+    });
+  }
 
   /** Returns a FormArray with the name 'steps'. */
   get steps(): AbstractControl | null { return this.form.get('steps'); }
@@ -23,9 +32,12 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
       new FormGroup({
         name: new FormControl(null, [Validators.required]),
         description: new FormControl(null),
-        role: new FormControl(null),
-        user: new FormArray([]),
-        group: new FormArray([])
+        role: new FormControl(null, [Validators.required]),
+        user: new FormControl([]),
+        group: new FormControl([])
+      }, {
+        validators: [userOrGroupRequire],
+        updateOn: 'submit'
       }),
       new FormGroup({
         object: new FormControl(null)
