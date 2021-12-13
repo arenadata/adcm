@@ -1,6 +1,6 @@
 import { Entity } from '@adwp-ui/widgets';
 
-export type RbacRoleParametrizedBy = 'Cluster' | 'Service' | 'Component' | 'Provider' | 'Host';
+export type RbacRoleParametrizedBy = 'cluster' | 'service' | 'component' | 'provider' | 'host';
 export type RbacRoleType = 'hidden' | 'business' | 'role';
 
 export interface RbacRoleModel extends Entity {
