@@ -88,7 +88,7 @@ class PolicySerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
     object = ObjectField(required=False)
     built_in = serializers.BooleanField(read_only=True)
     role = PolicyRoleSerializer()
-    user = PolicyUserSerializer(many=True)
+    user = PolicyUserSerializer(many=True, required=False)
     group = PolicyGroupSerializer(many=True, required=False)
 
     class Meta:
