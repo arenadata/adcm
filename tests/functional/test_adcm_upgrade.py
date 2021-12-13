@@ -102,7 +102,7 @@ def _check_encryption(obj: Union[Cluster, Service]) -> None:
 
 
 @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
-@pytest.mark.parametrize("image", old_adcm_images(), ids=repr)
+@pytest.mark.parametrize("image", old_adcm_images(), ids=repr, indirect=True)
 def test_upgrade_adcm(
     adcm_fs: ADCM,
     sdk_client_fs: ADCMClient,
@@ -121,7 +121,7 @@ def test_upgrade_adcm(
 
 
 @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
-@pytest.mark.parametrize("image", old_adcm_images(), ids=repr)
+@pytest.mark.parametrize("image", old_adcm_images(), ids=repr, indirect=True)
 def test_pass_in_config_encryption_after_upgrade(
     adcm_fs: ADCM,
     sdk_client_fs: ADCMClient,
