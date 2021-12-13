@@ -68,6 +68,7 @@ def ui_display_names(
     return Configuration.from_service(app_fs, ui_hell_fs).get_display_names()
 
 
+@pytest.mark.full()
 def test_save_configuration_hell(
     config_page: ServiceConfigPage,
     prototype_display_names: Tuple[str, str],
