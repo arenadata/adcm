@@ -22,11 +22,12 @@ import cm.job
 import cm.status_api
 from api.api_views import ListView, PageView, PageViewAdd, InterfaceView, DetailViewDelete
 from api.api_views import GenericAPIPermView, GenericAPIPermStatusView
-from api.api_views import create, update, check_obj, check_import_perm
+from api.api_views import create, update, check_obj, check_import_perm, DjangoModelPerm
 from cm.errors import AdcmEx
 from cm.models import Cluster, Host, HostComponent, Prototype
 from cm.models import ClusterObject, Upgrade, ClusterBind
 from . import serializers
+from cm.logger import log
 
 
 def get_obj_conf(cluster_id, service_id):
@@ -41,6 +42,37 @@ def get_obj_conf(cluster_id, service_id):
     if not obj.config:
         raise AdcmEx('CONFIG_NOT_FOUND', "this object has no config")
     return obj
+
+
+class MyPerm(DjangoModelPerm):
+    def log_cache(self, user, label):
+        cache = getattr(user, '_user_perm_cache', None)   # pylint: disable=W0212
+        log.debug('HAS_PERM user: %s CACHE %s: %s', user, label, cache)
+
+    def log_perm(self, user):
+        log.debug('HAS_PERM user: %s, PERMS from DB: %s', user, user.user_permissions.all())
+
+    def has_permission(self, request, view):
+        if getattr(view, '_ignore_model_permissions', False):
+            return True
+
+        if not request.user or (
+            not request.user.is_authenticated and self.authenticated_users_only
+        ):
+            log.debug('HAS_PERM no user RESULT: False')
+            return False
+
+        queryset = self._queryset(view)
+        perms = self.get_required_permissions(request.method, queryset.model)
+
+        log.debug('HAS_PERM user: %s, PERMS: %s', request.user, perms)
+        self.log_perm(request.user)
+        self.log_cache(request.user, 'BEFORE')
+
+        r = request.user.has_perms(perms)
+        self.log_cache(request.user, 'AFTER')
+        log.debug('HAS_PERM user: %s, %s RESULT: %s', request.user, perms, r)
+        return r
 
 
 class ClusterList(PageViewAdd):
@@ -58,6 +90,7 @@ class ClusterList(PageViewAdd):
     serializer_class_post = serializers.ClusterDetailSerializer
     filterset_fields = ('name', 'prototype_id')
     ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
+    permission_classes = (MyPerm,)
 
 
 class ClusterDetail(DetailViewDelete):
