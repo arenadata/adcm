@@ -4,6 +4,6 @@
   <adwp-input-select [form]="form" label="Select users" controlName="user" [handler]="users.label"
                      appRbacUsersAsOptions
                      #users="rbacUsers"
-                     [options]="users.options$ | async"></adwp-input-select>
+                     [options]="users.options$ | async | falseAsEmptyArray"></adwp-input-select>
   <adwp-controls [title]="title" [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></adwp-controls>
 </ng-container>

@@ -1,0 +1,27 @@
+<ng-container [formGroup]="form">
+  <mat-horizontal-stepper formArrayName="steps" linear>
+    <mat-step *ngIf="step(0) as step1" formGroupName="0" [stepControl]="step1">
+      <ng-template matStepLabel>Step 1</ng-template>
+      <app-rbac-policy-form-step-one [form]="step1"></app-rbac-policy-form-step-one>
+      <div>
+        <button mat-raised-button matStepperNext color="accent">Next</button>
+      </div>
+    </mat-step>
+    <mat-step *ngIf="step(1) as step2" formGroupName="1" [stepControl]="step2" label="Step 2">
+      <app-rbac-policy-form-step-two [form]="step2"></app-rbac-policy-form-step-two>
+      <div>
+        <button mat-button matStepperPrevious>Back</button>
+        <button mat-button matStepperNext>Next</button>
+      </div>
+    </mat-step>
+    <mat-step>
+      <ng-template matStepLabel>Done</ng-template>
+      <app-rbac-policy-form-step-three [form]="form"></app-rbac-policy-form-step-three>
+
+      <div>
+        <adwp-controls [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></adwp-controls>
+      </div>
+    </mat-step>
+  </mat-horizontal-stepper>
+</ng-container>
+

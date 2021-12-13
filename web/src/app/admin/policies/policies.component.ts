@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { IColumns } from '@adwp-ui/widgets';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
@@ -6,18 +6,23 @@ import { Store } from '@ngrx/store';
 
 import { TypeName } from '@app/core/types';
 import { RbacPolicyModel } from '@app/models/rbac/rbac-policy.model';
-import { RbacRoleModel } from '@app/models/rbac/rbac-role.model';
 import { RbacEntityListDirective } from '@app/abstract-directives/rbac-entity-list.directive';
 import { ListService } from '@app/shared/components/list/list.service';
 import { SocketState } from '@app/core/store';
 import { RbacPolicyService } from '@app/services/rbac-policy.service';
+import { ADD_SERVICE_PROVIDER } from '../../shared/add-component/add-service-model';
+import { AddButtonComponent } from '../../shared/add-component';
 
 @Component({
   selector: 'app-policies',
   templateUrl: './policies.component.html',
-  styleUrls: ['./policies.component.scss']
+  styleUrls: ['./policies.component.scss'],
+  providers: [
+    { provide: ADD_SERVICE_PROVIDER, useExisting: RbacPolicyService }
+  ],
 })
 export class PoliciesComponent extends RbacEntityListDirective<RbacPolicyModel> {
+  @ViewChild(AddButtonComponent) addButton: AddButtonComponent;
 
   listColumns = [
     {
@@ -46,7 +51,7 @@ export class PoliciesComponent extends RbacEntityListDirective<RbacPolicyModel> 
     super(service, store, route, router, dialog, entityService);
   }
 
-  getTitle(row: RbacRoleModel): string {
+  getTitle(row: RbacPolicyModel): string {
     return row.name;
   }
 
