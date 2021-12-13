@@ -253,9 +253,11 @@ def cook_roles(bundle):
     for act in Action.objects.filter(prototype__bundle=bundle):
         name = act.display_name
         model = get_model_by_type(act.prototype.type)
+        role_name = f'{bundle.name}_{bundle.version}_{bundle.edition}_' \
+                    f'{act.prototype.type}_{act.prototype.display_name}_{name}',
         role = Role(
-            name=f'{bundle.name}_{bundle.version}_{bundle.edition}'
-            f'_{act.prototype.type}_{act.prototype.display_name}_{name}',
+            name=role_name,
+            display_name=role_name,
             description=f'run action {name} of {act.prototype.type} {act.prototype.display_name}',
             category=[f'{bundle.name}'],
             bundle=bundle,
@@ -286,6 +288,7 @@ def cook_roles(bundle):
     for name, children in parent.items():
         role = Role(
             name=f'{name}',
+            display_name=f'{name}',
             description=f'action(s) {name}',
             category=[f'{bundle.name}'],
             bundle=bundle,
