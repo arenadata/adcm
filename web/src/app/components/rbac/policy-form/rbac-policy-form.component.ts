@@ -4,7 +4,7 @@ import { RbacFormDirective } from '@app/shared/add-component/rbac-form.directive
 import { RbacPolicyModel } from '@app/models/rbac/rbac-policy.model';
 import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
 import { RbacPolicyService } from '@app/services/rbac-policy.service';
-import { userOrGroupRequire } from '@app/components/rbac/policy-form/rbac-policy-form-step-one/validators/user-or-group-required';
+import { atLeastOne } from '@app/components/rbac/policy-form/rbac-policy-form-step-one/validators/user-or-group-required';
 
 
 @Component({
@@ -36,8 +36,7 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
         user: new FormControl([]),
         group: new FormControl([])
       }, {
-        validators: [userOrGroupRequire],
-        updateOn: 'submit'
+        validators: [atLeastOne('user', 'group')]
       }),
       new FormGroup({
         object: new FormControl(null)

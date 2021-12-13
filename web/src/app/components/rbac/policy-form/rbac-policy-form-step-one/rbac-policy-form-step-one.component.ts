@@ -18,4 +18,12 @@ export class RbacPolicyFormStepOneComponent extends BaseFormDirective {
   @Input()
   form: FormGroup;
 
+  isError(name: string): boolean {
+    const f = this.form.get(name);
+    return f.invalid && (f.dirty || f.touched);
+  }
+
+  hasError(error: string): boolean {
+    return this.form.hasError(error);
+  }
 }

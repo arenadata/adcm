@@ -18,6 +18,9 @@
         </mat-option>
       </ng-container>
     </mat-select>
+    <mat-error *ngIf="isError('role')">
+      <mat-error *ngIf="hasError('required')">Role is required.</mat-error>
+    </mat-error>
   </mat-form-field>
 </div>
 
