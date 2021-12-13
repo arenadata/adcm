@@ -3,17 +3,17 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { MatDialog } from '@angular/material/dialog';
 import { MatCheckboxChange } from '@angular/material/checkbox';
-import { Entity, IListResult } from '@adwp-ui/widgets';
+import { Entity, IListResult, RowEventData } from '@adwp-ui/widgets';
 import * as Immutable from 'immutable';
 import { filter } from 'rxjs/operators';
 import { zip } from 'rxjs';
 
 import { ListService } from '@app/shared/components/list/list.service';
 import { SocketState } from '@app/core/store';
-import { DeletableEntityAbstractService } from '@app/abstract/deletable-entity.abstract.service';
 import { DialogComponent } from '@app/shared/components';
 import { AdwpListDirective } from './adwp-list.directive';
-import { AddButtonDialogConfig } from '../shared/add-component';
+import { AddButtonComponent, AddButtonDialogConfig } from '../shared/add-component';
+import { EntityAbstractService } from '../abstract/entity.abstract.service';
 
 const ADCM_RBAC_ADD_DIALOG_CONFIG: AddButtonDialogConfig = {
   width: '75%',
@@ -27,6 +27,8 @@ export abstract class RbacEntityListDirective<T extends Entity> extends AdwpList
 
   abstract getTitle(row: T): string;
 
+  abstract addButton: AddButtonComponent;
+
   dialogConfig: AddButtonDialogConfig = ADCM_RBAC_ADD_DIALOG_CONFIG;
 
   constructor(
@@ -35,7 +37,7 @@ export abstract class RbacEntityListDirective<T extends Entity> extends AdwpList
     public route: ActivatedRoute,
     public router: Router,
     public dialog: MatDialog,
-    protected entityService: DeletableEntityAbstractService,
+    protected entityService: EntityAbstractService,
   ) {
     super(service, store, route, router, dialog);
   }
@@ -62,6 +64,14 @@ export abstract class RbacEntityListDirective<T extends Entity> extends AdwpList
         const rowsToDelete = this.data$.value.results.filter((row: any) => row.checked).map(row => this.entityService.delete(row.id));
         zip(...rowsToDelete).subscribe(() => this.baseListDirective.refresh());
       });
+  }
+
+  clickRow(data: RowEventData): void {
+    this.showForm(data);
+  }
+
+  showForm(data: RowEventData): void {
+    this.addButton.showForm(this.entityService.model(data.row));
   }
 
 }

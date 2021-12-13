@@ -1,11 +1,10 @@
 import { Component, ViewChild } from '@angular/core';
-import { IColumns, RowEventData } from '@adwp-ui/widgets';
+import { IColumns } from '@adwp-ui/widgets';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { Store } from '@ngrx/store';
 import { RbacGroupModel } from '@app/models/rbac/rbac-group.model';
 import { TypeName } from '../../core/types';
-import { RbacGroupFormComponent } from '../../components/rbac/group-form/rbac-group-form.component';
 import { ADD_SERVICE_PROVIDER } from '../../shared/add-component/add-service-model';
 import { AddButtonComponent } from '../../shared/add-component';
 import { ListService } from '@app/shared/components/list/list.service';
@@ -26,9 +25,6 @@ const userNameMapper = (group: RbacGroupModel) => {
   ],
 })
 export class GroupsComponent extends RbacEntityListDirective<RbacGroupModel> {
-
-  component = RbacGroupFormComponent;
-
   @ViewChild(AddButtonComponent) addButton: AddButtonComponent;
 
   listColumns = [
@@ -69,14 +65,6 @@ export class GroupsComponent extends RbacEntityListDirective<RbacGroupModel> {
 
   getTitle(row: RbacGroupModel): string {
     return row.name;
-  }
-
-  clickRow(data: RowEventData): void {
-    this.showForm(data);
-  }
-
-  showForm(data: RowEventData): void {
-    this.addButton.showForm(this.entityService.model(data.row));
   }
 
 }

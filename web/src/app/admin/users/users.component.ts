@@ -12,7 +12,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { IColumns, RowEventData } from '@adwp-ui/widgets';
+import { IColumns } from '@adwp-ui/widgets';
 import { Store } from '@ngrx/store';
 import { RbacUserModel } from '@app/models/rbac/rbac-user.model';
 import { ListService } from '@app/shared/components/list/list.service';
@@ -36,7 +36,6 @@ const groupNameMapper = (user: RbacUserModel) => {
   ],
 })
 export class UsersComponent extends RbacEntityListDirective<RbacUserModel> implements OnInit {
-
   @ViewChild(AddButtonComponent) addButton: AddButtonComponent;
 
   listColumns = [
@@ -77,14 +76,6 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
 
   getTitle(row: RbacUserModel): string {
     return row.username;
-  }
-
-  clickRow(data: RowEventData): void {
-    this.showForm(data);
-  }
-
-  showForm(data: RowEventData): void {
-    this.addButton.showForm(this.entityService.model(data.row));
   }
 
 }

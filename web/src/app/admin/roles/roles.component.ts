@@ -1,5 +1,5 @@
 import { Component, ViewChild } from '@angular/core';
-import { IColumns, RowEventData } from '@adwp-ui/widgets';
+import { IColumns } from '@adwp-ui/widgets';
 import { Store } from '@ngrx/store';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
@@ -23,7 +23,6 @@ import { AddButtonComponent } from '../../shared/add-component';
   ],
 })
 export class RolesComponent extends RbacEntityListDirective<RbacRoleModel> {
-
   @ViewChild(AddButtonComponent) addButton: AddButtonComponent;
 
   listColumns = [
@@ -58,16 +57,8 @@ export class RolesComponent extends RbacEntityListDirective<RbacRoleModel> {
     super(service, store, route, router, dialog, entityService);
   }
 
-  clickRow(data: RowEventData): void {
-    this.showForm(data);
-  }
-
   getTitle(row: RbacRoleModel): string {
     return row.name;
-  }
-
-  showForm(data: RowEventData): void {
-    this.addButton.showForm(this.entityService.model(data.row));
   }
 
 }

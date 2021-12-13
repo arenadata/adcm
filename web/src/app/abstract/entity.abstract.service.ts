@@ -3,7 +3,7 @@ import { Params } from '@angular/router';
 import { FormModel } from '@app/shared/add-component/add-service-model';
 
 export abstract class EntityAbstractService {
-  abstract model(): FormModel;
+  abstract model(value?: any): FormModel;
 
   abstract delete(id: number): Observable<any>;
 
