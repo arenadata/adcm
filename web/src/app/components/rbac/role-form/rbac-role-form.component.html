@@ -5,6 +5,7 @@
                               [nameHandler]="permissions.label"
                               [categoryHandler]="permissions.label"
                               [rbac-roles-as-options]="permissionForm.filter"
+                              rbac-role-type="business"
                               #permissions="rbacRoles">
     <app-rbac-permission-form #permissionForm [form]="form" [options]="permissions.options$ | async"
                               [nameHandler]="permissions.label" [idHandler]="permissions.id"
