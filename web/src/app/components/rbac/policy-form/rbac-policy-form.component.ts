@@ -16,14 +16,6 @@ import { atLeastOne } from '@app/components/rbac/policy-form/rbac-policy-form-st
 })
 export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> implements OnInit {
 
-
-  ngOnInit(): void {
-    super.ngOnInit();
-    this.form.valueChanges.pipe(this.takeUntil()).subscribe((value) => {
-      console.log('app-rbac-policy-form | value', value);
-    });
-  }
-
   /** Returns a FormArray with the name 'steps'. */
   get steps(): AbstractControl | null { return this.form.get('steps'); }
 
@@ -39,7 +31,15 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
         validators: [atLeastOne('user', 'group')]
       }),
       new FormGroup({
-        object: new FormControl(null)
+        object: new FormArray([
+          new FormGroup({
+            id: new FormControl(null)
+          }),
+          new FormGroup({
+            id: new FormControl(null),
+            parent: new FormControl(null),
+          })
+        ])
       })
     ])
   });

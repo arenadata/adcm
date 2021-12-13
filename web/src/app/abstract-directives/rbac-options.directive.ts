@@ -48,4 +48,14 @@ export class RbacOptionsDirective implements OnChanges {
       });
     }
   }
+
+  updateParam(key: string, value: any): void {
+    let params = { ...this._params$.getValue() };
+    if (value === null) {
+      delete params[key];
+    } else {
+      params[key] = value;
+    }
+    this._params$.next(params);
+  }
 }
