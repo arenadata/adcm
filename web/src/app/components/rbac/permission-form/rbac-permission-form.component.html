@@ -1,11 +1,12 @@
 <div class="adcm-rbac-permission">
   <div class="adcm-rbac-permission__filter">
-    <mat-chip-list class="adcm-rbac-permission__filter-category mat-chip-list-stacked" multiple selectable>
-      <mat-chip class="adcm-rbac-permission__filter-category-item" #chip="matChip"
+    <mat-chip-list class="adcm-rbac-permission__filter-category mat-chip-list-stacked"
+                   multiple selectable
+                   (valueChange)="updateFilter('category', $event)">
+      <mat-chip class="adcm-rbac-permission__filter-category-item" #chip="matChip" color="accent"
                 *ngFor="let category of ['*', 'adcm']"
-                (click)="chip.selected = !chip.selected"
-      >
-        {{category}}
+                (click)="chip.toggleSelected(true)">
+        {{ category }}
       </mat-chip>
     </mat-chip-list>
   </div>
@@ -15,10 +16,11 @@
   <div class="adcm-rbac-permission__options">
     <adwp-selection-list
       #optionList
-      [ngModel]="form.controls[controlName].value"
+      [ngModel]="form.controls[controlName]?.value"
       multiple
       [handler]="nameHandler"
-      [options]="options | adwpFilter:matcher:form.controls[controlName].value:idHandler"
+      [options]="(options || []) | adwpFilter:matcher:form.controls[controlName].value:idHandler"
+      (filter)="updateFilter('name', $event)"
       (ngModelChange)="value = $event"
     ></adwp-selection-list>
 
@@ -26,6 +28,9 @@
       <button mat-flat-button color="accent" [disabled]="!optionList.list?.selectedOptions.selected.length"
               (click)="save()">Select
       </button>
+      <ng-container *ngIf="options?.length >= 50">
+        <span class="adcm-rbac-permission__notification">50+ matches </span>
+      </ng-container>
     </div>
   </div>
 </div>

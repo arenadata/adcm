@@ -4,13 +4,11 @@
   <adcm-input-rbac-permission [form]="form" label='Permissions' controlName='child'
                               [nameHandler]="permissions.label"
                               [categoryHandler]="permissions.label"
-                              appRbacRolesAsOptions
+                              [rbac-roles-as-options]="permissionForm.filter"
                               #permissions="rbacRoles">
-    <ng-container *ngIf="permissions.options$ | async as options" ngProjectAs="app-rbac-permission-form">
-      <app-rbac-permission-form [form]="form" [options]="options" [nameHandler]="permissions.label"
-                                [idHandler]="permissions.id"
-                                controlName='child'></app-rbac-permission-form>
-    </ng-container>
+    <app-rbac-permission-form #permissionForm [form]="form" [options]="permissions.options$ | async"
+                              [nameHandler]="permissions.label" [idHandler]="permissions.id"
+                              controlName='child'></app-rbac-permission-form>
   </adcm-input-rbac-permission>
-  <adwp-controls [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></adwp-controls>
+  <adwp-controls [title]="title" [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></adwp-controls>
 </ng-container>

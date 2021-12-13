@@ -13,6 +13,7 @@ import { Directive, Input, OnInit } from '@angular/core';
 import { clearEmptyField } from '@app/core/types';
 import { BaseFormDirective } from '@app/shared/add-component/base-form.directive';
 import { take } from 'rxjs/operators';
+import { Params } from '@angular/router';
 
 @Directive({
   selector: '[appRbacForm]',
@@ -20,6 +21,8 @@ import { take } from 'rxjs/operators';
 export class RbacFormDirective<T extends { url: string } = { url: string }> extends BaseFormDirective implements OnInit {
   @Input()
   value: T;
+
+  filter: Params = {};
 
   get title(): string {
     return this.value ? 'Update' : 'Create';
@@ -49,5 +52,9 @@ export class RbacFormDirective<T extends { url: string } = { url: string }> exte
         .pipe(take(1))
         .subscribe((_) => this.onCancel());
     }
+  }
+
+  updateFilter(key: string, value: any): void {
+    this.filter = { ...this.filter, [key]: value };
   }
 }
