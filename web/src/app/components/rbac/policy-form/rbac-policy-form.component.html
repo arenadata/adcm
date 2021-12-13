@@ -4,15 +4,15 @@
       <ng-template matStepLabel>Step 1</ng-template>
       <adwp-input [form]="step1" controlName="name" label="Policy name"></adwp-input>
       <adwp-input [form]="step1" controlName="description" label="Description"></adwp-input>
-      <adwp-input-select [form]="step1" [multiple]="false" label="Role" controlName="role" [options]="options"></adwp-input-select>
-      <adwp-input-select [form]="step1" label="User" controlName="user" [options]="options"></adwp-input-select>
-      <adwp-input-select [form]="step1" label="Group" controlName="group" [options]="options"></adwp-input-select>
+      <!--      <adwp-input-select [form]="step1" [multiple]="false" label="Role" controlName="role" [options]="options"></adwp-input-select>-->
+      <!--      <adwp-input-select [form]="step1" label="User" controlName="user" [options]="options"></adwp-input-select>-->
+      <!--      <adwp-input-select [form]="step1" label="Group" controlName="group" [options]="options"></adwp-input-select>-->
       <div>
         <button mat-button matStepperNext>Next</button>
       </div>
     </mat-step>
     <mat-step *ngIf="step(1) as step2" formGroupName="1" [stepControl]="step2" label="Step 2">
-      <adwp-input-select [form]="step2" label="Object" controlName="object" [options]="options"></adwp-input-select>
+      <!--      <adwp-input-select [form]="step2" label="Object" controlName="object" [options]="options"></adwp-input-select>-->
       <div>
         <button mat-button matStepperPrevious>Back</button>
         <button mat-button matStepperNext>Next</button>

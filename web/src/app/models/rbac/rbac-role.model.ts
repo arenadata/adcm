@@ -12,6 +12,6 @@ export interface RbacRoleModel extends Entity {
   type: RbacRoleType;
   category: string[];
   parametrized_by_type: RbacRoleParametrizedBy[];
-  child: RbacRoleModel[];
+  child: Pick<RbacRoleModel, 'id' | 'name' | 'url'>[];
   url: string;
 }
