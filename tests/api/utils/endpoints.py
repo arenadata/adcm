@@ -23,7 +23,8 @@ from tests.api.utils.filters import (
     is_not_business_role,
     is_built_in,
     is_not_hidden_role,
-    is_not_built_in, is_role_type,
+    is_not_built_in,
+    is_role_type,
 )
 from tests.api.utils.data_classes import (
     BaseClass,
@@ -338,7 +339,7 @@ class Endpoints(Enum):
     # Test logic for "built_in"
     RbacBuiltInPolicy = Endpoint(
         path="rbac/policy",
-        methods=[Methods.GET, Methods.LIST],
+        methods=[Methods.GET, Methods.LIST, Methods.POST],
         data_class=RbacBuiltInPolicyFields,
         spec_link="",
         filter_predicate=is_built_in,

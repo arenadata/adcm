@@ -303,7 +303,7 @@ class RbacSimpleRoleFields(BaseClass):
     # default_value="auto" because we can't change name after it's set
     # it's "not postable", because we can only set this field during creation, not change it after
     # and currently framework can't resolve it correctly
-    name = Field(name="name", f_type=String(max_length=160), default_value="auto")
+    name = Field(name="name", f_type=String(max_length=160), default_value="auto", nullable=True)
     display_name = Field(
         name="display_name",
         f_type=String(max_length=160),
@@ -312,9 +312,7 @@ class RbacSimpleRoleFields(BaseClass):
         postable=True,
         changeable=True,
     )
-    description = Field(
-        name="description", f_type=Text(), default_value="", postable=True, changeable=True
-    )
+    description = Field(name="description", f_type=Text(), default_value="", postable=True, changeable=True)
     built_in = Field(name="built_in", f_type=StaticBoolean(value=False), default_value=False)
     # type is actually changeable=True and postable=True, but now it's only value
     # (since it's shouldn't be 'hidden' or 'business') is 'role', so we can't actually change it
@@ -337,7 +335,7 @@ class RbacBuiltInRoleFields(BaseClass):
     """
 
     id = Field(name="id", f_type=PositiveInt(), default_value="auto")
-    name = Field(name="name", f_type=String(max_length=160))
+    name = Field(name="name", f_type=String(max_length=160), nullable=True)
     display_name = Field(
         name="display_name",
         f_type=String(max_length=160),
@@ -353,11 +351,8 @@ class RbacBuiltInRoleFields(BaseClass):
         f_type=ListOf(Enum(PARAMETRIZED_BY_LIST)),
         required=True,
         postable=True,
-
     )
-    built_in = Field(
-        name="built_in", f_type=StaticBoolean(value=True), default_value="auto"
-    )
+    built_in = Field(name="built_in", f_type=StaticBoolean(value=True), default_value="auto")
     type = Field(name="type", f_type=Enum(['role', 'business', 'hidden']), default_value='role')
     child = Field(name="child", f_type=EmptyList(), default_value=[])
     url = Field(name="url", f_type=String(), default_value="auto")
@@ -407,7 +402,7 @@ class RbacNotBuiltInPolicyFields(BaseClass):
     """
 
     id = Field(name="id", f_type=PositiveInt(), default_value="auto")
-    name = Field(name="name", f_type=String(max_length=255), postable=True)
+    name = Field(name="name", f_type=String(max_length=255), postable=True, required=True)
     role = Field(name="role", f_type=ObjectForeignKey(RbacRoleFields), required=True, postable=True, changeable=True)
     built_in = Field(name="built_in", f_type=StaticBoolean(False), default_value="auto")
     object = Field(
@@ -432,13 +427,9 @@ class RbacBuiltInPolicyFields(BaseClass):
     """
 
     id = Field(name="id", f_type=PositiveInt(), default_value="auto")
-    name = Field(name="name", f_type=String(max_length=160))
-    role = Field(name="role", f_type=ObjectForeignKey(RbacRoleFields), required=True)
-    # Field made postable and required for reasons of (dis)allowed methods testing
-    # so POST will try to create not built_in role
-    built_in = Field(
-        name="built_in", f_type=StaticBoolean(value=True), default_value="auto", required=True
-    )
+    name = Field(name="name", f_type=String(max_length=160), required=True, postable=True)
+    role = Field(name="role", f_type=ObjectForeignKey(RbacRoleFields), required=True, postable=True)
+    built_in = Field(name="built_in", f_type=StaticBoolean(value=True), default_value="auto")
     object = Field(
         name="object",
         f_type=GenericForeignKeyList(relates_on=Relation(field=role)),
