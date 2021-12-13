@@ -1,5 +1,24 @@
 <adwp-input [form]="form" controlName="name" label="Policy name"></adwp-input>
 <adwp-input [form]="form" controlName="description" label="Description"></adwp-input>
-<!--      <adwp-input-select [form]="step1" [multiple]="false" label="Role" controlName="role" [options]="options"></adwp-input-select>-->
+
+<mat-form-field>
+  <mat-select [formControl]="form.controls['role']" placeholder="Role">
+    <mat-option>
+      <ngx-mat-select-search [(ngModel)]="roleFilter"></ngx-mat-select-search>
+    </mat-option>
+    <ng-container [rbac-roles-as-options]="{name: roleFilter}" #roles="rbacRoles">
+      <mat-option
+        *ngFor="let role of roles.options$ | async | falseAsEmptyArray | adwpFilter:matcher:roleFilter:roles.label"
+        [value]="role">
+        {{ role | adwpMapper:roles.label }}
+      </mat-option>
+    </ng-container>
+  </mat-select>
+</mat-form-field>
+
+<!--<adwp-input-select [form]="form" [multiple]="false" label="Role" controlName="role"-->
+<!--                   [options]="['asd', '222']"></adwp-input-select>-->
+
+
 <!--      <adwp-input-select [form]="step1" label="User" controlName="user" [options]="options"></adwp-input-select>-->
 <!--      <adwp-input-select [form]="step1" label="Group" controlName="group" [options]="options"></adwp-input-select>-->

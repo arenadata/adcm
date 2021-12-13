@@ -14,6 +14,6 @@
   <adwp-input-select [form]="userForm" label="Select groups" controlName="group" [handler]="groups.label"
                      appRbacGroupsAsOptions
                      #groups="rbacGroups"
-                     [options]="groups.options$ | async"></adwp-input-select>
+                     [options]="groups.options$ | async | falseAsEmptyArray"></adwp-input-select>
   <adwp-controls [title]="title" [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></adwp-controls>
 </form>

@@ -39,6 +39,7 @@
     "deepmerge": "^4.2.2",
     "immutable": "^4.0.0",
     "luxon": "^1.25.0",
+    "ngx-mat-select-search": "^3.3.3",
     "rxjs": "^6.5.5",
     "sass": "^1.32.8",
     "tslib": "^2.0.0",
