@@ -1,9 +1,8 @@
 import { Directive, Inject, Input, OnChanges, SimpleChange, SimpleChanges } from '@angular/core';
 import { BehaviorSubject, merge, Observable } from 'rxjs';
-import { AdwpStringHandler } from '@adwp-ui/widgets';
+import { AdwpHandler, AdwpStringHandler } from '@adwp-ui/widgets';
 import { RbacRoleModel } from '../../../../models/rbac/rbac-role.model';
 import { RbacRoleService } from '../../../../services/rbac-role.service';
-import { AdwpHandler } from '../../../../../../../../adwp_ui/projects/widgets/src/lib/cdk';
 import { Params } from '@angular/router';
 import { debounceTime, filter, first, skip, switchMap } from 'rxjs/operators';
 

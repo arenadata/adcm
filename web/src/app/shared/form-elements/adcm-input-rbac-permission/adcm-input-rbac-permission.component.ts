@@ -1,7 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { AbstractControl, FormGroup } from '@angular/forms';
-import { AdwpMatcher, AdwpStringHandler } from '@adwp-ui/widgets';
-import { ADWP_DEFAULT_MATCHER } from '../../../../../../../adwp_ui/projects/widgets/src/lib/cdk';
+import { ADWP_DEFAULT_MATCHER, AdwpMatcher, AdwpStringHandler } from '@adwp-ui/widgets';
 import { RbacRoleModel } from '../../../models/rbac/rbac-role.model';
 
 @Component({
