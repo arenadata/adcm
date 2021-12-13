@@ -3,10 +3,10 @@ import { Pipe, PipeTransform } from '@angular/core';
 @Pipe({
   name: 'falseAsEmptyArray'
 })
-export class FalseAsEmptyArrayPipe<T> implements PipeTransform {
+export class FalseAsEmptyArrayPipe implements PipeTransform {
 
-  transform(value: T[] | unknown): T[] {
-    return !Array.isArray(value) ? ([] as T[]) : value;
+  transform(value: any): any[] {
+    return !Array.isArray(value) ? [] : value;
   }
 
 }

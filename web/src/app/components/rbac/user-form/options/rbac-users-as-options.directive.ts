@@ -1,19 +1,21 @@
-import { Directive, Inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Directive, Inject, Input } from '@angular/core';
 import { RbacUserModel } from '../../../../models/rbac/rbac-user.model';
 import { RbacUserService } from '../../../../services/rbac-user.service';
 import { AdwpStringHandler } from '@adwp-ui/widgets';
+import { Params } from '@angular/router';
+import { RbacOptionsDirective } from '../../../../abstract-directives/rbac-options.directive';
 
 @Directive({
-  selector: '[appRbacUsersAsOptions]',
+  selector: '[appRbacUsersAsOptions], [rbac-users-as-options]',
   exportAs: 'rbacUsers'
 })
-export class RbacUsersAsOptionsDirective {
-  options$: Observable<RbacUserModel[]>;
+export class RbacUsersAsOptionsDirective extends RbacOptionsDirective {
+  @Input('rbac-users-as-options')
+  params: Params;
 
   label: AdwpStringHandler<RbacUserModel> = (item: RbacUserModel) => item.username;
 
   constructor(@Inject(RbacUserService) public service: RbacUserService) {
-    this.options$ = service.getList();
+    super(service);
   }
 }

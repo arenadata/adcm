@@ -7,7 +7,7 @@ import {
   AdwpClickOutsideModule,
   AdwpDropdownModule,
   AdwpMapperPipeModule,
-  PuiFilterPipeModule
+  AdwpFilterPipeModule
 } from '@adwp-ui/widgets';
 import { MatIconModule } from '@angular/material/icon';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -34,7 +34,7 @@ import { FalseAsEmptyArrayModule } from '../../pipes/false-as-empty-array/false-
     AdwpClickOutsideModule,
     AdwpMapperPipeModule,
     MatButtonModule,
-    PuiFilterPipeModule,
+    AdwpFilterPipeModule,
     MatInputModule,
     TooltipModule,
     FalseAsEmptyArrayModule

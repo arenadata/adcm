@@ -10,6 +10,8 @@ import { ADWP_DEFAULT_MATCHER, AdwpMatcher } from '@adwp-ui/widgets';
 })
 export class RbacPolicyFormStepOneComponent extends BaseFormDirective {
   roleFilter = '';
+  userFilter = '';
+  groupFilter = '';
 
   matcher: AdwpMatcher<any> = ADWP_DEFAULT_MATCHER;
 

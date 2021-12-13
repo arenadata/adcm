@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RbacPermissionFormComponent } from './rbac-permission-form.component';
-import { AdwpFormElementModule, AdwpSelectionListModule, PuiFilterPipeModule } from '@adwp-ui/widgets';
+import { AdwpFormElementModule, AdwpSelectionListModule, AdwpFilterPipeModule } from '@adwp-ui/widgets';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
@@ -22,7 +22,7 @@ import { FalseAsEmptyArrayModule } from '../../../shared/pipes/false-as-empty-ar
     AdwpSelectionListModule,
     FormsModule,
     MatButtonModule,
-    PuiFilterPipeModule,
+    AdwpFilterPipeModule,
     FalseAsEmptyArrayModule
   ],
   exports: [
