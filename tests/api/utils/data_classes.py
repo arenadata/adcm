@@ -31,6 +31,7 @@ from tests.api.utils.types import (
     ForeignKeyM2M,
     Email,
     Password,
+    Username,
 )
 
 
@@ -250,7 +251,7 @@ class RbacUserFields(BaseClass):
         default_value="auto",
     )
     username = Field(
-        name="username", f_type=String(max_length=150, special_chars="@.+-_"), required=True, postable=True
+        name="username", f_type=Username(max_length=150, special_chars="@.+-_"), required=True, postable=True
     )
     first_name = Field(
         name="first_name", default_value="", f_type=String(max_length=150), postable=True, changeable=True

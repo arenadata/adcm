@@ -51,118 +51,6 @@ roles:
               codenames:
                 - add
 
-    - name: Compare cluster configurations
-      description: The ability to view the history of cluster configuration page
-      type: hidden
-      parametrized_by:
-        - cluster
-      module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: Cluster
-      apps:
-        - label: cm
-          models:
-            - name: objectconfig
-              codenames:
-                - view
-            - name: configlog
-              codenames:
-                - view
-
-    - name: Compare service configurations
-      description: The ability to view the history of service configuration page
-      type: hidden
-      parametrized_by:
-        - service
-      module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: ClusterObject
-      apps:
-        - label: cm
-          models:
-            - name: objectconfig
-              codenames:
-                - view
-            - name: configlog
-              codenames:
-                - view
-
-    - name: Compare component configurations
-      description: The ability to view the history of component configuration page
-      type: hidden
-      parametrized_by:
-        - component
-      module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: ServiceComponent
-      apps:
-        - label: cm
-          models:
-            - name: objectconfig
-              codenames:
-                - view
-            - name: configlog
-              codenames:
-                - view
-
-    - name: Compare provider configurations
-      description: The ability to view the history of provider configuration page
-      type: hidden
-      parametrized_by:
-        - provider
-      module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: HostProvider
-      apps:
-        - label: cm
-          models:
-            - name: objectconfig
-              codenames:
-                - view
-            - name: configlog
-              codenames:
-                - view
-
-    - name: Compare host configurations
-      description: The ability to view the history of host configuration page
-      type: hidden
-      parametrized_by:
-        - host
-      module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: Host
-      apps:
-        - label: cm
-          models:
-            - name: objectconfig
-              codenames:
-                - view
-            - name: configlog
-              codenames:
-                - view
-
-    - name: Compare configurations
-      description: The ability to see the history of all configuration
-      type: business
-      module_name: rbac.roles
-      class_name: ParentRole
-      child:
-        - Compare cluster configurations
-        - Compare service configurations
-        - Compare component configurations
-        - Compare provider configurations
-        - Compare host configurations
-
     - name: View cluster configurations
       description: The ability to view the cluster configuration page
       type: hidden
@@ -374,9 +262,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: clusterbind
+            - name: cluster
               codenames:
-                - view
+                - view_import_of
 
     - name: View service imports
       description: The ability to view the service import page
@@ -391,9 +279,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: clusterbind
+            - name: clusterobject
               codenames:
-                - view
+                - view_import_of
 
     - name: View imports
       description: The ability to view all imports page on cluster and service
@@ -417,10 +305,10 @@ roles:
       apps:
         - label: cm
           models:
-            - name: clusterbind
+            - name: cluster
               codenames:
-                - add
-                - change
+                - view_import_of
+                - change_import_of
 
     - name: Manage service imports
       description: The ability to change service imports
@@ -435,10 +323,10 @@ roles:
       apps:
         - label: cm
           models:
-            - name: clusterbind
+            - name: clusterobject
               codenames:
-                - add
-                - change
+                - view_import_of
+                - change_import_of
 
     - name: Manage imports
       description: The ability to manage all imports page on cluster and service
@@ -513,12 +401,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: host
-              codenames:
-                - change
             - name: cluster
               codenames:
-                - change
+                - map_host
 
     - name: Unmap hosts
       description: The ability to unmap hosts to the Cluster
@@ -533,12 +418,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: host
-              codenames:
-                - change
             - name: cluster
               codenames:
-                - change
+                - unmap_host
 
     - name: Upgrade cluster bundle
       description: Update the cluster bundle
@@ -643,26 +525,6 @@ roles:
         - label: cm
           models:
             - name: objectconfig
-              codenames:
-                - view
-
-    - name: Compare ADCM settings
-      description: compare settings purely adcm config
-      type: business
-      module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: ADCM
-        filter:
-          name: ADCM
-      apps:
-        - label: cm
-          models:
-            - name: objectconfig
-              codenames:
-                - view
-            - name: configlog
               codenames:
                 - view
 
@@ -1120,7 +982,6 @@ roles:
       class_name: ParentRole
       child:
         - Base role
-        - Compare configurations
         - View configurations
         - View status information
         - View imports
@@ -1171,7 +1032,6 @@ roles:
         - Create cluster
         - Remove cluster
         - View ADCM settings
-        - Compare ADCM settings
         - Edit ADCM settings
         - View users
         - Create user

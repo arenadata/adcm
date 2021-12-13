@@ -36,7 +36,14 @@ def role_create(built_in=False, type_of_role=RoleTypes.role, **kwargs) -> Role:
         name = kwargs.pop('name')
     else:
         name = kwargs['display_name']
-    role = Role.objects.create(name=name, built_in=built_in, type=type_of_role, **kwargs)
+    role = Role.objects.create(
+        name=name
+        built_in=built_in,
+        type=type_of_role,
+        module_name='rbac.roles',
+        class_name='ParentRole',
+        **kwargs,
+    )
     role.child.add(*child)
     return role
 

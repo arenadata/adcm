@@ -10,6 +10,17 @@ That is Arenadata Cluster Manager Project (aka Chapelnik)
 
 [ArenaData ADCM Documentation](http://docs.arenadata.io/adcm/)
 
+# Develop
+
+All standard Django commands are available.
+
+Run dev server for the first time with these commands:
+1. `manage migrate`
+2. `manage createsupruser`
+3. `manage upgraderole`
+4. `manage runserver --insecure`
+
+Re-run them when needed/applicable.
 
 # Sources
 

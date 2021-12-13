@@ -254,11 +254,12 @@ def cook_roles(bundle):
         name = act.display_name
         model = get_model_by_type(act.prototype.type)
         role = Role(
-            name=f'{name}_{act.prototype.type}_{act.prototype.display_name}',
+            name=f'{bundle.name}_{bundle.version}_{bundle.edition}'
+            f'_{act.prototype.type}_{act.prototype.display_name}_{name}',
             description=f'run action {name} of {act.prototype.type} {act.prototype.display_name}',
             category=[f'{bundle.name}'],
             bundle=bundle,
-            type=RoleTypes.role,
+            type=RoleTypes.hidden,
             module_name='rbac.roles',
             class_name='ActionRole',
             init_params={
@@ -268,7 +269,7 @@ def cook_roles(bundle):
                 'filter': {
                     'prototype__name': act.prototype.name,
                     'prototype__type': act.prototype.type,
-                    'prototype__bundle_id': bundle.id
+                    'prototype__bundle_id': bundle.id,
                 },
             },
         )

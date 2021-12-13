@@ -19,7 +19,7 @@ from api.api_views import hlink, check_obj, filter_actions, CommonAPIURL, Object
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
 from cm.errors import AdcmEx
-from cm.models import Cluster, Host, HostProvider, Prototype, Action
+from cm.models import HostProvider, Prototype, Action
 
 
 class HostSerializer(serializers.Serializer):
@@ -72,12 +72,6 @@ class ClusterHostSerializer(HostSerializer):
     prototype_id = serializers.IntegerField(read_only=True)
     provider_id = serializers.IntegerField(read_only=True)
     fqdn = serializers.CharField(read_only=True)
-
-    def create(self, validated_data):
-        cluster = check_obj(Cluster, self.context.get('cluster_id'))
-        host = check_obj(Host, validated_data.get('id'))
-        cm.api.add_host_to_cluster(cluster, host)
-        return host
 
 
 class ProvideHostSerializer(HostSerializer):

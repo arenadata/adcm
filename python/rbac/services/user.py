@@ -24,7 +24,7 @@ from rest_framework.authtoken.models import Token
 from rbac import models
 from rbac.utils import Empty, set_not_empty_attr
 
-PW_MASK = '*****'
+PW_MASK = '******'
 
 
 def _set_password(user: models.User, value: str) -> None:

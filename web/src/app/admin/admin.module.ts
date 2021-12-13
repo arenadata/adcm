@@ -12,16 +12,27 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-
-import { SharedModule } from '@app/shared/shared.module';
 import { AuthGuard } from '@app/core/auth/auth.guard';
 import { IntroComponent } from './intro.component';
 import { PatternComponent } from './pattern.component';
 import { SettingsComponent } from './settings.component';
 import { UsersComponent } from './users/users.component';
+import { RbacGroupFormModule } from '../components/rbac/group-form/rbac-group-form.module';
+import { RbacUserFormModule } from '../components/rbac/user-form/rbac-user-form.module';
+import { RbacRoleFormModule } from '../components/rbac/role-form/rbac-role-form.module';
+
 import { GroupsComponent } from './groups/groups.component';
 import { RolesComponent } from './roles/roles.component';
 import { PoliciesComponent } from './policies/policies.component';
+import { AdwpListModule } from '@adwp-ui/widgets';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatListModule } from '@angular/material/list';
+import { MatCardModule } from '@angular/material/card';
+import { StuffModule } from '../shared/stuff.module';
+import { AddingModule } from '../shared/add-component/adding.module';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 
 const routes: Routes = [
   {
@@ -67,7 +78,18 @@ const routes: Routes = [
   imports: [
     CommonModule,
     RouterModule.forChild(routes),
-    SharedModule,
+    AdwpListModule,
+    RbacGroupFormModule,
+    RbacRoleFormModule,
+    RbacUserFormModule,
+    MatToolbarModule,
+    MatSidenavModule,
+    MatListModule,
+    MatCardModule,
+    StuffModule,
+    AddingModule,
+    MatButtonModule,
+    MatIconModule
   ],
   declarations: [
     IntroComponent,
@@ -79,4 +101,5 @@ const routes: Routes = [
     PoliciesComponent,
   ],
 })
-export class AdminModule {}
+export class AdminModule {
+}
