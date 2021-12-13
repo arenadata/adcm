@@ -217,10 +217,12 @@ class BasePageObject:
         except TimeoutException as e:
             raise AssertionError(e.msg)
 
-    def check_element_should_be_visible(self, locator: Locator, timeout: Optional[int] = None) -> None:
+    def check_element_should_be_visible(
+        self, element: Union[Locator, WebElement], timeout: Optional[int] = None
+    ) -> None:
         """Raises assertion error if element is not visible after timeout"""
         try:
-            self.wait_element_visible(locator, timeout)
+            self.wait_element_visible(element, timeout)
         except TimeoutException as e:
             raise AssertionError(e.msg)
 
@@ -246,14 +248,22 @@ class BasePageObject:
                 message=f"locator {locator.name} hasn't become clickable for " f"{loc_timeout} seconds",
             )
 
-    def wait_element_visible(self, locator: Locator, timeout: int = None) -> WebElement:
+    def wait_element_visible(self, element: Union[Locator, WebElement], timeout: int = None) -> WebElement:
         """Wait for the element visibility."""
 
         loc_timeout = timeout or self.default_loc_timeout
-        with allure.step(f'Wait "{locator.name}" presence'):
-            return WDW(self.driver, loc_timeout).until(
-                EC.visibility_of_element_located([locator.by, locator.value]),
-                message=f"locator {locator.name} hasn't become visible for " f"{loc_timeout} seconds",
+        el_name = element.name if isinstance(element, Locator) else element.text
+        with allure.step(f'Wait "{el_name}" presence'):
+            return (
+                WDW(self.driver, loc_timeout).until(
+                    EC.visibility_of_element_located([element.by, element.value]),
+                    message=f"locator {el_name} hasn't become visible for {loc_timeout} seconds",
+                )
+                if isinstance(element, Locator)
+                else WDW(self.driver, loc_timeout).until(
+                    EC.visibility_of(element),
+                    message=f"locator {el_name} hasn't become visible for {loc_timeout} seconds",
+                )
             )
 
     def wait_element_hide(self, element: Union[Locator, WebElement], timeout: int = None) -> None:
@@ -332,14 +342,15 @@ class BasePageObject:
         wait_until_step_succeeds(_send_keys_and_check, period=0.5, timeout=1.5)
 
     @allure.step('Clear element')
-    def clear_by_keys(self, locator: Locator) -> None:
+    def clear_by_keys(self, element: Union[Locator, WebElement]) -> None:
         """Clears element value by keyboard."""
 
         def _clear():
-            element = self.find_element(locator)
-            element.send_keys(Keys.CONTROL + "a")
-            element.send_keys(Keys.BACK_SPACE)
-            assert self.find_element(locator).text == ""
+            locator_before = element if isinstance(element, WebElement) else self.find_element(element)
+            locator_before.send_keys(Keys.CONTROL + "a")
+            locator_before.send_keys(Keys.BACK_SPACE)
+            locator_after = element if isinstance(element, WebElement) else self.find_element(element)
+            assert locator_after.text == ""
 
         wait_until_step_succeeds(_clear, period=0.5, timeout=self.default_loc_timeout)
 
@@ -382,9 +393,9 @@ class BasePageObject:
         self.driver.back()
 
     @allure.step('Scroll to element')
-    def scroll_to(self, locator: Optional[Locator] = None, element: Optional[WebElement] = None) -> WebElement:
+    def scroll_to(self, locator: Union[Locator, WebElement]) -> WebElement:
         """Scroll to element"""
-        element = element or self.find_element(locator)
+        element = locator if isinstance(locator, WebElement) else self.find_element(locator)
         # Hack for firefox because of move_to_element does not scroll to the element
         # https://github.com/mozilla/geckodriver/issues/776
         if self.driver.capabilities['browserName'] == 'firefox':

@@ -68,6 +68,7 @@ def ui_display_names(
     return Configuration.from_service(app_fs, ui_hell_fs).get_display_names()
 
 
+@pytest.mark.full()
 def test_save_configuration_hell(
     config_page: ServiceConfigPage,
     prototype_display_names: Tuple[str, str],
@@ -120,5 +121,5 @@ def _fill_required_fields(config_page: ServiceConfigPage):
     for param_display_name, value in required_fields.items():
         value_to_fill, fill_method = value
         row = config_page.config.get_config_row(param_display_name)
-        config_page.scroll_to(element=row)
+        config_page.scroll_to(row)
         fill_method(value_to_fill, row)

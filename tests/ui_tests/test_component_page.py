@@ -31,6 +31,7 @@ from adcm_pytest_plugin import utils
 
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
+from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
 from tests.ui_tests.app.page.common.status.page import (
     SUCCESS_COLOR,
@@ -47,6 +48,8 @@ from tests.ui_tests.app.page.service.page import ServiceComponentPage
 
 BUNDLE_COMMUNITY = "cluster_community"
 COMPONENT_WITH_REQUIRED_FIELDS = "component_with_required_string"
+COMPONENT_WITH_DESCRIPTION_FIELDS = "component_with_all_config_params"
+COMPONENT_WITH_DEFAULT_FIELDS = "component_with_default_string"
 CLUSTER_NAME = "Test cluster"
 SERVICE_NAME = "test_service"
 PROVIDER_NAME = 'test_provider'
@@ -98,6 +101,7 @@ class TestComponentMainPage:
         ).open()
         component_main_page = component_config_page.open_main_tab()
         component_main_page.check_all_elements()
+        component_main_page.check_component_toolbar(CLUSTER_NAME, SERVICE_NAME, FIRST_COMPONENT_NAME)
 
     def test_open_by_toolbar_admin_page(self, app_fs, create_cluster_with_service):
         """Test open admin/intro page from component toolbar"""
@@ -121,6 +125,7 @@ class TestComponentMainPage:
         component_config_page.click_link_by_name(FIRST_COMPONENT_NAME)
         component_main_page = ComponentMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id)
         component_main_page.wait_page_is_opened()
+        component_main_page.check_component_toolbar(CLUSTER_NAME, SERVICE_NAME, FIRST_COMPONENT_NAME)
 
     def test_open_by_toolbar_main_component_list_page(self, app_fs, create_cluster_with_service):
         """Test open /cluster/{}/service/{}/component page from toolbar"""
@@ -133,6 +138,7 @@ class TestComponentMainPage:
         component_main_page.click_link_by_name("COMPONENTS")
         service_comp_page = ServiceComponentPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id)
         service_comp_page.wait_page_is_opened()
+        service_comp_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
 
 class TestComponentConfigPage:
@@ -149,6 +155,7 @@ class TestComponentConfigPage:
         ).open()
         component_config_page = component_main_page.open_config_tab()
         component_config_page.check_all_elements()
+        component_config_page.check_component_toolbar(CLUSTER_NAME, SERVICE_NAME, FIRST_COMPONENT_NAME)
 
     @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
     def test_filter_config_on_component_config_page(self, app_fs, create_cluster_with_service):
@@ -254,6 +261,45 @@ class TestComponentConfigPage:
             tab_name=FIRST_COMPONENT_NAME, expected_warn_text=[f'{FIRST_COMPONENT_NAME} has an issue with its config']
         )
 
+    @pytest.mark.parametrize(
+        "bundle_archive", [utils.get_data_dir(__file__, COMPONENT_WITH_DEFAULT_FIELDS)], indirect=True
+    )
+    def test_field_validation_on_component_config_page_with_default_value(
+        self, app_fs, create_cluster_with_service, create_bundle_archives
+    ):
+        """Test config fields validation on /cluster/{}/service/{}/component/{}/config page"""
+
+        params = {'field_name': 'string', 'new_value': 'test', "config_name": "test_name"}
+
+        cluster, service = create_cluster_with_service
+        component = service.component(name=FIRST_COMPONENT_NAME)
+        component_config_page = ComponentConfigPage(
+            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+        ).open()
+        component_config_page.config.clear_field_by_keys(params['field_name'])
+        component_config_page.config.check_field_is_required(params['field_name'])
+        component_config_page.config.type_in_config_field(
+            params['new_value'], row=component_config_page.config.get_all_config_rows()[0]
+        )
+        component_config_page.config.save_config()
+        component_config_page.config.assert_input_value_is(
+            expected_value=params["new_value"], display_name=params["field_name"]
+        )
+
+    @pytest.mark.parametrize(
+        "bundle_archive", [utils.get_data_dir(__file__, COMPONENT_WITH_DESCRIPTION_FIELDS)], indirect=True
+    )
+    def test_field_tooltips_on_component_config_page(self, app_fs, create_cluster_with_service, create_bundle_archives):
+        """Test config fields tooltips on /cluster/{}/service/{}/component/{}/config page"""
+
+        cluster, service = create_cluster_with_service
+        component = service.component(name=FIRST_COMPONENT_NAME)
+        component_config_page = ComponentConfigPage(
+            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+        ).open()
+        for item in CONFIG_ITEMS:
+            component_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
+
 
 @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
 class TestComponentGroupConfigPage:
@@ -269,6 +315,7 @@ class TestComponentGroupConfigPage:
         ).open()
         component_groupconf_page = component_main_page.open_group_config_tab()
         component_groupconf_page.check_all_elements()
+        component_groupconf_page.check_component_toolbar(CLUSTER_NAME, SERVICE_NAME, FIRST_COMPONENT_NAME)
 
     def test_create_group_config_component(self, app_fs, create_cluster_with_service):
         """Test create group config on /cluster/{}/service/{}/component/{}/group_config"""
@@ -320,6 +367,7 @@ class TestComponentStatusPage:
         ).open()
         component_status_page = component_config_page.open_status_tab()
         component_status_page.check_all_elements()
+        component_status_page.check_component_toolbar(CLUSTER_NAME, SERVICE_NAME, FIRST_COMPONENT_NAME)
 
     def test_status_on_component_status_page(self, app_fs, adcm_fs, sdk_client_fs, create_cluster_with_hostcomponents):
         """Changes status on /cluster/{}/service/{}/component/{}/status"""

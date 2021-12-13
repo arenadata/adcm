@@ -26,6 +26,7 @@ class CommonLocators:
     socket = Locator(By.CSS_SELECTOR, ".socket", "open socket marker")
     profile = Locator(By.CSS_SELECTOR, ".profile", "profile load marker")
     load_marker = Locator(By.CSS_SELECTOR, '.load_complete', "page load marker")
+    mat_slide_toggle = Locator(By.CSS_SELECTOR, "mat-slide-toggle", "toggle")
 
 
 class ObjectPageLocators:
