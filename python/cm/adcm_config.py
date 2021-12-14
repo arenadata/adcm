@@ -213,7 +213,6 @@ def make_object_config(obj: ADCMEntity, prototype: Prototype) -> None:
     if obj.config:
         return
 
-    spec, _, conf, attr = get_prototype_config(prototype)
     obj_conf = init_object_config(prototype, obj)
     if obj_conf:
         obj.config = obj_conf
