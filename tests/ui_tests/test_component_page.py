@@ -15,7 +15,6 @@
 """UI tests for /cluster page"""
 
 import os
-import random
 from typing import (
     Tuple,
 )
@@ -215,13 +214,13 @@ class TestComponentConfigPage:
         config_rows = component_config_page.config.get_all_config_rows()
         with allure.step("Change value in float type on component config page"):
             component_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[0], values=[random.randint(10, 20)], clear=True
+                row=config_rows[0], values=["1.1111111111"], clear=True
             )
         with allure.step("Change value in boolean type on component config page"):
             component_config_page.config.click_boolean_checkbox(config_rows[1])
         with allure.step("Change value in int type on component config page"):
             component_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[2], values=[random.randint(20, 30)], clear=True
+                row=config_rows[2], values=["100500"], clear=True
             )
         with allure.step("Change value in password type on component config page"):
             component_config_page.config.type_in_field_with_few_inputs(
@@ -245,11 +244,11 @@ class TestComponentConfigPage:
             component_config_page.config.expand_or_close_group(params["group_name"], expand=False)
         with allure.step("Change value in structure type on component config page"):
             component_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[11], values=["1", params["row_value_new"], "2", params["row_value_new"]], clear=True
+                row=config_rows[12], values=["1", params["row_value_new"], "2", params["row_value_new"]], clear=True
             )
         with allure.step("Change value in map type on component config page"):
             component_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[12],
+                row=config_rows[13],
                 values=[
                     params["row_value_new"],
                     params["row_value_new"],
@@ -260,11 +259,11 @@ class TestComponentConfigPage:
             )
         with allure.step("Change value in secrettext type on component config page"):
             component_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[13], values=[params["row_value_new"]], clear=True
+                row=config_rows[14], values=[params["row_value_new"]], clear=True
             )
         with allure.step("Change value in json type on component config page"):
             component_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[14], values=[f'{{}}'], clear=True
+                row=config_rows[15], values=[f'{{}}'], clear=True
             )
 
         component_config_page.config.set_description(params["config_name_new"])
@@ -290,17 +289,17 @@ class TestComponentConfigPage:
                 component_config_page.config.check_group_is_active(params["group_name"], is_active=False)
             with allure.step("Check history value in structure type on component config page"):
                 component_config_page.config.wait_history_row_with_value(
-                    rows_with_history[9], '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]'
+                    rows_with_history[10], '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]'
                 )
             with allure.step("Check history value in map type on component config page"):
                 component_config_page.config.wait_history_row_with_value(
-                    rows_with_history[10], '{"age":"24","name":"Joe","sex":"m"}'
+                    rows_with_history[11], '{"age":"24","name":"Joe","sex":"m"}'
                 )
             with allure.step("Change value in secrettext type on component config page"):
-                component_config_page.config.wait_history_row_with_value(rows_with_history[11], '****')
+                component_config_page.config.wait_history_row_with_value(rows_with_history[12], '****')
             with allure.step("Change value in json type on component config page"):
                 component_config_page.config.wait_history_row_with_value(
-                    rows_with_history[12], '{"age":"24","name":"Joe","sex":"m"}'
+                    rows_with_history[13], '{"age":"24","name":"Joe","sex":"m"}'
                 )
 
     @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)

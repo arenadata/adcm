@@ -15,7 +15,6 @@
 """UI tests for /host page"""
 
 import os
-import random
 from typing import Tuple
 
 import allure
@@ -411,15 +410,11 @@ class TestHostConfigPage:
         host_page.check_host_toolbar(HOST_FQDN)
         config_rows = host_page.config.get_all_config_rows()
         with allure.step("Change value in float type on host config page"):
-            host_page.config.type_in_field_with_few_inputs(
-                row=config_rows[0], values=[random.randint(10, 20)], clear=True
-            )
+            host_page.config.type_in_field_with_few_inputs(row=config_rows[0], values=["1.1111111111"], clear=True)
         with allure.step("Change value in boolean type on host config page"):
             host_page.config.click_boolean_checkbox(config_rows[1])
         with allure.step("Change value in int type on host config page"):
-            host_page.config.type_in_field_with_few_inputs(
-                row=config_rows[2], values=[random.randint(20, 30)], clear=True
-            )
+            host_page.config.type_in_field_with_few_inputs(row=config_rows[2], values=["100500"], clear=True)
         with allure.step("Change value in password type on host config page"):
             host_page.config.type_in_field_with_few_inputs(
                 row=config_rows[3], values=[params["row_value_new"], params["row_value_new"]], clear=True
@@ -442,11 +437,11 @@ class TestHostConfigPage:
             host_page.config.expand_or_close_group(params["group_name"], expand=False)
         with allure.step("Change value in structure type on host config page"):
             host_page.config.type_in_field_with_few_inputs(
-                row=config_rows[11], values=["1", params["row_value_new"], "2", params["row_value_new"]], clear=True
+                row=config_rows[12], values=["1", params["row_value_new"], "2", params["row_value_new"]], clear=True
             )
         with allure.step("Change value in map type on host config page"):
             host_page.config.type_in_field_with_few_inputs(
-                row=config_rows[12],
+                row=config_rows[13],
                 values=[
                     params["row_value_new"],
                     params["row_value_new"],
@@ -457,10 +452,10 @@ class TestHostConfigPage:
             )
         with allure.step("Change value in secrettext type on host config page"):
             host_page.config.type_in_field_with_few_inputs(
-                row=config_rows[13], values=[params["row_value_new"]], clear=True
+                row=config_rows[14], values=[params["row_value_new"]], clear=True
             )
         with allure.step("Change value in json type on host config page"):
-            host_page.config.type_in_field_with_few_inputs(row=config_rows[14], values=[f'{{}}'], clear=True)
+            host_page.config.type_in_field_with_few_inputs(row=config_rows[15], values=[f'{{}}'], clear=True)
 
         host_page.config.set_description(params["config_name_new"])
         host_page.config.save_config()
@@ -485,17 +480,17 @@ class TestHostConfigPage:
                 host_page.config.check_group_is_active(params["group_name"], is_active=False)
             with allure.step("Check history value in structure type on host config page"):
                 host_page.config.wait_history_row_with_value(
-                    rows_with_history[9], '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]'
+                    rows_with_history[10], '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]'
                 )
             with allure.step("Check history value in map type on host config page"):
                 host_page.config.wait_history_row_with_value(
-                    rows_with_history[10], '{"age":"24","name":"Joe","sex":"m"}'
+                    rows_with_history[11], '{"age":"24","name":"Joe","sex":"m"}'
                 )
             with allure.step("Change value in secrettext type on host config page"):
-                host_page.config.wait_history_row_with_value(rows_with_history[11], '****')
+                host_page.config.wait_history_row_with_value(rows_with_history[12], '****')
             with allure.step("Change value in json type on host config page"):
                 host_page.config.wait_history_row_with_value(
-                    rows_with_history[12], '{"age":"24","name":"Joe","sex":"m"}'
+                    rows_with_history[13], '{"age":"24","name":"Joe","sex":"m"}'
                 )
 
     @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
