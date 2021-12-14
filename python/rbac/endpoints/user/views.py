@@ -69,7 +69,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
     """User serializer"""
 
     id = serializers.IntegerField(read_only=True)
-    username = serializers.RegexField(r'^[^\n]+$', max_length=150)
+    username = serializers.RegexField(r'^[^\s]+$', max_length=150)
     first_name = serializers.RegexField(
         r'^[^\n]*$', max_length=150, allow_blank=True, required=False, default=''
     )
