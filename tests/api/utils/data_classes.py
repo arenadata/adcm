@@ -14,8 +14,10 @@
 # pylint: disable=too-few-public-methods
 
 from abc import ABC
-from typing import List
+from typing import List, Callable
 
+# there's a local import, but it's not cyclic really
+from tests.api.utils.data_synchronization import sync_object_and_role  # pylint: disable=cyclic-import
 from tests.api.utils.tools import PARAMETRIZED_BY_LIST
 from tests.api.utils.types import (
     Field,
@@ -53,6 +55,10 @@ class BaseClass(ABC):
     # and should be generated implicitly after data preparation
     # and creation of current object
     implicitly_depends_on: List["BaseClass"] = []
+
+    # Synchronize data in result dict when API fields has complex dependencies
+    # like foreign keys list depends on other field's value (and this value is also fk)
+    dependable_fields_sync: Callable
 
 
 class ClusterFields(BaseClass):
@@ -363,7 +369,7 @@ class RbacBusinessRoleFields(RbacBuiltInRoleFields):
 
 
 RbacSimpleRoleFields.child = Field(
-    name="child", f_type=ForeignKeyM2M(fk_link=RbacBusinessRoleFields), default_value=[], postable=True, changeable=True
+    name="child", f_type=ForeignKeyM2M(fk_link=RbacBusinessRoleFields), required=True, postable=True, changeable=True
 )
 
 
@@ -401,19 +407,24 @@ class RbacNotBuiltInPolicyFields(BaseClass):
     Data type class for RbacPolicyFields objects
     """
 
+    dependable_fields_sync = sync_object_and_role
+
     id = Field(name="id", f_type=PositiveInt(), default_value="auto")
     name = Field(name="name", f_type=String(max_length=255), postable=True, required=True)
     role = Field(name="role", f_type=ObjectForeignKey(RbacRoleFields), required=True, postable=True, changeable=True)
     built_in = Field(name="built_in", f_type=StaticBoolean(False), default_value="auto")
+    # actually this field isn't required when role isn't parametrized
     object = Field(
         name="object",
         f_type=GenericForeignKeyList(relates_on=Relation(field=role)),
+        required=True,
         postable=True,
         changeable=True,
         default_value=[],
     )
+    # user or group should be not empty
     user = Field(
-        name="user", f_type=ForeignKeyM2M(fk_link=RbacUserFields), default_value=[], postable=True, changeable=True
+        name="user", f_type=ForeignKeyM2M(fk_link=RbacUserFields), required=True, postable=True, changeable=True
     )
     group = Field(
         name="group", f_type=ForeignKeyM2M(fk_link=RbacGroupFields), default_value=[], postable=True, changeable=True
@@ -423,18 +434,24 @@ class RbacNotBuiltInPolicyFields(BaseClass):
 
 class RbacBuiltInPolicyFields(BaseClass):
     """
-    Data type class for RbacBuiltinPolicyFields
+    Data type class for RbacBuiltInPolicyFields.
+
+    Note: we can't truly create built_in roles
     """
 
     id = Field(name="id", f_type=PositiveInt(), default_value="auto")
     name = Field(name="name", f_type=String(max_length=160), required=True, postable=True)
     role = Field(name="role", f_type=ObjectForeignKey(RbacRoleFields), required=True, postable=True)
     built_in = Field(name="built_in", f_type=StaticBoolean(value=True), default_value="auto")
+    # actually this field isn't required when role isn't parametrized
     object = Field(
         name="object",
         f_type=GenericForeignKeyList(relates_on=Relation(field=role)),
+        required=True,
+        postable=True,
         default_value=[],
     )
-    user = Field(name="user", f_type=ForeignKeyM2M(fk_link=RbacUserFields), default_value=[])
-    group = Field(name="group", f_type=ForeignKeyM2M(fk_link=RbacGroupFields), default_value=[])
+    # user or group should be not empty
+    user = Field(name="user", f_type=ForeignKeyM2M(fk_link=RbacUserFields), required=True, postable=True)
+    group = Field(name="group", f_type=ForeignKeyM2M(fk_link=RbacGroupFields), default_value=[], postable=True)
     url = Field(name="url", f_type=String(), default_value="auto")

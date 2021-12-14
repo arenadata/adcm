@@ -22,6 +22,7 @@ import requests
 import allure
 from requests_toolbelt.utils import dump
 
+
 PARAMETRIZED_BY_LIST = ["cluster", "service", "component", "provider", "host"]
 
 

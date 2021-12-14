@@ -464,10 +464,10 @@ def get_negative_data_for_put_body_check():
 def get_data_for_body_check(method: Methods, endpoints_with_test_sets: List[tuple], positive: bool):
     """
     Collect test sets for body testing
-    Each test set is set of data params where values is PreparedFieldValue instances
+    Each test set is set of data params where values are PreparedFieldValue instances
     :param method:
     :param endpoints_with_test_sets:
-    :param positive: collect positive or negative datasets
+    :param positive: collect positive or negative datasets.
         Negative datasets additionally checks of response body for correct errors.
         In positive cases it doesn't make sense
     """

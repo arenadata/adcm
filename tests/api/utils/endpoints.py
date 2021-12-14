@@ -318,7 +318,7 @@ class Endpoints(Enum):
         technical=True,
     )
 
-    # Workaround to get unfiltered Roles
+    # Workaround to get roles with 'role' type
     RbacAnyRole = Endpoint(
         path="rbac/role",
         methods=ALL,

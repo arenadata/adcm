@@ -11,11 +11,10 @@
 # limitations under the License.
 
 """Methods for get endpoints data"""
+
 from tests.api.utils.endpoints import Endpoints
 from tests.api.utils.methods import Methods
-from tests.api.utils.api_objects import Request, ExpectedResponse
-
-from tests.api.utils.api_objects import ADCMTestApiWrapper
+from tests.api.utils.api_objects import Request, ExpectedResponse, ADCMTestApiWrapper
 
 
 def get_endpoint_data(adcm: ADCMTestApiWrapper, endpoint: Endpoints) -> list:

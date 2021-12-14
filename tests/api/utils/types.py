@@ -98,6 +98,8 @@ class PreparedFieldValue:  # pylint: disable=too-few-public-methods,function-red
                 return dbfiller.generate_new_value_for_unchangeable_fk_field(
                     f_type=self.f_type, current_field_value=current_field_value
                 )
+            if isinstance(self.f_type, GenericForeignKeyList):
+                return dbfiller.generate_new_value_for_generic_foreign_key_list(current_value=current_field_value)
             return self.f_type.generate()
 
         return self.value

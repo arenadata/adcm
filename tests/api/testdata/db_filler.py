@@ -16,7 +16,7 @@
 import random
 from collections import defaultdict
 from copy import deepcopy
-from typing import Literal
+from typing import Literal, List, Dict, Any
 
 import allure
 
@@ -98,6 +98,8 @@ class DbFiller:
                     changed_fields[field.name] = self._generate_field_value(
                         field=field, old_value=full_item[field.name]
                     )
+            if getattr(endpoint.data_class, 'dependable_fields_sync', None):
+                changed_fields = endpoint.data_class.dependable_fields_sync(self.adcm, changed_fields)
             result = {
                 "full_item": full_item.copy(),
                 "changed_fields": changed_fields,
@@ -202,7 +204,7 @@ class DbFiller:
                 ][-1]
                 field.f_type.schema = build_schema_by_json(current_config_log[field.name])
 
-        elif endpoint == Endpoints.RbacNotBuiltInPolicy:
+        elif endpoint in (Endpoints.RbacNotBuiltInPolicy, Endpoints.RbacBuiltInPolicy):
             if field.name == "object":
                 role_fk = _data[related_field_name]
                 role = get_object_data(adcm=self.adcm, endpoint=endpoint.RbacAnyRole, object_id=role_fk)
@@ -264,10 +266,11 @@ class DbFiller:
                     if len(get_endpoint_data(adcm=self.adcm, endpoint=endpoint)) > count:
                         break
 
-    @staticmethod
-    def _generate_field_value(field: Field, old_value=None):
+    def _generate_field_value(self, field: Field, old_value=None):
         """Generate field value. If old_value is passed new value will be generated"""
         if old_value is not None:
+            if isinstance(field.f_type, GenericForeignKeyList):
+                return self.generate_new_value_for_generic_foreign_key_list(old_value)
             return field.f_type.generate_new(old_value=old_value)
         return field.f_type.generate()
 
@@ -343,3 +346,27 @@ class DbFiller:
             return valid_new_objects[0]["id"]
         with allure.step("Failed to create new data. Returning a non-existent object"):
             return 42
+
+    @allure.step("Generate new value for generic foreign key list")
+    def generate_new_value_for_generic_foreign_key_list(self, current_value: List[Dict[str, Any]]):
+        """Generate new value for generic foreign key list"""
+        return [
+            {
+                'id': self._get_new_id_by_type(generic_key['id'], generic_key['type'], self.adcm),
+                'type': generic_key['type'],
+            }
+            for generic_key in current_value
+        ]
+
+    # pylint: disable-next=no-self-use
+    def _get_new_id_by_type(self, prev_id: int, key_type: str, api_wrapper: ADCMTestApiWrapper) -> int:
+        """
+        Get new item by type name (when type name can be converted directly to endpoint).
+        ! This method isn't universal, it was originally made for resolving generic keys for "object" in RBAC Policy !
+        ! api_wrapper is instance of tests.api.utils.api_objects.ADCMTestApiWrapper !
+        """
+        endpoint = Endpoints[key_type.lower().capitalize()]
+        new_item = next(filter(lambda x: x['id'] != prev_id, get_endpoint_data(api_wrapper, endpoint)), None)
+        if new_item is None:
+            raise ValueError(f'Failed to find new generic foreign key id for type {key_type}')
+        return new_item['id']
