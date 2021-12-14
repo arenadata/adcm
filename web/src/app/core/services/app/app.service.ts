@@ -13,7 +13,19 @@ import { Injectable } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NavigationStart, Router } from '@angular/router';
-import { getConnectStatus, getFirstAdminLogin, getProfile, getRoot, isAuthenticated, loadProfile, loadRoot, loadStack, rootError, socketInit, State } from '@app/core/store';
+import {
+  getConnectStatus,
+  getFirstAdminLogin,
+  getProfile,
+  getRoot,
+  isAuthenticated,
+  loadProfile,
+  loadRoot,
+  loadStack,
+  rootError,
+  socketInit,
+  State
+} from '@app/core/store';
 import { select, Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
 import { filter, switchMap, tap } from 'rxjs/operators';
@@ -74,7 +86,10 @@ export class AppService {
   }
 
   getVersion(versionData: IVersionInfo): IVersionInfo {
-    return this.config.version.split('-').reduce((p, c, i) => ({ ...p, [Object.keys(versionData)[i]]: c }), {} as IVersionInfo);
+    return this.config.version.split('-').reduce((p, c, i) => ({
+      ...p,
+      [Object.keys(versionData)[i]]: c
+    }), {} as IVersionInfo);
   }
 
   initListeners() {
@@ -95,9 +110,9 @@ export class AppService {
       const data = astr[1]
         ? { panelClass: 'snack-bar-error' }
         : {
-            duration: 5000,
-            panelClass: 'snack-bar-notify',
-          };
+          duration: 5000,
+          panelClass: 'snack-bar-notify',
+        };
       this.snackBar.open(astr[0], 'Hide', data);
     });
 
