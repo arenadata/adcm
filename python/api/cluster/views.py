@@ -21,7 +21,7 @@ import cm.bundle
 import cm.job
 import cm.status_api
 from api.api_views import ListView, PageView, PageViewAdd, InterfaceView, DetailViewDelete
-from api.api_views import GenericAPIPermView, GenericAPIPermStatusView
+from api.api_views import GenericAPIPermView, GenericAPIPermStatusView, permission_denied
 from api.api_views import create, update, check_obj, check_import_perm, DjangoModelPerm
 from cm.errors import AdcmEx
 from cm.models import Cluster, Host, HostComponent, Prototype
@@ -46,7 +46,7 @@ def get_obj_conf(cluster_id, service_id):
 
 class MyPerm(DjangoModelPerm):
     def log_cache(self, user, label):
-        cache = getattr(user, '_user_perm_cache', None)   # pylint: disable=W0212
+        cache = getattr(user, '_user_perm_cache', None)  # pylint: disable=W0212
         log.debug('HAS_PERM user: %s CACHE %s: %s', user, label, cache)
 
     def log_perm(self, user):
@@ -91,6 +91,12 @@ class ClusterList(PageViewAdd):
     filterset_fields = ('name', 'prototype_id')
     ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
     permission_classes = (MyPerm,)
+
+    def check_permissions(self, request):
+        for permission in self.get_permissions():
+            log.debug('CHECK_PERM %s', permission)
+            if not permission.has_permission(request, self):
+                permission_denied(message='Auth fail')
 
 
 class ClusterDetail(DetailViewDelete):
