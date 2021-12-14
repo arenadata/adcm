@@ -1,26 +1,32 @@
 <ng-container *ngIf="role">
 
-  <ng-template [ngIf]="role.parametrized_by_type.includes('cluster')">
+  <ng-template [ngIf]="role | parametrizedByCluster">
 
-    <p>parametrized by cluster</p>
+    <adwp-input-select [form]="object('cluster')"
+                       controlName="id"
+                       label="Cluster"
+                       [handler]="clusterHandler"
+                       [options]="clusters$ | async">
 
-  </ng-template>
-
-
-  <ng-template [ngIf]="role.parametrized_by_type.includes('service')">
-
-    <p>parametrized by service</p>
-
-  </ng-template>
-
-  <ng-template [ngIf]="role.parametrized_by_type.includes('service') && role.parametrized_by_type.includes('cluster')">
-
-    <p>parametrized by service & cluster</p>
+    </adwp-input-select>
 
   </ng-template>
 
 
-  <ng-template [ngIf]="!role.parametrized_by_type.length">
+  <ng-template [ngIf]="role | parametrizedByService">
+
+    <adwp-input-select [form]="object('service')"
+                       controlName="id"
+                       label="Service"
+                       [handler]="serviceHandler"
+                       [options]="services$ | async">
+
+    </adwp-input-select>
+
+  </ng-template>
+
+
+  <ng-template [ngIf]="role | parametrizedByOther">
 
     <p>The selected role does not require specifying an object. The policy will apply to all ADCM objects.</p>
 
