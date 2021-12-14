@@ -38,7 +38,7 @@ export class PoliciesComponent extends RbacEntityListDirective<RbacPolicyModel> 
     },
   ] as IColumns<RbacPolicyModel>;
 
-  type: TypeName = 'rbac_policy';
+  type: TypeName = 'policy';
 
   constructor(
     protected service: ListService,

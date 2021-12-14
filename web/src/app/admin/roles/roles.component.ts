@@ -44,7 +44,7 @@ export class RolesComponent extends RbacEntityListDirective<RbacRoleModel> {
     },
   ] as IColumns<RbacRoleModel>;
 
-  type: TypeName = 'rbac_role';
+  type: TypeName = 'role';
 
   constructor(
     protected service: ListService,
