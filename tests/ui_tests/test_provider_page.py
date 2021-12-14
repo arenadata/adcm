@@ -419,8 +419,8 @@ class TestProviderConfigPage:
         ).open()
         provider_config_page.config.clear_field_by_keys(params['field_name'])
         provider_config_page.config.check_field_is_required(params['field_name'])
-        provider_config_page.config.type_in_field_with_few_inputs(
-            row=provider_config_page.config.get_all_config_rows()[0], values=[params['new_value']]
+        provider_config_page.config.type_in_config_field(
+            params['new_value'], row=provider_config_page.config.get_all_config_rows()[0]
         )
         provider_config_page.config.save_config()
         provider_config_page.config.assert_input_value_is(

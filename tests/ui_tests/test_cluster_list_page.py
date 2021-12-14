@@ -905,21 +905,21 @@ class TestClusterConfigPage:
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_config_page.config.clear_field_by_keys(params['field_name'])
         cluster_config_page.config.check_field_is_required(params['field_name'])
-        cluster_config_page.config.type_in_field_with_few_inputs(
-            row=cluster_config_page.config.get_all_config_rows()[0],
-            values=[params['new_value']],
+        cluster_config_page.config.type_in_config_field(
+            params['new_value'], row=cluster_config_page.config.get_all_config_rows()[0]
         )
         cluster_config_page.config.save_config()
         cluster_config_page.config.assert_input_value_is(
             expected_value=params["new_value"], display_name=params["field_name"]
         )
 
-    def test_field_tooltips_on_cluster_config_page(self, app_fs, create_cluster_with_all_config_fields):
+    def test_field_tooltips_on_cluster_config_page(self, app_fs, sdk_client_fs):
         """Test config fields tooltips on cluster/{}/config page"""
 
-        cluster_config_page = ClusterConfigPage(
-            app_fs.driver, app_fs.adcm.url, create_cluster_with_all_config_fields.id
-        ).open()
+        with allure.step("Create cluster"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_DESCRIPTION_FIELDS)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+        cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         for item in CONFIG_ITEMS:
             cluster_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 

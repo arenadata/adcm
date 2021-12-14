@@ -76,7 +76,6 @@ class CommonConfigMenuObj(BasePageObject):
 
     def get_textbox_rows(self, timeout=2) -> List[WebElement]:
         """Get textbox elements from the page"""
-
         try:
             return [r for r in self.find_elements(CommonConfigMenu.text_row, timeout=timeout) if r.is_displayed()]
         except TimeoutException:

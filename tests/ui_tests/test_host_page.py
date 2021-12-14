@@ -552,9 +552,7 @@ class TestHostConfigPage:
         host_page = open_config(page)
         host_page.config.clear_field_by_keys(params['field_name'])
         host_page.config.check_field_is_required(params['field_name'])
-        host_page.config.type_in_field_with_few_inputs(
-            row=host_page.config.get_all_config_rows()[0], values=[params['new_value']]
-        )
+        host_page.config.type_in_config_field(params['new_value'], row=host_page.config.get_all_config_rows()[0])
         host_page.config.save_config()
         host_page.config.assert_input_value_is(expected_value=params["new_value"], display_name=params["field_name"])
 
