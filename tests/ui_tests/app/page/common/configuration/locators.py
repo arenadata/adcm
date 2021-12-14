@@ -44,7 +44,7 @@ class CommonConfigMenu:
         "//app-field[.//div[@adcm_test='{}']]//mat-list-item//span[contains(text(), '{}')]",
         'Config diff of option "{}" with "{}" in text',
     )
-    config_row = Locator(By.CSS_SELECTOR, "app-field", "Configuration row")
+    config_row = Locator(By.CSS_SELECTOR, "app-field, app-group-fields", "Configuration row")
     text_row = Locator(By.TAG_NAME, "app-fields-textbox", "Configuration textbox row")
     field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
     info_tooltip_icon = TemplateLocator(
