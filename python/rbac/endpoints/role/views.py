@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.db.models import Q
+from django_filters import rest_framework as filters
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers, status
 from rest_framework.response import Response
@@ -54,18 +56,37 @@ class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
         expandable_fields = {'child': ('rbac.endpoints.role.views.RoleSerializer', {'many': True})}
 
 
+class _DefaultCharFilter(filters.CharFilter):
+    common = '*'
+
+    def filter(self, qs, value):
+        if value == self.common:
+            qs = qs.filter(**{self.field_name: None})
+        elif value:
+            qs = qs.filter(Q(**{self.field_name: value}) | Q(**{self.field_name: None}))
+        return qs
+
+
+class RoleFilter(filters.FilterSet):
+    category = _DefaultCharFilter(field_name='bundle__name')
+
+    class Meta:
+        model = Role
+        fields = (
+            'id',
+            'name',
+            'display_name',
+            'built_in',
+            'type',
+            'child',
+        )
+
+
 class RoleView(ModelPermViewSet):  # pylint: disable=too-many-ancestors
 
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
-    filterset_fields = (
-        'id',
-        'name',
-        'display_name',
-        'built_in',
-        'type',
-        'child',
-    )
+    filterset_class = RoleFilter
     ordering_fields = ('id', 'name', 'display_name', 'built_in', 'type')
 
     def create(self, request, *args, **kwargs):
