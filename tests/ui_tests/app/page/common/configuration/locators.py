@@ -58,6 +58,7 @@ class CommonConfigMenu:
 
         name = Locator(By.CSS_SELECTOR, "label", "Row name")
         value = Locator(By.CSS_SELECTOR, "input,textarea", "Row value")
+
         input = Locator(By.CSS_SELECTOR, '*:not([style="display: none;"])>mat-form-field input,textarea', "Row input")
         password = Locator(
             By.XPATH,

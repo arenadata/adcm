@@ -415,6 +415,59 @@ class TestServiceConfigPage:
         for item in CONFIG_ITEMS:
             service_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
+    def test_save_configuration_hell_on_service_config_page(self, app_fs, sdk_client_fs):
+        """
+        UI test for super large config
+        Scenario:
+        1. Get Service configuration
+        2. Get display names from UI
+        3. Check that config name in prototype is correct
+        4. Check that in UI we have full list of display names from prototype
+        5. Fill required fields and try to save
+        """
+
+        required_fields = {
+            'integer not default required:': (['2']),
+            'float not default required:': (['2.2']),
+            'string not default required:': (['Ein neuer Tag beginnt']),
+            'password not default required no confirm:': (['strongestpasswordever']),
+            'text not default required:': (['This is\nthe day']),
+            'file not default required:': (['My only\nfriend']),
+            'json not default required:': (['{"Where": "the long shadow falls"}']),
+            'list not default required:': (['Silencer']),
+            'map not default required:': (['Poccolus', 'Ragana', 'Poccolus', 'Ragana']),
+        }
+        with allure.step("Create cluster and service"):
+            bundle = cluster_bundle(sdk_client_fs, "config_hell_service")
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            service = cluster.service_add(name='service_ui_config_hell')
+        service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        with allure.step('Check that config name in prototype is correct'):
+            assert service.display_name == 'New UI Config Hell'
+        with allure.step('Check that in UI we have full list of group display names from prototype'):
+            parameters_display_names = {config['display_name'] for config in service.prototype().config}
+            group_names = filter(
+                lambda name: 'group' in name
+                and ('invisible' not in name or 'not invisible' in name)
+                and ('advanced' not in name or 'not advanced' in name),
+                parameters_display_names,
+            )
+            ui_display_names = service_config_page.config.get_all_config_rows_names()
+            config_group_names = [n.text for n in service_config_page.config.get_group_names()]
+            for display_name in group_names:
+                assert (
+                    display_name in ui_display_names or display_name in config_group_names
+                ), f"Config named '{display_name}' should be presented in config"
+        with allure.step('Fill required fields'):
+            for param_display_name, value in required_fields.items():
+                row = service_config_page.config.get_config_row(param_display_name)
+                service_config_page.config.type_in_field_with_few_inputs(row=row, values=value)
+        service_config_page.config.save_config(load_timeout=40)
+        with allure.step('Ensure page is still opened'):
+            service_config_page.wait_page_is_opened(timeout=1)
+        with allure.step('Check that popup is not presented on page'):
+            assert not service_config_page.is_popup_presented_on_page(), 'No popup should be shown after save'
+
 
 class TestServiceGroupConfigPage:
     """Tests for the /cluster/{}/service/{}/group_config page"""
