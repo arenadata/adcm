@@ -33,10 +33,10 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
       new FormGroup({
         object: new FormArray([
           new FormGroup({
-            id: new FormControl(null)
+            id: new FormControl([])
           }),
           new FormGroup({
-            id: new FormControl(null),
+            id: new FormControl([]),
             parent: new FormControl(null),
           })
         ])
@@ -46,6 +46,11 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
 
   step(id: number): FormGroup | null {
     return this.steps.get([id]) as FormGroup;
+  }
+
+  ngOnInit() {
+    super.ngOnInit();
+    this.form.markAllAsTouched();
   }
 
 }
