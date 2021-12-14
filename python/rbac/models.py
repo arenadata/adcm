@@ -57,6 +57,11 @@ class User(AuthUser):
     profile = models.JSONField(default=str)
     group = models.ManyToManyField('Group', related_name='user')
 
+    # class Meta:
+    #     indexes = [
+    #         models.Index(fields=['username', 'first_name', 'last_name', 'email']),
+    #     ]
+
 
 class Group(AuthGroup):
     """
@@ -65,6 +70,11 @@ class Group(AuthGroup):
     """
 
     description = models.CharField(max_length=255, null=True)
+
+    # class Meta:
+    #     indexes = [
+    #         models.Index(fields=['name']),
+    #     ]
 
 
 class RoleTypes(models.TextChoices):
@@ -102,6 +112,9 @@ class Role(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['name', 'bundle', 'built_in'], name='unique_role')
+        ]
+        indexes = [
+            models.Index(fields=['name', 'display_name']),
         ]
 
     def get_role_obj(self):
