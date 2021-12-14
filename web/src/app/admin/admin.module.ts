@@ -34,6 +34,7 @@ import { AddingModule } from '../shared/add-component/adding.module';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RbacPolicyFormModule } from '../components/rbac/policy-form/rbac-policy-form.module';
+import { ConfigurationModule } from '../shared/configuration/configuration.module';
 
 const routes: Routes = [
   {
@@ -91,7 +92,8 @@ const routes: Routes = [
     StuffModule,
     AddingModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    ConfigurationModule
   ],
   declarations: [
     IntroComponent,
