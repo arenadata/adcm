@@ -50,7 +50,7 @@ export class GroupsComponent extends RbacEntityListDirective<RbacGroupModel> {
     }
   ] as IColumns<RbacGroupModel>;
 
-  type: TypeName = 'rbac_group';
+  type: TypeName = 'group';
 
   constructor(
     protected service: ListService,

@@ -61,7 +61,7 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
     }
   ] as IColumns<RbacUserModel>;
 
-  type: TypeName = 'rbac_user';
+  type: TypeName = 'user';
 
   constructor(
     protected service: ListService,
