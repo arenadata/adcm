@@ -4,7 +4,7 @@
       <ng-template matStepLabel>Step 1</ng-template>
       <app-rbac-policy-form-step-one [form]="step1"></app-rbac-policy-form-step-one>
       <div>
-        <button mat-raised-button matStepperNext color="accent">Next</button>
+        <button [disabled]="step1.invalid" mat-raised-button matStepperNext color="accent">Next</button>
       </div>
     </mat-step>
     <mat-step *ngIf="step(1) as step2" formGroupName="1" [stepControl]="step2" label="Step 2">
