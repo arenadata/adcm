@@ -58,6 +58,7 @@ class CommonConfigMenu:
 
         name = Locator(By.CSS_SELECTOR, "label", "Row name")
         value = Locator(By.CSS_SELECTOR, "input,textarea", "Row value")
+        input = Locator(By.CSS_SELECTOR, '*:not([style="display: none;"])>mat-form-field input,textarea', "Row input")
         password = Locator(
             By.XPATH,
             "(.//app-fields-password/div[not(contains(@style, 'none'))]//input)[1]",
@@ -70,6 +71,8 @@ class CommonConfigMenu:
         )
         history = Locator(By.CSS_SELECTOR, "mat-list-item span.accent", "Row history")
         reset_btn = Locator(By.CSS_SELECTOR, "button[mattooltip='Reset to default']", "Reset button")
+
+        checkbox = Locator(By.CSS_SELECTOR, "mat-checkbox", "Checkbox")
 
         # complex parameters
         add_item_btn = Locator(

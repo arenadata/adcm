@@ -15,6 +15,7 @@
 """UI tests for /cluster page"""
 
 import os
+import random
 from typing import (
     Tuple,
 )
@@ -61,6 +62,9 @@ SECOND_COMPONENT_NAME = "second"
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
 
+# !===== Fixtures =====!
+
+
 @pytest.fixture()
 def create_cluster_with_service(sdk_client_fs: ADCMClient, bundle_archive: str) -> Tuple[Cluster, Service]:
     """Create cluster with service"""
@@ -84,6 +88,9 @@ def create_cluster_with_hostcomponents(
     cluster.host_add(host)
     cluster.hostcomponent_set((host, service.component(name=FIRST_COMPONENT_NAME)))
     return cluster, service, host
+
+
+# !===== Tests =====!
 
 
 @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
@@ -184,15 +191,19 @@ class TestComponentConfigPage:
         with component_config_page.config.wait_rows_change(expected_rows_amount=2):
             component_config_page.config.click_on_group(params["group_name"])
 
-    @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
-    def test_save_custom_config_on_component_config_page(self, app_fs, create_cluster_with_service):
+    @pytest.mark.parametrize(
+        "bundle_archive", [utils.get_data_dir(__file__, COMPONENT_WITH_DESCRIPTION_FIELDS)], indirect=True
+    )
+    def test_save_custom_config_on_component_config_page(
+        self, app_fs, create_cluster_with_service, create_bundle_archives
+    ):
         """Test config save on /cluster/{}/service/{}/component/{}/config page"""
 
         params = {
             "row_value_new": "test",
-            "row_value_old": "123",
             "config_name_new": "test_name",
             "config_name_old": "init",
+            "group_name": "group",
         }
 
         cluster, service = create_cluster_with_service
@@ -201,15 +212,96 @@ class TestComponentConfigPage:
             app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
         ).open()
 
-        config_row = component_config_page.config.get_all_config_rows()[0]
-        component_config_page.config.type_in_config_field(row=config_row, value=params["row_value_new"], clear=True)
+        config_rows = component_config_page.config.get_all_config_rows()
+        with allure.step("Change value in float type on component config page"):
+            component_config_page.config.type_in_field_with_few_inputs(
+                row=config_rows[0], values=[random.randint(10, 20)], clear=True
+            )
+        with allure.step("Change value in boolean type on component config page"):
+            component_config_page.config.click_boolean_checkbox(config_rows[1])
+        with allure.step("Change value in int type on component config page"):
+            component_config_page.config.type_in_field_with_few_inputs(
+                row=config_rows[2], values=[random.randint(20, 30)], clear=True
+            )
+        with allure.step("Change value in password type on component config page"):
+            component_config_page.config.type_in_field_with_few_inputs(
+                row=config_rows[3], values=[params["row_value_new"], params["row_value_new"]], clear=True
+            )
+        with allure.step("Change value in string type on component config page"):
+            component_config_page.config.type_in_field_with_few_inputs(
+                row=config_rows[4], values=[params["row_value_new"]], clear=True
+            )
+        with allure.step("Change value in list type on component config page"):
+            component_config_page.config.type_in_field_with_few_inputs(
+                row=config_rows[5],
+                values=[params["row_value_new"], params["row_value_new"], params["row_value_new"]],
+                clear=True,
+            )
+        with allure.step("Change value in text type on component config page"):
+            component_config_page.config.type_in_field_with_few_inputs(
+                row=config_rows[6], values=[params["row_value_new"]], clear=True
+            )
+        with allure.step("Deactivate group on component config page"):
+            component_config_page.config.expand_or_close_group(params["group_name"], expand=False)
+        with allure.step("Change value in structure type on component config page"):
+            component_config_page.config.type_in_field_with_few_inputs(
+                row=config_rows[11], values=["1", params["row_value_new"], "2", params["row_value_new"]], clear=True
+            )
+        with allure.step("Change value in map type on component config page"):
+            component_config_page.config.type_in_field_with_few_inputs(
+                row=config_rows[12],
+                values=[
+                    params["row_value_new"],
+                    params["row_value_new"],
+                    params["row_value_new"],
+                    params["row_value_new"],
+                ],
+                clear=True,
+            )
+        with allure.step("Change value in secrettext type on component config page"):
+            component_config_page.config.type_in_field_with_few_inputs(
+                row=config_rows[13], values=[params["row_value_new"]], clear=True
+            )
+        with allure.step("Change value in json type on component config page"):
+            component_config_page.config.type_in_field_with_few_inputs(
+                row=config_rows[14], values=[f'{{}}'], clear=True
+            )
 
         component_config_page.config.set_description(params["config_name_new"])
         component_config_page.config.save_config()
         component_config_page.config.compare_versions(params["config_name_old"])
-        with allure.step("Check row history"):
-            row_with_history = component_config_page.config.get_all_config_rows()[0]
-            component_config_page.config.wait_history_row_with_value(row_with_history, params["row_value_old"])
+        with allure.step("Check row history on component config page"):
+            rows_with_history = component_config_page.config.get_all_config_rows()
+            with allure.step("Check history value in float type on component config page"):
+                component_config_page.config.wait_history_row_with_value(rows_with_history[0], "0.1")
+            with allure.step("Check history value in boolean type on component config page"):
+                component_config_page.config.wait_history_row_with_value(rows_with_history[1], "true")
+            with allure.step("Check history value in int type on component config page"):
+                component_config_page.config.wait_history_row_with_value(rows_with_history[2], "16")
+            with allure.step("Check history value in string type on component config page"):
+                component_config_page.config.wait_history_row_with_value(rows_with_history[4], "string")
+            with allure.step("Check history value in list type on component config page"):
+                component_config_page.config.wait_history_row_with_value(
+                    rows_with_history[5], '["/dev/rdisk0s1","/dev/rdisk0s2","/dev/rdisk0s3"]'
+                )
+            with allure.step("Check history value in text type on component config page"):
+                component_config_page.config.wait_history_row_with_value(rows_with_history[6], 'file content')
+            with allure.step("Check group in not active on component config page"):
+                component_config_page.config.check_group_is_active(params["group_name"], is_active=False)
+            with allure.step("Check history value in structure type on component config page"):
+                component_config_page.config.wait_history_row_with_value(
+                    rows_with_history[9], '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]'
+                )
+            with allure.step("Check history value in map type on component config page"):
+                component_config_page.config.wait_history_row_with_value(
+                    rows_with_history[10], '{"age":"24","name":"Joe","sex":"m"}'
+                )
+            with allure.step("Change value in secrettext type on component config page"):
+                component_config_page.config.wait_history_row_with_value(rows_with_history[11], '****')
+            with allure.step("Change value in json type on component config page"):
+                component_config_page.config.wait_history_row_with_value(
+                    rows_with_history[12], '{"age":"24","name":"Joe","sex":"m"}'
+                )
 
     @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
     def test_reset_config_in_row_on_component_config_page(self, app_fs, create_cluster_with_service):
@@ -223,7 +315,9 @@ class TestComponentConfigPage:
             app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
         ).open()
         config_row = component_config_page.config.get_all_config_rows()[0]
-        component_config_page.config.type_in_config_field(row=config_row, value=params["row_value_new"], clear=True)
+        component_config_page.config.type_in_field_with_few_inputs(
+            row=config_row, values=[params["row_value_new"]], clear=True
+        )
         component_config_page.config.set_description(params["config_name"])
         component_config_page.config.save_config()
 
@@ -254,7 +348,7 @@ class TestComponentConfigPage:
         component_config_page.config.check_password_confirm_required(params['pass_name'])
         component_config_page.config.check_field_is_required(params['req_name'])
         config_row = component_config_page.config.get_all_config_rows()[0]
-        component_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
+        component_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params['wrong_value']])
         component_config_page.config.check_field_is_invalid(params['not_req_name'])
         component_config_page.config.check_config_warn_icon_on_left_menu()
         component_config_page.toolbar.check_warn_button(
@@ -278,8 +372,8 @@ class TestComponentConfigPage:
         ).open()
         component_config_page.config.clear_field_by_keys(params['field_name'])
         component_config_page.config.check_field_is_required(params['field_name'])
-        component_config_page.config.type_in_config_field(
-            params['new_value'], row=component_config_page.config.get_all_config_rows()[0]
+        component_config_page.config.type_in_field_with_few_inputs(
+            row=component_config_page.config.get_all_config_rows()[0], values=[params['new_value']]
         )
         component_config_page.config.save_config()
         component_config_page.config.assert_input_value_is(

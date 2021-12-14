@@ -20,6 +20,7 @@ from tests.ui_tests.app.page.admin.page import AdminIntroPage, AdminUsersPage, A
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.utils import expect_rows_amount_change
 
+
 # pylint: disable=redefined-outer-name
 
 
@@ -131,7 +132,7 @@ def test_save_settings_with_different_name(settings_page: AdminSettingsPage):
     settings_page.config.set_description(params['new_name'])
     with allure.step(f'Change value of field {params["field_display_name"]} to {params["field_value"]}'):
         config_field_row = settings_page.config.get_config_row(params['field_display_name'])
-        settings_page.config.type_in_config_field(params['field_value'], row=config_field_row)
+        settings_page.config.type_in_field_with_few_inputs(row=config_field_row, values=[params['field_value']])
     settings_page.config.save_config()
     settings_page.config.compare_versions(params['new_name'], 'init')
     with allure.step('Check history'):
@@ -148,7 +149,7 @@ def test_reset_config(settings_page: AdminSettingsPage):
     params = {'field_display_name': 'client_id', 'init_value': '', 'changed_value': '123'}
     with allure.step(f'Set value of {params["field_display_name"]} to {params["changed_value"]}'):
         config_field_row = settings_page.config.get_config_row(params['field_display_name'])
-        settings_page.config.type_in_config_field(params['changed_value'], row=config_field_row)
+        settings_page.config.type_in_field_with_few_inputs(row=config_field_row, values=[params['changed_value']])
     with allure.step('Save config'):
         settings_page.config.save_config()
         settings_page.config.assert_input_value_is(params['changed_value'], params['field_display_name'])

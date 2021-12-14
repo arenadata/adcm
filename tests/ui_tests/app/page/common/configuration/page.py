@@ -45,6 +45,7 @@ class CommonConfigMenuObj(BasePageObject):
 
     def get_all_config_rows(self, *, displayed_only: bool = True, timeout: int = 5) -> List[WebElement]:
         """Return all config field rows"""
+
         try:
             if displayed_only:
                 return [r for r in self.find_elements(CommonConfigMenu.config_row, timeout=timeout) if r.is_displayed()]
@@ -52,8 +53,21 @@ class CommonConfigMenuObj(BasePageObject):
         except TimeoutException:
             return []
 
+    def get_all_config_rows_names(self, *, displayed_only: bool = True) -> List[WebElement]:
+        """Return all config field rows names"""
+
+        try:
+            self.wait_element_visible(CommonConfigMenu.config_row)
+            return [
+                self.find_child(r, CommonConfigMenu.ConfigRow.name).text.rstrip(":")
+                for r in self.get_all_config_rows(displayed_only=displayed_only)
+            ]
+        except TimeoutException:
+            return []
+
     def get_config_row(self, display_name: str) -> WebElement:
         """Return config field row with provided display name"""
+
         row_name = f'{display_name}:' if not display_name.endswith(':') else display_name
         for row in self.get_all_config_rows():
             if self.find_child(row, CommonConfigMenu.ConfigRow.name).text == row_name:
@@ -62,6 +76,7 @@ class CommonConfigMenuObj(BasePageObject):
 
     def get_textbox_rows(self, timeout=2) -> List[WebElement]:
         """Get textbox elements from the page"""
+
         try:
             return [r for r in self.find_elements(CommonConfigMenu.text_row, timeout=timeout) if r.is_displayed()]
         except TimeoutException:
@@ -70,21 +85,22 @@ class CommonConfigMenuObj(BasePageObject):
     @allure.step('Saving configuration')
     def save_config(self, load_timeout: int = 2):
         """Save current configuration"""
+
         self.find_and_click(self.locators.save_btn)
         self.wait_element_hide(self.locators.loading_text, timeout=load_timeout)
 
     @allure.step('Setting configuration description to {description}')
     def set_description(self, description: str) -> str:
         """Clear description field, set new value and get previous description"""
+
         desc = self.find_element(self.locators.description_input)
         previous_description = desc.get_property('value')
         self.send_text_to_element(self.locators.description_input, description, clean_input=True)
         return previous_description
 
     def compare_versions(self, compare_with: str, base_compare_version: Optional[str] = None):
-        """
-        Click on history button and select compare to config option by its description
-        """
+        """Click on history button and select compare to config option by its description"""
+
         base_version = f'"{base_compare_version}"' if base_compare_version else 'current'
         with allure.step(f'Compare {base_version} configuration with {compare_with}'):
             self.find_and_click(self.locators.history_btn)
@@ -110,12 +126,7 @@ class CommonConfigMenuObj(BasePageObject):
 
         return "checked" in self.find_element(CommonConfigMenu.advanced_label).get_attribute("class")
 
-    def get_input_value(
-        self,
-        row: WebElement,
-        *,
-        is_password: bool = False,
-    ) -> str:
+    def get_input_value(self, row: WebElement, *, is_password: bool = False) -> str:
         """
         Get value from field input
         If is_password is True, then special field is used for search
@@ -124,18 +135,13 @@ class CommonConfigMenuObj(BasePageObject):
         :param is_password: Is field password/confirmation
         :returns: Value of input
         """
+
         row_locators = CommonConfigMenu.ConfigRow
         locator = row_locators.value if not is_password else row_locators.password
         return self.find_child(row, locator).get_property("value")
 
     @allure.step('Check field "{display_name}" has value "{expected_value}"')
-    def assert_input_value_is(
-        self,
-        expected_value: str,
-        display_name: str,
-        *,
-        is_password: bool = False,
-    ):
+    def assert_input_value_is(self, expected_value: str, display_name: str, *, is_password: bool = False):
         """
         Assert that value in field is expected_value (using retries)
         :param expected_value: Value expected to be in input field
@@ -151,6 +157,7 @@ class CommonConfigMenuObj(BasePageObject):
 
     def reset_to_default(self, row: WebElement):
         """Click reset button"""
+
         self.find_child(row, CommonConfigMenu.ConfigRow.reset_btn).click()
 
     @allure.step('Type "{value}" into config field')
@@ -172,18 +179,25 @@ class CommonConfigMenuObj(BasePageObject):
             field.clear()
         field.send_keys(value)
 
-    @allure.step("Filling in {display_name} field's password {password} and confirmation {confirmation}")
-    def fill_password_and_confirm_fields(self, password: str, confirmation: str, display_name: str):
+    @allure.step('Type "{values}" into config field with few inputs')
+    def type_in_field_with_few_inputs(self, row: WebElement, values: [str], clear: bool = False):
         """
-        Fill password in clean fields and confirm password fields
+        Send keys to config list
+        :param row: Config field row
+        :param value: keys to send
+        :param clear: clean input before sending keys or not
         """
-        # there are invisible inputs, so we need special locator
-        # if field is not empty or isn't required it can behave not so predictably
-        row = self.get_config_row(display_name)
-        password_input = self.find_child(row, self.locators.ConfigRow.password)
-        password_input.send_keys(password)
-        confirm_input = self.find_child(row, self.locators.ConfigRow.confirm_password)
-        confirm_input.send_keys(confirmation)
+        self.scroll_to(row)
+        for id, value in enumerate(values):
+            try:
+                field = self.find_children(row, self.locators.ConfigRow.input)[id]
+            except IndexError:
+                self.find_child(row, self.locators.ConfigRow.add_item_btn).click()
+                self.wait_element_visible(self.find_child(row, self.locators.ConfigRow.input))
+                field = self.find_children(row, self.locators.ConfigRow.input)[id]
+            if clear:
+                field.clear()
+            self.find_children(row, self.locators.ConfigRow.input)[id].send_keys(value)
 
     @allure.step('Click on group {title}')
     def click_on_group(self, title: str):
@@ -201,6 +215,9 @@ class CommonConfigMenuObj(BasePageObject):
             ), f"Group should be{'' if is_expanded else ' not '}expanded"
 
         wait_until_step_succeeds(_click_group, period=1, timeout=10)
+
+    def click_boolean_checkbox(self, row):
+        self.find_child(row, self.locators.ConfigRow.checkbox).click()
 
     @contextmanager
     def wait_group_changed(self, group_name: str):

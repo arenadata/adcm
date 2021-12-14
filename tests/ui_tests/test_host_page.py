@@ -15,6 +15,7 @@
 """UI tests for /host page"""
 
 import os
+import random
 from typing import Tuple
 
 import allure
@@ -61,6 +62,9 @@ REQUIRED_FIELD_NAME = 'Required item'
 PASSWORD_FIELD_NAME = 'Important password'
 SECRETTEXT_FIELD_NAME = 'secrettext'
 ADVANCED_FIELD_NAME = 'Advanced option'
+
+
+# !===== Fixtures =====!
 
 
 @pytest.fixture(params=["provider"])
@@ -392,40 +396,107 @@ class TestHostConfigPage:
             host_page.config.check_config_fields_visibility(set(), {ADVANCED_FIELD_NAME})
 
     @pytest.mark.smoke()
-    @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
+    @pytest.mark.parametrize('provider_bundle', ["host_with_all_config_params"], indirect=True)
     @pytest.mark.usefixtures('create_host')
     def test_custom_name_config(self, page: HostListPage):
         """Change configuration, save with custom name, compare changes"""
+
         params = {
-            'password': 'awesomepass',
-            'secrettext': 'awesome secrettext',
-            'description': 'my own config description',
-            'type_in_required': '12',
-            'required_expected': 'null',
-            'password_expected': '****',
-            'secrettext_expected': '****',
+            "row_value_new": "test",
+            "config_name_new": "test_name",
+            "config_name_old": "init",
+            "group_name": "group",
         }
         host_page = open_config(page)
         host_page.check_host_toolbar(HOST_FQDN)
-        with allure.step('Change config description'):
-            init_config_desc = host_page.config.set_description(params['description'])
-        with allure.step('Change config values'):
-            required_row = host_page.config.get_config_row(REQUIRED_FIELD_NAME)
-            host_page.config.type_in_config_field(params['type_in_required'], row=required_row)
-            host_page.config.fill_password_and_confirm_fields(
-                params['password'], params['password'], PASSWORD_FIELD_NAME
+        config_rows = host_page.config.get_all_config_rows()
+        with allure.step("Change value in float type on host config page"):
+            host_page.config.type_in_field_with_few_inputs(
+                row=config_rows[0], values=[random.randint(10, 20)], clear=True
             )
-            secrettext_row = host_page.config.get_config_row(SECRETTEXT_FIELD_NAME)
-            host_page.config.type_in_config_field(params['secrettext'], row=secrettext_row, clear=True)
-            host_page.config.save_config()
-        with allure.step('Compare configurations'):
-            host_page.config.compare_versions(init_config_desc)
-            required_row = host_page.config.get_config_row(REQUIRED_FIELD_NAME)
-            host_page.config.wait_history_row_with_value(required_row, params['required_expected'])
-            password_row = host_page.config.get_config_row(PASSWORD_FIELD_NAME)
-            host_page.config.wait_history_row_with_value(password_row, params['password_expected'])
-            secrettext_row = host_page.config.get_config_row(SECRETTEXT_FIELD_NAME)
-            host_page.config.wait_history_row_with_value(secrettext_row, params['secrettext_expected'])
+        with allure.step("Change value in boolean type on host config page"):
+            host_page.config.click_boolean_checkbox(config_rows[1])
+        with allure.step("Change value in int type on host config page"):
+            host_page.config.type_in_field_with_few_inputs(
+                row=config_rows[2], values=[random.randint(20, 30)], clear=True
+            )
+        with allure.step("Change value in password type on host config page"):
+            host_page.config.type_in_field_with_few_inputs(
+                row=config_rows[3], values=[params["row_value_new"], params["row_value_new"]], clear=True
+            )
+        with allure.step("Change value in string type on host config page"):
+            host_page.config.type_in_field_with_few_inputs(
+                row=config_rows[4], values=[params["row_value_new"]], clear=True
+            )
+        with allure.step("Change value in list type on host config page"):
+            host_page.config.type_in_field_with_few_inputs(
+                row=config_rows[5],
+                values=[params["row_value_new"], params["row_value_new"], params["row_value_new"]],
+                clear=True,
+            )
+        with allure.step("Change value in text type on host config page"):
+            host_page.config.type_in_field_with_few_inputs(
+                row=config_rows[6], values=[params["row_value_new"]], clear=True
+            )
+        with allure.step("Deactivate group on host config page"):
+            host_page.config.expand_or_close_group(params["group_name"], expand=False)
+        with allure.step("Change value in structure type on host config page"):
+            host_page.config.type_in_field_with_few_inputs(
+                row=config_rows[11], values=["1", params["row_value_new"], "2", params["row_value_new"]], clear=True
+            )
+        with allure.step("Change value in map type on host config page"):
+            host_page.config.type_in_field_with_few_inputs(
+                row=config_rows[12],
+                values=[
+                    params["row_value_new"],
+                    params["row_value_new"],
+                    params["row_value_new"],
+                    params["row_value_new"],
+                ],
+                clear=True,
+            )
+        with allure.step("Change value in secrettext type on host config page"):
+            host_page.config.type_in_field_with_few_inputs(
+                row=config_rows[13], values=[params["row_value_new"]], clear=True
+            )
+        with allure.step("Change value in json type on host config page"):
+            host_page.config.type_in_field_with_few_inputs(row=config_rows[14], values=[f'{{}}'], clear=True)
+
+        host_page.config.set_description(params["config_name_new"])
+        host_page.config.save_config()
+        host_page.config.compare_versions(params["config_name_old"])
+        with allure.step("Check row history on host config page"):
+            rows_with_history = host_page.config.get_all_config_rows()
+            with allure.step("Check history value in float type on host config page"):
+                host_page.config.wait_history_row_with_value(rows_with_history[0], "0.1")
+            with allure.step("Check history value in boolean type on host config page"):
+                host_page.config.wait_history_row_with_value(rows_with_history[1], "true")
+            with allure.step("Check history value in int type on host config page"):
+                host_page.config.wait_history_row_with_value(rows_with_history[2], "16")
+            with allure.step("Check history value in string type on host config page"):
+                host_page.config.wait_history_row_with_value(rows_with_history[4], "string")
+            with allure.step("Check history value in list type on host config page"):
+                host_page.config.wait_history_row_with_value(
+                    rows_with_history[5], '["/dev/rdisk0s1","/dev/rdisk0s2","/dev/rdisk0s3"]'
+                )
+            with allure.step("Check history value in text type on host config page"):
+                host_page.config.wait_history_row_with_value(rows_with_history[6], 'file content')
+            with allure.step("Check group in not active on host config page"):
+                host_page.config.check_group_is_active(params["group_name"], is_active=False)
+            with allure.step("Check history value in structure type on host config page"):
+                host_page.config.wait_history_row_with_value(
+                    rows_with_history[9], '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]'
+                )
+            with allure.step("Check history value in map type on host config page"):
+                host_page.config.wait_history_row_with_value(
+                    rows_with_history[10], '{"age":"24","name":"Joe","sex":"m"}'
+                )
+            with allure.step("Change value in secrettext type on host config page"):
+                host_page.config.wait_history_row_with_value(rows_with_history[11], '****')
+            with allure.step("Change value in json type on host config page"):
+                host_page.config.wait_history_row_with_value(
+                    rows_with_history[12], '{"age":"24","name":"Joe","sex":"m"}'
+                )
 
     @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
     @pytest.mark.usefixtures('create_host')
@@ -437,11 +508,13 @@ class TestHostConfigPage:
             'init_value': '',
         }
         host_page = open_config(page)
-        host_page.config.fill_password_and_confirm_fields(params['password'], params['password'], PASSWORD_FIELD_NAME)
-        host_page.config.type_in_config_field(
-            params['type_in_req_field'],
-            row=host_page.config.get_config_row(REQUIRED_FIELD_NAME),
+        host_page.config.type_in_field_with_few_inputs(
+            row=host_page.config.get_config_row(PASSWORD_FIELD_NAME),
+            values=[params['password'], params['password']],
             clear=True,
+        )
+        host_page.config.type_in_field_with_few_inputs(
+            row=host_page.config.get_config_row(REQUIRED_FIELD_NAME), values=[params['type_in_req_field']], clear=True
         )
         host_page.config.save_config()
         host_page.config.reset_to_default(host_page.config.get_config_row(REQUIRED_FIELD_NAME))
@@ -462,7 +535,7 @@ class TestHostConfigPage:
         regular_row = host_page.config.get_config_row(REGULAR_FIELD_NAME)
         host_page.config.check_password_confirm_required(PASSWORD_FIELD_NAME)
         host_page.config.check_field_is_required(REQUIRED_FIELD_NAME)
-        host_page.config.type_in_config_field(wrong_value, row=regular_row)
+        host_page.config.type_in_field_with_few_inputs(row=regular_row, values=[wrong_value])
         host_page.config.check_field_is_invalid(REGULAR_FIELD_NAME)
         host_page.config.check_config_warn_icon_on_left_menu()
         host_page.toolbar.check_warn_button(
@@ -479,7 +552,9 @@ class TestHostConfigPage:
         host_page = open_config(page)
         host_page.config.clear_field_by_keys(params['field_name'])
         host_page.config.check_field_is_required(params['field_name'])
-        host_page.config.type_in_config_field(params['new_value'], row=host_page.config.get_all_config_rows()[0])
+        host_page.config.type_in_field_with_few_inputs(
+            row=host_page.config.get_all_config_rows()[0], values=[params['new_value']]
+        )
         host_page.config.save_config()
         host_page.config.assert_input_value_is(expected_value=params["new_value"], display_name=params["field_name"])
 
