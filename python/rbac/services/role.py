@@ -14,6 +14,7 @@ from typing import List
 
 from rest_framework.exceptions import ValidationError
 
+from cm.models import Bundle
 from rbac.models import Role, RoleTypes
 from rbac.utils import update_m2m_field
 
@@ -61,3 +62,11 @@ def role_update(role: Role, **kwargs) -> Role:
         update_m2m_field(role.child, child)
 
     return role
+
+
+def list_categories() -> List[str]:
+    """List all available Role categories (including magic '*')"""
+    names = {b.name for b in Bundle.objects.all()}
+    data = ['*']
+    data.extend(sorted(names))
+    return data

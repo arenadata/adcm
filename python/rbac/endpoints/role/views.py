@@ -11,12 +11,12 @@
 # limitations under the License.
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.response import Response
+from rest_framework.decorators import action
 
 from rbac.models import Role
-from rbac.services.role import role_create, role_update
+from rbac.services.role import role_create, role_update, list_categories
 from rbac.utils import BaseRelatedSerializer
 from rbac.viewsets import ModelPermViewSet
 
@@ -100,3 +100,7 @@ class RoleView(ModelPermViewSet):  # pylint: disable=too-many-ancestors
         if instance.built_in:
             return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return super().destroy(request, *args, **kwargs)
+
+    @action(methods=['get'], detail=False)
+    def category(self, request):
+        return Response(list_categories())
