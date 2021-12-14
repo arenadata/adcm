@@ -418,7 +418,7 @@ class TestHostConfigPage:
             host_page.config.type_in_field_with_few_inputs(row=config_rows[2], values=["100500"], clear=True)
         with allure.step("Change value in password type on host config page"):
             host_page.config.type_in_field_with_few_inputs(
-                row=config_rows[3], values=[params["row_value_new"], params["row_value_new"]], clear=True
+                row=config_rows[3], values=[params["row_value_new"]] * 2, clear=True
             )
         with allure.step("Change value in string type on host config page"):
             host_page.config.type_in_field_with_few_inputs(
@@ -427,7 +427,7 @@ class TestHostConfigPage:
         with allure.step("Change value in list type on host config page"):
             host_page.config.type_in_field_with_few_inputs(
                 row=config_rows[5],
-                values=[params["row_value_new"], params["row_value_new"], params["row_value_new"]],
+                values=[params["row_value_new"]] * 3,
                 clear=True,
             )
         with allure.step("Change value in text type on host config page"):
@@ -442,14 +442,7 @@ class TestHostConfigPage:
             )
         with allure.step("Change value in map type on host config page"):
             host_page.config.type_in_field_with_few_inputs(
-                row=config_rows[13],
-                values=[
-                    params["row_value_new"],
-                    params["row_value_new"],
-                    params["row_value_new"],
-                    params["row_value_new"],
-                ],
-                clear=True,
+                row=config_rows[13], values=[params["row_value_new"]] * 4, clear=True
             )
         with allure.step("Change value in secrettext type on host config page"):
             host_page.config.type_in_field_with_few_inputs(

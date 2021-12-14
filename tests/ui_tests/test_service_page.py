@@ -257,7 +257,7 @@ class TestServiceConfigPage:
             service_config_page.config.type_in_field_with_few_inputs(row=config_rows[2], values=["100500"], clear=True)
         with allure.step("Change value in password type on service config page"):
             service_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[3], values=[params["row_value_new"], params["row_value_new"]], clear=True
+                row=config_rows[3], values=[params["row_value_new"]] * 2, clear=True
             )
         with allure.step("Change value in string type on service config page"):
             service_config_page.config.type_in_field_with_few_inputs(
@@ -265,9 +265,7 @@ class TestServiceConfigPage:
             )
         with allure.step("Change value in list type on service config page"):
             service_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[5],
-                values=[params["row_value_new"], params["row_value_new"], params["row_value_new"]],
-                clear=True,
+                row=config_rows[5], values=[params["row_value_new"]] * 3, clear=True
             )
         with allure.step("Change value in text type on service config page"):
             service_config_page.config.type_in_field_with_few_inputs(
@@ -281,14 +279,7 @@ class TestServiceConfigPage:
             )
         with allure.step("Change value in map type on service config page"):
             service_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[13],
-                values=[
-                    params["row_value_new"],
-                    params["row_value_new"],
-                    params["row_value_new"],
-                    params["row_value_new"],
-                ],
-                clear=True,
+                row=config_rows[13], values=[params["row_value_new"]] * 4, clear=True
             )
         with allure.step("Change value in secrettext type on service config page"):
             service_config_page.config.type_in_field_with_few_inputs(
