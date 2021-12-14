@@ -46,7 +46,7 @@ export class ListService implements IListService<Entities> {
     return this.current;
   }
 
-  getList(p: ParamMap, typeName: string): Observable<ListResult<Entities>> {
+  getList(p: ParamMap, typeName: TypeName): Observable<ListResult<Entities>> {
     const listParamStr = localStorage.getItem('list:param');
     if (p?.keys.length) {
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
@@ -68,16 +68,16 @@ export class ListService implements IListService<Entities> {
         return this.api.getList<Bundle>(`${environment.apiRoot}stack/bundle/`, p);
       case 'servicecomponent':
         return this.api.getList(`${environment.apiRoot}cluster/${(this.detail.Current as Service).cluster_id}/service/${this.detail.Current.id}/component`, p);
-      case 'rbac_user':
+      case 'user':
         params = { ...params, 'expand': 'group' };
         return this.api.getList(`${environment.apiRoot}rbac/user/`, convertToParamMap(params));
-      case 'rbac_group':
+      case 'group':
         params = { ...params, 'expand': 'user' };
         return this.api.getList(`${environment.apiRoot}rbac/group/`, convertToParamMap(params));
-      case 'rbac_role':
+      case 'role':
         params = { ...params, 'expand': 'child' };
         return this.api.getList(`${environment.apiRoot}rbac/role/`, convertToParamMap(params), { type: 'role' });
-      case 'rbac_policy':
+      case 'policy':
         return this.api.getList(`${environment.apiRoot}rbac/policy/`, p);
       default:
         return this.api.root.pipe(switchMap((root) => this.api.getList<Entities>(root[this.current.typeName], p)));
