@@ -156,7 +156,6 @@ class CommonConfigMenuObj(BasePageObject):
 
     def reset_to_default(self, row: WebElement):
         """Click reset button"""
-
         self.find_child(row, CommonConfigMenu.ConfigRow.reset_btn).click()
 
     @allure.step('Type "{value}" into config field')

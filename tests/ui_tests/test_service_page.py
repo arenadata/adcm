@@ -220,7 +220,7 @@ class TestServiceConfigPage:
             service_config_page.config.search(params["search_param"])
         with allure.step(f"Check that rows are filtered by {params['search_param']}"):
             config_rows = service_config_page.config.get_all_config_rows()
-            assert len(config_rows) == 1, "Rows are not filtered: there should be 1 row"
+            assert len(config_rows) == 2, "Rows are not filtered: there should be 1 group row and 1 sub group row"
             assert (
                 service_config_page.config.get_config_row_info(config_rows[0]).name == f"{params['search_param']}:"
             ), f"Name should be {params['search_param']}"
@@ -228,7 +228,7 @@ class TestServiceConfigPage:
             service_config_page.config.clear_search_input()
         with allure.step("Check that rows are not filtered"):
             config_rows = service_config_page.config.get_all_config_rows()
-            assert len(config_rows) == 2, "Rows are filtered: there should be 2 row"
+            assert len(config_rows) == 3, "Rows are filtered: there should be 1 group row and 2 sub group rows"
         with service_config_page.config.wait_rows_change(expected_rows_amount=0):
             service_config_page.config.click_on_group(params["group_name"])
 
@@ -248,15 +248,11 @@ class TestServiceConfigPage:
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         config_rows = service_config_page.config.get_all_config_rows()
         with allure.step("Change value in float type on service config page"):
-            service_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[0], values=[random.randint(10, 20)], clear=True
-            )
+            service_config_page.config.type_in_field_with_few_inputs(row=config_rows[0], values=["1.1111111111"], clear=True)
         with allure.step("Change value in boolean type on service config page"):
             service_config_page.config.click_boolean_checkbox(config_rows[1])
         with allure.step("Change value in int type on service config page"):
-            service_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[2], values=[random.randint(20, 30)], clear=True
-            )
+            service_config_page.config.type_in_field_with_few_inputs(row=config_rows[2], values=["100500"], clear=True)
         with allure.step("Change value in password type on service config page"):
             service_config_page.config.type_in_field_with_few_inputs(
                 row=config_rows[3], values=[params["row_value_new"], params["row_value_new"]], clear=True
@@ -279,11 +275,11 @@ class TestServiceConfigPage:
             service_config_page.config.expand_or_close_group(params["group_name"], expand=False)
         with allure.step("Change value in structure type on service config page"):
             service_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[11], values=["1", params["row_value_new"], "2", params["row_value_new"]], clear=True
+                row=config_rows[12], values=["1", params["row_value_new"], "2", params["row_value_new"]], clear=True
             )
         with allure.step("Change value in map type on service config page"):
             service_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[12],
+                row=config_rows[13],
                 values=[
                     params["row_value_new"],
                     params["row_value_new"],
@@ -294,10 +290,10 @@ class TestServiceConfigPage:
             )
         with allure.step("Change value in secrettext type on service config page"):
             service_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[13], values=[params["row_value_new"]], clear=True
+                row=config_rows[14], values=[params["row_value_new"]], clear=True
             )
         with allure.step("Change value in json type on service config page"):
-            service_config_page.config.type_in_field_with_few_inputs(row=config_rows[14], values=[f'{{}}'], clear=True)
+            service_config_page.config.type_in_field_with_few_inputs(row=config_rows[15], values=[f'{{}}'], clear=True)
 
         service_config_page.config.set_description(params["config_name_new"])
         service_config_page.config.save_config()
@@ -322,17 +318,17 @@ class TestServiceConfigPage:
                 service_config_page.config.check_group_is_active(params["group_name"], is_active=False)
             with allure.step("Check history value in structure type on service config page"):
                 service_config_page.config.wait_history_row_with_value(
-                    rows_with_history[9], '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]'
+                    rows_with_history[10], '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]'
                 )
             with allure.step("Check history value in map type on service config page"):
                 service_config_page.config.wait_history_row_with_value(
-                    rows_with_history[10], '{"age":"24","name":"Joe","sex":"m"}'
+                    rows_with_history[11], '{"age":"24","name":"Joe","sex":"m"}'
                 )
             with allure.step("Change value in secrettext type on service config page"):
-                service_config_page.config.wait_history_row_with_value(rows_with_history[11], '****')
+                service_config_page.config.wait_history_row_with_value(rows_with_history[12], '****')
             with allure.step("Change value in json type on service config page"):
                 service_config_page.config.wait_history_row_with_value(
-                    rows_with_history[12], '{"age":"24","name":"Joe","sex":"m"}'
+                    rows_with_history[13], '{"age":"24","name":"Joe","sex":"m"}'
                 )
 
     def test_reset_config_in_row_on_service_config_page(self, app_fs, create_cluster_with_service):
@@ -373,7 +369,7 @@ class TestServiceConfigPage:
         service_config_page.config.check_password_confirm_required(params['pass_name'])
         service_config_page.config.check_field_is_required(params['req_name'])
         config_row = service_config_page.config.get_all_config_rows()[0]
-        service_config_page.config.type_in_field_with_few_inputs(row=config_row, values=params['wrong_value'])
+        service_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params['wrong_value']])
         service_config_page.config.check_field_is_invalid(params['not_req_name'])
         service_config_page.config.check_config_warn_icon_on_left_menu()
         service_config_page.toolbar.check_warn_button(
