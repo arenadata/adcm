@@ -16,6 +16,7 @@
 import random
 from collections import defaultdict
 from copy import deepcopy
+from typing import Literal
 
 import allure
 
@@ -32,6 +33,8 @@ from tests.api.utils.types import (
     ForeignKeyM2M,
     ForeignKey,
     get_field_name_by_fk_dataclass,
+    GenericForeignKeyList,
+    ObjectForeignKey,
 )
 
 
@@ -86,7 +89,9 @@ class DbFiller:
                         endpoint=Endpoints.get_by_data_class(field.f_type.fk_link), force=True
                     )
                     if isinstance(field.f_type, ForeignKeyM2M):
-                        changed_fields[field.name] = [{'id': el["id"]} for el in fk_data]
+                        changed_fields[field.name] = [{"id": el["id"]} for el in fk_data]
+                    elif isinstance(field.f_type, ObjectForeignKey):
+                        changed_fields[field.name] = {"id": fk_data[0]["id"]}
                     else:
                         changed_fields[field.name] = fk_data[0]["id"]
                 elif field.name != "id":
@@ -164,6 +169,8 @@ class DbFiller:
                     return []
                 fk_data = self._get_or_create_data_for_endpoint(endpoint=fk_endpoint, force=force)
             return self._choose_fk_field_value(field=field, fk_data=fk_data)
+        if isinstance(field.f_type, GenericForeignKeyList):
+            return field.f_type.payload
         return self._generate_field_value(field=field)
 
     def _solve_field_relations(self, endpoint: Endpoints, data: dict, field: Field, force=False):
@@ -172,6 +179,7 @@ class DbFiller:
         """
         _data = deepcopy(data)
         related_field_name = field.f_type.relates_on.field.name
+        # if related field doesn't exist, create it
         if not field.f_type.relates_on.data_class:
             if related_field_name not in _data:
                 _data[related_field_name] = self._prepare_field_value_for_object_creation(
@@ -194,10 +202,29 @@ class DbFiller:
                 ][-1]
                 field.f_type.schema = build_schema_by_json(current_config_log[field.name])
 
+        elif endpoint == Endpoints.RbacNotBuiltInPolicy:
+            if field.name == "object":
+                role_fk = _data[related_field_name]
+                role = get_object_data(adcm=self.adcm, endpoint=endpoint.RbacAnyRole, object_id=role_fk)
+                field.f_type.payload = [
+                    {
+                        "id": self._get_adcm_object_id_by_object_type(object_type),
+                        "type": object_type,
+                    }
+                    for object_type in role["parametrized_by_type"]
+                ]
+                _data[field.name] = field.f_type.payload
+
         else:
             raise NotImplementedError(f"Relations logic needs to be implemented for {endpoint} for field {field.name}")
 
         return _data, field
+
+    def _get_adcm_object_id_by_object_type(
+        self, object_type: Literal["cluster", "service", "component", "provider", "host"]
+    ) -> int:
+        """Get random created object by given type"""
+        return random.choice(get_endpoint_data(adcm=self.adcm, endpoint=Endpoints[object_type.capitalize()]))["id"]
 
     def _prepare_data_for_object_creation(self, endpoint: Endpoints = None, force=False):
         data = {}
@@ -248,9 +275,10 @@ class DbFiller:
         """Choose a random fk value for the specified field"""
         if isinstance(field.f_type, ForeignKey):
             fk_class_name = field.f_type.fk_link.__name__
-            if fk_class_name in self._available_fkeys:
+            # we need to check for two situations:
+            # if there's a set for FK class, and it's not an empty set
+            if fk_vals := self._available_fkeys.get(fk_class_name, None):
                 new_fk = False
-                fk_vals = self._available_fkeys[fk_class_name]
             else:
                 new_fk = True
                 fk_vals = {el["id"] for el in fk_data}
@@ -263,6 +291,12 @@ class DbFiller:
                 self._available_fkeys[fk_class_name].update(keys)
                 if new_fk:
                     self._add_child_fk_values_to_available_fkeys(fk_ids=keys, fk_data_class=field.f_type.fk_link)
+            elif isinstance(field.f_type, ObjectForeignKey):
+                key = random.choice(list(fk_vals))
+                result = {'id': key}
+                self._available_fkeys[fk_class_name].add(key)
+                if new_fk:
+                    self._add_child_fk_values_to_available_fkeys(fk_ids=[key], fk_data_class=field.f_type.fk_link)
             else:
                 key = random.choice(list(fk_vals))
                 result = key

@@ -22,6 +22,8 @@ import requests
 import allure
 from requests_toolbelt.utils import dump
 
+PARAMETRIZED_BY_LIST = ["cluster", "service", "component", "provider", "host"]
+
 
 class NotSet:  # pylint: disable=too-few-public-methods
     """Dummy class for no field value"""
