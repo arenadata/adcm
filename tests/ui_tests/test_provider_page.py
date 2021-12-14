@@ -257,6 +257,7 @@ class TestProviderConfigPage:
         with provider_config_page.config.wait_rows_change(expected_rows_amount=2):
             provider_config_page.config.click_on_group(params["group_name"])
 
+    # pylint: disable=too-many-statements
     @pytest.mark.smoke()
     @pytest.mark.parametrize("bundle", ["provider_with_all_config_params"], indirect=True)
     def test_save_custom_config_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
@@ -320,7 +321,7 @@ class TestProviderConfigPage:
                 row=config_rows[14], values=[params["row_value_new"]], clear=True
             )
         with allure.step("Change value in json type on provider config page"):
-            provider_config_page.config.type_in_field_with_few_inputs(row=config_rows[15], values=[f'{{}}'], clear=True)
+            provider_config_page.config.type_in_field_with_few_inputs(row=config_rows[15], values=['{}'], clear=True)
 
         provider_config_page.config.set_description(params["config_name_new"])
         provider_config_page.config.save_config()

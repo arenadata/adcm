@@ -394,6 +394,7 @@ class TestHostConfigPage:
                 host_page.find_and_click(CommonConfigMenu.advanced_label)
             host_page.config.check_config_fields_visibility(set(), {ADVANCED_FIELD_NAME})
 
+    # pylint: disable=too-many-statements
     @pytest.mark.smoke()
     @pytest.mark.parametrize('provider_bundle', ["host_with_all_config_params"], indirect=True)
     @pytest.mark.usefixtures('create_host')
@@ -455,7 +456,7 @@ class TestHostConfigPage:
                 row=config_rows[14], values=[params["row_value_new"]], clear=True
             )
         with allure.step("Change value in json type on host config page"):
-            host_page.config.type_in_field_with_few_inputs(row=config_rows[15], values=[f'{{}}'], clear=True)
+            host_page.config.type_in_field_with_few_inputs(row=config_rows[15], values=['{}'], clear=True)
 
         host_page.config.set_description(params["config_name_new"])
         host_page.config.save_config()

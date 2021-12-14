@@ -82,7 +82,7 @@ BUNDLE_WITH_REQUIRED_IMPORT = "cluster_required_import"
 BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
 
 
-# pylint: disable=redefined-outer-name,no-self-use,unused-argument
+# pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-many-lines
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
 
@@ -776,6 +776,7 @@ class TestClusterConfigPage:
         with cluster_config_page.config.wait_rows_change(expected_rows_amount=2):
             cluster_config_page.config.click_on_group(params["group_name"])
 
+    # pylint: disable=too-many-statements
     def test_save_custom_config_on_cluster_config_page(self, app_fs, create_cluster_with_all_config_fields):
         """Test config save on cluster/{}/config page"""
 
@@ -838,7 +839,7 @@ class TestClusterConfigPage:
                 row=config_rows[14], values=[params["row_value_new"]], clear=True
             )
         with allure.step("Change value in json type on cluster config page"):
-            cluster_config_page.config.type_in_field_with_few_inputs(row=config_rows[15], values=[f'{{}}'], clear=True)
+            cluster_config_page.config.type_in_field_with_few_inputs(row=config_rows[15], values=['{}'], clear=True)
 
         cluster_config_page.config.set_description(params["config_name_new"])
         cluster_config_page.config.save_config()

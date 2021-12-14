@@ -190,6 +190,7 @@ class TestComponentConfigPage:
         with component_config_page.config.wait_rows_change(expected_rows_amount=2):
             component_config_page.config.click_on_group(params["group_name"])
 
+    # pylint: disable=too-many-statements
     @pytest.mark.parametrize(
         "bundle_archive", [utils.get_data_dir(__file__, COMPONENT_WITH_DESCRIPTION_FIELDS)], indirect=True
     )
@@ -263,7 +264,7 @@ class TestComponentConfigPage:
             )
         with allure.step("Change value in json type on component config page"):
             component_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[15], values=[f'{{}}'], clear=True
+                row=config_rows[15], values=['{}'], clear=True
             )
 
         component_config_page.config.set_description(params["config_name_new"])

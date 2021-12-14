@@ -12,7 +12,6 @@
 
 """UI tests for /service page"""
 import os
-import random
 from typing import Tuple
 
 import allure
@@ -232,6 +231,7 @@ class TestServiceConfigPage:
         with service_config_page.config.wait_rows_change(expected_rows_amount=0):
             service_config_page.config.click_on_group(params["group_name"])
 
+    # pylint: disable=too-many-statements
     def test_save_custom_config_on_service_config_page(self, app_fs, sdk_client_fs):
         """Test config save on /cluster/{}/service/{}/config page"""
 
@@ -248,7 +248,9 @@ class TestServiceConfigPage:
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         config_rows = service_config_page.config.get_all_config_rows()
         with allure.step("Change value in float type on service config page"):
-            service_config_page.config.type_in_field_with_few_inputs(row=config_rows[0], values=["1.1111111111"], clear=True)
+            service_config_page.config.type_in_field_with_few_inputs(
+                row=config_rows[0], values=["1.1111111111"], clear=True
+            )
         with allure.step("Change value in boolean type on service config page"):
             service_config_page.config.click_boolean_checkbox(config_rows[1])
         with allure.step("Change value in int type on service config page"):
@@ -293,7 +295,7 @@ class TestServiceConfigPage:
                 row=config_rows[14], values=[params["row_value_new"]], clear=True
             )
         with allure.step("Change value in json type on service config page"):
-            service_config_page.config.type_in_field_with_few_inputs(row=config_rows[15], values=[f'{{}}'], clear=True)
+            service_config_page.config.type_in_field_with_few_inputs(row=config_rows[15], values=['{}'], clear=True)
 
         service_config_page.config.set_description(params["config_name_new"])
         service_config_page.config.save_config()
