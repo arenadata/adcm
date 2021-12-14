@@ -67,6 +67,7 @@ class RoleView(ModelPermViewSet):  # pylint: disable=too-many-ancestors
         'child',
     )
     ordering_fields = ('id', 'name', 'display_name', 'built_in', 'type')
+    search_fields = ('name', 'display_name')
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

@@ -70,3 +70,4 @@ class GroupViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
     serializer_class = GroupSerializer
     filterset_fields = ('id', 'name', 'user')
     ordering_fields = ('id', 'name')
+    search_fields = ('name',)

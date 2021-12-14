@@ -130,6 +130,7 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.OrderingFilter',
+        'rest_framework.filters.SearchFilter',
     ],
     'EXCEPTION_HANDLER': 'cm.errors.custom_drf_exception_handler',
 }
