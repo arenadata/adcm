@@ -1,4 +1,5 @@
 import { RbacGroupModel } from '@app/models/rbac/rbac-group.model';
+import { IProfile } from '@app/core/store';
 
 export interface RbacUserModel {
   id: number;
@@ -9,6 +10,9 @@ export interface RbacUserModel {
   is_superuser: boolean;
   password: string;
   url: string;
-  profile: unknown;
+  profile: IProfile;
   group: Pick<RbacGroupModel, 'id' | 'name' | 'url'>[];
+
+  //
+  change_password: string;
 }
