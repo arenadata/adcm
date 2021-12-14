@@ -223,6 +223,19 @@ class Boolean(BaseType):
         return random.choice([True, False])
 
 
+class StaticBoolean(BaseType):
+    """Boolean field type that is always True or False"""
+
+    value: bool
+
+    def __init__(self, value: bool, **kwargs):
+        super().__init__(**kwargs)
+        self.value = value
+
+    def generate(self, **kwargs):
+        return self.value
+
+
 class String(BaseType):
     """String field type"""
 
@@ -386,6 +399,25 @@ class ForeignKey(BaseType):
         pass  # pylint: disable=unnecessary-pass
 
 
+class ObjectForeignKey(ForeignKey):
+    """Object foreign key field type (e.g. {'id': 2})"""
+
+    def __init__(self, fk_link: Type["data_classes.BaseClass"] = None, **kwargs):
+        super().__init__(fk_link=fk_link, **kwargs)
+        self._sp_vals_negative = [
+            PreparedFieldValue(
+                {'id': 1000},
+                f_type=self,
+                error_messages=["Invalid pk \"1000\" - object does not exist."],
+            ),
+            PreparedFieldValue(
+                {'id': 2 ** 63},
+                f_type=self,
+                error_messages=[f"Invalid pk \"{2 ** 63}\" - object does not exist."],
+            ),
+        ]
+
+
 class BackReferenceFK(BaseType):
     """Back reference foreign key field type"""
 
@@ -416,6 +448,41 @@ class ForeignKeyM2M(ForeignKey):
                 error_messages=[f"Invalid pk \"{2 ** 63}\" - object does not exist."],
             ),
         ]
+
+
+class GenericForeignKeyList(BaseType):
+    """List with generic foreign keys (special variant of ListOf(Json))"""
+
+    payload: List[dict]
+
+    def generate(self, **kwargs):
+        """
+        No need to directly generate such a field,
+        payload should be set during "relates_on" resolving and requested directly
+        """
+
+
+class ListOf(BaseType):
+    """List field type"""
+
+    item_type: BaseType
+
+    def __init__(self, item_type: BaseType, **kwargs):
+        self.item_type = item_type
+        super().__init__(**kwargs)
+        self._sp_vals_negative = [
+            PreparedFieldValue([neg.value], f_type=neg.f_type) for neg in item_type.get_negative_values()
+        ]
+
+    def generate(self, **kwargs):
+        return [self.item_type.generate(**kwargs)]
+
+
+class EmptyList(BaseType):
+    """Empty list type (for corner cases to ensure empty list is sent)"""
+
+    def generate(self, **kwargs):
+        return []
 
 
 @attr.dataclass

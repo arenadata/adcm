@@ -14,10 +14,18 @@
 
 # pylint: disable=too-few-public-methods,invalid-name
 from enum import Enum
-from typing import List, Type, Optional
+from typing import List, Type, Optional, Callable
 
 import attr
 
+from tests.api.utils.filters import (
+    is_business_role,
+    is_not_business_role,
+    is_built_in,
+    is_not_hidden_role,
+    is_not_built_in,
+    is_role_type,
+)
 from tests.api.utils.data_classes import (
     BaseClass,
     GroupConfigFields,
@@ -30,11 +38,26 @@ from tests.api.utils.data_classes import (
     ObjectConfigFields,
     ConfigLogFields,
     GroupConfigHostCandidatesFields,
+    RbacNotBuiltInPolicyFields,
     RbacUserFields,
     RbacGroupFields,
+    RbacSimpleRoleFields,
+    RbacBuiltInRoleFields,
+    RbacRoleFields,
+    RbacBusinessRoleFields,
+    RbacBuiltInPolicyFields,
 )
 from tests.api.utils.methods import Methods
 from tests.api.utils.types import get_fields
+
+ALL = [
+    Methods.GET,
+    Methods.LIST,
+    Methods.POST,
+    Methods.PUT,
+    Methods.PATCH,
+    Methods.DELETE,
+]
 
 
 @attr.dataclass
@@ -46,6 +69,9 @@ class Endpoint:
     :attribute data_class: endpoint fields specification
     :attribute spec_link: link to ADCM specification for endpoint
     :attribute technical: pass True if need to ignore during collect tests
+    :attribute filter_predicate: function that can be called to filter elements.
+                                 If there's 0 existing objects, framework will try to create one and most likely fail
+                                 with ValidationError in case object can't be created via API.
     """
 
     path: str
@@ -53,6 +79,7 @@ class Endpoint:
     data_class: Type[BaseClass]
     spec_link: str
     technical: bool = False
+    filter_predicate: Optional[Callable[[dict], bool]] = None
     _base_path = None
 
     def set_path(self, value):
@@ -65,6 +92,10 @@ class Endpoint:
         """Revert path to initial generic value"""
         if self._base_path:
             self.path = self._base_path
+
+    def get_data_class_pretty_name(self) -> str:
+        """Get "pretty" data class name (without "Fields" suffix)"""
+        return self.data_class.__name__.replace("Fields", "")
 
 
 class Endpoints(Enum):
@@ -101,6 +132,14 @@ class Endpoints(Enum):
     def technical(self):
         """Getter for Endpoint.technical attribute"""
         return self.endpoint.technical
+
+    @property
+    def endpoint_id(self) -> str:
+        """Get endpoint identifier based on path and (if required) Data Class name"""
+        path_id = self.endpoint.path.replace('/', '_')
+        if sum(1 for e in Endpoints if e.path == self.endpoint.path) > 1:
+            return f"{path_id}_{self.endpoint.get_data_class_pretty_name()}"
+        return path_id
 
     @classmethod
     def get_by_data_class(cls, data_class: Type[BaseClass]) -> Optional["Endpoints"]:
@@ -250,4 +289,58 @@ class Endpoints(Enum):
         ],
         data_class=RbacGroupFields,
         spec_link="",
+    )
+
+    # Test logic for "not built_in" that can be created and have a child
+    RbacSimpleRole = Endpoint(
+        path="rbac/role",
+        methods=ALL,
+        data_class=RbacSimpleRoleFields,
+        spec_link="",
+        filter_predicate=lambda i: is_not_business_role(i) and is_not_hidden_role(i) and is_not_built_in(i),
+    )
+
+    # Test logic for "built_in"
+    RbacBuiltInRole = Endpoint(
+        path="rbac/role",
+        methods=[Methods.GET, Methods.LIST, Methods.POST],
+        data_class=RbacBuiltInRoleFields,
+        spec_link="",
+        filter_predicate=is_built_in,
+    )
+
+    RbacBusinessRole = Endpoint(
+        path="rbac/role",
+        methods=[Methods.GET, Methods.LIST],
+        data_class=RbacBusinessRoleFields,
+        spec_link="",
+        filter_predicate=is_business_role,
+        technical=True,
+    )
+
+    # Workaround to get unfiltered Roles
+    RbacAnyRole = Endpoint(
+        path="rbac/role",
+        methods=ALL,
+        data_class=RbacRoleFields,
+        spec_link="",
+        technical=True,
+        filter_predicate=is_role_type,
+    )
+
+    RbacNotBuiltInPolicy = Endpoint(
+        path="rbac/policy",
+        methods=ALL,
+        data_class=RbacNotBuiltInPolicyFields,
+        spec_link="",
+        filter_predicate=is_not_built_in,
+    )
+
+    # Test logic for "built_in"
+    RbacBuiltInPolicy = Endpoint(
+        path="rbac/policy",
+        methods=[Methods.GET, Methods.LIST, Methods.POST],
+        data_class=RbacBuiltInPolicyFields,
+        spec_link="",
+        filter_predicate=is_built_in,
     )
