@@ -91,7 +91,7 @@ class MyPerm(DjangoModelPerm):
         r = request.user.has_perms(perms)
         self.log_cache(request.user, 'AFTER')
         log.debug('HAS_PERM user: %s, %s, %s RESULT: %s', request.user, perms, queryset.model, r)
-        return r
+        return r, perms
 
 
 class ClusterList(PageViewAdd):
@@ -114,8 +114,9 @@ class ClusterList(PageViewAdd):
     def check_permissions(self, request):
         for permission in self.get_permissions():
             log.debug('CHECK_PERM %s %s', self.queryset.model, permission)
-            if not permission.has_permission(request, self):
-                permission_denied(message='Auth fail')
+            r, perm = permission.has_permission(request, self)
+            if not r:
+                permission_denied(message=f'Auth fail {perm}')
 
 
 class ClusterDetail(DetailViewDelete):
