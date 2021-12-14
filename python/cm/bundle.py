@@ -254,7 +254,7 @@ def cook_roles(bundle):
         name = act.display_name
         model = get_model_by_type(act.prototype.type)
         role_name = f'{bundle.name}_{bundle.version}_{bundle.edition}_' \
-                    f'{act.prototype.type}_{act.prototype.display_name}_{name}',
+                    f'{act.prototype.type}_{act.prototype.display_name}_{name}'
         role = Role(
             name=role_name,
             display_name=role_name,
