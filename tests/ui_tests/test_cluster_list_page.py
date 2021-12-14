@@ -519,7 +519,7 @@ class TestClusterHostPage:
         host_row = cluster_host_page.table.get_all_rows()[0]
         cluster_host_page.click_on_host_name_in_host_row(host_row)
         HostMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, 1).wait_page_is_opened()
-        cluster_host_page.check_cluster_toolbar(CLUSTER_NAME)
+        cluster_host_page.check_cluster_hosts_toolbar(CLUSTER_NAME, HOST_NAME)
 
     @pytest.mark.usefixtures('create_host')
     def test_create_host_error_from_cluster_host_page(self, app_fs, create_community_cluster_with_service):
@@ -595,6 +595,7 @@ class TestClusterHostPage:
         row = cluster_host_page.table.get_all_rows()[0]
         cluster_host_page.click_config_btn_in_row(row)
         HostConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, host.id).wait_page_is_opened()
+        cluster_host_page.check_cluster_hosts_toolbar(CLUSTER_NAME, HOST_NAME)
 
     def test_check_pagination_on_cluster_host_page(self, app_fs, upload_and_create_provider, create_community_cluster):
         """Test pagination on cluster/{}/host page"""
