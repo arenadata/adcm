@@ -10,9 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=W0212
+
 from itertools import chain
 
-from rest_framework import status, permissions
+from rest_framework import status, permissions, exceptions
 from rest_framework.response import Response
 
 import api.serializers
@@ -46,7 +48,7 @@ def get_obj_conf(cluster_id, service_id):
 
 class MyPerm(DjangoModelPerm):
     def log_cache(self, user, label):
-        cache = getattr(user, '_user_perm_cache', None)  # pylint: disable=W0212
+        cache = getattr(user, '_user_perm_cache', None)
         log.debug('HAS_PERM user: %s CACHE %s: %s', user, label, cache)
 
     def log_perm(self, user):
@@ -54,22 +56,25 @@ class MyPerm(DjangoModelPerm):
 
     def get_required_permissions(self, method, model_cls):
         log.debug('GET_PERM methd: %s, model: %s', method, model_cls)
-        kwargs = {'app_label': model_cls._meta.app_label, 'model_name': model_cls._meta.model_name}
+        kwargs = {
+            'app_label': model_cls._meta.app_label,
+            'model_name': model_cls._meta.model_name,
+        }
 
+        log.debug('GET_PERM map: %s', self.perms_map)
         if method not in self.perms_map:
             raise exceptions.MethodNotAllowed(method)
 
         log.debug('GET_PERM kwargs: %s', kwargs)
         r = []
         for perm in self.perms_map[method]:
-            r.append(perm % kwargs)
+            codename = perm % kwargs
+            log.debug('GET_PERM codename: %s, perm %s, kwargs: %s', codename, perm, kwargs)
+            r.append(codename)
         log.debug('GET_PERM perm list: %s', r)
         return r
 
     def has_permission(self, request, view):
-        if getattr(view, '_ignore_model_permissions', False):
-            return True
-
         if not request.user or (
             not request.user.is_authenticated and self.authenticated_users_only
         ):
@@ -108,7 +113,7 @@ class ClusterList(PageViewAdd):
 
     def check_permissions(self, request):
         for permission in self.get_permissions():
-            log.debug('CHECK_PERM %s', permission)
+            log.debug('CHECK_PERM %s %s', self.queryset.model, permission)
             if not permission.has_permission(request, self):
                 permission_denied(message='Auth fail')
 
