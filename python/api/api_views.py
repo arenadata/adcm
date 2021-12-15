@@ -55,14 +55,14 @@ def permission_denied(
     raise exceptions.PermissionDenied(detail=message, code=code)
 
 
-def has_permission(user, action_type, model, obj):
-    if user.has_perm(f'cm.{action_type}_of_{model}', obj):
+def has_custom_permission(user, action_type, model, obj):
+    if user.has_perm(f'cm.{action_type}_{model}', obj):
         return True
     return False
 
 
-def check_perm(self, action_type, model, obj):
-    if not has_permission(self.request.user, action_type, model, obj):
+def check_custom_perm(self, action_type, model, obj):
+    if not has_custom_permission(self.request.user, action_type, model, obj):
         permission_denied()
 
 

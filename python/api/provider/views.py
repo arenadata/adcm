@@ -17,7 +17,7 @@ import cm
 from cm.models import HostProvider, Upgrade
 
 from api.api_views import create, check_obj, ListView, PageView, PageViewAdd, DetailViewRO
-from api.api_views import GenericAPIPermView, check_perm
+from api.api_views import GenericAPIPermView, check_custom_perm
 import api.serializers
 from . import serializers
 
@@ -96,7 +96,7 @@ class ProviderUpgradeDetail(ListView):
 class DoProviderUpgrade(GenericAPIPermView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.DoUpgradeSerializer
-    check_upgrade_perm = check_perm
+    check_upgrade_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, provider_id, upgrade_id):
@@ -104,6 +104,6 @@ class DoProviderUpgrade(GenericAPIPermView):
         Do upgrade specified host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        self.check_upgrade_perm('do_upgrade', 'hostprovider', provider)
+        self.check_upgrade_perm('do_upgrade_of', 'hostprovider', provider)
         serializer = self.serializer_class(data=request.data, context={'request': request})
         return create(serializer, upgrade_id=int(upgrade_id), obj=provider)
