@@ -43,6 +43,8 @@ def check_service(kwargs):
 
 class ServiceListView(PageView):
     queryset = ClusterObject.objects.all()
+    permission_classes = (permissions.IsAuthenticated,)
+    check_service_perm = check_custom_perm
     serializer_class = serializers.ServiceSerializer
     serializer_class_ui = serializers.ServiceUISerializer
     serializer_class_cluster = serializers.ClusterServiceSerializer
@@ -66,6 +68,10 @@ class ServiceListView(PageView):
         serializer_class = self.serializer_class
         if 'cluster_id' in kwargs:
             serializer_class = self.serializer_class_cluster
+            cluster = check_obj(Cluster, kwargs['cluster_id'])
+        else:
+            cluster = check_obj(Cluster, request.data['cluster_id'])
+        self.check_service_perm('add_service_to', 'cluster', cluster)
         serializer = serializer_class(
             data=request.data,
             context={'request': request, 'cluster_id': kwargs.get('cluster_id', None)},

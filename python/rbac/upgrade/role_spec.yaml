@@ -351,9 +351,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: clusterobject
+            - name: cluster
               codenames:
-                - add
+                - add_service_to
 
     - name: Remove service
       description: The ability to remove service from cluster
