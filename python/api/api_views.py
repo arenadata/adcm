@@ -166,11 +166,6 @@ class StatusPerm(DjangoModelPerm):
     Use codename status_view to check permissions
     """
 
-    def __init__(self, *args, **kwargs):
-        """Replace GET permissions from "view" to "status_view"""
-        super().__init__(*args, **kwargs)
-        self.perms_map['GET'] = ['%(app_label)s.status_view_%(model_name)s']
-
     def has_permission(self, request, view):
         """Check that user has allowed to view status page"""
         model_name = view.model_name.__name__.lower()
