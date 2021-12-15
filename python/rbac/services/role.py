@@ -50,8 +50,11 @@ def role_create(built_in=False, type_of_role=RoleTypes.role, **kwargs) -> Role:
 
 def role_update(role: Role, **kwargs) -> Role:
     """Updating Role object"""
-    child = kwargs.pop('child', None)
-    check_role_child(child)
+    if 'child' in kwargs:
+        child = kwargs.pop('child')
+        check_role_child(child)
+    else:
+        child = None
     kwargs.pop('name', None)
     for key, value in kwargs.items():
         setattr(role, key, value)
