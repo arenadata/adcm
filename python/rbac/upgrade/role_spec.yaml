@@ -827,7 +827,7 @@ roles:
 
     - name: Base role
       description: Default list of view permissions for all objects
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ParentRole
       child:
