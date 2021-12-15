@@ -607,7 +607,7 @@ class TestClusterHostPage:
                 cluster.host_add(host)
         cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, 1).open()
         cluster_host_page.table.check_pagination(1)
-        cluster_host_page.check_cluster_hosts_toolbar(CLUSTER_NAME, HOST_NAME)
+        cluster_host_page.check_cluster_toolbar(CLUSTER_NAME)
 
 
 class TestClusterComponentsPage:
@@ -772,8 +772,8 @@ class TestClusterConfigPage:
             cluster_config_page.config.clear_search_input()
         with allure.step("Check that rows are not filtered"):
             config_rows = cluster_config_page.config.get_all_config_rows()
-            assert len(config_rows) == 4, "Rows are filtered: there should be 4 row"
-        with cluster_config_page.config.wait_rows_change(expected_rows_amount=2):
+            assert len(config_rows) == 5, "Rows are filtered: there should be 4 row and 1 group"
+        with cluster_config_page.config.wait_rows_change(expected_rows_amount=3):
             cluster_config_page.config.click_on_group(params["group_name"])
 
     # pylint: disable=too-many-statements

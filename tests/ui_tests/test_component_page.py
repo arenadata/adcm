@@ -186,8 +186,8 @@ class TestComponentConfigPage:
             component_config_page.config.clear_search_input()
         with allure.step("Check that rows are not filtered"):
             config_rows = component_config_page.config.get_all_config_rows()
-            assert len(config_rows) == 4, "Rows are filtered: there should be 4 row"
-        with component_config_page.config.wait_rows_change(expected_rows_amount=2):
+            assert len(config_rows) == 5, "Rows are filtered: there should be 4 row and 1 config group"
+        with component_config_page.config.wait_rows_change(expected_rows_amount=3):
             component_config_page.config.click_on_group(params["group_name"])
 
     # pylint: disable=too-many-statements

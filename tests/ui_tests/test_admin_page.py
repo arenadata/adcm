@@ -76,7 +76,7 @@ def test_change_admin_password(users_page: AdminUsersPage):
         login_page.wait_page_is_opened()
     login_page.login_user(**params)
     with allure.step('Check login was successful'):
-        users_page.wait_page_is_opened()
+        users_page.wait_page_is_opened(timeout=5)
 
 
 def test_check_menus(users_page: AdminUsersPage):
