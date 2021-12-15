@@ -8,7 +8,6 @@ import { RbacRoleModel } from '@app/models/rbac/rbac-role.model';
 import { Params } from '@angular/router';
 import { ListResult } from '@app/models/list-result';
 import { map } from 'rxjs/operators';
-import { RbacRoleFormComponent } from '@app/components/rbac/role-form/rbac-role-form.component';
 
 @Injectable()
 export class RbacRoleService implements EntityAbstractService {
@@ -17,7 +16,6 @@ export class RbacRoleService implements EntityAbstractService {
   model(value?: any): FormModel {
     return {
       name: 'role',
-      component: RbacRoleFormComponent,
       value: value
     };
   }

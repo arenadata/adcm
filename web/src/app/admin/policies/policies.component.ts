@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, Type, ViewChild } from '@angular/core';
 import { IColumns } from '@adwp-ui/widgets';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
@@ -12,6 +12,7 @@ import { SocketState } from '@app/core/store';
 import { RbacPolicyService } from '@app/services/rbac-policy.service';
 import { ADD_SERVICE_PROVIDER } from '../../shared/add-component/add-service-model';
 import { AddButtonComponent } from '../../shared/add-component';
+import { RbacPolicyFormComponent } from '../../components/rbac/policy-form/rbac-policy-form.component';
 
 @Component({
   selector: 'app-policies',
@@ -39,6 +40,8 @@ export class PoliciesComponent extends RbacEntityListDirective<RbacPolicyModel> 
   ] as IColumns<RbacPolicyModel>;
 
   type: TypeName = 'policy';
+
+  component: Type<RbacPolicyFormComponent> = RbacPolicyFormComponent;
 
   constructor(
     protected service: ListService,
