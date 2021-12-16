@@ -13,6 +13,7 @@
 from itertools import chain
 
 from rest_framework import status, permissions
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
 import api.serializers
@@ -21,7 +22,7 @@ import cm.bundle
 import cm.job
 import cm.status_api
 from api.api_views import ListView, PageView, PageViewAdd, InterfaceView, DetailViewDelete
-from api.api_views import GenericAPIPermView, GenericAPIPermStatusView
+from api.api_views import GenericAPIPermView
 from api.api_views import create, update, check_obj, check_custom_perm
 from cm.errors import AdcmEx
 from cm.models import Cluster, Host, HostComponent, Prototype
@@ -251,7 +252,7 @@ class DoClusterUpgrade(GenericAPIPermView):
         return create(serializer, upgrade_id=int(upgrade_id), obj=cluster)
 
 
-class StatusList(GenericAPIPermStatusView, InterfaceView):
+class StatusList(GenericAPIView, InterfaceView):
     queryset = HostComponent.objects.all()
     model_name = Cluster
     serializer_class = serializers.StatusSerializer

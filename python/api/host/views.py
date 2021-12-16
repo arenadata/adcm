@@ -12,6 +12,7 @@
 
 from django_filters import rest_framework as drf_filters
 from rest_framework import status
+from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -21,7 +22,6 @@ from api.api_views import (
     PageView,
     DetailViewDelete,
     InterfaceView,
-    GenericAPIPermStatusView,
 )
 from cm.api import remove_host_from_cluster, delete_host
 from cm.errors import AdcmEx
@@ -228,7 +228,7 @@ class HostDetail(DetailViewDelete):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class StatusList(GenericAPIPermStatusView, InterfaceView):
+class StatusList(GenericAPIView, InterfaceView):
     serializer_class = serializers.StatusSerializer
     model_name = Host
     queryset = HostComponent.objects.all()

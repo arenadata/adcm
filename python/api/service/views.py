@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from rest_framework import status, permissions
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
 import cm.status_api
@@ -23,7 +24,6 @@ from api.api_views import (
     ListView,
     DetailViewDelete,
     InterfaceView,
-    GenericAPIPermStatusView,
 )
 from api.stack.serializers import ImportSerializer
 from api.cluster.serializers import BindSerializer
@@ -187,7 +187,7 @@ class ServiceBindDetailView(DetailViewDelete):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class StatusList(GenericAPIPermStatusView, InterfaceView):
+class StatusList(GenericAPIView, InterfaceView):
     queryset = HostComponent.objects.all()
     model_name = ClusterObject
     serializer_class = serializers.StatusSerializer
