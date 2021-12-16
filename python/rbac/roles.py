@@ -18,7 +18,6 @@ from guardian.models import UserObjectPermission, GroupObjectPermission
 from adwp_base.errors import raise_AdwpEx as err
 from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
 from cm.models import Action, ClusterObject, ServiceComponent, Host
-from cm.logger import log
 
 
 class AbstractRole:
