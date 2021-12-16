@@ -18,7 +18,7 @@ from api.api_views import (
     PageView,
     create,
     check_obj,
-    check_import_perm,
+    check_custom_perm,
     DetailViewRO,
     ListView,
     DetailViewDelete,
@@ -100,7 +100,7 @@ class ServiceImportView(ListView):
     queryset = Prototype.objects.all()
     serializer_class = ImportSerializer
     post_serializer_class = serializers.ImportPostSerializer
-    check_import_perm = check_import_perm
+    check_import_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -108,13 +108,13 @@ class ServiceImportView(ListView):
         List all imports available for specified service
         """
         service = check_service(kwargs)
-        self.check_import_perm('view', 'clusterobject', service)
+        self.check_import_perm('view_import_of', 'clusterobject', service)
         cluster = service.cluster
         return Response(get_import(cluster, service))
 
     def post(self, request, **kwargs):
         service = check_service(kwargs)
-        self.check_import_perm('change', 'clusterobject', service)
+        self.check_import_perm('change_import_of', 'clusterobject', service)
         cluster = service.cluster
         serializer = self.post_serializer_class(
             data=request.data, context={'request': request, 'cluster': cluster, 'service': service}
@@ -127,7 +127,7 @@ class ServiceImportView(ListView):
 class ServiceBindView(ListView):
     queryset = ClusterBind.objects.all()
     serializer_class = serializers.ServiceBindSerializer
-    check_import_perm = check_import_perm
+    check_import_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_serializer_class(self):
@@ -141,7 +141,7 @@ class ServiceBindView(ListView):
         List all binds of service
         """
         service = check_service(kwargs)
-        self.check_import_perm('view', 'clusterobject', service)
+        self.check_import_perm('view_import_of', 'clusterobject', service)
         binds = self.get_queryset().filter(service=service)
         serializer = self.get_serializer_class()(binds, many=True, context={'request': request})
         return Response(serializer.data)
@@ -151,7 +151,7 @@ class ServiceBindView(ListView):
         Bind two services
         """
         service = check_service(kwargs)
-        self.check_import_perm('change', 'clusterobject', service)
+        self.check_import_perm('change_import_of', 'clusterobject', service)
         cluster = service.cluster
         serializer = self.get_serializer_class()(data=request.data, context={'request': request})
         return create(serializer, cluster=cluster, service=service)
@@ -160,7 +160,7 @@ class ServiceBindView(ListView):
 class ServiceBindDetailView(DetailViewDelete):
     queryset = ClusterBind.objects.all()
     serializer_class = BindSerializer
-    check_import_perm = check_import_perm
+    check_import_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_obj(self, kwargs, bind_id):
@@ -173,7 +173,7 @@ class ServiceBindDetailView(DetailViewDelete):
         Show specified bind of service
         """
         service, bind = self.get_obj(kwargs, kwargs['bind_id'])
-        self.check_import_perm('view', 'clusterobject', service)
+        self.check_import_perm('view_import_of', 'clusterobject', service)
         serializer = self.serializer_class(bind, context={'request': request})
         return Response(serializer.data)
 
@@ -182,7 +182,7 @@ class ServiceBindDetailView(DetailViewDelete):
         Unbind specified bind of service
         """
         service, bind = self.get_obj(kwargs, kwargs['bind_id'])
-        self.check_import_perm('change', 'clusterobject', service)
+        self.check_import_perm('change_import_of', 'clusterobject', service)
         unbind(bind)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -209,7 +209,7 @@ class StatusList(GenericAPIPermStatusView, InterfaceView):
                     {
                         'id': host.id,
                         'name': host.fqdn,
-                        'status': cm.status_api.get_host_comp_status(host, comp['component'])
+                        'status': cm.status_api.get_host_comp_status(host, comp['component']),
                     }
                 )
             comp_list.append(

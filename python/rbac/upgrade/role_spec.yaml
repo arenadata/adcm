@@ -163,6 +163,7 @@ roles:
           models:
             - name: cluster
               codenames:
+                - view_config_of
                 - change_config_of
 
     - name: Edit service configurations
@@ -435,9 +436,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: upgrade
+            - name: cluster
               codenames:
-                - add
+                - do_upgrade_of
 
     - name: Upgrade provider bundle
       description: Update the provider bundle
@@ -452,9 +453,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: upgrade
+            - name: hostprovider
               codenames:
-                - add
+                - do_upgrade_of
 
     - name: Upgrade bundle
       description: Update all type of bundles
@@ -515,40 +516,25 @@ roles:
       description: View purely adcm config
       type: business
       module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: ADCM
-        filter:
-          name: ADCM
+      class_name: ModelRole
       apps:
         - label: cm
           models:
-            - name: objectconfig
+            - name: adcm
               codenames:
-                - view
+                - view_config_of
 
     - name: Edit ADCM settings
       description: Edit purely adcm config
       type: business
       module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: ADCM
-        filter:
-          name: ADCM
+      class_name: ModelRole
       apps:
         - label: cm
           models:
-            - name: objectconfig
+            - name: adcm
               codenames:
-                - add
-                - change
-            - name: configlog
-              codenames:
-                - add
-                - change
+                - change_config_of
 
     - name: View users
       description: The ability to view Users page
