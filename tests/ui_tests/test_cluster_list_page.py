@@ -776,97 +776,22 @@ class TestClusterConfigPage:
         with cluster_config_page.config.wait_rows_change(expected_rows_amount=3):
             cluster_config_page.config.click_on_group(params["group_name"])
 
-    # pylint: disable=too-many-statements
     def test_save_custom_config_on_cluster_config_page(self, app_fs, create_cluster_with_all_config_fields):
         """Test config save on cluster/{}/config page"""
 
         params = {
-            "row_value_new": "test",
             "config_name_new": "test_name",
             "config_name_old": "init",
-            "group_name": "group",
         }
 
         cluster_config_page = ClusterConfigPage(
             app_fs.driver, app_fs.adcm.url, create_cluster_with_all_config_fields.id
         ).open()
-        config_rows = cluster_config_page.config.get_all_config_rows()
-        with allure.step("Change value in float type on cluster config page"):
-            cluster_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[0], values=["1.1111111111"], clear=True
-            )
-        with allure.step("Change value in boolean type on cluster config page"):
-            cluster_config_page.config.click_boolean_checkbox(config_rows[1])
-        with allure.step("Change value in int type on cluster config page"):
-            cluster_config_page.config.type_in_field_with_few_inputs(row=config_rows[2], values=["100500"], clear=True)
-        with allure.step("Change value in password type on cluster config page"):
-            cluster_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[3], values=[params["row_value_new"]] * 2, clear=True
-            )
-        with allure.step("Change value in string type on cluster config page"):
-            cluster_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[4], values=[params["row_value_new"]], clear=True
-            )
-        with allure.step("Change value in list type on cluster config page"):
-            cluster_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[5], values=[params["row_value_new"]] * 3, clear=True
-            )
-        with allure.step("Change value in text type on cluster config page"):
-            cluster_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[6], values=[params["row_value_new"]], clear=True
-            )
-        with allure.step("Deactivate group on cluster config page"):
-            cluster_config_page.config.expand_or_close_group(params["group_name"], expand=False)
-        with allure.step("Change value in structure type on cluster config page"):
-            cluster_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[12], values=["1", params["row_value_new"], "2", params["row_value_new"]], clear=True
-            )
-        with allure.step("Change value in map type on cluster config page"):
-            cluster_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[13], values=[params["row_value_new"]] * 4, clear=True
-            )
-        with allure.step("Change value in secrettext type on cluster config page"):
-            cluster_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[14], values=[params["row_value_new"]], clear=True
-            )
-        with allure.step("Change value in json type on cluster config page"):
-            cluster_config_page.config.type_in_field_with_few_inputs(row=config_rows[15], values=['{}'], clear=True)
-
+        cluster_config_page.config.fill_config_fields_with_test_values()
         cluster_config_page.config.set_description(params["config_name_new"])
         cluster_config_page.config.save_config()
         cluster_config_page.config.compare_versions(params["config_name_old"])
-        with allure.step("Check row history on cluster config page"):
-            rows_with_history = cluster_config_page.config.get_all_config_rows()
-            with allure.step("Check history value in float type on cluster config page"):
-                cluster_config_page.config.wait_history_row_with_value(rows_with_history[0], "0.1")
-            with allure.step("Check history value in boolean type on cluster config page"):
-                cluster_config_page.config.wait_history_row_with_value(rows_with_history[1], "true")
-            with allure.step("Check history value in int type on cluster config page"):
-                cluster_config_page.config.wait_history_row_with_value(rows_with_history[2], "16")
-            with allure.step("Check history value in string type on cluster config page"):
-                cluster_config_page.config.wait_history_row_with_value(rows_with_history[4], "string")
-            with allure.step("Check history value in list type on cluster config page"):
-                cluster_config_page.config.wait_history_row_with_value(
-                    rows_with_history[5], '["/dev/rdisk0s1","/dev/rdisk0s2","/dev/rdisk0s3"]'
-                )
-            with allure.step("Check history value in text type on cluster config page"):
-                cluster_config_page.config.wait_history_row_with_value(rows_with_history[6], 'file content')
-            with allure.step("Check group in not active on cluster config page"):
-                cluster_config_page.config.check_group_is_active(params["group_name"], is_active=False)
-            with allure.step("Check history value in structure type on cluster config page"):
-                cluster_config_page.config.wait_history_row_with_value(
-                    rows_with_history[10], '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]'
-                )
-            with allure.step("Check history value in map type on cluster config page"):
-                cluster_config_page.config.wait_history_row_with_value(
-                    rows_with_history[11], '{"age":"24","name":"Joe","sex":"m"}'
-                )
-            with allure.step("Change value in secrettext type on cluster config page"):
-                cluster_config_page.config.wait_history_row_with_value(rows_with_history[12], '****')
-            with allure.step("Change value in json type on cluster config page"):
-                cluster_config_page.config.wait_history_row_with_value(
-                    rows_with_history[13], '{"age":"24","name":"Joe","sex":"m"}'
-                )
+        cluster_config_page.config.check_config_fields_history_with_test_values()
 
     def test_reset_config_in_row_on_cluster_config_page(self, app_fs, create_community_cluster):
         """Test config reset on cluster/{}/config page"""
@@ -918,8 +843,8 @@ class TestClusterConfigPage:
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_config_page.config.clear_field_by_keys(params['field_name'])
         cluster_config_page.config.check_field_is_required(params['field_name'])
-        cluster_config_page.config.type_in_config_field(
-            params['new_value'], row=cluster_config_page.config.get_all_config_rows()[0]
+        cluster_config_page.config.type_in_field_with_few_inputs(
+            row=cluster_config_page.config.get_all_config_rows()[0], values=[params['new_value']]
         )
         cluster_config_page.config.save_config()
         cluster_config_page.config.assert_input_value_is(

@@ -83,6 +83,9 @@ class CommonConfigMenu:
         map_input_key = Locator(By.XPATH, ".//input[@formcontrolname='key']", "Map input key input")
         map_input_value = Locator(By.XPATH, ".//input[@formcontrolname='value']", "Map input value input")
 
+        select_btn = Locator(By.CSS_SELECTOR, "app-fields-dropdown", "Select option button")
+        select_item = Locator(By.CSS_SELECTOR, ".mat-select-panel mat-option", "Select option item")
+
     class ConfigGroup:
         """Configuration menu configuration group locators"""
 

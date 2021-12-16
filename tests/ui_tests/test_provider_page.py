@@ -257,98 +257,23 @@ class TestProviderConfigPage:
         with provider_config_page.config.wait_rows_change(expected_rows_amount=3):
             provider_config_page.config.click_on_group(params["group_name"])
 
-    # pylint: disable=too-many-statements
     @pytest.mark.smoke()
     @pytest.mark.parametrize("bundle", ["provider_with_all_config_params"], indirect=True)
     def test_save_custom_config_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
         """Test save config on provider config page"""
 
         params = {
-            "row_value_new": "test",
             "config_name_new": "test_name",
             "config_name_old": "init",
-            "group_name": "group",
         }
         provider_config_page = ProviderConfigPage(
             app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
         ).open()
-        config_rows = provider_config_page.config.get_all_config_rows()
-        with allure.step("Change value in float type on provider config page"):
-            provider_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[0], values=["1.1111111111"], clear=True
-            )
-        with allure.step("Change value in boolean type on provider config page"):
-            provider_config_page.config.click_boolean_checkbox(config_rows[1])
-        with allure.step("Change value in int type on provider config page"):
-            provider_config_page.config.type_in_field_with_few_inputs(row=config_rows[2], values=["100500"], clear=True)
-        with allure.step("Change value in password type on provider config page"):
-            provider_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[3], values=[params["row_value_new"]] * 2, clear=True
-            )
-        with allure.step("Change value in string type on provider config page"):
-            provider_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[4], values=[params["row_value_new"]], clear=True
-            )
-        with allure.step("Change value in list type on provider config page"):
-            provider_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[5], values=[params["row_value_new"]] * 3, clear=True
-            )
-        with allure.step("Change value in text type on provider config page"):
-            provider_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[6], values=[params["row_value_new"]], clear=True
-            )
-        with allure.step("Deactivate group on provider config page"):
-            provider_config_page.config.expand_or_close_group(params["group_name"], expand=False)
-        with allure.step("Change value in structure type on provider config page"):
-            provider_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[12], values=["1", params["row_value_new"], "2", params["row_value_new"]], clear=True
-            )
-        with allure.step("Change value in map type on provider config page"):
-            provider_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[13], values=[params["row_value_new"]] * 4, clear=True
-            )
-        with allure.step("Change value in secrettext type on provider config page"):
-            provider_config_page.config.type_in_field_with_few_inputs(
-                row=config_rows[14], values=[params["row_value_new"]], clear=True
-            )
-        with allure.step("Change value in json type on provider config page"):
-            provider_config_page.config.type_in_field_with_few_inputs(row=config_rows[15], values=['{}'], clear=True)
-
+        provider_config_page.config.fill_config_fields_with_test_values()
         provider_config_page.config.set_description(params["config_name_new"])
         provider_config_page.config.save_config()
         provider_config_page.config.compare_versions(params["config_name_old"])
-        with allure.step("Check row history on provider config page"):
-            rows_with_history = provider_config_page.config.get_all_config_rows()
-            with allure.step("Check history value in float type on provider config page"):
-                provider_config_page.config.wait_history_row_with_value(rows_with_history[0], "0.1")
-            with allure.step("Check history value in boolean type on provider config page"):
-                provider_config_page.config.wait_history_row_with_value(rows_with_history[1], "true")
-            with allure.step("Check history value in int type on provider config page"):
-                provider_config_page.config.wait_history_row_with_value(rows_with_history[2], "16")
-            with allure.step("Check history value in string type on provider config page"):
-                provider_config_page.config.wait_history_row_with_value(rows_with_history[4], "string")
-            with allure.step("Check history value in list type on provider config page"):
-                provider_config_page.config.wait_history_row_with_value(
-                    rows_with_history[5], '["/dev/rdisk0s1","/dev/rdisk0s2","/dev/rdisk0s3"]'
-                )
-            with allure.step("Check history value in text type on provider config page"):
-                provider_config_page.config.wait_history_row_with_value(rows_with_history[6], 'file content')
-            with allure.step("Check group in not active on provider config page"):
-                provider_config_page.config.check_group_is_active(params["group_name"], is_active=False)
-            with allure.step("Check history value in structure type on provider config page"):
-                provider_config_page.config.wait_history_row_with_value(
-                    rows_with_history[10], '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]'
-                )
-            with allure.step("Check history value in map type on provider config page"):
-                provider_config_page.config.wait_history_row_with_value(
-                    rows_with_history[11], '{"age":"24","name":"Joe","sex":"m"}'
-                )
-            with allure.step("Change value in secrettext type on provider config page"):
-                provider_config_page.config.wait_history_row_with_value(rows_with_history[12], '****')
-            with allure.step("Change value in json type on provider config page"):
-                provider_config_page.config.wait_history_row_with_value(
-                    rows_with_history[13], '{"age":"24","name":"Joe","sex":"m"}'
-                )
+        provider_config_page.config.check_config_fields_history_with_test_values()
 
     def test_reset_config_in_row_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
         """Test config reset on provider config page"""
@@ -408,8 +333,8 @@ class TestProviderConfigPage:
         ).open()
         provider_config_page.config.clear_field_by_keys(params['field_name'])
         provider_config_page.config.check_field_is_required(params['field_name'])
-        provider_config_page.config.type_in_config_field(
-            params['new_value'], row=provider_config_page.config.get_all_config_rows()[0]
+        provider_config_page.config.type_in_field_with_few_inputs(
+            row=provider_config_page.config.get_all_config_rows()[0], values=[params['new_value']]
         )
         provider_config_page.config.save_config()
         provider_config_page.config.assert_input_value_is(

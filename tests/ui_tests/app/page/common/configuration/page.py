@@ -13,7 +13,12 @@
 """Config page PageObjects classes"""
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import List, Collection, Optional
+from typing import (
+    List,
+    Collection,
+    Optional,
+    Union,
+)
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -22,7 +27,10 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
-from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators, CommonLocators
+from tests.ui_tests.app.page.common.common_locators import (
+    ObjectPageMenuLocators,
+    CommonLocators,
+)
 from tests.ui_tests.app.page.common.configuration.fields import ConfigFieldsManipulator
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 
@@ -158,44 +166,41 @@ class CommonConfigMenuObj(BasePageObject):
         """Click reset button"""
         self.find_child(row, CommonConfigMenu.ConfigRow.reset_btn).click()
 
-    @allure.step('Type "{value}" into config field')
-    def type_in_config_field(
-        self,
-        value: str,
-        row: WebElement,
-        *,
-        clear: bool = False,
-    ):
-        """
-        Send keys to config value input
-        :param value: keys to send
-        :param row: Config field row
-        :param clear: clean input before sending keys or not
-        """
-        field = self.find_child(row, self.locators.ConfigRow.value)
-        if clear:
-            field.clear()
-        field.send_keys(value)
-
     @allure.step('Type "{values}" into config field with few inputs')
-    def type_in_field_with_few_inputs(self, row: WebElement, values: [str], clear: bool = False):
+    def type_in_field_with_few_inputs(self, row: Union[WebElement, str], values: [str], clear: bool = False):
         """
         Send keys to config list
         :param row: Config field row
         :param value: keys to send
         :param clear: clean input before sending keys or not
         """
-        self.scroll_to(row)
+
+        field_row = row if isinstance(row, WebElement) else self.get_config_row(display_name=row)
+        self.scroll_to(field_row)
         for id, value in enumerate(values):
             try:
-                field = self.find_children(row, self.locators.ConfigRow.input)[id]
+                field = self.find_children(field_row, self.locators.ConfigRow.input)[id]
             except IndexError:
-                self.find_child(row, self.locators.ConfigRow.add_item_btn).click()
-                self.wait_element_visible(self.find_child(row, self.locators.ConfigRow.input))
-                field = self.find_children(row, self.locators.ConfigRow.input)[id]
+                self.find_child(field_row, self.locators.ConfigRow.add_item_btn).click()
+                self.wait_element_visible(self.find_child(field_row, self.locators.ConfigRow.input))
+                field = self.find_children(field_row, self.locators.ConfigRow.input)[id]
             if clear:
                 field.clear()
-            self.find_children(row, self.locators.ConfigRow.input)[id].send_keys(value)
+            self.find_children(field_row, self.locators.ConfigRow.input)[id].send_keys(value)
+
+    @allure.step('Select option "{option}" in option field')
+    def select_option(self, row: Union[WebElement, str], option: str):
+        """For config type option select item from dropdown"""
+
+        field_row = row if isinstance(row, WebElement) else self.get_config_row(display_name=row)
+        self.find_child(field_row, self.locators.ConfigRow.select_btn).click()
+        self.wait_element_visible(self.locators.ConfigRow.select_item)
+        select_items = self.find_elements(self.locators.ConfigRow.select_item)
+        for item in select_items:
+            if item.text == option:
+                item.click()
+                return
+        raise AttributeError(f'Option {option} has not been found')
 
     @allure.step('Click on group {title}')
     def click_on_group(self, title: str):
@@ -458,6 +463,91 @@ class CommonConfigMenuObj(BasePageObject):
         assert self.is_child_displayed(
             self.find_element(ObjectPageMenuLocators.service_components_tab), ObjectPageMenuLocators.warn_icon
         ), "No warn icon near Host-Components left menu element"
+
+    @allure.step("Fill config page with test values")
+    def fill_config_fields_with_test_values(self):
+        """
+        For config fields test when in config file there are all types of fields named accordingly.
+        Fill fields with test values.
+        """
+
+        row_value_new = "test"
+        with allure.step("Change value in float type"):
+            self.type_in_field_with_few_inputs('float', ["1.1111111111"], True)
+        with allure.step("Change value in boolean type"):
+            self.click_boolean_checkbox(self.get_config_row("boolean"))
+        with allure.step("Change value in int type"):
+            self.type_in_field_with_few_inputs('integer', ["100500"], True)
+        with allure.step("Change value in password type"):
+            self.type_in_field_with_few_inputs('password', [row_value_new] * 2, True)
+        with allure.step("Change value in string type"):
+            self.type_in_field_with_few_inputs('string', [row_value_new], True)
+        with allure.step("Change value in list type"):
+            self.type_in_field_with_few_inputs(row='list', values=[row_value_new] * 3, clear=True)
+        with allure.step("Change value in file type"):
+            self.type_in_field_with_few_inputs('file', [row_value_new * 2], True)
+        with allure.step("Change value in option type"):
+            self.select_option('option', "WEEKLY")
+        with allure.step("Change value in text type"):
+            self.type_in_field_with_few_inputs(row='text', values=[row_value_new], clear=True)
+        with allure.step("Deactivate group"):
+            self.expand_or_close_group("group", expand=False)
+        with allure.step("Change value in structure type"):
+            self.type_in_field_with_few_inputs(
+                row='structure', values=["1", row_value_new, "2", row_value_new], clear=True
+            )
+        with allure.step("Change value in map type"):
+            self.type_in_field_with_few_inputs(row='map', values=[row_value_new] * 4, clear=True)
+        with allure.step("Change value in secrettext type"):
+            self.type_in_field_with_few_inputs(row='secrettext', values=[row_value_new], clear=True)
+        with allure.step("Change value in json type"):
+            self.type_in_field_with_few_inputs(row='json', values=['{}'], clear=True)
+
+    @allure.step("Check row history on config page")
+    def check_config_fields_history_with_test_values(self):
+        """
+        For config fields test when in config file there are all types of fields named accordingly.
+        Check common history values.
+        """
+
+        with allure.step("Check history value in float type"):
+            self.wait_history_row_with_value(self.get_config_row("float"), "0.1")
+        with allure.step("Check history value in boolean type"):
+            self.wait_history_row_with_value(self.get_config_row("boolean"), "true")
+        with allure.step("Check history value in int type"):
+            self.wait_history_row_with_value(self.get_config_row("integer"), "16")
+        with allure.step("Check history value in password type"):
+            self.wait_history_row_with_value(
+                self.get_config_row("password"),
+                "$*************;*.*;****** *********************************************************************"
+                "***********************************************************************************************"
+                "************************************************************************************************"
+                "****************************************************************",
+            )
+        with allure.step("Check history value in string type"):
+            self.wait_history_row_with_value(self.get_config_row("string"), "string")
+        with allure.step("Check history value in list type"):
+            self.wait_history_row_with_value(
+                self.get_config_row("list"), '["/dev/rdisk0s1","/dev/rdisk0s2","/dev/rdisk0s3"]'
+            )
+        with allure.step("Check history value in file type"):
+            self.wait_history_row_with_value(self.get_config_row("file"), 'file content')
+        with allure.step("Check history value in option type"):
+            self.wait_history_row_with_value(self.get_config_row("option"), 'DAILY')
+        with allure.step("Check history value in text type"):
+            self.wait_history_row_with_value(self.get_config_row("text"), 'text')
+        with allure.step("Check group in not active"):
+            self.check_group_is_active("group", is_active=False)
+        with allure.step("Check history value in structure type"):
+            self.wait_history_row_with_value(
+                self.get_config_row("structure"), '[{"code":1,"country":"Test1"},{"code":2,"country":"Test2"}]'
+            )
+        with allure.step("Check history value in map type"):
+            self.wait_history_row_with_value(self.get_config_row("map"), '{"age":"24","name":"Joe","sex":"m"}')
+        with allure.step("Change value in secrettext type"):
+            self.wait_history_row_with_value(self.get_config_row("secrettext"), '****')
+        with allure.step("Change value in json type"):
+            self.wait_history_row_with_value(self.get_config_row("json"), '{"age":"24","name":"Joe","sex":"m"}')
 
 
 CONFIG_ITEMS = [
