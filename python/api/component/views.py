@@ -9,10 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
-from api.api_views import PageView, check_obj, DetailViewRO, InterfaceView, GenericAPIPermStatusView
+from api.api_views import PageView, check_obj, DetailViewRO, InterfaceView
 from cm.models import ServiceComponent, ClusterObject, Cluster, HostComponent
 from . import serializers
 import cm.status_api
@@ -59,7 +59,7 @@ class ComponentDetailView(DetailViewRO):
         return Response(serializer.data)
 
 
-class StatusList(GenericAPIPermStatusView, InterfaceView):
+class StatusList(GenericAPIView, InterfaceView):
     serializer_class = serializers.StatusSerializer
     model_name = ServiceComponent
     queryset = HostComponent.objects.all()

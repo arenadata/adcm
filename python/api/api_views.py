@@ -160,27 +160,6 @@ class DjangoModelPerm(DjangoModelPermissions):
     }
 
 
-class StatusPerm(DjangoModelPerm):
-    """
-    Self view status page permissions class.
-    Use codename status_view to check permissions
-    """
-
-    def __init__(self, *args, **kwargs):
-        """Replace GET permissions from "view" to "status_view"""
-        super().__init__(*args, **kwargs)
-        self.perms_map['GET'] = ['%(app_label)s.status_view_%(model_name)s']
-
-    def has_permission(self, request, view):
-        """Check that user has allowed to view status page"""
-        model_name = view.model_name.__name__.lower()
-        return request.user.has_perm(f'cm.status_view_{model_name}')
-
-
-class GenericAPIPermStatusView(GenericAPIView):
-    permission_classes = (StatusPerm,)
-
-
 class GenericAPIPermView(GenericAPIView):
     permission_classes = (DjangoModelPerm,)
 
