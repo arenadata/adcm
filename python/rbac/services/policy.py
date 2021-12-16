@@ -68,7 +68,7 @@ def object_policy_add(policy: Policy, obj: ObjectType) -> None:
 
 def _check_subjects(users: Union[bool, List[User]], groups: Union[bool, List[Group]]) -> None:
     """Check if policy has at least one subject"""
-    if not users or groups:
+    if not users and not groups:
         raise AdwpEx(
             'POLICY_INTEGRITY_ERROR',
             msg='Role should be bind with some users or groups',
