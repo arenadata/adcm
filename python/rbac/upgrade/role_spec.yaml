@@ -1,6 +1,6 @@
 ---
 
-version: 1
+version: 2
 
 roles:
     - name: Create host
@@ -827,7 +827,7 @@ roles:
 
     - name: Base role
       description: Default list of view permissions for all objects
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ParentRole
       child:
@@ -843,7 +843,7 @@ roles:
 
     - name: Get ADCM object
       description: Read access to ADCM
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -855,7 +855,7 @@ roles:
 
     - name: Get provider
       description: Read access to Provider
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -867,7 +867,7 @@ roles:
 
     - name: Get cluster
       description: Read access to Clusters
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -879,7 +879,7 @@ roles:
 
     - name: Get host
       description: Read access to Host
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -891,7 +891,7 @@ roles:
 
     - name: Get service
       description: Read access to Service
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -903,7 +903,7 @@ roles:
 
     - name: Get component
       description: Read access to Component
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -915,7 +915,7 @@ roles:
 
     - name: Get task and jobs
       description: Read access to job execution information
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -933,7 +933,7 @@ roles:
 
     - name: Get stack
       description: Read access to all prototypes
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -960,7 +960,7 @@ roles:
 
     - name: Get concerns
       description: Read access to all concerns
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
