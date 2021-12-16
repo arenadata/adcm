@@ -285,15 +285,15 @@ class ConfigLog(ADCMModel):
     def save(self, *args, **kwargs):
         """Saving config and updating config groups"""
 
-        def update_config(origin, renovator, group_keys):
+        def update(origin, renovator, group_keys):
             """
             Updating the original dictionary with a check for the presence of keys in the original
             """
             if origin is None:
                 origin = {}
             for key, value in group_keys.items():
-                if isinstance(value, Mapping):
-                    origin[key] = update_config(
+                if isinstance(value, Mapping) and key in renovator:
+                    origin[key] = update(
                         origin.get(key, {}), renovator.get(key, {}), group_keys[key]
                     )
                 else:
@@ -312,12 +312,14 @@ class ConfigLog(ADCMModel):
                 current_group_config = ConfigLog.objects.get(id=cg.config.current)
                 group_config.obj_ref = cg.config
                 config = deepcopy(self.config)
-                update_config(config, diff, current_group_config.attr['group_keys'])
+                current_group_keys = current_group_config.attr['group_keys']
+                update(config, diff, current_group_keys)
                 group_config.config = config
                 attr = deepcopy(self.attr)
+                attr.update(current_group_config.attr)
                 group_keys, custom_group_keys = cg.create_group_keys(cg.get_config_spec())
                 attr.update({'group_keys': group_keys, 'custom_group_keys': custom_group_keys})
-                attr.update(current_group_config.attr)
+                update(attr['group_keys'], current_group_keys, current_group_keys)
                 group_config.attr = attr
                 group_config.description = current_group_config.description
                 group_config.save()
