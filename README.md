@@ -15,10 +15,10 @@ That is Arenadata Cluster Manager Project (aka Chapelnik)
 All standard Django commands are available.
 
 Run dev server for the first time with these commands:
-1. `manage migrate`
-2. `manage createsupruser`
-3. `manage upgraderole`
-4. `manage runserver --insecure`
+1. `manage.py migrate`
+2. `init_db.py`
+3. `manage.py upgraderole`
+4. `manage.py runserver --insecure`
 
 Re-run them when needed/applicable.
 

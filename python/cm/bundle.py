@@ -18,8 +18,7 @@ import shutil
 import functools
 
 from version_utils import rpm
-from django.db import transaction
-from django.db import IntegrityError
+from django.db import transaction, IntegrityError
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from rbac.models import Role, RoleTypes
@@ -31,12 +30,28 @@ import cm.stack
 import cm.status_api
 from cm.adcm_config import proto_ref, get_prototype_config, init_object_config, switch_config
 from cm.errors import raise_AdcmEx as err
-from cm.models import Cluster, Host, Upgrade, StageUpgrade, ADCM, get_model_by_type
-from cm.models import Bundle, Prototype, Action, SubAction, PrototypeConfig
-from cm.models import StagePrototype, StageAction
-from cm.models import StageSubAction, StagePrototypeConfig
-from cm.models import PrototypeExport, PrototypeImport, StagePrototypeExport, StagePrototypeImport
-
+from cm.models import (
+    ADCM,
+    Action,
+    Bundle,
+    Cluster,
+    Host,
+    ProductCategory,
+    Prototype,
+    PrototypeConfig,
+    PrototypeExport,
+    PrototypeImport,
+    StageAction,
+    StagePrototype,
+    StagePrototypeConfig,
+    StagePrototypeExport,
+    StagePrototypeImport,
+    StageSubAction,
+    StageUpgrade,
+    SubAction,
+    Upgrade,
+    get_model_by_type,
+)
 
 STAGE = (
     StagePrototype,
@@ -66,6 +81,7 @@ def load_bundle(bundle_file):
         bundle = copy_stage(bundle_hash, bundle_proto)
         order_versions()
         clear_stage()
+        ProductCategory.re_collect()
         cook_roles(bundle)
         cm.status_api.post_event('create', 'bundle', bundle.id)
         return bundle
@@ -192,6 +208,7 @@ def process_adcm():
     else:
         bundle = copy_stage('adcm', sp)
         init_adcm(bundle)
+        ProductCategory.re_collect()
 
 
 def init_adcm(bundle):
@@ -253,8 +270,10 @@ def cook_roles(bundle):
     for act in Action.objects.filter(prototype__bundle=bundle):
         name = act.display_name
         model = get_model_by_type(act.prototype.type)
-        role_name = f'{bundle.name}_{bundle.version}_{bundle.edition}_' \
-                    f'{act.prototype.type}_{act.prototype.display_name}_{name}'
+        role_name = (
+            f'{bundle.name}_{bundle.version}_{bundle.edition}_'
+            f'{act.prototype.type}_{act.prototype.display_name}_{name}'
+        )
         role = Role(
             name=role_name,
             display_name=role_name,
