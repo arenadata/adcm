@@ -14,7 +14,7 @@ import collections
 import copy
 import json
 import os
-from typing import Tuple, Optional
+from typing import Any, Tuple, Optional
 
 import yspec.checker
 from ansible.parsing.vault import VaultSecret, VaultAES256
@@ -143,12 +143,14 @@ def read_bundle_file(proto, fname, bundle_hash, pattern, ref=None):
     return body
 
 
-def init_object_config(spec: dict, conf: dict, attr: dict) -> Optional[ObjectConfig]:
+def init_object_config(proto: Prototype, obj: Any) -> Optional[ObjectConfig]:
+    spec, _, conf, attr = get_prototype_config(proto)
     if not conf:
         return None
     obj_conf = ObjectConfig(current=0, previous=0)
     obj_conf.save()
     save_obj_config(obj_conf, conf, attr, 'init')
+    process_file_type(obj, spec, conf)
     return obj_conf
 
 
@@ -211,8 +213,7 @@ def make_object_config(obj: ADCMEntity, prototype: Prototype) -> None:
     if obj.config:
         return
 
-    spec, _, conf, attr = get_prototype_config(prototype)
-    obj_conf = init_object_config(spec, conf, attr)
+    obj_conf = init_object_config(prototype, obj)
     if obj_conf:
         obj.config = obj_conf
         obj.save()
@@ -353,7 +354,7 @@ def save_file_type(obj, key, subkey, value):
     return filename
 
 
-def process_file_type(obj, spec, conf):
+def process_file_type(obj: Any, spec: dict, conf: dict):
     for key in conf:
         if 'type' in spec[key]:
             if spec[key]['type'] == 'file':
@@ -362,7 +363,6 @@ def process_file_type(obj, spec, conf):
             for subkey in conf[key]:
                 if spec[key][subkey]['type'] == 'file':
                     save_file_type(obj, key, subkey, conf[key][subkey])
-    return conf
 
 
 def ansible_encrypt(msg):
