@@ -38,6 +38,9 @@
         - name: some_param
           type: string
 
+  export:
+    - boolean
+
 - type: service
   name: test_service
   version: 101
@@ -48,5 +51,21 @@
 
   components:
     test_component:
+      config: *common_config
+      actions: *common_actions
+
+  export:
+    - boolean
+
+- type: service
+  name: new_service
+  version: 101
+
+  config: *common_config
+
+  actions: *common_actions
+
+  components:
+    new_component:
       config: *common_config
       actions: *common_actions

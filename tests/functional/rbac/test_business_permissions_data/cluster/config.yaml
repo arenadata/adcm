@@ -20,6 +20,15 @@
     type: boolean
     required: false
     default: true
+  import: &common_import
+    test_cluster:
+      versions:
+        min: 1.6
+        max: 1.6
+    test_service:
+      versions:
+        min: 101
+        max: 101
 
   actions: &common_actions
     no_config: &job
@@ -50,3 +59,20 @@
     test_component:
       config: *common_config
       actions: *common_actions
+
+  import: *common_import
+
+- type: service
+  name: new_service
+  version: 101
+
+  config: *common_config
+
+  actions: *common_actions
+
+  components:
+    new_component:
+      config: *common_config
+      actions: *common_actions
+
+  import: *common_import
