@@ -23,7 +23,7 @@ from django.db.transaction import atomic
 from guardian.models import UserObjectPermission, GroupObjectPermission
 from rest_framework.exceptions import ValidationError
 
-from cm.models import Bundle
+from cm.models import Bundle, ProductCategory
 
 
 class ObjectType(models.TextChoices):
@@ -39,13 +39,6 @@ def validate_object_type(value):
         raise ValidationError('Not a valid list.')
     if not all((v in ObjectType.values for v in value)):
         raise ValidationError('Not a valid object type.')
-
-
-def validate_category(value):
-    if not isinstance(value, list):
-        raise ValidationError('Not a valid list.')
-    if not all(isinstance(v, str) for v in value):
-        raise ValidationError('Not a valid string in list.')
 
 
 class User(AuthUser):
@@ -93,7 +86,8 @@ class Role(models.Model):
     type = models.CharField(
         max_length=32, choices=RoleTypes.choices, null=False, default=RoleTypes.role
     )
-    category = models.JSONField(default=list, null=False, validators=[validate_category])
+    category = models.ManyToManyField(ProductCategory)
+    any_category = models.BooleanField(default=False)
     parametrized_by_type = models.JSONField(
         default=list, null=False, validators=[validate_object_type]
     )
