@@ -1,6 +1,6 @@
 ---
 
-version: 2
+version: 3
 
 roles:
     - name: Create host
@@ -136,6 +136,21 @@ roles:
               codenames:
                 - view_config_of
 
+    - name: View config endpoints
+      description: The ability to view list of all configs separatly
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+      - label: cm
+        models:
+          - name: objectconfig
+            codenames:
+              - view
+          - name: configlog
+            codenames:
+              - view
+
     - name: View configurations
       description: The ability to view all configurations
       type: business
@@ -147,6 +162,7 @@ roles:
         - View component configurations
         - View provider configurations
         - View host configurations
+        - View config endpoints
 
     - name: Edit cluster configurations
       description: The ability to change and add new cluster configuration
@@ -238,6 +254,23 @@ roles:
                 - view_config_of
                 - change_config_of
 
+    - name: Edit config endpoints
+      description: The ability to edit list of all configs separatly
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: objectconfig
+              codenames:
+                - view
+                - change
+            - name: configlog
+              codenames:
+                - view
+                - change
+
     - name: Edit configurations
       description: The ability to edit all configurations
       type: business
@@ -249,6 +282,7 @@ roles:
         - Edit component configurations
         - Edit provider configurations
         - Edit host configurations
+        - Edit config endpoints
 
     - name: View cluster imports
       description: The ability to view the cluster import page
