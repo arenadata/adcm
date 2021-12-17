@@ -13,9 +13,9 @@
 from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin
 
 from api.views import ViewInterfaceGenericViewSet
+from api.api_views import DjangoModelPerm
 from cm.models import ConfigLog
 from .serializers import ConfigLogSerializer, UIConfigLogSerializer
-from api.api_views import DjangoModelPerm
 
 
 class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
