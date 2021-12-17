@@ -316,7 +316,7 @@ class BasePageObject:
 
     @allure.step('Write text to input element: "{text}"')
     def send_text_to_element(
-        self, locator: Locator, text: str, clean_input: bool = True, timeout: Optional[int] = None
+        self, element: Union[Locator, WebElement], text: str, clean_input: bool = True, timeout: Optional[int] = None
     ):
         """
         Writes text to input element found by locator
@@ -332,12 +332,12 @@ class BasePageObject:
 
         def _send_keys_and_check():
             if clean_input:
-                self.clear_by_keys(locator)
-            input_element = self.find_element(locator, timeout)
+                self.clear_by_keys(element)
+            input_element = self.find_element(element, timeout) if isinstance(element, Locator) else element
             input_element.send_keys(text)
             assert (
                 actual_value := input_element.get_property('value')
-            ) == text, f'Value of input {locator.name} expected to be "{text}", but "{actual_value}" was found'
+            ) == text, f'Value of input {element.name if isinstance(element, Locator) else element.text} expected to be "{text}", but "{actual_value}" was found'
 
         wait_until_step_succeeds(_send_keys_and_check, period=0.5, timeout=1.5)
 
