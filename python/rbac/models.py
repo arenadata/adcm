@@ -199,14 +199,25 @@ class Policy(models.Model):
 
     def remove_permissions(self):
         for pp in self.model_perm.all():
+            if (
+                PolicyPermission.objects.filter(
+                    user=pp.user, group=pp.group, permission=pp.permission
+                ).count()
+                > 1
+            ):
+                continue
             if pp.user:
                 pp.user.user_permissions.remove(pp.permission)
             if pp.group:
                 pp.group.permissions.remove(pp.permission)
             pp.delete()
         for pp in self.user_object_perm.all():
+            if Policy.objects.filter(user=pp.user, user_object_perm=pp).count() > 1:
+                continue
             pp.delete()
         for pp in self.group_object_perm.all():
+            if Policy.objects.filter(group=pp.group, group_object_perm=pp).count() > 1:
+                continue
             pp.delete()
 
     def add_object(self, obj):
@@ -224,6 +235,10 @@ class Policy(models.Model):
 
     def filter(self):
         return self.role.filter()
+
+    def delete(self, using=None, keep_parents=False):
+        self.remove_permissions()
+        return super().delete(using, keep_parents)
 
     @atomic
     def apply(self):
