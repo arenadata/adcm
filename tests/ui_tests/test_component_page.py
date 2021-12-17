@@ -61,6 +61,9 @@ SECOND_COMPONENT_NAME = "second"
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
 
+# !===== Fixtures =====!
+
+
 @pytest.fixture()
 def create_cluster_with_service(sdk_client_fs: ADCMClient, bundle_archive: str) -> Tuple[Cluster, Service]:
     """Create cluster with service"""
@@ -84,6 +87,9 @@ def create_cluster_with_hostcomponents(
     cluster.host_add(host)
     cluster.hostcomponent_set((host, service.component(name=FIRST_COMPONENT_NAME)))
     return cluster, service, host
+
+
+# !===== Tests =====!
 
 
 @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
@@ -180,17 +186,19 @@ class TestComponentConfigPage:
             component_config_page.config.clear_search_input()
         with allure.step("Check that rows are not filtered"):
             config_rows = component_config_page.config.get_all_config_rows()
-            assert len(config_rows) == 4, "Rows are filtered: there should be 4 row"
-        with component_config_page.config.wait_rows_change(expected_rows_amount=2):
+            assert len(config_rows) == 5, "Rows are filtered: there should be 4 row and 1 config group"
+        with component_config_page.config.wait_rows_change(expected_rows_amount=3):
             component_config_page.config.click_on_group(params["group_name"])
 
-    @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
-    def test_save_custom_config_on_component_config_page(self, app_fs, create_cluster_with_service):
+    @pytest.mark.parametrize(
+        "bundle_archive", [utils.get_data_dir(__file__, COMPONENT_WITH_DESCRIPTION_FIELDS)], indirect=True
+    )
+    def test_save_custom_config_on_component_config_page(
+        self, app_fs, create_cluster_with_service, create_bundle_archives
+    ):
         """Test config save on /cluster/{}/service/{}/component/{}/config page"""
 
         params = {
-            "row_value_new": "test",
-            "row_value_old": "123",
             "config_name_new": "test_name",
             "config_name_old": "init",
         }
@@ -200,16 +208,11 @@ class TestComponentConfigPage:
         component_config_page = ComponentConfigPage(
             app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
         ).open()
-
-        config_row = component_config_page.config.get_all_config_rows()[0]
-        component_config_page.config.type_in_config_field(row=config_row, value=params["row_value_new"], clear=True)
-
+        component_config_page.config.fill_config_fields_with_test_values()
         component_config_page.config.set_description(params["config_name_new"])
         component_config_page.config.save_config()
         component_config_page.config.compare_versions(params["config_name_old"])
-        with allure.step("Check row history"):
-            row_with_history = component_config_page.config.get_all_config_rows()[0]
-            component_config_page.config.wait_history_row_with_value(row_with_history, params["row_value_old"])
+        component_config_page.config.check_config_fields_history_with_test_values()
 
     @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, BUNDLE_COMMUNITY)], indirect=True)
     def test_reset_config_in_row_on_component_config_page(self, app_fs, create_cluster_with_service):
@@ -223,7 +226,9 @@ class TestComponentConfigPage:
             app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
         ).open()
         config_row = component_config_page.config.get_all_config_rows()[0]
-        component_config_page.config.type_in_config_field(row=config_row, value=params["row_value_new"], clear=True)
+        component_config_page.config.type_in_field_with_few_inputs(
+            row=config_row, values=[params["row_value_new"]], clear=True
+        )
         component_config_page.config.set_description(params["config_name"])
         component_config_page.config.save_config()
 
@@ -254,7 +259,7 @@ class TestComponentConfigPage:
         component_config_page.config.check_password_confirm_required(params['pass_name'])
         component_config_page.config.check_field_is_required(params['req_name'])
         config_row = component_config_page.config.get_all_config_rows()[0]
-        component_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
+        component_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params['wrong_value']])
         component_config_page.config.check_field_is_invalid(params['not_req_name'])
         component_config_page.config.check_config_warn_icon_on_left_menu()
         component_config_page.toolbar.check_warn_button(
@@ -278,8 +283,8 @@ class TestComponentConfigPage:
         ).open()
         component_config_page.config.clear_field_by_keys(params['field_name'])
         component_config_page.config.check_field_is_required(params['field_name'])
-        component_config_page.config.type_in_config_field(
-            params['new_value'], row=component_config_page.config.get_all_config_rows()[0]
+        component_config_page.config.type_in_field_with_few_inputs(
+            row=component_config_page.config.get_all_config_rows()[0], values=[params['new_value']]
         )
         component_config_page.config.save_config()
         component_config_page.config.assert_input_value_is(
