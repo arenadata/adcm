@@ -1,5 +1,6 @@
 <ng-container [formGroup]="form">
   <adwp-input [form]="form" label='Role name' controlName='name'></adwp-input>
+  <adwp-input [form]="form" label='Display name' controlName='display_name'></adwp-input>
   <adwp-input [form]="form" label='Description' controlName='description'></adwp-input>
   <adcm-input-rbac-permission [form]="form" label='Permissions' controlName='child'
                               [nameHandler]="permissions.label"
