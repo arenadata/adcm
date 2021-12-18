@@ -69,16 +69,17 @@ export class ListService implements IListService<Entities> {
       case 'servicecomponent':
         return this.api.getList(`${environment.apiRoot}cluster/${(this.detail.Current as Service).cluster_id}/service/${this.detail.Current.id}/component`, p);
       case 'user':
-        params = { ...params, 'expand': 'group' };
+        params = { ...params['params'], 'expand': 'group' };
         return this.api.getList(`${environment.apiRoot}rbac/user/`, convertToParamMap(params));
       case 'group':
-        params = { ...params, 'expand': 'user' };
+        params = { ...params['params'], 'expand': 'user' };
         return this.api.getList(`${environment.apiRoot}rbac/group/`, convertToParamMap(params));
       case 'role':
-        params = { ...params, 'expand': 'child' };
+        params = { ...params['params'], 'expand': 'child' };
         return this.api.getList(`${environment.apiRoot}rbac/role/`, convertToParamMap(params), { type: 'role' });
       case 'policy':
-        return this.api.getList(`${environment.apiRoot}rbac/policy/`, p);
+        params = { ...params['params'], 'expand': 'child' };
+        return this.api.getList(`${environment.apiRoot}rbac/policy/`, convertToParamMap(params));
       default:
         return this.api.root.pipe(switchMap((root) => this.api.getList<Entities>(root[this.current.typeName], p)));
     }
