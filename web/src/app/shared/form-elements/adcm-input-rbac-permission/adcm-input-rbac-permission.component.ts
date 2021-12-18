@@ -23,6 +23,8 @@ export class AdcmInputRbacPermissionComponent {
 
   @Input() isRequired = false;
 
+  @Input() readonly = false;
+
   get permissionsControl(): AbstractControl {
     return this.form.controls[this.controlName];
   }

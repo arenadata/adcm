@@ -18,25 +18,26 @@
                   [style.display]="chipListInput.value?.length ? 'block' : 'none'"
                   (click)="chipListInput.value = ''">Clear filter
           </button>
-          <button class="adcm-input-rbac-permissions__selected-filter-clear" mat-icon-button
+          <button *ngIf="!readonly" class="adcm-input-rbac-permissions__selected-filter-clear" mat-icon-button
                   appTooltip="Clear all selected permissions"
                   (click)="form.controls[controlName].reset([])">
             <mat-icon>cancel</mat-icon>
           </button>
         </div>
 
-        <ng-container *ngIf="selectedPermissions | falseAsEmptyArray | adwpFilter:matcher:chipListInput.value:nameHandler as selected">
+        <ng-container
+          *ngIf="selectedPermissions | falseAsEmptyArray | adwpFilter:matcher:chipListInput.value:nameHandler as selected">
           <ng-container *ngIf="!!selectedPermissions?.length && !selected?.length">
             <span class="warn">Nothing found</span>
           </ng-container>
           <mat-chip class="adcm-input-rbac-permissions__selected-permission"
                     *ngFor="let item of selected"
-                    removable disableRipple [selectable]="true" [value]="item" [selected]="true"
+                    [removable]="!readonly" disableRipple [selectable]="true" [value]="item" [selected]="true"
                     (removed)="removeSelectedPermission(item)">
 
             {{ item | adwpMapper:nameHandler }}
 
-            <button class="adcm-input-rbac-permissions__selected-permission-remove"
+            <button *ngIf="!readonly" class="adcm-input-rbac-permissions__selected-permission-remove"
                     mat-icon-button matChipRemove>
               <mat-icon>cancel</mat-icon>
             </button>
