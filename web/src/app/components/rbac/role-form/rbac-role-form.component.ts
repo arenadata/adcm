@@ -23,7 +23,7 @@ export class RbacRoleFormComponent extends RbacFormDirective<RbacRoleModel> {
     type: new FormControl('role'),
     category: new FormControl(['adcm']),
     parametrized_by_type: new FormControl([]),
-    child: new FormControl([]),
+    child: new FormControl([], [Validators.required]),
     url: new FormControl(null),
   });
 
