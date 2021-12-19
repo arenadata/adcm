@@ -214,6 +214,7 @@ def test_coreapi_schema(sdk_client_fs: ADCMClient, tested_class: Type[BaseAPIObj
             )
 
 
+@pytest.mark.full()
 @pytest.mark.parametrize(
     ('sdk_client', 'tested_class'),
     [
@@ -508,38 +509,6 @@ def task_status_attr():
 def job_task_id_attr(host_ok_action: Action):
     """Get task task_id attr"""
     return {'task_id': host_ok_action.task().task_id}
-
-
-# There is no paging on Actions right now.
-# @pytest.mark.parametrize(
-#     "TestedParentClass",
-#     [
-#         pytest.param(
-#             lazy_fixture('cluster_with_actions'),
-#             id="Cluster"
-#         ),
-#         pytest.param(
-#             lazy_fixture('service_with_actions'),
-#             id="Service"
-#         ),
-#         pytest.param(
-#             lazy_fixture('provider_with_actions'),
-#             id="Provider"
-#         ),
-#         pytest.param(
-#             lazy_fixture('host_with_actions'),
-#             id="Host"
-#         ),
-#     ])
-# def test_paging_fail_on_actions(TestedParentClass):
-#     """Scenario:
-#     * Create object  with a lot of actions
-#     * Call action_list()
-#     * Expecting to have ResponseTooLong error
-#     """
-#     with pytest.raises(ResponseTooLong):
-#         from pprint import pprint
-#         pprint(TestedParentClass.action_list())
 
 
 @pytest.mark.parametrize(

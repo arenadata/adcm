@@ -1,1 +1,1 @@
--r assemble/base/requirements-base.txt
+adwp-events==0.1.8

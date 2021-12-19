@@ -12,9 +12,9 @@
 
 """Bundle List page PageObjects classes"""
 
-import allure
-
 from dataclasses import dataclass
+
+import allure
 from selenium.webdriver.remote.webelement import WebElement
 
 from tests.ui_tests.app.page.bundle_list.locators import BundleListLocators
@@ -61,12 +61,12 @@ class BundleListPage(BasePageObject):
     @allure.step('Upload bundle from {bundle_path}')
     def upload_bundle(self, bundle_path: str):
         """Upload bundle with 'Upload bundles' button"""
-        self.find_element(BundleListLocators.Tooltip.upload_btn).send_keys(bundle_path)
+        self.find_element(BundleListLocators.Toolbar.upload_btn).send_keys(bundle_path)
 
     @allure.step('Upload bundles from {bundle_paths}')
     def upload_bundles(self, bundle_paths: list):
         """Upload multiple bundles at once with 'Upload bundles' button"""
-        self.find_element(BundleListLocators.Tooltip.upload_btn).send_keys("\n".join(bundle_paths))
+        self.find_element(BundleListLocators.Toolbar.upload_btn).send_keys("\n".join(bundle_paths))
 
     @allure.step('Remove bundle')
     def delete_bundle(self, row_num: int = 0):
@@ -93,10 +93,10 @@ class BundleListPage(BasePageObject):
         bundle_name = self.find_child(row, BundleListLocators.Table.Row.name)
         bundle_name.click()
 
-    @allure.step('Click on "home" button on tooltip')
-    def click_on_home_button_on_tooltip(self):
-        """Click on home button (a.k.a. "apps") in tooltip to open into page"""
-        self.find_and_click(BundleListLocators.Tooltip.apps_btn)
+    @allure.step('Click on "home" button on toolbar')
+    def click_on_home_button_on_toolbar(self):
+        """Click on home button (a.k.a. "apps") in toolbar to open into page"""
+        self.find_and_click(BundleListLocators.Toolbar.apps_btn)
 
     @allure.step('Check bundle is visible')
     def check_at_least_one_bundle_is_presented(self):

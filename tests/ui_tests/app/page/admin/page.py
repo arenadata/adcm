@@ -15,9 +15,8 @@
 from typing import List
 
 import allure
-
-from selenium.webdriver.remote.webelement import WebElement
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.remote.webelement import WebElement
 
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.admin.locators import (
@@ -25,15 +24,16 @@ from tests.ui_tests.app.page.admin.locators import (
     AdminIntroLocators,
     AdminSettingsLocators,
 )
-from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
-from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
-from tests.ui_tests.app.page.common.dialogs_locators import DeleteDialog
-from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
     PageHeader,
     PageFooter,
 )
+from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
+from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
+from tests.ui_tests.app.page.common.dialogs_locators import DeleteDialog
+from tests.ui_tests.app.page.common.table.page import CommonTableObj
+from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 
 
 class GeneralAdminPage(BasePageObject):
@@ -67,7 +67,11 @@ class GeneralAdminPage(BasePageObject):
 class AdminIntroPage(GeneralAdminPage):
     """Admin Intro Page class"""
 
-    MAIN_ELEMENTS = [AdminIntroLocators.intro_title, AdminIntroLocators.intro_text]
+    MAIN_ELEMENTS = [
+        AdminIntroLocators.intro_title,
+        AdminIntroLocators.intro_text,
+        CommonToolbarLocators.admin_link,
+    ]
 
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/admin/intro")
@@ -82,6 +86,7 @@ class AdminSettingsPage(GeneralAdminPage):
         AdminSettingsLocators.save_btn,
         AdminSettingsLocators.search_input,
         AdminSettingsLocators.advanced_label,
+        CommonToolbarLocators.admin_link,
     ]
 
     def __init__(self, driver, base_url):
@@ -94,7 +99,11 @@ class AdminSettingsPage(GeneralAdminPage):
 class AdminUsersPage(GeneralAdminPage):
     """Admin Users Page class"""
 
-    MAIN_ELEMENTS = [AdminUsersLocators.add_user_btn, AdminUsersLocators.user_row]
+    MAIN_ELEMENTS = [
+        AdminUsersLocators.add_user_btn,
+        AdminUsersLocators.user_row,
+        CommonToolbarLocators.admin_link,
+    ]
 
     def __init__(self, driver, base_url):
         super().__init__(driver, base_url, "/admin/users")

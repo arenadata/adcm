@@ -11,34 +11,38 @@
 # limitations under the License.
 
 import functools
+from typing import Union, Tuple, List
 
 from django.db import transaction
 from version_utils import rpm
 
 import cm.issue
 import cm.status_api
-from cm.adcm_config import proto_ref, obj_ref, switch_config
+from cm.adcm_config import proto_ref, obj_ref, switch_config, make_object_config
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
-    Prototype,
-    Host,
-    HostComponent,
-    ServiceComponent,
-    PrototypeImport,
+    Bundle,
+    Cluster,
     ClusterBind,
     ClusterObject,
+    Host,
+    HostComponent,
+    HostProvider,
+    Prototype,
+    PrototypeImport,
+    ServiceComponent,
     Upgrade,
 )
 
 
-def check_license(bundle):
+def check_license(bundle: Bundle) -> None:
     if bundle.license == 'unaccepted':
         msg = 'License for bundle "{}" {} {} is not accepted'
         err('LICENSE_ERROR', msg.format(bundle.name, bundle.version, bundle.edition))
 
 
-def version_in(version, ver):
+def version_in(version: str, ver: PrototypeImport) -> bool:
     # log.debug('version_in: %s < %s > %s', ver.min_version, version, ver.max_version)
     if ver.min_strict:
         if rpm.compare_versions(version, ver.min_version) <= 0:
@@ -55,7 +59,7 @@ def version_in(version, ver):
     return True
 
 
-def switch_object(obj, new_prototype):
+def switch_object(obj: Union[Host, ClusterObject], new_prototype: Prototype) -> None:
     """Upgrade object"""
     log.info('upgrade switch from %s to %s', proto_ref(obj.prototype), proto_ref(new_prototype))
     old_prototype = obj.prototype
@@ -64,7 +68,7 @@ def switch_object(obj, new_prototype):
     switch_config(obj, new_prototype, old_prototype)
 
 
-def switch_services(upgrade, cluster):
+def switch_services(upgrade: Upgrade, cluster: Cluster) -> None:
     """Upgrade services and component"""
 
     for prototype in Prototype.objects.filter(bundle=upgrade.bundle, type='service'):
@@ -78,7 +82,7 @@ def switch_services(upgrade, cluster):
     switch_hc(cluster, upgrade)
 
 
-def switch_components(cluster, co, new_co_proto):
+def switch_components(cluster: Cluster, co: ClusterObject, new_co_proto: Prototype) -> None:
     """Upgrade components"""
     for sc in ServiceComponent.objects.filter(cluster=cluster, service=co):
         try:
@@ -92,22 +96,21 @@ def switch_components(cluster, co, new_co_proto):
         except Prototype.DoesNotExist:
             # sc.delete() ?!
             pass
-    for comp in Prototype.objects.filter(parent=new_co_proto, type='component'):
-        try:
-            ServiceComponent.objects.get(cluster=cluster, service=co, prototype=comp)
-        except ServiceComponent.DoesNotExist:
-            sc = ServiceComponent(cluster=cluster, service=co, prototype=comp)
-            sc.save()
+    for sc_proto in Prototype.objects.filter(parent=new_co_proto, type='component'):
+        kwargs = dict(cluster=cluster, service=co, prototype=sc_proto)
+        if not ServiceComponent.objects.filter(**kwargs).exists():
+            sc = ServiceComponent.objects.create(**kwargs)
+            make_object_config(sc, sc_proto)
 
 
-def switch_hosts(upgrade, provider):
+def switch_hosts(upgrade: Upgrade, provider: HostProvider) -> None:
     """Upgrade hosts"""
     for prototype in Prototype.objects.filter(bundle=upgrade.bundle, type='host'):
         for host in Host.objects.filter(provider=provider, prototype__name=prototype.name):
             switch_object(host, prototype)
 
 
-def check_upgrade_version(obj, upgrade):
+def check_upgrade_version(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[bool, str]:
     proto = obj.prototype
     # log.debug('check %s < %s > %s', upgrade.min_version, proto.version, upgrade.max_version)
     if upgrade.min_strict:
@@ -129,7 +132,7 @@ def check_upgrade_version(obj, upgrade):
     return True, ''
 
 
-def check_upgrade_edition(obj, upgrade):
+def check_upgrade_edition(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[bool, str]:
     if not upgrade.from_edition:
         return True, ''
     from_edition = upgrade.from_edition
@@ -139,7 +142,7 @@ def check_upgrade_edition(obj, upgrade):
     return True, ''
 
 
-def check_upgrade_state(obj, upgrade):
+def check_upgrade_state(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[bool, str]:
     if obj.locked:
         return False, 'object is locked'
     if upgrade.state_available:
@@ -155,7 +158,9 @@ def check_upgrade_state(obj, upgrade):
         return False, 'no available states'
 
 
-def check_upgrade_import(obj, upgrade):  # pylint: disable=too-many-branches
+def check_upgrade_import(
+    obj: Union[Cluster, HostProvider], upgrade: Upgrade
+) -> Tuple[bool, str]:  # pylint: disable=too-many-branches
     def get_export(cbind):
         if cbind.source_service:
             return cbind.source_service
@@ -222,7 +227,7 @@ def check_upgrade_import(obj, upgrade):  # pylint: disable=too-many-branches
     return True, ''
 
 
-def check_upgrade(obj, upgrade):
+def check_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[bool, str]:
     if obj.locked:
         concerns = [i.name or 'Action lock' for i in obj.concerns.all()]
         return False, f'{obj} has blocking concerns to address: {concerns}'
@@ -240,7 +245,7 @@ def check_upgrade(obj, upgrade):
     return True, ''
 
 
-def switch_hc(obj, upgrade):
+def switch_hc(obj: Cluster, upgrade: Upgrade) -> None:
     def find_service(service, bundle):
         try:
             return Prototype.objects.get(bundle=bundle, type='service', name=service.prototype.name)
@@ -255,8 +260,9 @@ def switch_hc(obj, upgrade):
         except Prototype.DoesNotExist:
             return None
 
-    if obj.prototype.type == 'host':
+    if obj.prototype.type != 'cluster':
         return
+
     for hc in HostComponent.objects.filter(cluster=obj):
         service_proto = find_service(hc.service, upgrade.bundle)
         if not service_proto:
@@ -267,7 +273,7 @@ def switch_hc(obj, upgrade):
             continue
 
 
-def get_upgrade(obj, order=None):
+def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
     def rpm_cmp(obj1, obj2):
         return rpm.compare_versions(obj1.name, obj2.name)
 
@@ -298,7 +304,7 @@ def get_upgrade(obj, order=None):
         return res
 
 
-def do_upgrade(obj, upgrade):
+def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> dict:
     old_proto = obj.prototype
     check_license(obj.prototype.bundle)
     check_license(upgrade.bundle)

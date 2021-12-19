@@ -112,6 +112,9 @@ class HostPageMixin(BasePageObject):
         """Assert all main elements presence"""
         self.assert_displayed_elements(self.MAIN_ELEMENTS)
 
+    def check_host_toolbar(self, host_name: str):
+        self.toolbar.check_toolbar_elements(["HOSTS", host_name])
+
 
 class HostMainPage(HostPageMixin):
     """Host page Main menu"""

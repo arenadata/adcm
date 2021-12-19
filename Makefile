@@ -2,8 +2,8 @@
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 ADCMBASE_IMAGE ?= hub.arenadata.io/adcm/base
-ADCMBASE_TAG ?= 20211125152316
-
+ADCMTEST_IMAGE ?= hub.arenadata.io/adcm/test
+ADCMBASE_TAG ?= 20211205195158
 
 APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
@@ -33,11 +33,6 @@ buildss: ## Build status server
 
 buildjs: ## Build client side js/html/css in directory wwwroot
 	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./build.sh
-
-buildbase: ## Build base image for ADCM's container. That is alpine with all packages.
-	cd assemble/base && docker build --pull=true --no-cache=true \
-	-t $(ADCMBASE_IMAGE):$$(date '+%Y%m%d%H%M%S') -t $(ADCMBASE_IMAGE):latest \
-	.
 
 build: describe buildss buildjs ## Build final docker image and all depended targets except baseimage.
 	@docker build --no-cache=true \
@@ -78,9 +73,9 @@ ng_tests: ## Run Angular tests
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster-x64 ./ng_test.sh
 
 linters : ## Run linters
-	docker pull hub.adsw.io/library/pr-builder:3-x64
-	docker run -i --rm -v $(CURDIR)/:/source -w /source hub.adsw.io/library/pr-builder:3-x64 \
-        /bin/bash -xeo pipefail -c "/linters.sh shellcheck pylint pep8 && \
+	docker pull $(ADCMTEST_IMAGE):$(ADCMBASE_TAG)
+	docker run -i --rm -v $(CURDIR)/:/source -w /source $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) \
+        /bin/sh -xeo pipefail -c "/linters.sh shellcheck pylint && \
         /linters.sh -b ./tests -f ../tests pylint && \
         /linters.sh -f ./tests black && \
         /linters.sh -f ./tests/functional flake8_pytest_style && \
