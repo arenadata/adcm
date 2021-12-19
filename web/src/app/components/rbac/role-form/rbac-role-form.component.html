@@ -15,6 +15,6 @@
                                 controlName='child'></app-rbac-permission-form>
     </ng-container>
   </adcm-input-rbac-permission>
-  <adwp-controls [title]="title" [disabled]="form.invalid || value?.built_in" (cancel)="onCancel()"
+  <adwp-controls [title]="title" [disabled]="form.invalid || value?.built_in || form.pristine" (cancel)="onCancel()"
                  (save)="save()"></adwp-controls>
 </ng-container>

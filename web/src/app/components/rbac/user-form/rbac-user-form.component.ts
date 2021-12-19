@@ -90,6 +90,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
       // ToDo(lihih) the "adwp-list" should not change the composition of the original model.
       //  Now he adds the "checked" key to the model
       delete this.value['checked'];
+      this.form.get('user.username').disable();
       this.userForm.setValue(this.value);
       this.confirmForm.setValue({ password: this.value.password });
     }

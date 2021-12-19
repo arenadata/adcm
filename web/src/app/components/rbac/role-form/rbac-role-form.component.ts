@@ -14,12 +14,11 @@ import { RbacPermissionFormComponent } from '../permission-form/rbac-permission-
   ],
 })
 export class RbacRoleFormComponent extends RbacFormDirective<RbacRoleModel> implements OnInit {
-  form = null;
+  form: FormGroup = undefined;
 
   @ViewChild(RbacPermissionFormComponent) permissionForm: RbacPermissionFormComponent;
 
-
-  ngOnInit() {
+  ngOnInit(): void {
     this.form = new FormGroup({
       id: new FormControl(null),
       name: new FormControl({ value: '', disabled: this.value?.built_in }, [Validators.required]),

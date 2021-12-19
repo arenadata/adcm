@@ -32,7 +32,7 @@ export class RbacUserService implements EntityAbstractService {
   }
 
   update(url: string, params: Partial<RbacUserModel>): Observable<RbacUserModel> {
-    return this.api.put<RbacUserModel>(url, params);
+    return this.api.patch<RbacUserModel>(url, params);
   }
 
   getList(param?: Params): Observable<RbacUserModel[]> {

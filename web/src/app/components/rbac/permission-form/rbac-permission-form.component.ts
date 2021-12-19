@@ -34,5 +34,6 @@ export class RbacPermissionFormComponent extends RbacFormDirective<RbacRoleModel
 
   save(): void {
     this.form.controls[this.controlName].setValue(this.value);
+    this.form.markAsDirty();
   }
 }
