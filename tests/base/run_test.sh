@@ -64,5 +64,7 @@ if [[ ! -f fixture.db ]]; then
     init_db
 fi
 
+pip install -r ../../requirements.txt
+
 run_test "${1}" "${2}"
 #run_debug
