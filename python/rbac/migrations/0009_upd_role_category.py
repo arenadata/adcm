@@ -19,8 +19,6 @@ role_category = {}
 
 
 def pre_save_categories(apps, schema_editor):
-    global role_category
-
     Role = apps.get_model('rbac', 'Role')
     ProductCategory = apps.get_model('cm', 'ProductCategory')
 
@@ -33,8 +31,6 @@ def pre_save_categories(apps, schema_editor):
 
 
 def update_categories(apps, schema_editor):
-    global role_category
-
     displayed_for_all = {
         'Create host',
         'Remove hosts',
