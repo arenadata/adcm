@@ -14,6 +14,10 @@ import { ADD_SERVICE_PROVIDER } from '../../shared/add-component/add-service-mod
 import { AddButtonComponent } from '../../shared/add-component';
 import { RbacRoleFormComponent } from '../../components/rbac/role-form/rbac-role-form.component';
 
+const permissionNameMapper = (role: RbacRoleModel) => {
+  return role.child.map((u) => u.name).join(', ');
+};
+
 
 @Component({
   selector: 'app-roles',
@@ -43,6 +47,10 @@ export class RolesComponent extends RbacEntityListDirective<RbacRoleModel> {
       sort: 'description',
       value: (row) => row.description,
     },
+    {
+      label: 'Permissions',
+      value: permissionNameMapper,
+    }
   ] as IColumns<RbacRoleModel>;
 
   type: TypeName = 'role';
