@@ -18,7 +18,7 @@ from typing import Callable, NamedTuple
 import allure
 import pytest
 from adcm_client.base import NoSuchEndpointOrAccessIsDenied
-from adcm_client.objects import _BaseObject, ADCMClient
+from adcm_client.objects import _BaseObject, ADCMClient, User
 from adcm_client.wrappers.api import AccessIsDenied
 from adcm_pytest_plugin.utils import catch_failed, random_string
 
@@ -66,9 +66,9 @@ class BusinessRoles(Enum):
     MapHosts = BusinessRole("Map hosts", lambda x, *args: x.host_add(*args))
     UnmapHosts = BusinessRole("Unmap hosts", lambda x, *args: x.host_delete(*args))
     UpgradeBundle = BusinessRole("Upgrade bundle", lambda x, kwargs: x.upgrade().do())  # TODO
-    CreateHostProvider = BusinessRole("Create hostprovider", methodcaller("provider_create", name="new_provider"))
+    CreateHostProvider = BusinessRole("Create provider", methodcaller("provider_create", name="new_provider"))
     CreateHost = BusinessRole("Create host", methodcaller("host_create", fqdn="new_host"))
-    RemoveHostProvider = BusinessRole("Remove hostprovider", methodcaller("delete"))
+    RemoveHostProvider = BusinessRole("Remove provider", methodcaller("delete"))
     CreateCluster = BusinessRole("Create cluster", methodcaller("cluster_create", name="new_cluster"))
     RemoveCluster = BusinessRole("Remove cluster", methodcaller("delete"))
     UploadBundle = BusinessRole("Upload bundle", methodcaller("upload_from_fs", {}))  # TODO add new bundle
@@ -81,14 +81,14 @@ class BusinessRoles(Enum):
     RemoveUser = BusinessRole("Remove user", methodcaller("delete"))
     EditUser = BusinessRole("Edit user", methodcaller(""))  # TODO not implemented in adcm_client
     ViewRoles = BusinessRole("View roles", methodcaller("role_list"))
-    CreateCustomRoles = BusinessRole("Create custom roles", lambda x, **kwargs: x.role_create(**kwargs))
+    CreateCustomRoles = BusinessRole("Create custom role", lambda x, **kwargs: x.role_create(**kwargs))
     RemoveRoles = BusinessRole("Remove roles", methodcaller("delete"))
-    EditRoles = BusinessRole("Edit roles", methodcaller(""))  # TODO not implemented in adcm_client
-    ViewGroups = BusinessRole("View groups", methodcaller("group_list"))
+    EditRoles = BusinessRole("Edit role", methodcaller(""))  # TODO not implemented in adcm_client
+    ViewGroups = BusinessRole("View group", methodcaller("group_list"))
     CreateGroup = BusinessRole("Create group", lambda x, **kwargs: x.group_create(**kwargs))
     RemoveGroup = BusinessRole("Remove group", methodcaller("delete"))
     EditGroup = BusinessRole("Edit group", methodcaller(""))  # TODO not implemented in adcm_client
-    ViewPolicies = BusinessRole("View policies", methodcaller("policy_list"))
+    ViewPolicies = BusinessRole("View policy", methodcaller("policy_list"))
     CreatePolicy = BusinessRole("Create policy", lambda x, **kwargs: x.group_create(**kwargs))
     RemovePolicy = BusinessRole("Remove policy", methodcaller("delete"))
     EditPolicy = BusinessRole("Edit policy", methodcaller(""))  # TODO not implemented in adcm_client
@@ -96,7 +96,7 @@ class BusinessRoles(Enum):
 
 @pytest.fixture()
 @allure.title("Create test user")
-def user(sdk_client_fs):
+def user(sdk_client_fs) -> User:
     """Create user for testing"""
     return sdk_client_fs.user_create(*TEST_USER_CREDENTIALS)
 
