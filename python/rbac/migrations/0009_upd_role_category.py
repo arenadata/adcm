@@ -27,7 +27,7 @@ def pre_save_categories(apps, schema_editor):
         for value in role.category:
             category = ProductCategory.objects.filter(value=value).first()
             if category:
-                role_category[role.id].append(category)
+                role_category[role.id].append(category.id)
 
 
 def update_categories(apps, schema_editor):
@@ -52,7 +52,9 @@ def update_categories(apps, schema_editor):
     adcm_category = ProductCategory.objects.filter(value='ADCM').first()
 
     for role in Role.objects.all():
-        role.category.add(*role_category[role.id])
+        for category_id in role_category[role.id]:
+            category = ProductCategory.objects.filter(id=category_id).first()
+            role.category.add(category)
         if adcm_category and role.type == 'business':
             role.category.add(adcm_category)
         if role.name in displayed_for_all:
