@@ -17,6 +17,7 @@ from rest_framework import serializers
 from rbac import models
 from rbac.services import user as user_services
 from rbac.viewsets import ModelPermViewSet, DjangoModelPerm
+from rest_framework.validators import UniqueValidator
 
 
 class UserPermissions(DjangoModelPerm):
@@ -75,7 +76,12 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
     last_name = serializers.RegexField(
         r'^[^\n]*$', max_length=150, allow_blank=True, required=False, default=''
     )
-    email = serializers.EmailField(allow_blank=True, required=False, default='')
+    email = serializers.EmailField(
+        allow_blank=True,
+        required=False,
+        default='',
+        validators=[UniqueValidator(queryset=models.User.objects.all())],
+    )
     is_superuser = serializers.BooleanField(default=False)
     password = PasswordField(trim_whitespace=False)
     url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
