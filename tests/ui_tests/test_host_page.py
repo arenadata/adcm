@@ -32,6 +32,7 @@ from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
+from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.status.page import (
     SUCCESS_COLOR,
     NEGATIVE_COLOR,
@@ -60,6 +61,9 @@ REQUIRED_FIELD_NAME = 'Required item'
 PASSWORD_FIELD_NAME = 'Important password'
 SECRETTEXT_FIELD_NAME = 'secrettext'
 ADVANCED_FIELD_NAME = 'Advanced option'
+
+
+# !===== Fixtures =====!
 
 
 @pytest.fixture(params=["provider"])
@@ -257,6 +261,7 @@ class TestHostListPage:
         with allure.step('Check correct menu is opened'):
             main_host_page.check_fqdn_equal_to(HOST_FQDN)
             assert main_host_page.active_menu_is(menu_item_locator)
+            main_host_page.check_host_toolbar(HOST_FQDN)
 
     @pytest.mark.smoke()
     @pytest.mark.usefixtures("create_host", "upload_and_create_provider")
@@ -313,6 +318,7 @@ class TestHostMainPage:
         host_config_page = HostConfigPage(app_fs.driver, app_fs.adcm.url, create_host.host_id).open()
         host_main_page = host_config_page.open_main_menu()
         host_main_page.check_all_elements()
+        host_main_page.check_host_toolbar(HOST_FQDN)
 
     def test_check_host_admin_page_open_by_toolbar(self, app_fs, create_host):
         """Test open admin/intro page from host toolbar"""
@@ -332,6 +338,7 @@ class TestHostMainPage:
         host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, create_host.host_id).open()
         host_main_page.toolbar.click_link_by_name(HOST_FQDN)
         host_main_page.wait_page_is_opened()
+        host_main_page.check_host_toolbar(HOST_FQDN)
 
     def test_check_cluster_run_action_on_host_page_by_toolbar(self, app_fs, create_host):
         """Test run action from the /cluster/{}/main page toolbar"""
@@ -356,6 +363,7 @@ class TestHostConfigPage:
 
         params = {'group': 'group_one', 'search_text': 'Adv'}
         host_page = open_config(page)
+        host_page.check_host_toolbar(HOST_FQDN)
         get_rows_func = host_page.config.get_all_config_rows
         with allure.step('Check unfiltered configuration'):
             host_page.config.check_config_fields_visibility(
@@ -387,39 +395,22 @@ class TestHostConfigPage:
             host_page.config.check_config_fields_visibility(set(), {ADVANCED_FIELD_NAME})
 
     @pytest.mark.smoke()
-    @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
+    @pytest.mark.parametrize('provider_bundle', ["host_with_all_config_params"], indirect=True)
     @pytest.mark.usefixtures('create_host')
     def test_custom_name_config(self, page: HostListPage):
         """Change configuration, save with custom name, compare changes"""
+
         params = {
-            'password': 'awesomepass',
-            'secrettext': 'awesome secrettext',
-            'description': 'my own config description',
-            'type_in_required': '12',
-            'required_expected': 'null',
-            'password_expected': '****',
-            'secrettext_expected': '****',
+            "config_name_new": "test_name",
+            "config_name_old": "init",
         }
         host_page = open_config(page)
-        with allure.step('Change config description'):
-            init_config_desc = host_page.config.set_description(params['description'])
-        with allure.step('Change config values'):
-            required_row = host_page.config.get_config_row(REQUIRED_FIELD_NAME)
-            host_page.config.type_in_config_field(params['type_in_required'], row=required_row)
-            host_page.config.fill_password_and_confirm_fields(
-                params['password'], params['password'], PASSWORD_FIELD_NAME
-            )
-            secrettext_row = host_page.config.get_config_row(SECRETTEXT_FIELD_NAME)
-            host_page.config.type_in_config_field(params['secrettext'], row=secrettext_row, clear=True)
-            host_page.config.save_config()
-        with allure.step('Compare configurations'):
-            host_page.config.compare_versions(init_config_desc)
-            required_row = host_page.config.get_config_row(REQUIRED_FIELD_NAME)
-            host_page.config.wait_history_row_with_value(required_row, params['required_expected'])
-            password_row = host_page.config.get_config_row(PASSWORD_FIELD_NAME)
-            host_page.config.wait_history_row_with_value(password_row, params['password_expected'])
-            secrettext_row = host_page.config.get_config_row(SECRETTEXT_FIELD_NAME)
-            host_page.config.wait_history_row_with_value(secrettext_row, params['secrettext_expected'])
+        host_page.check_host_toolbar(HOST_FQDN)
+        host_page.config.fill_config_fields_with_test_values()
+        host_page.config.set_description(params["config_name_new"])
+        host_page.config.save_config()
+        host_page.config.compare_versions(params["config_name_old"])
+        host_page.config.check_config_fields_history_with_test_values()
 
     @pytest.mark.parametrize('provider_bundle', ["provider_config"], indirect=True)
     @pytest.mark.usefixtures('create_host')
@@ -431,11 +422,13 @@ class TestHostConfigPage:
             'init_value': '',
         }
         host_page = open_config(page)
-        host_page.config.fill_password_and_confirm_fields(params['password'], params['password'], PASSWORD_FIELD_NAME)
-        host_page.config.type_in_config_field(
-            params['type_in_req_field'],
-            row=host_page.config.get_config_row(REQUIRED_FIELD_NAME),
+        host_page.config.type_in_field_with_few_inputs(
+            row=host_page.config.get_config_row(PASSWORD_FIELD_NAME),
+            values=[params['password'], params['password']],
             clear=True,
+        )
+        host_page.config.type_in_field_with_few_inputs(
+            row=host_page.config.get_config_row(REQUIRED_FIELD_NAME), values=[params['type_in_req_field']], clear=True
         )
         host_page.config.save_config()
         host_page.config.reset_to_default(host_page.config.get_config_row(REQUIRED_FIELD_NAME))
@@ -456,12 +449,37 @@ class TestHostConfigPage:
         regular_row = host_page.config.get_config_row(REGULAR_FIELD_NAME)
         host_page.config.check_password_confirm_required(PASSWORD_FIELD_NAME)
         host_page.config.check_field_is_required(REQUIRED_FIELD_NAME)
-        host_page.config.type_in_config_field(wrong_value, row=regular_row)
+        host_page.config.type_in_field_with_few_inputs(row=regular_row, values=[wrong_value])
         host_page.config.check_field_is_invalid(REGULAR_FIELD_NAME)
         host_page.config.check_config_warn_icon_on_left_menu()
         host_page.toolbar.check_warn_button(
             tab_name=HOST_FQDN, expected_warn_text=[f'{HOST_FQDN} has an issue with its config']
         )
+
+    @pytest.mark.parametrize('provider_bundle', ["host_with_default_string"], indirect=True)
+    @pytest.mark.usefixtures('create_host')
+    def test_field_validation_on_host_config_page_with_default_value(self, page: HostListPage):
+        """Test config fields validation on host config page"""
+
+        params = {'field_name': 'string', 'new_value': 'test', "config_name": "test_name"}
+
+        host_page = open_config(page)
+        host_page.config.clear_field_by_keys(params['field_name'])
+        host_page.config.check_field_is_required(params['field_name'])
+        host_page.config.type_in_field_with_few_inputs(
+            row=host_page.config.get_all_config_rows()[0], values=[params['new_value']]
+        )
+        host_page.config.save_config()
+        host_page.config.assert_input_value_is(expected_value=params["new_value"], display_name=params["field_name"])
+
+    @pytest.mark.parametrize('provider_bundle', ["host_with_all_config_params"], indirect=True)
+    @pytest.mark.usefixtures('create_host')
+    def test_field_tooltips_on_host_config_page(self, page: HostListPage):
+        """Test config fields tooltips on host config page"""
+
+        host_page = open_config(page)
+        for item in CONFIG_ITEMS:
+            host_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
 
 @pytest.mark.usefixtures('login_to_adcm_over_api')
@@ -474,6 +492,7 @@ class TestHostStatusPage:
         host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, create_host.id).open()
         host_status_page = host_main_page.open_status_menu()
         host_status_page.check_all_elements()
+        host_status_page.check_host_toolbar(HOST_FQDN)
 
     def test_status_on_host_status_page(self, app_fs, adcm_fs, sdk_client_fs, create_host, upload_and_create_cluster):
         """Changes status on cluster/{}/status page"""

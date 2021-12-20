@@ -4,7 +4,8 @@ FROM $ADCMBASE_IMAGE:$ADCMBASE_TAG
 
 COPY . /adcm/
 
-RUN cp -r /adcm/os/* / && rm -rf /adcm/os; cp -r /adcm/python/ansible/* /usr/local/lib/python3.?/site-packages/ansible/ && rm -rf /adcm/python/ansible && rmdir /var/log/nginx;
+RUN cp -r /adcm/os/* / && rm -rf /adcm/os; cp -r /adcm/python/ansible/* /usr/local/lib/python3.*/site-packages/ansible/ && rm -rf /adcm/python/ansible && rmdir /var/log/nginx;
+RUN pip install -r /adcm/requirements.txt
 
 # Secret_key is mandatory for build_static procedure,
 # but should not be hardcoded in the image.

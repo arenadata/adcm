@@ -21,8 +21,8 @@ from tests.ui_tests.app.page.common.table.locator import CommonTable
 class BundleListLocators:
     """Bundle List page elements locators"""
 
-    class Tooltip:
-        """Bundle List page tooltip elements locators"""
+    class Toolbar:
+        """Bundle List page toolbar elements locators"""
 
         apps_btn = Locator(By.XPATH, "//a[.//mat-icon[text()='apps']]", "Apps button")
         upload_btn = Locator(By.CSS_SELECTOR, "input[value='upload_bundle_file']", "Bundle upload button")

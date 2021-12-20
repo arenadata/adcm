@@ -116,6 +116,11 @@ class ComponentPageMixin(BasePageObject):
         self.wait_element_visible(CommonToolbarLocators.admin_link)
         self.find_and_click(CommonToolbarLocators.text_link(link_name.upper().strip("_")))
 
+    def check_component_toolbar(self, cluster_name: str, service_name: str, component_name: str):
+        self.toolbar.check_toolbar_elements(
+            ["CLUSTERS", cluster_name, "SERVICES", service_name, "COMPONENTS", component_name]
+        )
+
 
 class ComponentMainPage(ComponentPageMixin):
     """Component page Main menu"""

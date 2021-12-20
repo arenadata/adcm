@@ -122,7 +122,7 @@ class ADCMManager(models.Manager):
     def get(self, *args, **kwargs):
         try:
             return super().get(*args, **kwargs)
-        except ObjectDoesNotExist:
+        except (ObjectDoesNotExist, ValueError, TypeError):
             if not hasattr(self.model, '__error_code__'):
                 raise AdcmEx('NO_MODEL_ERROR_CODE', f'model: {self.model.__name__}') from None
             msg = f'{self.model.__name__} {kwargs} does not exist'
