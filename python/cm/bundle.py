@@ -270,10 +270,17 @@ def cook_roles(bundle):
     for act in Action.objects.filter(prototype__bundle=bundle):
         name = act.display_name
         model = get_model_by_type(act.prototype.type)
-        role_name = (
-            f'{bundle.name}_{bundle.version}_{bundle.edition}_'
-            f'{act.prototype.type}_{act.prototype.display_name}_{name}'
-        )
+        if act.prototype.type == 'component':
+            role_name = (
+                f'{bundle.name}_{bundle.version}_{bundle.edition}_service_'
+                f'{act.prototype.parent.name}_{act.prototype.type}_'
+                f'{act.prototype.display_name}_{name}'
+            )
+        else:
+            role_name = (
+                f'{bundle.name}_{bundle.version}_{bundle.edition}_'
+                f'{act.prototype.type}_{act.prototype.display_name}_{name}'
+            )
         role = Role(
             name=role_name,
             display_name=role_name,
