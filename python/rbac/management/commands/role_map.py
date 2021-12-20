@@ -12,6 +12,7 @@
 import json
 
 from django.core.management.base import BaseCommand
+from django.db.models import Subquery
 
 from rbac.models import Role
 
@@ -44,7 +45,11 @@ class Command(BaseCommand):
         output = options['output']
         data = []
 
-        for role in Role.objects.all():
+        # We should start from root of the forest, so we filter out
+        # everything that is not mentioned as a child.
+        for role in Role.objects.exclude(
+            id__in=Subquery(Role.objects.filter(child__isnull=False).values('child__id'))
+        ):
             data.append(read_role(role))
 
         with open(output, 'w', encoding='utf_8') as f:
