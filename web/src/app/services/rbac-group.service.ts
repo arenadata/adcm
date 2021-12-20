@@ -5,7 +5,6 @@ import { ApiService } from '@app/core/api';
 import { environment } from '@env/environment';
 import { EntityAbstractService } from '@app/abstract/entity.abstract.service';
 import { FormModel } from '@app/shared/add-component/add-service-model';
-import { RbacGroupFormComponent } from '@app/components/rbac/group-form/rbac-group-form.component';
 import { RbacGroupModel } from '@app/models/rbac/rbac-group.model';
 import { Params } from '@angular/router';
 import { ListResult } from '@app/models/list-result';
@@ -18,7 +17,6 @@ export class RbacGroupService implements EntityAbstractService {
   model(value?: any): FormModel {
     return {
       name: 'group',
-      component: RbacGroupFormComponent,
       value: value
     };
   }

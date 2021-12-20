@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, Type, ViewChild } from '@angular/core';
 import { IColumns } from '@adwp-ui/widgets';
 import { Store } from '@ngrx/store';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -12,6 +12,11 @@ import { SocketState } from '@app/core/store';
 import { RbacRoleService } from '@app/services/rbac-role.service';
 import { ADD_SERVICE_PROVIDER } from '../../shared/add-component/add-service-model';
 import { AddButtonComponent } from '../../shared/add-component';
+import { RbacRoleFormComponent } from '../../components/rbac/role-form/rbac-role-form.component';
+
+const permissionNameMapper = (role: RbacRoleModel) => {
+  return role.child.map((u) => u.name).join(', ');
+};
 
 
 @Component({
@@ -42,9 +47,15 @@ export class RolesComponent extends RbacEntityListDirective<RbacRoleModel> {
       sort: 'description',
       value: (row) => row.description,
     },
+    {
+      label: 'Permissions',
+      value: permissionNameMapper,
+    }
   ] as IColumns<RbacRoleModel>;
 
-  type: TypeName = 'rbac_role';
+  type: TypeName = 'role';
+
+  component: Type<RbacRoleFormComponent> = RbacRoleFormComponent;
 
   constructor(
     protected service: ListService,

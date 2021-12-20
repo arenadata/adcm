@@ -9,7 +9,6 @@ import { ListResult } from '@app/models/list-result';
 import { map } from 'rxjs/operators';
 import { EntityAbstractService } from '@app/abstract/entity.abstract.service';
 import { FormModel } from '@app/shared/add-component/add-service-model';
-import { RbacUserFormComponent } from '@app/components/rbac/user-form/rbac-user-form.component';
 
 @Injectable()
 export class RbacUserService implements EntityAbstractService {
@@ -18,7 +17,6 @@ export class RbacUserService implements EntityAbstractService {
   model(value?: any): FormModel {
     return {
       name: 'user',
-      component: RbacUserFormComponent,
       value: value
     };
   }
@@ -34,7 +32,7 @@ export class RbacUserService implements EntityAbstractService {
   }
 
   update(url: string, params: Partial<RbacUserModel>): Observable<RbacUserModel> {
-    return this.api.put<RbacUserModel>(url, params);
+    return this.api.patch<RbacUserModel>(url, params);
   }
 
   getList(param?: Params): Observable<RbacUserModel[]> {

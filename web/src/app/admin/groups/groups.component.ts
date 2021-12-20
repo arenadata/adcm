@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, Type, ViewChild } from '@angular/core';
 import { IColumns } from '@adwp-ui/widgets';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
@@ -6,11 +6,12 @@ import { Store } from '@ngrx/store';
 import { RbacGroupModel } from '@app/models/rbac/rbac-group.model';
 import { TypeName } from '../../core/types';
 import { ADD_SERVICE_PROVIDER } from '../../shared/add-component/add-service-model';
-import { AddButtonComponent } from '../../shared/add-component';
+import { AddButtonComponent, BaseFormDirective } from '../../shared/add-component';
 import { ListService } from '@app/shared/components/list/list.service';
 import { SocketState } from '@app/core/store';
 import { RbacEntityListDirective } from '@app/abstract-directives/rbac-entity-list.directive';
 import { RbacGroupService } from '../../services/rbac-group.service';
+import { RbacGroupFormComponent } from '../../components/rbac/group-form/rbac-group-form.component';
 
 const userNameMapper = (group: RbacGroupModel) => {
   return group.user.map((u) => u.username).join(', ');
@@ -50,7 +51,9 @@ export class GroupsComponent extends RbacEntityListDirective<RbacGroupModel> {
     }
   ] as IColumns<RbacGroupModel>;
 
-  type: TypeName = 'rbac_group';
+  type: TypeName = 'group';
+
+  component: Type<BaseFormDirective> = RbacGroupFormComponent;
 
   constructor(
     protected service: ListService,

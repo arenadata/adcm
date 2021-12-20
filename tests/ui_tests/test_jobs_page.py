@@ -12,18 +12,12 @@
 
 """UI tests for /jobs page"""
 
+import os
 from dataclasses import asdict
 from typing import Union, List
 
-import os
-
-import pytest
 import allure
-
-from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.steps.actions import (
-    run_cluster_action_and_assert_result,
-)
+import pytest
 from adcm_client.objects import (
     ADCMClient,
     Cluster,
@@ -34,6 +28,10 @@ from adcm_client.objects import (
     Component,
     Action,
     ObjectNotFound,
+)
+from adcm_pytest_plugin import utils
+from adcm_pytest_plugin.steps.actions import (
+    run_cluster_action_and_assert_result,
 )
 
 from tests.ui_tests.app.app import ADCMTest
@@ -218,6 +216,7 @@ class TestTaskPage:
                 page.select_filter_all_tab()
             page.table.check_pagination(params['second_page'])
 
+    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2385")
     @pytest.mark.smoke()
     def test_open_task_by_click_on_name(self, cluster: Cluster, page: JobListPage):
         """Click on task name and task page should be opened"""
@@ -228,7 +227,9 @@ class TestTaskPage:
         with allure.step('Check Task detailed page is opened'):
             job_page = JobPageStdout(page.driver, page.base_url, task.id)
             job_page.wait_page_is_opened()
+            job_page.check_jobs_toolbar(LONG_ACTION_DISPLAY_NAME.upper())
 
+    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2385")
     @pytest.mark.smoke()
     @pytest.mark.parametrize('log_type', ['stdout', 'stderr'], ids=['stdout_menu', 'stderr_menu'])
     @pytest.mark.usefixtures('login_to_adcm_over_api')
@@ -249,6 +250,7 @@ class TestTaskPage:
                 },
                 job_page.get_job_info,
             )
+            job_page.check_jobs_toolbar(SUCCESS_ACTION_DISPLAY_NAME.upper())
 
     @pytest.mark.usefixtures("login_to_adcm_over_api", "clean_downloads_fs")
     def test_download_log(self, cluster: Cluster, app_fs: ADCMTest, downloads_directory):

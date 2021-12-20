@@ -55,16 +55,14 @@ def permission_denied(
     raise exceptions.PermissionDenied(detail=message, code=code)
 
 
-def has_import_perm(user, action_type, model, obj):
-    if user.has_perm(f'cm.{action_type}_clusterbind'):
-        return True
-    if user.has_perm(f'cm.{action_type}_import_of_{model}', obj):
+def has_custom_permission(user, action_type, model, obj):
+    if user.has_perm(f'cm.{action_type}_{model}', obj):
         return True
     return False
 
 
-def check_import_perm(self, action_type, model, obj):
-    if not has_import_perm(self.request.user, action_type, model, obj):
+def check_custom_perm(self, action_type, model, obj):
+    if not has_custom_permission(self.request.user, action_type, model, obj):
         permission_denied()
 
 
@@ -160,27 +158,6 @@ class DjangoModelPerm(DjangoModelPermissions):
         'PATCH': ['%(app_label)s.change_%(model_name)s'],
         'DELETE': ['%(app_label)s.delete_%(model_name)s'],
     }
-
-
-class StatusPerm(DjangoModelPerm):
-    """
-    Self view status page permissions class.
-    Use codename status_view to check permissions
-    """
-
-    def __init__(self, *args, **kwargs):
-        """Replace GET permissions from "view" to "status_view"""
-        super().__init__(*args, **kwargs)
-        self.perms_map['GET'] = ['%(app_label)s.status_view_%(model_name)s']
-
-    def has_permission(self, request, view):
-        """Check that user has allowed to view status page"""
-        model_name = view.model_name.__name__.lower()
-        return request.user.has_perm(f'cm.status_view_{model_name}')
-
-
-class GenericAPIPermStatusView(GenericAPIView):
-    permission_classes = (StatusPerm,)
 
 
 class GenericAPIPermView(GenericAPIView):

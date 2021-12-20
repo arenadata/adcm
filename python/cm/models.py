@@ -122,7 +122,7 @@ class ADCMManager(models.Manager):
     def get(self, *args, **kwargs):
         try:
             return super().get(*args, **kwargs)
-        except ObjectDoesNotExist:
+        except (ObjectDoesNotExist, ValueError, TypeError):
             if not hasattr(self.model, '__error_code__'):
                 raise AdcmEx('NO_MODEL_ERROR_CODE', f'model: {self.model.__name__}') from None
             msg = f'{self.model.__name__} {kwargs} does not exist'
@@ -182,11 +182,36 @@ class Bundle(ADCMModel):
     hash = models.CharField(max_length=64)
     description = models.TextField(blank=True)
     date = models.DateTimeField(auto_now=True)
+    category = models.ForeignKey('ProductCategory', on_delete=models.RESTRICT, null=True)
 
     __error_code__ = 'BUNDLE_NOT_FOUND'
 
     class Meta:
         unique_together = (('name', 'version', 'edition'),)
+
+
+class ProductCategory(ADCMModel):
+    """
+    Categories are used for some models categorization.
+    It's same as Bundle.name but unlinked from it due to simplicity reasons.
+    """
+
+    value = models.CharField(max_length=160, unique=True)
+    visible = models.BooleanField(default=True)
+
+    _invisible_categories = ('ADCM',)
+
+    @classmethod
+    def re_collect(cls) -> None:
+        """Re-sync category list with installed bundles"""
+        for bundle in Bundle.objects.filter(category=None).all():
+            bundle.category, _ = cls.objects.get_or_create(
+                value=bundle.name, visible=bundle.name not in cls._invisible_categories
+            )
+            bundle.save()
+        for category in cls.objects.all():
+            if category.bundle_set.count() == 0:
+                category.delete()  # TODO: ensure that's enough
 
 
 def get_default_from_edition():

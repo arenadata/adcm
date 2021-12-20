@@ -227,7 +227,7 @@ def get_positive_data_for_post_body_check():
                         ),
                         _get_datasets(
                             endpoint,
-                            desc="Some values for fields with POSTable=False and Required=False",
+                            desc="Changed values for fields with POSTable=False and Required=False",
                             field_conditions=lambda x: not x.postable and not x.required,
                             value_properties={"generated_value": True},
                         ),
@@ -267,7 +267,7 @@ def get_negative_data_for_post_body_check():
                         ),
                         _get_datasets(
                             endpoint,
-                            desc="Drop fields with " "Default=null AND Nullable=False AND Required=False",
+                            desc="Drop fields with Default=null AND Nullable=False AND Required=False",
                             field_conditions=lambda x: x.default_value is None
                             and (not x.required and not x.nullable and not x.dynamic_nullable),
                             value_properties={
@@ -313,7 +313,7 @@ def get_positive_data_for_patch_body_check():
                     [
                         _get_datasets(
                             endpoint,
-                            desc="Object as is (all fields) " "without any changes in field set or values",
+                            desc="Object as is (all fields) without any changes in field set or values",
                             field_conditions=lambda x: True,
                             value_properties={"unchanged_value": True},
                         ),
@@ -334,6 +334,12 @@ def get_positive_data_for_patch_body_check():
                             desc="All Changeable=True fields with special valid values",
                             method=Methods.PATCH,
                             positive_case=True,
+                        ),
+                        _get_datasets(
+                            endpoint,
+                            desc="Changed values for fields with Changeable=False and POSTable=False",
+                            field_conditions=lambda x: not x.changeable and not x.postable,
+                            value_properties={"generated_value": True},
                         ),
                     ],
                 )

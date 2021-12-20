@@ -126,7 +126,6 @@ class PolicyViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-
             policy = policy_create(**serializer.validated_data)
 
             return Response(data=self.get_serializer(policy).data, status=status.HTTP_201_CREATED)

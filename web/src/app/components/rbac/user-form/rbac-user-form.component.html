@@ -1,4 +1,4 @@
-<form [formGroup]="userForm" class="rbac-user-form">
+<form [formGroup]="userForm" class="rbac-user-form" tabindex="0">
   <adwp-input [form]="userForm" label='User name' controlName='username'></adwp-input>
   <div class="rbac-user-form__password">
     <adwp-input [form]="userForm"
@@ -15,5 +15,6 @@
                      appRbacGroupsAsOptions
                      #groups="rbacGroups"
                      [options]="groups.options$ | async | falseAsEmptyArray"></adwp-input-select>
-  <adwp-controls [title]="title" [disabled]="!form.valid" (cancel)="onCancel()" (save)="save()"></adwp-controls>
+  <adwp-controls [title]="title" [disabled]="form.invalid || form.pristine" (cancel)="onCancel()"
+                 (save)="save()"></adwp-controls>
 </form>

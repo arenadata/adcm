@@ -38,13 +38,13 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
       is_superuser: new FormControl(null),
       url: new FormControl(null),
       profile: new FormControl(null),
-      username: new FormControl(null),
+      username: new FormControl(null, [Validators.required]),
       password: new FormControl(null, [
         Validators.required, Validators.min(5)
       ]),
-      first_name: new FormControl(null),
-      last_name: new FormControl(null),
-      email: new FormControl(null, [Validators.email]),
+      first_name: new FormControl(null, [Validators.required]),
+      last_name: new FormControl(null, [Validators.required]),
+      email: new FormControl(null, [Validators.required, Validators.email]),
       group: new FormControl([])
     }),
     confirm: new FormGroup({
@@ -87,6 +87,10 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
    */
   private _setValue(value: RbacUserModel): void {
     if (value) {
+      // ToDo(lihih) the "adwp-list" should not change the composition of the original model.
+      //  Now he adds the "checked" key to the model
+      delete this.value['checked'];
+      this.form.get('user.username').disable();
       this.userForm.setValue(this.value);
       this.confirmForm.setValue({ password: this.value.password });
     }

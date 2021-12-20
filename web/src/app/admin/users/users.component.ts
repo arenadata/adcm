@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, Type, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { IColumns } from '@adwp-ui/widgets';
@@ -20,8 +20,9 @@ import { SocketState } from '@app/core/store';
 import { TypeName } from '@app/core/types';
 import { RbacEntityListDirective } from '@app/abstract-directives/rbac-entity-list.directive';
 import { ADD_SERVICE_PROVIDER } from '../../shared/add-component/add-service-model';
-import { AddButtonComponent } from '../../shared/add-component';
+import { AddButtonComponent, BaseFormDirective } from '../../shared/add-component';
 import { RbacUserService } from '../../services/rbac-user.service';
+import { RbacUserFormComponent } from '../../components/rbac/user-form/rbac-user-form.component';
 
 const groupNameMapper = (user: RbacUserModel) => {
   return user.group.map((group) => group.name).join(', ');
@@ -61,7 +62,9 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
     }
   ] as IColumns<RbacUserModel>;
 
-  type: TypeName = 'rbac_user';
+  type: TypeName = 'user';
+
+  component: Type<BaseFormDirective> = RbacUserFormComponent;
 
   constructor(
     protected service: ListService,

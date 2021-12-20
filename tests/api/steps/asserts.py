@@ -14,11 +14,12 @@
 import json
 from dataclasses import field, dataclass
 from http import HTTPStatus
+from typing import Dict
 
 import allure
 from requests import Response
 
-from tests.api.utils.tools import NotSet
+from tests.api.utils.tools import NotSet, NotEqual
 
 
 @dataclass
@@ -45,8 +46,11 @@ def status_code_should_be(response: Response, status_code=HTTPStatus.OK):
 def body_should_be(response: Response, expected_body: ExpectedBody):
     """Assert response body and attach it"""
     actual_body: dict = response.json()
-    expected_fields_values = {
-        key: value for key, value in expected_body.fields.items() if not isinstance(value, NotSet)
+    expected_values = {
+        key: value for key, value in expected_body.fields.items() if not isinstance(value, (NotSet, NotEqual))
+    }
+    unexpected_values: Dict[str, NotEqual] = {
+        key: value for key, value in expected_body.fields.items() if isinstance(value, NotEqual)
     }
     with allure.step("Body should contains fields"):
         try:
@@ -61,20 +65,39 @@ def body_should_be(response: Response, expected_body: ExpectedBody):
         except AssertionError as error:
             raise BodyAssertionError(error) from error
 
-    if expected_fields_values:
+    if expected_values:
         with allure.step("Fields values should be"):
-            actual_fields_values = {key: value for key, value in actual_body.items() if key in expected_fields_values}
+
+            actual_values = {key: value for key, value in actual_body.items() if key in expected_values}
             allure.attach(
-                json.dumps(expected_fields_values, indent=2),
+                json.dumps(expected_values, indent=2),
                 name='Expected fields values',
                 attachment_type=allure.attachment_type.JSON,
             )
             allure.attach(
-                json.dumps(actual_fields_values or actual_body, indent=2),
+                json.dumps(actual_values or actual_body, indent=2),
                 name='Actual fields values',
                 attachment_type=allure.attachment_type.JSON,
             )
             try:
-                assert actual_fields_values == expected_fields_values, "Response fields values assertion failed!"
+                assert actual_values == expected_values, "Response fields values assertion failed!"
+            except AssertionError as error:
+                raise BodyAssertionError(error) from error
+    if unexpected_values:
+        with allure.step("Fields values should NOT be"):
+            actual_values = {key: value for key, value in actual_body.items() if key in unexpected_values}
+            allure.attach(
+                json.dumps(unexpected_values, indent=2, cls=NotEqual.Encoder),
+                name='Unexpected fields values',
+                attachment_type=allure.attachment_type.JSON,
+            )
+            allure.attach(
+                json.dumps(actual_values or actual_body, indent=2),
+                name='Actual fields values',
+                attachment_type=allure.attachment_type.JSON,
+            )
+            try:
+                for key, value in unexpected_values.items():
+                    assert value.value != actual_values.get(key), f"Response field {key} has unexpected value"
             except AssertionError as error:
                 raise BodyAssertionError(error) from error

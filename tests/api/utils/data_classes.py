@@ -42,6 +42,8 @@ from tests.api.utils.types import (
     Username,
 )
 
+AUTO_VALUE = "auto"
+
 
 class BaseClass(ABC):
     """Base data class"""
@@ -66,7 +68,7 @@ class ClusterFields(BaseClass):
     Data type class for Cluster object
     """
 
-    id = Field(name="id", f_type=PositiveInt(), default_value="auto")
+    id = Field(name="id", f_type=PositiveInt(), default_value=AUTO_VALUE)
     name = Field(name="name", f_type=String(max_length=255))
 
 
@@ -75,7 +77,7 @@ class ServiceFields(BaseClass):
     Data type class for Service object
     """
 
-    id = Field(name="id", f_type=PositiveInt(), default_value="auto")
+    id = Field(name="id", f_type=PositiveInt(), default_value=AUTO_VALUE)
     name = Field(name="name", f_type=String(max_length=255))
 
 
@@ -84,7 +86,7 @@ class ComponentFields(BaseClass):
     Data type class for Component object
     """
 
-    id = Field(name="id", f_type=PositiveInt(), default_value="auto")
+    id = Field(name="id", f_type=PositiveInt(), default_value=AUTO_VALUE)
     name = Field(name="name", f_type=String(max_length=255))
 
 
@@ -93,7 +95,7 @@ class ProviderFields(BaseClass):
     Data type class for Provider object
     """
 
-    id = Field(name="id", f_type=PositiveInt(), default_value="auto")
+    id = Field(name="id", f_type=PositiveInt(), default_value=AUTO_VALUE)
     name = Field(name="name", f_type=String(max_length=255))
 
 
@@ -102,7 +104,7 @@ class HostFields(BaseClass):
     Data type class for Host object
     """
 
-    id = Field(name="id", f_type=PositiveInt(), default_value="auto")
+    id = Field(name="id", f_type=PositiveInt(), default_value=AUTO_VALUE)
     fqdn = Field(name="fqdn", f_type=String(max_length=255))
 
 
@@ -111,8 +113,8 @@ class ObjectConfigFields(BaseClass):
     Data type class for ObjectConfig object
     """
 
-    id = Field(name="id", f_type=PositiveInt(), default_value="auto")
-    url = Field(name="url", f_type=String(), default_value="auto")
+    id = Field(name="id", f_type=PositiveInt(), default_value=AUTO_VALUE)
+    url = Field(name="url", f_type=String(), default_value=AUTO_VALUE)
 
 
 class GroupConfigFields(BaseClass):
@@ -121,7 +123,7 @@ class GroupConfigFields(BaseClass):
     https://spec.adsw.io/adcm_core/objects.html#group
     """
 
-    id = Field(name="id", f_type=PositiveInt(), default_value="auto")
+    id = Field(name="id", f_type=PositiveInt(), default_value=AUTO_VALUE)
     object_type = Field(
         name="object_type",
         f_type=Enum(enum_values=["cluster", "service", "component", "provider"]),
@@ -139,17 +141,17 @@ class GroupConfigFields(BaseClass):
     config = Field(
         name="config",
         f_type=ForeignKey(fk_link=ObjectConfigFields),
-        default_value="auto",
+        default_value=AUTO_VALUE,
     )
-    config_id = Field(name='config_id', f_type=PositiveInt(), default_value="auto", nullable=True)
+    config_id = Field(name='config_id', f_type=PositiveInt(), default_value=AUTO_VALUE, nullable=True)
     host_candidate = Field(
         # Link to host candidates url for this object. Auto-filled when group-config object creates
         # Candidates list depends on ADCM object for which group-config was created.
         name="host_candidate",
         f_type=String(),
-        default_value="auto",
+        default_value=AUTO_VALUE,
     )
-    url = Field(name="url", f_type=String(), default_value="auto")
+    url = Field(name="url", f_type=String(), default_value=AUTO_VALUE)
 
 
 class ConfigLogFields(BaseClass):
@@ -157,8 +159,8 @@ class ConfigLogFields(BaseClass):
     Data type class for ConfigLog object
     """
 
-    id = Field(name="id", f_type=PositiveInt(), default_value="auto")
-    date = Field(name="date", f_type=DateTime(), default_value="auto")
+    id = Field(name="id", f_type=PositiveInt(), default_value=AUTO_VALUE)
+    date = Field(name="date", f_type=DateTime(), default_value=AUTO_VALUE)
     obj_ref = Field(name="obj_ref", f_type=ForeignKey(fk_link=ObjectConfigFields), required=True, postable=True)
     description = Field(
         name="description",
@@ -179,24 +181,24 @@ class ConfigLogFields(BaseClass):
         default_value={},
         postable=True,
     )
-    url = Field(name="url", f_type=String(), default_value="auto")
+    url = Field(name="url", f_type=String(), default_value=AUTO_VALUE)
 
 
 # Back-reference from ConfigLogFields
 ObjectConfigFields.current = Field(
     name="current",
     f_type=BackReferenceFK(fk_link=ConfigLogFields),
-    default_value="auto",
+    default_value=AUTO_VALUE,
 )
 ObjectConfigFields.previous = Field(
     name="previous",
     f_type=BackReferenceFK(fk_link=ConfigLogFields),
-    default_value="auto",
+    default_value=AUTO_VALUE,
 )
 ObjectConfigFields.history = Field(
     name="history",
     f_type=BackReferenceFK(fk_link=ConfigLogFields),
-    default_value="auto",
+    default_value=AUTO_VALUE,
 )
 
 
@@ -210,15 +212,15 @@ class GroupConfigHostCandidatesFields(BaseClass):
     id = Field(
         name="id",
         f_type=PositiveInt(),
-        default_value="auto",
+        default_value=AUTO_VALUE,
     )
-    cluster_id = Field(name="cluster_id", f_type=PositiveInt(), default_value="auto")
-    prototype_id = Field(name="prototype_id", f_type=PositiveInt(), default_value="auto")
-    provider_id = Field(name="provider_id", f_type=PositiveInt(), default_value="auto")
-    fqdn = Field(name="fqdn", f_type=String(), default_value="auto")
-    description = Field(name="description", f_type=Text(), default_value="auto")
-    state = Field(name="state", f_type=String(), default_value="auto")
-    url = Field(name="url", f_type=String(), default_value="auto")
+    cluster_id = Field(name="cluster_id", f_type=PositiveInt(), default_value=AUTO_VALUE)
+    prototype_id = Field(name="prototype_id", f_type=PositiveInt(), default_value=AUTO_VALUE)
+    provider_id = Field(name="provider_id", f_type=PositiveInt(), default_value=AUTO_VALUE)
+    fqdn = Field(name="fqdn", f_type=String(), default_value=AUTO_VALUE)
+    description = Field(name="description", f_type=Text(), default_value=AUTO_VALUE)
+    state = Field(name="state", f_type=String(), default_value=AUTO_VALUE)
+    url = Field(name="url", f_type=String(), default_value=AUTO_VALUE)
 
 
 class GroupConfigHostsFields(BaseClass):
@@ -235,20 +237,20 @@ class GroupConfigHostsFields(BaseClass):
         required=True,
         postable=True,
     )
-    cluster_id = Field(name="cluster_id", f_type=PositiveInt(), default_value="auto")
-    prototype_id = Field(name="prototype_id", f_type=PositiveInt(), default_value="auto")
-    provider_id = Field(name="provider_id", f_type=PositiveInt(), default_value="auto")
-    fqdn = Field(name="fqdn", f_type=String(), default_value="auto")
-    description = Field(name="description", f_type=Text(), default_value="auto")
-    state = Field(name="state", f_type=String(), default_value="auto")
-    url = Field(name="url", f_type=String(), default_value="auto")
+    cluster_id = Field(name="cluster_id", f_type=PositiveInt(), default_value=AUTO_VALUE)
+    prototype_id = Field(name="prototype_id", f_type=PositiveInt(), default_value=AUTO_VALUE)
+    provider_id = Field(name="provider_id", f_type=PositiveInt(), default_value=AUTO_VALUE)
+    fqdn = Field(name="fqdn", f_type=String(), default_value=AUTO_VALUE)
+    description = Field(name="description", f_type=Text(), default_value=AUTO_VALUE)
+    state = Field(name="state", f_type=String(), default_value=AUTO_VALUE)
+    url = Field(name="url", f_type=String(), default_value=AUTO_VALUE)
 
 
 # Back-reference from GroupConfigHostsFields
 GroupConfigFields.hosts = Field(
     name="hosts",
     f_type=BackReferenceFK(fk_link=GroupConfigHostsFields),
-    default_value="auto",
+    default_value=AUTO_VALUE,
 )
 
 
@@ -260,7 +262,7 @@ class RbacUserFields(BaseClass):
     id = Field(
         name="id",
         f_type=PositiveInt(),
-        default_value="auto",
+        default_value=AUTO_VALUE,
     )
     username = Field(
         name="username", f_type=Username(max_length=150, special_chars="@.+-_"), required=True, postable=True
@@ -273,7 +275,7 @@ class RbacUserFields(BaseClass):
     password = Field(name="password", f_type=Password(), required=True, postable=True, changeable=True)
     is_superuser = Field(name="is_superuser", f_type=Boolean(), default_value=False, postable=True, changeable=True)
     profile = Field(name="profile", f_type=Json(), default_value="", postable=True, changeable=True)
-    url = Field(name="url", f_type=String(), default_value="auto")
+    url = Field(name="url", f_type=String(), default_value=AUTO_VALUE)
 
 
 class RbacGroupFields(BaseClass):
@@ -284,14 +286,14 @@ class RbacGroupFields(BaseClass):
     id = Field(
         name="id",
         f_type=PositiveInt(),
-        default_value="auto",
+        default_value=AUTO_VALUE,
     )
     user = Field(
         name="user", f_type=ForeignKeyM2M(fk_link=RbacUserFields), postable=True, changeable=True, default_value=[]
     )
     name = Field(name="name", f_type=String(max_length=150), required=True, postable=True, changeable=True)
     description = Field(name="description", f_type=Text(), postable=True, changeable=True, default_value="")
-    url = Field(name="url", f_type=String(), default_value="auto")
+    url = Field(name="url", f_type=String(), default_value=AUTO_VALUE)
 
 
 RbacUserFields.group = Field(

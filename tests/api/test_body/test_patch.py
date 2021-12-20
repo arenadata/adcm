@@ -22,7 +22,6 @@ from tests.api.test_body import _test_patch_put_body_positive
 from tests.api.testdata.generators import (
     get_positive_data_for_patch_body_check,
     get_negative_data_for_patch_body_check,
-    TestData,
     TestDataWithPreparedBody,
 )
 from tests.api.testdata.db_filler import DbFiller
@@ -49,7 +48,7 @@ def prepare_patch_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
     )
     full_item = deepcopy(valid_data["full_item"])
     changed_fields = deepcopy(valid_data["changed_fields"])
-    final_test_data_list: List[TestData] = []
+    final_test_data_list: List[TestDataWithPreparedBody] = []
     for test_data_with_prepared_values in test_data_list:
         test_data, prepared_field_values = deepcopy(test_data_with_prepared_values)
         for field in get_fields(test_data.request.endpoint.data_class):
@@ -64,7 +63,7 @@ def prepare_patch_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
                     test_data.request.data[field.name] = current_field_value
 
         test_data.request.object_id = valid_data["object_id"]
-        final_test_data_list.append(test_data)
+        final_test_data_list.append(TestDataWithPreparedBody(test_data, prepared_field_values))
 
     return adcm_api_fs, final_test_data_list
 
@@ -86,6 +85,7 @@ def test_patch_body_negative(prepare_patch_body_data, flexible_assert_step):
     nullable and changeable if not possible, fields with incorrect types and etc.
     """
     adcm, test_data_list = prepare_patch_body_data
-    for test_data in test_data_list:
+    for test_data_with_prepared_body in test_data_list:
+        test_data, _ = test_data_with_prepared_body
         with flexible_assert_step(title=f'Assert - {test_data.description}'):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)

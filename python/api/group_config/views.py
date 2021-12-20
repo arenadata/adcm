@@ -83,6 +83,8 @@ class GroupConfigHostViewSet(
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
+        if hasattr(context['view'], 'response'):
+            return context
         group_config_id = self.kwargs.get('parent_lookup_group_config')
         if group_config_id is not None:
             group_config = GroupConfig.obj.get(id=group_config_id)
@@ -108,6 +110,8 @@ class GroupConfigHostCandidateViewSet(
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
+        if hasattr(context['view'], 'response'):
+            return context
         group_config_id = self.kwargs.get('parent_lookup_group_config')
         if group_config_id is not None:
             group_config = GroupConfig.obj.get(id=group_config_id)
@@ -124,6 +128,8 @@ class GroupConfigConfigViewSet(NestedViewSetMixin, RetrieveModelMixin, viewsets.
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
+        if hasattr(context['view'], 'response'):
+            return context
         group_config_id = self.kwargs.get('parent_lookup_group_config')
         if group_config_id is not None:
             group_config = GroupConfig.obj.get(id=group_config_id)
@@ -160,6 +166,8 @@ class GroupConfigConfigLogViewSet(
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
+        if hasattr(context['view'], 'response'):
+            return context
         group_config_id = self.kwargs.get('parent_lookup_obj_ref__group_config')
         if group_config_id is not None:
             group_config = GroupConfig.obj.get(id=group_config_id)
@@ -189,6 +197,8 @@ class GroupConfigViewSet(
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
+        if hasattr(context['view'], 'response'):
+            return context
         if self.kwargs:
             group_config = self.get_object()
             self.check_config_perm('view', group_config.object)

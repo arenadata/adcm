@@ -14,7 +14,6 @@
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
-
 from rbac import models
 from rbac.services import user as user_services
 from rbac.viewsets import ModelPermViewSet, DjangoModelPerm
@@ -69,7 +68,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
     """User serializer"""
 
     id = serializers.IntegerField(read_only=True)
-    username = serializers.RegexField(r'^[^\n]+$', max_length=150)
+    username = serializers.RegexField(r'^[^\s]+$', max_length=150)
     first_name = serializers.RegexField(
         r'^[^\n]*$', max_length=150, allow_blank=True, required=False, default=''
     )
@@ -109,4 +108,5 @@ class UserViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
         'group',
     )
     ordering_fields = ('id', 'username', 'first_name', 'last_name', 'email', 'is_superuser')
+    search_fields = ('username', 'first_name', 'last_name', 'email')
     permission_classes = (UserPermissions,)

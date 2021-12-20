@@ -3,7 +3,6 @@ import { Observable } from 'rxjs';
 import { ApiService } from '@app/core/api';
 import { environment } from '@env/environment';
 import { FormModel } from '@app/shared/add-component/add-service-model';
-import { RbacPolicyFormComponent } from '@app/components/rbac/policy-form/rbac-policy-form.component';
 import { EntityAbstractService } from '@app/abstract/entity.abstract.service';
 import { RbacPolicyModel } from '@app/models/rbac/rbac-policy.model';
 import { Params } from '@angular/router';
@@ -16,8 +15,7 @@ export class RbacPolicyService implements EntityAbstractService {
 
   model(value?: any): FormModel {
     return {
-      name: 'group',
-      component: RbacPolicyFormComponent,
+      name: 'policy',
       value: value
     };
   }

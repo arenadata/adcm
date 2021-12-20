@@ -23,6 +23,8 @@ export class AdcmInputRbacPermissionComponent {
 
   @Input() isRequired = false;
 
+  @Input() readonly = false;
+
   get permissionsControl(): AbstractControl {
     return this.form.controls[this.controlName];
   }
@@ -34,6 +36,7 @@ export class AdcmInputRbacPermissionComponent {
   removeSelectedPermission(item: RbacRoleModel): void {
     const selected = this.permissionsControl.value;
     this.permissionsControl.setValue(selected.filter((i) => i.id !== item.id));
+    this.form.markAsDirty();
   }
 
   open = false;

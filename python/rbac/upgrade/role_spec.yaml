@@ -1,6 +1,6 @@
 ---
 
-version: 1
+version: 3
 
 roles:
     - name: Create host
@@ -136,6 +136,21 @@ roles:
               codenames:
                 - view_config_of
 
+    - name: View config endpoints
+      description: The ability to view list of all configs separatly
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+      - label: cm
+        models:
+          - name: objectconfig
+            codenames:
+              - view
+          - name: configlog
+            codenames:
+              - view
+
     - name: View configurations
       description: The ability to view all configurations
       type: business
@@ -147,6 +162,7 @@ roles:
         - View component configurations
         - View provider configurations
         - View host configurations
+        - View config endpoints
 
     - name: Edit cluster configurations
       description: The ability to change and add new cluster configuration
@@ -163,6 +179,7 @@ roles:
           models:
             - name: cluster
               codenames:
+                - view_config_of
                 - change_config_of
 
     - name: Edit service configurations
@@ -237,6 +254,23 @@ roles:
                 - view_config_of
                 - change_config_of
 
+    - name: Edit config endpoints
+      description: The ability to edit list of all configs separatly
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: objectconfig
+              codenames:
+                - view
+                - change
+            - name: configlog
+              codenames:
+                - view
+                - change
+
     - name: Edit configurations
       description: The ability to edit all configurations
       type: business
@@ -248,6 +282,7 @@ roles:
         - Edit component configurations
         - Edit provider configurations
         - Edit host configurations
+        - Edit config endpoints
 
     - name: View cluster imports
       description: The ability to view the cluster import page
@@ -350,9 +385,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: clusterobject
+            - name: cluster
               codenames:
-                - add
+                - add_service_to
 
     - name: Remove service
       description: The ability to remove service from cluster
@@ -435,9 +470,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: upgrade
+            - name: cluster
               codenames:
-                - add
+                - do_upgrade_of
 
     - name: Upgrade provider bundle
       description: Update the provider bundle
@@ -452,9 +487,9 @@ roles:
       apps:
         - label: cm
           models:
-            - name: upgrade
+            - name: hostprovider
               codenames:
-                - add
+                - do_upgrade_of
 
     - name: Upgrade bundle
       description: Update all type of bundles
@@ -515,40 +550,25 @@ roles:
       description: View purely adcm config
       type: business
       module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: ADCM
-        filter:
-          name: ADCM
+      class_name: ModelRole
       apps:
         - label: cm
           models:
-            - name: objectconfig
+            - name: adcm
               codenames:
-                - view
+                - view_config_of
 
     - name: Edit ADCM settings
       description: Edit purely adcm config
       type: business
       module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: ADCM
-        filter:
-          name: ADCM
+      class_name: ModelRole
       apps:
         - label: cm
           models:
-            - name: objectconfig
+            - name: adcm
               codenames:
-                - add
-                - change
-            - name: configlog
-              codenames:
-                - add
-                - change
+                - change_config_of
 
     - name: View users
       description: The ability to view Users page
@@ -742,92 +762,9 @@ roles:
               codenames:
                 - delete
 
-    - name: View cluster status page
-      description: The ability to view status page of exact cluster
-      type: hidden
-      module_name: rbac.roles
-      class_name: ObjectRole
-      parametrized_by:
-        - cluster
-      init_params:
-        init_params:
-          app_name: cm
-          model: Cluster
-      apps:
-        - label: cm
-          models:
-            - name: cluster
-              codenames:
-                - status_view
-
-    - name: View service status page
-      description: The ability to view status page of exact service
-      type: hidden
-      module_name: rbac.roles
-      class_name: ObjectRole
-      parametrized_by:
-        - service
-      init_params:
-        init_params:
-          app_name: cm
-          model: ClusterObject
-      apps:
-        - label: cm
-          models:
-            - name: clusterobject
-              codenames:
-                - status_view
-
-    - name: View component status page
-      description: The ability to view status page of exact component
-      type: hidden
-      module_name: rbac.roles
-      class_name: ObjectRole
-      parametrized_by:
-        - component
-      init_params:
-        init_params:
-          app_name: cm
-          model: ServiceComponent
-      apps:
-        - label: cm
-          models:
-            - name: servicecomponent
-              codenames:
-                - status_view
-
-    - name: View host status page
-      description: The ability to view status page of exact host
-      type: hidden
-      module_name: rbac.roles
-      class_name: ObjectRole
-      parametrized_by:
-        - host
-      init_params:
-        init_params:
-          app_name: cm
-          model: Host
-      apps:
-        - label: cm
-          models:
-            - name: host
-              codenames:
-                - status_view
-
-    - name: View status information
-      description: Ability to view all status pages
-      type: business
-      module_name: rbac.roles
-      class_name: ParentRole
-      child:
-        - View cluster status page
-        - View service status page
-        - View component status page
-        - View host status page
-
     - name: Base role
       description: Default list of view permissions for all objects
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ParentRole
       child:
@@ -843,7 +780,7 @@ roles:
 
     - name: Get ADCM object
       description: Read access to ADCM
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -855,7 +792,7 @@ roles:
 
     - name: Get provider
       description: Read access to Provider
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -867,7 +804,7 @@ roles:
 
     - name: Get cluster
       description: Read access to Clusters
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -879,7 +816,7 @@ roles:
 
     - name: Get host
       description: Read access to Host
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -891,7 +828,7 @@ roles:
 
     - name: Get service
       description: Read access to Service
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -903,7 +840,7 @@ roles:
 
     - name: Get component
       description: Read access to Component
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -915,7 +852,7 @@ roles:
 
     - name: Get task and jobs
       description: Read access to job execution information
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -933,7 +870,7 @@ roles:
 
     - name: Get stack
       description: Read access to all prototypes
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -960,7 +897,7 @@ roles:
 
     - name: Get concerns
       description: Read access to all concerns
-      type: business
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
       apps:
@@ -983,7 +920,6 @@ roles:
       child:
         - Base role
         - View configurations
-        - View status information
         - View imports
 
     - name: Service Administrator
