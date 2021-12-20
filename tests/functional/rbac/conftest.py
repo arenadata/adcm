@@ -13,12 +13,12 @@
 import os
 from enum import Enum
 from operator import methodcaller
-from typing import Callable, NamedTuple
+from typing import Callable, NamedTuple, Union
 
 import allure
 import pytest
-from adcm_client.base import NoSuchEndpointOrAccessIsDenied
-from adcm_client.objects import _BaseObject, ADCMClient, User
+from adcm_client.base import NoSuchEndpointOrAccessIsDenied, BaseAPIObject
+from adcm_client.objects import ADCMClient, User
 from adcm_client.wrappers.api import AccessIsDenied
 from adcm_pytest_plugin.utils import catch_failed, random_string
 
@@ -65,33 +65,43 @@ class BusinessRoles(Enum):
     RemoveHosts = BusinessRole("Remove hosts", methodcaller("delete"))
     MapHosts = BusinessRole("Map hosts", lambda x, *args: x.host_add(*args))
     UnmapHosts = BusinessRole("Unmap hosts", lambda x, *args: x.host_delete(*args))
-    UpgradeBundle = BusinessRole("Upgrade bundle", lambda x, kwargs: x.upgrade().do())  # TODO
-    CreateHostProvider = BusinessRole("Create provider", methodcaller("provider_create", name="new_provider"))
-    CreateHost = BusinessRole("Create host", methodcaller("host_create", fqdn="new_host"))
+    UpgradeBundle = BusinessRole("Upgrade bundle", lambda x: x.upgrade().do())
+    CreateHostProvider = BusinessRole(
+        "Create provider", methodcaller("provider_create", name=f"new_provider {random_string(5)}")
+    )
+    CreateHost = BusinessRole("Create host", methodcaller("host_create", fqdn=f"new_host_{random_string(5)}"))
     RemoveHostProvider = BusinessRole("Remove provider", methodcaller("delete"))
-    CreateCluster = BusinessRole("Create cluster", methodcaller("cluster_create", name="new_cluster"))
+    CreateCluster = BusinessRole(
+        "Create cluster", methodcaller("cluster_create", name=f"new_cluster {random_string(5)}")
+    )
     RemoveCluster = BusinessRole("Remove cluster", methodcaller("delete"))
-    UploadBundle = BusinessRole("Upload bundle", methodcaller("upload_from_fs", {}))  # TODO add new bundle
+    UploadBundle = BusinessRole("Upload bundle", methodcaller("upload_from_fs", os.path.join(DATA_DIR, "dummy")))
     RemoveBundle = BusinessRole("Remove bundle", methodcaller("delete"))
-    # TODO AddUserToGroup = BusinessRole("Add user to group", methodcaller(""))
     ViewADCMSettings = BusinessRole("View ADCM settings", methodcaller("config"))
     EditADCMSettings = BusinessRole("Edit ADCM settings", methodcaller("config_set_diff", {}))
     ViewUsers = BusinessRole("View users", methodcaller("user_list"))
     CreateUser = BusinessRole("Create user", methodcaller("user_create", username="test", password="test"))
     RemoveUser = BusinessRole("Remove user", methodcaller("delete"))
-    EditUser = BusinessRole("Edit user", methodcaller(""))  # TODO not implemented in adcm_client
+    EditUser = BusinessRole("Edit user", methodcaller("update", first_name=random_string(5)))
     ViewRoles = BusinessRole("View roles", methodcaller("role_list"))
-    CreateCustomRoles = BusinessRole("Create custom role", lambda x, **kwargs: x.role_create(**kwargs))
+    CreateCustomRoles = BusinessRole(
+        "Create custom role",
+        methodcaller(
+            "role_create", name="Custom role", display_name="Custom role", parametrized_by=[], child=[{"id": 1}]
+        ),
+    )
     RemoveRoles = BusinessRole("Remove roles", methodcaller("delete"))
-    EditRoles = BusinessRole("Edit role", methodcaller(""))  # TODO not implemented in adcm_client
+    EditRoles = BusinessRole("Edit role", methodcaller("update", display_name=random_string(5)))
     ViewGroups = BusinessRole("View group", methodcaller("group_list"))
-    CreateGroup = BusinessRole("Create group", lambda x, **kwargs: x.group_create(**kwargs))
+    CreateGroup = BusinessRole("Create group", methodcaller("group_create", name="test"))
     RemoveGroup = BusinessRole("Remove group", methodcaller("delete"))
-    EditGroup = BusinessRole("Edit group", methodcaller(""))  # TODO not implemented in adcm_client
+    EditGroup = BusinessRole("Edit group", methodcaller("update", name=random_string(5)))
     ViewPolicies = BusinessRole("View policy", methodcaller("policy_list"))
-    CreatePolicy = BusinessRole("Create policy", lambda x, **kwargs: x.group_create(**kwargs))
+    CreatePolicy = BusinessRole(
+        "Create policy", lambda x, **kwargs: x.policy_create(name="Test policy", objects=[], **kwargs)
+    )
     RemovePolicy = BusinessRole("Remove policy", methodcaller("delete"))
-    EditPolicy = BusinessRole("Edit policy", methodcaller(""))  # TODO not implemented in adcm_client
+    EditPolicy = BusinessRole("Edit policy", methodcaller("update", name=random_string(5)))
 
 
 @pytest.fixture()
@@ -189,27 +199,29 @@ def create_policy(sdk_client, user, permission: BusinessRoles, *objects):
     return policy
 
 
-def is_allowed(base_object: _BaseObject, role: BusinessRoles, *args, **kwargs):
+def is_allowed(base_object: Union[BaseAPIObject, ADCMClient], business_role: BusinessRoles, *args, **kwargs):
     """
     Assert that role is allowed on object
     """
     with allure.step(
-        f"Assert that {role.value.role_name} on {base_object.__class__.__name__} is allowed"
+        f"Assert that {business_role.value.role_name} on {base_object.__class__.__name__} is allowed"
     ), catch_failed(
         (AccessIsDenied, NoSuchEndpointOrAccessIsDenied),
-        f"{role.value.role_name} on {base_object.__class__.__name__} should be allowed",
+        f"{business_role.value.role_name} on {base_object.__class__.__name__} should be allowed",
     ):
-        role.value.method_call(base_object, *args, **kwargs)
+        business_role.value.method_call(base_object, *args, **kwargs)
 
 
-def is_denied(base_object: _BaseObject, role: BusinessRoles, *args, **kwargs):
+def is_denied(base_object: Union[BaseAPIObject, ADCMClient], business_role: BusinessRoles, *args, **kwargs):
     """
     Assert that role is denied on object
     """
-    with allure.step(f"Assert that {role.value.role_name} on {base_object.__class__.__name__} is denied"):
+    with allure.step(f"Assert that {business_role.value.role_name} on {base_object.__class__.__name__} is denied"):
         try:
-            role.value.method_call(base_object, *args, **kwargs)
+            business_role.value.method_call(base_object, *args, **kwargs)
         except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied):
             pass
         else:
-            raise AssertionError(f"{role.value.role_name} on {base_object.__class__.__name__} should not be allowed")
+            raise AssertionError(
+                f"{business_role.value.role_name} on {base_object.__class__.__name__} should not be allowed"
+            )
