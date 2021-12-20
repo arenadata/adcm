@@ -18,7 +18,13 @@ from rbac.models import Role
 
 
 def read_role(role: Role) -> dict:
-    data = {'name': role.name, 'type': role.type, 'child': [read_role(r) for r in role.child.all()]}
+    data = {
+        'name': role.name,
+        'type': role.type,
+        'parametrized_by_type': role.parametrized_by_type,
+        'category': [c.value for c in role.category.all()],
+        'child': [read_role(r) for r in role.child.all()],
+    }
     return data
 
 
