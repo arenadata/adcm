@@ -72,7 +72,7 @@ ng_tests: ## Run Angular tests
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster-x64
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster-x64 ./ng_test.sh
 
-linters : ## Run linters
+linters: ## Run linters
 	docker pull $(ADCMTEST_IMAGE):$(ADCMBASE_TAG)
 	docker run -i --rm -v $(CURDIR)/:/source -w /source $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) \
         /bin/sh -xeo pipefail -c "/linters.sh shellcheck pylint && \
@@ -84,6 +84,6 @@ linters : ## Run linters
 npm_check: ## Run npm-check
 	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./npm_check.sh
 
-django_tests : ## Run django tests.
+django_tests: ## Run django tests.
 	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
-	docker run -e DJANGO_SETTINGS_MODULE=adcm.test -i --rm -v $(CURDIR)/:/adcm -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) python python/manage.py test cm
+	docker run -e DJANGO_SETTINGS_MODULE=adcm.test -i --rm -v $(CURDIR)/:/adcm -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/sh -c "pip install -r /adcm/requirements.txt; python python/manage.py test cm"

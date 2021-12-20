@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh -x
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -59,12 +59,11 @@ run_test() {
     ./server.sh stop
 }
 
+pip install -r ../../requirements.txt
 
 if [[ ! -f fixture.db ]]; then
     init_db
 fi
-
-pip install -r ../../requirements.txt
 
 run_test "${1}" "${2}"
 #run_debug
