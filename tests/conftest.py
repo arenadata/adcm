@@ -47,6 +47,10 @@ DUMMY_CLUSTER_BUNDLE = [
     }
 ]
 
+CLEAN_ADCM_PARAM = pytest.param({}, id="clean_adcm")
+DUMMY_DATA_PARAM = pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data")
+DUMMY_DATA_FULL_PARAM = pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data", marks=[pytest.mark.full])
+
 
 def pytest_generate_tests(metafunc):
     """
@@ -66,6 +70,12 @@ def pytest_runtest_setup(item: Function):
     """
     yield
     _override_allure_test_parameters(item)
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_collection_modifyitems(session, config, items):  # pylint: disable=unused-argument
+    """Run tests with id "adcm_with_dummy_data" after everything else"""
+    items.sort(key=lambda x: 'adcm_with_dummy_data' in x.name)
 
 
 def _override_allure_test_parameters(item: Function):

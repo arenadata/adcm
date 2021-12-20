@@ -1,27 +1,40 @@
 """Common fixtures for the functional tests"""
+from typing import Union
+
 import pytest
-import allure
+from _pytest.python import FunctionDefinition, Module
 
-only_clean_adcm = pytest.mark.parametrize(
-    "additional_adcm_init_config",
-    [pytest.param({}, id="clean_adcm")],
-    indirect=True,
-)
+from tests.conftest import CLEAN_ADCM_PARAM, DUMMY_DATA_FULL_PARAM
+
+only_clean_adcm = pytest.mark.only_clean_adcm
+
+ONLY_CLEAN_MARK = "only_clean_adcm"
+
+CLEAN_ADCM_PARAMS = [CLEAN_ADCM_PARAM]
+CLEAN_AND_DIRTY_PARAMS = [CLEAN_ADCM_PARAM, DUMMY_DATA_FULL_PARAM]
 
 
-@allure.title("Additional ADCM init config")
-@pytest.fixture(
-    scope="session",
-    params=[
-        pytest.param({}, id="clean_adcm"),
-        pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data", marks=[pytest.mark.full]),
-    ],
-)
-def additional_adcm_init_config(request) -> dict:
+def _marker_in_node(mark: str, node: Union[FunctionDefinition, Module]) -> bool:
+    """Check if mark is in own_markers of a node"""
+    return any(marker.name == mark for marker in node.own_markers)
+
+
+def _marker_in_node_or_its_parent(mark: str, node) -> bool:
+    """Check if mark is in own_markers of a node or any of its parents"""
+    marker_at_this_node = _marker_in_node(mark, node)
+    if marker_at_this_node or node.parent is None:
+        return marker_at_this_node
+    return _marker_in_node_or_its_parent(mark, node.parent)
+
+
+def pytest_generate_tests(metafunc):
     """
-    Add options for ADCM init.
-    Redefine this fixture in the actual project to alter additional options of ADCM initialisation.
-    Ex. If this fixture will return {"fill_dummy_data": True}
-    then on the init stage dummy objects will be added to ADCM image
+    Parametrize tests
     """
-    return request.param
+    if "additional_adcm_init_config" in metafunc.fixturenames:
+        if _marker_in_node_or_its_parent(ONLY_CLEAN_MARK, metafunc.definition):
+            values = CLEAN_ADCM_PARAMS
+        else:
+            values = CLEAN_AND_DIRTY_PARAMS
+
+        metafunc.parametrize("additional_adcm_init_config", values, scope="session")

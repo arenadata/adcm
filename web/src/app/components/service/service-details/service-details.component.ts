@@ -9,6 +9,7 @@ import { ClusterService } from '@app/core/services/cluster.service';
 import { ChannelService } from '@app/core/services';
 import { ServiceService } from '@app/services/service.service';
 import { DetailsFactory } from '@app/factories/details.factory';
+import { ConcernEventType } from '@app/models/concern/concern-reason';
 
 @Component({
   selector: 'app-service-details',
@@ -21,11 +22,11 @@ export class ServiceDetailsComponent extends DetailAbstractDirective<Service> {
 
   leftMenu = [
     DetailsFactory.labelMenuItem('Main', 'main'),
-    DetailsFactory.labelMenuItem('Components', 'component'),
-    DetailsFactory.labelMenuItem('Configuration', 'config'),
+    DetailsFactory.concernMenuItem('Components', 'component', 'host-component', ConcernEventType.Service, 'service'),
+    DetailsFactory.concernMenuItem('Configuration', 'config', 'config', ConcernEventType.Service, 'service'),
     DetailsFactory.labelMenuItem('Configuration groups', 'group_config'),
     DetailsFactory.statusMenuItem('Status', 'status', 'service'),
-    DetailsFactory.labelMenuItem('Import', 'import'),
+    DetailsFactory.concernMenuItem('Import', 'import', 'import', ConcernEventType.Service, 'service'),
   ];
 
   constructor(

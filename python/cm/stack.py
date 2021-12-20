@@ -106,6 +106,8 @@ def check_adcm_config(conf_file):
     except ruyaml.constructor.DuplicateKeyError as e:
         msg = f'{e.context}\n{e.context_mark}\n{e.problem}\n{e.problem_mark}'
         err('STACK_LOAD_ERROR', f'Duplicate Keys error: {msg}')
+    except ruyaml.composer.ComposerError as e:
+        err('STACK_LOAD_ERROR', f'YAML Composer error: {e}')
     try:
         cm.checker.check(data, rules)
         return data

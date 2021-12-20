@@ -123,7 +123,7 @@ class ADCMManager(models.Manager):
     def get(self, *args, **kwargs):
         try:
             return super().get(*args, **kwargs)
-        except ObjectDoesNotExist:
+        except (ObjectDoesNotExist, ValueError, TypeError):
             if not hasattr(self.model, '__error_code__'):
                 raise AdcmEx('NO_MODEL_ERROR_CODE', f'model: {self.model.__name__}') from None
             msg = f'{self.model.__name__} {kwargs} does not exist'
@@ -693,7 +693,11 @@ class GroupConfig(ADCMModel):
             group_customization = field.group_customization
             if group_customization is None:
                 group_customization = self.object.prototype.config_group_customization
-            field_spec = {'type': field.type, 'group_customization': group_customization}
+            field_spec = {
+                'type': field.type,
+                'group_customization': group_customization,
+                'limits': field.limits,
+            }
             if field.subname == '':
                 if field.type == 'group':
                     field_spec.update({'fields': {}})

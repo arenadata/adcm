@@ -15,22 +15,21 @@
 import threading
 from typing import Tuple
 
-import pytest
 import allure
-
-from selenium.common.exceptions import StaleElementReferenceException
+import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from selenium.common.exceptions import StaleElementReferenceException
 
-from tests.upgrade_utils import upgrade_adcm_version
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.pages import BasePage
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
-from tests.ui_tests.app.page.login.page import LoginPage
-from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.bundle_list.page import BundleListPage
+from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
+from tests.ui_tests.app.page.common.base_page import BasePageObject
+from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.app.page.profile.page import ProfilePage
+from tests.upgrade_utils import upgrade_adcm_version
 
 
 def old_adcm_image() -> Tuple[str, str]:
@@ -38,7 +37,7 @@ def old_adcm_image() -> Tuple[str, str]:
     return parametrized_by_adcm_version(adcm_min_version="2021.03.10")[0][-1]
 
 
-def wait_info_popup_contains(page: BasePage, text: str):
+def wait_info_popup_contains(page: BasePageObject, text: str):
     """Wait for popup to be the one that's expected"""
     try:
         assert (popup_text := page.get_info_popup_text()) == text, f'Text in popup should be {text}, not {popup_text}'

@@ -21,11 +21,9 @@ import cm.issue
 import cm.status_api
 from cm.adcm_config import (
     check_json_config,
-    get_prototype_config,
     init_object_config,
     obj_ref,
     prepare_social_auth,
-    process_file_type,
     proto_ref,
     read_bundle_file,
     save_obj_config,
@@ -105,12 +103,11 @@ def load_service_map():
 def add_cluster(proto, name, desc=''):
     check_proto_type(proto, 'cluster')
     check_license(proto.bundle)
-    spec, _, conf, attr = get_prototype_config(proto)
     with transaction.atomic():
-        obj_conf = init_object_config(spec, conf, attr)
-        cluster = Cluster(prototype=proto, name=name, config=obj_conf, description=desc)
+        cluster = Cluster.objects.create(prototype=proto, name=name, description=desc)
+        obj_conf = init_object_config(proto, cluster)
+        cluster.config = obj_conf
         cluster.save()
-        process_file_type(cluster, spec, conf)
         cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.post_event('create', 'cluster', cluster.id)
     load_service_map()
@@ -124,15 +121,12 @@ def add_host(proto, provider, fqdn, desc=''):
     if proto.bundle != provider.prototype.bundle:
         msg = 'Host prototype bundle #{} does not match with host provider bundle #{}'
         err('FOREIGN_HOST', msg.format(proto.bundle.id, provider.prototype.bundle.id))
-    spec, _, conf, attr = get_prototype_config(proto)
     with transaction.atomic():
-        obj_conf = init_object_config(spec, conf, attr)
-        host = Host(
-            prototype=proto, provider=provider, fqdn=fqdn, config=obj_conf, description=desc
-        )
+        host = Host.objects.create(prototype=proto, provider=provider, fqdn=fqdn, description=desc)
+        obj_conf = init_object_config(proto, host)
+        host.config = obj_conf
         host.save()
         host.add_to_concerns(ctx.lock)
-        process_file_type(host, spec, conf)
         cm.issue.update_hierarchy_issues(host)
     ctx.event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
@@ -155,13 +149,12 @@ def add_provider_host(provider_id, fqdn, desc=''):
 def add_host_provider(proto, name, desc=''):
     check_proto_type(proto, 'provider')
     check_license(proto.bundle)
-    spec, _, conf, attr = get_prototype_config(proto)
     with transaction.atomic():
-        obj_conf = init_object_config(spec, conf, attr)
-        provider = HostProvider(prototype=proto, name=name, config=obj_conf, description=desc)
+        provider = HostProvider.objects.create(prototype=proto, name=name, description=desc)
+        obj_conf = init_object_config(proto, provider)
+        provider.config = obj_conf
         provider.save()
         provider.add_to_concerns(ctx.lock)
-        process_file_type(provider, spec, conf)
         cm.issue.update_hierarchy_issues(provider)
     ctx.event.send_state()
     cm.status_api.post_event('create', 'provider', provider.id)
@@ -366,13 +359,12 @@ def add_service_to_cluster(cluster, proto):
                     proto_ref(proto), cluster.prototype.bundle.name, cluster.prototype.version
                 ),
             )
-    spec, _, conf, attr = get_prototype_config(proto)
     with transaction.atomic():
-        obj_conf = init_object_config(spec, conf, attr)
-        cs = ClusterObject(cluster=cluster, prototype=proto, config=obj_conf)
+        cs = ClusterObject.objects.create(cluster=cluster, prototype=proto)
+        obj_conf = init_object_config(proto, cs)
+        cs.config = obj_conf
         cs.save()
         add_components_to_service(cluster, cs)
-        process_file_type(cs, spec, conf)
         cm.issue.update_hierarchy_issues(cs)
     cm.status_api.post_event('add', 'service', cs.id, 'cluster', str(cluster.id))
     load_service_map()
@@ -384,11 +376,10 @@ def add_service_to_cluster(cluster, proto):
 
 def add_components_to_service(cluster, service):
     for comp in Prototype.objects.filter(type='component', parent=service.prototype):
-        spec, _, conf, attr = get_prototype_config(comp)
-        obj_conf = init_object_config(spec, conf, attr)
-        sc = ServiceComponent(cluster=cluster, service=service, prototype=comp, config=obj_conf)
+        sc = ServiceComponent.objects.create(cluster=cluster, service=service, prototype=comp)
+        obj_conf = init_object_config(comp, sc)
+        sc.config = obj_conf
         sc.save()
-        process_file_type(sc, spec, conf)
         cm.issue.update_hierarchy_issues(sc)
 
 

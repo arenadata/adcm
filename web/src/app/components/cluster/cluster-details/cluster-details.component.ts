@@ -9,6 +9,7 @@ import { SocketState } from '@app/core/store';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ChannelService } from '@app/core/services';
 import { ClusterEntityService } from '@app/services/cluster-entity.service';
+import { ConcernEventType } from '@app/models/concern/concern-reason';
 
 @Component({
   selector: 'app-cluster-details',
@@ -23,11 +24,11 @@ export class ClusterDetailsComponent extends DetailAbstractDirective<ICluster> {
     DetailsFactory.labelMenuItem('Main', 'main'),
     DetailsFactory.labelMenuItem('Services', 'service'),
     DetailsFactory.labelMenuItem('Hosts', 'host'),
-    DetailsFactory.labelMenuItem('Hosts - Components', 'host_component'),
-    DetailsFactory.concernMenuItem('Configuration', 'config', 'config'),
+    DetailsFactory.concernMenuItem('Hosts - Components', 'host_component', 'host-component', ConcernEventType.Cluster, 'cluster'),
+    DetailsFactory.concernMenuItem('Configuration', 'config', 'config', ConcernEventType.Cluster, 'cluster'),
     DetailsFactory.labelMenuItem('Configuration groups', 'group_config'),
     DetailsFactory.statusMenuItem('Status', 'status', 'cluster'),
-    DetailsFactory.concernMenuItem('Import', 'import', 'import'),
+    DetailsFactory.concernMenuItem('Import', 'import', 'import', ConcernEventType.Cluster, 'cluster'),
   ];
 
   constructor(

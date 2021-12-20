@@ -17,7 +17,16 @@ from selenium.webdriver.common.by import By
 from tests.ui_tests.app.helpers.locator import Locator
 
 
-class ServiceImportLocators:
-    """Service import page elements locators"""
+class ServiceComponentLocators:
+    """Service component page elements locators"""
 
-    import_item_block = Locator(By.CSS_SELECTOR, ".items>div", "Import item block")
+    component_row = Locator(By.CSS_SELECTOR, "app-service-components .mat-row", "Component row")
+
+    class ComponentRow:
+        """Component row locators"""
+
+        name = Locator(By.CSS_SELECTOR, "mat-cell:first-of-type", "Component name")
+        state = Locator(By.CSS_SELECTOR, "app-state-column", "Component state")
+        status = Locator(By.CSS_SELECTOR, "app-status-column button", "Component status")
+        actions = Locator(By.CSS_SELECTOR, "app-actions-button button", "Component actions")
+        config = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(5) button", "Component config")

@@ -35,7 +35,7 @@ const enum flagForConsole {
       <div>
         <span class="left">
           <span>VERSION: </span>
-          <a target="_blank" rel="noopener" href="https://docs.arenadata.io/adcm/notes.html#{{ versionData.version }}"
+          <a target="_blank" rel="noopener" href="https://docs.arenadata.io/adcm/notes.html#ver-{{ versionData.version }}"
             >{{ versionData.version }}-{{ versionData.commit_id }}</a
           >
         </span>
