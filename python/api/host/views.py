@@ -160,7 +160,7 @@ class HostListCluster(HostList):
             if 'cluster_id' in kwargs:
                 cluster = check_obj(Cluster, kwargs['cluster_id'])
             host = check_obj(Host, validated_data.get('id'))
-            self.check_host_perm('map_host', 'cluster', cluster)
+            self.check_host_perm('map_host_to', 'cluster', cluster)
             cm.api.add_host_to_cluster(cluster, host)
             return Response(self.get_serializer(host).data, status=status.HTTP_201_CREATED)
         else:
@@ -206,7 +206,7 @@ class HostDetail(DetailViewDelete):
             # Remove host from cluster
             cluster = check_obj(Cluster, kwargs['cluster_id'])
             check_host(host, cluster)
-            self.check_host_perm('unmap_host', 'cluster', cluster)
+            self.check_host_perm('unmap_host_from', 'cluster', cluster)
             remove_host_from_cluster(host)
         else:
             # Delete host (and all corresponding host services:components)
