@@ -349,7 +349,7 @@ def test_simple_parent_policy():
 @pytest.mark.django_db
 def test_empty_parent_policy():
     user = cook_user('Joe')
-    cluster, service1, service2, comp11, comp12, comp21 = cook_cluster1()
+    _, _, service2, _, _, _ = cook_cluster1()
 
     r = cook_role('all', 'ParentRole', ['service'])
     p = Policy.objects.create(role=r)
