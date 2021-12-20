@@ -210,6 +210,7 @@ class HostDetail(DetailViewDelete):
             remove_host_from_cluster(host)
         else:
             # Delete host (and all corresponding host services:components)
+            self.check_host_perm('delete', 'host', host)
             delete_host(host)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
