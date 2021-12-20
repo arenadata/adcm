@@ -1,3 +1,4 @@
+@use './assets/scss/mixins' as mixins;
 @import "./assets/scss/normalize";
 
 // Media Query Ranges
@@ -444,5 +445,9 @@ adwp-dropdown-box {
     max-height: 200px;
     overflow-y: auto;
   }
+}
+
+.one-line-string {
+  @include mixins.adcm-cut-one-line-string;
 }
 
