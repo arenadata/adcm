@@ -47,6 +47,6 @@ class Command(BaseCommand):
         for role in Role.objects.all():
             data.append(read_role(role))
 
-        with open(output, 'w') as f:
+        with open(output, 'w', encoding='utf_8') as f:
             json.dump(data, f, indent=indent)
         self.stdout.write(self.style.SUCCESS(f'Result file: {output}'))
