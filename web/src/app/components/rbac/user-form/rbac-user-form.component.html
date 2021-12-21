@@ -16,7 +16,7 @@
                      [handler]="groups.label"
                      [rbac-groups-as-options]="filter"
                      [options]="groups.options$ | async | falseAsEmptyArray"
-                     (filter)="updateFilter('name', $event)"
+                     (filter)="updateFilter('search', $event)"
 
   ></adwp-input-select>
   <adwp-controls [title]="title" [disabled]="form.invalid || form.pristine" (cancel)="onCancel()"
