@@ -38,18 +38,41 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
       is_superuser: new FormControl(null),
       url: new FormControl(null),
       profile: new FormControl(null),
-      username: new FormControl(null, [Validators.required]),
-      password: new FormControl(null, [
-        Validators.required, Validators.min(5)
+      username: new FormControl(null, [
+        Validators.required,
+        Validators.minLength(1),
+        Validators.maxLength(150),
+        Validators.pattern('^[a-zA-Z0-9_]*$')
       ]),
-      first_name: new FormControl(null, [Validators.required]),
-      last_name: new FormControl(null, [Validators.required]),
-      email: new FormControl(null, [Validators.required, Validators.email]),
+      password: new FormControl(null, [
+        Validators.required,
+        Validators.minLength(5),
+        Validators.maxLength(128)
+      ]),
+      first_name: new FormControl(null, [
+        Validators.required,
+        Validators.minLength(1),
+        Validators.maxLength(150),
+        Validators.pattern('^[a-zA-Z]*$')
+      ]),
+      last_name: new FormControl(null, [
+        Validators.required,
+        Validators.minLength(1),
+        Validators.maxLength(150),
+        Validators.pattern('^[a-zA-Z]*$')
+      ]),
+      email: new FormControl(null, [
+        Validators.required,
+        Validators.email
+      ]),
       group: new FormControl([])
     }),
     confirm: new FormGroup({
       password: new FormControl('', [
-        Validators.required, Validators.min(5)])
+        Validators.required,
+        Validators.minLength(5),
+        Validators.maxLength(128)
+      ])
     })
   }, { validators: passwordsConfirmValidator });
 
