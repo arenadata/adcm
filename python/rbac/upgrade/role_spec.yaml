@@ -457,6 +457,7 @@ roles:
                 - delete
 
     - name: Map hosts
+      display_name: Add hosts to the Cluster
       description: The ability to map hosts to the Cluster
       type: business
       parametrized_by:
@@ -474,9 +475,10 @@ roles:
           models:
             - name: cluster
               codenames:
-                - map_host
+                - map_host_to
 
     - name: Unmap hosts
+      display_name: Remove hosts from the Cluster
       description: The ability to unmap hosts to the Cluster
       type: business
       parametrized_by:
@@ -494,7 +496,7 @@ roles:
           models:
             - name: cluster
               codenames:
-                - unmap_host
+                - unmap_host_from
 
     - name: Upgrade cluster bundle
       description: Update the cluster bundle
