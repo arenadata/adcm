@@ -159,6 +159,9 @@ class ClusterPageMixin(BasePageObject):
         """Assert all main elements presence"""
         self.assert_displayed_elements(self.MAIN_ELEMENTS)
 
+    def check_cluster_toolbar(self, cluster_name: str):
+        self.toolbar.check_toolbar_elements(["CLUSTERS", cluster_name])
+
 
 class ClusterMainPage(ClusterPageMixin):
     """Cluster page Main menu"""
@@ -172,7 +175,7 @@ class ClusterMainPage(ClusterPageMixin):
 
 
 class ClusterServicesPage(ClusterPageMixin):
-    """Cluster page config menu"""
+    """Cluster page services menu"""
 
     MENU_SUFFIX = 'service'
     MAIN_ELEMENTS = [
@@ -431,6 +434,9 @@ class ClusterHostPage(ClusterPageMixin):
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
 
+    def check_cluster_hosts_toolbar(self, cluster_name: str, host_name: str):
+        self.toolbar.check_toolbar_elements(["CLUSTERS", cluster_name, "HOSTS", host_name])
+
 
 class ClusterComponentsPage(ClusterPageMixin):
     """Cluster page components menu"""
@@ -533,7 +539,7 @@ class ClusterComponentsPage(ClusterPageMixin):
 
 
 class ClusterStatusPage(ClusterPageMixin, StatusPage):
-    """Cluster page config menu"""
+    """Cluster page status menu"""
 
     MENU_SUFFIX = 'status'
     MAIN_ELEMENTS = [

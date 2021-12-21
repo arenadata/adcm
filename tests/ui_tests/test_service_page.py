@@ -35,6 +35,7 @@ from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
     ClusterServicesPage,
 )
+from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
 from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
 from tests.ui_tests.app.page.common.status.page import (
@@ -65,9 +66,15 @@ from tests.ui_tests.test_cluster_list_page import (
 
 BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
 BUNDLE_WITH_REQUIRED_IMPORT = "cluster_required_import"
+BUNDLE_DEFAULT_FIELDS = "cluster_and_service_with_default_string"
+BUNDLE_WITH_DESCRIPTION_FIELDS = "service_with_all_config_params"
 
-# pylint: disable=redefined-outer-name,no-self-use,unused-argument
+
+# pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-many-locals
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
+
+
+# !===== Fixtures =====!
 
 
 @pytest.fixture()
@@ -104,6 +111,9 @@ def create_host(request: SubRequest, sdk_client_fs: ADCMClient) -> Host:
     return provider.host_create(HOST_NAME)
 
 
+# !===== Tests =====!
+
+
 class TestServiceMainPage:
     """Tests for the /cluster/{}/service/{}/main page"""
 
@@ -115,6 +125,7 @@ class TestServiceMainPage:
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_main_page = service_config_page.open_main_tab()
         service_main_page.check_all_elements()
+        service_main_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
     def test_open_admin_page_by_toolbar_in_service(self, app_fs, create_cluster_with_service):
         """Test open admin/intro page from service toolbar"""
@@ -124,7 +135,7 @@ class TestServiceMainPage:
         service_main_page.toolbar.click_admin_link()
         AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
 
-    def test_open_service_main_page_by_toolbar(self, app_fs, create_cluster_with_service):
+    def test_open_cluster_service_page_by_toolbar(self, app_fs, create_cluster_with_service):
         """Test open /cluster/{}/service/{}/main page from service toolbar"""
 
         params = {"service_list_name": "SERVICES"}
@@ -132,7 +143,9 @@ class TestServiceMainPage:
         cluster, service = create_cluster_with_service
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_main_page.toolbar.click_link_by_name(params["service_list_name"])
-        ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).wait_page_is_opened()
+        cluster_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id)
+        cluster_page.wait_page_is_opened()
+        cluster_page.check_cluster_toolbar(CLUSTER_NAME)
 
     def test_run_action_on_service_page_by_toolbar(self, app_fs, create_cluster_with_service):
         """Test run action from the /cluster/{}/service/{}/main page toolbar"""
@@ -159,6 +172,7 @@ class TestServiceComponentPage:
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_component_page = service_main_page.open_components_tab()
         service_component_page.check_all_elements()
+        service_component_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
     @params.including_https
     @pytest.mark.smoke()
@@ -192,6 +206,7 @@ class TestServiceConfigPage:
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_config_page = service_main_page.open_config_tab()
         service_config_page.check_all_elements()
+        service_config_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
     def test_filter_config_on_service_config_page(self, app_fs, create_cluster_with_service):
         """Test config filtration on /cluster/{}/service/{}/config page"""
@@ -204,7 +219,7 @@ class TestServiceConfigPage:
             service_config_page.config.search(params["search_param"])
         with allure.step(f"Check that rows are filtered by {params['search_param']}"):
             config_rows = service_config_page.config.get_all_config_rows()
-            assert len(config_rows) == 1, "Rows are not filtered: there should be 1 row"
+            assert len(config_rows) == 2, "Rows are not filtered: there should be 1 group row and 1 sub group row"
             assert (
                 service_config_page.config.get_config_row_info(config_rows[0]).name == f"{params['search_param']}:"
             ), f"Name should be {params['search_param']}"
@@ -212,31 +227,27 @@ class TestServiceConfigPage:
             service_config_page.config.clear_search_input()
         with allure.step("Check that rows are not filtered"):
             config_rows = service_config_page.config.get_all_config_rows()
-            assert len(config_rows) == 2, "Rows are filtered: there should be 4 row"
+            assert len(config_rows) == 3, "Rows are filtered: there should be 1 group row and 2 sub group rows"
         with service_config_page.config.wait_rows_change(expected_rows_amount=0):
             service_config_page.config.click_on_group(params["group_name"])
 
-    def test_save_custom_config_on_service_config_page(self, app_fs, create_cluster_with_service):
+    def test_save_custom_config_on_service_config_page(self, app_fs, sdk_client_fs):
         """Test config save on /cluster/{}/service/{}/config page"""
 
         params = {
-            "row_value_new": "test",
-            "row_value_old": "null",
             "config_name_new": "test_name",
             "config_name_old": "init",
         }
-
-        cluster, service = create_cluster_with_service
+        with allure.step("Create cluster and service"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_DESCRIPTION_FIELDS)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            service = cluster.service_add(name=SERVICE_NAME)
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
-        config_row = service_config_page.config.get_all_config_rows()[0]
-        service_config_page.config.type_in_config_field(row=config_row, value=params["row_value_new"], clear=True)
-
+        service_config_page.config.fill_config_fields_with_test_values()
         service_config_page.config.set_description(params["config_name_new"])
         service_config_page.config.save_config()
         service_config_page.config.compare_versions(params["config_name_old"])
-        with allure.step("Check row history"):
-            row_with_history = service_config_page.config.get_all_config_rows()[0]
-            service_config_page.config.wait_history_row_with_value(row_with_history, params["row_value_old"])
+        service_config_page.config.check_config_fields_history_with_test_values()
 
     def test_reset_config_in_row_on_service_config_page(self, app_fs, create_cluster_with_service):
         """Test config reset on /cluster/{}/service/{}/config page"""
@@ -246,7 +257,9 @@ class TestServiceConfigPage:
         cluster, service = create_cluster_with_service
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         config_row = service_config_page.config.get_all_config_rows()[0]
-        service_config_page.config.type_in_config_field(row=config_row, value=params["row_value_new"], clear=True)
+        service_config_page.config.type_in_field_with_few_inputs(
+            row=config_row, values=[params["row_value_new"]], clear=True
+        )
         service_config_page.config.set_description(params["config_name"])
         service_config_page.config.save_config()
 
@@ -274,7 +287,7 @@ class TestServiceConfigPage:
         service_config_page.config.check_password_confirm_required(params['pass_name'])
         service_config_page.config.check_field_is_required(params['req_name'])
         config_row = service_config_page.config.get_all_config_rows()[0]
-        service_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
+        service_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params['wrong_value']])
         service_config_page.config.check_field_is_invalid(params['not_req_name'])
         service_config_page.config.check_config_warn_icon_on_left_menu()
         service_config_page.toolbar.check_warn_button(
@@ -284,6 +297,90 @@ class TestServiceConfigPage:
                 'test_service has an issue with its config',
             ],
         )
+
+    def test_field_validation_on_service_config_page_with_default_value(self, app_fs, sdk_client_fs):
+        """Test config fields validation on /cluster/{}/service/{}/config page"""
+
+        params = {'field_name': 'string', 'new_value': 'test', "config_name": "test_name"}
+
+        with allure.step("Create cluster and service"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_DEFAULT_FIELDS)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            service = cluster.service_add(name=SERVICE_NAME)
+        service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        service_config_page.config.clear_field_by_keys(params['field_name'])
+        service_config_page.config.check_field_is_required(params['field_name'])
+        service_config_page.config.type_in_field_with_few_inputs(
+            row=service_config_page.config.get_all_config_rows()[0], values=[params['new_value']]
+        )
+        service_config_page.config.save_config()
+        service_config_page.config.assert_input_value_is(
+            expected_value=params["new_value"], display_name=params["field_name"]
+        )
+
+    def test_field_tooltips_on_service_config_page(self, app_fs, sdk_client_fs):
+        """Test config fields tooltips on /cluster/{}/service/{}/config page"""
+
+        with allure.step("Create cluster and service"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_DESCRIPTION_FIELDS)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            service = cluster.service_add(name=SERVICE_NAME)
+        service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        for item in CONFIG_ITEMS:
+            service_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
+
+    def test_save_configuration_hell_on_service_config_page(self, app_fs, sdk_client_fs):
+        """
+        UI test for super large config
+        Scenario:
+        1. Get Service configuration
+        2. Get display names from UI
+        3. Check that config name in prototype is correct
+        4. Check that in UI we have full list of display names from prototype
+        5. Fill required fields and try to save
+        """
+
+        required_fields = {
+            'integer not default required:': (['2']),
+            'float not default required:': (['2.2']),
+            'string not default required:': (['Ein neuer Tag beginnt']),
+            'password not default required no confirm:': (['strongestpasswordever']),
+            'text not default required:': (['This is\nthe day']),
+            'file not default required:': (['My only\nfriend']),
+            'json not default required:': (['{"Where": "the long shadow falls"}']),
+            'list not default required:': (['Silencer']),
+            'map not default required:': (['Poccolus', 'Ragana', 'Poccolus', 'Ragana']),
+        }
+        with allure.step("Create cluster and service"):
+            bundle = cluster_bundle(sdk_client_fs, "config_hell_service")
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            service = cluster.service_add(name='service_ui_config_hell')
+        service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        with allure.step('Check that config name in prototype is correct'):
+            assert service.display_name == 'New UI Config Hell'
+        with allure.step('Check that in UI we have full list of group display names from prototype'):
+            parameters_display_names = {config['display_name'] for config in service.prototype().config}
+            group_names = filter(
+                lambda name: 'group' in name
+                and ('invisible' not in name or 'not invisible' in name)
+                and ('advanced' not in name or 'not advanced' in name),
+                parameters_display_names,
+            )
+            ui_display_names = service_config_page.config.get_all_config_rows_names()
+            config_group_names = [n.text for n in service_config_page.config.get_group_names()]
+            for display_name in group_names:
+                assert (
+                    display_name in ui_display_names or display_name in config_group_names
+                ), f"Config named '{display_name}' should be presented in config"
+        with allure.step('Fill required fields'):
+            for param_display_name, value in required_fields.items():
+                row = service_config_page.config.get_config_row(param_display_name)
+                service_config_page.config.type_in_field_with_few_inputs(row=row, values=value)
+        service_config_page.config.save_config(load_timeout=40)
+        with allure.step('Ensure page is still opened'):
+            service_config_page.wait_page_is_opened(timeout=1)
+        with allure.step('Check that popup is not presented on page'):
+            assert not service_config_page.is_popup_presented_on_page(), 'No popup should be shown after save'
 
 
 class TestServiceGroupConfigPage:
@@ -296,6 +393,7 @@ class TestServiceGroupConfigPage:
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         group_conf_page = service_main_page.open_group_config_tab()
         group_conf_page.check_all_elements()
+        group_conf_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
     def test_create_group_config_service(self, app_fs, create_cluster_with_service):
         """Test create group config on /cluster/{}/service/{}/group_config"""
@@ -338,6 +436,7 @@ class TestServiceStatusPage:
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_status_page = service_main_page.open_status_tab()
         service_status_page.check_all_elements()
+        service_status_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
     def test_status_on_service_status_page(
         self, app_fs, adcm_fs, sdk_client_fs, create_community_cluster_with_host_and_service
@@ -386,6 +485,7 @@ class TestServiceImportPage:
         service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_import_page = service_main_page.open_import_tab()
         service_import_page.check_all_elements()
+        service_import_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
     def test_import_from_service_import_page(self, app_fs: ADCMTest, sdk_client_fs: ADCMClient):
         """Test service import on /cluster/{}/service/{}/import page"""

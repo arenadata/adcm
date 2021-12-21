@@ -44,8 +44,13 @@ class CommonConfigMenu:
         "//app-field[.//div[@adcm_test='{}']]//mat-list-item//span[contains(text(), '{}')]",
         'Config diff of option "{}" with "{}" in text',
     )
-    config_row = Locator(By.CSS_SELECTOR, "app-field", "Configuration row")
+    config_row = Locator(By.CSS_SELECTOR, "app-field, app-group-fields", "Configuration row")
+    text_row = Locator(By.TAG_NAME, "app-fields-textbox", "Configuration textbox row")
     field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
+    info_tooltip_icon = TemplateLocator(
+        By.XPATH, "//div[contains(@adcm_test, '{}')]//mat-icon[@mattooltipclass='info-tooltip']", 'info tooltip "{}"'
+    )
+    tooltip_text = Locator(By.CSS_SELECTOR, "mat-tooltip-component div", "Tooltip text")
     loading_text = Locator(By.XPATH, "//span[text()='Loading...']", "Loading text")
 
     class ConfigRow:
@@ -53,6 +58,8 @@ class CommonConfigMenu:
 
         name = Locator(By.CSS_SELECTOR, "label", "Row name")
         value = Locator(By.CSS_SELECTOR, "input,textarea", "Row value")
+
+        input = Locator(By.CSS_SELECTOR, '*:not([style="display: none;"])>mat-form-field input,textarea', "Row input")
         password = Locator(
             By.XPATH,
             "(.//app-fields-password/div[not(contains(@style, 'none'))]//input)[1]",
@@ -66,6 +73,8 @@ class CommonConfigMenu:
         history = Locator(By.CSS_SELECTOR, "mat-list-item span.accent", "Row history")
         reset_btn = Locator(By.CSS_SELECTOR, "button[mattooltip='Reset to default']", "Reset button")
 
+        checkbox = Locator(By.CSS_SELECTOR, "mat-checkbox", "Checkbox")
+
         # complex parameters
         add_item_btn = Locator(
             By.XPATH, ".//button//mat-icon[text()='add_circle_outline']", "Add item to parameter button"
@@ -73,6 +82,9 @@ class CommonConfigMenu:
         map_item = Locator(By.CSS_SELECTOR, "div.item", "Map parameter item")
         map_input_key = Locator(By.XPATH, ".//input[@formcontrolname='key']", "Map input key input")
         map_input_value = Locator(By.XPATH, ".//input[@formcontrolname='value']", "Map input value input")
+
+        select_btn = Locator(By.CSS_SELECTOR, "app-fields-dropdown", "Select option button")
+        select_item = Locator(By.CSS_SELECTOR, ".mat-select-panel mat-option", "Select option item")
 
     class ConfigGroup:
         """Configuration menu configuration group locators"""

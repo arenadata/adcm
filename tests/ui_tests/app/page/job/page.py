@@ -19,8 +19,9 @@ import allure
 
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
-from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
+from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
+from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.job.locators import JobPageLocators
 
 
@@ -42,12 +43,14 @@ class JobPageMixin(BasePageObject):
 
     MAIN_ELEMENTS: list
     job_id: int
+    toolbar: CommonToolbar
 
     def __init__(self, driver, base_url, job_id: int):
         super().__init__(driver, base_url, "/job/{job_id}", job_id=job_id)
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.job_id = job_id
+        self.toolbar = CommonToolbar(self.driver, self.base_url)
 
     MAIN_ELEMENTS = [
         ObjectPageLocators.title,
@@ -96,6 +99,9 @@ class JobPageMixin(BasePageObject):
         self.find_and_click(locator)
         self.wait_element_attribute(locator, 'class', 'active', exact_match=False)
         self.wait_element_hide(CommonToolbarLocators.progress_bar)
+
+    def check_jobs_toolbar(self, action_name: str):
+        self.toolbar.check_toolbar_elements(["JOBS", action_name])
 
 
 class JobPageStdout(JobPageMixin):
