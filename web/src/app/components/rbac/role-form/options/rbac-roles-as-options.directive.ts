@@ -10,6 +10,10 @@ import { RbacRoleService } from '../../../../services/rbac-role.service';
   exportAs: 'rbacRoles'
 })
 export class RbacRolesAsOptionsDirective extends RbacOptionsDirective {
+  initialParams: Params = {
+    ordering: 'name'
+  };
+
   @Input('rbac-roles-as-options')
   params: Params;
 

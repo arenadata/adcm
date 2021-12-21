@@ -49,6 +49,7 @@ export class RolesComponent extends RbacEntityListDirective<RbacRoleModel> {
     },
     {
       label: 'Permissions',
+      className: 'one-line-string',
       value: permissionNameMapper,
     }
   ] as IColumns<RbacRoleModel>;

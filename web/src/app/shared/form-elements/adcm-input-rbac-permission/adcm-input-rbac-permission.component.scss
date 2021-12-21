@@ -1,5 +1,9 @@
 .adcm-input-rbac-permissions {
 
+  .row {
+    margin-bottom: 0;
+  }
+
   &__selected-field {
     width: 100%;
   }
@@ -73,7 +77,7 @@
       width: 100%;
       flex: 1;
       overflow: hidden;
-      height: 260px;
+      height: 270px;
     }
   }
 

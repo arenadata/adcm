@@ -19,12 +19,14 @@ export class RbacOptionsDirective implements OnChanges {
 
   constructor(service: EntityAbstractService) {
     this._params$ = new BehaviorSubject<Params>(this.initialParams);
-
-    const initial$ = this._params$.pipe(
-      first()
+    const paramsWithOrdering$ = this._params$.asObservable().pipe(
+      // the ordering is s required param for options requests
+      filter((params) => params['ordering'])
     );
 
-    const debounced$ = this._params$.pipe(
+    const initial$ = paramsWithOrdering$.pipe(first());
+
+    const debounced$ = paramsWithOrdering$.pipe(
       skip(1),
       debounceTime(RBAC_ROLES_FILTERS_DEBOUNCE_TIME)
     );

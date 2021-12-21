@@ -28,6 +28,8 @@ role:
     init_params: json
     apps: app_list
     child: child_list
+    category: category_list
+    any_category: boolean
   required_items:
     - name
     - module_name
@@ -72,6 +74,10 @@ child_list:
 app_list:
   match: list
   item: app
+
+category_list:
+  match: list
+  item: string
 
 # Application permissions
 

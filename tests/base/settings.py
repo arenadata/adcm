@@ -17,7 +17,7 @@ from os.path import dirname
 
 from adcm.settings import *  # pylint: disable=wildcard-import,unused-wildcard-import,import-error
 
-DEBUG = True
+DEBUG = False
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = dirname(dirname(dirname(os.path.abspath(__file__))))

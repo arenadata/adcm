@@ -1,5 +1,6 @@
 --extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
-adcm-client>=2021.7.21
+# TODO don't forget to fix it
+adcm_client==2021.12.16.12.dev0+adcm.1688
 adcm-pytest-plugin~=4.14
 attr
 allure-pytest

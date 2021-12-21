@@ -10,6 +10,10 @@ import { RbacOptionsDirective } from '../../../../abstract-directives/rbac-optio
   exportAs: 'rbacUsers'
 })
 export class RbacUsersAsOptionsDirective extends RbacOptionsDirective {
+  initialParams: Params = {
+    ordering: 'username'
+  };
+
   @Input('rbac-users-as-options')
   params: Params;
 

@@ -76,6 +76,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='role',
             name='category',
-            field=models.JSONField(default=list, validators=[rbac.models.validate_category]),
+            field=models.JSONField(default=list),
         ),
     ]

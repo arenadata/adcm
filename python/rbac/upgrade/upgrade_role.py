@@ -20,7 +20,7 @@ from django.contrib.contenttypes.models import ContentType
 from adwp_base.errors import raise_AdwpEx as err
 
 import cm.checker
-
+from cm.models import ProductCategory
 from rbac import log
 from rbac.settings import api_settings
 from rbac.models import Role, RoleMigration, Policy, Permission
@@ -111,6 +111,10 @@ def upgrade_role(role: dict, data: dict) -> Role:
         new_role.type = role['type']
     for perm in perm_list:
         new_role.permissions.add(perm)
+    for category_value in role.get('category', []):
+        category = ProductCategory.objects.get(value=category_value)
+        new_role.category.add(category)
+    new_role.any_category = role.get('any_category', False)
     new_role.save()
     return new_role
 

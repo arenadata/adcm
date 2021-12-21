@@ -10,6 +10,10 @@ import { RbacOptionsDirective } from '../../../../abstract-directives/rbac-optio
   exportAs: 'rbacGroups'
 })
 export class RbacGroupsAsOptionsDirective extends RbacOptionsDirective {
+  initialParams: Params = {
+    ordering: 'name'
+  };
+
   @Input('rbac-groups-as-options')
   params: Params;
 

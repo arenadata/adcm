@@ -267,6 +267,7 @@ def update_obj(dest, source, fields):
 
 def cook_roles(bundle):
     parent = {}
+    category = ProductCategory.objects.get(value=bundle.name)
     for act in Action.objects.filter(prototype__bundle=bundle):
         name = act.display_name
         model = get_model_by_type(act.prototype.type)
@@ -285,7 +286,6 @@ def cook_roles(bundle):
             name=role_name,
             display_name=role_name,
             description=f'run action {name} of {act.prototype.type} {act.prototype.display_name}',
-            category=[f'{bundle.name}'],
             bundle=bundle,
             type=RoleTypes.hidden,
             module_name='rbac.roles',
@@ -302,6 +302,7 @@ def cook_roles(bundle):
             },
         )
         role.save()
+        role.category.add(category)
         if name not in parent:
             parent[name] = []
         parent[name].append(role)
@@ -316,13 +317,13 @@ def cook_roles(bundle):
             name=f'{name}',
             display_name=f'{name}',
             description=f'action(s) {name}',
-            category=[f'{bundle.name}'],
             bundle=bundle,
             type=RoleTypes.business,
             module_name='rbac.roles',
             class_name='ParentRole',
         )
         role.save()
+        role.category.add(category)
         for action_role in children:
             role.child.add(action_role)
 
