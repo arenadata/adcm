@@ -41,6 +41,9 @@ pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 PROVIDER_NAME = 'test_provider'
 
 
+# !===== Fixtures =====!
+
+
 @pytest.fixture(params=["provider"])
 @allure.title("Upload provider bundle")
 def bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
@@ -53,6 +56,9 @@ def bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
 def upload_and_create_test_provider(bundle) -> Provider:
     """Create provider from uploaded bundle"""
     return bundle.provider_create(PROVIDER_NAME)
+
+
+# !===== Tests =====!
 
 
 class TestProviderListPage:
@@ -247,31 +253,27 @@ class TestProviderConfigPage:
             provider_config_page.config.clear_search_input()
         with allure.step("Check that rows are not filtered"):
             config_rows = provider_config_page.config.get_all_config_rows()
-            assert len(config_rows) == 4, "Rows are filtered: there should be 4 row"
-        with provider_config_page.config.wait_rows_change(expected_rows_amount=2):
+            assert len(config_rows) == 5, "Rows are filtered: there should be 4 row and 1 group"
+        with provider_config_page.config.wait_rows_change(expected_rows_amount=3):
             provider_config_page.config.click_on_group(params["group_name"])
 
     @pytest.mark.smoke()
+    @pytest.mark.parametrize("bundle", ["provider_with_all_config_params"], indirect=True)
     def test_save_custom_config_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
         """Test save config on provider config page"""
+
         params = {
-            "row_value_new": "test",
-            "row_value_old": "0000",
             "config_name_new": "test_name",
             "config_name_old": "init",
         }
         provider_config_page = ProviderConfigPage(
             app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
         ).open()
-        config_row = provider_config_page.config.get_all_config_rows()[0]
-        provider_config_page.config.type_in_config_field(row=config_row, value=params["row_value_new"], clear=True)
-
+        provider_config_page.config.fill_config_fields_with_test_values()
         provider_config_page.config.set_description(params["config_name_new"])
         provider_config_page.config.save_config()
         provider_config_page.config.compare_versions(params["config_name_old"])
-        with allure.step("Check row history"):
-            row_with_history = provider_config_page.config.get_all_config_rows()[0]
-            provider_config_page.config.wait_history_row_with_value(row_with_history, params["row_value_old"])
+        provider_config_page.config.check_config_fields_history_with_test_values()
 
     def test_reset_config_in_row_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
         """Test config reset on provider config page"""
@@ -285,7 +287,9 @@ class TestProviderConfigPage:
             app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id
         ).open()
         config_row = provider_config_page.config.get_all_config_rows()[0]
-        provider_config_page.config.type_in_config_field(row=config_row, value=params["row_value_new"], clear=True)
+        provider_config_page.config.type_in_field_with_few_inputs(
+            row=config_row, values=[params["row_value_new"]], clear=True
+        )
         provider_config_page.config.set_description(params["config_name"])
         provider_config_page.config.save_config()
 
@@ -309,7 +313,7 @@ class TestProviderConfigPage:
         provider_config_page.config.check_password_confirm_required(params['pass_name'])
         provider_config_page.config.check_field_is_required(params['req_name'])
         config_row = provider_config_page.config.get_all_config_rows()[0]
-        provider_config_page.config.type_in_config_field(params['wrong_value'], row=config_row)
+        provider_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params['wrong_value']])
         provider_config_page.config.check_field_is_invalid(params['not_req_name'])
         provider_config_page.config.check_config_warn_icon_on_left_menu()
         provider_config_page.toolbar.check_warn_button(
@@ -329,8 +333,8 @@ class TestProviderConfigPage:
         ).open()
         provider_config_page.config.clear_field_by_keys(params['field_name'])
         provider_config_page.config.check_field_is_required(params['field_name'])
-        provider_config_page.config.type_in_config_field(
-            params['new_value'], row=provider_config_page.config.get_all_config_rows()[0]
+        provider_config_page.config.type_in_field_with_few_inputs(
+            row=provider_config_page.config.get_all_config_rows()[0], values=[params['new_value']]
         )
         provider_config_page.config.save_config()
         provider_config_page.config.assert_input_value_is(
