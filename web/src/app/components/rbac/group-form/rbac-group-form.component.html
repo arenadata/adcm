@@ -6,7 +6,7 @@
                      [handler]="users.label"
                      [rbac-users-as-options]="filter"
                      [options]="users.options$ | async | falseAsEmptyArray"
-                     (filter)="updateFilter('name', $event)"
+                     (filter)="updateFilter('search', $event)"
   ></adwp-input-select>
   <adwp-controls [title]="title" [disabled]="form.invalid || form.pristine" (cancel)="onCancel()"
                  (save)="save()"></adwp-controls>
