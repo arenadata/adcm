@@ -13,7 +13,7 @@
 """RBAC Permissions classes"""
 
 from rest_framework import viewsets
-from rest_framework.permissions import DjangoModelPermissions, DjangoObjectPermissions
+from rest_framework.permissions import DjangoModelPermissions, DjangoObjectPermissions, SAFE_METHODS
 
 
 class DjangoModelPerm(DjangoModelPermissions):
@@ -46,6 +46,25 @@ class DjangoObjectPerm(DjangoObjectPermissions):
         'PATCH': ['%(app_label)s.change_%(model_name)s'],
         'DELETE': ['%(app_label)s.delete_%(model_name)s'],
     }
+
+    def has_permission(self, request, view):
+        if all((request.user, request.user.is_active, request.user.is_authenticated)):
+            return True
+        if request.user.is_superuser:
+            return True
+        return False
+
+    def has_object_permission(self, request, view, obj):
+        model_name = obj.__class__.__name__.lower()
+        if request.method in SAFE_METHODS:
+            return True
+        if request.method == 'DELETE' and request.user.has_perm(f'delete_{model_name}', obj):
+            return True
+        if request.method in ['PUT', 'PATCH'] and request.user.has_perm(
+            f'change_{model_name}', obj
+        ):
+            return True
+        return False
 
 
 class ModelPermViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
