@@ -213,6 +213,17 @@ class PositiveInt(BaseType):
         return randint(self._min_int64, self._max_int64)
 
 
+class SmallIntegerID(BaseType):
+    """Sort of technical type to represent small integer ID to use as a value for foreign keys"""
+
+    def __init__(self, max_value: int, **kwargs):
+        super().__init__(**kwargs)
+        self.max_value = max_value
+
+    def generate(self, **kwargs):
+        return random.randint(1, self.max_value + 1)
+
+
 class Boolean(BaseType):
     """Boolean field type"""
 

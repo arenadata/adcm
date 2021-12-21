@@ -40,6 +40,7 @@ from tests.api.utils.types import (
     StaticBoolean,
     ObjectForeignKey,
     Username,
+    SmallIntegerID,
 )
 
 AUTO_VALUE = "auto"
@@ -325,7 +326,8 @@ class RbacSimpleRoleFields(BaseClass):
     # type is actually changeable=True and postable=True, but now it's only value
     # (since it's shouldn't be 'hidden' or 'business') is 'role', so we can't actually change it
     type = Field(name="type", f_type=Enum(['role']), default_value='role')
-    category = Field(name="category", f_type=ListOf(String()), default_value=[], postable=True, changeable=True)
+    # category is a list of FK to a "ProductCategory" that is hard to get from API
+    category = Field(name="category", f_type=ListOf(SmallIntegerID(max_value=2)), default_value=[])
     parametrized_by_type = Field(
         name="parametrized_by_type",
         f_type=ListOf(Enum(PARAMETRIZED_BY_LIST)),
@@ -335,6 +337,7 @@ class RbacSimpleRoleFields(BaseClass):
     )
 
     url = Field(name="url", f_type=String(), default_value="auto")
+    any_category = Field(name="any_category", f_type=Boolean(), default_value=False)
 
 
 class RbacBuiltInRoleFields(BaseClass):
@@ -353,7 +356,8 @@ class RbacBuiltInRoleFields(BaseClass):
         changeable=True,
     )
     description = Field(name="description", f_type=Text(), default_value="")
-    category = Field(name="category", f_type=ListOf(String()), default_value=[])
+
+    category = Field(name="category", f_type=ListOf(SmallIntegerID(max_value=1)), default_value=[])
     parametrized_by_type = Field(
         name="parametrized_by_type",
         f_type=ListOf(Enum(PARAMETRIZED_BY_LIST)),
@@ -364,6 +368,7 @@ class RbacBuiltInRoleFields(BaseClass):
     type = Field(name="type", f_type=Enum(['role', 'business', 'hidden']), default_value='role')
     child = Field(name="child", f_type=EmptyList(), default_value=[])
     url = Field(name="url", f_type=String(), default_value="auto")
+    any_category = Field(name="any_category", f_type=Boolean(), default_value=False)
 
 
 class RbacBusinessRoleFields(RbacBuiltInRoleFields):
@@ -392,7 +397,11 @@ class RbacRoleFields(BaseClass):
     )
     built_in = Field(name="built_in", f_type=StaticBoolean(value=False), default_value="auto")
     type = Field(name="type", f_type=Enum(['role', 'business', 'hidden']), default_value='role')
-    category = Field(name="category", f_type=ListOf(String()), default_value=[], postable=True, changeable=True)
+    category = Field(
+        name="category",
+        f_type=ListOf(SmallIntegerID(max_value=1)),
+        default_value=[],
+    )
     parametrized_by_type = Field(
         name="parametrized_by_type",
         f_type=ListOf(Enum(PARAMETRIZED_BY_LIST)),
@@ -402,6 +411,7 @@ class RbacRoleFields(BaseClass):
     )
     url = Field(name="url", f_type=String(), default_value="auto")
     child = Field(name="child", f_type=EmptyList(), default_value=[])
+    any_category = Field(name="any_category", f_type=Boolean(), default_value=False)
 
 
 class RbacNotBuiltInPolicyFields(BaseClass):
