@@ -282,7 +282,9 @@ def cook_roles(bundle):
         role = Role(
             name=role_name,
             display_name=role_name,
-            description=f'run action {act.name} of {act.prototype.type} {act.prototype.display_name}',
+            description=(
+                f'run action {act.name} of {act.prototype.type} {act.prototype.display_name}'
+            ),
             bundle=bundle,
             type=RoleTypes.hidden,
             module_name='rbac.roles',
