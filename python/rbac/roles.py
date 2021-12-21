@@ -123,11 +123,14 @@ class ParentRole(AbstractRole):
     def find_and_apply(self, obj, policy, role, user, group=None):
         """Find Role of appropriate type and apply it to specified object"""
         for r in role.child.all():
-            self.find_and_apply(obj, policy, r, user, group)
-        if not role.child.all() and (obj.prototype.type in role.parametrized_by_type):
-            role.apply(policy, user, group, obj)
+            if r.class_name not in ('ObjectRole', 'ActionRole'):
+                continue
+            if obj.prototype.type in r.parametrized_by_type:
+                r.apply(policy, user, group, obj)
 
-    def apply(self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None):
+    def apply(
+        self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None
+    ):  # pylint: disable=too-many-branches
         """Apply Role to User and/or Group"""
         for obj in policy.get_objects(param_obj):
             self.find_and_apply(obj, policy, role, user, group)
@@ -146,6 +149,6 @@ class ParentRole(AbstractRole):
                 for host in Host.obj.filter(provider=obj):
                     self.find_and_apply(host, policy, role, user, group)
 
-        if not policy.get_objects():
-            for r in role.child.all():
-                r.apply(policy, user, group)
+        for r in role.child.all():
+            if r.class_name in ('ModelRole', 'ParentRole'):
+                r.apply(policy, user, group, param_obj)

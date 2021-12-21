@@ -347,6 +347,19 @@ def test_simple_parent_policy():
 
 
 @pytest.mark.django_db
+def test_empty_parent_policy():
+    user = cook_user('Joe')
+    _, _, service2, _, _, _ = cook_cluster1()
+
+    r = cook_role('all', 'ParentRole', ['service'])
+    p = Policy.objects.create(role=r)
+    p.user.add(user)
+    p.add_object(service2)
+
+    p.apply()
+
+
+@pytest.mark.django_db
 def test_object_filter():
     r = Role(
         name='view',
