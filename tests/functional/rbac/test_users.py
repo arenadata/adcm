@@ -128,7 +128,7 @@ def _get_user_by_username(client: ADCMClient, username: str) -> User:
     """Get user by username"""
     user = client.user(username=username)
     if user is None:
-        raise ValueError("User with name %s not found" % username)
+        raise ValueError("User with name %s not found" % username)  # pylint: disable=consider-using-f-string
     return user
 
 
