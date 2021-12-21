@@ -1,5 +1,3 @@
-# pylint: disable=too-many-lines,unsupported-membership-test,unsupported-delete-operation
-#   pylint could not understand that JSON fields are dicts
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,7 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-lines,unsupported-membership-test,unsupported-delete-operation,
+# too-many-instance-attributes
+# pylint could not understand that JSON fields are dicts
 
 from __future__ import unicode_literals
 
@@ -282,7 +282,7 @@ class ConfigLog(ADCMModel):
     __error_code__ = 'CONFIG_NOT_FOUND'
 
     @transaction.atomic()
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):  # pylint: disable=too-many-locals
         """Saving config and updating config groups"""
 
         def update(origin, renovator, group_keys):
@@ -301,6 +301,18 @@ class ConfigLog(ADCMModel):
                         origin[key] = renovator[key]
             return origin
 
+        def clean_attr(attrs: dict, spec: dict) -> None:
+            """Clean attr after upgrade cluster"""
+            extra_fields = []
+
+            for key in attrs.keys():
+                if key not in ['group_keys', 'custom_group_keys']:
+                    if key not in spec:
+                        extra_fields.append(key)
+
+            for field in extra_fields:
+                attrs.pop(field)
+
         DummyData.objects.filter(id=1).update(date=timezone.now())
         obj = self.obj_ref.object
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
@@ -317,9 +329,13 @@ class ConfigLog(ADCMModel):
                 group_config.config = config
                 attr = deepcopy(self.attr)
                 attr.update(current_group_config.attr)
-                group_keys, custom_group_keys = cg.create_group_keys(cg.get_config_spec())
+                spec = cg.get_config_spec()
+                group_keys, custom_group_keys = cg.create_group_keys(spec)
                 attr.update({'group_keys': group_keys, 'custom_group_keys': custom_group_keys})
                 update(attr['group_keys'], current_group_keys, current_group_keys)
+                clean_attr(attr, spec)
+                clean_attr(attr['group_keys'], spec)
+
                 group_config.attr = attr
                 group_config.description = current_group_config.description
                 group_config.save()
