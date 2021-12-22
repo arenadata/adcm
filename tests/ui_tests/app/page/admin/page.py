@@ -113,7 +113,6 @@ class GeneralAdminPage(BasePageObject):
         """Open Admin Roles page by menu object click"""
 
         self.find_and_click(ObjectPageMenuLocators.roles_tab)
-        self.find_and_click(ObjectPageMenuLocators.roles_tab)
         page = AdminRolesPage(self.driver, self.base_url)
         page.wait_page_is_opened()
         return page

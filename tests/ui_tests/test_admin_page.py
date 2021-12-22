@@ -79,7 +79,7 @@ class TestAdminSettingsPage:
         }
         get_rows_func = settings_page.config.get_all_config_rows
         with allure.step(
-            f'Search {params["search_text"]} and check {params["field_display_name"]} ' 'is presented after search'
+            f'Search {params["search_text"]} and check {params["field_display_name"]} is presented after search'
         ):
             with expect_rows_amount_change(get_rows_func):
                 settings_page.config.search(params['search_text'])
@@ -88,7 +88,7 @@ class TestAdminSettingsPage:
             settings_page.config.clear_search()
         with allure.step(
             f'Click on {params["group"]} group and check {params["field_display_name"]} '
-            'is not presented after group roll up'
+            f'is not presented after group roll up'
         ):
             with expect_rows_amount_change(get_rows_func):
                 settings_page.config.click_on_group(params['group'])
