@@ -21,14 +21,21 @@ export class RbacRoleFormComponent extends RbacFormDirective<RbacRoleModel> impl
   ngOnInit(): void {
     this.form = new FormGroup({
       id: new FormControl(null),
-      name: new FormControl({ value: '', disabled: this.value?.built_in }, [Validators.required]),
+      name: new FormControl({ value: '', disabled: this.value?.built_in }),
       description: new FormControl({ value: '', disabled: this.value?.built_in }),
-      display_name: new FormControl({ value: '', disabled: this.value?.built_in }, [Validators.required]),
+      display_name: new FormControl({ value: '', disabled: this.value?.built_in }, [
+        Validators.required,
+        Validators.minLength(1),
+        Validators.maxLength(160),
+        Validators.pattern('^[a-zA-Z_]*$')
+      ]),
       built_in: new FormControl(null),
       type: new FormControl('role'),
-      category: new FormControl(['adcm']),
+      category: new FormControl(['ADCM']),
       parametrized_by_type: new FormControl([]),
-      child: new FormControl([], [Validators.required]),
+      child: new FormControl([], [
+        Validators.required
+      ]),
       url: new FormControl(null),
     });
     super.ngOnInit();

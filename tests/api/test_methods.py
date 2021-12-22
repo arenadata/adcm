@@ -17,6 +17,7 @@ from typing import List
 import pytest
 import allure
 
+from tests.api.utils.methods import Methods
 from tests.api.testdata.generators import TestData, get_data_for_methods_check
 from tests.api.testdata.db_filler import DbFiller
 
@@ -52,4 +53,9 @@ def test_methods(prepare_data):
     """
     adcm, test_data_list = prepare_data
     for test_data in test_data_list:
-        adcm.exec_request(request=test_data.request, expected_response=test_data.response)
+        request = test_data.request
+        if request.method in (Methods.PUT, Methods.PATCH) and getattr(
+            request.endpoint.data_class, 'dependable_fields_sync', None
+        ):
+            request.data = request.endpoint.data_class.dependable_fields_sync(adcm, request.data)
+        adcm.exec_request(request=request, expected_response=test_data.response)

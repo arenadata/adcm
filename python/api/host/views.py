@@ -22,6 +22,7 @@ from api.api_views import (
     PageView,
     DetailViewDelete,
     InterfaceView,
+    check_custom_perm,
 )
 from cm.api import remove_host_from_cluster, delete_host
 from cm.errors import AdcmEx
@@ -34,23 +35,8 @@ from cm.models import (
     ServiceComponent,
     HostComponent,
 )
-from . import serializers
 import cm.status_api
-
-
-def has_host_perm(user, action_type, obj):
-    if user.has_perm(f'cm.{action_type}_host_cluster', obj):
-        return True
-    return False
-
-
-def check_host_perm(self, action_type, obj):
-    if not has_host_perm(self.request.user, action_type, obj):
-        self.permission_denied(
-            self.request,
-            message='You do not have permission to perform this action',
-            code=status.HTTP_403_FORBIDDEN,
-        )
+from . import serializers
 
 
 class NumberInFilter(drf_filters.BaseInFilter, drf_filters.NumberFilter):
@@ -165,7 +151,7 @@ class HostListProvider(HostList):
 class HostListCluster(HostList):
     serializer_class = serializers.ClusterHostSerializer
     permission_classes = (IsAuthenticated,)
-    check_host_perm = check_host_perm
+    check_host_perm = check_custom_perm
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -174,7 +160,7 @@ class HostListCluster(HostList):
             if 'cluster_id' in kwargs:
                 cluster = check_obj(Cluster, kwargs['cluster_id'])
             host = check_obj(Host, validated_data.get('id'))
-            self.check_host_perm('unmap', cluster)
+            self.check_host_perm('map_host_to', 'cluster', cluster)
             cm.api.add_host_to_cluster(cluster, host)
             return Response(self.get_serializer(host).data, status=status.HTTP_201_CREATED)
         else:
@@ -197,7 +183,7 @@ class HostDetail(DetailViewDelete):
     serializer_class = serializers.HostDetailSerializer
     serializer_class_ui = serializers.HostUISerializer
     permission_classes = (IsAuthenticated,)
-    check_host_perm = check_host_perm
+    check_host_perm = check_custom_perm
     lookup_field = 'id'
     lookup_url_kwarg = 'host_id'
     error_code = 'HOST_NOT_FOUND'
@@ -220,10 +206,11 @@ class HostDetail(DetailViewDelete):
             # Remove host from cluster
             cluster = check_obj(Cluster, kwargs['cluster_id'])
             check_host(host, cluster)
-            self.check_host_perm('unmap', cluster)
+            self.check_host_perm('unmap_host_from', 'cluster', cluster)
             remove_host_from_cluster(host)
         else:
             # Delete host (and all corresponding host services:components)
+            self.check_host_perm('delete', 'host', host)
             delete_host(host)
         return Response(status=status.HTTP_204_NO_CONTENT)
 

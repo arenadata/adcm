@@ -38,4 +38,8 @@ export class RbacRoleService implements EntityAbstractService {
     return this.api.get<ListResult<RbacRoleModel>>(`${environment.apiRoot}rbac/role/`, param)
       .pipe(map((list) => list.results));
   }
+
+  getCategories(): Observable<string[]> {
+    return this.api.get<string[]>(`${environment.apiRoot}rbac/role/category`);
+  }
 }

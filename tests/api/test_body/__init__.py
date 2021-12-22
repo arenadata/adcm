@@ -54,14 +54,9 @@ def generate_body_for_checks(test_data: TestDataWithPreparedBody):
             # TODO add fk field check
             continue
 
+        if test_data.request.method == Methods.POST:
+            continue
         if (
-            test_data.request.method == Methods.POST
-            and not field.postable
-            and field.name in prepared_field_values
-            and prepared_field_values[field.name].generated_value
-        ):
-            body.fields[field.name] = NotEqual(test_data.request.data.get(field.name))
-        elif (
             test_data.request.method == Methods.PATCH
             and not field.changeable
             and field.name in prepared_field_values

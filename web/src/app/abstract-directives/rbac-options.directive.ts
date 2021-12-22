@@ -4,6 +4,7 @@ import { BehaviorSubject, merge, Observable } from 'rxjs';
 import { RbacRoleModel } from '../models/rbac/rbac-role.model';
 import { debounceTime, filter, first, skip, switchMap } from 'rxjs/operators';
 import { EntityAbstractService } from '../abstract/entity.abstract.service';
+import { clearEmptyField } from '../core/types';
 
 const RBAC_ROLES_FILTERS_DEBOUNCE_TIME = 300;
 
@@ -45,19 +46,8 @@ export class RbacOptionsDirective implements OnChanges {
     if (params && params.currentValue) {
       this._params$.next({
         ...this.initialParams,
-        ...this._params$.getValue(),
-        ...params.currentValue
+        ...clearEmptyField(params.currentValue)
       });
     }
-  }
-
-  updateParam(key: string, value: any): void {
-    let params = { ...this._params$.getValue() };
-    if (value === null) {
-      delete params[key];
-    } else {
-      params[key] = value;
-    }
-    this._params$.next(params);
   }
 }

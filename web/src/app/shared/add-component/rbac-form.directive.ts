@@ -57,7 +57,7 @@ export class RbacFormDirective<T extends { url: string } = { url: string }> exte
     }
   }
 
-  updateFilter(key: string, value: any): void {
-    this.filter = { ...this.filter, [key]: value };
+  updateFilter(key: string, value: string): void {
+    this.filter = { ...this.filter, [key]: value?.trim() };
   }
 }

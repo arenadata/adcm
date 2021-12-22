@@ -6,9 +6,9 @@
     <div class="adcm-rbac-permission__filter">
       <mat-chip-list class="adcm-rbac-permission__filter-category mat-chip-list-stacked"
                      multiple selectable
-                     (valueChange)="updateFilter('category', $event)">
+                     (valueChange)="updateFilter('category', $event[0])">
         <mat-chip class="adcm-rbac-permission__filter-category-item" #chip="matChip" color="accent"
-                  *ngFor="let category of ['*', 'adcm']"
+                  *ngFor="let category of categories$ | async"
                   (click)="chip.toggleSelected(true)">
           {{ category }}
         </mat-chip>
@@ -24,7 +24,7 @@
         multiple
         [handler]="nameHandler"
         [options]="options | falseAsEmptyArray | adwpFilter:matcher:(form.controls[controlName].value || []):idHandler"
-        (filter)="updateFilter('name', $event)"
+        (filter)="updateFilter('search', $event)"
         (ngModelChange)="value = $event"
       ></adwp-selection-list>
 
