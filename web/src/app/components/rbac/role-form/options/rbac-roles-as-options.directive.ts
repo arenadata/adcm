@@ -1,6 +1,6 @@
 import { Directive, Inject, Input } from '@angular/core';
 import { AdwpHandler, AdwpStringHandler } from '@adwp-ui/widgets';
-import { RbacRoleModel, RbacRoleType } from '../../../../models/rbac/rbac-role.model';
+import { RbacRoleModel } from '../../../../models/rbac/rbac-role.model';
 import { Params } from '@angular/router';
 import { RbacOptionsDirective } from '../../../../abstract-directives/rbac-options.directive';
 import { RbacRoleService } from '../../../../services/rbac-role.service';
@@ -16,11 +16,6 @@ export class RbacRolesAsOptionsDirective extends RbacOptionsDirective {
 
   @Input('rbac-roles-as-options')
   params: Params;
-
-  @Input('rbac-role-type')
-  set type(value: RbacRoleType) {
-    this.updateParam('type', value);
-  };
 
   id: AdwpStringHandler<RbacRoleModel> = (item: RbacRoleModel) => String(item.id);
 
