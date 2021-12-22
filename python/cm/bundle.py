@@ -306,6 +306,7 @@ def cook_roles(bundle):
                     'prototype__bundle_id': bundle.id,
                 },
             },
+            parametrized_by_type=act.prototype.type,
         )
         role.save()
         role.category.add(category)
@@ -315,42 +316,42 @@ def cook_roles(bundle):
         )
         role.permissions.add(perm)
         if name not in parent:
-            parent[name] = []
-        parent[name].append(role)
+            parent[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
+        parent[name]['children'].append(role)
 
-    for name, children in parent.items():
-        try:
-            parent_role = Role.objects.get(name=name)
-        except:
-            parent_role = Role(
-                name=f'{name}',
-                display_name=f'{name}',
-                description=f'{name}',
-                bundle=bundle,
-                type=RoleTypes.business,
-                module_name='rbac.roles',
-                class_name='ParentRole',
-            )
-            parent_role.save()
+    for parent_name, parent_value in parent.items():
+        parent_role, is_created = Role.objects.get_or_create(
+            name=f'{parent_name}',
+            display_name=f'{parent_name}',
+            description=f'{parent_name}',
+            type=RoleTypes.business,
+            module_name='rbac.roles',
+            class_name='ParentRole',
+            parametrized_by_type=parent_value['parametrized_by_type']
+        )
 
-        for action_role in children:
+        if is_created:
+            log.info('Create business permission "%s"', parent_name)
+
+        for action_role in parent_value['children']:
             parent_role.child.add(action_role)
-            if action_role.prototype.type == 'cluster':
-                parent_role.category.add(category)
-                for top_parent_name in {'Cluster Administrator', 'ADCM Administrator'}:
-                    top_parent[top_parent_name].append(parent_role)
-            elif action_role.prototype.type in {'service', 'component'}:
-                parent_role.category.add(category)
-                for top_parent_name in {'Cluster Administrator', 'ADCM Administrator', 'Service Administrator'}:
-                    top_parent[top_parent_name].append(parent_role)
-            elif action_role.prototype.type == 'provider':
+
+        if parent_value['parametrized_by_type'] == 'cluster':
+            parent_role.category.add(category)
+            for top_parent_name in {'Cluster Administrator', 'ADCM Administrator'}:
+                top_parent[top_parent_name].append(parent_role)
+        elif parent_value['parametrized_by_type'] in {'service', 'component'}:
+            parent_role.category.add(category)
+            for top_parent_name in {'Cluster Administrator', 'ADCM Administrator', 'Service Administrator'}:
+                top_parent[top_parent_name].append(parent_role)
+        elif parent_value['parametrized_by_type'] == 'provider':
                 top_parent['ADCM Administrator'].append(parent_role)
-            elif action_role.prototype.type == 'host':
-                for top_parent_name in {'Cluster Administrator', 'ADCM Administrator'}:
-                    top_parent[top_parent_name].append(parent_role)
+        elif parent_value['parametrized_by_type'] == 'host':
+            for top_parent_name in {'Cluster Administrator', 'ADCM Administrator'}:
+                top_parent[top_parent_name].append(parent_role)
 
     for name, children in top_parent.items():
-        extend_role(name,children)
+        extend_role(name, children)
 
 
 def re_check_actions():
