@@ -88,6 +88,7 @@ def test_delete_user(users_page: AdminUsersPage):
 def test_change_admin_password(users_page: AdminUsersPage):
     """Change admin password, login with new credentials"""
     params = {'username': 'admin', 'password': 'new_pass'}
+    users_page.update_user_info(params['username'], first_name='Best', last_name='Admin')
     users_page.change_user_password(**params)
     with allure.step('Check Login page is opened'):
         login_page = LoginPage(users_page.driver, users_page.base_url)

@@ -12,7 +12,7 @@
 
 """Admin pages PageObjects classes"""
 
-from typing import List
+from typing import List, Optional
 
 import allure
 from selenium.common.exceptions import TimeoutException
@@ -147,6 +147,33 @@ class AdminUsersPage(GeneralAdminPage):
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.last_name, last_name)
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.email, email)
         self.find_and_click(AdminUsersLocators.AddUserPopup.create_button)
+        self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
+
+    @allure.step('Update user {username} info')
+    def update_user_info(
+        self,
+        username: str,
+        password: Optional[str] = None,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        email: Optional[str] = None,
+    ): # pylint: disable-next=too-many-arguments
+        """Update some of fields for user"""
+        if not (password or first_name or last_name or email):
+            raise ValueError("You should provide at least one field's value to make an update")
+        user_row = self.get_user_row_by_username(username)
+        self.find_child(user_row, AdminUsersLocators.Row.username).click()
+        self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
+        popup_locators = AdminUsersLocators.AddUserPopup
+        for value, locator in (
+            (password, popup_locators.password),
+            (first_name, popup_locators.first_name),
+            (last_name, popup_locators.last_name),
+            (email, popup_locators.email),
+        ):
+            if value:
+                self.send_text_to_element(locator, value)
+        self.find_and_click(AdminUsersLocators.AddUserPopup.update_button)
         self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
 
     @allure.step('Change password of user {username} to {password}')
