@@ -29,11 +29,20 @@ from tests.functional.rbac.conftest import (
 def test_view_configurations(user_policy: Policy, user_sdk: ADCMClient, prepare_objects, second_objects):
     """Test that View configuration role is ok"""
     user_objects = as_user_objects(user_sdk, prepare_objects)
+    cluster_via_admin, *_, provider_via_admin, _ = prepare_objects
     user_second_objects = as_user_objects(user_sdk, second_objects)
+    second_service_on_first_cluster = user_sdk.service(id=cluster_via_admin.service_add(name="new_service").id)
+    second_component_on_first_cluster = second_service_on_first_cluster.component()
+    second_host_on_first_provider = user_sdk.host(id=provider_via_admin.host_create(fqdn="new_host").id)
     for base_object in user_objects:
         is_allowed(base_object, BusinessRoles.ViewConfigurations)
         is_denied(base_object, BusinessRoles.EditConfigurations)
-    for base_object in user_second_objects:
+    for base_object in (
+        *user_second_objects,
+        second_service_on_first_cluster,
+        second_component_on_first_cluster,
+        second_host_on_first_provider,
+    ):
         is_denied(base_object, BusinessRoles.ViewConfigurations)
     delete_policy(user_policy)
     for base_object in user_objects:
