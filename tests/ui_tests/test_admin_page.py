@@ -135,6 +135,7 @@ class TestAdminSettingsPage:
             settings_page.config.assert_input_value_is(params['init_value'], params['field_display_name'])
 
 
+@pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2456")
 class TestAdminUsersPage:
     """Tests for the /admin/users"""
 
