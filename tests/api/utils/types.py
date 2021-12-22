@@ -100,7 +100,7 @@ class PreparedFieldValue:  # pylint: disable=too-few-public-methods,function-red
                 )
             if isinstance(self.f_type, GenericForeignKeyList):
                 return dbfiller.generate_new_value_for_generic_foreign_key_list(current_value=current_field_value)
-            return self.f_type.generate()
+            return self.f_type.generate_new(current_field_value)
 
         return self.value
 
@@ -234,19 +234,6 @@ class Boolean(BaseType):
 
     def generate(self, **kwargs):
         return random.choice([True, False])
-
-
-class StaticBoolean(BaseType):
-    """Boolean field type that is always True or False"""
-
-    value: bool
-
-    def __init__(self, value: bool, **kwargs):
-        super().__init__(**kwargs)
-        self.value = value
-
-    def generate(self, **kwargs):
-        return self.value
 
 
 class String(BaseType):
