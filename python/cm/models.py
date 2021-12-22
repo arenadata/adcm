@@ -285,21 +285,18 @@ class ConfigLog(ADCMModel):
     def save(self, *args, **kwargs):  # pylint: disable=too-many-locals
         """Saving config and updating config groups"""
 
-        def update(origin, renovator, group_keys):
+        def update(origin: dict, renovator: dict, group_keys: dict) -> None:
             """
             Updating the original dictionary with a check for the presence of keys in the original
             """
-            if origin is None:
-                origin = {}
             for key, value in group_keys.items():
-                if isinstance(value, Mapping) and key in renovator:
-                    origin[key] = update(
-                        origin.get(key, {}), renovator.get(key, {}), group_keys[key]
-                    )
-                else:
-                    if value and key in renovator:
-                        origin[key] = renovator[key]
-            return origin
+                if key in renovator:
+                    if isinstance(value, Mapping):
+                        origin.setdefault(key, {})
+                        update(origin[key], renovator[key], group_keys[key])
+                    else:
+                        if value:
+                            origin[key] = renovator[key]
 
         def clean_attr(attrs: dict, spec: dict) -> None:
             """Clean attr after upgrade cluster"""
