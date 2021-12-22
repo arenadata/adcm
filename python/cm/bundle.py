@@ -265,11 +265,18 @@ def update_obj(dest, source, fields):
         setattr(dest, f, getattr(source, f))
 
 
+def extend_role(name, children):
+    role = Role.objects.get(name=name)
+    for child_role in children:
+        role.child.add(child_role)
+
 def cook_roles(bundle):
     parent = {}
+    top_parent = {'Cluster Administrator': [], 'ADCM Administrator': [], 'Service Administrator': []}
     category = ProductCategory.objects.get(value=bundle.name)
     for act in Action.objects.filter(prototype__bundle=bundle):
-        name = act.display_name
+        name_prefix = f'{act.prototype.type} action:'.title()
+        name = f'{name_prefix} {act.display_name}'
         model = get_model_by_type(act.prototype.type)
         if act.prototype.type == 'component':
             serv_name = f'service_{act.prototype.parent.name}_'
@@ -302,29 +309,48 @@ def cook_roles(bundle):
         )
         role.save()
         role.category.add(category)
-        if name not in parent:
-            parent[name] = []
-        parent[name].append(role)
         ct = ContentType.objects.get_for_model(model)
         perm, _ = Permission.objects.get_or_create(
             content_type=ct, codename='run_object_action', name='Can run actions'
         )
         role.permissions.add(perm)
+        if name not in parent:
+            parent[name] = []
+        parent[name].append(role)
 
     for name, children in parent.items():
-        role = Role(
-            name=f'{name}',
-            display_name=f'{name}',
-            description=f'action(s) {name}',
-            bundle=bundle,
-            type=RoleTypes.business,
-            module_name='rbac.roles',
-            class_name='ParentRole',
-        )
-        role.save()
-        role.category.add(category)
+        try:
+            parent_role = Role.objects.get(name=name)
+        except:
+            parent_role = Role(
+                name=f'{name}',
+                display_name=f'{name}',
+                description=f'{name}',
+                bundle=bundle,
+                type=RoleTypes.business,
+                module_name='rbac.roles',
+                class_name='ParentRole',
+            )
+            parent_role.save()
+
         for action_role in children:
-            role.child.add(action_role)
+            parent_role.child.add(action_role)
+            if action_role.prototype.type == 'cluster':
+                parent_role.category.add(category)
+                for top_parent_name in {'Cluster Administrator', 'ADCM Administrator'}:
+                    top_parent[top_parent_name].append(parent_role)
+            elif action_role.prototype.type in {'service', 'component'}:
+                parent_role.category.add(category)
+                for top_parent_name in {'Cluster Administrator', 'ADCM Administrator', 'Service Administrator'}:
+                    top_parent[top_parent_name].append(parent_role)
+            elif action_role.prototype.type == 'provider':
+                top_parent['ADCM Administrator'].append(parent_role)
+            elif action_role.prototype.type == 'host':
+                for top_parent_name in {'Cluster Administrator', 'ADCM Administrator'}:
+                    top_parent[top_parent_name].append(parent_role)
+
+    for name, children in top_parent.items():
+        extend_role(name,children)
 
 
 def re_check_actions():
