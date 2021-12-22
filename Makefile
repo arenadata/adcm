@@ -48,9 +48,13 @@ build: describe buildss buildjs ## Build final docker image and all depended tar
 testpyreqs: ## Install test prereqs into user's pip target dir
 	pip install --user -r requirements-test.txt
 
-unittests: ## Run unittests
+basetests: ## Run tests/base
 	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/tests/base $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/sh -e ./run_test.sh
+
+unittests: basetests ## Run unittests
+	docker pull $(ADCMTEST_IMAGE):$(ADCMBASE_TAG)
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/ $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) /bin/sh -c "pip install -r /adcm/requirements.txt && pip install pytest-django && pytest python"
 
 pytest: ## Run functional tests
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster-x64
