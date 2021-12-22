@@ -17,20 +17,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rbac import models
 from rbac.services import user as user_services
-from rbac.viewsets import ModelPermViewSet, DjangoModelPerm
-
-
-class UserPermissions(DjangoModelPerm):
-    """Special permission class for User to allow user change own properties"""
-
-    def has_permission(self, request, view):
-        if not all((request.user, request.user.is_active, request.user.is_authenticated)):
-            return False
-        if request.user.is_superuser:
-            return True
-        if view.action not in ('retrieve', 'update', 'partial_update'):
-            return False
-        return int(view.kwargs.get('pk', 0)) == request.user.pk
+from rbac.viewsets import ModelPermViewSet
 
 
 class PasswordField(serializers.CharField):
@@ -115,4 +102,3 @@ class UserViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
     )
     ordering_fields = ('id', 'username', 'first_name', 'last_name', 'email', 'is_superuser')
     search_fields = ('username', 'first_name', 'last_name', 'email')
-    permission_classes = (UserPermissions,)
