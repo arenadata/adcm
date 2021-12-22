@@ -29,6 +29,13 @@ def pytest_generate_tests(metafunc):
     metafunc.parametrize("additional_adcm_init_config", [DUMMY_DATA_PARAM], scope="session")
 
 
+def pytest_generate_tests(metafunc):
+    """
+    Parametrize tests to use ADCM with dummy data
+    """
+    metafunc.parametrize("additional_adcm_init_config", [DUMMY_DATA_PARAM], scope="session")
+
+
 def pytest_addoption(parser):
     """
     Additional options for ADCM api testing
