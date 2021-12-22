@@ -21,8 +21,8 @@ from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMe
 class AdminIntroLocators:
     """Locators for Admin Intro menu"""
 
-    intro_title = Locator(By.CSS_SELECTOR, "mat-card-header", "Intro header container")
-    intro_text = Locator(By.CSS_SELECTOR, "mat-card-content", "Intro text container")
+    intro_title = Locator(By.CSS_SELECTOR, ".content mat-card-header", "Intro header container")
+    intro_text = Locator(By.CSS_SELECTOR, ".content mat-card-content", "Intro text container")
 
 
 class AdminSettingsLocators(CommonConfigMenu):
@@ -60,3 +60,16 @@ class AdminUsersLocators:
             By.CSS_SELECTOR, "input[formcontrolname='cpassword']", "New user password confirmation"
         )
         save_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Add user save button")
+
+
+class AdminRolesLocators:
+    """Locators for Admin Roles menu"""
+
+    create_role_btn = Locator(By.CSS_SELECTOR, "app-add-button button", "Create role button")
+    delete_btn = Locator(By.CSS_SELECTOR, ".controls>button", "Delete role button")
+
+    class RoleRow:
+        checkbox = Locator(By.CSS_SELECTOR, "mat-checkbox", "Role checkbox")
+        name = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Role name")
+        description = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(3)", "Role description")
+        permissions = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(4)", "Role permissions")
