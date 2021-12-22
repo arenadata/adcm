@@ -7,6 +7,7 @@ import { RbacRoleService } from '../../../services/rbac-role.service';
 import { MatDialog } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
 import { IAddService } from '../../../shared/add-component/add-service-model';
+import { Params } from '@angular/router';
 
 @Component({
   selector: 'app-rbac-permission-form',
@@ -29,6 +30,10 @@ export class RbacPermissionFormComponent extends RbacFormDirective<RbacRoleModel
 
   @Input()
   controlName: string;
+
+  filter: Params = {
+    type: 'business'
+  };
 
   categories$: Observable<string[]>;
 

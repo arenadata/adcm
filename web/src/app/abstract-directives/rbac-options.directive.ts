@@ -2,7 +2,7 @@ import { Directive, OnChanges, SimpleChange, SimpleChanges } from '@angular/core
 import { Params } from '@angular/router';
 import { BehaviorSubject, merge, Observable } from 'rxjs';
 import { RbacRoleModel } from '../models/rbac/rbac-role.model';
-import { debounceTime, filter, first, skip, switchMap } from 'rxjs/operators';
+import { debounceTime, filter, first, skip, switchMap, tap } from 'rxjs/operators';
 import { EntityAbstractService } from '../abstract/entity.abstract.service';
 import { clearEmptyField } from '../core/types';
 
@@ -53,11 +53,15 @@ export class RbacOptionsDirective implements OnChanges {
 
   updateParam(key: string, value: any): void {
     let params = { ...this._params$.getValue() };
+
     if (!value) {
       delete params[key];
     } else {
       params[key] = value;
     }
+
+    console.log('updateParam: ', params);
+
     this._params$.next(params);
   }
 }
