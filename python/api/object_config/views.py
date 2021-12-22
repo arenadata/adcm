@@ -14,9 +14,11 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from cm.models import ObjectConfig
 from .serializers import ObjectConfigSerializer
-from api.api_views import DjangoModelPerm
+
+from rbac.viewsets import DjangoObjectPerm
 
 
 class ObjectConfigViewSet(ReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = ObjectConfig.objects.all()
     serializer_class = ObjectConfigSerializer
+    permission_classes = (DjangoObjectPerm,)
