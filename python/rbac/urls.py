@@ -18,6 +18,7 @@ from .endpoints import logout, root, token
 
 urlpatterns = [
     path('', root.RBACRoot.as_view(), name='root'),
+    path('me/', include('rbac.endpoints.me.urls')),
     path('user/', include('rbac.endpoints.user.urls')),
     path('group/', include('rbac.endpoints.group.urls')),
     path('role/', include('rbac.endpoints.role.urls')),

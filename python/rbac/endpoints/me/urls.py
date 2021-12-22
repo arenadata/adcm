@@ -10,21 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Arenadata RBAC root view"""
+"""User URLs"""
 
-from rest_framework import permissions, routers
+from django.urls import path
+
+from .views import MyselfView
 
 
-class RBACRoot(routers.APIRootView):
-    """Arenadata RBAC Root"""
-
-    permission_classes = (permissions.AllowAny,)
-    api_root_dict = {
-        'me': 'me',
-        'user': 'user-list',
-        'group': 'group-list',
-        'role': 'role-list',
-        'policy': 'policy-list',
-        'logout': 'logout',
-        'token': 'token',
-    }
+urlpatterns = [path('', MyselfView.as_view(), name='me')]
