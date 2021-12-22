@@ -100,7 +100,7 @@ class AdminUsersPage(GeneralAdminPage):
     """Admin Users Page class"""
 
     MAIN_ELEMENTS = [
-        AdminUsersLocators.add_user_btn,
+        AdminUsersLocators.create_user_button,
         AdminUsersLocators.user_row,
         CommonToolbarLocators.admin_link,
     ]
@@ -134,26 +134,31 @@ class AdminUsersPage(GeneralAdminPage):
         return False
 
     @allure.step('Create new user "{username}" with password "{password}"')
-    def create_user(self, username: str, password: str):
+    def create_user(
+        self, username: str, password: str, first_name: str, last_name: str, email: str
+    ):  # pylint: disable-next=too-many-arguments
         """Create new user via add user popup"""
-        self.find_and_click(AdminUsersLocators.add_user_btn)
+        self.find_and_click(AdminUsersLocators.create_user_button)
         self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.username, username)
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.password, password)
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.password_confirm, password)
-        self.find_and_click(AdminUsersLocators.AddUserPopup.save_btn)
+        self.send_text_to_element(AdminUsersLocators.AddUserPopup.first_name, first_name)
+        self.send_text_to_element(AdminUsersLocators.AddUserPopup.last_name, last_name)
+        self.send_text_to_element(AdminUsersLocators.AddUserPopup.email, email)
+        self.find_and_click(AdminUsersLocators.AddUserPopup.create_button)
         self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
 
     @allure.step('Change password of user {username} to {password}')
     def change_user_password(self, username: str, password: str):
         """Change user password"""
         user_row = self.get_user_row_by_username(username)
-        pass_input = self.find_child(user_row, AdminUsersLocators.Row.password)
-        pass_input.send_keys(password)
-        pass_confirm_input = self.find_child(user_row, AdminUsersLocators.Row.password_confirm)
-        pass_confirm_input.send_keys(password)
-        update_pass = self.find_child(user_row, AdminUsersLocators.Row.confirm_update_btn)
-        update_pass.click()
+        self.find_child(user_row, AdminUsersLocators.Row.username).click()
+        self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
+        self.send_text_to_element(AdminUsersLocators.AddUserPopup.password, password)
+        self.send_text_to_element(AdminUsersLocators.AddUserPopup.password_confirm, password)
+        self.find_and_click(AdminUsersLocators.AddUserPopup.update_button)
+        self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
 
     @allure.step('Delete user {username}')
     def delete_user(self, username: str):

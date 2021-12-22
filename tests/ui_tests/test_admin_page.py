@@ -40,8 +40,17 @@ def settings_page(app_fs: ADCMTest, login_to_adcm_over_api) -> AdminSettingsPage
 
 def test_new_user_creation(users_page: AdminUsersPage):
     """Create new user, change password and login with new password"""
-    params = {'username': 'testuser', 'password': 'test_pass', 'new_password': 'testtest'}
-    users_page.create_user(params['username'], params['password'])
+    params = {
+        'username': 'testuser',
+        'password': 'test_pass',
+        'new_password': 'testtest',
+        'first_name': 'First',
+        'last_name': 'Last',
+        'email': 'priv@et.ru',
+    }
+    users_page.create_user(
+        params['username'], params['password'], params['first_name'], params['last_name'], params['email']
+    )
     with allure.step(f'Check user {params["username"]} is listed in users list'):
         assert users_page.is_user_presented(params['username']), f'User {params["username"]} was not created'
     users_page.change_user_password(params['username'], params['new_password'])
@@ -55,10 +64,19 @@ def test_new_user_creation(users_page: AdminUsersPage):
 
 def test_delete_user(users_page: AdminUsersPage):
     """Create new user, delete it and check current user can't be deleted"""
-    params = {'username': 'testuser', 'password': 'test_pass', 'current_user': 'admin'}
+    params = {
+        'username': 'testuser',
+        'password': 'test_pass',
+        'current_user': 'admin',
+        'first_name': 'First',
+        'last_name': 'Last',
+        'email': 'priv@et.ru',
+    }
     users_page.check_delete_button_not_presented(params['current_user'])
     with allure.step(f'Create user {params["username"]}'):
-        users_page.create_user(params['username'], params['password'])
+        users_page.create_user(
+            params['username'], params['password'], params['first_name'], params['last_name'], params['email']
+        )
         assert users_page.is_user_presented(params['username']), f'User {params["username"]} was not created'
     with allure.step(f'Delete user {params["username"]}'):
         users_page.delete_user(params['username'])
