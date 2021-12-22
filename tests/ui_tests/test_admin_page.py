@@ -135,7 +135,6 @@ class TestAdminSettingsPage:
             settings_page.config.assert_input_value_is(params['init_value'], params['field_display_name'])
 
 
-@pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2456")
 class TestAdminUsersPage:
     """Tests for the /admin/users"""
 
@@ -187,9 +186,10 @@ class TestAdminUsersPage:
             login_page.wait_page_is_opened()
         login_page.login_user(**params)
         with allure.step('Check login was successful'):
-            users_page.wait_page_is_opened(timeout=5)
+            users_page.wait_page_is_opened(timeout=8)
 
 
+@pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2298")
 class TestAdminRolesPage:
     """Tests for the /admin/roles"""
 
