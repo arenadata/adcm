@@ -42,9 +42,8 @@ def prepare_put_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
     """
     test_data_list: List[TestDataWithPreparedBody] = request.param
     dbfiller = DbFiller(adcm=adcm_api_fs)
-    valid_data = dbfiller.generate_valid_request_data(
-        endpoint=test_data_list[0].test_data.request.endpoint, method=Methods.PUT
-    )
+    endpoint = test_data_list[0].test_data.request.endpoint
+    valid_data = dbfiller.generate_valid_request_data(endpoint=endpoint, method=Methods.PUT)
     full_item = deepcopy(valid_data["full_item"])
     changed_fields = deepcopy(valid_data["changed_fields"])
     final_test_data_list: List[TestDataWithPreparedBody] = []
@@ -73,6 +72,8 @@ def prepare_put_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
                     test_data.request.data[field.name] = changed_fields[field.name]
 
         test_data.request.object_id = valid_data["object_id"]
+        if getattr(endpoint.data_class, 'dependable_fields_sync', None):
+            test_data.request.data = endpoint.data_class.dependable_fields_sync(adcm_api_fs, test_data.request.data)
         final_test_data_list.append(TestDataWithPreparedBody(test_data, prepared_field_values))
 
     return adcm_api_fs, final_test_data_list

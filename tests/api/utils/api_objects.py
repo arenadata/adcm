@@ -64,6 +64,8 @@ class ADCMTestApiWrapper:
         """
         url = self.get_url_for_endpoint(endpoint=request.endpoint, method=request.method, object_id=request.object_id)
         url_params = request.url_params.copy()
+        if request.method == Methods.LIST:
+            url_params.update({"limit": 200})
 
         step_name = f"Send {request.method.name} {url.replace(self._base_url, '')}"
         if url_params:
