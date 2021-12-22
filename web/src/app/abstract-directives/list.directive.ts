@@ -56,7 +56,7 @@ export abstract class ListDirective extends BaseDirective implements OnInit, OnD
       const list = data.results;
       this.data = new MatTableDataSource<any>(list);
       this.changeCount(data.count);
-      if (list.length) {
+      if (Array.isArray(list)) {
         this.listItemEvt.emit({ cmd: 'onLoad', row: list[0] });
       }
     }
