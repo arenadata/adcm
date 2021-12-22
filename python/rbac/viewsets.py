@@ -13,7 +13,8 @@
 """RBAC Permissions classes"""
 
 from rest_framework import viewsets
-from rest_framework.permissions import DjangoModelPermissions, DjangoObjectPermissions, SAFE_METHODS
+from rest_framework.permissions import DjangoModelPermissions, DjangoObjectPermissions
+from guardian.shortcuts import get_objects_for_user
 
 
 class DjangoModelPerm(DjangoModelPermissions):
@@ -48,21 +49,19 @@ class DjangoObjectPerm(DjangoObjectPermissions):
     }
 
     def has_permission(self, request, view):
-        if all((request.user, request.user.is_active, request.user.is_authenticated)):
+        model_cls = self._queryset(view).model
+        model_perms = self.get_required_permissions(request.method, model_cls)
+        objects = get_objects_for_user(request.user, model_perms)
+        if objects:
             return True
-        if request.user.is_superuser:
-            return True
-        return False
+        return super().has_permission(request, view)
 
     def has_object_permission(self, request, view, obj):
-        model_name = obj.__class__.__name__.lower()
-        if request.method in SAFE_METHODS:
-            return True
-        if request.method == 'DELETE' and request.user.has_perm(f'delete_{model_name}', obj):
-            return True
-        if request.method in ['PUT', 'PATCH'] and request.user.has_perm(
-            f'change_{model_name}', obj
-        ):
+        model_cls = self._queryset(view).model
+        user = request.user
+        model_perms = self.get_required_permissions(request.method, model_cls)
+        object_perms = self.get_required_object_permissions(request.method, model_cls)
+        if user.has_perms(object_perms, obj) or user.has_perms(model_perms):
             return True
         return False
 
@@ -70,7 +69,7 @@ class DjangoObjectPerm(DjangoObjectPermissions):
 class ModelPermViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
     """Replace of DRF ModelViewSet with view permission"""
 
-    permission_classes = (DjangoModelPerm,)
+    permission_classes = (DjangoObjectPerm,)
 
 
 class GenericPermViewSet(
@@ -78,4 +77,4 @@ class GenericPermViewSet(
 ):
     """Replace of DRF GenericViewSet with view permission"""
 
-    permission_classes = (DjangoModelPerm,)
+    permission_classes = (DjangoObjectPerm,)

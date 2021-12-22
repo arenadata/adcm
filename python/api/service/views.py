@@ -33,8 +33,6 @@ from cm.models import Cluster, ClusterObject, Prototype, ClusterBind, HostCompon
 
 from . import serializers
 
-from rbac.viewsets import DjangoObjectPerm
-
 
 def check_service(kwargs):
     service = check_obj(ClusterObject, kwargs['service_id'])
@@ -85,7 +83,6 @@ class ServiceDetailView(DetailViewRO):
     queryset = ClusterObject.objects.all()
     serializer_class = serializers.ServiceDetailSerializer
     serializer_class_ui = serializers.ServiceUISerializer
-    permission_classes = (DjangoObjectPerm,)
 
     def get(self, request, *args, **kwargs):
         """

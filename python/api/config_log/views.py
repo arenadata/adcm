@@ -23,7 +23,6 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
 ):
     queryset = ConfigLog.objects.all()
     serializer_class = ConfigLogSerializer
-    permission_classes = (DjangoModelPerm,)
     ui_serializer_class = UIConfigLogSerializer
     filterset_fields = ('id', 'obj_ref')
     ordering_fields = ('id',)

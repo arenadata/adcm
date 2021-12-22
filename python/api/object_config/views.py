@@ -20,4 +20,3 @@ from api.api_views import DjangoModelPerm
 class ObjectConfigViewSet(ReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = ObjectConfig.objects.all()
     serializer_class = ObjectConfigSerializer
-    permission_classes = (DjangoModelPerm,)
