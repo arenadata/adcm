@@ -498,6 +498,46 @@ roles:
               codenames:
                 - unmap_host_from
 
+    - name: View host-components
+      description: The ability to view cluster's host-component page
+      type: business
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      any_category: true
+      category:
+        - ADCM
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - view_host_components_of
+
+    - name: Edit host-components
+      description: The ability to edit cluster's host-component page
+      type: business
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      any_category: true
+      category:
+        - ADCM
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - edit_host_components_of
+
     - name: Upgrade cluster bundle
       description: Update the cluster bundle
       type: hidden
@@ -1026,6 +1066,7 @@ roles:
       class_name: ParentRole
       child:
         - Base role
+        - View host-components
         - View configurations
         - View imports
 
@@ -1054,6 +1095,7 @@ roles:
       class_name: ParentRole
       child:
         - Service Administrator
+        - Edit host-components
         - Add service
         - Remove service
         - Remove hosts
