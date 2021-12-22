@@ -13,12 +13,12 @@
 import os
 from enum import Enum
 from operator import methodcaller
-from typing import Callable, NamedTuple, Union
+from typing import Callable, NamedTuple, Union, List
 
 import allure
 import pytest
 from adcm_client.base import NoSuchEndpointOrAccessIsDenied, BaseAPIObject
-from adcm_client.objects import ADCMClient, User
+from adcm_client.objects import ADCMClient, User, Group
 from adcm_client.wrappers.api import AccessIsDenied
 from adcm_pytest_plugin.utils import catch_failed, random_string
 
@@ -124,7 +124,7 @@ def user_policy(request, user, sdk_client_fs, prepare_objects):
     Create testing role and policy
     Parametrize this fixture with `use_role` decorator
     """
-    return create_policy(sdk_client_fs, user, request.param, *prepare_objects)
+    return create_policy(sdk_client_fs, request.param, objects=prepare_objects, users=[user], groups=[])
 
 
 def use_role(role: BusinessRoles):
@@ -182,7 +182,7 @@ def delete_policy(policy):
     policy.delete()
 
 
-def create_policy(sdk_client, user, permission: BusinessRoles, *objects):
+def create_policy(sdk_client, permission: BusinessRoles, objects: list, users: List[User], groups: List[Group]):
     """Create a new policy for the user and role"""
     role_name = permission.value.role_name
 
@@ -194,7 +194,7 @@ def create_policy(sdk_client, user, permission: BusinessRoles, *objects):
         child=[{"id": business_role.id}],
     )
     policy = sdk_client.policy_create(
-        name=f"Policy with role {role_name} on the user {user.username}", role=role, objects=objects, user=[user]
+        name=f"Policy with role {role_name}", role=role, objects=objects, user=users, group=groups
     )
     return policy
 
