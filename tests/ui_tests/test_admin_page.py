@@ -88,7 +88,7 @@ class TestAdminSettingsPage:
             settings_page.config.clear_search()
         with allure.step(
             f'Click on {params["group"]} group and check {params["field_display_name"]} '
-            f'is not presented after group roll up'
+            'is not presented after group roll up'
         ):
             with expect_rows_amount_change(get_rows_func):
                 settings_page.config.click_on_group(params['group'])
