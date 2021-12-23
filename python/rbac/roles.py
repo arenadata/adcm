@@ -17,7 +17,7 @@ from django.contrib.contenttypes.models import ContentType
 from guardian.models import UserObjectPermission, GroupObjectPermission
 from adwp_base.errors import raise_AdwpEx as err
 from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
-from cm.models import Action, ClusterObject, ServiceComponent, Host
+from cm.models import Action, ClusterObject, ServiceComponent, Host, HostComponent
 
 
 class AbstractRole:
@@ -140,10 +140,20 @@ class ParentRole(AbstractRole):
                     self.find_and_apply(service, policy, role, user, group)
                     for comp in ServiceComponent.obj.filter(service=service):
                         self.find_and_apply(comp, policy, role, user, group)
+                for host in Host.obj.filter(cluster=obj):
+                    self.find_and_apply(host, policy, role, user, group)
 
             elif obj.prototype.type == 'service':
                 for comp in ServiceComponent.obj.filter(service=obj):
                     self.find_and_apply(comp, policy, role, user, group)
+                for hc in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
+                    self.find_and_apply(hc.host, policy, role, user, group)
+
+            elif obj.prototype.type == 'component':
+                for hc in HostComponent.obj.filter(
+                    cluster=obj.cluster, service=obj.service, component=obj
+                ):
+                    self.find_and_apply(hc.host, policy, role, user, group)
 
             elif obj.prototype.type == 'provider':
                 for host in Host.obj.filter(provider=obj):
