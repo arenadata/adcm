@@ -362,6 +362,7 @@ class ADCMEntity(ADCMModel):
     state = models.CharField(max_length=64, default='created')
     _multi_state = models.JSONField(default=dict, db_column='multi_state')
     concerns = models.ManyToManyField('ConcernItem', blank=True, related_name='%(class)s_entities')
+    policy_object = GenericRelation('rbac.PolicyObject')
 
     class Meta:
         abstract = True
