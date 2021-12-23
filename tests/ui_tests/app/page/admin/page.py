@@ -233,8 +233,8 @@ class AdminUsersPage(GeneralAdminPage):
     def delete_user(self, username: str):
         """Delete existing user"""
         user_row = self.get_user_row_by_username(username)
-        delete_button = self.find_child(user_row, AdminUsersLocators.Row.delete_btn)
-        delete_button.click()
+        self.find_child(user_row, AdminUsersLocators.Row.select_checkbox).click()
+        self.find_and_click(AdminUsersLocators.Row.delete_btn)
         self.wait_element_visible(DeleteDialog.body)
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)

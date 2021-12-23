@@ -50,6 +50,7 @@ class AdminUsersLocators:
             ".//button[.//mat-icon[text()='done']]",
             "Confirm password update button in row",
         )
+        select_checkbox = Locator(By.XPATH, ".//span[.//input[@type='checkbox']]", "Select user checkbox in row")
         delete_btn = Locator(By.XPATH, ".//button[.//mat-icon[text()='delete']]", "Delete user button in row")
 
     class AddUserPopup:
