@@ -95,7 +95,10 @@ class Role(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['name', 'bundle', 'built_in'], name='unique_role')
+            models.UniqueConstraint(fields=['name', 'built_in'], name='unique_name'),
+            models.UniqueConstraint(
+                fields=['display_name', 'built_in'], name='unique_display_name'
+            ),
         ]
         indexes = [
             models.Index(fields=['name', 'display_name']),
