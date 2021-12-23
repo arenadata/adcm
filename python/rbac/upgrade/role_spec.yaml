@@ -678,7 +678,7 @@ roles:
       category:
         - ADCM
       apps:
-        - label: auth
+        - label: rbac
           models:
             - name: user
               codenames:
@@ -693,7 +693,7 @@ roles:
       category:
         - ADCM
       apps:
-        - label: auth
+        - label: rbac
           models:
             - name: user
               codenames:
@@ -708,7 +708,7 @@ roles:
       category:
         - ADCM
       apps:
-        - label: auth
+        - label: rbac
           models:
             - name: user
               codenames:
@@ -723,7 +723,7 @@ roles:
       category:
         - ADCM
       apps:
-        - label: auth
+        - label: rbac
           models:
             - name: user
               codenames:
@@ -798,7 +798,7 @@ roles:
       category:
         - ADCM
       apps:
-        - label: auth
+        - label: rbac
           models:
             - name: group
               codenames:
@@ -813,7 +813,7 @@ roles:
       category:
         - ADCM
       apps:
-        - label: auth
+        - label: rbac
           models:
             - name: group
               codenames:
@@ -828,7 +828,7 @@ roles:
       category:
         - ADCM
       apps:
-        - label: auth
+        - label: rbac
           models:
             - name: group
               codenames:
@@ -843,7 +843,7 @@ roles:
       category:
         - ADCM
       apps:
-        - label: auth
+        - label: rbac
           models:
             - name: group
               codenames:
