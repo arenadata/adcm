@@ -593,7 +593,7 @@ roles:
               codenames:
                 - do_upgrade_of
 
-    - name: Upgrade infrastrucutre bundle
+    - name: Upgrade infrastructure bundle
       description: Update the provider bundle
       type: business
       parametrized_by:
@@ -1128,8 +1128,25 @@ roles:
         - Remove hosts
         - Map hosts
         - Unmap hosts
-        - Upgrade bundle
+        - Upgrade application bundle
         - Create host
+        - Upload bundle
+        - Remove bundle
+
+    - name: Provider Administrator
+      type: role
+      parametrized_by:
+        - provider
+        - hosts
+      init_params:
+        app_name: cm
+        model: Cluster
+      module_name: rbac.roles
+      class_name: ParentRole
+      child:
+        - Upgrade infrastructure bundle
+        - Create host
+        - Remove hosts
         - Upload bundle
         - Remove bundle
 
