@@ -267,12 +267,17 @@ def update_obj(dest, source, fields):
 
 def extend_role(name, children):
     role = Role.objects.get(name=name)
-    for child_role in children:
-        role.child.add(child_role)
+    role.child.add(*children)
 
-def cook_roles(bundle):
+
+def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too-many-lines
     parent = {}
-    top_parent = {'Cluster Administrator': [], 'ADCM Administrator': [], 'Service Administrator': []}
+    top_parent = {
+        'Cluster Administrator': [],
+        'ADCM Administrator': [],
+        'Service Administrator': [],
+    }
+
     category = ProductCategory.objects.get(value=bundle.name)
     for act in Action.objects.filter(prototype__bundle=bundle):
         name_prefix = f'{act.prototype.type} action:'.title()
@@ -306,7 +311,7 @@ def cook_roles(bundle):
                     'prototype__bundle_id': bundle.id,
                 },
             },
-            parametrized_by_type=act.prototype.type,
+            parametrized_by_type=[act.prototype.type],
         )
         role.save()
         role.category.add(category)
@@ -327,7 +332,9 @@ def cook_roles(bundle):
             type=RoleTypes.business,
             module_name='rbac.roles',
             class_name='ParentRole',
-            parametrized_by_type=parent_value['parametrized_by_type']
+            parametrized_by_type=[
+                parent_value['parametrized_by_type'],
+            ],
         )
 
         if is_created:
@@ -338,16 +345,20 @@ def cook_roles(bundle):
 
         if parent_value['parametrized_by_type'] == 'cluster':
             parent_role.category.add(category)
-            for top_parent_name in {'Cluster Administrator', 'ADCM Administrator'}:
+            for top_parent_name in ['Cluster Administrator', 'ADCM Administrator']:
                 top_parent[top_parent_name].append(parent_role)
-        elif parent_value['parametrized_by_type'] in {'service', 'component'}:
+        elif parent_value['parametrized_by_type'] in ['service', 'component']:
             parent_role.category.add(category)
-            for top_parent_name in {'Cluster Administrator', 'ADCM Administrator', 'Service Administrator'}:
+            for top_parent_name in [
+                'Cluster Administrator',
+                'ADCM Administrator',
+                'Service Administrator',
+            ]:
                 top_parent[top_parent_name].append(parent_role)
         elif parent_value['parametrized_by_type'] == 'provider':
-                top_parent['ADCM Administrator'].append(parent_role)
+            top_parent['ADCM Administrator'].append(parent_role)
         elif parent_value['parametrized_by_type'] == 'host':
-            for top_parent_name in {'Cluster Administrator', 'ADCM Administrator'}:
+            for top_parent_name in ['Cluster Administrator', 'ADCM Administrator']:
                 top_parent[top_parent_name].append(parent_role)
 
     for name, children in top_parent.items():
