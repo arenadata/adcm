@@ -145,7 +145,7 @@ def test_remove_hosts(user_policy: Policy, user_sdk: ADCMClient, prepare_objects
     with allure.step("Assert that policy is valid after object removing"):
         user_policy.reread()
 
-    new_policy = create_policy(sdk_client_fs, user, BusinessRoles.RemoveHosts, second_host)
+    new_policy = create_policy(sdk_client_fs, BusinessRoles.RemoveHosts, objects=[second_host], users=[user], groups=[])
     delete_policy(new_policy)
     is_denied(second_host, BusinessRoles.RemoveHosts)
 
@@ -203,7 +203,9 @@ def test_upgrade_bundle(user_policy, user_sdk: ADCMClient, prepare_objects, seco
     is_denied(second_cluster, BusinessRoles.UpgradeBundle)
     is_denied(second_provider, BusinessRoles.UpgradeBundle)
 
-    new_policy = create_policy(sdk_client_fs, user, BusinessRoles.UpgradeBundle, second_cluster, second_provider)
+    new_policy = create_policy(
+        sdk_client_fs, BusinessRoles.UpgradeBundle, objects=[second_cluster, second_provider], users=[user], groups=[]
+    )
     delete_policy(new_policy)
     is_denied(second_cluster, BusinessRoles.UpgradeBundle)
     is_denied(second_provider, BusinessRoles.UpgradeBundle)
@@ -251,7 +253,9 @@ def test_remove_provider(user_policy, user_sdk: ADCMClient, prepare_objects, sec
     is_allowed(provider, BusinessRoles.RemoveHostProvider)
     is_denied(second_provider, BusinessRoles.RemoveHostProvider)
 
-    new_policy = create_policy(sdk_client_fs, user, BusinessRoles.UpgradeBundle, second_provider)
+    new_policy = create_policy(
+        sdk_client_fs, BusinessRoles.UpgradeBundle, objects=[second_provider], users=[user], groups=[]
+    )
     delete_policy(new_policy)
     is_denied(second_provider, BusinessRoles.RemoveHostProvider)
 
@@ -279,7 +283,9 @@ def test_remove_cluster(user_policy, user_sdk: ADCMClient, prepare_objects, seco
     is_allowed(cluster, BusinessRoles.RemoveCluster)
     is_denied(second_cluster, BusinessRoles.RemoveCluster)
 
-    new_policy = create_policy(sdk_client_fs, user, BusinessRoles.UpgradeBundle, second_cluster)
+    new_policy = create_policy(
+        sdk_client_fs, BusinessRoles.UpgradeBundle, objects=[second_cluster], users=[user], groups=[]
+    )
     delete_policy(new_policy)
     is_denied(second_cluster, BusinessRoles.RemoveCluster)
 
