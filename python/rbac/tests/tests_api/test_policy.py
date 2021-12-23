@@ -26,7 +26,6 @@ def test_create_policy(admin_api_client):
             {
                 "name": ["This field is required."],
                 "role": ["This field is required."],
-                "user": ["This field is required."],
             },
         ),
         (
@@ -34,7 +33,6 @@ def test_create_policy(admin_api_client):
             {
                 "name": ["Not a valid string."],
                 "role": ["This field is required."],
-                "user": ["This field is required."],
             },
         ),
         (
@@ -42,7 +40,6 @@ def test_create_policy(admin_api_client):
             {
                 "name": ["Not a valid string."],
                 "role": ["This field is required."],
-                "user": ["This field is required."],
             },
         ),
         (
@@ -50,25 +47,22 @@ def test_create_policy(admin_api_client):
             {
                 "name": ["This field may not be null."],
                 "role": ["This field is required."],
-                "user": ["This field is required."],
             },
         ),
         (
             {"name": "test", "role": None},
-            {"role": ["This field may not be null."], "user": ["This field is required."]},
+            {"role": ["This field may not be null."]},
         ),
         (
             {"name": "test", "role": 1},
             {
                 "role": {"non_field_errors": ["Invalid data. Expected a dictionary, but got int."]},
-                "user": ["This field is required."],
             },
         ),
         (
             {"name": "test", "role": "string"},
             {
                 "role": {"non_field_errors": ["Invalid data. Expected a dictionary, but got str."]},
-                "user": ["This field is required."],
             },
         ),
         (
@@ -77,111 +71,109 @@ def test_create_policy(admin_api_client):
                 "role": {
                     "non_field_errors": ["Invalid data. Expected a dictionary, but got list."]
                 },
-                "user": ["This field is required."],
             },
         ),
         (
             {"name": "test", "role": {}},
-            {"role": {"id": ["This field is required."]}, "user": ["This field is required."]},
+            {"role": {"id": ["This field is required."]}},
         ),
         (
             {"name": "test", "role": {"id": None}},
-            {"role": {"id": ["This field may not be null."]}, "user": ["This field is required."]},
+            {"role": {"id": ["This field may not be null."]}},
         ),
         (
             {"name": "test", "role": {"id": 1000}},
             {
                 "role": {"id": ["Invalid pk \"1000\" - object does not exist."]},
-                "user": ["This field is required."],
             },
         ),
         (
             {"name": "test", "role": {"id": "string"}},
             {
                 "role": {"id": ["Incorrect type. Expected pk value, received str."]},
-                "user": ["This field is required."],
             },
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": None},
+            {"name": "test", "role": {"id": 1}},
+            {"role": ["Role with type \"business\" could not be used in policy"]},
+        ),
+        (
+            {"name": "test", "role": {"id": 5}},
+            {"role": ["Role with type \"hidden\" could not be used in policy"]},
+        ),
+        (
+            {"name": "test", "role": {"id": 65}, "user": None},
             {"user": ["This field may not be null."]},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": 1},
+            {"name": "test", "role": {"id": 65}, "user": 1},
             {"user": {"non_field_errors": ["Expected a list of items but got type \"int\"."]}},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": "string"},
+            {"name": "test", "role": {"id": 65}, "user": "string"},
             {"user": {"non_field_errors": ["Expected a list of items but got type \"str\"."]}},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": {}},
+            {"name": "test", "role": {"id": 65}, "user": {}},
             {"user": {"non_field_errors": ["Expected a list of items but got type \"dict\"."]}},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": [1]},
+            {"name": "test", "role": {"id": 65}, "user": [1]},
             {"user": [{"non_field_errors": ["Invalid data. Expected a dictionary, but got int."]}]},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": ["string"]},
+            {"name": "test", "role": {"id": 65}, "user": ["string"]},
             {"user": [{"non_field_errors": ["Invalid data. Expected a dictionary, but got str."]}]},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": [{}]},
+            {"name": "test", "role": {"id": 65}, "user": [{}]},
             {"user": [{"id": ["This field is required."]}]},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": [{"id": None}]},
+            {"name": "test", "role": {"id": 65}, "user": [{"id": None}]},
             {"user": [{"id": ["This field may not be null."]}]},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": [{"id": "string"}]},
+            {"name": "test", "role": {"id": 65}, "user": [{"id": "string"}]},
             {"user": [{"id": ["Incorrect type. Expected pk value, received str."]}]},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": [{"id": 1000}]},
+            {"name": "test", "role": {"id": 65}, "user": [{"id": 1000}]},
             {"user": [{"id": ["Invalid pk \"1000\" - object does not exist."]}]},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": [{"id": 3}], "object": None},
+            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": None},
             {"object": ["This field may not be null."]},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": [{"id": 3}], "object": 1},
+            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": 1},
             {"object": ["the field does not match the scheme"]},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": [{"id": 3}], "object": "string"},
+            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": "string"},
             {"object": ["the field does not match the scheme"]},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": [{"id": 3}], "object": {}},
+            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": {}},
             {"object": ["the field does not match the scheme"]},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": [{"id": 3}], "object": [1]},
+            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": [1]},
             {"object": ["the field does not match the scheme"]},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": [{"id": 3}], "object": ["string"]},
+            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": ["string"]},
             {"object": ["the field does not match the scheme"]},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": [{"id": 3}], "object": [{}]},
+            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": [{}]},
             {"object": ["the field does not match the scheme"]},
         ),
         (
-            {"name": "test", "role": {"id": 1}, "user": [{"id": 3}], "object": [{"id": 1}]},
+            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": [{"id": 1}]},
             {"object": ["the field does not match the scheme"]},
         ),
     ]
-
-    admin_api_client.post(
-        reverse("rbac:role-list"), data={"name": "test", "parametrized_by_type": []}, format='json'
-    )
-    admin_api_client.post(
-        reverse("rbac:user-list"), data={"username": "test", "password": "test"}, format='json'
-    )
 
     for request_data, response_data in data:
         response = admin_api_client.post(url, data=request_data, format='json')

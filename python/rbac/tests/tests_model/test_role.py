@@ -38,5 +38,4 @@ def test_default():
     assert role.class_name == ''
     assert role.init_params == {}
     assert role.built_in is True
-    assert role.category == []
     assert role.parametrized_by_type == []

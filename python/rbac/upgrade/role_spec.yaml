@@ -1137,7 +1137,7 @@ roles:
       type: role
       parametrized_by:
         - provider
-        - hosts
+        - host
       init_params:
         app_name: cm
         model: Cluster

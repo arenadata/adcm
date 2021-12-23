@@ -15,10 +15,15 @@
 import pytest
 from rest_framework.test import APIClient
 
+from init_db import init
+from rbac.upgrade.upgrade_role import init_roles
+
 
 @pytest.fixture
-def admin_api_client(admin_user):  # pylint: disable=unused-argument
+def admin_api_client():  # pylint: disable=unused-argument
     """Superuser API client"""
+    init()
+    init_roles()
     client = APIClient()
-    client.login(username='admin', password='password')
+    client.login(username='admin', password='admin')
     return client
