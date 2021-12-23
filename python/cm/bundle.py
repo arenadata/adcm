@@ -265,11 +265,23 @@ def update_obj(dest, source, fields):
         setattr(dest, f, getattr(source, f))
 
 
-def cook_roles(bundle):
+def extend_role(name, children):
+    role = Role.objects.get(name=name)
+    role.child.add(*children)
+
+
+def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too-many-lines
     parent = {}
+    top_parent = {
+        'Cluster Administrator': [],
+        'ADCM Administrator': [],
+        'Service Administrator': [],
+    }
+
     category = ProductCategory.objects.get(value=bundle.name)
     for act in Action.objects.filter(prototype__bundle=bundle):
-        name = act.display_name
+        name_prefix = f'{act.prototype.type} action:'.title()
+        name = f'{name_prefix} {act.display_name}'
         model = get_model_by_type(act.prototype.type)
         if act.prototype.type == 'component':
             serv_name = f'service_{act.prototype.parent.name}_'
@@ -299,32 +311,58 @@ def cook_roles(bundle):
                     'prototype__bundle_id': bundle.id,
                 },
             },
+            parametrized_by_type=[act.prototype.type],
         )
         role.save()
         role.category.add(category)
-        if name not in parent:
-            parent[name] = []
-        parent[name].append(role)
         ct = ContentType.objects.get_for_model(model)
         perm, _ = Permission.objects.get_or_create(
             content_type=ct, codename='run_object_action', name='Can run actions'
         )
         role.permissions.add(perm)
+        if name not in parent:
+            parent[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
+        parent[name]['children'].append(role)
 
-    for name, children in parent.items():
-        role = Role(
-            name=f'{name}',
-            display_name=f'{name}',
-            description=f'action(s) {name}',
-            bundle=bundle,
+    for parent_name, parent_value in parent.items():
+        parent_role, is_created = Role.objects.get_or_create(
+            name=f'{parent_name}',
+            display_name=f'{parent_name}',
+            description=f'{parent_name}',
             type=RoleTypes.business,
             module_name='rbac.roles',
             class_name='ParentRole',
+            parametrized_by_type=[
+                parent_value['parametrized_by_type'],
+            ],
         )
-        role.save()
-        role.category.add(category)
-        for action_role in children:
-            role.child.add(action_role)
+
+        if is_created:
+            log.info('Create business permission "%s"', parent_name)
+
+        for action_role in parent_value['children']:
+            parent_role.child.add(action_role)
+
+        if parent_value['parametrized_by_type'] == 'cluster':
+            parent_role.category.add(category)
+            for top_parent_name in ['Cluster Administrator', 'ADCM Administrator']:
+                top_parent[top_parent_name].append(parent_role)
+        elif parent_value['parametrized_by_type'] in ['service', 'component']:
+            parent_role.category.add(category)
+            for top_parent_name in [
+                'Cluster Administrator',
+                'ADCM Administrator',
+                'Service Administrator',
+            ]:
+                top_parent[top_parent_name].append(parent_role)
+        elif parent_value['parametrized_by_type'] == 'provider':
+            top_parent['ADCM Administrator'].append(parent_role)
+        elif parent_value['parametrized_by_type'] == 'host':
+            for top_parent_name in ['Cluster Administrator', 'ADCM Administrator']:
+                top_parent[top_parent_name].append(parent_role)
+
+    for name, children in top_parent.items():
+        extend_role(name, children)
 
 
 def re_check_actions():
