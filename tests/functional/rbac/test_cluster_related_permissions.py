@@ -98,6 +98,41 @@ def test_manage_imports(user_policy: Policy, user_sdk: ADCMClient, prepare_objec
         is_denied(base_object, BusinessRoles.ManageImports, second_service)
 
 
+@use_role(BusinessRoles.ViewHostComponents)
+def test_view_hostcomponents(user_policy: Policy, user_sdk: ADCMClient, prepare_objects, second_objects):
+    """Test that View host-components role is ok"""
+    cluster, _, component, _, host = as_user_objects(user_sdk, prepare_objects)
+    cluster_via_admin, *_, host_via_admin = prepare_objects
+    second_cluster, *_ = as_user_objects(user_sdk, second_objects)
+    cluster_via_admin.host_add(host_via_admin)
+
+    is_allowed(cluster, BusinessRoles.ViewHostComponents)
+    is_denied(second_cluster, BusinessRoles.ViewHostComponents)
+    is_denied(cluster, BusinessRoles.EditHostComponents, (host, component))
+    delete_policy(user_policy)
+    is_denied(cluster, BusinessRoles.ViewHostComponents)
+
+
+@use_role(BusinessRoles.EditHostComponents)
+def test_edit_hostcomponents(user_policy: Policy, user_sdk: ADCMClient, prepare_objects, second_objects):
+    """Test that View host-components role is ok"""
+    cluster, _, component, _, host = as_user_objects(user_sdk, prepare_objects)
+    cluster_via_admin, *_, host_via_admin = prepare_objects
+    second_cluster, _, second_component, _, second_host = as_user_objects(user_sdk, second_objects)
+    second_cluster_via_admin, *_, second_host_via_admin = second_objects
+
+    cluster_via_admin.host_add(host_via_admin)
+    second_cluster_via_admin.host_add(second_host_via_admin)
+
+    is_allowed(cluster, BusinessRoles.ViewHostComponents)
+    is_allowed(cluster, BusinessRoles.EditHostComponents, (host, component))
+    is_denied(second_cluster, BusinessRoles.ViewHostComponents)
+    is_denied(second_cluster, BusinessRoles.EditHostComponents, (second_host, second_component))
+    delete_policy(user_policy)
+    is_denied(cluster, BusinessRoles.ViewHostComponents)
+    is_denied(cluster, BusinessRoles.EditHostComponents)
+
+
 @use_role(BusinessRoles.AddService)
 def test_add_service(user_policy: Policy, user_sdk: ADCMClient, prepare_objects, second_objects):
     """Test that Add service role is ok"""
