@@ -18,8 +18,9 @@ import { select, Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
 import { filter, switchMap, tap } from 'rxjs/operators';
 
-import { ChannelService, keyChannelStrim } from '../channel.service';
+import { ChannelService, keyChannelStrim, ResponseError } from '../channel.service';
 import { ConfigService, IVersionInfo } from '../config.service';
+import { ErrorSnackBarComponent } from '@app/components/error-snack-bar/error-snack-bar.component';
 
 @Injectable()
 export class AppService {
@@ -29,7 +30,7 @@ export class AppService {
     private router: Router,
     private dialog: MatDialog,
     private channel: ChannelService,
-    public snackBar: MatSnackBar
+    public snackBar: MatSnackBar,
   ) {}
 
   getRootAndCheckAuth() {
@@ -99,6 +100,19 @@ export class AppService {
             panelClass: 'snack-bar-notify',
           };
       this.snackBar.open(astr[0], 'Hide', data);
+    });
+
+    // error
+    this.channel.on<ResponseError>(keyChannelStrim.error).subscribe((respError) => {
+      const message =
+        respError.statusText === 'Unknown Error' || respError.statusText === 'Gateway Timeout'
+          ? 'No connection to back-end. Check your internet connection.'
+          : `[ ${respError.statusText.toUpperCase()} ] ${respError.error.code ? ` ${respError.error.code} -- ${respError.error.desc}` : respError.error?.detail || ''}`;
+
+      this.snackBar.openFromComponent(ErrorSnackBarComponent, {
+        panelClass: 'snack-bar-error',
+        data: { message, args: respError.error?.args },
+      });
     });
 
   }
