@@ -11,6 +11,7 @@
 # limitations under the License.
 
 """Test cases of permissions deleting"""
+import allure
 from adcm_client.objects import ADCMClient
 
 from tests.functional.rbac.conftest import BusinessRoles, create_policy, is_allowed, is_denied
@@ -24,7 +25,8 @@ def test_remove_user_from_policy(user_sdk: ADCMClient, user, prepare_objects, sd
     cluster = user_sdk.cluster(id=cluster_via_admin.id)
     policy = create_policy(sdk_client_fs, BusinessRoles.ViewConfigurations, objects=[cluster], users=[user], groups=[])
     is_allowed(cluster, BusinessRoles.ViewConfigurations)
-    policy.update(user=[{"id": sdk_client_fs.user(username="admin").id}])
+    with allure.step("Remove user from policy"):
+        policy.update(user=[{"id": sdk_client_fs.user(username="admin").id}])
     is_denied(cluster, BusinessRoles.ViewConfigurations)
 
 
@@ -40,7 +42,8 @@ def test_remove_group_from_policy(user_sdk: ADCMClient, user, prepare_objects, s
         sdk_client_fs, BusinessRoles.ViewConfigurations, objects=[cluster], users=[user], groups=[group]
     )
     is_allowed(cluster, BusinessRoles.ViewConfigurations)
-    policy.update(group=[{"id": empty_group.id}])
+    with allure.step("Remove group from policy"):
+        policy.update(group=[{"id": empty_group.id}])
     is_denied(cluster, BusinessRoles.ViewConfigurations)
 
 
@@ -53,7 +56,8 @@ def test_remove_user_from_group(user_sdk: ADCMClient, user, prepare_objects, sdk
     group = sdk_client_fs.group_create("test_group", user=[{"id": user.id}])
     create_policy(sdk_client_fs, BusinessRoles.ViewConfigurations, objects=[cluster], users=[user], groups=[group])
     is_allowed(cluster, BusinessRoles.ViewConfigurations)
-    group.update(user=[])
+    with allure.step("Remove user from group"):
+        group.update(user=[])
     is_denied(cluster, BusinessRoles.ViewConfigurations)
 
 
@@ -63,10 +67,13 @@ def test_remove_object_from_policy(user_sdk: ADCMClient, user, prepare_objects, 
     """
     cluster_via_admin, service_via_admin, *_ = prepare_objects
     cluster = user_sdk.cluster(id=cluster_via_admin.id)
+    service = user_sdk.service(id=service_via_admin.id)
     policy = create_policy(sdk_client_fs, BusinessRoles.ViewConfigurations, objects=[cluster], users=[user], groups=[])
     is_allowed(cluster, BusinessRoles.ViewConfigurations)
-    policy.update(object=[{"id": service_via_admin.id, "type": "service"}])
+    with allure.step("Change policy object from cluster to service"):
+        policy.update(object=[{"id": service_via_admin.id, "type": "service"}])
     is_denied(cluster, BusinessRoles.ViewConfigurations)
+    is_allowed(service, BusinessRoles.ViewConfigurations)
 
 
 def test_change_child_role(user_sdk: ADCMClient, user, prepare_objects, sdk_client_fs):
@@ -78,13 +85,14 @@ def test_change_child_role(user_sdk: ADCMClient, user, prepare_objects, sdk_clie
     policy = create_policy(sdk_client_fs, BusinessRoles.ViewConfigurations, objects=[cluster], users=[user], groups=[])
     is_allowed(cluster, BusinessRoles.ViewConfigurations)
 
-    role = sdk_client_fs.role_create(
-        name="Another role",
-        display_name="Another role",
-        parametrized_by=["cluster", "service", "component", "host", "provider"],
-        child=[{"id": sdk_client_fs.role(name=BusinessRoles.ViewImports.value.role_name).id}],
-    )
-    policy.update(role={"id": role.id})
+    with allure.step("Change role from 'View configuration' to 'View imports'"):
+        role = sdk_client_fs.role_create(
+            name="Another role",
+            display_name="Another role",
+            parametrized_by=["cluster", "service", "component", "host", "provider"],
+            child=[{"id": sdk_client_fs.role(name=BusinessRoles.ViewImports.value.role_name).id}],
+        )
+        policy.update(role={"id": role.id})
     is_allowed(cluster, BusinessRoles.ViewImports)
     is_denied(cluster, BusinessRoles.ViewConfigurations)
 
@@ -100,13 +108,14 @@ def test_remove_user_from_policy_but_still_in_group(user_sdk: ADCMClient, user, 
         sdk_client_fs, BusinessRoles.ViewConfigurations, objects=[cluster], users=[user], groups=[group]
     )
     is_allowed(cluster, BusinessRoles.ViewConfigurations)
-    policy.update(user=[{"id": sdk_client_fs.user(username="admin").id}])
+    with allure.step("Remove user from policy"):
+        policy.update(user=[{"id": sdk_client_fs.user(username="admin").id}])
     is_allowed(cluster, BusinessRoles.ViewConfigurations)
 
 
-def test_remove_user_from_group_but_still_in_another_group(user_sdk: ADCMClient, user, prepare_objects, sdk_client_fs):
+def test_remove_group_with_user_but_still_in_another_group(user_sdk: ADCMClient, user, prepare_objects, sdk_client_fs):
     """
-    Test that user is still have access if user removed from group but is in another group
+    Test that user is still have access if removed group with user but user is in another group
     """
     cluster_via_admin, *_ = prepare_objects
     cluster = user_sdk.cluster(id=cluster_via_admin.id)
@@ -116,7 +125,8 @@ def test_remove_user_from_group_but_still_in_another_group(user_sdk: ADCMClient,
         sdk_client_fs, BusinessRoles.ViewConfigurations, objects=[cluster], users=[], groups=[group, another_group]
     )
     is_allowed(cluster, BusinessRoles.ViewConfigurations)
-    policy.update(group=[{"id": another_group.id}])
+    with allure.step("Remove user from group"):
+        policy.update(group=[{"id": another_group.id}])
     is_allowed(cluster, BusinessRoles.ViewConfigurations)
 
 
@@ -130,9 +140,12 @@ def test_remove_another_object_from_policy(user_sdk: ADCMClient, user, prepare_o
     policy = create_policy(
         sdk_client_fs, BusinessRoles.ViewConfigurations, objects=[cluster, service], users=[user], groups=[]
     )
-    is_allowed(service, BusinessRoles.ViewConfigurations)
-    policy.update(object=[{"id": cluster.id, "type": "cluster"}])
     is_allowed(cluster, BusinessRoles.ViewConfigurations)
+    is_allowed(service, BusinessRoles.ViewConfigurations)
+    with allure.step("Remove object from policy"):
+        policy.update(object=[{"id": cluster.id, "type": "cluster"}])
+    is_allowed(cluster, BusinessRoles.ViewConfigurations)
+    is_allowed(service, BusinessRoles.ViewConfigurations)
 
 
 def test_remove_policy_but_exists_same_policy(user_sdk: ADCMClient, user, prepare_objects, sdk_client_fs):
@@ -146,7 +159,6 @@ def test_remove_policy_but_exists_same_policy(user_sdk: ADCMClient, user, prepar
         sdk_client_fs, BusinessRoles.ViewConfigurations, objects=[cluster], users=[user], groups=[]
     )
     is_allowed(cluster, BusinessRoles.ViewConfigurations)
-    policy.update(object=[{"id": cluster.id, "type": "cluster"}])
-    is_allowed(cluster, BusinessRoles.ViewConfigurations)
-    second_policy.delete()
+    with allure.step("Remove second policy"):
+        second_policy.delete()
     is_allowed(cluster, BusinessRoles.ViewConfigurations)
