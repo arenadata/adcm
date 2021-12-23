@@ -135,7 +135,6 @@ class TestAdminSettingsPage:
             settings_page.config.assert_input_value_is(params['init_value'], params['field_display_name'])
 
 
-@pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2456")
 class TestAdminUsersPage:
     """Tests for the /admin/users"""
 
@@ -151,8 +150,17 @@ class TestAdminUsersPage:
     def test_new_user_creation(self, users_page: AdminUsersPage):
         """Create new user, change password and login with new password"""
 
-        params = {'username': 'testuser', 'password': 'test_pass', 'new_password': 'testtest'}
-        users_page.create_user(params['username'], params['password'])
+        params = {
+            'username': 'testuser',
+            'password': 'test_pass',
+            'new_password': 'testtest',
+            'first_name': 'First',
+            'last_name': 'Last',
+            'email': 'priv@et.ru',
+        }
+        users_page.create_user(
+            params['username'], params['password'], params['first_name'], params['last_name'], params['email']
+        )
         with allure.step(f'Check user {params["username"]} is listed in users list'):
             assert users_page.is_user_presented(params['username']), f'User {params["username"]} was not created'
         users_page.change_user_password(params['username'], params['new_password'])
@@ -166,10 +174,19 @@ class TestAdminUsersPage:
     def test_delete_user(self, users_page: AdminUsersPage):
         """Create new user, delete it and check current user can't be deleted"""
 
-        params = {'username': 'testuser', 'password': 'test_pass', 'current_user': 'admin'}
+        params = {
+            'username': 'testuser',
+            'password': 'test_pass',
+            'current_user': 'admin',
+            'first_name': 'First',
+            'last_name': 'Last',
+            'email': 'priv@et.ru',
+        }
         users_page.check_delete_button_not_presented(params['current_user'])
         with allure.step(f'Create user {params["username"]}'):
-            users_page.create_user(params['username'], params['password'])
+            users_page.create_user(
+                params['username'], params['password'], params['first_name'], params['last_name'], params['email']
+            )
             assert users_page.is_user_presented(params['username']), f'User {params["username"]} was not created'
         with allure.step(f'Delete user {params["username"]}'):
             users_page.delete_user(params['username'])
@@ -181,13 +198,14 @@ class TestAdminUsersPage:
         """Change admin password, login with new credentials"""
 
         params = {'username': 'admin', 'password': 'new_pass'}
+        users_page.update_user_info(params['username'], first_name='Best', last_name='Admin')
         users_page.change_user_password(**params)
         with allure.step('Check Login page is opened'):
             login_page = LoginPage(users_page.driver, users_page.base_url)
             login_page.wait_page_is_opened()
         login_page.login_user(**params)
         with allure.step('Check login was successful'):
-            users_page.wait_page_is_opened(timeout=8)
+            users_page.wait_page_is_opened(timeout=5)
 
 
 class TestAdminRolesPage:
