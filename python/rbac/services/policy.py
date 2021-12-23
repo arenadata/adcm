@@ -140,4 +140,5 @@ def policy_update(policy: Policy, **kwargs) -> Policy:
         update_m2m_field(policy.object, [_get_policy_object(obj) for obj in objects])
 
     policy.save()
+    policy.apply()
     return policy
