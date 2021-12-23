@@ -98,7 +98,9 @@ class PreparedFieldValue:  # pylint: disable=too-few-public-methods,function-red
                 return dbfiller.generate_new_value_for_unchangeable_fk_field(
                     f_type=self.f_type, current_field_value=current_field_value
                 )
-            return self.f_type.generate()
+            if isinstance(self.f_type, GenericForeignKeyList):
+                return dbfiller.generate_new_value_for_generic_foreign_key_list(current_value=current_field_value)
+            return self.f_type.generate_new(current_field_value)
 
         return self.value
 
@@ -211,6 +213,17 @@ class PositiveInt(BaseType):
         return randint(self._min_int64, self._max_int64)
 
 
+class SmallIntegerID(BaseType):
+    """Sort of technical type to represent small integer ID to use as a value for foreign keys"""
+
+    def __init__(self, max_value: int, **kwargs):
+        super().__init__(**kwargs)
+        self.max_value = max_value
+
+    def generate(self, **kwargs):
+        return random.randint(1, self.max_value + 1)
+
+
 class Boolean(BaseType):
     """Boolean field type"""
 
@@ -221,19 +234,6 @@ class Boolean(BaseType):
 
     def generate(self, **kwargs):
         return random.choice([True, False])
-
-
-class StaticBoolean(BaseType):
-    """Boolean field type that is always True or False"""
-
-    value: bool
-
-    def __init__(self, value: bool, **kwargs):
-        super().__init__(**kwargs)
-        self.value = value
-
-    def generate(self, **kwargs):
-        return self.value
 
 
 class String(BaseType):

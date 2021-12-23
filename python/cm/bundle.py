@@ -271,14 +271,20 @@ def cook_roles(bundle):
     for act in Action.objects.filter(prototype__bundle=bundle):
         name = act.display_name
         model = get_model_by_type(act.prototype.type)
+        if act.prototype.type == 'component':
+            serv_name = f'service_{act.prototype.parent.name}_'
+        else:
+            serv_name = ''
         role_name = (
-            f'{bundle.name}_{bundle.version}_{bundle.edition}_'
-            f'{act.prototype.type}_{act.prototype.display_name}_{name}'
+            f'{bundle.name}_{bundle.version}_{bundle.edition}_{serv_name}'
+            f'{act.prototype.type}_{act.prototype.display_name}_{act.name}'
         )
         role = Role(
             name=role_name,
             display_name=role_name,
-            description=f'run action {name} of {act.prototype.type} {act.prototype.display_name}',
+            description=(
+                f'run action {act.name} of {act.prototype.type} {act.prototype.display_name}'
+            ),
             bundle=bundle,
             type=RoleTypes.hidden,
             module_name='rbac.roles',
