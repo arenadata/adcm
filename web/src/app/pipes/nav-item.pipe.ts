@@ -25,6 +25,10 @@ export class NavItemPipe implements PipeTransform {
         return 'hostproviders';
       case 'group_config':
         return 'groupconfigs';
+      case 'job':
+        return 'jobs';
+      case 'bundle':
+        return 'bundles';
     }
   }
 
@@ -60,6 +64,10 @@ export class NavItemPipe implements PipeTransform {
         return group ? `/${path[index].typeName}` : `/${path[index].typeName}/${path[index].id}`;
       case 'provider':
         return group ? `/${path[index].typeName}` : `/${path[index].typeName}/${path[index].id}`;
+      case 'job':
+        return group ? `/task` : `/${path[index].typeName}/${path[index].id}/main`;
+      case 'bundle':
+        return group ? `/${path[index].typeName}` : `/${path[index].typeName}/${path[index].id}/main`;
       case 'group_config':
         cluster = path[0];
         const { object_type, object_id, id } = (path[index] as unknown as ApiFlat);
@@ -76,13 +84,11 @@ export class NavItemPipe implements PipeTransform {
             `/${path[index - 3].typeName}/${path[index - 3].id}/service/${path[index - 2].id}/component/${path[index-1].id}/group_config/${id}`
           );
         }
-      {
         return group ? (
           `/${object_type}/${object_id}/group_config`
         ) : (
           `/${object_type}/${object_id}/group_config/${id}`
         );
-      }
 
     }
   }
