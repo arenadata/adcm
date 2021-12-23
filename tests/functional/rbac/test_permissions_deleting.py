@@ -150,11 +150,11 @@ def test_remove_another_object_from_policy(user_sdk: ADCMClient, user, prepare_o
 
 def test_remove_policy_but_exists_same_policy(user_sdk: ADCMClient, user, prepare_objects, sdk_client_fs):
     """
-    Test that user is still have access if removed policy but we still have policy with the same rights
+    Test that user is still have access if removed policy but we still have another policy with the same rights
     """
     cluster_via_admin, *_ = prepare_objects
     cluster = user_sdk.cluster(id=cluster_via_admin.id)
-    policy = create_policy(sdk_client_fs, BusinessRoles.ViewConfigurations, objects=[cluster], users=[user], groups=[])
+    create_policy(sdk_client_fs, BusinessRoles.ViewConfigurations, objects=[cluster], users=[user], groups=[])
     second_policy = create_policy(
         sdk_client_fs, BusinessRoles.ViewConfigurations, objects=[cluster], users=[user], groups=[]
     )
