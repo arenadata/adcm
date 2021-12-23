@@ -14,6 +14,7 @@
 
 from rest_framework import viewsets
 from rest_framework.permissions import DjangoModelPermissions, DjangoObjectPermissions
+from guardian.shortcuts import get_objects_for_user
 
 
 class DjangoModelPerm(DjangoModelPermissions):
@@ -47,11 +48,28 @@ class DjangoObjectPerm(DjangoObjectPermissions):
         'DELETE': ['%(app_label)s.delete_%(model_name)s'],
     }
 
+    def has_permission(self, request, view):
+        model_cls = self._queryset(view).model
+        model_perms = self.get_required_permissions(request.method, model_cls)
+        objects = get_objects_for_user(request.user, model_perms)
+        if objects:
+            return True
+        return super().has_permission(request, view)
+
+    def has_object_permission(self, request, view, obj):
+        model_cls = self._queryset(view).model
+        user = request.user
+        model_perms = self.get_required_permissions(request.method, model_cls)
+        object_perms = self.get_required_object_permissions(request.method, model_cls)
+        if user.has_perms(object_perms, obj) or user.has_perms(model_perms):
+            return True
+        return False
+
 
 class ModelPermViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
     """Replace of DRF ModelViewSet with view permission"""
 
-    permission_classes = (DjangoModelPerm,)
+    permission_classes = (DjangoObjectPerm,)
 
 
 class GenericPermViewSet(
@@ -59,4 +77,4 @@ class GenericPermViewSet(
 ):
     """Replace of DRF GenericViewSet with view permission"""
 
-    permission_classes = (DjangoModelPerm,)
+    permission_classes = (DjangoObjectPerm,)
