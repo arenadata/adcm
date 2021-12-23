@@ -76,6 +76,7 @@ class AdminRolesLocators:
 
     class RoleRow:
         """Row with role info"""
+
         checkbox = Locator(By.CSS_SELECTOR, "mat-checkbox", "Role checkbox")
         name = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Role name")
         description = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(3)", "Role description")
