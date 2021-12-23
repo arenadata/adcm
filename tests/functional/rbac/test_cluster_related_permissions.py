@@ -115,7 +115,7 @@ def test_view_hostcomponents(user_policy: Policy, user_sdk: ADCMClient, prepare_
 
 @use_role(BusinessRoles.EditHostComponents)
 def test_edit_hostcomponents(user_policy: Policy, user_sdk: ADCMClient, prepare_objects, second_objects):
-    """Test that View host-components role is ok"""
+    """Test that Edit host-components role is ok"""
     cluster, _, component, _, host = as_user_objects(user_sdk, prepare_objects)
     cluster_via_admin, *_, host_via_admin = prepare_objects
     second_cluster, _, second_component, _, second_host = as_user_objects(user_sdk, second_objects)
