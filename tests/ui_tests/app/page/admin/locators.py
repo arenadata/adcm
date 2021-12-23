@@ -66,7 +66,6 @@ class AdminUsersLocators:
         email = Locator(By.NAME, "email", "New user email")
         create_button = Locator(By.XPATH, "//button[./span[contains(text(), 'Create')]]", "Create user save button")
         update_button = Locator(By.XPATH, "//button[./span[contains(text(), 'Update')]]", "Update user save button")
-        save_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Add user save button")
 
 
 class AdminRolesLocators:
@@ -76,6 +75,7 @@ class AdminRolesLocators:
     delete_btn = Locator(By.CSS_SELECTOR, ".controls>button", "Delete role button")
 
     class RoleRow:
+        """Row with role info"""
         checkbox = Locator(By.CSS_SELECTOR, "mat-checkbox", "Role checkbox")
         name = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "Role name")
         description = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(3)", "Role description")

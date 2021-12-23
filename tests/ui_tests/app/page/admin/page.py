@@ -78,7 +78,9 @@ class GeneralAdminPage(BasePageObject):
             raise AttributeError('MAIN_ELEMENTS should contain at least 1 element')
         self.assert_displayed_elements(self.MAIN_ELEMENTS)
 
+    @allure.step("Check admin toolbar")
     def check_admin_toolbar(self):
+        """Check that admin toolbar has all required elements in place"""
         self.assert_displayed_elements([CommonToolbarLocators.admin_link])
 
     @allure.step('Open Admin Intro page by left menu item click')
@@ -197,7 +199,7 @@ class AdminUsersPage(GeneralAdminPage):
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
         email: Optional[str] = None,
-    ): # pylint: disable-next=too-many-arguments
+    ):  # pylint: disable-next=too-many-arguments
         """Update some of fields for user"""
         if not (password or first_name or last_name or email):
             raise ValueError("You should provide at least one field's value to make an update")
@@ -273,7 +275,8 @@ class AdminRolesPage(GeneralAdminPage):
 
     @allure.step('Check default roles')
     def check_default_roles(self):
-        dafault_roles = [
+        """Check default roles are listed on admin page"""
+        default_roles = [
             AdminRoleInfo(name='ADCM User', description='', permissions='View configurations, View imports, Base role'),
             AdminRoleInfo(
                 name='Service Administrator',
@@ -297,4 +300,4 @@ class AdminRolesPage(GeneralAdminPage):
         ]
 
         roles = self.get_all_roles_info()
-        assert roles == dafault_roles, "Some default roles are wrong or missing"
+        assert roles == default_roles, "Some default roles are wrong or missing"
