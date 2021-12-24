@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from typing import List
-
+from adwp_base.errors import raise_AdwpEx as err
 from rest_framework.exceptions import ValidationError
 
 from rbac.models import Role, RoleTypes
@@ -35,8 +35,8 @@ def check_child_parametrized(child_param, param_list) -> bool:
     if ((child_param == 'provider') and bool(cluster_hierarchy & set(param_list))) or (
         (child_param in cluster_hierarchy) and ('provider' in param_list)
     ):
-        errors = {'child': ['This children parametrized by types from different hierarchy']}
-        raise ValidationError(errors)
+        msg = {'This children parametrized by types from different hierarchy'}
+        raise err('ROLE_CREATE_ERROR', msg)
     return child_param in param_list
 
 
