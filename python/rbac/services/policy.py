@@ -140,7 +140,8 @@ def policy_update(policy: Policy, **kwargs) -> Policy:
         update_m2m_field(policy.group, groups)
     if objects is not None:
         update_m2m_field(policy.object, [_get_policy_object(obj) for obj in objects])
-
-    policy.save()
-    policy.apply()
+    try:
+        policy.save()
+    except IntegrityError as exc:
+        raise AdwpEx('POLICY_UPDATE_ERROR', msg=f'Policy update failed with error {exc}') from exc
     return policy
