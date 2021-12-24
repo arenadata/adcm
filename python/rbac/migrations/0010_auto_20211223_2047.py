@@ -24,4 +24,9 @@ class Migration(migrations.Migration):
                 fields=('display_name', 'built_in'), name='unique_display_name'
             ),
         ),
+        migrations.AlterField(
+            model_name='policy',
+            name='name',
+            field=models.CharField(max_length=255, unique=True),
+        ),
     ]
