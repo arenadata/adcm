@@ -60,7 +60,10 @@ def role_update(role: Role, **kwargs) -> Role:
     kwargs.pop('name', None)
     for key, value in kwargs.items():
         setattr(role, key, value)
-    role.save()
+    try:
+        role.save()
+    except IntegrityError as exc:
+        raise AdwpEx('ROLE_UPDATE_ERROR', msg=f'Role update failed with error {exc}') from exc
 
     if child is not None:
         update_m2m_field(role.child, child)
