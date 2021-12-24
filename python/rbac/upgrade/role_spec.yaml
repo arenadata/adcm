@@ -163,21 +163,40 @@ roles:
             codenames:
               - view
 
-    - name: View configurations
-      description: The ability to view all configurations
+    - name: View application configurations
+      description: The ability to view the configuration of cluster, service and component.
       type: business
       module_name: rbac.roles
       class_name: ParentRole
       any_category: true
+      parametrized_by:
+        - cluster
+        - service
+        - component
       category:
         - ADCM
       child:
         - View cluster configurations
         - View service configurations
         - View component configurations
+        - View config endpoints
+
+    - name: View infrastrucutre configurations
+      description: The ability to view configuration of provider and host.
+      type: business
+      module_name: rbac.roles
+      class_name: ParentRole
+      any_category: true
+      parametrized_by:
+        - provider
+        - host
+      category:
+        - ADCM
+      child:
         - View provider configurations
         - View host configurations
         - View config endpoints
+
 
     - name: Edit cluster configurations
       description: The ability to change and add new cluster configuration
@@ -286,18 +305,37 @@ roles:
                 - view
                 - change
 
-    - name: Edit configurations
-      description: The ability to edit all configurations
+    - name: Edit application configurations
+      description: The ability to edit the configuration of cluster, service and component.
       type: business
       module_name: rbac.roles
       class_name: ParentRole
       any_category: true
+      parametrized_by:
+        - cluster
+        - service
+        - component
       category:
         - ADCM
       child:
         - Edit cluster configurations
         - Edit service configurations
         - Edit component configurations
+        - Edit config endpoints
+
+    - name: Edit infrastrucutre configurations
+      description: The ability to edit the configuration of provider and host
+      type: business
+      module_name: rbac.roles
+      class_name: ParentRole
+      any_category: true
+      parametrized_by:
+        - cluster
+        - service
+        - component
+      category:
+        - ADCM
+      child:
         - Edit provider configurations
         - Edit host configurations
         - Edit config endpoints
@@ -538,9 +576,9 @@ roles:
               codenames:
                 - edit_host_components_of
 
-    - name: Upgrade cluster bundle
+    - name: Upgrade application bundle
       description: Update the cluster bundle
-      type: hidden
+      type: business
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -555,9 +593,9 @@ roles:
               codenames:
                 - do_upgrade_of
 
-    - name: Upgrade provider bundle
+    - name: Upgrade infrastructure bundle
       description: Update the provider bundle
-      type: hidden
+      type: business
       parametrized_by:
         - provider
       module_name: rbac.roles
@@ -571,18 +609,6 @@ roles:
             - name: hostprovider
               codenames:
                 - do_upgrade_of
-
-    - name: Upgrade bundle
-      description: Update all type of bundles
-      type: business
-      module_name: rbac.roles
-      class_name: ParentRole
-      any_category: true
-      category:
-        - ADCM
-      child:
-        - Upgrade cluster bundle
-        - Upgrade provider bundle
 
     - name: Remove cluster
       description: The ability to remove cluster
@@ -1067,7 +1093,8 @@ roles:
       child:
         - Base role
         - View host-components
-        - View configurations
+        - View application configurations
+        - View infrastrucutre configurations
         - View imports
 
     - name: Service Administrator
@@ -1081,7 +1108,7 @@ roles:
       class_name: ParentRole
       child:
         - ADCM User
-        - Edit configurations
+        - Edit application configurations
         - Manage imports
 
     - name: Cluster Administrator
@@ -1101,8 +1128,25 @@ roles:
         - Remove hosts
         - Map hosts
         - Unmap hosts
-        - Upgrade bundle
+        - Upgrade application bundle
         - Create host
+        - Upload bundle
+        - Remove bundle
+
+    - name: Provider Administrator
+      type: role
+      parametrized_by:
+        - provider
+        - host
+      init_params:
+        app_name: cm
+        model: Cluster
+      module_name: rbac.roles
+      class_name: ParentRole
+      child:
+        - Upgrade infrastructure bundle
+        - Create host
+        - Remove hosts
         - Upload bundle
         - Remove bundle
 
