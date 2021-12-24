@@ -60,7 +60,7 @@ export class AppService {
       tap((status) => {
         if (status === 'open') this.channel.next(keyChannelStrim.notifying, 'Connection established.');
         if (status === 'close') {
-          this.channel.next(keyChannelStrim.notifying, 'Connection lost. Recovery attempt.::error');
+          this.channel.next<string>(keyChannelStrim.error, 'Connection lost. Recovery attempt.');
           this.store.dispatch(rootError());
         }
       })
@@ -91,28 +91,31 @@ export class AppService {
     this.router.events.pipe(filter((e) => e instanceof NavigationStart)).subscribe(() => this.dialog.closeAll());
 
     // notification
-    this.channel.on<string>(keyChannelStrim.notifying).subscribe((m) => {
-      const astr = m.split('::');
-      const data = astr[1]
-        ? { panelClass: 'snack-bar-error' }
-        : {
-            duration: 5000,
-            panelClass: 'snack-bar-notify',
-          };
-      this.snackBar.open(astr[0], 'Hide', data);
+    this.channel.on<string>(keyChannelStrim.notifying).subscribe((message) => {
+      this.snackBar.open(message, 'Hide', {
+        duration: 5000,
+        panelClass: 'snack-bar-notify',
+      });
     });
 
     // error
-    this.channel.on<ResponseError>(keyChannelStrim.error).subscribe((respError) => {
-      const message =
-        respError.statusText === 'Unknown Error' || respError.statusText === 'Gateway Timeout'
-          ? 'No connection to back-end. Check your internet connection.'
-          : `[ ${respError.statusText.toUpperCase()} ] ${respError.error.code ? ` ${respError.error.code} -- ${respError.error.desc}` : respError.error?.detail || ''}`;
+    this.channel.on<ResponseError | string>(keyChannelStrim.error).subscribe((respError) => {
+      if (typeof respError === 'string') {
+        this.snackBar.openFromComponent(ErrorSnackBarComponent, {
+          panelClass: 'snack-bar-error',
+          data: { message: respError },
+        });
+      } else {
+        const message =
+          respError.statusText === 'Unknown Error' || respError.statusText === 'Gateway Timeout'
+            ? 'No connection to back-end. Check your internet connection.'
+            : `[ ${respError.statusText.toUpperCase()} ] ${respError.error.code ? ` ${respError.error.code} -- ${respError.error.desc}` : respError.error?.detail || ''}`;
 
-      this.snackBar.openFromComponent(ErrorSnackBarComponent, {
-        panelClass: 'snack-bar-error',
-        data: { message, args: respError.error?.args },
-      });
+        this.snackBar.openFromComponent(ErrorSnackBarComponent, {
+          panelClass: 'snack-bar-error',
+          data: { message, args: respError.error?.args },
+        });
+      }
     });
 
   }
