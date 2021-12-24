@@ -53,7 +53,7 @@ class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
             'any_category',
         )
         extra_kwargs = {
-            'parametrized_by_type': {'required': True},
+            'parametrized_by_type': {'read_only': True},
             'built_in': {'read_only': True},
             'type': {'read_only': True},
             'any_category': {'read_only': True},
