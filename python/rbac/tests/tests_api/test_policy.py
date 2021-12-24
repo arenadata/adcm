@@ -102,75 +102,75 @@ def test_create_policy(admin_api_client):
             {"role": ["Role with type \"hidden\" could not be used in policy"]},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": None},
+            {"name": "test", "role": {"id": 67}, "user": None},
             {"user": ["This field may not be null."]},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": 1},
+            {"name": "test", "role": {"id": 67}, "user": 1},
             {"user": {"non_field_errors": ["Expected a list of items but got type \"int\"."]}},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": "string"},
+            {"name": "test", "role": {"id": 67}, "user": "string"},
             {"user": {"non_field_errors": ["Expected a list of items but got type \"str\"."]}},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": {}},
+            {"name": "test", "role": {"id": 67}, "user": {}},
             {"user": {"non_field_errors": ["Expected a list of items but got type \"dict\"."]}},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": [1]},
+            {"name": "test", "role": {"id": 67}, "user": [1]},
             {"user": [{"non_field_errors": ["Invalid data. Expected a dictionary, but got int."]}]},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": ["string"]},
+            {"name": "test", "role": {"id": 67}, "user": ["string"]},
             {"user": [{"non_field_errors": ["Invalid data. Expected a dictionary, but got str."]}]},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": [{}]},
+            {"name": "test", "role": {"id": 67}, "user": [{}]},
             {"user": [{"id": ["This field is required."]}]},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": [{"id": None}]},
+            {"name": "test", "role": {"id": 67}, "user": [{"id": None}]},
             {"user": [{"id": ["This field may not be null."]}]},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": [{"id": "string"}]},
+            {"name": "test", "role": {"id": 67}, "user": [{"id": "string"}]},
             {"user": [{"id": ["Incorrect type. Expected pk value, received str."]}]},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": [{"id": 1000}]},
+            {"name": "test", "role": {"id": 67}, "user": [{"id": 1000}]},
             {"user": [{"id": ["Invalid pk \"1000\" - object does not exist."]}]},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": None},
+            {"name": "test", "role": {"id": 67}, "user": [{"id": 2}], "object": None},
             {"object": ["This field may not be null."]},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": 1},
+            {"name": "test", "role": {"id": 67}, "user": [{"id": 2}], "object": 1},
             {"object": ["the field does not match the scheme"]},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": "string"},
+            {"name": "test", "role": {"id": 67}, "user": [{"id": 2}], "object": "string"},
             {"object": ["the field does not match the scheme"]},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": {}},
+            {"name": "test", "role": {"id": 67}, "user": [{"id": 2}], "object": {}},
             {"object": ["the field does not match the scheme"]},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": [1]},
+            {"name": "test", "role": {"id": 67}, "user": [{"id": 2}], "object": [1]},
             {"object": ["the field does not match the scheme"]},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": ["string"]},
+            {"name": "test", "role": {"id": 67}, "user": [{"id": 2}], "object": ["string"]},
             {"object": ["the field does not match the scheme"]},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": [{}]},
+            {"name": "test", "role": {"id": 67}, "user": [{"id": 2}], "object": [{}]},
             {"object": ["the field does not match the scheme"]},
         ),
         (
-            {"name": "test", "role": {"id": 65}, "user": [{"id": 2}], "object": [{"id": 1}]},
+            {"name": "test", "role": {"id": 67}, "user": [{"id": 2}], "object": [{"id": 1}]},
             {"object": ["the field does not match the scheme"]},
         ),
     ]
