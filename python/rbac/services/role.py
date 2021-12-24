@@ -36,7 +36,7 @@ def check_child_parametrized(child_param, param_list) -> bool:
         (child_param in cluster_hierarchy) and ('provider' in param_list)
     ):
         msg = {'This children parametrized by types from different hierarchy'}
-        raise err('ROLE_CREATE_ERROR', msg)
+        raise err('ROLE_ERROR', msg)
     return child_param in param_list
 
 
