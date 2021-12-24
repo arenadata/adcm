@@ -15,6 +15,7 @@ from typing import List
 
 from adwp_base.errors import AdwpEx
 from django.contrib.contenttypes.models import ContentType
+from django.db import IntegrityError
 from django.db.transaction import atomic
 from rest_framework import status
 
@@ -91,9 +92,10 @@ def policy_create(name: str, role: Role, built_in: bool = False, **kwargs):
 
     objects = kwargs.get('object', [])
     _check_objects(role, objects)
-
-    policy = Policy.objects.create(name=name, role=role, built_in=built_in)
-
+    try:
+        policy = Policy.objects.create(name=name, role=role, built_in=built_in)
+    except IntegrityError as exc:
+        raise AdwpEx('POLICY_CREATE_ERROR', msg=f'Policy creation failed with error {exc}') from exc
     for obj in objects:
         policy.object.add(_get_policy_object(obj))
 

@@ -67,7 +67,6 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
         allow_blank=True,
         required=False,
         default='',
-        validators=[UniqueValidator(queryset=models.User.objects.all())],
     )
     is_superuser = serializers.BooleanField(default=False)
     password = PasswordField(trim_whitespace=False)
