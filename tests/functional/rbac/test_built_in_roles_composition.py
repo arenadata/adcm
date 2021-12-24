@@ -22,11 +22,15 @@ from tests.functional.rbac.conftest import BusinessRoles
 ADCM_ADMIN_ROLES = {role.value.role_name for role in BusinessRoles}
 ADCM_USER_ROLES = {
     role.value.role_name
-    for role in (BusinessRoles.ViewConfigurations, BusinessRoles.ViewImports, BusinessRoles.ViewHostComponents)
+    for role in (
+        BusinessRoles.ViewApplicationConfigurations,
+        BusinessRoles.ViewImports,
+        BusinessRoles.ViewHostComponents,
+    )
 }
 SERVICE_ADMIN_ROLES = {
     *ADCM_USER_ROLES,
-    BusinessRoles.EditConfigurations.value.role_name,
+    BusinessRoles.EditApplicationConfigurations.value.role_name,
     BusinessRoles.ManageImports.value.role_name,
 }
 CLUSTER_ADMIN_ROLES = SERVICE_ADMIN_ROLES.union(
@@ -37,13 +41,25 @@ CLUSTER_ADMIN_ROLES = SERVICE_ADMIN_ROLES.union(
             BusinessRoles.AddService,
             BusinessRoles.RemoveService,
             BusinessRoles.RemoveHosts,
-            BusinessRoles.UpgradeBundle,
+            BusinessRoles.UpgradeApplicationBundle,
             BusinessRoles.CreateHost,
             BusinessRoles.UploadBundle,
             BusinessRoles.RemoveBundle,
         )
     }
 )
+
+PROVIDER_ADMIN_ROLES = {
+    role.value.role_name
+    for role in (
+        BusinessRoles.UpgradeInfrastructureBundle,
+        BusinessRoles.EditInfrastructureConfigurations,
+        BusinessRoles.CreateHost,
+        BusinessRoles.RemoveHosts,
+        BusinessRoles.UploadBundle,
+        BusinessRoles.RemoveBundle,
+    )
+}
 
 BASE_ROLES = {
     'Get ADCM object',
@@ -90,6 +106,7 @@ def test_composition(sdk_client_fs: ADCMClient):
         ('ADCM Administrator', ADCM_ADMIN_ROLES),
         ('Cluster Administrator', CLUSTER_ADMIN_ROLES),
         ('Service Administrator', SERVICE_ADMIN_ROLES),
+        ('Provider Administrator', PROVIDER_ADMIN_ROLES),
         ('ADCM User', ADCM_USER_ROLES),
     ):
         with allure.step(f'Check rules for role "{default_role}"'):

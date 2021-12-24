@@ -54,8 +54,12 @@ class BusinessRoles(Enum):
 
     # pylint: disable=invalid-name
 
-    ViewConfigurations = BusinessRole("View configurations", methodcaller("config"))
-    EditConfigurations = BusinessRole("Edit configurations", methodcaller("config_set_diff", {}))
+    ViewApplicationConfigurations = BusinessRole("View application configurations", methodcaller("config"))
+    ViewInfrastructureConfigurations = BusinessRole("View infrastructure configurations", methodcaller("config"))
+    EditApplicationConfigurations = BusinessRole("Edit application configurations", methodcaller("config_set_diff", {}))
+    EditInfrastructureConfigurations = BusinessRole(
+        "Edit infrastructure configurations", methodcaller("config_set_diff", {})
+    )
     ViewImports = BusinessRole("View imports", methodcaller("imports"))
     ManageImports = BusinessRole("Manage imports", lambda x, *args: x.bind(*args))
     ViewHostComponents = BusinessRole("View host-components", methodcaller("hostcomponent"))
@@ -65,15 +69,14 @@ class BusinessRoles(Enum):
     RemoveHosts = BusinessRole("Remove hosts", methodcaller("delete"))
     MapHosts = BusinessRole("Map hosts", lambda x, *args: x.host_add(*args))
     UnmapHosts = BusinessRole("Unmap hosts", lambda x, *args: x.host_delete(*args))
-    UpgradeBundle = BusinessRole("Upgrade bundle", lambda x: x.upgrade().do())
+    UpgradeApplicationBundle = BusinessRole("Upgrade application bundle", lambda x: x.upgrade().do())
+    UpgradeInfrastructureBundle = BusinessRole("Upgrade infrastructure bundle", lambda x: x.upgrade().do())
     CreateHostProvider = BusinessRole(
-        "Create provider", methodcaller("provider_create", name=f"new_provider {random_string(5)}")
+        "Create provider", lambda x: x.provider_create(name=f"new_provider {random_string(5)}")
     )
-    CreateHost = BusinessRole("Create host", methodcaller("host_create", fqdn=f"new_host_{random_string(5)}"))
+    CreateHost = BusinessRole("Create host", lambda x: x.host_create(fqdn=f"new_host_{random_string(5)}"))
     RemoveHostProvider = BusinessRole("Remove provider", methodcaller("delete"))
-    CreateCluster = BusinessRole(
-        "Create cluster", methodcaller("cluster_create", name=f"new_cluster {random_string(5)}")
-    )
+    CreateCluster = BusinessRole("Create cluster", lambda x: x.cluster_create(name=f"new_cluster {random_string(5)}"))
     RemoveCluster = BusinessRole("Remove cluster", methodcaller("delete"))
     UploadBundle = BusinessRole("Upload bundle", methodcaller("upload_from_fs", os.path.join(DATA_DIR, "dummy")))
     RemoveBundle = BusinessRole("Remove bundle", methodcaller("delete"))
@@ -82,7 +85,7 @@ class BusinessRoles(Enum):
     ViewUsers = BusinessRole("View users", methodcaller("user_list"))
     CreateUser = BusinessRole("Create user", methodcaller("user_create", username="test", password="test"))
     RemoveUser = BusinessRole("Remove user", methodcaller("delete"))
-    EditUser = BusinessRole("Edit user", methodcaller("update", first_name=random_string(5)))
+    EditUser = BusinessRole("Edit user", lambda x: x.update(first_name=random_string(5)))
     ViewRoles = BusinessRole("View roles", methodcaller("role_list"))
     CreateCustomRoles = BusinessRole(
         "Create custom role",
@@ -91,17 +94,17 @@ class BusinessRoles(Enum):
         ),
     )
     RemoveRoles = BusinessRole("Remove roles", methodcaller("delete"))
-    EditRoles = BusinessRole("Edit role", methodcaller("update", display_name=random_string(5)))
+    EditRoles = BusinessRole("Edit role", lambda x: x.update(display_name=random_string(5)))
     ViewGroups = BusinessRole("View group", methodcaller("group_list"))
     CreateGroup = BusinessRole("Create group", methodcaller("group_create", name="test"))
     RemoveGroup = BusinessRole("Remove group", methodcaller("delete"))
-    EditGroup = BusinessRole("Edit group", methodcaller("update", name=random_string(5)))
+    EditGroup = BusinessRole("Edit group", lambda x: x.update(name=random_string(5)))
     ViewPolicies = BusinessRole("View policy", methodcaller("policy_list"))
     CreatePolicy = BusinessRole(
         "Create policy", lambda x, **kwargs: x.policy_create(name="Test policy", objects=[], **kwargs)
     )
     RemovePolicy = BusinessRole("Remove policy", methodcaller("delete"))
-    EditPolicy = BusinessRole("Edit policy", methodcaller("update", name=random_string(5)))
+    EditPolicy = BusinessRole("Edit policy", lambda x: x.update(name=random_string(5)))
 
 
 @pytest.fixture()
@@ -133,7 +136,7 @@ def use_role(role: BusinessRoles):
 
 
 @pytest.fixture()
-def prepare_objects(sdk_client_fs, user_sdk):
+def prepare_objects(sdk_client_fs):
     """
     Prepare adcm objects
     Created objects should be used as a `parametrized_by_type` values on policy with tested role
@@ -149,7 +152,7 @@ def prepare_objects(sdk_client_fs, user_sdk):
 
 
 @pytest.fixture()
-def second_objects(sdk_client_fs, user_sdk):
+def second_objects(sdk_client_fs):
     """
     Prepare second adcm objects
     Its objects should not be allowed on tested user
