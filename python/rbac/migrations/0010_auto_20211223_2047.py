@@ -3,20 +3,6 @@
 from django.db import migrations, models
 
 
-def check_name(apps, schema_editor):
-    Role = apps.get_model('rbac', 'Role')
-    for role in Role.objects.all():
-        if len(Role.objects.filter(name=role.name, built_in=role.built_in)) > 1:
-            role.delete()
-
-
-def check_display_name(apps, schema_editor):
-    Role = apps.get_model('rbac', 'Role')
-    for role in Role.objects.all():
-        if len(Role.objects.filter(display_name=role.display_name, built_in=role.built_in)) > 1:
-            role.delete()
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -24,8 +10,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(check_name),
-        migrations.RunPython(check_display_name),
         migrations.RemoveConstraint(
             model_name='role',
             name='unique_role',
