@@ -87,7 +87,7 @@ class Common:
 
     # Common elements
     all_childs = bys.by_css("*")
-    common_popup = bys.by_css("simple-snack-bar")
+    common_popup = bys.by_css("app-error-snack-bar")
 
 
 class Cluster:
