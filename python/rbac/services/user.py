@@ -104,6 +104,12 @@ def update(
     if not partial and not all((arg is not Empty for arg in args)):
         raise AdwpEx('USER_UPDATE_ERROR', msg='Full User update with partial argset is forbidden')
 
+    user_exist = models.User.objects.filter(email=email).exists()
+    if user_exist and (email != ''):
+        email_user = models.User.objects.get(email=email)
+        if email_user != user:
+            raise AdwpEx('USER_UPDATE_ERROR', msg='User with the same email already exist')
+
     set_not_empty_attr(user, partial, 'first_name', first_name, '')
     set_not_empty_attr(user, partial, 'last_name', last_name, '')
     set_not_empty_attr(user, partial, 'email', email, '')
@@ -134,6 +140,11 @@ def create(
         func = models.User.objects.create_superuser
     else:
         func = models.User.objects.create_user
+
+    user_exist = models.User.objects.filter(email=email).exists()
+    if user_exist and (email != ''):
+        raise AdwpEx('USER_CREATE_ERROR', msg='User with the same email already exist')
+
     try:
         user = func(
             username=username,

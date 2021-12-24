@@ -11,7 +11,9 @@
 # limitations under the License.
 
 from typing import List
+
 from adwp_base.errors import AdwpEx
+from django.db import IntegrityError
 from rest_framework.exceptions import ValidationError
 
 from rbac.models import Role, RoleTypes
@@ -50,14 +52,17 @@ def role_create(built_in=False, type_of_role=RoleTypes.role, **kwargs) -> Role:
         name = kwargs.pop('name')
     else:
         name = kwargs['display_name']
-    role = Role.objects.create(
-        name=name,
-        built_in=built_in,
-        type=type_of_role,
-        module_name='rbac.roles',
-        class_name='ParentRole',
-        **kwargs,
-    )
+    try:
+        role = Role.objects.create(
+            name=name,
+            built_in=built_in,
+            type=type_of_role,
+            module_name='rbac.roles',
+            class_name='ParentRole',
+            **kwargs,
+        )
+    except IntegrityError as exc:
+        raise AdwpEx('ROLE_CREATE_ERROR', msg=f'Role creation failed with error {exc}') from exc
     set_parametrized_from_child(role, child)
     role.child.add(*child)
     return role
