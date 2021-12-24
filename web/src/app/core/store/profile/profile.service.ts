@@ -16,7 +16,6 @@ import { Observable, throwError } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
 
 import { AuthService } from '@app/core/auth/auth.service';
-import { RbacUserService } from '@app/services/rbac-user.service';
 import { RbacUserModel } from '@app/models/rbac/rbac-user.model';
 
 const PROFILE_LINK = `${environment.apiRoot}profile/`;
@@ -41,10 +40,10 @@ export interface IUser {
 export class ProfileService {
   private user: RbacUserModel;
 
-  constructor(private http: HttpClient, private auth: AuthService, private userService: RbacUserService) {}
+  constructor(private http: HttpClient, private auth: AuthService) {}
 
   public getProfile(): Observable<IUser> {
-    const source$ = this.userService.getUserByUsername(this.auth.auth.login).pipe(
+    const source$ = this.me().pipe(
       map(user => (!user.profile ? { ...user, profile: this.emptyProfile() } : user)),
       tap(user => (this.user = user))
     );
@@ -61,9 +60,13 @@ export class ProfileService {
     this.user = { ...this.user, profile };
   }
 
+  me(): Observable<RbacUserModel> {
+    return this.http.get<RbacUserModel>(`${environment.apiRoot}rbac/me/`);
+  }
+
   setProfile(): Observable<RbacUserModel> {
-    const { username, profile } = { ...this.user };
-    return this.http.patch<RbacUserModel>(`${this.user.url}`, { username, profile });
+    const { username, password, profile } = { ...this.user };
+    return this.http.put<RbacUserModel>(`${environment.apiRoot}rbac/me/`, { username, password, profile });
   }
 
   setTextareaProfile(data: { key: string; value: number }): Observable<IUser> {
