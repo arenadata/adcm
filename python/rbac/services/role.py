@@ -34,9 +34,8 @@ def role_create(built_in=False, type_of_role=RoleTypes.role, **kwargs) -> Role:
     """Creating Role object"""
     child = kwargs.pop('child', [])
     check_role_child(child)
-    if 'name' in kwargs:
-        name = kwargs.pop('name')
-    else:
+    name = kwargs.pop('name', '')
+    if name == '':
         name = kwargs['display_name']
     try:
         role = Role.objects.create(
