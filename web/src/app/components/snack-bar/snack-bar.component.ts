@@ -2,10 +2,10 @@ import { Component, Inject } from '@angular/core';
 import { MAT_SNACK_BAR_DATA, MatSnackBarRef } from '@angular/material/snack-bar';
 
 @Component({
-  selector: 'app-error-snack-bar',
+  selector: 'app-snack-bar',
   template: `
     <div class="snack-bar-container">
-      <div>
+      <div class="message-wrapper">
         <div class="message">{{ data?.message }}</div>
         <div class="args" *ngIf="data?.args">
           <span class="chip">args</span>
@@ -18,10 +18,13 @@ import { MAT_SNACK_BAR_DATA, MatSnackBarRef } from '@angular/material/snack-bar'
   styles: [`
     .snack-bar-container {
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
       font-size: 14px;
       line-height: 20px;
+    }
+    .message-wrapper {
+      margin-right: 16px;
     }
     .args {
       border-top: 1px solid #78909c;
@@ -36,10 +39,10 @@ import { MAT_SNACK_BAR_DATA, MatSnackBarRef } from '@angular/material/snack-bar'
     }
   `]
 })
-export class ErrorSnackBarComponent {
+export class SnackBarComponent {
 
   constructor(
-    public snackBarRef: MatSnackBarRef<ErrorSnackBarComponent>,
+    public snackBarRef: MatSnackBarRef<SnackBarComponent>,
     @Inject(MAT_SNACK_BAR_DATA) public data: {
       message: string,
       args: string;

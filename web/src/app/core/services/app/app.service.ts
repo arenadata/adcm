@@ -20,7 +20,7 @@ import { filter, switchMap, tap } from 'rxjs/operators';
 
 import { ChannelService, keyChannelStrim, ResponseError } from '../channel.service';
 import { ConfigService, IVersionInfo } from '../config.service';
-import { ErrorSnackBarComponent } from '@app/components/error-snack-bar/error-snack-bar.component';
+import { SnackBarComponent } from '@app/components/snack-bar/snack-bar.component';
 
 @Injectable()
 export class AppService {
@@ -92,16 +92,17 @@ export class AppService {
 
     // notification
     this.channel.on<string>(keyChannelStrim.notifying).subscribe((message) => {
-      this.snackBar.open(message, 'Hide', {
+      this.snackBar.openFromComponent(SnackBarComponent, {
         duration: 5000,
         panelClass: 'snack-bar-notify',
+        data: { message }
       });
     });
 
     // error
     this.channel.on<ResponseError | string>(keyChannelStrim.error).subscribe((respError) => {
       if (typeof respError === 'string') {
-        this.snackBar.openFromComponent(ErrorSnackBarComponent, {
+        this.snackBar.openFromComponent(SnackBarComponent, {
           panelClass: 'snack-bar-error',
           data: { message: respError },
         });
@@ -111,7 +112,7 @@ export class AppService {
             ? 'No connection to back-end. Check your internet connection.'
             : `[ ${respError.statusText.toUpperCase()} ] ${respError.error.code ? ` ${respError.error.code} -- ${respError.error.desc}` : respError.error?.detail || ''}`;
 
-        this.snackBar.openFromComponent(ErrorSnackBarComponent, {
+        this.snackBar.openFromComponent(SnackBarComponent, {
           panelClass: 'snack-bar-error',
           data: { message, args: respError.error?.args },
         });
