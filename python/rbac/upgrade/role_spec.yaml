@@ -330,9 +330,8 @@ roles:
       class_name: ParentRole
       any_category: true
       parametrized_by:
-        - cluster
-        - service
-        - component
+        - provider
+        - host
       category:
         - ADCM
       child:
@@ -377,6 +376,9 @@ roles:
     - name: View imports
       description: The ability to view all imports page on cluster and service
       type: business
+      parametrized_by:
+        - cluster
+        - service
       module_name: rbac.roles
       class_name: ParentRole
       any_category: true
@@ -425,6 +427,9 @@ roles:
     - name: Manage imports
       description: The ability to manage all imports page on cluster and service
       type: business
+      parametrized_by:
+        - cluster
+        - service
       module_name: rbac.roles
       class_name: ParentRole
       any_category: true
@@ -574,6 +579,7 @@ roles:
           models:
             - name: cluster
               codenames:
+                - view_host_components_of
                 - edit_host_components_of
 
     - name: Upgrade application bundle
@@ -693,6 +699,7 @@ roles:
           models:
             - name: adcm
               codenames:
+                - view_config_of
                 - change_config_of
 
     - name: View users
@@ -716,6 +723,8 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
+      child:
+        - View users
       category:
         - ADCM
       apps:
@@ -731,6 +740,8 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
+      child:
+        - View users
       category:
         - ADCM
       apps:
@@ -746,6 +757,8 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
+      child:
+        - View users
       category:
         - ADCM
       apps:
@@ -776,6 +789,8 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
+      child:
+        - View roles
       category:
         - ADCM
       apps:
@@ -791,6 +806,8 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
+      child:
+        - View roles
       category:
         - ADCM
       apps:
@@ -806,6 +823,8 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
+      child:
+        - View roles
       category:
         - ADCM
       apps:
@@ -836,6 +855,8 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
+      child:
+        - View group
       category:
         - ADCM
       apps:
@@ -851,6 +872,8 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
+      child:
+        - View group
       category:
         - ADCM
       apps:
@@ -866,6 +889,8 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
+      child:
+        - View group
       category:
         - ADCM
       apps:
@@ -896,6 +921,8 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
+      child:
+        - View policy
       category:
         - ADCM
       apps:
@@ -911,6 +938,8 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
+      child:
+        - View policy
       category:
         - ADCM
       apps:
@@ -926,6 +955,8 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
+      child:
+        - View policy
       category:
         - ADCM
       apps:
@@ -1077,12 +1108,6 @@ roles:
         - label: cm
           models:
             - name: concernitem
-              codenames:
-                - view
-            - name: bundle
-              codenames:
-                - view
-            - name: action
               codenames:
                 - view
 
