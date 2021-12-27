@@ -51,4 +51,6 @@ class MyselfView(RetrieveUpdateAPIView):
     serializer_class = UserSerializer
 
     def get_object(self):
-        return self.request.user
+        # request user object is disconnected from DB, use another instance
+        user = models.User.objects.get(id=self.request.user.id)
+        return user
