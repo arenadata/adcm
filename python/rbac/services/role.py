@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from typing import List
-from adwp_base.errors import raise_AdwpEx as err
+from adwp_base.errors import AdwpEx
 from rest_framework.exceptions import ValidationError
 
 from rbac.models import Role, RoleTypes
@@ -19,25 +19,17 @@ from rbac.utils import update_m2m_field
 
 
 def set_parametrized_from_child(role, children: List[Role]):
-    param_list = []
+    param_set = set()
+    cluster_hierarchy = {'cluster', 'service', 'component'}
+    provider_hierarchy = {'provider'}
 
     for child in children:
-        child_params = child.parametrized_by_type
-        for child_param in child_params:
-            if not check_child_parametrized(child_param, param_list):
-                param_list.append(child_param)
-    role.parametrized_by_type = param_list
+        param_set.update(child.parametrized_by_type)
+        if param_set.intersection(provider_hierarchy) and param_set.intersection(cluster_hierarchy):
+            msg = {'This children parametrized by types from different hierarchy'}
+            raise AdwpEx('ROLE_ERROR', msg)
+    role.parametrized_by_type = list(param_set)
     role.save()
-
-
-def check_child_parametrized(child_param, param_list) -> bool:
-    cluster_hierarchy = {'cluster', 'service', 'component'}
-    if ((child_param == 'provider') and bool(cluster_hierarchy & set(param_list))) or (
-        (child_param in cluster_hierarchy) and ('provider' in param_list)
-    ):
-        msg = {'This children parametrized by types from different hierarchy'}
-        raise err('ROLE_ERROR', msg)
-    return child_param in param_list
 
 
 def check_role_child(child: List[Role]) -> None:
