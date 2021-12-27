@@ -152,6 +152,7 @@ class HostList(PageView):
                 )
             self.check_host_perm('add_host_to', 'hostprovider', provider)
             return create(serializer)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class HostListProvider(HostList):

@@ -10,6 +10,9 @@ roles:
       class_name: ObjectRole
       parametrized_by:
         - provider
+      init_params:
+        app_name: cm
+        model: HostProvider
       any_category: true
       category:
         - ADCM
