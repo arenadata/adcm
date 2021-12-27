@@ -94,6 +94,8 @@ class HostList(PageView):
     queryset = Host.objects.all()
     serializer_class = serializers.HostSerializer
     serializer_class_ui = serializers.HostUISerializer
+    permission_classes = (IsAuthenticated,)
+    check_host_perm = check_custom_perm
     filterset_class = HostFilter
     filterset_fields = (
         'cluster_id',
@@ -141,7 +143,15 @@ class HostList(PageView):
                 'provider_id': kwargs.get('provider_id', None),
             },
         )
-        return create(serializer)
+        if serializer.is_valid():
+            if 'provider_id' in kwargs:  # List provider hosts
+                provider = check_obj(HostProvider, kwargs['provider_id'])
+            else:
+                provider = serializer.validated_data.get(
+                    'provider_id',
+                )
+            self.check_host_perm('add_host_to', 'hostprovider', provider)
+            return create(serializer)
 
 
 class HostListProvider(HostList):
