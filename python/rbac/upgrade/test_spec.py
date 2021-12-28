@@ -48,6 +48,17 @@ def role_map(spec_data):
     return result
 
 
+@pytest.fixture(scope="module")
+def roots(role_map: dict):
+    roots = role_map.copy()
+    for v in role_map.values():
+        if "child" in role_map:
+            for c in role_map["child"]:
+                if c in roots:
+                    del roots[c]
+    return roots
+
+
 def test_structure(spec_data):
     """Test that role spec is map and has keys version and roles"""
     assert "version" in spec_data
@@ -96,3 +107,22 @@ def test_allowed_parametrization(role_map: dict):
                 assert is_in_set(
                     BUSINESS_PARAMETRISATION, set(v["parametrized_by"])
                 ), f'Wrong parametrization for role "{k}". See ADCM-2498 for more information.'
+
+
+class Visited(Exception):
+    pass
+
+
+def tree_dive_in(roles: dict, visited: dict, path: list, role: dict, root):
+    if role["name"] in visited:
+        raise AssertionError(f'In the tree from \"{root["name"]}\" we got a cycle: {path}')
+    visited[role["name"]] = True
+    if "child" in role:
+        for c in role["child"]:
+            tree_dive_in(roles, visited.copy(), path + [c], roles[c], root)
+
+
+def test_acyclic(role_map: dict, roots: dict):
+    """Check that role specification is a DAG"""
+    for v in roots.values():
+        tree_dive_in(role_map, dict(), [v["name"]], v, v)
