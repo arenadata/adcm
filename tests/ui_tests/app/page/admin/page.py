@@ -285,7 +285,7 @@ class AdminRolesPage(GeneralAdminPage):
                 name='ADCM User',
                 description='',
                 permissions='View application configurations, View infrastructure configurations, View imports, '
-                            'View host-components, Base role',
+                'View host-components, Base role',
             ),
             AdminRoleInfo(
                 name='Service Administrator',
