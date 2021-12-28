@@ -317,9 +317,8 @@ roles:
       class_name: ParentRole
       any_category: true
       parametrized_by:
-        - cluster
-        - service
-        - component
+        - provider
+        - host
       category:
         - ADCM
       child:
@@ -387,6 +386,9 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       any_category: true
+      parametrized_by:
+        - cluster
+        - service
       category:
         - ADCM
       child:
@@ -438,6 +440,9 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       any_category: true
+      parametrized_by:
+        - cluster
+        - service
       category:
         - ADCM
       child:
@@ -1183,31 +1188,3 @@ roles:
         - Upload bundle
         - Remove bundle
 
-    - name: ADCM Administrator
-      type: role
-      module_name: rbac.roles
-      class_name: ParentRole
-      child:
-        - Cluster Administrator
-        - Create provider
-        - Remove provider
-        - Create cluster
-        - Remove cluster
-        - View ADCM settings
-        - Edit ADCM settings
-        - View users
-        - Create user
-        - Remove user
-        - Edit user
-        - View roles
-        - Create custom role
-        - Remove roles
-        - Edit role
-        - View group
-        - Create group
-        - Remove group
-        - Edit group
-        - View policy
-        - Create policy
-        - Remove policy
-        - Edit policy
