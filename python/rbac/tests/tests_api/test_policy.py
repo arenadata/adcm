@@ -32,7 +32,7 @@ def test_create_policy(admin_api_client):
         (
             {"name": []},
             {
-                "name": ["Not a valid string."],
+                "name": ["This value does not match the required pattern."],
                 "role": ["This field is required."],
                 "object": ["This field is required."],
             },
@@ -40,7 +40,7 @@ def test_create_policy(admin_api_client):
         (
             {"name": {}},
             {
-                "name": ["Not a valid string."],
+                "name": ["This value does not match the required pattern."],
                 "role": ["This field is required."],
                 "object": ["This field is required."],
             },

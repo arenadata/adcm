@@ -57,7 +57,11 @@ def cook_role(name, class_name, obj_type=None):
     if obj_type is None:
         obj_type = []
     return Role.objects.create(
-        name=name, module_name='rbac.roles', class_name=class_name, parametrized_by_type=obj_type
+        name=name,
+        display_name=name,
+        module_name='rbac.roles',
+        class_name=class_name,
+        parametrized_by_type=obj_type,
     )
 
 
@@ -612,6 +616,7 @@ def test_object_filter():
 def test_object_filter_error():
     r1 = Role(
         name='view',
+        display_name='view',
         module_name='rbac.roles',
         class_name='ObjectRole',
         init_params={'app_name': 'cm', 'model': 'qwe'},
@@ -623,6 +628,7 @@ def test_object_filter_error():
 
     r2 = Role(
         name='add',
+        display_name='add',
         module_name='rbac.roles',
         class_name='ObjectRole',
         init_params={'app_name': 'qwe', 'model': 'qwe'},
