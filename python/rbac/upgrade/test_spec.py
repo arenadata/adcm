@@ -22,6 +22,7 @@ BUSINESS_PARAMETRISATION = [
     set(["cluster"]),
     set(["cluster", "service"]),
     set(["cluster", "component"]),
+    set(["cluster", "service", "component"]),
     set(["service"]),
     set(["service", "component"]),
     set(["provider", "host"]),
