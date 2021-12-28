@@ -25,42 +25,38 @@ def test_create_role(admin_api_client):
             {},
             {
                 "display_name": ["This field is required."],
-                "parametrized_by_type": ["This field is required."],
             },
         ),
         (
-            {"display_name": [], "parametrized_by_type": "test"},
+            {
+                "display_name": [],
+            },
             {
                 "display_name": ["This value does not match the required pattern."],
-                "parametrized_by_type": ["Not a valid list."],
             },
         ),
         (
-            {"display_name": "test", "parametrized_by_type": ["WrongType"]},
-            {"parametrized_by_type": ["Not a valid object type."]},
-        ),
-        (
-            {"display_name": "test", "parametrized_by_type": [], "description": None},
+            {"display_name": "test", "description": None},
             {"description": ["This field may not be null."]},
         ),
         (
-            {"display_name": "test", "parametrized_by_type": [], "description": []},
+            {"display_name": "test", "description": []},
             {"description": ["Not a valid string."]},
         ),
         (
-            {"display_name": "test", "parametrized_by_type": [], "child": None},
+            {"display_name": "test", "child": None},
             {"child": ["This field may not be null."]},
         ),
         (
-            {"display_name": "test", "parametrized_by_type": [], "child": 1},
+            {"display_name": "test", "child": 1},
             {"child": {"non_field_errors": ["Expected a list of items but got type \"int\"."]}},
         ),
         (
-            {"display_name": "test", "parametrized_by_type": [], "child": "string"},
+            {"display_name": "test", "child": "string"},
             {"child": {"non_field_errors": ["Expected a list of items but got type \"str\"."]}},
         ),
         (
-            {"display_name": "test", "parametrized_by_type": [], "child": [1]},
+            {"display_name": "test", "child": [1]},
             {
                 "child": [
                     {"non_field_errors": ["Invalid data. Expected a dictionary, but got int."]}
@@ -68,7 +64,7 @@ def test_create_role(admin_api_client):
             },
         ),
         (
-            {"display_name": "test", "parametrized_by_type": [], "child": ["string"]},
+            {"display_name": "test", "child": ["string"]},
             {
                 "child": [
                     {"non_field_errors": ["Invalid data. Expected a dictionary, but got str."]}
@@ -76,21 +72,20 @@ def test_create_role(admin_api_client):
             },
         ),
         (
-            {"display_name": "test", "parametrized_by_type": [], "child": [{}]},
+            {"display_name": "test", "child": [{}]},
             {"child": [{"id": ["This field is required."]}]},
         ),
         (
-            {"display_name": "test", "parametrized_by_type": [], "child": [{"id": "string"}]},
+            {"display_name": "test", "child": [{"id": "string"}]},
             {"child": [{"id": ["Incorrect type. Expected pk value, received str."]}]},
         ),
         (
-            {"display_name": "test", "parametrized_by_type": [], "child": [{"id": 1000}]},
+            {"display_name": "test", "child": [{"id": 1000}]},
             {"child": [{"id": ["Invalid pk \"1000\" - object does not exist."]}]},
         ),
         (
             {
                 "display_name": "test",
-                "parametrized_by_type": [],
                 "child": [{"id": 10000000000000000000}],
             },
             {
