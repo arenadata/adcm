@@ -35,6 +35,9 @@ def set_parametrized_from_child(role, children: List[Role]):
 
 
 def check_role_child(child: List[Role]) -> None:
+    if not child:
+        errors = {'child': ['Roles without children make not sense']}
+        raise ValidationError(errors)
     for item in child:
         if not item.built_in:
             errors = {'child': ['Only built-in roles allowed to be included as children.']}
