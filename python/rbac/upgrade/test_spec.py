@@ -18,6 +18,18 @@ import ruyaml
 
 MANDATORY_KEYS = ["name", "type", "module_name", "class_name"]
 
+BUSINESS_PARAMETRISATION = [
+    set(["cluster"]),
+    set(["cluster", "service"]),
+    set(["cluster", "component"]),
+    set(["service"]),
+    set(["service", "component"]),
+    set(["provider", "host"]),
+    set(["provider"]),
+    set(["host"]),
+    set([]),
+]
+
 
 @pytest.fixture(scope="module")
 def spec_data():
@@ -66,3 +78,20 @@ def test_leaf_parametriation(spec_data: list):
                 assert (
                     len(r["parametrized_by"]) < 2
                 ), f'Role entry {r["name"]} has more then one parametrized_by entry'
+
+
+def is_in_set(allowed: list[set], value: set):
+    for s in allowed:
+        if s == value:
+            return True
+    return False
+
+
+def test_allowed_parametrization(role_map: dict):
+    """Check that parametrize_by_type for business permissions is in allowed list."""
+    for k, v in role_map.items():
+        if "parametrized_by" in v:
+            if v["type"] == "business":
+                assert is_in_set(
+                    BUSINESS_PARAMETRISATION, set(v["parametrized_by"])
+                ), f'Wrong parametrization for role "{k}". See ADCM-2498 for more information.'
