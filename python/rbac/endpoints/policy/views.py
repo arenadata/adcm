@@ -37,7 +37,7 @@ class ObjectField(serializers.JSONField):
                         'pattern': '^(cluster|service|component|provider|host)$',
                     },
                 },
-                'additionalProperties': True,
+                'additionalProperties': False,
                 'required': ['id', 'type'],
             },
         }
