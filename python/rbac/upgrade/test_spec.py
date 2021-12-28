@@ -125,7 +125,7 @@ def tree_dive_in(roles: dict, visited: dict, path: list, role: dict, root):
 def test_acyclic(role_map: dict, roots: dict):
     """Check that role specification is a DAG"""
     for v in roots.values():
-        tree_dive_in(role_map, dict(), [v["name"]], v, v)
+        tree_dive_in(role_map, {}, [v["name"]], v, v)
 
 
 EXCLUDE = {"ADCM User": True, "Cluster Administrator": True, "Service Administrator": True}
@@ -167,5 +167,8 @@ def tree_sum(role_map: dict, role: dict) -> list:
 
 
 def test_parametrization_sum(roots: dict, role_map: dict):
+    """Check that most of the roles has parametrized_by equal to sum of child's parametrized_by.
+    But with some excludes.
+    """
     for v in roots.values():
         tree_sum(role_map, v)
