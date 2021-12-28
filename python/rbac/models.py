@@ -194,8 +194,8 @@ class Policy(models.Model):
     def remove_permissions(self):
         for pp in self.model_perm.all():
             if (
-                PolicyPermission.objects.filter(
-                    user=pp.user, group=pp.group, permission=pp.permission
+                Policy.objects.filter(
+                    user=pp.user, group=pp.group, model_perm__permission=pp.permission
                 ).count()
                 > 1
             ):
