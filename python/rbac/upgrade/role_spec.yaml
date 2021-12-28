@@ -181,7 +181,7 @@ roles:
         - View component configurations
         - View config endpoints
 
-    - name: View infrastrucutre configurations
+    - name: View infrastructure configurations
       description: The ability to view configuration of provider and host.
       type: business
       module_name: rbac.roles
@@ -323,7 +323,7 @@ roles:
         - Edit component configurations
         - Edit config endpoints
 
-    - name: Edit infrastrucutre configurations
+    - name: Edit infrastructure configurations
       description: The ability to edit the configuration of provider and host
       type: business
       module_name: rbac.roles
@@ -1094,7 +1094,7 @@ roles:
         - Base role
         - View host-components
         - View application configurations
-        - View infrastrucutre configurations
+        - View infrastructure configurations
         - View imports
 
     - name: Service Administrator
@@ -1144,6 +1144,7 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       child:
+        - Edit infrastructure configurations
         - Upgrade infrastructure bundle
         - Create host
         - Remove hosts

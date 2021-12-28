@@ -25,42 +25,79 @@ from tests.functional.rbac.conftest import (
 )
 
 
-@use_role(BusinessRoles.ViewConfigurations)
-def test_view_configurations(user_policy: Policy, user_sdk: ADCMClient, prepare_objects, second_objects):
-    """Test that View configuration role is ok"""
-    user_objects = as_user_objects(user_sdk, prepare_objects)
-    cluster_via_admin, *_, provider_via_admin, _ = prepare_objects
+@use_role(BusinessRoles.ViewApplicationConfigurations)
+def test_view_application_configurations(user_policy: Policy, user_sdk: ADCMClient, prepare_objects, second_objects):
+    """Test that View application configuration role is ok"""
+    cluster, service, component, provider, host = as_user_objects(user_sdk, prepare_objects)
+    cluster_via_admin, *_ = prepare_objects
     user_second_objects = as_user_objects(user_sdk, second_objects)
     second_service_on_first_cluster = user_sdk.service(id=cluster_via_admin.service_add(name="new_service").id)
     second_component_on_first_cluster = second_service_on_first_cluster.component()
-    second_host_on_first_provider = user_sdk.host(id=provider_via_admin.host_create(fqdn="new_host").id)
-    for base_object in user_objects:
-        is_allowed(base_object, BusinessRoles.ViewConfigurations)
-        is_denied(base_object, BusinessRoles.EditConfigurations)
+    for base_object in (cluster, service, component):
+        is_allowed(base_object, BusinessRoles.ViewApplicationConfigurations)
+        is_denied(base_object, BusinessRoles.EditApplicationConfigurations)
     for base_object in (
+        provider,
+        host,
         *user_second_objects,
         second_service_on_first_cluster,
         second_component_on_first_cluster,
+    ):
+        is_denied(base_object, BusinessRoles.ViewApplicationConfigurations)
+    delete_policy(user_policy)
+    for base_object in (cluster, service, component):
+        is_denied(base_object, BusinessRoles.ViewApplicationConfigurations)
+
+
+@use_role(BusinessRoles.ViewInfrastructureConfigurations)
+def test_view_infrastructure_configurations(user_policy: Policy, user_sdk: ADCMClient, prepare_objects, second_objects):
+    """Test that View infrastructure configuration role is ok"""
+    cluster, service, component, provider, host = as_user_objects(user_sdk, prepare_objects)
+    *_, provider_via_admin, _ = prepare_objects
+    user_second_objects = as_user_objects(user_sdk, second_objects)
+    second_host_on_first_provider = user_sdk.host(id=provider_via_admin.host_create(fqdn="new_host").id)
+    for base_object in (provider, host):
+        is_allowed(base_object, BusinessRoles.ViewInfrastructureConfigurations)
+        is_denied(base_object, BusinessRoles.EditInfrastructureConfigurations)
+    for base_object in (
+        cluster,
+        service,
+        component,
+        *user_second_objects,
         second_host_on_first_provider,
     ):
-        is_denied(base_object, BusinessRoles.ViewConfigurations)
+        is_denied(base_object, BusinessRoles.ViewInfrastructureConfigurations)
     delete_policy(user_policy)
-    for base_object in user_objects:
-        is_denied(base_object, BusinessRoles.ViewConfigurations)
+    for base_object in (provider, host):
+        is_denied(base_object, BusinessRoles.ViewInfrastructureConfigurations)
 
 
-@use_role(BusinessRoles.EditConfigurations)
-def test_edit_configurations(user_policy: Policy, user_sdk: ADCMClient, prepare_objects, second_objects):
-    """Test that Edit configuration role is ok"""
-    user_objects = as_user_objects(user_sdk, prepare_objects)
+@use_role(BusinessRoles.EditApplicationConfigurations)
+def test_edit_application_configurations(user_policy: Policy, user_sdk: ADCMClient, prepare_objects, second_objects):
+    """Test that Edit application configuration role is ok"""
+    cluster, service, component, provider, host = as_user_objects(user_sdk, prepare_objects)
     user_second_objects = as_user_objects(user_sdk, second_objects)
-    for base_object in user_objects:
-        is_allowed(base_object, BusinessRoles.EditConfigurations)
-    for base_object in [*user_second_objects, user_sdk.adcm()]:
-        is_denied(base_object, BusinessRoles.EditConfigurations)
+    for base_object in (cluster, service, component):
+        is_allowed(base_object, BusinessRoles.EditApplicationConfigurations)
+    for base_object in [*user_second_objects, user_sdk.adcm(), provider, host]:
+        is_denied(base_object, BusinessRoles.EditApplicationConfigurations)
     delete_policy(user_policy)
-    for base_object in user_objects:
-        is_denied(base_object, BusinessRoles.EditConfigurations)
+    for base_object in (cluster, service, component):
+        is_denied(base_object, BusinessRoles.EditApplicationConfigurations)
+
+
+@use_role(BusinessRoles.EditInfrastructureConfigurations)
+def test_edit_infrastructure_configurations(user_policy: Policy, user_sdk: ADCMClient, prepare_objects, second_objects):
+    """Test that Edit infrastructure configuration role is ok"""
+    cluster, service, component, provider, host = as_user_objects(user_sdk, prepare_objects)
+    user_second_objects = as_user_objects(user_sdk, second_objects)
+    for base_object in (provider, host):
+        is_allowed(base_object, BusinessRoles.EditInfrastructureConfigurations)
+    for base_object in [*user_second_objects, user_sdk.adcm(), cluster, service, component]:
+        is_denied(base_object, BusinessRoles.EditInfrastructureConfigurations)
+    delete_policy(user_policy)
+    for base_object in (provider, host):
+        is_denied(base_object, BusinessRoles.EditInfrastructureConfigurations)
 
 
 @use_role(BusinessRoles.ViewImports)
@@ -225,25 +262,40 @@ def test_unmap_hosts(user_policy: Policy, user_sdk: ADCMClient, prepare_objects,
     is_denied(cluster, BusinessRoles.UnmapHosts, new_host)
 
 
-@use_role(BusinessRoles.UpgradeBundle)
-def test_upgrade_bundle(user_policy, user_sdk: ADCMClient, prepare_objects, second_objects, sdk_client_fs, user):
-    """Test that Upgrade bundle role is ok"""
+@use_role(BusinessRoles.UpgradeApplicationBundle)
+def test_upgrade_application_bundle(user_policy, user_sdk: ADCMClient, prepare_objects, sdk_client_fs, user):
+    """Test that Upgrade application bundle role is ok"""
     cluster, *_, provider, _ = as_user_objects(user_sdk, prepare_objects)
-    cluster_via_admin, *_, provider_via_admin, _ = prepare_objects
+    cluster_via_admin, *_ = prepare_objects
     second_cluster = user_sdk.cluster(id=cluster_via_admin.bundle().cluster_create(name="Second cluster").id)
-    second_provider = user_sdk.provider(id=provider_via_admin.bundle().provider_create(name="Second provider").id)
 
-    is_allowed(cluster, BusinessRoles.UpgradeBundle)
-    is_allowed(provider, BusinessRoles.UpgradeBundle)
-    is_denied(second_cluster, BusinessRoles.UpgradeBundle)
-    is_denied(second_provider, BusinessRoles.UpgradeBundle)
+    is_allowed(cluster, BusinessRoles.UpgradeApplicationBundle)
+    is_denied(provider, BusinessRoles.UpgradeApplicationBundle)
+    is_denied(second_cluster, BusinessRoles.UpgradeApplicationBundle)
 
     new_policy = create_policy(
-        sdk_client_fs, BusinessRoles.UpgradeBundle, objects=[second_cluster, second_provider], users=[user], groups=[]
+        sdk_client_fs, BusinessRoles.UpgradeApplicationBundle, objects=[second_cluster], users=[user], groups=[]
     )
     delete_policy(new_policy)
-    is_denied(second_cluster, BusinessRoles.UpgradeBundle)
-    is_denied(second_provider, BusinessRoles.UpgradeBundle)
+    is_denied(second_cluster, BusinessRoles.UpgradeApplicationBundle)
+
+
+@use_role(BusinessRoles.UpgradeInfrastructureBundle)
+def test_upgrade_infrastructure_bundle(user_policy, user_sdk: ADCMClient, prepare_objects, sdk_client_fs, user):
+    """Test that Upgrade infrastructure bundle role is ok"""
+    cluster, *_, provider, _ = as_user_objects(user_sdk, prepare_objects)
+    *_, provider_via_admin, _ = prepare_objects
+    second_provider = user_sdk.provider(id=provider_via_admin.bundle().provider_create(name="Second provider").id)
+
+    is_allowed(provider, BusinessRoles.UpgradeInfrastructureBundle)
+    is_denied(cluster, BusinessRoles.UpgradeInfrastructureBundle)
+    is_denied(second_provider, BusinessRoles.UpgradeInfrastructureBundle)
+
+    new_policy = create_policy(
+        sdk_client_fs, BusinessRoles.UpgradeInfrastructureBundle, objects=[second_provider], users=[user], groups=[]
+    )
+    delete_policy(new_policy)
+    is_denied(second_provider, BusinessRoles.UpgradeInfrastructureBundle)
 
 
 @use_role(BusinessRoles.CreateHostProvider)
@@ -256,7 +308,7 @@ def test_create_provider(user_policy, user_sdk: ADCMClient, prepare_objects, sec
     is_allowed(second_provider.bundle(), BusinessRoles.CreateHostProvider)
     is_denied(provider, BusinessRoles.CreateHost)
     is_denied(user_sdk.provider_list()[-1], BusinessRoles.CreateHost)
-    is_denied(cluster.bundle(), BusinessRoles.CreateHostProvider)
+    is_denied(cluster.bundle(), BusinessRoles.CreateCluster)
 
     delete_policy(user_policy)
     is_denied(provider.bundle(), BusinessRoles.CreateHostProvider)
@@ -282,14 +334,18 @@ def test_create_host(user_policy, user_sdk: ADCMClient, prepare_objects, second_
 def test_remove_provider(user_policy, user_sdk: ADCMClient, prepare_objects, second_objects, sdk_client_fs, user):
     """Test that Remove provider role is ok"""
     *_, provider, host = as_user_objects(user_sdk, prepare_objects)
+    *_, host_via_admin = prepare_objects
     *_, second_provider, _ = as_user_objects(user_sdk, second_objects)
+    *_, second_host_via_admin = second_objects
 
     is_denied(host, BusinessRoles.RemoveHosts)
+    host_via_admin.delete()
+    second_host_via_admin.delete()
     is_allowed(provider, BusinessRoles.RemoveHostProvider)
     is_denied(second_provider, BusinessRoles.RemoveHostProvider)
 
     new_policy = create_policy(
-        sdk_client_fs, BusinessRoles.UpgradeBundle, objects=[second_provider], users=[user], groups=[]
+        sdk_client_fs, BusinessRoles.RemoveHostProvider, objects=[second_provider], users=[user], groups=[]
     )
     delete_policy(new_policy)
     is_denied(second_provider, BusinessRoles.RemoveHostProvider)
@@ -319,7 +375,7 @@ def test_remove_cluster(user_policy, user_sdk: ADCMClient, prepare_objects, seco
     is_denied(second_cluster, BusinessRoles.RemoveCluster)
 
     new_policy = create_policy(
-        sdk_client_fs, BusinessRoles.UpgradeBundle, objects=[second_cluster], users=[user], groups=[]
+        sdk_client_fs, BusinessRoles.RemoveCluster, objects=[second_cluster], users=[user], groups=[]
     )
     delete_policy(new_policy)
     is_denied(second_cluster, BusinessRoles.RemoveCluster)
@@ -343,8 +399,8 @@ def test_remove_bundle(user_policy, user_sdk: ADCMClient, sdk_client_fs):
 
     is_denied(user_sdk, BusinessRoles.UploadBundle)
     BusinessRoles.UploadBundle.value.method_call(sdk_client_fs)
-    is_allowed(user_sdk.bundle(), BusinessRoles.RemoveBundle)
+    is_allowed(user_sdk.bundle_list()[-1], BusinessRoles.RemoveBundle)
 
     delete_policy(user_policy)
     BusinessRoles.UploadBundle.value.method_call(sdk_client_fs)
-    is_denied(user_sdk, BusinessRoles.RemoveBundle)
+    is_denied(user_sdk.bundle_list()[-1], BusinessRoles.RemoveBundle)
