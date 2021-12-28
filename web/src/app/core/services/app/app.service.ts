@@ -18,8 +18,9 @@ import { select, Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
 import { filter, switchMap, tap } from 'rxjs/operators';
 
-import { ChannelService, keyChannelStrim } from '../channel.service';
+import { ChannelService, keyChannelStrim, ResponseError } from '../channel.service';
 import { ConfigService, IVersionInfo } from '../config.service';
+import { SnackBarComponent } from '@app/components/snack-bar/snack-bar.component';
 
 @Injectable()
 export class AppService {
@@ -29,7 +30,7 @@ export class AppService {
     private router: Router,
     private dialog: MatDialog,
     private channel: ChannelService,
-    public snackBar: MatSnackBar
+    public snackBar: MatSnackBar,
   ) {}
 
   getRootAndCheckAuth() {
@@ -59,7 +60,7 @@ export class AppService {
       tap((status) => {
         if (status === 'open') this.channel.next(keyChannelStrim.notifying, 'Connection established.');
         if (status === 'close') {
-          this.channel.next(keyChannelStrim.notifying, 'Connection lost. Recovery attempt.::error');
+          this.channel.next<string>(keyChannelStrim.error, 'Connection lost. Recovery attempt.');
           this.store.dispatch(rootError());
         }
       })
@@ -90,15 +91,32 @@ export class AppService {
     this.router.events.pipe(filter((e) => e instanceof NavigationStart)).subscribe(() => this.dialog.closeAll());
 
     // notification
-    this.channel.on<string>(keyChannelStrim.notifying).subscribe((m) => {
-      const astr = m.split('::');
-      const data = astr[1]
-        ? { panelClass: 'snack-bar-error' }
-        : {
-            duration: 5000,
-            panelClass: 'snack-bar-notify',
-          };
-      this.snackBar.open(astr[0], 'Hide', data);
+    this.channel.on<string>(keyChannelStrim.notifying).subscribe((message) => {
+      this.snackBar.openFromComponent(SnackBarComponent, {
+        duration: 5000,
+        panelClass: 'snack-bar-notify',
+        data: { message }
+      });
+    });
+
+    // error
+    this.channel.on<ResponseError | string>(keyChannelStrim.error).subscribe((respError) => {
+      if (typeof respError === 'string') {
+        this.snackBar.openFromComponent(SnackBarComponent, {
+          panelClass: 'snack-bar-error',
+          data: { message: respError },
+        });
+      } else {
+        const message =
+          respError.statusText === 'Unknown Error' || respError.statusText === 'Gateway Timeout'
+            ? 'No connection to back-end. Check your internet connection.'
+            : `[ ${respError.statusText.toUpperCase()} ] ${respError.error.code ? ` ${respError.error.code} -- ${respError.error.desc}` : respError.error?.detail || ''}`;
+
+        this.snackBar.openFromComponent(SnackBarComponent, {
+          panelClass: 'snack-bar-error',
+          data: { message, args: respError.error?.args },
+        });
+      }
     });
 
   }
