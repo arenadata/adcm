@@ -14,7 +14,10 @@
 
 from selenium.webdriver.common.by import By
 
-from tests.ui_tests.app.helpers.locator import Locator
+from tests.ui_tests.app.helpers.locator import (
+    Locator,
+    TemplateLocator,
+)
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 
 
@@ -78,27 +81,43 @@ class AdminRolesLocators:
         """Locators for creating roles popup"""
 
         block = Locator(By.CSS_SELECTOR, "app-rbac-role-form", "Add role popup block")
-        role_name_input = Locator(By.CSS_SELECTOR, "adwp-input[controlname='display_name'] input", "Input for role name")
-        description_name_input = Locator(By.CSS_SELECTOR, "adwp-input[controlname='description'] input", "Input for role description")
+        field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
+        role_name_input = Locator(
+            By.CSS_SELECTOR, "adwp-input[controlname='display_name'] input", "Input for role name"
+        )
+        description_name_input = Locator(
+            By.CSS_SELECTOR, "adwp-input[controlname='description'] input", "Input for role description"
+        )
 
         class PermissionItemsBlock:
-            filter_input = Locator(By.CSS_SELECTOR, ".adcm-input-rbac-permissions__selected-filter input", "Filter input")
-            item = Locator(By.CSS_SELECTOR, ".adcm-input-rbac-permissions__selected-field mat-chip", "Selected permission item")
-            clear_all_btn = Locator(By.CSS_SELECTOR, ".adcm-input-rbac-permissions__selected-filter-clear", "Clear all button")
+            filter_input = Locator(
+                By.CSS_SELECTOR, ".adcm-input-rbac-permissions__selected-filter input", "Filter input"
+            )
+            item = Locator(
+                By.CSS_SELECTOR, ".adcm-input-rbac-permissions__selected-field mat-chip", "Selected permission item"
+            )
+            clear_all_btn = Locator(
+                By.CSS_SELECTOR, ".adcm-input-rbac-permissions__selected-filter-clear", "Clear all button"
+            )
 
             class PermissionItem:
                 name = Locator(By.CSS_SELECTOR, "div", "Name")
                 delete_btn = Locator(By.CSS_SELECTOR, "button", "Delete button")
 
         class SelectPermissionsBlock:
-            permissions_filters = Locator(By.CSS_SELECTOR, ".adcm-rbac-permission__filter mat-chip",
-                                          "filter item for permissions list")
+            permissions_filters = Locator(
+                By.CSS_SELECTOR, ".adcm-rbac-permission__filter mat-chip", "filter item for permissions list"
+            )
             permissions_search_row = Locator(By.CSS_SELECTOR, "adwp-selection-list-actions", "Permission search row")
-            permissions_item_row = Locator(By.CSS_SELECTOR, ".adcm-rbac-permission__options mat-list-option", "Permission row")
-            select_btn = Locator(By.CSS_SELECTOR, ".adcm-rbac-permission__actions", "Select button")
+            permissions_item_row = Locator(
+                By.CSS_SELECTOR, ".adcm-rbac-permission__options mat-list-option", "Permission row"
+            )
+            select_btn = Locator(By.CSS_SELECTOR, ".adcm-rbac-permission__actions button", "Select button")
 
             class SelectPermissionsRow:
                 checkbox = Locator(By.CSS_SELECTOR, "mat-pseudo-checkbox", "Checkbox")
                 name = Locator(By.CSS_SELECTOR, ".mat-list-text", "Name")
 
-        create_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Create')]]", "Create button")
+        save_btn = Locator(
+            By.XPATH, "//button[./span[contains(text(), 'Create') or contains(text(), 'Update')]]", "Create button"
+        )
