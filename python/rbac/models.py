@@ -242,3 +242,12 @@ class Policy(models.Model):
             self.role.apply(self, user, None)
         for group in self.group.all():
             self.role.apply(self, None, group=group)
+
+
+def re_apply(obj):
+    """
+    This function search for polices linked with specified object and re apply them
+    """
+    content = ContentType.objects.get_for_model(obj)
+    for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=content):
+        policy.apply()

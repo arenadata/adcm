@@ -213,7 +213,7 @@ def cook_cluster1():
     cp21 = Prototype.obj.create(bundle=b, type='component', name='node2')
     comp21 = ServiceComponent.obj.create(cluster=cluster, service=service2, prototype=cp21)
 
-    return (cluster, service1, service2, comp11, comp12, comp21)
+    return (cluster, service1, service2, comp11, comp12, comp21, b)
 
 
 def cook_hosts():
@@ -232,7 +232,7 @@ def cook_hosts():
 @pytest.mark.django_db
 def test_parent_policy4cluster():
     user = cook_user('Joe')
-    cluster, service1, service2, comp11, comp12, comp21 = cook_cluster1()
+    cluster, service1, service2, comp11, comp12, comp21, _ = cook_cluster1()
 
     p = Policy.objects.create(role=cook_conf_role())
     p.user.add(user)
@@ -258,7 +258,7 @@ def test_parent_policy4cluster():
 @pytest.mark.django_db
 def test_parent_policy4service():
     user = cook_user('Joe')
-    cluster, service1, service2, comp11, comp12, comp21 = cook_cluster1()
+    cluster, service1, service2, comp11, comp12, comp21, _ = cook_cluster1()
     p = Policy.objects.create(role=cook_conf_role())
     p.user.add(user)
 
@@ -284,7 +284,7 @@ def test_parent_policy4service():
 @pytest.mark.django_db
 def test_parent_policy4service2():
     user = cook_user('Joe')
-    cluster, service1, service2, comp11, comp12, comp21 = cook_cluster1()
+    cluster, service1, service2, comp11, comp12, comp21, _ = cook_cluster1()
     p = Policy.objects.create(role=cook_conf_role())
     p.user.add(user)
 
@@ -310,7 +310,7 @@ def test_parent_policy4service2():
 @pytest.mark.django_db
 def test_parent_policy4component():
     user = cook_user('Joe')
-    cluster, service1, service2, comp11, comp12, comp21 = cook_cluster1()
+    cluster, service1, service2, comp11, comp12, comp21, _ = cook_cluster1()
     p = Policy.objects.create(role=cook_conf_role())
     p.user.add(user)
 
@@ -336,7 +336,7 @@ def test_parent_policy4component():
 @pytest.mark.django_db
 def test_parent_policy4host_in_cluster():
     user = cook_user('Joe')
-    cluster, _, _, _, _, _ = cook_cluster1()
+    cluster, _, _, _, _, _, _ = cook_cluster1()
     _, host1, host2, host3 = cook_hosts()
     api.add_host_to_cluster(cluster, host1)
     api.add_host_to_cluster(cluster, host2)
@@ -361,14 +361,19 @@ def test_parent_policy4host_in_cluster():
 @pytest.mark.django_db
 def test_parent_policy4host_in_service():
     user = cook_user('Joe')
-    cluster, service1, service2, comp11, comp12, comp21 = cook_cluster1()
+    cluster, service1, service2, comp11, comp12, comp21, _ = cook_cluster1()
     _, host1, host2, host3 = cook_hosts()
     api.add_host_to_cluster(cluster, host1)
     api.add_host_to_cluster(cluster, host2)
     api.add_host_to_cluster(cluster, host3)
-    HostComponent.obj.create(cluster=cluster, service=service1, component=comp11, host=host1)
-    HostComponent.obj.create(cluster=cluster, service=service1, component=comp12, host=host2)
-    HostComponent.obj.create(cluster=cluster, service=service2, component=comp21, host=host3)
+    api.add_hc(
+        cluster,
+        [
+            {"service_id": service1.id, "component_id": comp11.id, "host_id": host1.id},
+            {"service_id": service1.id, "component_id": comp12.id, "host_id": host2.id},
+            {"service_id": service2.id, "component_id": comp21.id, "host_id": host3.id},
+        ],
+    )
 
     p = Policy.objects.create(role=cook_conf_role())
     p.user.add(user)
@@ -392,7 +397,7 @@ def test_parent_policy4host_in_service():
 @pytest.mark.django_db
 def test_parent_policy4host_in_component():
     user = cook_user('Joe')
-    cluster, service1, service2, comp11, _, comp21 = cook_cluster1()
+    cluster, service1, service2, comp11, _, comp21, _ = cook_cluster1()
     _, host1, host2, host3 = cook_hosts()
     api.add_host_to_cluster(cluster, host1)
     api.add_host_to_cluster(cluster, host2)
@@ -478,7 +483,7 @@ def test_simple_parent_policy():
 @pytest.mark.django_db
 def test_empty_parent_policy():
     user = cook_user('Joe')
-    _, _, service2, _, _, _ = cook_cluster1()
+    _, _, service2, _, _, _, _ = cook_cluster1()
 
     r = cook_role('all', 'ParentRole', ['service'])
     p = Policy.objects.create(role=r)
@@ -486,6 +491,97 @@ def test_empty_parent_policy():
     p.add_object(service2)
 
     p.apply()
+
+
+@pytest.mark.django_db
+def test_add_service():
+    user = cook_user('Joe')
+    cluster, service1, service2, _, _, _, b = cook_cluster1()
+    sp3 = Prototype.obj.create(bundle=b, type='service', name='Hive')
+
+    p = Policy.objects.create(role=cook_conf_role())
+    p.user.add(user)
+    p.add_object(cluster)
+
+    assert not user.has_perm('cm.edit_conf_cluster', cluster)
+    assert not user.has_perm('cm.edit_conf_clusterobject', service1)
+    assert not user.has_perm('cm.edit_conf_clusterobject', service2)
+
+    p.apply()
+
+    assert user.has_perm('cm.edit_conf_cluster', cluster)
+    assert user.has_perm('cm.edit_conf_clusterobject', service1)
+    assert user.has_perm('cm.edit_conf_clusterobject', service2)
+
+    service3 = api.add_service_to_cluster(cluster, sp3)
+    assert user.has_perm('cm.edit_conf_clusterobject', service3)
+
+
+@pytest.mark.django_db
+def test_add_host():
+    user = cook_user('Joe')
+    cluster, service1, _, comp11, comp12, _, _ = cook_cluster1()
+    _, host1, host2, host3 = cook_hosts()
+    api.add_host_to_cluster(cluster, host1)
+    api.add_host_to_cluster(cluster, host2)
+    HostComponent.obj.create(cluster=cluster, service=service1, component=comp11, host=host1)
+    HostComponent.obj.create(cluster=cluster, service=service1, component=comp12, host=host2)
+
+    p = Policy.objects.create(role=cook_conf_role())
+    p.user.add(user)
+    p.add_object(cluster)
+
+    assert not user.has_perm('cm.edit_conf_cluster', cluster)
+    assert not user.has_perm('cm.edit_conf_host', host1)
+    assert not user.has_perm('cm.edit_conf_host', host2)
+    assert not user.has_perm('cm.edit_conf_host', host3)
+
+    p.apply()
+
+    assert user.has_perm('cm.edit_conf_cluster', cluster)
+    assert user.has_perm('cm.edit_conf_host', host1)
+    assert user.has_perm('cm.edit_conf_host', host2)
+    assert not user.has_perm('cm.edit_conf_host', host3)
+
+    api.add_host_to_cluster(cluster, host3)
+
+    assert user.has_perm('cm.edit_conf_host', host3)
+
+
+@pytest.mark.django_db
+def test_add_hc():
+    user = cook_user('Joe')
+    cluster, service1, _, comp11, comp12, _, _ = cook_cluster1()
+    _, host1, host2, host3 = cook_hosts()
+    api.add_host_to_cluster(cluster, host1)
+    HostComponent.obj.create(cluster=cluster, service=service1, component=comp11, host=host1)
+
+    p = Policy.objects.create(role=cook_conf_role())
+    p.user.add(user)
+    p.add_object(service1)
+
+    assert not user.has_perm('cm.edit_conf_cluster', cluster)
+    assert not user.has_perm('cm.edit_conf_host', host1)
+    assert not user.has_perm('cm.edit_conf_host', host2)
+    assert not user.has_perm('cm.edit_conf_host', host3)
+
+    p.apply()
+
+    assert user.has_perm('cm.edit_conf_clusterobject', service1)
+    assert user.has_perm('cm.edit_conf_host', host1)
+    assert not user.has_perm('cm.edit_conf_host', host2)
+    assert not user.has_perm('cm.edit_conf_host', host3)
+
+    api.add_host_to_cluster(cluster, host2)
+    api.add_hc(
+        cluster,
+        [
+            {"service_id": service1.id, "component_id": comp11.id, "host_id": host1.id},
+            {"service_id": service1.id, "component_id": comp12.id, "host_id": host2.id},
+        ],
+    )
+
+    assert user.has_perm('cm.edit_conf_host', host2)
 
 
 @pytest.mark.django_db
