@@ -39,52 +39,61 @@ class RoleViewSet(mixins.ListModelMixin, GenericPermViewSet):
     @action(methods=['get'], detail=True)
     def object_candidate(self, request, **kwargs):
         role = self.get_object()
+        parametrization = set(role.parametrized_by_type)
         clusters = []
         providers = []
         services = []
         hosts = []
 
-        if models.ObjectType.cluster.value in role.parametrized_by_type:
+        if models.ObjectType.cluster.value in parametrization:
             for cluster in cm_models.Cluster.objects.all():
                 clusters.append(
                     {
                         'name': cluster.display_name,
-                        'type': cm_models.PrototypeEnum.Cluster.value,
-                        'id': cluster.id,
+                        "post_data": {
+                            'type': cm_models.PrototypeEnum.Cluster.value,
+                            'id': cluster.id,
+                        },
                     }
                 )
 
-        if models.ObjectType.provider.value in role.parametrized_by_type:
+        if models.ObjectType.provider.value in parametrization:
             for provider in cm_models.HostProvider.objects.all():
                 providers.append(
                     {
                         'name': provider.display_name,
-                        'type': cm_models.PrototypeEnum.Provider.value,
-                        'id': provider.id,
+                        "post_data": {
+                            'type': cm_models.PrototypeEnum.Provider.value,
+                            'id': provider.id,
+                        },
                     }
                 )
 
-        if models.ObjectType.host.value in role.parametrized_by_type:
+        if models.ObjectType.host.value in parametrization:
             for host in cm_models.Host.objects.all():
                 hosts.append(
                     {
                         'name': host.display_name,
-                        'type': cm_models.PrototypeEnum.Host.value,
-                        'id': host.id,
+                        "post_data": {
+                            'type': cm_models.PrototypeEnum.Host.value,
+                            'id': host.id,
+                        },
                     }
                 )
 
         if (
-            models.ObjectType.service.value in role.parametrized_by_type
-            or models.ObjectType.component.value in role.parametrized_by_type
+            models.ObjectType.service.value in parametrization
+            or models.ObjectType.component.value in parametrization
         ):
             _services = defaultdict(list)
             for service in cm_models.ClusterObject.objects.all():
                 _services[service.display_name].append(
                     {
                         'name': service.cluster.display_name,
-                        'type': 'service',
-                        'id': service.id,
+                        "post_data": {
+                            'type': 'service',
+                            'id': service.id,
+                        },
                     }
                 )
             for service_name, clusters_info in _services.items():
@@ -95,11 +104,24 @@ class RoleViewSet(mixins.ListModelMixin, GenericPermViewSet):
                     }
                 )
 
-        return Response(
-            {
-                'cluster': sorted(clusters, key=lambda x: x['name']),
-                'provider': sorted(providers, key=lambda x: x['name']),
-                'service': sorted(services, key=lambda x: x['name']),
-                'host': sorted(hosts, key=lambda x: x['name']),
-            }
-        )
+        if parametrization:
+            ordering = ('cluster', 'service', 'component', 'provider', 'host')
+            types = sorted(parametrization, key=lambda x: ordering.index(x))
+            result_type = 'by_' + '_or_'.join(types)
+        else:
+            result_type = 'no_parametrization'
+
+        result = {
+            'type': result_type,
+            'data': {},
+        }
+        if clusters:
+            result['data']['cluster'] = sorted(clusters, key=lambda x: x['name'])
+        if providers:
+            result['data']['provider'] = sorted(providers, key=lambda x: x['name'])
+        if services:
+            result['data']['service'] = (sorted(services, key=lambda x: x['name']),)
+        if hosts:
+            result['data']['host'] = sorted(hosts, key=lambda x: x['name'])
+
+        return Response(result)
