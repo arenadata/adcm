@@ -128,23 +128,33 @@ def test_acyclic(role_map: dict, roots: dict):
         tree_dive_in(role_map, dict(), [v["name"]], v, v)
 
 
+EXCLUDE = {"ADCM User": True, "Cluster Administrator": True, "Service Administrator": True}
+
+
+def is_exclude(name: str) -> bool:
+    try:
+        return EXCLUDE[name]
+    except KeyError:
+        return False
+
+
+def parametrized_by(role: dict) -> list:
+    if "parametrized_by" in role:
+        return role["parametrized_by"]
+    return []
+
+
 def tree_sum(role_map: dict, role: dict) -> list:
+    role_params = parametrized_by(role)
     if "child" in role:
-        childs_params = []
-        for c in role["child"]:
-            childs_params.extend(tree_sum(role_map, role_map[c]))
-        if "parametrized_by" in role:
-            role_params = role["parametrized_by"]
-        else:
-            role_params = []
-        assert set(childs_params) == set(
-            role_params
-        ), f'For role \"{role["name"]}\" parametrize_by is not a sum of child parametrization: {role_params} != {childs_params}'
-    else:
-        if "parametrized_by" in role:
-            return role["parametrized_by"]
-        else:
-            return []
+        child_params = []
+        for c in role['child']:
+            child_params.extend(tree_sum(role_map, role_map[c]))
+        if not is_exclude(role["name"]):
+            assert set(child_params) == set(
+                role_params
+            ), f'For role \"{role["name"]}\" parametrize_by is not a sum of child parametrization: {set(role_params)} != {set(child_params)}'
+    return role_params
 
 
 def test_parametrization_sum(roots: dict, role_map: dict):
