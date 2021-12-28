@@ -40,15 +40,8 @@ urlpatterns = [
     path('cm/error/<msg>/', cm.views.error),
     path('social/complete/google-oauth2/', cm.views.complete),
     path('social/', include('social_django.urls', namespace='social')),
-    path(
-        'api/',
-        include(
-            [
-                path('v1/', include(api.urls)),
-                path('ui/', include(api_ui.urls)),
-            ]
-        ),
-    ),
+    path('api/v1/', include(api.urls)),
+    path('api/ui/', include(api_ui.urls)),
 ]
 
 cm.adcm_config.load_social_auth()
