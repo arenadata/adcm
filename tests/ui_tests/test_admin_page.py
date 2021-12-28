@@ -247,7 +247,7 @@ class TestAdminRolesPage:
 
         page = AdminRolesPage(app_fs.driver, app_fs.adcm.url).open()
         with allure.step("Create 11 roles"):
-            for i in range(6):
+            for _ in range(6):
                 page.create_role(self.custom_role)
         page.table.check_pagination(second_page_item_amount=1)
 
