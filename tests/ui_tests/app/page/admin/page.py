@@ -278,16 +278,15 @@ class AdminRolesPage(GeneralAdminPage):
 
     @allure.step('Check default roles')
     def check_default_roles(self):
+        """Check default roles are listed on admin page"""
+
         default_roles = [
             AdminRoleInfo(
                 name='ADCM User',
                 description='',
                 permissions='View application configurations, View infrastructure configurations, View imports, '
-                'View host-components, Base role',
+                            'View host-components, Base role',
             ),
-        """Check default roles are listed on admin page"""
-        default_roles = [
-            AdminRoleInfo(name='ADCM User', description='', permissions='View configurations, View imports, Base role'),
             AdminRoleInfo(
                 name='Service Administrator',
                 description='',
