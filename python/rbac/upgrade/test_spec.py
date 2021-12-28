@@ -144,6 +144,16 @@ def parametrized_by(role: dict) -> list:
     return []
 
 
+class ChildSumEx(AssertionError):
+    def __init__(self, name: str, role: list, child: list):
+        super().__init__(
+            (
+                f'For role "{name}" parametrize_by is not a sum of child parametrization:',
+                f'{set(role)} != {set(child)}',
+            )
+        )
+
+
 def tree_sum(role_map: dict, role: dict) -> list:
     role_params = parametrized_by(role)
     if "child" in role:
@@ -151,9 +161,8 @@ def tree_sum(role_map: dict, role: dict) -> list:
         for c in role['child']:
             child_params.extend(tree_sum(role_map, role_map[c]))
         if not is_exclude(role["name"]):
-            assert set(child_params) == set(
-                role_params
-            ), f'For role \"{role["name"]}\" parametrize_by is not a sum of child parametrization: {set(role_params)} != {set(child_params)}'
+            if not set(child_params) == set(role_params):
+                raise ChildSumEx(role["name"], role_params, child_params)
     return role_params
 
 
