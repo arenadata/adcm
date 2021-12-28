@@ -1,11 +1,56 @@
 import { Component, forwardRef, OnInit } from '@angular/core';
-import { AbstractControl, FormArray, FormControl, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, FormArray, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { RbacFormDirective } from '@app/shared/add-component/rbac-form.directive';
 import { RbacPolicyModel } from '@app/models/rbac/rbac-policy.model';
 import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
 import { RbacPolicyService } from '@app/services/rbac-policy.service';
 import { atLeastOne } from '@app/components/rbac/policy-form/rbac-policy-form-step-one/validators/user-or-group-required';
 
+const INITIAL_OBJECT = {
+  cluster: [],
+  parent: [],
+  service: null,
+  provider: [],
+  host: []
+};
+
+const clusterOrServiceValidator: ValidatorFn = (control: AbstractControl) => {
+  const cluster = control.get('cluster');
+  const service = control.get('service');
+
+  if (Array.isArray(cluster.value) && cluster.value.length > 0) {
+    service.disable({ onlySelf: true });
+  } else {
+    service.enable({ onlySelf: true });
+  }
+
+  if (!!service.value) {
+    cluster.disable({ onlySelf: true });
+  } else {
+    cluster.enable({ onlySelf: true });
+  }
+
+  return null;
+};
+
+const providerOrHostValidator: ValidatorFn = (control: AbstractControl) => {
+  const provider = control.get('provider');
+  const host = control.get('host');
+
+  if (Array.isArray(provider.value) && provider.value.length > 0) {
+    host.disable({ onlySelf: true });
+  } else {
+    host.enable({ onlySelf: true });
+  }
+
+  if (Array.isArray(host.value) && host.value.length > 0) {
+    provider.disable({ onlySelf: true });
+  } else {
+    provider.enable({ onlySelf: true });
+  }
+
+  return null;
+};
 
 @Component({
   selector: 'app-rbac-policy-form',
@@ -15,6 +60,7 @@ import { atLeastOne } from '@app/components/rbac/policy-form/rbac-policy-form-st
   ]
 })
 export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> implements OnInit {
+  initialObject = INITIAL_OBJECT;
 
   /** Returns a FormArray with the name 'steps'. */
   get steps(): AbstractControl | null { return this.form.get('steps'); }
@@ -31,15 +77,15 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
         validators: [atLeastOne('user', 'group')]
       }),
       new FormGroup({
-        object: new FormArray([
-          new FormGroup({
-            id: new FormControl([])
-          }),
-          new FormGroup({
-            id: new FormControl([]),
-            parent: new FormControl(null),
-          })
-        ])
+        object: new FormGroup({
+          cluster: new FormControl(null),
+          parent: new FormControl(null),
+          service: new FormControl(null),
+          provider: new FormControl(null),
+          host: new FormControl(null),
+        }, {
+          validators: [clusterOrServiceValidator, providerOrHostValidator]
+        })
       })
     ])
   });

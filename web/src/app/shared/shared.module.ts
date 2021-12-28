@@ -60,6 +60,7 @@ import { RbacGroupService } from '@app/services/rbac-group.service';
 import { RbacRoleService } from '@app/services/rbac-role.service';
 import { RbacPolicyService } from '@app/services/rbac-policy.service';
 import { DynamicModule } from '@app/shared/directives/dynamic/dynamic.module';
+import { RbacObjectCandidateService } from '@app/services/rbac-object-candidate.service';
 
 @NgModule({
   imports: [
@@ -151,6 +152,7 @@ import { DynamicModule } from '@app/shared/directives/dynamic/dynamic.module';
     RbacGroupService,
     RbacRoleService,
     RbacPolicyService,
+    RbacObjectCandidateService
   ],
 })
 export class SharedModule {

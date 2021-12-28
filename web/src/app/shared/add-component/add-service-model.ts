@@ -27,6 +27,8 @@ export interface IAddService {
 
   add?<T>(data: any, name?: TypeName, prototype?: StackBase): Observable<T>;
 
+  get?<T>(id: number): Observable<T>;
+
   update?<T>(url: string, data: any): Observable<T>;
 
   getList?<T>(type: TypeName, param: Params): Observable<T[]>;

@@ -2,7 +2,10 @@
   <mat-horizontal-stepper formArrayName="steps" linear [disableRipple]="true" [@.disabled]="true">
     <mat-step *ngIf="step(0) as step1" formGroupName="0" [stepControl]="step1">
       <ng-template matStepLabel>Step 1</ng-template>
-      <app-rbac-policy-form-step-one [form]="step1"></app-rbac-policy-form-step-one>
+      <app-rbac-policy-form-step-one
+        [form]="step1"
+        (roleChanged)="step(1).get('object').reset(initialObject)"
+      ></app-rbac-policy-form-step-one>
       <div>
         <button [disabled]="step1.invalid" mat-raised-button matStepperNext color="accent">Next</button>
       </div>

@@ -15,9 +15,13 @@ import { RbacRolesAsOptionsModule } from '../role-form/options/rbac-roles-as-opt
 import { FalseAsEmptyArrayModule } from '../../../shared/pipes/false-as-empty-array/false-as-empty-array.module';
 import { RbacUsersAsOptionsModule } from '../user-form/options/rbac-users-as-options.module';
 import { RbacGroupsAsOptionsModule } from '../group-form/options/rbac-groups-as-options.module';
-import { RbacRoleParametrizedByClusterPipe } from './rbac-policy-form-step-two/pipes/rbac-role-parametrized-by-cluster.pipe';
-import { RbacRoleParametrizedByServicePipe } from './rbac-policy-form-step-two/pipes/rbac-role-parametrized-by-service.pipe';
-import { RbacRoleParametrizedByOtherPipe } from './rbac-policy-form-step-two/pipes/rbac-role-parametrized-by-other.pipe';
+import { GetParentsFromServicesPipe } from './rbac-policy-form-step-two/components/parametrized-by-service/get-clusters-from-services.pipe';
+import { ParametrizedByClusterComponent } from './rbac-policy-form-step-two/components/parametrized-by-cluster/parametrized-by-cluster.component';
+import { ParametrizedByServiceComponent } from './rbac-policy-form-step-two/components/parametrized-by-service/parametrized-by-service.component';
+import { ParametrizedByProviderComponent } from './rbac-policy-form-step-two/components/parametrized-by-provider/parametrized-by-provider.component';
+import { ParametrizedByDirective } from './rbac-policy-form-step-two/directives/parametrized-by.directive';
+import { ParametrizedPipe } from './rbac-policy-form-step-two/pipes/parametrized.pipe';
+import { ParametrizedByHostComponent } from './rbac-policy-form-step-two/components/parametrized-by-host/parametrized-by-host.component';
 
 
 @NgModule({
@@ -26,9 +30,13 @@ import { RbacRoleParametrizedByOtherPipe } from './rbac-policy-form-step-two/pip
     RbacPolicyFormStepOneComponent,
     RbacPolicyFormStepTwoComponent,
     RbacPolicyFormStepThreeComponent,
-    RbacRoleParametrizedByClusterPipe,
-    RbacRoleParametrizedByServicePipe,
-    RbacRoleParametrizedByOtherPipe
+    GetParentsFromServicesPipe,
+    ParametrizedByClusterComponent,
+    ParametrizedByServiceComponent,
+    ParametrizedByProviderComponent,
+    ParametrizedByDirective,
+    ParametrizedPipe,
+    ParametrizedByHostComponent
   ],
   exports: [
     RbacPolicyFormComponent
