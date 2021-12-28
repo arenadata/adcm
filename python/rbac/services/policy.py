@@ -126,7 +126,7 @@ def policy_update(policy: Policy, **kwargs) -> Policy:
     role = kwargs.get('role')
     objects = kwargs.get('object')
     policy_old_objects = [po.object for po in policy.object.all()]
-    _check_objects(role or policy.role, objects or policy_old_objects)
+    _check_objects(role or policy.role, objects if objects is not None else policy_old_objects)
 
     if 'name' in kwargs:
         policy.name = kwargs['name']

@@ -85,7 +85,7 @@ class PolicyGroupSerializer(BaseRelatedSerializer):
 
 class PolicySerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='rbac:policy-detail')
-    object = ObjectField(required=False)
+    object = ObjectField(required=True)
     built_in = serializers.BooleanField(read_only=True)
     role = PolicyRoleSerializer()
     user = PolicyUserSerializer(many=True, required=False)
