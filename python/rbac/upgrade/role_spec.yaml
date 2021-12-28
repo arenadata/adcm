@@ -591,6 +591,7 @@ roles:
           models:
             - name: cluster
               codenames:
+                - view_upgrade_of
                 - do_upgrade_of
 
     - name: Upgrade infrastructure bundle
@@ -608,6 +609,7 @@ roles:
           models:
             - name: hostprovider
               codenames:
+                - view_upgrade_of
                 - do_upgrade_of
 
     - name: Remove cluster

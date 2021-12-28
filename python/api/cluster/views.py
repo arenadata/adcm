@@ -207,12 +207,15 @@ class ClusterBindDetail(DetailViewDelete):
 class ClusterUpgrade(PageView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.UpgradeLinkSerializer
+    check_upgrade_perm = check_custom_perm
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, cluster_id):  # pylint: disable=arguments-differ
         """
         List all avaliable upgrades for specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
+        self.check_upgrade_perm('view_upgrade_of', 'cluster', cluster)
         obj = cm.upgrade.get_upgrade(cluster, self.get_ordering(request, self.queryset, self))
         serializer = self.serializer_class(
             obj, many=True, context={'cluster_id': cluster.id, 'request': request}
@@ -223,12 +226,15 @@ class ClusterUpgrade(PageView):
 class ClusterUpgradeDetail(ListView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.UpgradeLinkSerializer
+    check_upgrade_perm = check_custom_perm
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, cluster_id, upgrade_id):  # pylint: disable=arguments-differ
         """
         List all avaliable upgrades for specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
+        self.check_upgrade_perm('view_upgrade_of', 'cluster', cluster)
         obj = self.get_queryset().get(id=upgrade_id)
         serializer = self.serializer_class(
             obj, context={'cluster_id': cluster.id, 'request': request}
