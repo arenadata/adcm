@@ -126,3 +126,27 @@ def test_acyclic(role_map: dict, roots: dict):
     """Check that role specification is a DAG"""
     for v in roots.values():
         tree_dive_in(role_map, dict(), [v["name"]], v, v)
+
+
+def tree_sum(role_map: dict, role: dict) -> list:
+    if "child" in role:
+        childs_params = []
+        for c in role["child"]:
+            childs_params.extend(tree_sum(role_map, role_map[c]))
+        if "parametrized_by" in role:
+            role_params = role["parametrized_by"]
+        else:
+            role_params = []
+        assert set(childs_params) == set(
+            role_params
+        ), f'For role \"{role["name"]}\" parametrize_by is not a sum of child parametrization: {role_params} != {childs_params}'
+    else:
+        if "parametrized_by" in role:
+            return role["parametrized_by"]
+        else:
+            return []
+
+
+def test_parametrization_sum(roots: dict, role_map: dict):
+    for v in roots.values():
+        tree_sum(role_map, v)
