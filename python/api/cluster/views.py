@@ -346,6 +346,8 @@ class HostComponentList(GenericAPIPermView, InterfaceView):
     queryset = HostComponent.objects.all()
     serializer_class = serializers.HostComponentSerializer
     serializer_class_ui = serializers.HostComponentUISerializer
+    check_custom_perm = check_custom_perm
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_serializer_class(self):
         if self.request and self.request.method == 'POST':
@@ -357,6 +359,7 @@ class HostComponentList(GenericAPIPermView, InterfaceView):
         Show host <-> component map in a specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
+        self.check_custom_perm('view_host_components_of', 'cluster', cluster)
         hc = self.get_queryset().filter(cluster=cluster)
         serializer_class = self.select_serializer(request)
         if self.for_ui(request):
@@ -372,6 +375,7 @@ class HostComponentList(GenericAPIPermView, InterfaceView):
         Create new mapping service:component <-> host in a specified cluster.
         """
         cluster = check_obj(Cluster, cluster_id)
+        self.check_custom_perm('edit_host_components_of', 'cluster', cluster)
         save_serializer = self.get_serializer_class()
         serializer = save_serializer(
             data=request.data,
@@ -392,9 +396,12 @@ class HostComponentList(GenericAPIPermView, InterfaceView):
 class HostComponentDetail(GenericAPIPermView):
     queryset = HostComponent.objects.all()
     serializer_class = serializers.HostComponentSerializer
+    check_custom_perm = check_custom_perm
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_obj(self, cluster_id, hs_id):
         cluster = check_obj(Cluster, cluster_id)
+        self.check_custom_perm('view_host_components_of', 'cluster', cluster)
         return check_obj(HostComponent, {'id': hs_id, 'cluster': cluster}, 'HOSTSERVICE_NOT_FOUND')
 
     def get(self, request, cluster_id, hs_id):

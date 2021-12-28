@@ -40,10 +40,4 @@ export class RbacUserService implements EntityAbstractService {
       .pipe(map((list) => list.results));
   }
 
-  getUserByUsername(username: string): Observable<RbacUserModel | null> {
-    return this.api.get<ListResult<RbacUserModel>>(`${environment.apiRoot}rbac/user/`, { username }).pipe(
-      map((list) => list.results.length && list.results[0])
-    );
-  }
-
 }

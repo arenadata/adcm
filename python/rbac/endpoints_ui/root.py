@@ -10,21 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Arenadata RBAC root view"""
+"""Arenadata RBAC UI root view"""
 
 from rest_framework import permissions, routers
 
 
-class RBACRoot(routers.APIRootView):
-    """Arenadata RBAC Root"""
+class RBACUIRoot(routers.APIRootView):
+    """Arenadata RBAC UI Root"""
 
     permission_classes = (permissions.AllowAny,)
     api_root_dict = {
-        'me': 'me',
-        'user': 'user-list',
-        'group': 'group-list',
         'role': 'role-list',
-        'policy': 'policy-list',
-        'logout': 'logout',
-        'token': 'token',
     }

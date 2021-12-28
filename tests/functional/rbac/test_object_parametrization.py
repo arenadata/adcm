@@ -27,28 +27,34 @@ def test_cluster_hierarchy(user_sdk: ADCMClient, user, prepare_objects, sdk_clie
     Parametrize role with cluster related objects
     """
     cluster, service, component, provider, host = as_user_objects(user_sdk, prepare_objects)
-    policy = create_policy(sdk_client_fs, user, BusinessRoles.ViewConfigurations, cluster)
-    is_allowed(cluster, BusinessRoles.ViewConfigurations)
-    is_allowed(service, BusinessRoles.ViewConfigurations)
-    is_allowed(component, BusinessRoles.ViewConfigurations)
-    is_denied(provider, BusinessRoles.ViewConfigurations)
-    is_denied(host, BusinessRoles.ViewConfigurations)
+    policy = create_policy(
+        sdk_client_fs, BusinessRoles.ViewApplicationConfigurations, objects=[cluster], users=[user], groups=[]
+    )
+    is_allowed(cluster, BusinessRoles.ViewApplicationConfigurations)
+    is_allowed(service, BusinessRoles.ViewApplicationConfigurations)
+    is_allowed(component, BusinessRoles.ViewApplicationConfigurations)
+    is_denied(provider, BusinessRoles.ViewInfrastructureConfigurations)
+    is_denied(host, BusinessRoles.ViewInfrastructureConfigurations)
     delete_policy(policy)
 
-    policy = create_policy(sdk_client_fs, user, BusinessRoles.ViewConfigurations, service)
-    is_denied(cluster, BusinessRoles.ViewConfigurations)
-    is_allowed(service, BusinessRoles.ViewConfigurations)
-    is_allowed(component, BusinessRoles.ViewConfigurations)
-    is_denied(provider, BusinessRoles.ViewConfigurations)
-    is_denied(host, BusinessRoles.ViewConfigurations)
+    policy = create_policy(
+        sdk_client_fs, BusinessRoles.ViewApplicationConfigurations, objects=[service], users=[user], groups=[]
+    )
+    is_denied(cluster, BusinessRoles.ViewApplicationConfigurations)
+    is_allowed(service, BusinessRoles.ViewApplicationConfigurations)
+    is_allowed(component, BusinessRoles.ViewApplicationConfigurations)
+    is_denied(provider, BusinessRoles.ViewInfrastructureConfigurations)
+    is_denied(host, BusinessRoles.ViewInfrastructureConfigurations)
     delete_policy(policy)
 
-    create_policy(sdk_client_fs, user, BusinessRoles.ViewConfigurations, component)
-    is_denied(cluster, BusinessRoles.ViewConfigurations)
-    is_denied(service, BusinessRoles.ViewConfigurations)
-    is_allowed(component, BusinessRoles.ViewConfigurations)
-    is_denied(provider, BusinessRoles.ViewConfigurations)
-    is_denied(host, BusinessRoles.ViewConfigurations)
+    create_policy(
+        sdk_client_fs, BusinessRoles.ViewApplicationConfigurations, objects=[component], users=[user], groups=[]
+    )
+    is_denied(cluster, BusinessRoles.ViewApplicationConfigurations)
+    is_denied(service, BusinessRoles.ViewApplicationConfigurations)
+    is_allowed(component, BusinessRoles.ViewApplicationConfigurations)
+    is_denied(provider, BusinessRoles.ViewInfrastructureConfigurations)
+    is_denied(host, BusinessRoles.ViewInfrastructureConfigurations)
 
 
 def test_provider_hierarchy(user_sdk: ADCMClient, user, prepare_objects, sdk_client_fs):
@@ -57,17 +63,21 @@ def test_provider_hierarchy(user_sdk: ADCMClient, user, prepare_objects, sdk_cli
     """
     cluster, service, component, provider, host = as_user_objects(user_sdk, prepare_objects)
 
-    policy = create_policy(sdk_client_fs, user, BusinessRoles.ViewConfigurations, provider)
-    is_allowed(provider, BusinessRoles.ViewConfigurations)
-    is_allowed(host, BusinessRoles.ViewConfigurations)
-    is_denied(cluster, BusinessRoles.ViewConfigurations)
-    is_denied(service, BusinessRoles.ViewConfigurations)
-    is_denied(component, BusinessRoles.ViewConfigurations)
+    policy = create_policy(
+        sdk_client_fs, BusinessRoles.ViewInfrastructureConfigurations, objects=[provider], users=[user], groups=[]
+    )
+    is_allowed(provider, BusinessRoles.ViewInfrastructureConfigurations)
+    is_allowed(host, BusinessRoles.ViewInfrastructureConfigurations)
+    is_denied(cluster, BusinessRoles.ViewApplicationConfigurations)
+    is_denied(service, BusinessRoles.ViewApplicationConfigurations)
+    is_denied(component, BusinessRoles.ViewApplicationConfigurations)
     delete_policy(policy)
 
-    create_policy(sdk_client_fs, user, BusinessRoles.ViewConfigurations, host)
-    is_denied(provider, BusinessRoles.ViewConfigurations)
-    is_allowed(host, BusinessRoles.ViewConfigurations)
-    is_denied(cluster, BusinessRoles.ViewConfigurations)
-    is_denied(service, BusinessRoles.ViewConfigurations)
-    is_denied(component, BusinessRoles.ViewConfigurations)
+    create_policy(
+        sdk_client_fs, BusinessRoles.ViewInfrastructureConfigurations, objects=[host], users=[user], groups=[]
+    )
+    is_denied(provider, BusinessRoles.ViewInfrastructureConfigurations)
+    is_allowed(host, BusinessRoles.ViewInfrastructureConfigurations)
+    is_denied(cluster, BusinessRoles.ViewApplicationConfigurations)
+    is_denied(service, BusinessRoles.ViewApplicationConfigurations)
+    is_denied(component, BusinessRoles.ViewApplicationConfigurations)

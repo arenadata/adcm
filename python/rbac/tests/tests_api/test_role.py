@@ -24,48 +24,43 @@ def test_create_role(admin_api_client):
         (
             {},
             {
-                "name": ["This field is required."],
+                "display_name": ["This field is required."],
                 "parametrized_by_type": ["This field is required."],
             },
         ),
         (
-            {"name": [], "parametrized_by_type": "test"},
-            {"name": ["Not a valid string."], "parametrized_by_type": ["Not a valid list."]},
+            {"display_name": [], "parametrized_by_type": "test"},
+            {
+                "display_name": ["This value does not match the required pattern."],
+                "parametrized_by_type": ["Not a valid list."],
+            },
         ),
         (
-            {"name": "test", "parametrized_by_type": ["WrongType"]},
+            {"display_name": "test", "parametrized_by_type": ["WrongType"]},
             {"parametrized_by_type": ["Not a valid object type."]},
         ),
         (
-            {"name": "test", "parametrized_by_type": [], "description": None},
+            {"display_name": "test", "parametrized_by_type": [], "description": None},
             {"description": ["This field may not be null."]},
         ),
         (
-            {"name": "test", "parametrized_by_type": [], "description": []},
+            {"display_name": "test", "parametrized_by_type": [], "description": []},
             {"description": ["Not a valid string."]},
         ),
         (
-            {"name": "test", "parametrized_by_type": [], "category": 123},
-            {"category": ["Not a valid list."]},
-        ),
-        (
-            {"name": "test", "parametrized_by_type": [], "category": ["string", 1]},
-            {"category": ["Not a valid string in list."]},
-        ),
-        (
-            {"name": "test", "parametrized_by_type": [], "child": None},
+            {"display_name": "test", "parametrized_by_type": [], "child": None},
             {"child": ["This field may not be null."]},
         ),
         (
-            {"name": "test", "parametrized_by_type": [], "child": 1},
+            {"display_name": "test", "parametrized_by_type": [], "child": 1},
             {"child": {"non_field_errors": ["Expected a list of items but got type \"int\"."]}},
         ),
         (
-            {"name": "test", "parametrized_by_type": [], "child": "string"},
+            {"display_name": "test", "parametrized_by_type": [], "child": "string"},
             {"child": {"non_field_errors": ["Expected a list of items but got type \"str\"."]}},
         ),
         (
-            {"name": "test", "parametrized_by_type": [], "child": [1]},
+            {"display_name": "test", "parametrized_by_type": [], "child": [1]},
             {
                 "child": [
                     {"non_field_errors": ["Invalid data. Expected a dictionary, but got int."]}
@@ -73,7 +68,7 @@ def test_create_role(admin_api_client):
             },
         ),
         (
-            {"name": "test", "parametrized_by_type": [], "child": ["string"]},
+            {"display_name": "test", "parametrized_by_type": [], "child": ["string"]},
             {
                 "child": [
                     {"non_field_errors": ["Invalid data. Expected a dictionary, but got str."]}
@@ -81,19 +76,23 @@ def test_create_role(admin_api_client):
             },
         ),
         (
-            {"name": "test", "parametrized_by_type": [], "child": [{}]},
+            {"display_name": "test", "parametrized_by_type": [], "child": [{}]},
             {"child": [{"id": ["This field is required."]}]},
         ),
         (
-            {"name": "test", "parametrized_by_type": [], "child": [{"id": "string"}]},
+            {"display_name": "test", "parametrized_by_type": [], "child": [{"id": "string"}]},
             {"child": [{"id": ["Incorrect type. Expected pk value, received str."]}]},
         ),
         (
-            {"name": "test", "parametrized_by_type": [], "child": [{"id": 1000}]},
+            {"display_name": "test", "parametrized_by_type": [], "child": [{"id": 1000}]},
             {"child": [{"id": ["Invalid pk \"1000\" - object does not exist."]}]},
         ),
         (
-            {"name": "test", "parametrized_by_type": [], "child": [{"id": 10000000000000000000}]},
+            {
+                "display_name": "test",
+                "parametrized_by_type": [],
+                "child": [{"id": 10000000000000000000}],
+            },
             {
                 "code": "OVERFLOW",
                 "level": "error",

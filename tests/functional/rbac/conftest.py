@@ -13,12 +13,12 @@
 import os
 from enum import Enum
 from operator import methodcaller
-from typing import Callable, NamedTuple, Union
+from typing import Callable, NamedTuple, Union, List
 
 import allure
 import pytest
 from adcm_client.base import NoSuchEndpointOrAccessIsDenied, BaseAPIObject
-from adcm_client.objects import ADCMClient, User
+from adcm_client.objects import ADCMClient, User, Group
 from adcm_client.wrappers.api import AccessIsDenied
 from adcm_pytest_plugin.utils import catch_failed, random_string
 
@@ -54,26 +54,29 @@ class BusinessRoles(Enum):
 
     # pylint: disable=invalid-name
 
-    ViewConfigurations = BusinessRole("View configurations", methodcaller("config"))
-    EditConfigurations = BusinessRole("Edit configurations", methodcaller("config_set_diff", {}))
+    ViewApplicationConfigurations = BusinessRole("View application configurations", methodcaller("config"))
+    ViewInfrastructureConfigurations = BusinessRole("View infrastructure configurations", methodcaller("config"))
+    EditApplicationConfigurations = BusinessRole("Edit application configurations", methodcaller("config_set_diff", {}))
+    EditInfrastructureConfigurations = BusinessRole(
+        "Edit infrastructure configurations", methodcaller("config_set_diff", {})
+    )
     ViewImports = BusinessRole("View imports", methodcaller("imports"))
     ManageImports = BusinessRole("Manage imports", lambda x, *args: x.bind(*args))
-    ViewHostComponents = BusinessRole("View Host-Components", methodcaller("hostcomponent"))
-    EditHostComponents = BusinessRole("Edit Host-Components", lambda x, *args: x.hostcomponent_set(*args))
+    ViewHostComponents = BusinessRole("View host-components", methodcaller("hostcomponent"))
+    EditHostComponents = BusinessRole("Edit host-components", lambda x, *args: x.hostcomponent_set(*args))
     AddService = BusinessRole("Add service", methodcaller("service_add", name="new_service"))
     RemoveService = BusinessRole("Remove service", lambda x, *args: x.service_delete(*args))
     RemoveHosts = BusinessRole("Remove hosts", methodcaller("delete"))
     MapHosts = BusinessRole("Map hosts", lambda x, *args: x.host_add(*args))
     UnmapHosts = BusinessRole("Unmap hosts", lambda x, *args: x.host_delete(*args))
-    UpgradeBundle = BusinessRole("Upgrade bundle", lambda x: x.upgrade().do())
+    UpgradeApplicationBundle = BusinessRole("Upgrade application bundle", lambda x: x.upgrade().do())
+    UpgradeInfrastructureBundle = BusinessRole("Upgrade infrastructure bundle", lambda x: x.upgrade().do())
     CreateHostProvider = BusinessRole(
-        "Create provider", methodcaller("provider_create", name=f"new_provider {random_string(5)}")
+        "Create provider", lambda x: x.provider_create(name=f"new_provider {random_string(5)}")
     )
-    CreateHost = BusinessRole("Create host", methodcaller("host_create", fqdn=f"new_host_{random_string(5)}"))
+    CreateHost = BusinessRole("Create host", lambda x: x.host_create(fqdn=f"new_host_{random_string(5)}"))
     RemoveHostProvider = BusinessRole("Remove provider", methodcaller("delete"))
-    CreateCluster = BusinessRole(
-        "Create cluster", methodcaller("cluster_create", name=f"new_cluster {random_string(5)}")
-    )
+    CreateCluster = BusinessRole("Create cluster", lambda x: x.cluster_create(name=f"new_cluster {random_string(5)}"))
     RemoveCluster = BusinessRole("Remove cluster", methodcaller("delete"))
     UploadBundle = BusinessRole("Upload bundle", methodcaller("upload_from_fs", os.path.join(DATA_DIR, "dummy")))
     RemoveBundle = BusinessRole("Remove bundle", methodcaller("delete"))
@@ -82,7 +85,7 @@ class BusinessRoles(Enum):
     ViewUsers = BusinessRole("View users", methodcaller("user_list"))
     CreateUser = BusinessRole("Create user", methodcaller("user_create", username="test", password="test"))
     RemoveUser = BusinessRole("Remove user", methodcaller("delete"))
-    EditUser = BusinessRole("Edit user", methodcaller("update", first_name=random_string(5)))
+    EditUser = BusinessRole("Edit user", lambda x: x.update(first_name=random_string(5)))
     ViewRoles = BusinessRole("View roles", methodcaller("role_list"))
     CreateCustomRoles = BusinessRole(
         "Create custom role",
@@ -91,17 +94,17 @@ class BusinessRoles(Enum):
         ),
     )
     RemoveRoles = BusinessRole("Remove roles", methodcaller("delete"))
-    EditRoles = BusinessRole("Edit role", methodcaller("update", display_name=random_string(5)))
+    EditRoles = BusinessRole("Edit role", lambda x: x.update(display_name=random_string(5)))
     ViewGroups = BusinessRole("View group", methodcaller("group_list"))
     CreateGroup = BusinessRole("Create group", methodcaller("group_create", name="test"))
     RemoveGroup = BusinessRole("Remove group", methodcaller("delete"))
-    EditGroup = BusinessRole("Edit group", methodcaller("update", name=random_string(5)))
+    EditGroup = BusinessRole("Edit group", lambda x: x.update(name=random_string(5)))
     ViewPolicies = BusinessRole("View policy", methodcaller("policy_list"))
     CreatePolicy = BusinessRole(
         "Create policy", lambda x, **kwargs: x.policy_create(name="Test policy", objects=[], **kwargs)
     )
     RemovePolicy = BusinessRole("Remove policy", methodcaller("delete"))
-    EditPolicy = BusinessRole("Edit policy", methodcaller("update", name=random_string(5)))
+    EditPolicy = BusinessRole("Edit policy", lambda x: x.update(name=random_string(5)))
 
 
 @pytest.fixture()
@@ -124,7 +127,7 @@ def user_policy(request, user, sdk_client_fs, prepare_objects):
     Create testing role and policy
     Parametrize this fixture with `use_role` decorator
     """
-    return create_policy(sdk_client_fs, user, request.param, *prepare_objects)
+    return create_policy(sdk_client_fs, request.param, objects=prepare_objects, users=[user], groups=[])
 
 
 def use_role(role: BusinessRoles):
@@ -133,7 +136,7 @@ def use_role(role: BusinessRoles):
 
 
 @pytest.fixture()
-def prepare_objects(sdk_client_fs, user_sdk):
+def prepare_objects(sdk_client_fs):
     """
     Prepare adcm objects
     Created objects should be used as a `parametrized_by_type` values on policy with tested role
@@ -149,7 +152,7 @@ def prepare_objects(sdk_client_fs, user_sdk):
 
 
 @pytest.fixture()
-def second_objects(sdk_client_fs, user_sdk):
+def second_objects(sdk_client_fs):
     """
     Prepare second adcm objects
     Its objects should not be allowed on tested user
@@ -182,7 +185,7 @@ def delete_policy(policy):
     policy.delete()
 
 
-def create_policy(sdk_client, user, permission: BusinessRoles, *objects):
+def create_policy(sdk_client, permission: BusinessRoles, objects: list, users: List[User], groups: List[Group]):
     """Create a new policy for the user and role"""
     role_name = permission.value.role_name
 
@@ -194,7 +197,7 @@ def create_policy(sdk_client, user, permission: BusinessRoles, *objects):
         child=[{"id": business_role.id}],
     )
     policy = sdk_client.policy_create(
-        name=f"Policy with role {role_name} on the user {user.username}", role=role, objects=objects, user=[user]
+        name=f"Policy with role {role_name}", role=role, objects=objects, user=users, group=groups
     )
     return policy
 

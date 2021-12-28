@@ -25,9 +25,8 @@ class ADCMDirectAPIClient:
         self.base_url = base_url.rstrip("/")
         self.credentials = user_credentials
         self.login_endpoint = f'{base_url}/api/v1/token/'
-        self.user_create_endpoint = f'{base_url}/api/v1/user/'
-        self.user_delete_ep_template = f'{base_url}/api/v1/user/' + '{}/'
-        self.password_endpoint = f'{base_url}/api/v1/profile/admin/password/'
+        self.user_create_endpoint = f'{base_url}/api/v1/rbac/user/'
+        self.user_delete_ep_template = f'{base_url}/api/v1/rbac/user/' + '{}/'
 
     @allure.step('Get authorization token over API')
     def get_authorization_token(self) -> str:

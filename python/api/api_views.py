@@ -25,7 +25,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView
 from rest_framework.utils.urls import replace_query_param
-from rest_framework.permissions import DjangoModelPermissions, DjangoObjectPermissions
+from rest_framework.permissions import DjangoModelPermissions
 
 from adcm.settings import REST_FRAMEWORK
 
@@ -33,6 +33,8 @@ import cm.upgrade
 from cm import config
 from cm.errors import AdcmEx
 from cm.models import Action, ADCMEntity, PrototypeConfig, ConcernType
+
+from rbac.viewsets import DjangoObjectPerm
 
 
 def check_obj(model, req, error=None):
@@ -161,7 +163,7 @@ class DjangoModelPerm(DjangoModelPermissions):
 
 
 class GenericAPIPermView(GenericAPIView):
-    permission_classes = (DjangoModelPerm,)
+    permission_classes = (DjangoObjectPerm,)
 
 
 class InterfaceView:
@@ -244,7 +246,7 @@ class AdcmFilterBackend(drf_filters.DjangoFilterBackend):
 class PageView(GenericAPIView, InterfaceView):
     filter_backends = (AdcmFilterBackend, AdcmOrderingFilter)
     pagination_class = rest_framework.pagination.LimitOffsetPagination
-    permission_classes = (DjangoModelPerm,)
+    permission_classes = (DjangoObjectPerm,)
 
     def get_ordering(self, request, queryset, view):
         Order = AdcmOrderingFilter()
@@ -321,7 +323,7 @@ class PageViewAdd(PageView):
 
 class ListView(GenericAPIView, InterfaceView):
     filter_backends = (AdcmFilterBackend,)
-    permission_classes = (DjangoModelPerm,)
+    permission_classes = (DjangoObjectPerm,)
 
     def get(self, request, *args, **kwargs):
         obj = self.filter_queryset(self.get_queryset())
@@ -338,7 +340,7 @@ class ListViewAdd(ListView):
 
 
 class DetailViewRO(GenericAPIView, InterfaceView):
-    permission_classes = (DjangoModelPerm,)
+    permission_classes = (DjangoObjectPerm,)
 
     def check_obj(self, kw_req):
         try:

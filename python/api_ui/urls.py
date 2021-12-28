@@ -10,19 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""RBAC root URLs"""
-
 from django.urls import path, include
-
-from .endpoints import logout, root, token
+from api_ui import views
 
 urlpatterns = [
-    path('', root.RBACRoot.as_view(), name='root'),
-    path('me/', include('rbac.endpoints.me.urls')),
-    path('user/', include('rbac.endpoints.user.urls')),
-    path('group/', include('rbac.endpoints.group.urls')),
-    path('role/', include('rbac.endpoints.role.urls')),
-    path(r'policy/', include('rbac.endpoints.policy.urls')),
-    path('logout/', logout.LogOut.as_view(), name='logout'),
-    path('token/', token.GetAuthToken.as_view(), name='token'),
+    path('', views.APIRoot.as_view()),
+    path('rbac/', include(('rbac.urls_ui', 'rbac'), namespace='rbac-ui')),
 ]
