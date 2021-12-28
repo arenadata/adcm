@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Common fixtures and steps for rbac testing"""
+import itertools
 import os
 from enum import Enum
 from operator import methodcaller
@@ -18,7 +19,7 @@ from typing import Callable, NamedTuple, Union, List
 import allure
 import pytest
 from adcm_client.base import NoSuchEndpointOrAccessIsDenied, BaseAPIObject
-from adcm_client.objects import ADCMClient, User, Group
+from adcm_client.objects import ADCMClient, User, Group, Cluster, Service, Component, Provider, Host
 from adcm_client.wrappers.api import AccessIsDenied
 from adcm_pytest_plugin.utils import catch_failed, random_string
 
@@ -89,9 +90,7 @@ class BusinessRoles(Enum):
     ViewRoles = BusinessRole("View roles", methodcaller("role_list"))
     CreateCustomRoles = BusinessRole(
         "Create custom role",
-        methodcaller(
-            "role_create", name="Custom role", display_name="Custom role", parametrized_by=[], child=[{"id": 1}]
-        ),
+        methodcaller("role_create", name="Custom role", display_name="Custom role", child=[{"id": 1}]),
     )
     RemoveRoles = BusinessRole("Remove roles", methodcaller("delete"))
     EditRoles = BusinessRole("Edit role", lambda x: x.update(display_name=random_string(5)))
@@ -187,17 +186,30 @@ def delete_policy(policy):
 
 def create_policy(sdk_client, permission: BusinessRoles, objects: list, users: List[User], groups: List[Group]):
     """Create a new policy for the user and role"""
+    obj_dict = {
+        "cluster": list(filter(lambda x: isinstance(x, Cluster), objects)),
+        "service": list(filter(lambda x: isinstance(x, Service), objects)),
+        "component": list(filter(lambda x: isinstance(x, Component), objects)),
+        "provider": list(filter(lambda x: isinstance(x, Provider), objects)),
+        "host": list(filter(lambda x: isinstance(x, Host), objects)),
+    }
     role_name = permission.value.role_name
 
     business_role = sdk_client.role(name=role_name)
     role = sdk_client.role_create(
         name=f"Testing {role_name} {random_string(5)}",
         display_name=f"Testing {role_name}",
-        parametrized_by=["cluster", "service", "component", "host", "provider"],
         child=[{"id": business_role.id}],
     )
+    if role.parametrized_by_type:
+        suitable_objects = list(itertools.chain(*[obj_dict[obj_type] for obj_type in role.parametrized_by_type]))
+        with allure.step(f"Suitable policy objects: {suitable_objects}"):
+            pass
+        assert suitable_objects, "Could not find suitable policy objects"
+    else:
+        suitable_objects = []
     policy = sdk_client.policy_create(
-        name=f"Policy with role {role_name}", role=role, objects=objects, user=users, group=groups
+        name=f"Policy with role {role_name}", role=role, objects=suitable_objects, user=users, group=groups
     )
     return policy
 
