@@ -52,8 +52,8 @@ def role_map(spec_data):
 def roots(role_map: dict):
     roots = role_map.copy()
     for v in role_map.values():
-        if "child" in role_map:
-            for c in role_map["child"]:
+        if "child" in v:
+            for c in v["child"]:
                 if c in roots:
                     del roots[c]
     return roots
