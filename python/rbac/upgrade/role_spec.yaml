@@ -386,9 +386,6 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       any_category: true
-      parametrized_by:
-        - cluster
-        - service
       category:
         - ADCM
       child:
@@ -434,9 +431,6 @@ roles:
     - name: Manage imports
       description: The ability to manage all imports page on cluster and service
       type: business
-      parametrized_by:
-        - cluster
-        - service
       module_name: rbac.roles
       class_name: ParentRole
       any_category: true
