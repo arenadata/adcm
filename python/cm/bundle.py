@@ -148,9 +148,14 @@ def untar_safe(bundle_hash, path):
 def untar(bundle_hash, bundle):
     path = os.path.join(config.BUNDLE_DIR, bundle_hash)
     if os.path.isdir(path):
-        existed = Bundle.objects.get(hash=bundle_hash)
-        msg = 'Bundle already exists. Name: {}, version: {}, edition: {}'
-        err('BUNDLE_ERROR', msg.format(existed.name, existed.version, existed.edition))
+        try:
+            existed = Bundle.objects.get(hash=bundle_hash)
+            msg = 'Bundle already exists. Name: {}, version: {}, edition: {}'
+            err('BUNDLE_ERROR', msg.format(existed.name, existed.version, existed.edition))
+        except Bundle.DoesNotExist:
+            log.warning(
+                f"There is no bundle with hash {bundle_hash} in DB, but there is a dir on disk with this hash. Dir will be erased."
+            )
     tar = tarfile.open(bundle)
     tar.extractall(path=path)
     tar.close()
