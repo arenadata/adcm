@@ -381,7 +381,7 @@ class HostComponentList(GenericAPIPermView, InterfaceView):
         Create new mapping service:component <-> host in a specified cluster.
         """
         cluster = check_obj(Cluster, cluster_id)
-        self.check_custom_perm('edit_host_components_of', 'cluster', cluster)
+        self.check_hc_perm('edit_host_components_of', 'cluster', cluster)
         save_serializer = self.get_serializer_class()
         serializer = save_serializer(
             data=request.data,
