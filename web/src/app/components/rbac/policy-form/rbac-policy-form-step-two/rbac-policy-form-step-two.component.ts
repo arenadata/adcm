@@ -9,7 +9,7 @@ import {
 } from '../../../../models/rbac/rbac-object-candidate';
 import { ADD_SERVICE_PROVIDER } from '../../../../shared/add-component/add-service-model';
 import { RbacObjectCandidateService } from '../../../../services/rbac-object-candidate.service';
-import { switchMap } from 'rxjs/operators';
+import { filter, switchMap } from 'rxjs/operators';
 import { RbacRoleModel } from '../../../../models/rbac/rbac-role.model';
 
 
@@ -45,6 +45,7 @@ export class RbacPolicyFormStepTwoComponent extends BaseFormDirective implements
 
   ngOnInit(): void {
     this.roleControl.valueChanges.pipe(
+      filter((v) => !!v),
       switchMap((role) => this.service.get<IRbacObjectCandidateModel>(role.id)),
       this.takeUntil()
     ).subscribe((candidates: IRbacObjectCandidateModel) => {

@@ -99,4 +99,16 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
     this.form.markAllAsTouched();
   }
 
+  rbacBeforeSave(value): RbacPolicyModel {
+    return {
+      ...value.steps[0],
+      object: [
+        ...value.steps[1].object.cluster || [],
+        ...value.steps[1].object.parent || [],
+        ...value.steps[1].object.provider || [],
+        ...value.steps[1].object.host || []
+      ]
+    };
+  }
+
 }
