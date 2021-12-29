@@ -279,7 +279,7 @@ def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too
     parent = {}
     top_parent = {
         'Cluster Administrator': [],
-        'ADCM Administrator': [],
+        'Provider Administrator': [],
         'Service Administrator': [],
     }
 
@@ -350,20 +350,19 @@ def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too
 
         if parent_value['parametrized_by_type'] == 'cluster':
             parent_role.category.add(category)
-            for top_parent_name in ['Cluster Administrator', 'ADCM Administrator']:
+            for top_parent_name in ['Cluster Administrator']:
                 top_parent[top_parent_name].append(parent_role)
         elif parent_value['parametrized_by_type'] in ['service', 'component']:
             parent_role.category.add(category)
             for top_parent_name in [
                 'Cluster Administrator',
-                'ADCM Administrator',
                 'Service Administrator',
             ]:
                 top_parent[top_parent_name].append(parent_role)
         elif parent_value['parametrized_by_type'] == 'provider':
-            top_parent['ADCM Administrator'].append(parent_role)
+            top_parent['Provider Administrator'].append(parent_role)
         elif parent_value['parametrized_by_type'] == 'host':
-            for top_parent_name in ['Cluster Administrator', 'ADCM Administrator']:
+            for top_parent_name in ['Cluster Administrator', 'Provider Administrator']:
                 top_parent[top_parent_name].append(parent_role)
 
     for name, children in top_parent.items():
