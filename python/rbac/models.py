@@ -95,7 +95,10 @@ class Role(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['name', 'bundle', 'built_in'], name='unique_role')
+            models.UniqueConstraint(fields=['name', 'built_in'], name='unique_name'),
+            models.UniqueConstraint(
+                fields=['display_name', 'built_in'], name='unique_display_name'
+            ),
         ]
         indexes = [
             models.Index(fields=['name', 'display_name']),
@@ -181,7 +184,7 @@ class PolicyPermission(models.Model):
 class Policy(models.Model):
     """Policy connect role, users and (maybe) objects"""
 
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
     object = models.ManyToManyField(PolicyObject, blank=True)
     built_in = models.BooleanField(default=True)
@@ -242,3 +245,12 @@ class Policy(models.Model):
             self.role.apply(self, user, None)
         for group in self.group.all():
             self.role.apply(self, None, group=group)
+
+
+def re_apply(obj):
+    """
+    This function search for polices linked with specified object and re apply them
+    """
+    content = ContentType.objects.get_for_model(obj)
+    for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=content):
+        policy.apply()

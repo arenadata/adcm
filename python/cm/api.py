@@ -17,6 +17,7 @@ from django.core.exceptions import MultipleObjectsReturned
 from django.db import transaction
 from django.utils import timezone
 
+import rbac
 import cm.issue
 import cm.status_api
 from cm.adcm_config import (
@@ -184,6 +185,7 @@ def add_host_to_cluster(cluster, host):
         host.save()
         host.add_to_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(host)
+        rbac.models.re_apply(cluster)
     cm.status_api.post_event('add', 'host', host.id, 'cluster', str(cluster.id))
     load_service_map()
     log.info('host #%s %s is added to cluster #%s %s', host.id, host.fqdn, cluster.id, cluster.name)
@@ -365,6 +367,7 @@ def add_service_to_cluster(cluster, proto):
         cs.save()
         add_components_to_service(cluster, cs)
         cm.issue.update_hierarchy_issues(cs)
+        rbac.models.re_apply(cluster)
     cm.status_api.post_event('add', 'service', cs.id, 'cluster', str(cluster.id))
     load_service_map()
     log.info(
@@ -542,11 +545,20 @@ def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     return result
 
 
+def re_apply_policy4service(hc_map):
+    service_map = {}
+    for hc in hc_map:
+        service_map[hc.service.id] = hc.service
+    for service in service_map.values():
+        rbac.models.re_apply(service)
+
+
 def add_hc(cluster, hc_in):
     host_comp_list = check_hc(cluster, hc_in)
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
         new_hc = save_hc(cluster, host_comp_list)
+        re_apply_policy4service(new_hc)
     return new_hc
 
 

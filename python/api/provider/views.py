@@ -64,12 +64,15 @@ class ProviderDetail(DetailViewRO):
 class ProviderUpgrade(PageView):
     queryset = Upgrade.objects.all()
     serializer_class = serializers.UpgradeProviderSerializer
+    check_upgrade_perm = check_custom_perm
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, provider_id):  # pylint: disable=arguments-differ
         """
         List all avaliable upgrades for specified host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
+        self.check_upgrade_perm('view_upgrade_of', 'hostprovider', provider)
         obj = cm.upgrade.get_upgrade(provider, self.get_ordering(request, self.queryset, self))
         serializer = self.serializer_class(
             obj, many=True, context={'provider_id': provider.id, 'request': request}
@@ -80,12 +83,15 @@ class ProviderUpgrade(PageView):
 class ProviderUpgradeDetail(ListView):
     queryset = Upgrade.objects.all()
     serializer_class = serializers.UpgradeProviderSerializer
+    check_upgrade_perm = check_custom_perm
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, provider_id, upgrade_id):  # pylint: disable=arguments-differ
         """
         List all avaliable upgrades for specified host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
+        self.check_upgrade_perm('view_upgrade_of', 'hostprovider', provider)
         obj = self.get_queryset().get(id=upgrade_id)
         serializer = self.serializer_class(
             obj, context={'provider_id': provider.id, 'request': request}

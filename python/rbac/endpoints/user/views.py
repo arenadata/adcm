@@ -14,7 +14,6 @@
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
 from rbac import models
 from rbac.services import user as user_services
 from rbac.viewsets import ModelPermViewSet
@@ -67,7 +66,6 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
         allow_blank=True,
         required=False,
         default='',
-        validators=[UniqueValidator(queryset=models.User.objects.all())],
     )
     is_superuser = serializers.BooleanField(default=False)
     password = PasswordField(trim_whitespace=False)

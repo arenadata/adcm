@@ -41,7 +41,7 @@ def test_remove_group_from_policy(user_sdk: ADCMClient, user, prepare_objects, s
     group = sdk_client_fs.group_create("test_group", user=[{"id": user.id}])
     empty_group = sdk_client_fs.group_create("empty_group")
     policy = create_policy(
-        sdk_client_fs, BusinessRoles.ViewApplicationConfigurations, objects=[cluster], users=[user], groups=[group]
+        sdk_client_fs, BusinessRoles.ViewApplicationConfigurations, objects=[cluster], users=[], groups=[group]
     )
     is_allowed(cluster, BusinessRoles.ViewApplicationConfigurations)
     with allure.step("Remove group from policy"):
@@ -57,7 +57,7 @@ def test_remove_user_from_group(user_sdk: ADCMClient, user, prepare_objects, sdk
     cluster = user_sdk.cluster(id=cluster_via_admin.id)
     group = sdk_client_fs.group_create("test_group", user=[{"id": user.id}])
     create_policy(
-        sdk_client_fs, BusinessRoles.ViewApplicationConfigurations, objects=[cluster], users=[user], groups=[group]
+        sdk_client_fs, BusinessRoles.ViewApplicationConfigurations, objects=[cluster], users=[], groups=[group]
     )
     is_allowed(cluster, BusinessRoles.ViewApplicationConfigurations)
     with allure.step("Remove user from group"):
@@ -97,7 +97,6 @@ def test_change_child_role(user_sdk: ADCMClient, user, prepare_objects, sdk_clie
         role = sdk_client_fs.role_create(
             name="Another role",
             display_name="Another role",
-            parametrized_by=["cluster", "service", "component", "host", "provider"],
             child=[{"id": sdk_client_fs.role(name=BusinessRoles.ViewImports.value.role_name).id}],
         )
         policy.update(role={"id": role.id})

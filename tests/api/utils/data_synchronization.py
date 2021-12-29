@@ -40,3 +40,37 @@ def sync_object_and_role(adcm, fields: dict) -> dict:
         for object_type in role['parametrized_by_type']
     ]
     return new_fields
+
+
+def sync_child_roles_hierarchy(adcm, fields: dict):
+    """Child roles can be only in infrastructure or application hierarchy"""
+    from tests.api.utils.endpoints import Endpoints
+    from tests.api.testdata.getters import get_endpoint_data
+
+    if "child" not in fields:
+        return fields
+
+    child_list = fields.get("child")
+    if not child_list or len(child_list) == 1:
+        return fields
+
+    def _role_by_id(roles, role_id):
+        return list(filter(lambda x: role_id == x["id"], roles))[0]
+
+    def _is_suitable_role(role):
+        types = _role_by_id(all_roles, role["id"])["parametrized_by_type"]
+        if not types:
+            return True
+        is_infrastructure = "provider" in types or "host" in types
+        return is_infrastructure and should_be_infrastructure
+
+    all_roles = get_endpoint_data(adcm, endpoint=Endpoints.RbacBusinessRole)
+    for child in child_list:
+        child_role = _role_by_id(all_roles, role_id=child.get("id"))
+        role_types = child_role["parametrized_by_type"]
+        if not role_types:
+            continue
+        should_be_infrastructure = role_types[0] in ["provider", "host"]
+        fields["child"] = list(filter(_is_suitable_role, child_list))
+        break
+    return fields

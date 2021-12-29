@@ -15,6 +15,7 @@ from typing import List
 
 from adwp_base.errors import AdwpEx
 from django.contrib.contenttypes.models import ContentType
+from django.db import IntegrityError
 from django.db.transaction import atomic
 from rest_framework import status
 
@@ -91,9 +92,10 @@ def policy_create(name: str, role: Role, built_in: bool = False, **kwargs):
 
     objects = kwargs.get('object', [])
     _check_objects(role, objects)
-
-    policy = Policy.objects.create(name=name, role=role, built_in=built_in)
-
+    try:
+        policy = Policy.objects.create(name=name, role=role, built_in=built_in)
+    except IntegrityError as exc:
+        raise AdwpEx('POLICY_CREATE_ERROR', msg=f'Policy creation failed with error {exc}') from exc
     for obj in objects:
         policy.object.add(_get_policy_object(obj))
 
@@ -126,7 +128,7 @@ def policy_update(policy: Policy, **kwargs) -> Policy:
     role = kwargs.get('role')
     objects = kwargs.get('object')
     policy_old_objects = [po.object for po in policy.object.all()]
-    _check_objects(role or policy.role, objects or policy_old_objects)
+    _check_objects(role or policy.role, objects if objects is not None else policy_old_objects)
 
     if 'name' in kwargs:
         policy.name = kwargs['name']
@@ -138,7 +140,8 @@ def policy_update(policy: Policy, **kwargs) -> Policy:
         update_m2m_field(policy.group, groups)
     if objects is not None:
         update_m2m_field(policy.object, [_get_policy_object(obj) for obj in objects])
-
-    policy.save()
-    policy.apply()
+    try:
+        policy.save()
+    except IntegrityError as exc:
+        raise AdwpEx('POLICY_UPDATE_ERROR', msg=f'Policy update failed with error {exc}') from exc
     return policy
