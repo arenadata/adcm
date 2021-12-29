@@ -201,8 +201,8 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
         const getDateField = (task: Task) => task.status === 'failed' || task.status === 'success' ? task.finish_date : task.start_date;
         const aDate = new Date(getDateField(a));
         const bDate = new Date(getDateField(b));
-        return aDate.getDate() - bDate.getDate();
-      }).slice(0, 5);
+        return aDate.getTime() - bDate.getTime();
+      }).reverse().slice(0, 5);
 
       if (user.profile?.lastViewedTask?.id) {
         tasks = tasks.filter(task => task.id > user.profile.lastViewedTask.id);
