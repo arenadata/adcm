@@ -18,7 +18,13 @@ import allure
 import pytest
 
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.page.admin.page import AdminIntroPage, AdminUsersPage, AdminSettingsPage
+from tests.ui_tests.app.page.admin.page import (
+    AdminIntroPage,
+    AdminUsersPage,
+    AdminSettingsPage,
+    AdminRolesPage,
+    AdminRoleInfo,
+)
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.utils import expect_rows_amount_change
 
@@ -211,6 +217,12 @@ class TestAdminUsersPage:
 class TestAdminRolesPage:
     """Tests for the /admin/roles"""
 
+    custom_role = AdminRoleInfo(
+        name='Test_role_name',
+        description='Test role description',
+        permissions='Create provider, Create cluster, Create user, Remove policy',
+    )
+
     def test_open_by_tab_admin_roles_page(self, app_fs):
         """Test open /admin/roles from left menu"""
 
@@ -219,4 +231,66 @@ class TestAdminRolesPage:
         roles_page.wait_page_is_opened()
         roles_page.check_all_elements()
         roles_page.check_default_roles()
+        assert len(roles_page.table.get_all_rows()) == 5, "There should be 5 default roles"
         roles_page.check_admin_toolbar()
+
+    def test_create_custom_role_on_roles_page(self, app_fs):
+        """Test create a role on /admin/roles page"""
+
+        page = AdminRolesPage(app_fs.driver, app_fs.adcm.url).open()
+        page.create_role(self.custom_role)
+        page.check_default_roles()
+        page.check_custom_role(self.custom_role)
+
+    def test_check_pagination_role_list_page(self, app_fs):
+        """Test pagination on /admin/roles page"""
+
+        page = AdminRolesPage(app_fs.driver, app_fs.adcm.url).open()
+        with allure.step("Create 11 roles"):
+            for _ in range(6):
+                page.create_role(self.custom_role)
+        page.table.check_pagination(second_page_item_amount=1)
+
+    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2531")
+    def test_check_role_popup_on_roles_page(self, app_fs):
+        """Test changing a role on /admin/roles page"""
+
+        custom_role_changed = AdminRoleInfo(
+            name='Test_another_name',
+            description='Test role description 2',
+            permissions='Upload bundle',
+        )
+
+        page = AdminRolesPage(app_fs.driver, app_fs.adcm.url).open()
+        page.create_role(self.custom_role)
+        page.open_role_by_name(self.custom_role.name)
+        with allure.step("Check that update unavailable without role name"):
+            page.fill_role_name_in_role_popup(" ")
+            page.check_field_is_not_correct_in_role_popup("Role name")
+            page.check_save_button_disabled()
+            page.fill_role_name_in_role_popup("")
+            page.check_field_is_required_in_role_popup("Role name")
+            page.check_save_button_disabled()
+        with allure.step("Check that update unavailable without permissions"):
+            page.remove_permissions_in_add_role_popup(permissions_to_remove=self.custom_role.permissions.split(", "))
+            page.check_save_button_disabled()
+            for permission in self.custom_role.permissions.split(", "):
+                page.select_permission_in_add_role_popup(permission)
+            page.remove_permissions_in_add_role_popup(permissions_to_remove=None, all_permissions=True)
+            page.check_save_button_disabled()
+        page.fill_role_name_in_role_popup(custom_role_changed.name)
+        page.fill_description_in_role_popup(custom_role_changed.description)
+        page.select_permission_in_add_role_popup(custom_role_changed.permissions)
+        page.click_save_btn_in_role_popup()
+        page.check_default_roles()
+        page.check_custom_role(custom_role_changed)
+
+    def test_delete_role_from_roles_page(self, app_fs):
+        """Test delete custome role on /admin/roles page"""
+
+        page = AdminRolesPage(app_fs.driver, app_fs.adcm.url).open()
+        page.create_role(self.custom_role)
+        page.select_all_roles()
+        page.click_delete_button()
+        page.check_default_roles()
+        assert len(page.table.get_all_rows()) == 5, "There should be 5 default roles"

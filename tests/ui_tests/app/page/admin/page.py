@@ -13,7 +13,10 @@
 """Admin pages PageObjects classes"""
 
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import (
+    List,
+    Optional,
+)
 
 import allure
 from selenium.common.exceptions import TimeoutException
@@ -276,18 +279,31 @@ class AdminRolesPage(GeneralAdminPage):
     @allure.step('Check default roles')
     def check_default_roles(self):
         """Check default roles are listed on admin page"""
+
         default_roles = [
-            AdminRoleInfo(name='ADCM User', description='', permissions='View configurations, View imports, Base role'),
+            AdminRoleInfo(
+                name='ADCM User',
+                description='',
+                permissions='View application configurations, View infrastructure configurations, View imports, '
+                'View host-components, Base role',
+            ),
             AdminRoleInfo(
                 name='Service Administrator',
                 description='',
-                permissions='Edit configurations, Manage imports, ADCM User',
+                permissions='Edit application configurations, Manage imports, ADCM User',
             ),
             AdminRoleInfo(
                 name='Cluster Administrator',
                 description='',
                 permissions='Create host, Upload bundle, Add service, Remove service, Remove hosts, Map hosts, '
-                'Unmap hosts, Upgrade bundle, Remove bundle, Service Administrator',
+                'Unmap hosts, Edit host-components, Upgrade application bundle, Remove bundle, '
+                'Service Administrator',
+            ),
+            AdminRoleInfo(
+                name='Provider Administrator',
+                description='',
+                permissions='Create host, Upload bundle, Edit infrastructure configurations, Remove hosts, '
+                'Upgrade infrastructure bundle, Remove bundle',
             ),
             AdminRoleInfo(
                 name='ADCM Administrator',
@@ -300,4 +316,104 @@ class AdminRolesPage(GeneralAdminPage):
         ]
 
         roles = self.get_all_roles_info()
-        assert roles == default_roles, "Some default roles are wrong or missing"
+        for role in default_roles:
+            assert role in roles, f"Default role {role.name} is wrong or missing"
+
+    @allure.step('Check custom roles')
+    def check_custom_role(self, role: AdminRoleInfo):
+        assert role in self.get_all_roles_info(), f"Role {role.name} is wrong or missing"
+
+    @allure.step('Open create role popup')
+    def open_create_role_popup(self):
+        self.find_and_click(AdminRolesLocators.create_role_btn)
+        self.wait_element_visible(AdminRolesLocators.AddRolePopup.block)
+
+    @allure.step('Fill role name {role_name}')
+    def fill_role_name_in_role_popup(self, role_name: str):
+        self.send_text_to_element(AdminRolesLocators.AddRolePopup.role_name_input, role_name, clean_input=True)
+
+    @allure.step('Fill description {description}')
+    def fill_description_in_role_popup(self, description: str):
+        self.send_text_to_element(AdminRolesLocators.AddRolePopup.description_name_input, description, clean_input=True)
+
+    @allure.step('Create new role')
+    def create_role(self, role: AdminRoleInfo):
+        self.open_create_role_popup()
+        self.fill_role_name_in_role_popup(role.name)
+        self.fill_description_in_role_popup(role.description)
+        for permission in role.permissions.split(", "):
+            self.select_permission_in_add_role_popup(permission)
+        self.wait_element_visible(AdminRolesLocators.AddRolePopup.PermissionItemsBlock.item)
+        self.click_save_btn_in_role_popup()
+        self.wait_element_hide(CommonToolbarLocators.progress_bar)
+
+    @allure.step('Select permission {permission}')
+    def select_permission_in_add_role_popup(self, permission: str):
+        available_permissions = self.find_elements(
+            AdminRolesLocators.AddRolePopup.SelectPermissionsBlock.permissions_item_row
+        )
+        for perm in available_permissions:
+            if perm.text == permission:
+                perm.click()
+                self.find_and_click(AdminRolesLocators.AddRolePopup.SelectPermissionsBlock.select_btn)
+                return
+        raise ValueError(f"Permission {permission} has not found")
+
+    @allure.step('Open role {role_name}')
+    def open_role_by_name(self, role_name: str):
+        role_rows = self.table.get_all_rows()
+        for row in role_rows:
+            if role_name in row.text:
+                self.find_child(row, AdminRolesLocators.RoleRow.name).click()
+                self.wait_element_visible(AdminRolesLocators.AddRolePopup.block)
+                return
+        raise ValueError(f"Role {role_name} has not found")
+
+    @allure.step('Remove permissions {permissions_to_remove}')
+    def remove_permissions_in_add_role_popup(
+        self, permissions_to_remove: Optional[List], all_permissions: bool = False
+    ):
+
+        if all_permissions:
+            self.find_and_click(AdminRolesLocators.AddRolePopup.PermissionItemsBlock.clear_all_btn)
+        else:
+            for permission_to_remove in permissions_to_remove:
+                selected_permission = self.find_elements(AdminRolesLocators.AddRolePopup.PermissionItemsBlock.item)
+                for permission in selected_permission:
+                    if permission_to_remove in permission.text:
+                        self.find_child(
+                            permission, AdminRolesLocators.AddRolePopup.PermissionItemsBlock.PermissionItem.delete_btn
+                        ).click()
+                        break
+
+    def click_save_btn_in_role_popup(self):
+        self.find_and_click(AdminRolesLocators.AddRolePopup.save_btn)
+
+    @allure.step('Check that save button is disabled')
+    def check_save_button_disabled(self):
+        assert (
+            self.find_element(AdminRolesLocators.AddRolePopup.save_btn).get_attribute("disabled") == 'true'
+        ), "Save role button should be disabled"
+
+    @allure.step("Check {name} required error is presented")
+    def check_field_is_required_in_role_popup(self, name: str):
+        """Assert that message "{name} is required" is presented"""
+
+        message = f'{name} is required.'
+        self.check_element_should_be_visible(AdminRolesLocators.AddRolePopup.field_error(message))
+
+    @allure.step("Check {name} not correct error is presented")
+    def check_field_is_not_correct_in_role_popup(self, name: str):
+        """Assert that message "{name} is not correct" is presented"""
+
+        message = f'{name} is not correct.'
+        self.check_element_should_be_visible(AdminRolesLocators.AddRolePopup.field_error(message))
+
+    def select_all_roles(self):
+        self.find_elements(self.table.locators.header)[0].click()
+
+    def click_delete_button(self):
+        self.find_and_click(AdminRolesLocators.delete_btn)
+        self.wait_element_visible(DeleteDialog.body)
+        self.find_and_click(DeleteDialog.yes)
+        self.wait_element_hide(DeleteDialog.body)
