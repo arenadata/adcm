@@ -7,16 +7,21 @@ roles:
       description: The ability to add new host
       type: business
       module_name: rbac.roles
-      class_name: ModelRole
+      class_name: ObjectRole
+      parametrized_by:
+        - provider
+      init_params:
+        app_name: cm
+        model: HostProvider
       any_category: true
       category:
         - ADCM
       apps:
         - label: cm
           models:
-            - name: host
+            - name: hostprovider
               codenames:
-                - add
+                - add_host_to
 
     - name: Create provider
       description: The ability to add new provider
