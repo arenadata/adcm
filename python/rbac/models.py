@@ -194,9 +194,9 @@ class Policy(models.Model):
     def remove_permissions(self):
         for pp in self.model_perm.all():
             if (
-                Policy.objects.filter(
-                    user=pp.user, group=pp.group, model_perm__permission=pp.permission
-                ).count()
+                Policy.objects.select_for_update()
+                .filter(user=pp.user, group=pp.group, model_perm__permission=pp.permission)
+                .count()
                 > 1
             ):
                 continue
@@ -206,11 +206,19 @@ class Policy(models.Model):
                 pp.group.permissions.remove(pp.permission)
             pp.delete()
         for pp in self.user_object_perm.all():
-            if Policy.objects.filter(user=pp.user, user_object_perm=pp).count() > 1:
+            if (
+                Policy.objects.select_for_update().filter(user=pp.user, user_object_perm=pp).count()
+                > 1
+            ):
                 continue
             pp.delete()
         for pp in self.group_object_perm.all():
-            if Policy.objects.filter(group=pp.group, group_object_perm=pp).count() > 1:
+            if (
+                Policy.objects.select_for_update()
+                .filter(group=pp.group, group_object_perm=pp)
+                .count()
+                > 1
+            ):
                 continue
             pp.delete()
 
