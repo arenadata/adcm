@@ -44,11 +44,15 @@ def validate_object_type(value):
 class User(AuthUser):
     """
     Beware the Multi-table inheritance
-    Original User model extended with profile and replaced groups m2m
+    Original User model extended with profile
     """
 
     profile = models.JSONField(default=str)
-    group = models.ManyToManyField('Group', related_name='user')
+
+    @property
+    def group(self):
+        """Alias for auth.User.groups according to customary style"""
+        return self.groups
 
 
 class Group(AuthGroup):
@@ -58,6 +62,11 @@ class Group(AuthGroup):
     """
 
     description = models.CharField(max_length=255, null=True)
+
+    @property
+    def user(self):
+        """Alias for auth.Group.user_set according to customary style"""
+        return self.user_set
 
 
 class RoleTypes(models.TextChoices):
