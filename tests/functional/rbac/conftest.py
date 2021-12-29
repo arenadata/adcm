@@ -196,9 +196,10 @@ def create_policy(sdk_client, permission: BusinessRoles, objects: list, users: L
     role_name = permission.value.role_name
 
     business_role = sdk_client.role(name=role_name)
+    role_name = f"Testing {role_name} {random_string(5)}"
     role = sdk_client.role_create(
-        name=f"Testing {role_name} {random_string(5)}",
-        display_name=f"Testing {role_name}",
+        name=role_name,
+        display_name=role_name,
         child=[{"id": business_role.id}],
     )
     if role.parametrized_by_type:
