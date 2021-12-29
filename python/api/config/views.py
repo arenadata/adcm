@@ -93,7 +93,7 @@ class ConfigView(ListView):
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         self.object_type = object_type
         obj, _, _ = get_obj(object_type, object_id)
-        self.check_config_perm('view', object_type, obj if object_type != 'adcm' else None)
+        self.check_config_perm('view', object_type, obj)
         serializer = self.serializer_class(
             self.get_queryset().get(id=obj.id), context={'request': request, 'object': obj}
         )
