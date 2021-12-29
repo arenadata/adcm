@@ -202,6 +202,20 @@ roles:
         - View host configurations
         - View config endpoints
 
+    - name: View any object configuration
+      description: The ability to view config page of all objects except ADCM settings
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: true
+      category:
+        - ADCM
+      apps:
+        - label: cm
+          models:
+            - name: adcm
+              codenames:
+                - view_config_of
 
     - name: Edit cluster configurations
       description: The ability to change and add new cluster configuration
@@ -393,6 +407,21 @@ roles:
         - View cluster imports
         - View service imports
 
+    - name: View any object import
+      description: The ability to view all services and clusters import
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: true
+      category:
+        - ADCM
+      apps:
+        - label: cm
+          models:
+            - name: clusterbind
+              codenames:
+                - view
+
     - name: Manage cluster imports
       description: The ability to change cluster imports
       type: hidden
@@ -547,7 +576,7 @@ roles:
                 - unmap_host_from
 
     - name: View host-components
-      description: The ability to view cluster's host-component page
+      description: The ability to view exact cluster's host-component page
       type: business
       parametrized_by:
         - cluster
@@ -566,8 +595,23 @@ roles:
               codenames:
                 - view_host_components_of
 
+    - name: View any object host-components
+      description: The ability to view host-components page of all clusters
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: true
+      category:
+        - ADCM
+      apps:
+        - label: cm
+          models:
+            - name: hostcomponent
+              codenames:
+                - view
+
     - name: Edit host-components
-      description: The ability to edit cluster's host-component page
+      description: The ability to edit exact cluster's host-component page
       type: business
       parametrized_by:
         - cluster
@@ -691,7 +735,7 @@ roles:
           models:
             - name: adcm
               codenames:
-                - view_config_of
+                - view_settings_of
 
     - name: Edit ADCM settings
       description: Edit purely adcm config
@@ -706,8 +750,8 @@ roles:
           models:
             - name: adcm
               codenames:
-                - view_config_of
-                - change_config_of
+                - view_settings_of
+                - change_settings_of
 
     - name: View users
       description: The ability to view Users page
@@ -1124,10 +1168,10 @@ roles:
       class_name: ParentRole
       child:
         - Base role
-        - View host-components
-        - View application configurations
-        - View infrastructure configurations
-        - View imports
+        - View any object host-components
+        - View any object configuration
+        - View config endpoints
+        - View any object import
 
     - name: Service Administrator
       type: role

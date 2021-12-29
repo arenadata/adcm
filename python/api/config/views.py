@@ -63,10 +63,16 @@ def get_queryset(self):
 
 
 def has_config_perm(user, action_type, object_type, obj):
+    """
+    config_of_adcm checks permission to view/change config of any object
+    settings_of_adcm checks permission to view/change only ADCM settings
+    """
     model = type_to_model(object_type)
     if user.has_perm(f'cm.{action_type}_config_of_{model}', obj):
         return True
     if user.has_perm(f'cm.{action_type}_config_of_adcm'):
+        return True
+    if user.has_perm(f'cm.{action_type}_settings_of_adcm') and object_type == 'adcm':
         return True
     return False
 
@@ -87,7 +93,7 @@ class ConfigView(ListView):
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         self.object_type = object_type
         obj, _, _ = get_obj(object_type, object_id)
-        self.check_config_perm('view', object_type, obj)
+        self.check_config_perm('view', object_type, obj if object_type != 'adcm' else None)
         serializer = self.serializer_class(
             self.get_queryset().get(id=obj.id), context={'request': request, 'object': obj}
         )

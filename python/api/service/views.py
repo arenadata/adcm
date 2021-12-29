@@ -114,7 +114,7 @@ class ServiceImportView(ListView):
         List all imports available for specified service
         """
         service = check_service(kwargs)
-        self.check_import_perm('view_import_of', 'clusterobject', service)
+        self.check_import_perm('view_import_of', 'clusterobject', service, 'view_clusterbind')
         cluster = service.cluster
         return Response(get_import(cluster, service))
 
@@ -147,7 +147,7 @@ class ServiceBindView(ListView):
         List all binds of service
         """
         service = check_service(kwargs)
-        self.check_import_perm('view_import_of', 'clusterobject', service)
+        self.check_import_perm('view_import_of', 'clusterobject', service, 'view_clusterbind')
         binds = self.get_queryset().filter(service=service)
         serializer = self.get_serializer_class()(binds, many=True, context={'request': request})
         return Response(serializer.data)
@@ -179,7 +179,7 @@ class ServiceBindDetailView(DetailViewDelete):
         Show specified bind of service
         """
         service, bind = self.get_obj(kwargs, kwargs['bind_id'])
-        self.check_import_perm('view_import_of', 'clusterobject', service)
+        self.check_import_perm('view_import_of', 'clusterobject', service, 'view_clusterbind')
         serializer = self.serializer_class(bind, context={'request': request})
         return Response(serializer.data)
 

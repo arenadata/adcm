@@ -124,7 +124,7 @@ class ClusterImport(ListView):
         List all imports avaliable for specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
-        self.check_import_perm('view_import_of', 'cluster', cluster)
+        self.check_import_perm('view_import_of', 'cluster', cluster, 'view_clusterbind')
         res = cm.api.get_import(cluster)
         return Response(res)
 
@@ -160,7 +160,7 @@ class ClusterBindList(ListView):
         List all binds of specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
-        self.check_import_perm('view_import_of', 'cluster', cluster)
+        self.check_import_perm('view_import_of', 'cluster', cluster, 'view_clusterbind')
         obj = self.get_queryset().filter(cluster=cluster, service=None)
         serializer = self.get_serializer_class()(obj, many=True, context={'request': request})
         return Response(serializer.data)
@@ -190,7 +190,7 @@ class ClusterBindDetail(DetailViewDelete):
         Show specified bind of specified cluster
         """
         cluster, obj = self.get_obj(cluster_id, bind_id)
-        self.check_import_perm('view_import_of', 'cluster', cluster)
+        self.check_import_perm('view_import_of', 'cluster', cluster, 'view_clusterbind')
         serializer = self.serializer_class(obj, context={'request': request})
         return Response(serializer.data)
 
@@ -352,7 +352,7 @@ class HostComponentList(GenericAPIPermView, InterfaceView):
     queryset = HostComponent.objects.all()
     serializer_class = serializers.HostComponentSerializer
     serializer_class_ui = serializers.HostComponentUISerializer
-    check_custom_perm = check_custom_perm
+    check_hc_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_serializer_class(self):
@@ -365,7 +365,7 @@ class HostComponentList(GenericAPIPermView, InterfaceView):
         Show host <-> component map in a specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
-        self.check_custom_perm('view_host_components_of', 'cluster', cluster)
+        self.check_hc_perm('view_host_components_of', 'cluster', cluster, 'view_hostcomponent')
         hc = self.get_queryset().filter(cluster=cluster)
         serializer_class = self.select_serializer(request)
         if self.for_ui(request):
@@ -402,12 +402,12 @@ class HostComponentList(GenericAPIPermView, InterfaceView):
 class HostComponentDetail(GenericAPIPermView):
     queryset = HostComponent.objects.all()
     serializer_class = serializers.HostComponentSerializer
-    check_custom_perm = check_custom_perm
+    check_hc_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_obj(self, cluster_id, hs_id):
         cluster = check_obj(Cluster, cluster_id)
-        self.check_custom_perm('view_host_components_of', 'cluster', cluster)
+        self.check_hc_perm('view_host_components_of', 'cluster', cluster, 'view_hostcomponent')
         return check_obj(HostComponent, {'id': hs_id, 'cluster': cluster}, 'HOSTSERVICE_NOT_FOUND')
 
     def get(self, request, cluster_id, hs_id):
