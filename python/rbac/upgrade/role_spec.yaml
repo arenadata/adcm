@@ -67,6 +67,9 @@ roles:
             - name: bundle
               codenames:
                 - add
+            - name: prototype
+              codenames:
+                - add
 
     - name: View cluster configurations
       description: The ability to view the cluster configuration page
