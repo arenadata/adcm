@@ -4,7 +4,10 @@
 
 <div class="row">
   <mat-form-field class="full-width">
-    <mat-select [formControl]="form.controls['role']" placeholder="Role">
+    <mat-select
+      [formControl]="form.controls['role']"
+      placeholder="Role"
+      (selectionChange)="roleChanged.emit()">
       <mat-option>
         <ngx-mat-select-search noEntriesFoundLabel="No options available" placeholderLabel="Select role"
                                [(ngModel)]="roleFilter">

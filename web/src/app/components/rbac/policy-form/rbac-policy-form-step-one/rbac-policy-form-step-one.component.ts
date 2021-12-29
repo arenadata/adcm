@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { BaseFormDirective } from '../../../../shared/add-component';
 import { FormGroup } from '@angular/forms';
 import { ADWP_DEFAULT_MATCHER, AdwpMatcher } from '@adwp-ui/widgets';
@@ -17,6 +17,9 @@ export class RbacPolicyFormStepOneComponent extends BaseFormDirective {
 
   @Input()
   form: FormGroup;
+
+  @Output()
+  roleChanged: EventEmitter<void> = new EventEmitter<void>();
 
   isError(name: string): boolean {
     const f = this.form.get(name);
