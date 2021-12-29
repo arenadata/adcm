@@ -152,6 +152,9 @@ class DbFiller:
         for data_class in endpoint.data_class.implicitly_depends_on:
             self._get_or_create_data_for_endpoint(endpoint=Endpoints.get_by_data_class(data_class), force=force)
 
+        if getattr(endpoint.data_class, 'dependable_fields_sync', None):
+            data = endpoint.data_class.dependable_fields_sync(self.adcm, data)
+
         if not prepare_data_only:
             response = self.adcm.exec_request(
                 request=Request(endpoint=endpoint, method=Methods.POST, data=data),

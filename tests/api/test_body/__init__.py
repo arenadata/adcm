@@ -19,6 +19,7 @@ import pytest
 
 from tests.api.steps.asserts import ExpectedBody
 from tests.api.testdata.generators import TestDataWithPreparedBody
+from tests.api.utils.data_classes import AUTO_VALUE
 from tests.api.utils.methods import Methods
 from tests.api.utils.tools import not_set, NotEqual
 from tests.api.utils.types import get_fields, is_fk_field, is_password_field
@@ -53,7 +54,8 @@ def generate_body_for_checks(test_data: TestDataWithPreparedBody):
         if is_fk_field(field):
             # TODO add fk field check
             continue
-
+        if field.default_value == AUTO_VALUE:
+            continue
         if test_data.request.method == Methods.POST:
             continue
         if (

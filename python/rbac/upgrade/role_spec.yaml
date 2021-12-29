@@ -330,9 +330,8 @@ roles:
       class_name: ParentRole
       any_category: true
       parametrized_by:
-        - cluster
-        - service
-        - component
+        - provider
+        - host
       category:
         - ADCM
       child:
