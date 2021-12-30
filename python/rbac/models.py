@@ -192,7 +192,7 @@ class Policy(models.Model):
     group_object_perm = models.ManyToManyField(GroupObjectPermission, blank=True)
 
     def remove_permissions(self):
-        for pp in self.model_perm.select_for_update().all():
+        for pp in self.model_perm.all():
             if (
                 Policy.objects.filter(
                     user=pp.user, group=pp.group, model_perm__permission=pp.permission
@@ -205,11 +205,11 @@ class Policy(models.Model):
             if pp.group:
                 pp.group.permissions.remove(pp.permission)
             pp.delete()
-        for pp in self.user_object_perm.select_for_update().all():
+        for pp in self.user_object_perm.all():
             if Policy.objects.filter(user=pp.user, user_object_perm=pp).count() > 1:
                 continue
             pp.delete()
-        for pp in self.group_object_perm.select_for_update().all():
+        for pp in self.group_object_perm.all():
             if Policy.objects.filter(group=pp.group, group_object_perm=pp).count() > 1:
                 continue
             pp.delete()
@@ -244,10 +244,18 @@ class Policy(models.Model):
             self.role.apply(self, None, group=group)
 
 
-def re_apply(obj):
+def re_apply_object_policy(obj):
     """
     This function search for polices linked with specified object and re apply them
     """
     content = ContentType.objects.get_for_model(obj)
     for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=content):
+        policy.apply()
+
+
+def re_apply_all_polices():
+    """
+    This function re apply all polices
+    """
+    for policy in Policy.objects.all():
         policy.apply()
