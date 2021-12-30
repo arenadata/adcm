@@ -25,7 +25,7 @@ export class RbacRoleFormComponent extends RbacFormDirective<RbacRoleModel> impl
       description: new FormControl({ value: '', disabled: this.value?.built_in }),
       display_name: new FormControl({ value: '', disabled: this.value?.built_in }, [
         Validators.required,
-        Validators.minLength(1),
+        Validators.minLength(2),
         Validators.maxLength(160),
         Validators.pattern('^[a-zA-Z_]*$')
       ]),
