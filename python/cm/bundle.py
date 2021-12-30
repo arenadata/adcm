@@ -154,7 +154,10 @@ def untar(bundle_hash, bundle):
             err('BUNDLE_ERROR', msg.format(existed.name, existed.version, existed.edition))
         except Bundle.DoesNotExist:
             log.warning(
-                f"There is no bundle with hash {bundle_hash} in DB, but there is a dir on disk with this hash. Dir will be erased."
+                (
+                    f"There is no bundle with hash {bundle_hash} in DB, ",
+                    "but there is a dir on disk with this hash. Dir will be rewrited.",
+                )
             )
     tar = tarfile.open(bundle)
     tar.extractall(path=path)
