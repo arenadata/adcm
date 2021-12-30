@@ -8,6 +8,9 @@
                 label='Confirm password' controlName='password' type="password"
                 (focusin)="clearPasswordControlIfFocusIn()"></adwp-input>
   </div>
+  <div class="row" [formGroup]="userForm">
+    <mat-checkbox formControlName="is_superuser">ADCM Administrator</mat-checkbox>
+  </div>
   <adwp-input [form]="userForm" label='First name' controlName='first_name'></adwp-input>
   <adwp-input [form]="userForm" label='Last name' controlName='last_name'></adwp-input>
   <adwp-input [form]="userForm" label='Email' controlName='email'></adwp-input>

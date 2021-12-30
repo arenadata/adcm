@@ -16,10 +16,10 @@ export const passwordsConfirmValidator: ValidatorFn = (control: AbstractControl)
 @Component({
   selector: 'app-rbac-user-form',
   templateUrl: './rbac-user-form.component.html',
+  styleUrls: ['rbac-user-form.component.scss'],
   providers: [
     { provide: ADD_SERVICE_PROVIDER, useExisting: forwardRef(() => RbacUserService) }
-  ],
-  styles: ['.rbac-user-form__password { display: flex; gap: 5px } .rbac-user-form__password > adwp-input { flex: 1 }']
+  ]
 })
 export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
   private _isFirstTouch = true;
