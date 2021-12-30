@@ -6,6 +6,7 @@ import { RbacGroupModel } from './rbac-group.model';
 export interface RbacPolicyModel extends Entity {
   id: number;
   name: string;
+  description: string;
   object: unknown[];
   built_in: boolean;
   role: Pick<RbacRoleModel, 'id' | 'name' | 'url' | 'parametrized_by_type'>[];

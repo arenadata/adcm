@@ -20,7 +20,7 @@ export class RbacRoleService implements EntityAbstractService {
     };
   }
 
-  delete(id: number): Observable<unknown> {
+  delete(id: number): Observable<any> {
     return this.api.delete(`${environment.apiRoot}rbac/role/${id}/`);
   }
 
@@ -32,6 +32,12 @@ export class RbacRoleService implements EntityAbstractService {
 
   update(url: string, params: Partial<RbacRoleModel>): Observable<RbacRoleModel> {
     return this.api.put<RbacRoleModel>(url, params);
+  }
+
+  getByUrl(url: string, params?: Params): Observable<RbacRoleModel> {
+    const p = { expand: 'child', ...params };
+
+    return this.api.get(url, p);
   }
 
   getList(param?: Params): Observable<RbacRoleModel[]> {

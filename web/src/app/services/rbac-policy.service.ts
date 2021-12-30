@@ -20,7 +20,7 @@ export class RbacPolicyService implements EntityAbstractService {
     };
   }
 
-  delete(id: number): Observable<unknown> {
+  delete(id: number): Observable<any> {
     return this.api.delete(`${environment.apiRoot}rbac/policy/${id}/`);
   }
 
@@ -37,5 +37,15 @@ export class RbacPolicyService implements EntityAbstractService {
   getList(param?: Params): Observable<RbacPolicyModel[]> {
     return this.api.get<ListResult<RbacPolicyModel>>(`${environment.apiRoot}rbac/policy/`, param)
       .pipe(map((list) => list.results));
+  }
+
+  getByUrl(url: string, params?: Params): Observable<RbacPolicyModel> {
+    const p = { expand: 'object,role,user,group', ...params };
+
+    return this.api.get(url, p);
+  }
+
+  get(id: number): Observable<RbacPolicyModel> {
+    return this.api.get(`${environment.apiRoot}rbac/policy/${id}/`);
   }
 }

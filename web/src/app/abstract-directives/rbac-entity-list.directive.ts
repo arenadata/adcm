@@ -37,7 +37,7 @@ export abstract class RbacEntityListDirective<T extends Entity> extends AdwpList
     public route: ActivatedRoute,
     public router: Router,
     public dialog: MatDialog,
-    protected entityService: EntityAbstractService,
+    protected entityService: EntityAbstractService<T>,
   ) {
     super(service, store, route, router, dialog);
   }
@@ -71,7 +71,12 @@ export abstract class RbacEntityListDirective<T extends Entity> extends AdwpList
   }
 
   showForm(data: RowEventData): void {
-    this.addButton.showForm(this.entityService.model(data.row));
+    const { url } = data.row;
+    if (url) {
+      this.entityService.getByUrl(data.row.url).pipe(this.takeUntil()).subscribe((entity) => {
+        this.addButton.showForm(this.entityService.model(entity));
+      });
+    }
   }
 
 }
