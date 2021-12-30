@@ -86,6 +86,6 @@ export class ProfileService {
   }
 
   setPassword(password: string) {
-    return this.http.patch(this.user.change_password, { password });
+    return this.http.patch(`${environment.apiRoot}rbac/me/`, { password });
   }
 }
