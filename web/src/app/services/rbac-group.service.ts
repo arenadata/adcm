@@ -21,7 +21,7 @@ export class RbacGroupService implements EntityAbstractService {
     };
   }
 
-  delete(id: number): Observable<unknown> {
+  delete(id: number): Observable<any> {
     return this.api.delete(`${environment.apiRoot}rbac/group/${id}/`);
   }
 
@@ -33,6 +33,12 @@ export class RbacGroupService implements EntityAbstractService {
 
   update(url: string, params: Partial<RbacGroupModel>): Observable<RbacGroupModel> {
     return this.api.put<RbacGroupModel>(url, params);
+  }
+
+  getByUrl(url: string, params?: Params): Observable<RbacGroupModel> {
+    const p = { expand: 'user', ...params };
+
+    return this.api.get(url, p);
   }
 
   getList(param?: Params): Observable<RbacGroupModel[]> {

@@ -21,7 +21,7 @@ export class RbacUserService implements EntityAbstractService {
     };
   }
 
-  delete(id: number): Observable<unknown> {
+  delete(id: number): Observable<any> {
     return this.api.delete(`${environment.apiRoot}rbac/user/${id}/`);
   }
 
@@ -33,6 +33,12 @@ export class RbacUserService implements EntityAbstractService {
 
   update(url: string, params: Partial<RbacUserModel>): Observable<RbacUserModel> {
     return this.api.patch<RbacUserModel>(url, params);
+  }
+
+  getByUrl(url: string, params?: Params): Observable<RbacUserModel> {
+    const p = { expand: 'group', ...params };
+
+    return this.api.get(url, p);
   }
 
   getList(param?: Params): Observable<RbacUserModel[]> {

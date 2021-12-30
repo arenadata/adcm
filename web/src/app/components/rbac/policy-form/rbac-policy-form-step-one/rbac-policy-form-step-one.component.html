@@ -7,6 +7,7 @@
     <mat-select
       [formControl]="form.controls['role']"
       placeholder="Role"
+      [compareWith]="comparator"
       (selectionChange)="roleChanged.emit()">
       <mat-option>
         <ngx-mat-select-search noEntriesFoundLabel="No options available" placeholderLabel="Select role"

@@ -1,7 +1,8 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { BaseFormDirective } from '../../../../shared/add-component';
 import { FormGroup } from '@angular/forms';
-import { ADWP_DEFAULT_MATCHER, AdwpMatcher } from '@adwp-ui/widgets';
+import { ADWP_DEFAULT_MATCHER, ADWP_IDENTITY_MATCHER, AdwpIdentityMatcher, AdwpMatcher } from '@adwp-ui/widgets';
+import { RbacRoleModel } from '../../../../models/rbac/rbac-role.model';
 
 @Component({
   selector: 'app-rbac-policy-form-step-one',
@@ -20,6 +21,8 @@ export class RbacPolicyFormStepOneComponent extends BaseFormDirective {
 
   @Output()
   roleChanged: EventEmitter<void> = new EventEmitter<void>();
+
+  comparator: AdwpIdentityMatcher<RbacRoleModel> = ADWP_IDENTITY_MATCHER;
 
   isError(name: string): boolean {
     const f = this.form.get(name);

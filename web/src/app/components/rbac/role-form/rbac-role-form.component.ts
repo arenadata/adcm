@@ -29,6 +29,7 @@ export class RbacRoleFormComponent extends RbacFormDirective<RbacRoleModel> impl
         Validators.maxLength(160),
         Validators.pattern('^[a-zA-Z_]*$')
       ]),
+      any_category: new FormControl(null),
       built_in: new FormControl(null),
       type: new FormControl('role'),
       category: new FormControl(['ADCM']),

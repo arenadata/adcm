@@ -9,7 +9,7 @@ import {
 } from '../../../../models/rbac/rbac-object-candidate';
 import { ADD_SERVICE_PROVIDER } from '../../../../shared/add-component/add-service-model';
 import { RbacObjectCandidateService } from '../../../../services/rbac-object-candidate.service';
-import { filter, switchMap } from 'rxjs/operators';
+import { filter, startWith, switchMap } from 'rxjs/operators';
 import { RbacRoleModel } from '../../../../models/rbac/rbac-role.model';
 
 
@@ -42,9 +42,9 @@ export class RbacPolicyFormStepTwoComponent extends BaseFormDirective implements
 
   candidates: IRbacObjectCandidateModel | null = null;
 
-
   ngOnInit(): void {
     this.roleControl.valueChanges.pipe(
+      startWith(this.role),
       filter((v) => !!v),
       switchMap((role) => this.service.get<IRbacObjectCandidateModel>(role.id)),
       this.takeUntil()
