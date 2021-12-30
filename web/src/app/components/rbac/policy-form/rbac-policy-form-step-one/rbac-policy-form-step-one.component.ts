@@ -22,7 +22,7 @@ export class RbacPolicyFormStepOneComponent extends BaseFormDirective {
   @Output()
   roleChanged: EventEmitter<void> = new EventEmitter<void>();
 
-  comparator: AdwpIdentityMatcher<RbacRoleModel> = ADWP_IDENTITY_MATCHER;
+  comparator: AdwpIdentityMatcher<RbacRoleModel> = (item1: any, item2: any) => item1?.id === item2?.id;
 
   isError(name: string): boolean {
     const f = this.form.get(name);

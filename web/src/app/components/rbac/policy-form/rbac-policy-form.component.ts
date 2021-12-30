@@ -119,26 +119,27 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
   }
 
   private _fillForm(value: RbacPolicyModel) {
-    this.form.setValue({
-      steps: [
-        {
-          name: value.name,
-          description: value.description || '',
-          role: value.role,
-          user: value.user,
-          group: value.group
-        },
-        {
-          object: {
-            cluster: value.object.filter((item: IRbacObjectCandidateClusterModel) => item.type === 'cluster'),
-            parent: [],
-            service: [],
-            provider: value.object.filter((item: IRbacObjectCandidateProviderModel) => item.type === 'provider'),
-            host: value.object.filter((item: IRbacObjectCandidateHostModel) => item.type === 'host'),
+    if (value) {
+      this.form.setValue({
+        steps: [
+          {
+            name: value.name,
+            description: value.description || '',
+            role: value.role,
+            user: value.user,
+            group: value.group
+          },
+          {
+            object: {
+              cluster: value.object.filter((item: IRbacObjectCandidateClusterModel) => item.type === 'cluster'),
+              parent: [],
+              service: [],
+              provider: value.object.filter((item: IRbacObjectCandidateProviderModel) => item.type === 'provider'),
+              host: value.object.filter((item: IRbacObjectCandidateHostModel) => item.type === 'host'),
+            }
           }
-        }
-      ]
-    });
-
+        ]
+      });
+    }
   }
 }
