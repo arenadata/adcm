@@ -15,7 +15,7 @@ export class RbacPolicyService implements EntityAbstractService {
 
   model(value?: any): FormModel {
     return {
-      name: 'policy',
+      name: 'new policy',
       value: value
     };
   }

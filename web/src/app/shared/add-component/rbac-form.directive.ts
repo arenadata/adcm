@@ -25,7 +25,7 @@ export class RbacFormDirective<T extends { url: string } = { url: string }> exte
   filter: Params = {};
 
   get title(): string {
-    return this.value ? 'Update' : 'Create';
+    return this.value ? 'Save' : 'Create';
   }
 
   ngOnInit(): void {

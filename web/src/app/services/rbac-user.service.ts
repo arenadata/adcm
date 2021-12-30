@@ -16,7 +16,7 @@ export class RbacUserService implements EntityAbstractService {
 
   model(value?: any): FormModel {
     return {
-      name: 'user',
+      name: 'new user',
       value: value
     };
   }
