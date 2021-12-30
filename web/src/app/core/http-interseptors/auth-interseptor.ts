@@ -41,7 +41,7 @@ export class AuthInterceptor implements HttpInterceptor {
       catchError((res: HttpErrorResponse) => {
         if (res.status === 401 || res.status === 403) {
           this.authService.redirectUrl = this.router.url;
-          this.router.navigate(['/login']);
+          this.router.navigate(['/']);
         }
 
         if (res.status === 500) this.router.navigate(['/500']);
