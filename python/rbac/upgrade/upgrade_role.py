@@ -23,7 +23,7 @@ import cm.checker
 from cm.models import ProductCategory
 from rbac import log
 from rbac.settings import api_settings
-from rbac.models import Role, RoleMigration, Policy, Permission
+from rbac.models import Role, RoleMigration, Policy, Permission, re_apply_all_polices
 
 
 def upgrade(data: dict):
@@ -182,4 +182,5 @@ def init_roles():
         log.info(msg)
     else:
         msg = f'Roles are already at version {rm.version}'
+    re_apply_all_polices()
     return msg
