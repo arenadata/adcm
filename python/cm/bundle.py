@@ -148,9 +148,17 @@ def untar_safe(bundle_hash, path):
 def untar(bundle_hash, bundle):
     path = os.path.join(config.BUNDLE_DIR, bundle_hash)
     if os.path.isdir(path):
-        existed = Bundle.objects.get(hash=bundle_hash)
-        msg = 'Bundle already exists. Name: {}, version: {}, edition: {}'
-        err('BUNDLE_ERROR', msg.format(existed.name, existed.version, existed.edition))
+        try:
+            existed = Bundle.objects.get(hash=bundle_hash)
+            msg = 'Bundle already exists. Name: {}, version: {}, edition: {}'
+            err('BUNDLE_ERROR', msg.format(existed.name, existed.version, existed.edition))
+        except Bundle.DoesNotExist:
+            log.warning(
+                (
+                    f"There is no bundle with hash {bundle_hash} in DB, ",
+                    "but there is a dir on disk with this hash. Dir will be rewrited.",
+                )
+            )
     tar = tarfile.open(bundle)
     tar.extractall(path=path)
     tar.close()
@@ -274,7 +282,7 @@ def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too
     parent = {}
     top_parent = {
         'Cluster Administrator': [],
-        'ADCM Administrator': [],
+        'Provider Administrator': [],
         'Service Administrator': [],
     }
 
@@ -345,20 +353,19 @@ def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too
 
         if parent_value['parametrized_by_type'] == 'cluster':
             parent_role.category.add(category)
-            for top_parent_name in ['Cluster Administrator', 'ADCM Administrator']:
+            for top_parent_name in ['Cluster Administrator']:
                 top_parent[top_parent_name].append(parent_role)
         elif parent_value['parametrized_by_type'] in ['service', 'component']:
             parent_role.category.add(category)
             for top_parent_name in [
                 'Cluster Administrator',
-                'ADCM Administrator',
                 'Service Administrator',
             ]:
                 top_parent[top_parent_name].append(parent_role)
         elif parent_value['parametrized_by_type'] == 'provider':
-            top_parent['ADCM Administrator'].append(parent_role)
+            top_parent['Provider Administrator'].append(parent_role)
         elif parent_value['parametrized_by_type'] == 'host':
-            for top_parent_name in ['Cluster Administrator', 'ADCM Administrator']:
+            for top_parent_name in ['Cluster Administrator', 'Provider Administrator']:
                 top_parent[top_parent_name].append(parent_role)
 
     for name, children in top_parent.items():

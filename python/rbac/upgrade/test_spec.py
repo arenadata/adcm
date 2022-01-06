@@ -18,6 +18,19 @@ import ruyaml
 
 MANDATORY_KEYS = ["name", "type", "module_name", "class_name"]
 
+BUSINESS_PARAMETRISATION = [
+    set(["cluster"]),
+    set(["cluster", "service"]),
+    set(["cluster", "component"]),
+    set(["cluster", "service", "component"]),
+    set(["service"]),
+    set(["service", "component"]),
+    set(["provider", "host"]),
+    set(["provider"]),
+    set(["host"]),
+    set([]),
+]
+
 
 @pytest.fixture(scope="module")
 def spec_data():
@@ -33,6 +46,17 @@ def role_map(spec_data):
     for r in spec_data["roles"]:
         result[r["name"]] = r
     return result
+
+
+@pytest.fixture(scope="module")
+def roots(role_map: dict):
+    roots = role_map.copy()
+    for v in role_map.values():
+        if "child" in v:
+            for c in v["child"]:
+                if c in roots:
+                    del roots[c]
+    return roots
 
 
 def test_structure(spec_data):
@@ -66,3 +90,85 @@ def test_leaf_parametriation(spec_data: list):
                 assert (
                     len(r["parametrized_by"]) < 2
                 ), f'Role entry {r["name"]} has more then one parametrized_by entry'
+
+
+def is_in_set(allowed: list[set], value: set):
+    for s in allowed:
+        if s == value:
+            return True
+    return False
+
+
+def test_allowed_parametrization(role_map: dict):
+    """Check that parametrize_by_type for business permissions is in allowed list."""
+    for k, v in role_map.items():
+        if "parametrized_by" in v:
+            if v["type"] == "business":
+                assert is_in_set(
+                    BUSINESS_PARAMETRISATION, set(v["parametrized_by"])
+                ), f'Wrong parametrization for role "{k}". See ADCM-2498 for more information.'
+
+
+class Visited(Exception):
+    pass
+
+
+def tree_dive_in(roles: dict, visited: dict, path: list, role: dict, root):
+    if role["name"] in visited:
+        raise AssertionError(f'In the tree from \"{root["name"]}\" we got a cycle: {path}')
+    visited[role["name"]] = True
+    if "child" in role:
+        for c in role["child"]:
+            tree_dive_in(roles, visited.copy(), path + [c], roles[c], root)
+
+
+def test_acyclic(role_map: dict, roots: dict):
+    """Check that role specification is a DAG"""
+    for v in roots.values():
+        tree_dive_in(role_map, {}, [v["name"]], v, v)
+
+
+EXCLUDE = {"ADCM User": True, "Cluster Administrator": True, "Service Administrator": True}
+
+
+def is_exclude(name: str) -> bool:
+    try:
+        return EXCLUDE[name]
+    except KeyError:
+        return False
+
+
+def parametrized_by(role: dict) -> list:
+    if "parametrized_by" in role:
+        return role["parametrized_by"]
+    return []
+
+
+class ChildSumEx(AssertionError):
+    def __init__(self, name: str, role: list, child: list):
+        super().__init__(
+            (
+                f'For role "{name}" parametrize_by is not a sum of child parametrization:',
+                f'{set(role)} != {set(child)}',
+            )
+        )
+
+
+def tree_sum(role_map: dict, role: dict) -> list:
+    role_params = parametrized_by(role)
+    if "child" in role:
+        child_params = []
+        for c in role['child']:
+            child_params.extend(tree_sum(role_map, role_map[c]))
+        if not is_exclude(role["name"]):
+            if not set(child_params) == set(role_params):
+                raise ChildSumEx(role["name"], role_params, child_params)
+    return role_params
+
+
+def test_parametrization_sum(roots: dict, role_map: dict):
+    """Check that most of the roles has parametrized_by equal to sum of child's parametrized_by.
+    But with some excludes.
+    """
+    for v in roots.values():
+        tree_sum(role_map, v)
