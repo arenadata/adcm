@@ -55,8 +55,11 @@
 
   actions: *common_actions
 
-  components:
+  components: &common_components
     test_component:
+      config: *common_config
+      actions: *common_actions
+    new_component:
       config: *common_config
       actions: *common_actions
 
@@ -70,9 +73,6 @@
 
   actions: *common_actions
 
-  components:
-    new_component:
-      config: *common_config
-      actions: *common_actions
+  components: *common_components
 
   import: *common_import

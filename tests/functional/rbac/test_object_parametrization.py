@@ -10,8 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Test for the parametrized roles by objects of hierarchy"""
+import allure
+import pytest
 from adcm_client.objects import ADCMClient
+from coreapi.exceptions import ErrorMessage
 
+from tests.api.utils.tools import random_string
 from tests.functional.rbac.conftest import (
     create_policy,
     BusinessRoles,
@@ -81,3 +85,53 @@ def test_provider_hierarchy(user_sdk: ADCMClient, user, prepare_objects, sdk_cli
     is_denied(cluster, BusinessRoles.ViewApplicationConfigurations)
     is_denied(service, BusinessRoles.ViewApplicationConfigurations)
     is_denied(component, BusinessRoles.ViewApplicationConfigurations)
+
+
+def test_role_with_two_hierarchy_not_allowed(sdk_client_fs):
+    """
+    Test that we can not create a new role with childs from different hierarchy
+    """
+    application_role = {"id": sdk_client_fs.role(name=BusinessRoles.ViewApplicationConfigurations.value.role_name).id}
+    infrastructure_role = {
+        "id": sdk_client_fs.role(name=BusinessRoles.ViewInfrastructureConfigurations.value.role_name).id
+    }
+    generic_role = {"id": sdk_client_fs.role(name=BusinessRoles.ViewADCMSettings.value.role_name).id}
+    with allure.step("Assert that create role with different hierarchy is not possible"), pytest.raises(ErrorMessage):
+        sdk_client_fs.role_create(
+            name=random_string(),
+            display_name=random_string(),
+            child=[application_role, infrastructure_role],
+        )
+    role = sdk_client_fs.role_create(
+        name=random_string(),
+        display_name=random_string(),
+        child=[application_role],
+    )
+    with allure.step("Assert that update role to different hierarchy is not possible"), pytest.raises(ErrorMessage):
+        role.update(child=[application_role, infrastructure_role])
+    with allure.step("Assert that application role can be mixed with not parametrized role"):
+        sdk_client_fs.role_create(
+            name=random_string(),
+            display_name=random_string(),
+            child=[application_role, generic_role],
+        )
+    with allure.step("Assert that infrastructure role can be mixed with not parametrized role"):
+        sdk_client_fs.role_create(
+            name=random_string(),
+            display_name=random_string(),
+            child=[infrastructure_role, generic_role],
+        )
+
+
+def test_host_and_cluster_roles(sdk_client_fs):
+    """
+    Test that cluster and host roles is allowed to use together
+    """
+    cluster_role = {"id": sdk_client_fs.role(name=BusinessRoles.ViewApplicationConfigurations.value.role_name).id}
+    host_role = {"id": sdk_client_fs.role(name=BusinessRoles.RemoveHosts.value.role_name).id}
+    with allure.step("Assert that create role with cluster and host parametrization is allowed"):
+        sdk_client_fs.role_create(
+            name=random_string(),
+            display_name=random_string(),
+            child=[cluster_role, host_role],
+        )

@@ -19,7 +19,6 @@ from adcm_client.objects import ADCMClient, Role, User
 
 from tests.functional.rbac.conftest import BusinessRoles
 
-ADCM_ADMIN_ROLES = {role.value.role_name for role in BusinessRoles}
 ADCM_USER_ROLES = {
     role.value.role_name
     for role in (
@@ -103,7 +102,6 @@ def test_default_role(user: User, sdk_client_fs: ADCMClient):
 def test_composition(sdk_client_fs: ADCMClient):
     """Check that default roles have all required permissions"""
     for default_role, expected_children in (
-        ('ADCM Administrator', ADCM_ADMIN_ROLES),
         ('Cluster Administrator', CLUSTER_ADMIN_ROLES),
         ('Service Administrator', SERVICE_ADMIN_ROLES),
         ('Provider Administrator', PROVIDER_ADMIN_ROLES),

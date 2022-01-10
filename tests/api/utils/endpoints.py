@@ -43,7 +43,6 @@ from tests.api.utils.data_classes import (
     RbacGroupFields,
     RbacSimpleRoleFields,
     RbacBuiltInRoleFields,
-    RbacRoleFields,
     RbacBusinessRoleFields,
     RbacBuiltInPolicyFields,
 )
@@ -307,6 +306,7 @@ class Endpoints(Enum):
         data_class=RbacBuiltInRoleFields,
         spec_link="",
         filter_predicate=is_built_in,
+        technical=True,
     )
 
     RbacBusinessRole = Endpoint(
@@ -322,7 +322,7 @@ class Endpoints(Enum):
     RbacAnyRole = Endpoint(
         path="rbac/role",
         methods=ALL,
-        data_class=RbacRoleFields,
+        data_class=RbacSimpleRoleFields,
         spec_link="",
         technical=True,
         filter_predicate=is_role_type,

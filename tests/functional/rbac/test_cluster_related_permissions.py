@@ -32,16 +32,20 @@ def test_view_application_configurations(user_policy: Policy, user_sdk: ADCMClie
     cluster_via_admin, *_ = prepare_objects
     user_second_objects = as_user_objects(user_sdk, second_objects)
     second_service_on_first_cluster = user_sdk.service(id=cluster_via_admin.service_add(name="new_service").id)
-    second_component_on_first_cluster = second_service_on_first_cluster.component()
-    for base_object in (cluster, service, component):
+    second_component_on_first_cluster = second_service_on_first_cluster.component(name="test_component")
+    for base_object in (
+        cluster,
+        service,
+        component,
+        second_service_on_first_cluster,
+        second_component_on_first_cluster,
+    ):
         is_allowed(base_object, BusinessRoles.ViewApplicationConfigurations)
         is_denied(base_object, BusinessRoles.EditApplicationConfigurations)
     for base_object in (
         provider,
         host,
         *user_second_objects,
-        second_service_on_first_cluster,
-        second_component_on_first_cluster,
     ):
         is_denied(base_object, BusinessRoles.ViewApplicationConfigurations)
     delete_policy(user_policy)

@@ -305,14 +305,6 @@ class AdminRolesPage(GeneralAdminPage):
                 permissions='Create host, Upload bundle, Edit infrastructure configurations, Remove hosts, '
                 'Upgrade infrastructure bundle, Remove bundle',
             ),
-            AdminRoleInfo(
-                name='ADCM Administrator',
-                description='',
-                permissions='Create provider, Create cluster, Remove cluster, Remove provider, View ADCM settings, '
-                'Edit ADCM settings, View users, Create user, Edit user, Remove user, View roles, Create '
-                'custom role, Edit role, Remove roles, View group, Create group, Edit group, Remove group, '
-                'View policy, Create policy, Edit policy, Remove policy, Cluster Administrator',
-            ),
         ]
 
         roles = self.get_all_roles_info()
