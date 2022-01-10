@@ -79,6 +79,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
   ngOnInit(): void {
     this._setValue(this.value);
     this._initPasswordConfirmSubscription();
+    this.form.markAllAsTouched();
   }
 
   rbacBeforeSave(value: any): Partial<RbacUserModel> {

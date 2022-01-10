@@ -1,5 +1,13 @@
 import { Component, forwardRef, OnInit } from '@angular/core';
-import { AbstractControl, FormArray, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormArray,
+  FormControl,
+  FormGroup,
+  ValidationErrors,
+  ValidatorFn,
+  Validators
+} from '@angular/forms';
 import { RbacFormDirective } from '@app/shared/add-component/rbac-form.directive';
 import { RbacPolicyModel } from '@app/models/rbac/rbac-policy.model';
 import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
@@ -10,6 +18,7 @@ import {
   IRbacObjectCandidateHostModel,
   IRbacObjectCandidateProviderModel
 } from '../../../models/rbac/rbac-object-candidate';
+import { RbacRoleModel } from '../../../models/rbac/rbac-role.model';
 
 const INITIAL_OBJECT = {
   cluster: [],
@@ -19,42 +28,80 @@ const INITIAL_OBJECT = {
   host: []
 };
 
-const clusterOrServiceValidator: ValidatorFn = (control: AbstractControl) => {
-  const cluster = control.get('cluster');
-  const service = control.get('service');
+enum StateVariants {
+  byCluster = 'byCluster',
+  byService = 'byService',
+  byProvider = 'byProvider',
+}
 
-  if (Array.isArray(cluster.value) && cluster.value.length > 0) {
-    service.disable({ onlySelf: true });
-  } else {
-    service.enable({ onlySelf: true });
+type PolicyObjectControlsState = {
+  [key in StateVariants]: {
+    controls: AbstractControl[];
+    state: boolean;
   }
+}
 
-  if (!!service.value) {
-    cluster.disable({ onlySelf: true });
-  } else {
-    cluster.enable({ onlySelf: true });
-  }
+const objectValidator = (roleControl: AbstractControl): ValidatorFn => {
+  let isInitial = true;
 
-  return null;
-};
+  return (objectControl: AbstractControl): ValidationErrors | null => {
+    const role: RbacRoleModel | null = roleControl.value;
+    if (!role) {
+      return null;
+    }
 
-const providerOrHostValidator: ValidatorFn = (control: AbstractControl) => {
-  const provider = control.get('provider');
-  const host = control.get('host');
+    const { parametrized_by_type } = role;
 
-  if (Array.isArray(provider.value) && provider.value.length > 0) {
-    host.disable({ onlySelf: true });
-  } else {
-    host.enable({ onlySelf: true });
-  }
+    const variants: StateVariants[] = [StateVariants.byCluster, StateVariants.byService, StateVariants.byProvider];
 
-  if (Array.isArray(host.value) && host.value.length > 0) {
-    provider.disable({ onlySelf: true });
-  } else {
-    provider.enable({ onlySelf: true });
-  }
+    const clusterControl = objectControl.get('cluster');
+    const serviceControl = objectControl.get('service');
+    const parentControl = objectControl.get('parent');
+    const providerControl = objectControl.get('provider');
+    const hostControl = objectControl.get('host');
 
-  return null;
+    if (isInitial) {
+      !clusterControl.disabled && clusterControl.disable();
+      !serviceControl.disabled && serviceControl.disable();
+      !parentControl.disabled && parentControl.disable();
+      !providerControl.disabled && providerControl.disable();
+      !hostControl.disabled && hostControl.disable();
+    }
+
+    isInitial = false;
+
+    const controlsState: PolicyObjectControlsState = {
+      byCluster: {
+        controls: [clusterControl],
+        state: !!parametrized_by_type.find((v) => v === 'cluster')
+      },
+      byService: {
+        controls: [serviceControl, parentControl],
+        state: !!parametrized_by_type.find((v) => v === 'service' || v === 'component')
+      },
+      byProvider: {
+        controls: [providerControl, hostControl],
+        state: !!parametrized_by_type.find((v) => v === 'provider')
+      },
+    };
+
+    variants.forEach((variant) => {
+      const stateVariant = controlsState[variant];
+      if (stateVariant) {
+        stateVariant.controls.forEach((control) => {
+          if (stateVariant.state && !control.enabled) {
+            control.enable();
+          } else if (!stateVariant.state && control.enabled) {
+            control.disable();
+          }
+        });
+      }
+    });
+
+    if (parametrized_by_type.length === 0) {
+      return null;
+    }
+  };
 };
 
 @Component({
@@ -70,36 +117,12 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
   /** Returns a FormArray with the name 'steps'. */
   get steps(): AbstractControl | null { return this.form.get('steps'); }
 
-  form = new FormGroup({
-    steps: new FormArray([
-      new FormGroup({
-        name: new FormControl(null, [Validators.required]),
-        description: new FormControl(null),
-        role: new FormControl(null, [Validators.required]),
-        user: new FormControl([]),
-        group: new FormControl([])
-      }, {
-        validators: [atLeastOne('user', 'group')]
-      }),
-      new FormGroup({
-        object: new FormGroup({
-          cluster: new FormControl(null),
-          parent: new FormControl(null),
-          service: new FormControl(null),
-          provider: new FormControl(null),
-          host: new FormControl(null),
-        }, {
-          validators: [clusterOrServiceValidator, providerOrHostValidator]
-        })
-      })
-    ])
-  });
-
   step(id: number): FormGroup | null {
     return this.steps.get([id]) as FormGroup;
   }
 
   ngOnInit() {
+    this._createForm();
     this._fillForm(this.value);
     this.form.markAllAsTouched();
   }
@@ -119,6 +142,8 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
   }
 
   private _fillForm(value: RbacPolicyModel) {
+    console.log(value);
+
     if (value) {
       this.form.setValue({
         steps: [
@@ -141,5 +166,36 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
         ]
       });
     }
+  }
+
+  private _createForm(): void {
+    const roleControl = new FormControl(null, [Validators.required]);
+
+    this.form = new FormGroup({
+      steps: new FormArray([
+        new FormGroup({
+          name: new FormControl(null, [Validators.required]),
+          description: new FormControl(null),
+          role: roleControl,
+          user: new FormControl([]),
+          group: new FormControl([])
+        }, {
+          validators: [atLeastOne('user', 'group')]
+        }),
+        new FormGroup({
+          object: new FormGroup({
+            cluster: new FormControl(null, [Validators.required]),
+            parent: new FormControl(null),
+            service: new FormControl(null, [Validators.required]),
+            provider: new FormControl(null, [Validators.required]),
+            host: new FormControl(null, [Validators.required]),
+          }, {
+            validators: [
+              objectValidator(roleControl)
+            ]
+          })
+        })
+      ])
+    });
   }
 }
