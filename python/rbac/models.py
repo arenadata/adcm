@@ -48,11 +48,7 @@ class User(AuthUser):
     """
 
     profile = models.JSONField(default=str)
-
-    @property
-    def group(self):
-        """Alias for auth.User.groups according to customary style"""
-        return self.groups
+    built_in = models.BooleanField(default=False, null=False)
 
 
 class Group(AuthGroup):
@@ -62,11 +58,7 @@ class Group(AuthGroup):
     """
 
     description = models.CharField(max_length=255, null=True)
-
-    @property
-    def user(self):
-        """Alias for auth.Group.user_set according to customary style"""
-        return self.user_set
+    built_in = models.BooleanField(default=False, null=False)
 
 
 class RoleTypes(models.TextChoices):

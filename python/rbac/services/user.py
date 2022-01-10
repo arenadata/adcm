@@ -46,7 +46,7 @@ def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
     if groups is Empty:
         return
 
-    user_groups = {g.id: g for g in user.group.all()}
+    user_groups = {g.id: g for g in user.groups.all()}
     new_groups = [g['id'] for g in groups]
 
     for group_id in new_groups:
@@ -59,13 +59,13 @@ def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
             raise AdwpEx(
                 'USER_UPDATE_ERROR', msg=msg, http_code=status.HTTP_400_BAD_REQUEST
             ) from exc
-        user.group.add(group)
+        user.groups.add(group)
         user_groups[group_id] = group
 
     for group_id, group in user_groups.items():
         if group_id in new_groups:
             continue
-        user.group.remove(group)
+        user.groups.remove(group)
 
 
 def _regenerate_token(user: models.User) -> Token:
@@ -94,7 +94,7 @@ def update(
     is_superuser: bool = Empty,
     password: str = Empty,
     profile: dict = Empty,
-    group: list = Empty,
+    groups: list = Empty,
 ) -> models.User:
     """Full or partial User update"""
     if (username is not Empty) and (username != user.username):
@@ -118,7 +118,7 @@ def update(
 
     if context_user is None or context_user.is_superuser:
         set_not_empty_attr(user, partial, 'is_superuser', is_superuser, False)
-        _update_groups(user, group)
+        _update_groups(user, groups)
     user.save()
     return user
 
@@ -133,7 +133,7 @@ def create(
     email: str = None,
     is_superuser: bool = None,
     profile: dict = None,
-    group: list = None,
+    groups: list = None,
 ) -> models.User:
     """Create User"""
     if is_superuser:
@@ -157,6 +157,6 @@ def create(
     except IntegrityError as exc:
         raise AdwpEx('USER_CREATE_ERROR', msg=f'User creation failed with error {exc}') from exc
     _update_default_policy(user)
-    _update_groups(user, group or [])
+    _update_groups(user, groups or [])
     _regenerate_token(user)
     return user

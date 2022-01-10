@@ -27,39 +27,62 @@ class UserSerializer(serializers.Serializer):
     url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
 
 
-class ExpandedUserSerializer(UserSerializer):
+class UserGroupSerializer(serializers.Serializer):
+    """Simple Group serializer"""
+
+    id = serializers.IntegerField()
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
+
+
+class ExpandedUserSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
     """Expanded User serializer"""
 
-    username = serializers.CharField()
-    first_name = serializers.CharField()
-    last_name = serializers.CharField()
-    email = serializers.EmailField()
-    is_superuser = serializers.BooleanField()
-    profile = serializers.JSONField()
+    group = UserGroupSerializer(many=True, source='groups')
+    url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
+
+    class Meta:
+        model = models.User
+        fields = (
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'email',
+            'is_superuser',
+            'group',
+            'url',
+        )
+        expandable_fields = {
+            'group': (
+                'rbac.endpoints.group.views.GroupSerializer',
+                {'many': True, 'source': 'groups'},
+            )
+        }
 
 
 class GroupSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
-    """Group serializer"""
+    """
+    Group serializer
+    Group model inherits 'user_set' property from parent class, which refers to 'auth.User',
+    so it has not our custom properties in expanded fields
+    """
 
     id = serializers.IntegerField(read_only=True)
     name = serializers.RegexField(r'^[^\n]+$', max_length=150)
     description = serializers.CharField(
         max_length=255, allow_blank=True, required=False, default=''
     )
-    user = UserSerializer(many=True, required=False)
+    user = UserSerializer(many=True, required=False, source='user_set')
     url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
+    built_in = serializers.BooleanField(read_only=True)
 
     class Meta:
-        expandable_fields = {'user': (ExpandedUserSerializer, {'many': True})}
+        expandable_fields = {'user': (ExpandedUserSerializer, {'many': True, 'source': 'user_set'})}
 
     def update(self, instance, validated_data):
-        if 'user_set' in validated_data:
-            validated_data['user'] = validated_data.pop('user_set')
         return group_services.update(instance, partial=self.partial, **validated_data)
 
     def create(self, validated_data):
-        if 'user_set' in validated_data:
-            validated_data['user'] = validated_data.pop('user_set')
         return group_services.create(**validated_data)
 
 
@@ -68,6 +91,6 @@ class GroupViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
 
     queryset = models.Group.objects.all()
     serializer_class = GroupSerializer
-    filterset_fields = ('id', 'name', 'user')
+    filterset_fields = ('id', 'name')
     ordering_fields = ('id', 'name')
-    search_fields = ('name',)
+    search_fields = ('name', 'description')
