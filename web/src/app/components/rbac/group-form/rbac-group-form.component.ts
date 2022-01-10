@@ -27,4 +27,9 @@ export class RbacGroupFormComponent extends RbacFormDirective<RbacGroupModel> {
     url: new FormControl(null),
   });
 
+  ngOnInit() {
+    super.ngOnInit();
+    this.form.markAllAsTouched();
+  }
+
 }
