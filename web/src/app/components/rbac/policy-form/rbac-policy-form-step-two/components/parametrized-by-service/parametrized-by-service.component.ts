@@ -22,4 +22,9 @@ export class ParametrizedByServiceComponent extends ParametrizedByDirective {
   hasError(error: string): boolean {
     return this.object.hasError(error);
   }
+
+  reset(): void {
+    this.object.get('cluster').reset([]);
+    this.object.get('parent').reset([]);
+  }
 }

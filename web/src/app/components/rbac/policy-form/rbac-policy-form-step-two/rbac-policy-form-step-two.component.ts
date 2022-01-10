@@ -50,7 +50,24 @@ export class RbacPolicyFormStepTwoComponent extends BaseFormDirective implements
       this.takeUntil()
     ).subscribe((candidates: IRbacObjectCandidateModel) => {
       this.candidates = candidates;
-    });
+      const selectedService = this.object.get('service')?.value;
+      const serviceCandidate = candidates.service.find((s) => selectedService?.name === s?.name);
 
+      if (selectedService && serviceCandidate) {
+        this.object.get('service').setValue(serviceCandidate);
+      }
+    });
+  }
+
+  reset(value: any): void {
+    if (!this.object) {
+      return;
+    }
+
+    if (this.object.disabled) {
+      this.object.enable();
+    }
+
+    this.object.reset(value);
   }
 }
