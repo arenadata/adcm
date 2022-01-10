@@ -27,7 +27,7 @@ def _update_users(group: models.Group, users: [Empty, List[dict]]) -> None:
     if users is Empty:
         return
 
-    group_users = {u.id: u for u in group.user.all()}
+    group_users = {u.id: u for u in group.user_set.all()}
     new_users = [u['id'] for u in users]
 
     for user_id in new_users:
@@ -40,13 +40,13 @@ def _update_users(group: models.Group, users: [Empty, List[dict]]) -> None:
             raise AdwpEx(
                 'GROUP_UPDATE_ERROR', msg=msg, http_code=status.HTTP_400_BAD_REQUEST
             ) from exc
-        group.user.add(user)
+        group.user_set.add(user)
         group_users[user_id] = user
 
     for user_id, user in group_users.items():
         if user_id in new_users:
             continue
-        group.user.remove(user)
+        group.user_set.remove(user)
 
 
 @transaction.atomic
@@ -54,14 +54,14 @@ def create(
     *,
     name: str,
     description: str = None,
-    user: List[dict] = None,
+    user_set: List[dict] = None,
 ) -> models.Group:
     """Create Group"""
     try:
         group = models.Group.objects.create(name=name, description=description)
     except IntegrityError as exc:
         raise AdwpEx('GROUP_CREATE_ERROR', msg=f'Group creation failed with error {exc}') from exc
-    _update_users(group, user or [])
+    _update_users(group, user_set or [])
     return group
 
 
@@ -72,7 +72,7 @@ def update(
     partial: bool = False,
     name: str = Empty,
     description: str = Empty,
-    user: List[dict] = Empty,
+    user_set: List[dict] = Empty,
 ) -> models.Group:
     """Full or partial Group object update"""
     set_not_empty_attr(group, partial, 'name', name)
@@ -81,5 +81,5 @@ def update(
         group.save()
     except IntegrityError as exc:
         raise AdwpEx('GROUP_UPDATE_ERROR', msg=f'Group update failed with error {exc}') from exc
-    _update_users(group, user)
+    _update_users(group, user_set)
     return group

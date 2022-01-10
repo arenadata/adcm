@@ -41,18 +41,26 @@ class GroupUserSerializer(serializers.Serializer):
 class ExpandedGroupSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
     """Expanded Group serializer"""
 
-    description = serializers.CharField()
-    user = GroupUserSerializer(many=True)
+    user = GroupUserSerializer(many=True, source='user_set')
     url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
 
     class Meta:
         model = models.Group
-        fields = ('id', 'name', 'description', 'user', 'url')
-        expandable_fields = {'user': ('rbac.endpoints.user.views.UserSerializer', {'many': True})}
+        fields = ('id', 'name', 'user', 'url')
+        expandable_fields = {
+            'user': (
+                'rbac.endpoints.user.views.UserSerializer',
+                {'many': True, 'source': 'user_set'},
+            )
+        }
 
 
 class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
-    """User serializer"""
+    """
+    User serializer
+    User model inherits 'groups' property from parent class, which refers to 'auth.Group',
+    so it has not our custom properties in expanded fields
+    """
 
     id = serializers.IntegerField(read_only=True)
     username = serializers.RegexField(r'^[^\s]+$', max_length=150)
@@ -71,10 +79,11 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
     password = PasswordField(trim_whitespace=False)
     url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
     profile = serializers.JSONField(required=False, default='')
-    group = GroupSerializer(many=True, required=False)
+    group = GroupSerializer(many=True, required=False, source='groups')
+    built_in = serializers.BooleanField(read_only=True)
 
     class Meta:
-        expandable_fields = {'group': (ExpandedGroupSerializer, {'many': True})}
+        expandable_fields = {'group': (ExpandedGroupSerializer, {'many': True, 'source': 'groups'})}
 
     def update(self, instance, validated_data):
         context_user = self.context['request'].user
@@ -96,7 +105,7 @@ class UserViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
         'last_name',
         'email',
         'is_superuser',
-        'group',
+        'built_in',
     )
     ordering_fields = ('id', 'username', 'first_name', 'last_name', 'email', 'is_superuser')
     search_fields = ('username', 'first_name', 'last_name', 'email')

@@ -46,7 +46,7 @@ def create_status_user():
 
     password = random_string(40)
     token = random_string(40)
-    User.objects.create_superuser(username, "", password)
+    User.objects.create_superuser(username, "", password, built_in=True)
     with open(SECRETS_FILE, 'w', encoding='utf_8') as f:
         json.dump({'adcmuser': {'user': username, 'password': password}, 'token': token}, f)
     log.info('Update secret file %s OK', SECRETS_FILE)
@@ -80,7 +80,7 @@ def recheck_issues():
 def init():
     log.info("Start initializing ADCM DB...")
     if not User.objects.filter(username='admin').exists():
-        User.objects.create_superuser('admin', 'admin@example.com', 'admin')
+        User.objects.create_superuser('admin', 'admin@example.com', 'admin', built_in=True)
     create_status_user()
     event = Event()
     abort_all(event)
