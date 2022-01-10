@@ -10,12 +10,12 @@
     </app-parametrized-by-service>
   </ng-template>
 
-  <ng-template [ngIf]="role | parametrizedBy: ['host'] ">
+  <ng-template [ngIf]="(role | parametrizedBy: ['host']) && !object?.get('provider')?.value?.length">
     <app-parametrized-by-host [object]="object" [candidates]="candidates">
     </app-parametrized-by-host>
   </ng-template>
 
-  <ng-template [ngIf]="role | parametrizedBy: ['provider'] ">
+  <ng-template [ngIf]="(role | parametrizedBy: ['provider']) && !object?.get('host')?.value?.length ">
     <app-parametrized-by-provider [object]="object" [candidates]="candidates">
     </app-parametrized-by-provider>
   </ng-template>
