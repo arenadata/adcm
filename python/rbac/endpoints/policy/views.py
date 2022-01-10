@@ -36,6 +36,9 @@ class ObjectField(serializers.JSONField):
                         'type': 'string',
                         'pattern': '^(cluster|service|component|provider|host)$',
                     },
+                    'name': {
+                        'type': 'string',
+                    },
                 },
                 'additionalProperties': True,
                 'required': ['id', 'type'],
@@ -64,7 +67,13 @@ class ObjectField(serializers.JSONField):
     def to_representation(self, value):
         data = []
         for obj in value.all():
-            data.append({'id': obj.object_id, 'type': obj.object.prototype.type})
+            data.append(
+                {
+                    'id': obj.object_id,
+                    'type': obj.object.prototype.type,
+                    'name': obj.object.display_name,
+                }
+            )
         return super().to_representation(data)
 
 
