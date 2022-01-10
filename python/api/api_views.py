@@ -60,12 +60,12 @@ def permission_denied(
 def has_custom_permission(user, action_type, model, obj, second_perm):
     if user.has_perm(f'cm.{action_type}_{model}', obj):
         return True
-    if user.has_perm(f'cm.{second_perm}'):
+    if second_perm is not None and user.has_perm(f'cm.{second_perm}'):
         return True
     return False
 
 
-def check_custom_perm(self, action_type, model, obj, second_perm=''):
+def check_custom_perm(self, action_type, model, obj, second_perm=None):
     if not has_custom_permission(self.request.user, action_type, model, obj, second_perm):
         permission_denied()
 
