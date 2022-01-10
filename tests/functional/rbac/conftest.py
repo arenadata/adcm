@@ -32,6 +32,16 @@ TEST_USER_CREDENTIALS = "test_user", "password"
 DATA_DIR = os.path.join(os.path.dirname(__file__), "test_business_permissions_data")
 
 
+class RoleType(Enum):
+    """
+    Possible values of "type" field in Role object
+    """
+
+    HIDDEN = 'hidden'
+    BUSINESS = 'business'
+    ROLE = 'role'
+
+
 class RbacRoles(Enum):
     """
     Pre-defined rbac user roles
