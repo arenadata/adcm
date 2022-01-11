@@ -21,6 +21,7 @@ export interface IRbacObjectCandidateProviderModel extends Entity {
 
 export interface IRbacObjectCandidateServiceModel extends Entity {
   name: string;
+  type?: 'service',
   clusters: IRbacObjectCandidateClusterModel[];
 }
 

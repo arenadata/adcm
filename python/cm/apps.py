@@ -19,7 +19,6 @@ from django.db.models.signals import post_save, post_delete, m2m_changed
 
 
 WATCHED_CM_MODELS = (
-    # 'cluster',
     'group-config',
     'group-config-hosts',
     'adcm-concerns',
@@ -29,14 +28,19 @@ WATCHED_CM_MODELS = (
     'host-provider-concerns',
     'host-concerns',
 )
+WATCHED_RBAC_MODELS = (
+    'user',
+    'group',
+    'policy',
+    'role',
+)
 
 
 def filter_out_event(module, name, obj):
-    # We filter the sending of events only for cm, rbac and django.contrib.auth applications
-    if module in ['rbac.models', 'django.contrib.auth.models']:
-        if name == 'user' and obj.username in ['AnonymousUser', 'status', 'admin']:
-            return True
-        if name == 'user-profile' and obj.user.username in ['status', 'admin']:
+    # We filter the sending of events only for cm and rbac applications
+    # 'AnonymousUser', 'admin', 'status' are filtered out due to adwp_event design issue
+    if module in ['rbac.models'] and name in WATCHED_RBAC_MODELS:
+        if name == 'user' and obj.username in ['AnonymousUser', 'admin', 'status']:
             return True
         return False
     if module in ['cm.models'] and name in WATCHED_CM_MODELS:

@@ -58,6 +58,9 @@ def generate_body_for_checks(test_data: TestDataWithPreparedBody):
             continue
         if test_data.request.method == Methods.POST:
             continue
+        if isinstance(body.fields[field.name], list):
+            # TODO implement list checks with sorting
+            continue
         if (
             test_data.request.method == Methods.PATCH
             and not field.changeable
