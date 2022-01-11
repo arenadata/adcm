@@ -34,8 +34,8 @@ def set_parametrized_from_child(role, children: List[Role]):
     role.save()
 
 
-def check_role_child(child: List[Role]) -> None:
-    if not child:
+def check_role_child(child: List[Role], partial=False) -> None:
+    if not child and not partial:
         errors = {'child': ['Roles without children make not sense']}
         raise ValidationError(errors)
     for item in child:
@@ -70,10 +70,10 @@ def role_create(built_in=False, type_of_role=RoleTypes.role, **kwargs) -> Role:
     return role
 
 
-def role_update(role: Role, **kwargs) -> Role:
+def role_update(role: Role, partial, **kwargs) -> Role:
     """Updating Role object"""
     child = kwargs.pop('child', [])
-    check_role_child(child)
+    check_role_child(child, partial)
     kwargs.pop('name', None)
     for key, value in kwargs.items():
         setattr(role, key, value)
@@ -82,7 +82,7 @@ def role_update(role: Role, **kwargs) -> Role:
     except IntegrityError as exc:
         raise AdwpEx('ROLE_UPDATE_ERROR', msg=f'Role update failed with error {exc}') from exc
 
-    if child is not None:
+    if child:
         set_parametrized_from_child(role, child)
         update_m2m_field(role.child, child)
 
