@@ -332,7 +332,7 @@ class TestAdminGroupsPage:
 
         page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
         with allure.step("Create 11 groups"):
-            for i in range(11):
+            for _ in range(11):
                 page.create_custom_group(
                     f"{self.custom_group.name}_{random_string()}",
                     self.custom_group.description,
