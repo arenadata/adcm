@@ -12,7 +12,7 @@
 
 """Test permissions on actions: role creation, assignment and application"""
 from operator import itemgetter
-from typing import Iterable, List, Tuple, Set, NamedTuple, Generator
+from typing import Iterable, List, Tuple, Set, NamedTuple, Iterator
 
 import pytest
 import allure
@@ -321,7 +321,7 @@ def check_roles_does_not_have_category(category: str, roles: Iterable[RoleShortI
 # !===== Helpers ======!
 
 
-def key_values_from(key, collection: Iterable[dict]) -> Generator:
+def key_values_from(key, collection: Iterable[dict]) -> Iterator:
     """Create generator with value of given key from each collection item"""
     return map(itemgetter(key), collection)
 
