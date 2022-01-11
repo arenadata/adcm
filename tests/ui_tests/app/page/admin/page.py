@@ -131,7 +131,7 @@ class GeneralAdminPage(BasePageObject):
         page = AdminGroupsPage(self.driver, self.base_url)
         page.wait_page_is_opened()
         return page
-    
+
     @allure.step('Open Admin Roles page by left menu item click')
     def open_roles_menu(self) -> "AdminRolesPage":
         """Open Admin Roles page by menu object click"""
@@ -363,7 +363,7 @@ class AdminRolesPage(GeneralAdminPage):
                 name='ADCM User',
                 description='',
                 permissions='View config endpoints, View any object configuration, View any object import, '
-                            'View any object host-components, Base role',
+                'View any object host-components, Base role',
             ),
             AdminRoleInfo(
                 name='Service Administrator',
@@ -374,14 +374,14 @@ class AdminRolesPage(GeneralAdminPage):
                 name='Cluster Administrator',
                 description='',
                 permissions='Create host, Upload bundle, Add service, Remove service, Remove hosts, Map hosts, Unmap '
-                            'hosts, Edit host-components, Upgrade application bundle, Remove bundle, '
-                            'Service Administrator',
+                'hosts, Edit host-components, Upgrade application bundle, Remove bundle, '
+                'Service Administrator',
             ),
             AdminRoleInfo(
                 name='Provider Administrator',
                 description='',
                 permissions='Create host, Upload bundle, Edit infrastructure configurations, Remove hosts, Upgrade '
-                            'infrastructure bundle, Remove bundle',
+                'infrastructure bundle, Remove bundle',
             ),
         ]
 
