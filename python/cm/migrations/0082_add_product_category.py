@@ -20,9 +20,12 @@ def fill_category(apps, schema_editor):
     """Add category records and link them to bundles"""
     Bundle = apps.get_model('cm', 'Bundle')
     ProductCategory = apps.get_model('cm', 'ProductCategory')
+    Prototype = apps.get_model('cm', 'Prototype')
     for bundle in Bundle.objects.all():
+        prototype = Prototype.objects.filter(bundle=bundle, name=bundle.name).first()
+        value = prototype.display_name or bundle.name
         category, _ = ProductCategory.objects.get_or_create(
-            value=bundle.name, visible=bundle.name != 'ADCM'
+            value=value, visible=bundle.name != 'ADCM'
         )
         bundle.category = category
         bundle.save()
