@@ -32,7 +32,7 @@ class RoleChildSerializer(BaseRelatedSerializer):
 
 class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
-    child = RoleChildSerializer(many=True)
+    child = RoleChildSerializer(many=True, required=False)
     name = serializers.RegexField(r'^[^\n]*$', max_length=160, required=False, allow_blank=True)
     display_name = serializers.RegexField(r'^[^\n]*$', max_length=160, required=True)
     category = serializers.SerializerMethodField(read_only=True)
