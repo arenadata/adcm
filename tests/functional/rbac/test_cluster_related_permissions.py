@@ -12,6 +12,7 @@
 """Test business permissions related to cluster objects"""
 # pylint: disable=too-many-arguments,unused-argument
 import allure
+import pytest
 from adcm_client.objects import ADCMClient, Policy
 
 from tests.functional.rbac.conftest import (
@@ -32,16 +33,20 @@ def test_view_application_configurations(user_policy: Policy, user_sdk: ADCMClie
     cluster_via_admin, *_ = prepare_objects
     user_second_objects = as_user_objects(user_sdk, second_objects)
     second_service_on_first_cluster = user_sdk.service(id=cluster_via_admin.service_add(name="new_service").id)
-    second_component_on_first_cluster = second_service_on_first_cluster.component()
-    for base_object in (cluster, service, component):
+    second_component_on_first_cluster = second_service_on_first_cluster.component(name="test_component")
+    for base_object in (
+        cluster,
+        service,
+        component,
+        second_service_on_first_cluster,
+        second_component_on_first_cluster,
+    ):
         is_allowed(base_object, BusinessRoles.ViewApplicationConfigurations)
         is_denied(base_object, BusinessRoles.EditApplicationConfigurations)
     for base_object in (
         provider,
         host,
         *user_second_objects,
-        second_service_on_first_cluster,
-        second_component_on_first_cluster,
     ):
         is_denied(base_object, BusinessRoles.ViewApplicationConfigurations)
     delete_policy(user_policy)
@@ -263,6 +268,7 @@ def test_unmap_hosts(user_policy: Policy, user_sdk: ADCMClient, prepare_objects,
 
 
 @use_role(BusinessRoles.UpgradeApplicationBundle)
+@pytest.mark.usefixtures("second_objects")
 def test_upgrade_application_bundle(user_policy, user_sdk: ADCMClient, prepare_objects, sdk_client_fs, user):
     """Test that Upgrade application bundle role is ok"""
     cluster, *_, provider, _ = as_user_objects(user_sdk, prepare_objects)
@@ -281,6 +287,7 @@ def test_upgrade_application_bundle(user_policy, user_sdk: ADCMClient, prepare_o
 
 
 @use_role(BusinessRoles.UpgradeInfrastructureBundle)
+@pytest.mark.usefixtures("second_objects")
 def test_upgrade_infrastructure_bundle(user_policy, user_sdk: ADCMClient, prepare_objects, sdk_client_fs, user):
     """Test that Upgrade infrastructure bundle role is ok"""
     cluster, *_, provider, _ = as_user_objects(user_sdk, prepare_objects)
@@ -389,7 +396,7 @@ def test_upload_bundle(user_policy, user_sdk: ADCMClient, sdk_client_fs):
     is_denied(user_sdk.bundle(), BusinessRoles.RemoveBundle)
 
     delete_policy(user_policy)
-    sdk_client_fs.bundle().delete()
+    sdk_client_fs.bundle_list()[-1].delete()
     is_denied(user_sdk, BusinessRoles.UploadBundle)
 
 

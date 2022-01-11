@@ -170,7 +170,7 @@ class DbFiller:
             if "{id}" not in fk_endpoint.path:
                 fk_data = get_endpoint_data(adcm=self.adcm, endpoint=fk_endpoint)
             if not fk_data or force:
-                if fk_endpoint in self._endpoints_stack:
+                if fk_endpoint in self._endpoints_stack and not field.required:
                     return []
                 fk_data = self._get_or_create_data_for_endpoint(endpoint=fk_endpoint, force=force)
             return self._choose_fk_field_value(field=field, fk_data=fk_data)
