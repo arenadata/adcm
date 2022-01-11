@@ -960,6 +960,10 @@ def delete_bundle(bundle):
         shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
     bundle_id = bundle.id
     bundle.delete()
+    for role in Role.objects.filter(class_name='ParentRole'):
+        if not role.child.all():
+            role.delete()
+    ProductCategory.re_collect()
     cm.status_api.post_event('delete', 'bundle', bundle_id)
 
 

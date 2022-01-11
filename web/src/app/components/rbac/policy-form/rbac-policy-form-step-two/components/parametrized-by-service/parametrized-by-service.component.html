@@ -6,7 +6,8 @@
         #serviceSelect
         formControlName="service"
         placeholder="Service"
-        (selectionChange)="object.get('cluster').reset([])"
+        [compareWith]="serviceComparator"
+        (selectionChange)="reset()"
       >
         <mat-option
           *ngFor="let service of candidates.service"
@@ -23,6 +24,7 @@
   </div>
 
   <app-parametrized-by-cluster
+    *ngIf="!!serviceSelect.value?.clusters"
     [object]="object"
     [candidates]="serviceSelect.value | getParents"
     [isParent]="true"

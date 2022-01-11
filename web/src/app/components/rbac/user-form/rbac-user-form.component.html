@@ -1,5 +1,5 @@
-<form [formGroup]="userForm" class="rbac-user-form" tabindex="0">
-  <adwp-input [form]="userForm" label='User name' controlName='username'></adwp-input>
+<form [formGroup]="userForm" class="rbac-user-form" tabindex="0" autocomplete="off">
+  <adwp-input [form]="userForm" label='User name' controlName='username' ></adwp-input>
   <div class="rbac-user-form__password">
     <adwp-input [form]="userForm"
                 label='Password' controlName='password' type="password"
