@@ -80,7 +80,7 @@ class BusinessRoles(Enum):
     ViewRoles = BusinessRole("View roles", methodcaller("role_list"))
     CreateCustomRoles = BusinessRole(
         "Create custom role",
-        methodcaller("role_create", name="Custom role", display_name="Custom role", child=[{"id": 1}]),
+        methodcaller("role_create", name="Custom role", display_name="Custom role", child=[{"id": 2}]),
     )
     RemoveRoles = BusinessRole("Remove roles", methodcaller("delete"))
     EditRoles = BusinessRole("Edit role", lambda x: x.update(display_name=random_string(5)))

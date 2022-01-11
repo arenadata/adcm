@@ -12,6 +12,7 @@
 """Test business permissions related to cluster objects"""
 # pylint: disable=too-many-arguments,unused-argument
 import allure
+import pytest
 from adcm_client.objects import ADCMClient, Policy
 
 from tests.functional.rbac.conftest import (
@@ -267,6 +268,7 @@ def test_unmap_hosts(user_policy: Policy, user_sdk: ADCMClient, prepare_objects,
 
 
 @use_role(BusinessRoles.UpgradeApplicationBundle)
+@pytest.mark.usefixtures("second_objects")
 def test_upgrade_application_bundle(user_policy, user_sdk: ADCMClient, prepare_objects, sdk_client_fs, user):
     """Test that Upgrade application bundle role is ok"""
     cluster, *_, provider, _ = as_user_objects(user_sdk, prepare_objects)
@@ -285,6 +287,7 @@ def test_upgrade_application_bundle(user_policy, user_sdk: ADCMClient, prepare_o
 
 
 @use_role(BusinessRoles.UpgradeInfrastructureBundle)
+@pytest.mark.usefixtures("second_objects")
 def test_upgrade_infrastructure_bundle(user_policy, user_sdk: ADCMClient, prepare_objects, sdk_client_fs, user):
     """Test that Upgrade infrastructure bundle role is ok"""
     cluster, *_, provider, _ = as_user_objects(user_sdk, prepare_objects)
@@ -393,7 +396,7 @@ def test_upload_bundle(user_policy, user_sdk: ADCMClient, sdk_client_fs):
     is_denied(user_sdk.bundle(), BusinessRoles.RemoveBundle)
 
     delete_policy(user_policy)
-    sdk_client_fs.bundle().delete()
+    sdk_client_fs.bundle_list()[-1].delete()
     is_denied(user_sdk, BusinessRoles.UploadBundle)
 
 
