@@ -7,6 +7,7 @@ import {
   ComponentRef,
   ContentChild,
   ContentChildren,
+  HostBinding,
   Input,
   QueryList,
   TemplateRef,
@@ -28,13 +29,7 @@ import { CONFIG_FIELD, FieldComponent } from '@app/shared/configuration/field/fi
 
     <ng-container #container></ng-container>
   `,
-  styles: [
-    ':host {display: flex; width: 100%; margin-bottom: 20px}',
-    ':host:last-child {margin-bottom: 0}',
-    `:host:nth-child(odd) {
-      background-color: #4e4e4e;
-    }`
-  ],
+  styleUrls: ['./attribute-provider.component.scss'],
 })
 export class ConfigFieldAttributeProviderComponent implements AfterViewInit {
 
@@ -47,6 +42,10 @@ export class ConfigFieldAttributeProviderComponent implements AfterViewInit {
 
   @Input()
   options: IFieldOptions;
+
+  @HostBinding('class.read-only') get readOnly() {
+    return this.options.read_only;
+  }
 
   @ViewChild('container', { read: ViewContainerRef })
   container: ViewContainerRef;
