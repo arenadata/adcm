@@ -161,4 +161,6 @@ class AdminRolesLocators:
                 checkbox = Locator(By.CSS_SELECTOR, "mat-pseudo-checkbox", "Checkbox")
                 name = Locator(By.CSS_SELECTOR, ".mat-list-text", "Name")
 
-        save_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Create') or contains(text(), 'Save')]]", "Save button")
+        save_btn = Locator(
+            By.XPATH, "//button[./span[contains(text(), 'Create') or contains(text(), 'Save')]]", "Save button"
+        )
