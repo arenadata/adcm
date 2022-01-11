@@ -272,7 +272,7 @@ class TestAdminRolesPage:
         page = AdminRolesPage(app_fs.driver, app_fs.adcm.url).open()
         page.create_role(self.custom_role.name, self.custom_role.description, self.custom_role.permissions)
         page.open_role_by_name(self.custom_role.name)
-        with allure.step("Check that update unavailable without role name"):
+        with allure.step("Check that update unavailable without the role name"):
             page.fill_role_name_in_role_popup(" ")
             page.check_save_button_disabled()
             page.check_field_is_not_correct_in_role_popup("Role name")
