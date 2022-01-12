@@ -94,6 +94,9 @@ class BusinessRoles(Enum):
     )
     RemovePolicy = BusinessRole("Remove policy", methodcaller("delete"))
     EditPolicy = BusinessRole("Edit policy", lambda x: x.update(name=random_string(5)))
+    ViewAnyObjectConfiguration = BusinessRole("View any object configuration", methodcaller("config"))
+    ViewAnyObjectHostComponents = BusinessRole("View any object host-components", methodcaller("hostcomponent"))
+    ViewAnyObjectImport = BusinessRole("View any object import", methodcaller("imports"))
 
 
 @pytest.fixture()
