@@ -33,6 +33,26 @@ TEST_USER_CREDENTIALS = "test_user", "password"
 DATA_DIR = os.path.join(os.path.dirname(__file__), "test_business_permissions_data")
 
 
+class RoleType(Enum):
+    """
+    Possible values of "type" field in Role object
+    """
+
+    HIDDEN = 'hidden'
+    BUSINESS = 'business'
+    ROLE = 'role'
+
+
+class RbacRoles(Enum):
+    """
+    Pre-defined rbac user roles
+    """
+
+    ADCMUser = "ADCM User"
+    ServiceAdministrator = "Service Administrator"
+    ClusterAdministrator = "Cluster Administrator"
+
+
 class BusinessRole(NamedTuple):
     """Mapping for business role and func to check role permissions"""
 
