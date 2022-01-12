@@ -27,20 +27,10 @@ from adcm_pytest_plugin.utils import catch_failed, random_string
 
 # Enum names doesn't conform to UPPER_CASE naming style
 # pylint: disable=invalid-name
+from tests.functional.tools import get_object_represent
 
 TEST_USER_CREDENTIALS = "test_user", "password"
 DATA_DIR = os.path.join(os.path.dirname(__file__), "test_business_permissions_data")
-
-
-class RbacRoles(Enum):
-    """
-    Pre-defined rbac user roles
-    """
-
-    ADCMUser = "ADCM User"
-    ServiceAdministrator = "Service Administrator"
-    ClusterAdministrator = "Cluster Administrator"
-    ADCMAdministrator = "ADCM Administrator"
 
 
 class BusinessRole(NamedTuple):
@@ -90,7 +80,7 @@ class BusinessRoles(Enum):
     ViewRoles = BusinessRole("View roles", methodcaller("role_list"))
     CreateCustomRoles = BusinessRole(
         "Create custom role",
-        methodcaller("role_create", name="Custom role", display_name="Custom role", child=[{"id": 1}]),
+        methodcaller("role_create", name="Custom role", display_name="Custom role", child=[{"id": 2}]),
     )
     RemoveRoles = BusinessRole("Remove roles", methodcaller("delete"))
     EditRoles = BusinessRole("Edit role", lambda x: x.update(display_name=random_string(5)))
@@ -104,6 +94,9 @@ class BusinessRoles(Enum):
     )
     RemovePolicy = BusinessRole("Remove policy", methodcaller("delete"))
     EditPolicy = BusinessRole("Edit policy", lambda x: x.update(name=random_string(5)))
+    ViewAnyObjectConfiguration = BusinessRole("View any object configuration", methodcaller("config"))
+    ViewAnyObjectHostComponents = BusinessRole("View any object host-components", methodcaller("hostcomponent"))
+    ViewAnyObjectImport = BusinessRole("View any object import", methodcaller("imports"))
 
 
 @pytest.fixture()
@@ -143,7 +136,7 @@ def prepare_objects(sdk_client_fs):
     cluster_bundle = sdk_client_fs.upload_from_fs(os.path.join(DATA_DIR, "cluster"))
     cluster = cluster_bundle.cluster_create("Cluster")
     service = cluster.service_add(name="test_service")
-    component = service.component()
+    component = service.component(name="test_component")
     provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(DATA_DIR, "provider"))
     provider = provider_bundle.provider_create("Provider")
     host = provider.host_create("Host")
@@ -184,7 +177,13 @@ def delete_policy(policy):
     policy.delete()
 
 
-def create_policy(sdk_client, permission: BusinessRoles, objects: list, users: List[User], groups: List[Group]):
+def create_policy(
+    sdk_client,
+    permission: Union[BusinessRoles, List[BusinessRoles]],
+    objects: list,
+    users: List[User],
+    groups: List[Group],
+):
     """Create a new policy for the user and role"""
     obj_dict = {
         "cluster": list(filter(lambda x: isinstance(x, Cluster), objects)),
@@ -193,14 +192,16 @@ def create_policy(sdk_client, permission: BusinessRoles, objects: list, users: L
         "provider": list(filter(lambda x: isinstance(x, Provider), objects)),
         "host": list(filter(lambda x: isinstance(x, Host), objects)),
     }
-    role_name = permission.value.role_name
-
-    business_role = sdk_client.role(name=role_name)
-    role_name = f"Testing {role_name} {random_string(5)}"
+    child = []
+    for perm in [permission] if isinstance(permission, BusinessRoles) else permission:
+        role_name = perm.value.role_name
+        business_role = sdk_client.role(name=role_name)
+        child.append({"id": business_role.id})
+    role_name = f"Testing {random_string(5)}"
     role = sdk_client.role_create(
         name=role_name,
         display_name=role_name,
-        child=[{"id": business_role.id}],
+        child=child,
     )
     if role.parametrized_by_type:
         suitable_objects = list(itertools.chain(*[obj_dict[obj_type] for obj_type in role.parametrized_by_type]))
@@ -220,10 +221,10 @@ def is_allowed(base_object: Union[BaseAPIObject, ADCMClient], business_role: Bus
     Assert that role is allowed on object
     """
     with allure.step(
-        f"Assert that {business_role.value.role_name} on {base_object.__class__.__name__} is allowed"
+        f"Assert that {business_role.value.role_name} on {get_object_represent(base_object)} is allowed"
     ), catch_failed(
         (AccessIsDenied, NoSuchEndpointOrAccessIsDenied),
-        f"{business_role.value.role_name} on {base_object.__class__.__name__} should be allowed",
+        f"{business_role.value.role_name} on {get_object_represent(base_object)} should be allowed",
     ):
         business_role.value.method_call(base_object, *args, **kwargs)
 
@@ -232,12 +233,12 @@ def is_denied(base_object: Union[BaseAPIObject, ADCMClient], business_role: Busi
     """
     Assert that role is denied on object
     """
-    with allure.step(f"Assert that {business_role.value.role_name} on {base_object.__class__.__name__} is denied"):
+    with allure.step(f"Assert that {business_role.value.role_name} on {get_object_represent(base_object)} is denied"):
         try:
             business_role.value.method_call(base_object, *args, **kwargs)
         except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied):
             pass
         else:
             raise AssertionError(
-                f"{business_role.value.role_name} on {base_object.__class__.__name__} should not be allowed"
+                f"{business_role.value.role_name} on {get_object_represent(base_object)} should not be allowed"
             )

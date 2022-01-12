@@ -71,6 +71,6 @@ def sync_child_roles_hierarchy(adcm, fields: dict):
         if not role_types:
             continue
         should_be_infrastructure = role_types[0] in ["provider", "host"]
-        fields["child"] = list(filter(_is_suitable_role, child_list))
+        fields["child"] = [{"id": role.get("id")} for role in filter(_is_suitable_role, child_list)]
         break
     return fields

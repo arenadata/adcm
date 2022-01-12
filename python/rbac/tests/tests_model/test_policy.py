@@ -150,6 +150,33 @@ def test_object_policy():
 
 
 @pytest.mark.django_db
+def test_object_policy_remove_user():
+    user = cook_user('Joe')
+    r = cook_role('view', 'ObjectRole')
+    r.permissions.add(cook_perm('cm', 'view', 'bundle'))
+
+    p = Policy.objects.create(name='MyPolicy', role=r)
+    p.user.add(user)
+
+    b1 = Bundle.objects.create(name='ADH', version='1.0')
+    b2 = Bundle.objects.create(name='ADH', version='2.0')
+
+    p.add_object(b1)
+    assert not user.has_perm('cm.view_bundle', b1)
+
+    p.apply()
+
+    assert user.has_perm('cm.view_bundle', b1)
+    assert not user.has_perm('cm.view_bundle', b2)
+
+    p.user.remove(user)
+    p.apply()
+
+    assert not user.has_perm('cm.view_bundle', b1)
+    assert not user.has_perm('cm.view_bundle', b2)
+
+
+@pytest.mark.django_db
 def test_object_policy4group():
     group = cook_group('Ops')
     user = cook_user('Joe')

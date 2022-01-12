@@ -205,8 +205,10 @@ class ProductCategory(ADCMModel):
     def re_collect(cls) -> None:
         """Re-sync category list with installed bundles"""
         for bundle in Bundle.objects.filter(category=None).all():
+            prototype = Prototype.objects.filter(bundle=bundle, name=bundle.name).first()
+            value = prototype.display_name or bundle.name
             bundle.category, _ = cls.objects.get_or_create(
-                value=bundle.name, visible=bundle.name not in cls._invisible_categories
+                value=value, visible=bundle.name not in cls._invisible_categories
             )
             bundle.save()
         for category in cls.objects.all():

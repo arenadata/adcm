@@ -9,3 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Suite with rbac tests
+"""
+import pytest
+
+pytestmark = [
+    pytest.mark.allure_label("API Tests", label_type="layer"),
+    pytest.mark.allure_label("Functional Tests", label_type="parentSuite"),
+    pytest.mark.allure_label("Functional Tests", label_type="page_url"),
+]

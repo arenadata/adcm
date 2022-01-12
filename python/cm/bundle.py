@@ -286,7 +286,6 @@ def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too
         'Service Administrator': [],
     }
 
-    category = ProductCategory.objects.get(value=bundle.name)
     for act in Action.objects.filter(prototype__bundle=bundle):
         name_prefix = f'{act.prototype.type} action:'.title()
         name = f'{name_prefix} {act.display_name}'
@@ -322,7 +321,7 @@ def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too
             parametrized_by_type=[act.prototype.type],
         )
         role.save()
-        role.category.add(category)
+        role.category.add(bundle.category)
         ct = ContentType.objects.get_for_model(model)
         perm, _ = Permission.objects.get_or_create(
             content_type=ct, codename='run_object_action', name='Can run actions'
@@ -352,11 +351,11 @@ def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too
             parent_role.child.add(action_role)
 
         if parent_value['parametrized_by_type'] == 'cluster':
-            parent_role.category.add(category)
+            parent_role.category.add(bundle.category)
             for top_parent_name in ['Cluster Administrator']:
                 top_parent[top_parent_name].append(parent_role)
         elif parent_value['parametrized_by_type'] in ['service', 'component']:
-            parent_role.category.add(category)
+            parent_role.category.add(bundle.category)
             for top_parent_name in [
                 'Cluster Administrator',
                 'Service Administrator',
@@ -960,6 +959,10 @@ def delete_bundle(bundle):
         shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
     bundle_id = bundle.id
     bundle.delete()
+    for role in Role.objects.filter(class_name='ParentRole'):
+        if not role.child.all():
+            role.delete()
+    ProductCategory.re_collect()
     cm.status_api.post_event('delete', 'bundle', bundle_id)
 
 
