@@ -20,7 +20,7 @@ from django.db.transaction import atomic
 from rest_framework import status
 
 from cm.models import ADCMEntity
-from rbac.models import User, Policy, PolicyObject, Role, Group
+from rbac.models import User, Policy, PolicyObject, Role, Group, ObjectType
 from rbac.utils import update_m2m_field
 
 
@@ -52,8 +52,14 @@ def _check_objects(role: Role, objects: List[ADCMEntity]) -> None:
                 msg='Parametrized role should be applied to some objects',
                 http_code=status.HTTP_400_BAD_REQUEST,
             )
+
+        parametrized_by = set(role.parametrized_by_type)
+        under_cluster = {ObjectType.service.value, ObjectType.component.value}
+        if parametrized_by.intersection(under_cluster):
+            parametrized_by.add(ObjectType.cluster.value)
+
         for obj in objects:
-            if obj.prototype.type not in role.parametrized_by_type:
+            if obj.prototype.type not in parametrized_by:
                 raise AdwpEx(
                     'POLICY_INTEGRITY_ERROR',
                     msg=(
