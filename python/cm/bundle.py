@@ -321,6 +321,7 @@ def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too
             parametrized_by_type=[act.prototype.type],
         )
         role.save()
+        bundle.refresh_from_db()
         role.category.add(bundle.category)
         ct = ContentType.objects.get_for_model(model)
         perm, _ = Permission.objects.get_or_create(
