@@ -23,7 +23,7 @@ class AdcmList(ListView):
 
     queryset = ADCM.objects.all()
     serializer_class = serializers.AdcmSerializer
-    serializer_class_ui = serializers.AdcmDetailSerializer
+    serializer_class_ui = serializers.AdcmDetailUISerializer
 
 
 class AdcmDetail(DetailViewRO):
@@ -34,6 +34,7 @@ class AdcmDetail(DetailViewRO):
 
     queryset = ADCM.objects.all()
     serializer_class = serializers.AdcmDetailSerializer
+    serializer_class_ui = serializers.AdcmDetailUISerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'adcm_id'
     error_code = 'ADCM_NOT_FOUND'

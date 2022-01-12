@@ -14,14 +14,13 @@
 
 from rest_framework import serializers
 
-
 from api.action.serializers import ActionShort
 from api.api_views import hlink, filter_actions, CommonAPIURL, ObjectURL
-
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import StringListSerializer
 from cm import status_api
+from cm.adcm_config import get_main_info
 from cm.models import Action
 
 
@@ -69,6 +68,7 @@ class ComponentUISerializer(ComponentDetailSerializer):
     actions = serializers.SerializerMethodField()
     version = serializers.SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
+    main_info = serializers.SerializerMethodField()
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
@@ -80,3 +80,6 @@ class ComponentUISerializer(ComponentDetailSerializer):
 
     def get_version(self, obj):
         return obj.prototype.version
+
+    def get_main_info(self, obj):
+        return get_main_info(obj)

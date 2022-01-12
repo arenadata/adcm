@@ -18,6 +18,7 @@ from api.action.serializers import ActionShort
 from api.api_views import hlink, check_obj, filter_actions, CommonAPIURL, ObjectURL
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
+from cm.adcm_config import get_main_info
 from cm.errors import AdcmEx
 from cm.models import HostProvider, Prototype, Action
 
@@ -106,6 +107,7 @@ class HostUISerializer(HostDetailSerializer):
     prototype_display_name = serializers.SerializerMethodField()
     provider_name = serializers.SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
+    main_info = serializers.SerializerMethodField()
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
@@ -132,3 +134,6 @@ class HostUISerializer(HostDetailSerializer):
         if obj.provider:
             return obj.provider.name
         return None
+
+    def get_main_info(self, obj):
+        return get_main_info(obj)
