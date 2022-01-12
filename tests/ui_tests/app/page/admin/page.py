@@ -27,6 +27,7 @@ from tests.ui_tests.app.page.admin.locators import (
     AdminUsersLocators,
     AdminIntroLocators,
     AdminSettingsLocators,
+    AdminGroupsLocators,
     AdminRolesLocators,
 )
 from tests.ui_tests.app.page.common.base_page import (
@@ -50,6 +51,15 @@ class AdminRoleInfo:
     name: str
     description: str
     permissions: str
+
+
+@dataclass
+class AdminGroupInfo:
+    """Information about group"""
+
+    name: str
+    description: str
+    users: str
 
 
 class GeneralAdminPage(BasePageObject):
@@ -110,6 +120,15 @@ class GeneralAdminPage(BasePageObject):
 
         self.find_and_click(ObjectPageMenuLocators.users_tab)
         page = AdminUsersPage(self.driver, self.base_url)
+        page.wait_page_is_opened()
+        return page
+
+    @allure.step('Open Admin groups page by left menu item click')
+    def open_groups_menu(self) -> "AdminGroupsPage":
+        """Open Admin groups page by menu object click"""
+
+        self.find_and_click(ObjectPageMenuLocators.groups_tab)
+        page = AdminGroupsPage(self.driver, self.base_url)
         page.wait_page_is_opened()
         return page
 
@@ -249,6 +268,65 @@ class AdminUsersPage(GeneralAdminPage):
         assert not self.is_child_displayed(user_row, AdminUsersLocators.Row.delete_btn, timeout=3)
 
 
+class AdminGroupsPage(GeneralAdminPage):
+    """Admin groups Page class"""
+
+    MENU_SUFFIX = 'groups'
+    MAIN_ELEMENTS = [
+        AdminIntroLocators.intro_title,
+        AdminIntroLocators.intro_text,
+        AdminGroupsLocators.create_group_btn,
+        AdminGroupsLocators.delete_btn,
+        CommonTable.header,
+    ]
+
+    def click_create_group_btn(self):
+        self.find_and_click(AdminGroupsLocators.create_group_btn)
+        self.wait_element_visible(AdminGroupsLocators.AddGroupPopup.block)
+
+    @allure.step('Create custom group {name}')
+    def create_custom_group(self, name: str, description: Optional[str], users: Optional[str]):
+        self.click_create_group_btn()
+        self.send_text_to_element(AdminGroupsLocators.AddGroupPopup.name_input, name)
+        if description:
+            self.send_text_to_element(AdminGroupsLocators.AddGroupPopup.description_input, description)
+        if users:
+            self.find_and_click(AdminGroupsLocators.AddGroupPopup.users_select)
+            self.wait_element_visible(AdminGroupsLocators.AddGroupPopup.users_item)
+            for user in users.split(", "):
+                for user_item in self.find_elements(AdminGroupsLocators.AddGroupPopup.users_item):
+                    if user_item.text == user:
+                        user_chbx = self.find_child(user_item, AdminGroupsLocators.AddGroupPopup.UserRow.checkbox)
+                        self.hover_element(user_chbx)
+                        user_chbx.click()
+            self.find_and_click(AdminGroupsLocators.AddGroupPopup.users_select)
+        self.find_and_click(AdminGroupsLocators.AddGroupPopup.create_btn)
+        self.wait_element_hide(AdminGroupsLocators.AddGroupPopup.block)
+
+    def get_all_groups(self) -> [AdminGroupInfo]:
+        """Get all groups info."""
+
+        groups_items = []
+        groups_rows = self.table.get_all_rows()
+        for row in groups_rows:
+            row_item = AdminGroupInfo(
+                name=self.find_child(row, AdminGroupsLocators.GroupRow.name).text,
+                description=self.find_child(row, AdminGroupsLocators.GroupRow.description).text,
+                users=self.find_child(row, AdminGroupsLocators.GroupRow.users).text,
+            )
+            groups_items.append(row_item)
+        return groups_items
+
+    def select_all_groups(self):
+        self.find_elements(self.table.locators.header)[0].click()
+
+    def click_delete_button(self):
+        self.find_and_click(AdminRolesLocators.delete_btn)
+        self.wait_element_visible(DeleteDialog.body)
+        self.find_and_click(DeleteDialog.yes)
+        self.wait_element_hide(DeleteDialog.body)
+
+
 class AdminRolesPage(GeneralAdminPage):
     """Admin Roles Page class"""
 
@@ -284,8 +362,8 @@ class AdminRolesPage(GeneralAdminPage):
             AdminRoleInfo(
                 name='ADCM User',
                 description='',
-                permissions='View application configurations, View infrastructure configurations, View imports, '
-                'View host-components, Base role',
+                permissions='View config endpoints, View any object configuration, View any object import, '
+                'View any object host-components, Base role',
             ),
             AdminRoleInfo(
                 name='Service Administrator',
@@ -295,15 +373,15 @@ class AdminRolesPage(GeneralAdminPage):
             AdminRoleInfo(
                 name='Cluster Administrator',
                 description='',
-                permissions='Create host, Upload bundle, Add service, Remove service, Remove hosts, Map hosts, '
-                'Unmap hosts, Edit host-components, Upgrade application bundle, Remove bundle, '
+                permissions='Create host, Upload bundle, Add service, Remove service, Remove hosts, Map hosts, Unmap '
+                'hosts, Edit host-components, Upgrade application bundle, Remove bundle, '
                 'Service Administrator',
             ),
             AdminRoleInfo(
                 name='Provider Administrator',
                 description='',
-                permissions='Create host, Upload bundle, Edit infrastructure configurations, Remove hosts, '
-                'Upgrade infrastructure bundle, Remove bundle',
+                permissions='Create host, Upload bundle, Edit infrastructure configurations, Remove hosts, Upgrade '
+                'infrastructure bundle, Remove bundle',
             ),
         ]
 
@@ -322,18 +400,20 @@ class AdminRolesPage(GeneralAdminPage):
 
     @allure.step('Fill role name {role_name}')
     def fill_role_name_in_role_popup(self, role_name: str):
-        self.send_text_to_element(AdminRolesLocators.AddRolePopup.role_name_input, role_name, clean_input=True)
+        self.send_text_to_element(AdminRolesLocators.AddRolePopup.role_name_input, role_name)
+        self.find_and_click(AdminRolesLocators.AddRolePopup.description_name_input)
 
     @allure.step('Fill description {description}')
     def fill_description_in_role_popup(self, description: str):
-        self.send_text_to_element(AdminRolesLocators.AddRolePopup.description_name_input, description, clean_input=True)
+        self.send_text_to_element(AdminRolesLocators.AddRolePopup.description_name_input, description)
+        self.find_and_click(AdminRolesLocators.AddRolePopup.role_name_input)
 
     @allure.step('Create new role')
-    def create_role(self, role: AdminRoleInfo):
+    def create_role(self, role_name: str, role_description: str, role_permissions: str):
         self.open_create_role_popup()
-        self.fill_role_name_in_role_popup(role.name)
-        self.fill_description_in_role_popup(role.description)
-        for permission in role.permissions.split(", "):
+        self.fill_role_name_in_role_popup(role_name)
+        self.fill_description_in_role_popup(role_description)
+        for permission in role_permissions.split(", "):
             self.select_permission_in_add_role_popup(permission)
         self.wait_element_visible(AdminRolesLocators.AddRolePopup.PermissionItemsBlock.item)
         self.click_save_btn_in_role_popup()
@@ -399,7 +479,7 @@ class AdminRolesPage(GeneralAdminPage):
         """Assert that message "{name} is not correct" is presented"""
 
         message = f'{name} is not correct.'
-        self.check_element_should_be_visible(AdminRolesLocators.AddRolePopup.field_error(message))
+        self.check_element_should_be_visible(AdminRolesLocators.AddRolePopup.field_error(message), timeout=6)
 
     def select_all_roles(self):
         self.find_elements(self.table.locators.header)[0].click()

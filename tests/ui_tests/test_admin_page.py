@@ -16,6 +16,7 @@
 
 import allure
 import pytest
+from adcm_pytest_plugin.utils import random_string
 
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import (
@@ -23,7 +24,9 @@ from tests.ui_tests.app.page.admin.page import (
     AdminUsersPage,
     AdminSettingsPage,
     AdminRolesPage,
+    AdminGroupsPage,
     AdminRoleInfo,
+    AdminGroupInfo,
 )
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.utils import expect_rows_amount_change
@@ -175,7 +178,7 @@ class TestAdminUsersPage:
             login_page = LoginPage(users_page.driver, users_page.base_url)
             login_page.wait_page_is_opened()
             login_page.login_user(params['username'], params['new_password'])
-            users_page.wait_page_is_opened()
+            AdminIntroPage(users_page.driver, users_page.base_url).wait_page_is_opened()
 
     def test_delete_user(self, users_page: AdminUsersPage):
         """Create new user, delete it and check current user can't be deleted"""
@@ -200,6 +203,7 @@ class TestAdminUsersPage:
                 params['username']
             ), f'User {params["username"]} should not be in users list'
 
+    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2555")
     def test_change_admin_password(self, users_page: AdminUsersPage):
         """Change admin password, login with new credentials"""
 
@@ -231,14 +235,14 @@ class TestAdminRolesPage:
         roles_page.wait_page_is_opened()
         roles_page.check_all_elements()
         roles_page.check_default_roles()
-        assert len(roles_page.table.get_all_rows()) == 5, "There should be 5 default roles"
+        assert len(roles_page.table.get_all_rows()) == 4, "There should be 4 default roles"
         roles_page.check_admin_toolbar()
 
     def test_create_custom_role_on_roles_page(self, app_fs):
         """Test create a role on /admin/roles page"""
 
         page = AdminRolesPage(app_fs.driver, app_fs.adcm.url).open()
-        page.create_role(self.custom_role)
+        page.create_role(self.custom_role.name, self.custom_role.description, self.custom_role.permissions)
         page.check_default_roles()
         page.check_custom_role(self.custom_role)
 
@@ -247,8 +251,12 @@ class TestAdminRolesPage:
 
         page = AdminRolesPage(app_fs.driver, app_fs.adcm.url).open()
         with allure.step("Create 11 roles"):
-            for _ in range(6):
-                page.create_role(self.custom_role)
+            for _ in range(7):
+                page.create_role(
+                    f"{self.custom_role.name}_{random_string()}",
+                    self.custom_role.description,
+                    self.custom_role.permissions,
+                )
         page.table.check_pagination(second_page_item_amount=1)
 
     @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2531")
@@ -262,15 +270,15 @@ class TestAdminRolesPage:
         )
 
         page = AdminRolesPage(app_fs.driver, app_fs.adcm.url).open()
-        page.create_role(self.custom_role)
+        page.create_role(self.custom_role.name, self.custom_role.description, self.custom_role.permissions)
         page.open_role_by_name(self.custom_role.name)
-        with allure.step("Check that update unavailable without role name"):
+        with allure.step("Check that update unavailable without the role name"):
             page.fill_role_name_in_role_popup(" ")
+            page.check_save_button_disabled()
             page.check_field_is_not_correct_in_role_popup("Role name")
-            page.check_save_button_disabled()
             page.fill_role_name_in_role_popup("")
-            page.check_field_is_required_in_role_popup("Role name")
             page.check_save_button_disabled()
+            page.check_field_is_required_in_role_popup("Role name")
         with allure.step("Check that update unavailable without permissions"):
             page.remove_permissions_in_add_role_popup(permissions_to_remove=self.custom_role.permissions.split(", "))
             page.check_save_button_disabled()
@@ -289,8 +297,54 @@ class TestAdminRolesPage:
         """Test delete custome role on /admin/roles page"""
 
         page = AdminRolesPage(app_fs.driver, app_fs.adcm.url).open()
-        page.create_role(self.custom_role)
+        page.create_role(self.custom_role.name, self.custom_role.description, self.custom_role.permissions)
         page.select_all_roles()
         page.click_delete_button()
         page.check_default_roles()
-        assert len(page.table.get_all_rows()) == 5, "There should be 5 default roles"
+        assert len(page.table.get_all_rows()) == 4, "There should be 4 default roles"
+
+
+class TestAdminGroupsPage:
+    """Tests for the /admin/groups"""
+
+    custom_group = AdminGroupInfo(name='Test_group', description='Test description', users='admin')
+
+    def test_open_by_tab_admin_groups_page(self, app_fs):
+        """Test open /admin/groups from left menu"""
+
+        intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url).open()
+        groups_page = intro_page.open_groups_menu()
+        groups_page.wait_page_is_opened()
+        groups_page.check_all_elements()
+        groups_page.check_admin_toolbar()
+
+    def test_create_group_on_admin_groups_page(self, app_fs):
+        """Test create a group on /admin/groups"""
+
+        groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
+        groups_page.create_custom_group(self.custom_group.name, self.custom_group.description, self.custom_group.users)
+        current_groups = groups_page.get_all_groups()
+        assert len(current_groups) == 1, "There should be 1 group on the page"
+        assert self.custom_group in current_groups, "Created group should be on the page"
+
+    def test_check_pagination_groups_list_page(self, app_fs):
+        """Test pagination on /admin/groups page"""
+
+        page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
+        with allure.step("Create 11 groups"):
+            for _ in range(11):
+                page.create_custom_group(
+                    f"{self.custom_group.name}_{random_string()}",
+                    self.custom_group.description,
+                    self.custom_group.users,
+                )
+        page.table.check_pagination(second_page_item_amount=1)
+
+    def test_delete_group_from_groups_page(self, app_fs):
+        """Test delete custom group on /admin/groups page"""
+
+        page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
+        page.create_custom_group(self.custom_group.name, self.custom_group.description, self.custom_group.users)
+        page.select_all_groups()
+        page.click_delete_button()
+        assert len(page.table.get_all_rows()) == 0, "There should be 0 groups"
