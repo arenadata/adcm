@@ -76,7 +76,7 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
             object: {
               cluster: value.object.filter((item: IRbacObjectCandidateClusterModel) => item.type === 'cluster'),
               parent: [],
-              service: value.object.find((item: IRbacObjectCandidateServiceModel) => item.type === 'service'),
+              service: value.object.find((item: IRbacObjectCandidateServiceModel) => item.type === 'service') || '',
               provider: value.object.filter((item: IRbacObjectCandidateProviderModel) => item.type === 'provider'),
               host: value.object.filter((item: IRbacObjectCandidateHostModel) => item.type === 'host'),
             }
