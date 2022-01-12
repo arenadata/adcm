@@ -22,9 +22,9 @@ from tests.functional.rbac.conftest import BusinessRoles
 ADCM_USER_ROLES = {
     role.value.role_name
     for role in (
-        BusinessRoles.ViewApplicationConfigurations,
-        BusinessRoles.ViewImports,
-        BusinessRoles.ViewHostComponents,
+        BusinessRoles.ViewAnyObjectConfiguration,
+        BusinessRoles.ViewAnyObjectImport,
+        BusinessRoles.ViewAnyObjectHostComponents,
     )
 }
 SERVICE_ADMIN_ROLES = {

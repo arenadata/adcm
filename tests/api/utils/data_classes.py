@@ -279,6 +279,7 @@ class RbacUserFields(BaseClass):
     is_superuser = Field(name="is_superuser", f_type=Boolean(), default_value=False, postable=True, changeable=True)
     profile = Field(name="profile", f_type=Json(), default_value="", postable=True, changeable=True)
     url = Field(name="url", f_type=String(), default_value=AUTO_VALUE)
+    built_in = Field(name="built_in", f_type=Boolean(), default_value=AUTO_VALUE)
 
 
 class RbacGroupFields(BaseClass):
@@ -297,6 +298,7 @@ class RbacGroupFields(BaseClass):
     name = Field(name="name", f_type=String(max_length=150), required=True, postable=True, changeable=True)
     description = Field(name="description", f_type=Text(), postable=True, changeable=True, default_value="")
     url = Field(name="url", f_type=String(), default_value=AUTO_VALUE)
+    built_in = Field(name="built_in", f_type=Boolean(), default_value=AUTO_VALUE)
 
 
 RbacUserFields.group = Field(
