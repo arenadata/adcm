@@ -82,6 +82,7 @@ def load_bundle(bundle_file):
         order_versions()
         clear_stage()
         ProductCategory.re_collect()
+        bundle.refresh_from_db()
         cook_roles(bundle)
         cm.status_api.post_event('create', 'bundle', bundle.id)
         return bundle
@@ -321,7 +322,6 @@ def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too
             parametrized_by_type=[act.prototype.type],
         )
         role.save()
-        bundle.refresh_from_db()
         role.category.add(bundle.category)
         ct = ContentType.objects.get_for_model(model)
         perm, _ = Permission.objects.get_or_create(
