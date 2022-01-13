@@ -40,5 +40,7 @@ export class RbacRoleFormComponent extends RbacFormDirective<RbacRoleModel> impl
       url: new FormControl(null),
     });
     super.ngOnInit();
+
+    this.form.markAllAsTouched();
   }
 }
