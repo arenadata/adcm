@@ -219,6 +219,7 @@ class TestInventory(TestCase):
                                 'edition': 'community',
                                 'state': 'created',
                                 'multi_state': [],
+                                'before_upgrade': {'state': None},
                             },
                             'services': {},
                         },
@@ -239,6 +240,7 @@ class TestInventory(TestCase):
                                 'host_prototype_id': proto3.id,
                                 'state': 'created',
                                 'multi_state': [],
+                                'before_upgrade': {'state': None},
                             }
                         },
                     }
@@ -263,6 +265,7 @@ class TestInventory(TestCase):
                         'host_prototype_id': proto3.id,
                         'state': 'created',
                         'multi_state': [],
+                        'before_upgrade': {'state': None},
                     }
                 },
             }
