@@ -198,49 +198,14 @@ class StatusList(GenericAPIView, InterfaceView):
     model_name = ClusterObject
     serializer_class = serializers.StatusSerializer
 
-    def ui_status(self, service, host_components):
-        service_map = cm.status_api.get_object_map(service, 'service')
-
-        component_map = {}
-        for hc in host_components:
-            if hc.component.id not in component_map:
-                component_map[hc.component.id] = {'component': hc.component, 'hosts': []}
-            component_map[hc.component.id]['hosts'].append(hc.host)
-
-        comp_list = []
-        for comp in component_map.values():
-            host_list = []
-            for host in comp['hosts']:
-                host_list.append(
-                    {
-                        'id': host.id,
-                        'name': host.fqdn,
-                        'status': cm.status_api.get_host_comp_status(host, comp['component']),
-                    }
-                )
-            comp_list.append(
-                {
-                    'id': comp['component'].id,
-                    'name': comp['component'].display_name,
-                    'status': cm.status_api.get_component_status(comp['component']),
-                    'hosts': host_list,
-                }
-            )
-        return {
-            'id': service.id,
-            'name': service.display_name,
-            'status': 32 if service_map is None else service_map.get('status', 0),
-            'hc': comp_list,
-        }
-
     def get(self, request, service_id, cluster_id=None):
         """
         Show all hosts and components in a specified cluster
         """
         service = check_obj(ClusterObject, service_id)
-        obj = self.get_queryset().filter(service=service)
         if self.for_ui(request):
-            return Response(self.ui_status(service, obj))
+            host_components = self.get_queryset().filter(service=service)
+            return Response(cm.status_api.make_ui_service_status(service, host_components))
         else:
             serializer = self.serializer_class(service, context={'request': request})
             return Response(serializer.data)
