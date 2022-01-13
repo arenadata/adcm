@@ -12,7 +12,9 @@
         <div class="adcm-input-rbac-permissions__selected-filter">
           <input #chipListInput [matChipInputFor]="chipList"
                  [placeholder]="chipList.chips?.length ? 'Filter selected permissions...' : 'Select permissions...'"
-                 [disabled]="!form.controls[controlName].value?.length">
+                 [disabled]="!form.controls[controlName].value?.length"
+                 (keydown.backspace)="onBackspaceKeydown($event, chipListInput)"
+          >
           <button class="adcm-input-rbac-permissions__selected-clear"
                   mat-flat-button
                   [style.display]="chipListInput.value?.length ? 'block' : 'none'"
