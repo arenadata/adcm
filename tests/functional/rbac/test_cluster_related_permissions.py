@@ -415,7 +415,7 @@ def test_remove_bundle(user_policy, user_sdk: ADCMClient, sdk_client_fs):
 
 
 def test_service_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepare_objects, second_objects):
-    """Test that service administrator role grants access to single service"""
+    """Test that service administrator role grants access to single service and its components"""
     cluster, service, component, *provider_objects = as_user_objects(user_sdk, prepare_objects)
     cluster_via_admin, *_ = prepare_objects
     second_service_on_first_cluster = user_sdk.service(id=cluster_via_admin.service_add(name="new_service").id)
@@ -438,7 +438,7 @@ def test_service_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepar
 
 
 def test_cluster_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepare_objects, second_objects):
-    """Test that cluster administrator role grants access to single cluster"""
+    """Test that cluster administrator role grants access to single cluster and related services and components"""
     cluster, service, component, *provider_objects = as_user_objects(user_sdk, prepare_objects)
     second_cluster, second_service, second_component, *second_provider_objects = as_user_objects(
         user_sdk, second_objects
@@ -459,7 +459,7 @@ def test_cluster_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepar
 
 
 def test_provider_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepare_objects, second_objects):
-    """Test that provider administrator role grants access to single provider"""
+    """Test that provider administrator role grants access to single provider and its hosts"""
     cluster, service, component, hostprovider, host = as_user_objects(user_sdk, prepare_objects)
     second_cluster, second_service, second_component, *second_provider_objects = as_user_objects(
         user_sdk, second_objects
