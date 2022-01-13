@@ -903,3 +903,12 @@ def set_object_config(obj, keys, value):
         save_file_type(obj, key, subkey, value)
     log.info('update %s config %s/%s to "%s"', obj_ref(obj), key, subkey, value)
     return value
+
+
+def get_main_info(obj: Optional[ADCMEntity]) -> Optional[str]:
+    """Return __main_info for object"""
+    _, spec, _, _ = get_prototype_config(obj.prototype)
+    if '__main_info/' in spec:
+        return get_default(spec['__main_info/'], obj.prototype)
+    else:
+        return None

@@ -21,10 +21,10 @@ from api.api_views import check_obj, filter_actions, CommonAPIURL, ObjectURL
 from api.cluster.serializers import BindSerializer
 from api.component.serializers import ComponentUISerializer
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.serializers import StringListSerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
-
+from api.serializers import StringListSerializer
 from cm import status_api
+from cm.adcm_config import get_main_info
 from cm.api import add_service_to_cluster, multi_bind, bind
 from cm.errors import AdcmEx
 from cm.models import Prototype, Action, ServiceComponent, Cluster
@@ -98,6 +98,7 @@ class ServiceUISerializer(ServiceDetailSerializer):
     action = CommonAPIURL(view_name='object-action')
     config = CommonAPIURL(view_name='object-config')
     concerns = ConcernItemUISerializer(many=True, read_only=True)
+    main_info = serializers.SerializerMethodField()
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
@@ -113,6 +114,9 @@ class ServiceUISerializer(ServiceDetailSerializer):
 
     def get_version(self, obj):
         return obj.prototype.version
+
+    def get_main_info(self, obj):
+        return get_main_info(obj)
 
 
 class ImportPostSerializer(serializers.Serializer):
