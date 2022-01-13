@@ -30,10 +30,35 @@ const INITIAL_OBJECT = {
   ]
 })
 export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> implements OnInit {
+  static EXPORT_TO_JSON = (value): RbacPolicyModel => {
+    console.log('EXPORT_TO_JSON: ', value);
+    if (!value) {
+      return null;
+    }
+
+    const object = (value.steps[1] && value.steps[1].object) || {};
+
+    const { cluster, parent, provider, host } = object;
+
+    return {
+      ...value.steps[0],
+      object: [
+        ...cluster || [],
+        ...parent || [],
+        ...provider || [],
+        ...host || []
+      ]
+    };
+  };
+
   initialObject = INITIAL_OBJECT;
 
   /** Returns a FormArray with the name 'steps'. */
   get steps(): AbstractControl | null { return this.form.get('steps'); }
+
+  get title(): string {
+    return this.value ? 'Save' : 'Create';
+  }
 
   step(id: number): FormGroup | null {
     return this.steps.get([id]) as FormGroup;
@@ -46,22 +71,10 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
   }
 
   rbacBeforeSave(value): RbacPolicyModel {
-    const object = (value.steps[1] && value.steps[1].object) || {};
-
-    const { cluster = [], parent = [], provider = [], host = [] } = object;
-
-    return {
-      ...value.steps[0],
-      object: [
-        ...cluster,
-        ...parent,
-        ...provider,
-        ...host
-      ]
-    };
+    return RbacPolicyFormComponent.EXPORT_TO_JSON(value);
   }
 
-  private _fillForm(value: RbacPolicyModel) {
+  private _fillForm(value: RbacPolicyModel): void {
     if (value) {
       this.form.setValue({
         steps: [

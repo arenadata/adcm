@@ -15,7 +15,7 @@
         <app-rbac-policy-form-step-two #step2Component [form]="step(1)"></app-rbac-policy-form-step-two>
         <div class="controls">
           <button mat-button matStepperPrevious>Back</button>
-          <button mat-raised-button matStepperNext color="accent">Next</button>
+          <button mat-raised-button matStepperNext color="accent" [disabled]="step(1).invalid">Next</button>
         </div>
       </mat-step>
       <mat-step>
@@ -25,8 +25,7 @@
           <button mat-button matStepperPrevious>Back</button>
           <button mat-raised-button color="primary" (click)="onCancel()">Cancel</button>
           <button mat-raised-button [disabled]="!form.valid" color="accent" (click)="save()"
-                  (focus)="(!!form.valid)">Create
-          </button>
+                  (focus)="(!!form.valid)">{{ title }}</button>
         </div>
       </mat-step>
     </ng-container>

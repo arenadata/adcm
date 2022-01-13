@@ -51,4 +51,12 @@ export class AdcmInputRbacPermissionComponent {
   hasError(name: string, error: string): boolean {
     return this.form.controls[name].hasError(error);
   }
+
+  onBackspaceKeydown(e: KeyboardEvent, chipListInput: HTMLInputElement): void {
+    e.stopImmediatePropagation();
+    if (!chipListInput.value) {
+      e.preventDefault();
+      chipListInput.focus();
+    }
+  }
 }
