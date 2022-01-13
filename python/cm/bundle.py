@@ -82,6 +82,7 @@ def load_bundle(bundle_file):
         order_versions()
         clear_stage()
         ProductCategory.re_collect()
+        bundle.refresh_from_db()
         cook_roles(bundle)
         cm.status_api.post_event('create', 'bundle', bundle.id)
         return bundle
