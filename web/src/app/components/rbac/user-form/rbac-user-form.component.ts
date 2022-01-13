@@ -36,6 +36,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
     user: new FormGroup({
       id: new FormControl(null),
       is_superuser: new FormControl(null),
+      built_in: new FormControl(null),
       url: new FormControl(null),
       profile: new FormControl(null),
       username: new FormControl(null, [

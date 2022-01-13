@@ -15,6 +15,7 @@ from rest_framework import serializers
 from api.api_views import hlink, CommonAPIURL
 from api.concern.serializers import ConcernItemSerializer
 from api.serializers import StringListSerializer
+from cm.adcm_config import get_main_info
 
 
 class AdcmSerializer(serializers.Serializer):
@@ -36,3 +37,10 @@ class AdcmDetailSerializer(AdcmSerializer):
 
     def get_prototype_version(self, obj):
         return obj.prototype.version
+
+
+class AdcmDetailUISerializer(AdcmDetailSerializer):
+    main_info = serializers.SerializerMethodField()
+
+    def get_main_info(self, obj):
+        return get_main_info(obj)

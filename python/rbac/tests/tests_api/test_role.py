@@ -25,22 +25,21 @@ def test_create_role(admin_api_client):
             {},
             {
                 "display_name": ["This field is required."],
+                "child": ["This field is required."],
             },
         ),
         (
-            {
-                "display_name": [],
-            },
+            {"display_name": [], "child": [{"id": 1}]},
             {
                 "display_name": ["This value does not match the required pattern."],
             },
         ),
         (
-            {"display_name": "test", "description": None},
+            {"display_name": "test", "description": None, "child": [{"id": 1}]},
             {"description": ["This field may not be null."]},
         ),
         (
-            {"display_name": "test", "description": []},
+            {"display_name": "test", "description": [], "child": [{"id": 1}]},
             {"description": ["Not a valid string."]},
         ),
         (
@@ -54,6 +53,10 @@ def test_create_role(admin_api_client):
         (
             {"display_name": "test", "child": "string"},
             {"child": {"non_field_errors": ["Expected a list of items but got type \"str\"."]}},
+        ),
+        (
+            {"display_name": "test", "child": []},
+            {"child": ["Roles without children make not sense"]},
         ),
         (
             {"display_name": "test", "child": [1]},

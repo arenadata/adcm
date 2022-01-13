@@ -144,4 +144,5 @@ def policy_update(policy: Policy, **kwargs) -> Policy:
         policy.save()
     except IntegrityError as exc:
         raise AdwpEx('POLICY_UPDATE_ERROR', msg=f'Policy update failed with error {exc}') from exc
+    policy.apply()
     return policy
