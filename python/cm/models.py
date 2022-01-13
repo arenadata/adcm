@@ -485,6 +485,7 @@ class Cluster(ADCMEntity):
         content_type_field='object_type',
         on_delete=models.CASCADE,
     )
+    state_before_upgrade = models.CharField(max_length=64, blank=True)
 
     __error_code__ = 'CLUSTER_NOT_FOUND'
 
@@ -523,6 +524,7 @@ class HostProvider(ADCMEntity):
         content_type_field='object_type',
         on_delete=models.CASCADE,
     )
+    state_before_upgrade = models.CharField(max_length=64, blank=True)
 
     __error_code__ = 'PROVIDER_NOT_FOUND'
 

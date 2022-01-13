@@ -48,6 +48,7 @@ class ClusterSerializer(serializers.Serializer):
     name = serializers.CharField(help_text='cluster name')
     description = serializers.CharField(help_text='cluster description', required=False)
     state = serializers.CharField(read_only=True)
+    state_before_upgrade = serializers.CharField(read_only=True)
     url = hlink('cluster-details', 'id', 'cluster_id')
 
     def validate_prototype_id(self, prototype_id):

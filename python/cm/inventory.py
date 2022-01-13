@@ -118,6 +118,9 @@ def get_cluster_variables(cluster: Cluster, cluster_config: dict = None):
         'edition': cluster.prototype.bundle.edition,
         'state': cluster.state,
         'multi_state': cluster.multi_state,
+        'before_upgrade': {
+            'state': cluster.state_before_upgrade,
+        },
     }
 
 
@@ -149,6 +152,9 @@ def get_provider_variables(provider: HostProvider, provider_config: dict = None)
         'host_prototype_id': host_proto.id,
         'state': provider.state,
         'multi_state': provider.multi_state,
+        'before_upgrade': {
+            'state': provider.state_before_upgrade,
+        },
     }
 
 
