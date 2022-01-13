@@ -20,7 +20,7 @@ export class StatsService {
   ) { }
 
   tasks(lastTaskId?: number): Observable<Stats> {
-    return this.http.get<Stats>(`${environment.apiRoot}/stats/task/${lastTaskId || 1}/`);
+    return this.http.get<Stats>(`${environment.apiRoot}/stats/task/${lastTaskId ?? 0}/`);
   }
 
 }
