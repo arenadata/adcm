@@ -29,6 +29,7 @@ from tests.ui_tests.app.page.admin.locators import (
     AdminSettingsLocators,
     AdminGroupsLocators,
     AdminRolesLocators,
+    AdminPoliciesLocators,
 )
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
@@ -60,6 +61,17 @@ class AdminGroupInfo:
     name: str
     description: str
     users: str
+
+
+@dataclass
+class AdminPolicyInfo:
+    """Information about poicy"""
+
+    name: str
+    description: Optional[str]
+    role: str
+    users: Optional[str]
+    groups: Optional[str]
 
 
 class GeneralAdminPage(BasePageObject):
@@ -138,6 +150,15 @@ class GeneralAdminPage(BasePageObject):
 
         self.find_and_click(ObjectPageMenuLocators.roles_tab)
         page = AdminRolesPage(self.driver, self.base_url)
+        page.wait_page_is_opened()
+        return page
+
+    @allure.step('Open Admin policies page by left menu item click')
+    def open_policies_menu(self) -> "AdminPoliciesPage":
+        """Open Admin policies page by menu object click"""
+
+        self.find_and_click(ObjectPageMenuLocators.policies_tab)
+        page = AdminPoliciesPage(self.driver, self.base_url)
         page.wait_page_is_opened()
         return page
 
@@ -486,6 +507,86 @@ class AdminRolesPage(GeneralAdminPage):
 
     def click_delete_button(self):
         self.find_and_click(AdminRolesLocators.delete_btn)
+        self.wait_element_visible(DeleteDialog.body)
+        self.find_and_click(DeleteDialog.yes)
+        self.wait_element_hide(DeleteDialog.body)
+
+
+class AdminPoliciesPage(GeneralAdminPage):
+    """Admin Policy Page class"""
+
+    MENU_SUFFIX = 'policies'
+    MAIN_ELEMENTS = [
+        AdminIntroLocators.intro_title,
+        AdminIntroLocators.intro_text,
+        AdminGroupsLocators.create_group_btn,
+        AdminGroupsLocators.delete_btn,
+        CommonTable.header,
+    ]
+
+    def click_create_policy_btn(self):
+        self.find_and_click(AdminPoliciesLocators.create_policy_btn)
+        self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.block)
+
+    @allure.step('Create new policy')
+    def create_policy(
+        self, policy_name: str, description: Optional[str], role: str, users: Optional[str], groups: Optional[str]
+    ):
+        self.click_create_policy_btn()
+        self.send_text_to_element(AdminPoliciesLocators.AddPolicyPopup.FirstStep.name_input, policy_name)
+        if description:
+            self.send_text_to_element(AdminPoliciesLocators.AddPolicyPopup.FirstStep.description_input, description)
+        with allure.step(f"Select role {role} in popup"):
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.role_select)
+            self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.FirstStep.role_item)
+            for available_role in self.find_elements(AdminPoliciesLocators.AddPolicyPopup.FirstStep.role_item):
+                if available_role.text == role:
+                    available_role.click()
+                    break
+        assert users or groups, "There are should be users or groups in the policy"
+        if users:
+            with allure.step(f"Select users {users} in popup"):
+                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_select)
+                self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_item)
+                available_users = self.find_elements(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_item)
+                for user in users.split(","):
+                    for available_user in available_users:
+                        if available_user.text == user:
+                            self.scroll_to(available_user)
+                            available_user.click()
+                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_select)
+        if groups:
+            with allure.step(f"Select groups {groups} in popup"):
+                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_select)
+                self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_item)
+                available_groups = self.find_elements(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_item)
+                for group in groups.split(","):
+                    for available_group in available_groups:
+                        if available_group.text == group:
+                            self.scroll_to(available_group)
+                            available_group.click()
+                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_select)
+        self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.next_btn_first)
+        self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
+        self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
+        self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.ThirdStep.create_btn)
+        self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.ThirdStep.create_btn)
+        self.wait_element_hide(AdminPoliciesLocators.AddPolicyPopup.block)
+
+    def get_all_policies(self) -> [AdminGroupInfo]:
+        """Get all policies info."""
+
+        policies_items = []
+        policies_rows = self.table.get_all_rows()
+        for policy in policies_rows:
+            policies_items.append(policy.text)
+        return policies_items
+
+    def select_all_groups(self):
+        self.find_elements(self.table.locators.header)[0].click()
+
+    def click_delete_button(self):
+        self.find_and_click(AdminPoliciesLocators.delete_btn)
         self.wait_element_visible(DeleteDialog.body)
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)

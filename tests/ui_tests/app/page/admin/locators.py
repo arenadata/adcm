@@ -164,3 +164,68 @@ class AdminRolesLocators:
         save_btn = Locator(
             By.XPATH, "//button[./span[contains(text(), 'Create') or contains(text(), 'Save')]]", "Save button"
         )
+
+
+class AdminPoliciesLocators:
+    """Locators for Admin Policies menu"""
+
+    create_policy_btn = Locator(By.CSS_SELECTOR, "app-add-button button", "Create policy button")
+    delete_btn = Locator(By.CSS_SELECTOR, ".controls>button", "Delete policy button")
+
+    class PolicyRow:
+        """Row with policy info"""
+
+        checkbox = Locator(By.CSS_SELECTOR, "mat-checkbox", "policy checkbox")
+        name = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "policy name")
+
+    class AddPolicyPopup:
+        """Locators for creating policy popup"""
+
+        block = Locator(By.CSS_SELECTOR, "app-rbac-policy-form>mat-horizontal-stepper", "Add policy popup block")
+
+        field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
+
+        class FirstStep:
+            """Locators for first step"""
+
+            name_input = Locator(By.CSS_SELECTOR, "input[name='name']", "Input name")
+            description_input = Locator(By.CSS_SELECTOR, "input[name='description']", "Input description")
+            role_select = Locator(By.CSS_SELECTOR, "mat-select[placeholder='Role']", "select role")
+            role_item = Locator(
+                By.XPATH, "//div[./mat-option//*[@placeholderlabel='Select role']]/mat-option", "select items for role"
+            )
+
+            users_select = Locator(By.CSS_SELECTOR, "adwp-input-select[label='User'] adwp-select", "select users")
+            users_item = Locator(By.CSS_SELECTOR, "adwp-selection-list mat-list-option", "select items for users")
+
+            group_select = Locator(By.CSS_SELECTOR, "adwp-input-select[label='Group'] adwp-select", "select group")
+            group_item = Locator(By.CSS_SELECTOR, "adwp-selection-list mat-list-option", "select items for group")
+
+            next_btn_first = Locator(
+                By.CSS_SELECTOR,
+                "app-rbac-policy-form-step-one~div button.mat-stepper-next",
+                "Next button from first step",
+            )
+
+        class SecondStep:
+            """Locators for second step"""
+
+            back_btn_second = Locator(
+                By.CSS_SELECTOR,
+                "app-rbac-policy-form-step-two~div button[matstepperprevious]",
+                "Back button from second step",
+            )
+            next_btn_second = Locator(
+                By.CSS_SELECTOR, "app-rbac-policy-form-step-two~div .mat-stepper-next", "Next button from second step"
+            )
+
+        class ThirdStep:
+            """Locators for third step"""
+
+            back_btn_third = Locator(
+                By.CSS_SELECTOR,
+                "app-rbac-policy-form-step-three~div button[matstepperprevious]",
+                "Next button from third step",
+            )
+            cancel_btn = Locator(By.XPATH, "//button[./span[text()='Cancel']]", "Cancel button")
+            create_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Create')]]", "Create button")
