@@ -5,6 +5,7 @@ import { RbacRoleService } from '@app/services/rbac-role.service';
 import { RbacFormDirective } from '@app/shared/add-component/rbac-form.directive';
 import { RbacRoleModel } from '@app/models/rbac/rbac-role.model';
 import { RbacPermissionFormComponent } from '../permission-form/rbac-permission-form.component';
+import { AdwpStringHandler } from '@adwp-ui/widgets';
 
 @Component({
   selector: 'app-rbac-role-form',
@@ -43,4 +44,6 @@ export class RbacRoleFormComponent extends RbacFormDirective<RbacRoleModel> impl
 
     this.form.markAllAsTouched();
   }
+
+  nameHandler: AdwpStringHandler<RbacRoleModel> = (item: RbacRoleModel) => item.display_name;
 }
