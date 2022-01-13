@@ -51,6 +51,7 @@ class RbacRoles(Enum):
     ADCMUser = "ADCM User"
     ServiceAdministrator = "Service Administrator"
     ClusterAdministrator = "Cluster Administrator"
+    ProviderAdministrator = "Provider Administrator"
 
 
 class BusinessRole(NamedTuple):

@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Test business permissions related to cluster objects"""
-# pylint: disable=too-many-arguments,unused-argument
+# pylint: disable=too-many-arguments,unused-argument,too-many-locals
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Policy
@@ -23,6 +23,7 @@ from tests.functional.rbac.conftest import (
     is_denied,
     delete_policy,
     create_policy,
+    RbacRoles,
 )
 
 
@@ -411,3 +412,68 @@ def test_remove_bundle(user_policy, user_sdk: ADCMClient, sdk_client_fs):
     delete_policy(user_policy)
     BusinessRoles.UploadBundle.value.method_call(sdk_client_fs)
     is_denied(user_sdk.bundle_list()[-1], BusinessRoles.RemoveBundle)
+
+
+def test_service_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepare_objects, second_objects):
+    """Test that service administrator role grants access to single service and its components"""
+    cluster, service, component, *provider_objects = as_user_objects(user_sdk, prepare_objects)
+    cluster_via_admin, *_ = prepare_objects
+    second_service_on_first_cluster = user_sdk.service(id=cluster_via_admin.service_add(name="new_service").id)
+    second_cluster, second_service, second_component, *second_provider_objects = as_user_objects(
+        user_sdk, second_objects
+    )
+
+    role = sdk_client_fs.role(name=RbacRoles.ServiceAdministrator.value)
+    sdk_client_fs.policy_create(
+        name=f"Policy with role {role.name}", role=role, objects=[service], user=[user], group=[]
+    )
+    for base_object in (service, component):
+        is_allowed(base_object, BusinessRoles.ViewApplicationConfigurations)
+        is_allowed(base_object, BusinessRoles.EditApplicationConfigurations)
+
+    for base_object in (cluster, second_cluster, second_service, second_component, second_service_on_first_cluster):
+        is_denied(base_object, BusinessRoles.ViewApplicationConfigurations)
+    for base_object in (*provider_objects, *second_provider_objects):
+        is_denied(base_object, BusinessRoles.ViewInfrastructureConfigurations)
+
+
+def test_cluster_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepare_objects, second_objects):
+    """Test that cluster administrator role grants access to single cluster and related services and components"""
+    cluster, service, component, *provider_objects = as_user_objects(user_sdk, prepare_objects)
+    second_cluster, second_service, second_component, *second_provider_objects = as_user_objects(
+        user_sdk, second_objects
+    )
+
+    role = sdk_client_fs.role(name=RbacRoles.ClusterAdministrator.value)
+    sdk_client_fs.policy_create(
+        name=f"Policy with role {role.name}", role=role, objects=[cluster], user=[user], group=[]
+    )
+    for base_object in (cluster, service, component):
+        is_allowed(base_object, BusinessRoles.ViewApplicationConfigurations)
+        is_allowed(base_object, BusinessRoles.EditApplicationConfigurations)
+
+    for base_object in (second_cluster, second_service, second_component):
+        is_denied(base_object, BusinessRoles.ViewApplicationConfigurations)
+    for base_object in (*provider_objects, *second_provider_objects):
+        is_denied(base_object, BusinessRoles.ViewInfrastructureConfigurations)
+
+
+def test_provider_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepare_objects, second_objects):
+    """Test that provider administrator role grants access to single provider and its hosts"""
+    cluster, service, component, hostprovider, host = as_user_objects(user_sdk, prepare_objects)
+    second_cluster, second_service, second_component, *second_provider_objects = as_user_objects(
+        user_sdk, second_objects
+    )
+
+    role = sdk_client_fs.role(name=RbacRoles.ProviderAdministrator.value)
+    sdk_client_fs.policy_create(
+        name=f"Policy with role {role.name}", role=role, objects=[hostprovider], user=[user], group=[]
+    )
+    for base_object in (hostprovider, host):
+        is_allowed(base_object, BusinessRoles.ViewInfrastructureConfigurations)
+        is_allowed(base_object, BusinessRoles.EditInfrastructureConfigurations)
+
+    for base_object in (cluster, service, component, second_cluster, second_service, second_component):
+        is_denied(base_object, BusinessRoles.ViewApplicationConfigurations)
+    for base_object in second_provider_objects:
+        is_denied(base_object, BusinessRoles.ViewInfrastructureConfigurations)
