@@ -15,7 +15,7 @@
 from typing import Union, List
 
 import allure
-from adcm_client.objects import ADCMClient, Policy
+from adcm_client.objects import ADCMClient, Policy, Bundle, Prototype
 from adcm_pytest_plugin.utils import random_string
 
 from tests.functional.rbac.conftest import BusinessRole
@@ -53,3 +53,13 @@ def create_action_policy(
         user=user if isinstance(user, list) else [user],
         group=group if isinstance(group, list) else [group],
     )
+
+
+def get_bundle_prefix(bundle: Bundle) -> str:
+    """Get Bundle based prefix for role name"""
+    return f'{bundle.name}_{bundle.version}_{bundle.edition}_'
+
+
+def get_prototype_prefix(prototype: Prototype) -> str:
+    """Get prototype based prefix for role name"""
+    return f'{prototype.type}_{prototype.display_name}_'

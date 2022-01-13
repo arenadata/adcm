@@ -17,11 +17,12 @@ from typing import Iterable, List, Tuple, Set, NamedTuple, Iterator
 
 import allure
 from adcm_client.base import ObjectNotFound
-from adcm_client.objects import ADCMClient, Cluster, Bundle, Prototype, Service, Role
+from adcm_client.objects import ADCMClient, Cluster, Prototype, Service, Role
 from adcm_pytest_plugin.utils import catch_failed
 
-from tests.functional.rbac.actions.conftest import ALL_SERVICE_NAMES
 from tests.library.assertions import is_superset_of, is_in_collection, is_not_in_collection, does_not_intersect
+from tests.functional.rbac.actions.utils import get_prototype_prefix, get_bundle_prefix
+from tests.functional.rbac.actions.conftest import ALL_SERVICE_NAMES
 from tests.functional.rbac.conftest import RbacRoles, RoleType
 
 
@@ -300,16 +301,6 @@ def check_roles_does_not_have_category(category: str, roles: Iterable[RoleShortI
 def key_values_from(key, collection: Iterable[dict]) -> Iterator:
     """Create generator with value of given key from each collection item"""
     return map(itemgetter(key), collection)
-
-
-def get_bundle_prefix(bundle: Bundle) -> str:
-    """Get Bundle based prefix for role name"""
-    return f'{bundle.name}_{bundle.version}_{bundle.edition}_'
-
-
-def get_prototype_prefix(prototype: Prototype) -> str:
-    """Get prototype based prefix for role name"""
-    return f'{prototype.type}_{prototype.display_name}_'
 
 
 def get_actions_role_names(full_role_prefix: str, action_names: List[dict]) -> List[str]:

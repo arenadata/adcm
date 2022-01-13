@@ -12,6 +12,8 @@
 
 """Test that action permissions works and are applies to action running"""
 
+# pylint: disable=too-many-locals
+
 import itertools
 from collections import defaultdict
 from contextlib import contextmanager
@@ -40,7 +42,7 @@ def _do_nothing_action_not_presented(obj):
 # !===== Tests ======!
 
 
-def test_cluster_basic(sdk_client_fs, user, user_sdk, actions_cluster, simple_cluster):
+def test_cluster_basic(clients, user, actions_cluster, simple_cluster):
     """
     Test basic permissions on cluster objects' actions:
       - granted permission allows running only specified action on specified object;
@@ -53,10 +55,10 @@ def test_cluster_basic(sdk_client_fs, user, user_sdk, actions_cluster, simple_cl
     all_objects = *get_all_cluster_tree_plain(actions_cluster), *get_all_cluster_tree_plain(simple_cluster)
 
     for adcm_object in (cluster, service, component):
-        _test_basic_action_run_permissions(adcm_object, sdk_client_fs, user_sdk, user, all_objects)
+        _test_basic_action_run_permissions(adcm_object, clients.admin, clients.user, user, all_objects)
 
 
-def test_provider_basic(sdk_client_fs, user, user_sdk, actions_provider, simple_provider):
+def test_provider_basic(clients, user, actions_provider, simple_provider):
     """
     Test basic permissions on provider objects' actions:
       - granted permission allows running only specified action on specified object;
@@ -68,7 +70,7 @@ def test_provider_basic(sdk_client_fs, user, user_sdk, actions_provider, simple_
     all_objects = provider, host, simple_provider, simple_provider.host()
 
     for adcm_object in (provider, host):
-        _test_basic_action_run_permissions(adcm_object, sdk_client_fs, user_sdk, user, all_objects)
+        _test_basic_action_run_permissions(adcm_object, clients.admin, clients.user, user, all_objects)
 
 
 def _test_basic_action_run_permissions(adcm_object, admin_sdk, user_sdk, user, all_objects):
@@ -117,7 +119,6 @@ def test_config_change_via_plugin(clients, user, actions_cluster, actions_provid
     _test_config_change(host, (provider, host), user=user, admin_client=clients.admin)
 
 
-# pylint: disable-next=too-many-locals
 def _test_config_change(
     action_owner_object: AnyADCMObject,
     objects_to_change: Tuple[AnyADCMObject, ...],
@@ -167,6 +168,47 @@ def _test_config_change(
                 assert (
                     config_val_before == config_val_after
                 ), f'Config value should stay the same for object {get_object_represent(admin_object)}'
+
+
+def test_host_actions(clients, actions_cluster, actions_provider, user):
+    """Test permissions on host actions"""
+    host_action_template = '{object_type} ready for host'
+    with allure.step('Add host to cluster'):
+        first_host = actions_provider.host()
+        actions_cluster.host_add(first_host)
+        actions_service = actions_cluster.service(name='actions_service')
+        single_component = actions_service.component(name='single_component')
+        actions_cluster.hostcomponent_set((first_host, single_component))
+
+    _, host, second_host = as_user_objects(
+        clients.user, actions_provider, first_host, actions_provider.host_create(fqdn='test-new-host')
+    )
+    user_cluster_objects = cluster, _, _ = as_user_objects(
+        clients.user, actions_cluster, actions_service, single_component
+    )
+
+    with allure.step('Grant permission to run host actions on cluster, service and component'):
+        business_roles = [
+            action_business_role(obj, host_action_template.format(object_type=obj.__class__.__name__))
+            for obj in user_cluster_objects
+        ]
+        policy = create_action_policy(
+            clients.admin,
+            cluster,
+            *business_roles,
+            user=user,
+        )
+
+    with allure.step('Run host actions from cluster, service and component on host in and out of cluster'):
+        for role in business_roles:
+            is_allowed(host, role)
+            is_denied(second_host, role)
+
+    with allure.step('Check policy deletion leads to denial of host action execution'):
+        policy.delete()
+        for role in business_roles:
+            is_denied(host, role)
+            is_denied(second_host, role)
 
 
 # !===== Steps and checks =====!
