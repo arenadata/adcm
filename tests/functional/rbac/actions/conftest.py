@@ -66,6 +66,7 @@ def actions_cluster(actions_cluster_bundle) -> Cluster:
 
 @pytest.fixture()
 def simple_cluster(simple_cluster_bundle) -> Cluster:
+    """Cluster based on simple cluster bundle"""
     cluster = simple_cluster_bundle.cluster_create(name="Test Simple Cluster")
     cluster.service_add(name='actions_service')
     return cluster
@@ -73,6 +74,7 @@ def simple_cluster(simple_cluster_bundle) -> Cluster:
 
 @pytest.fixture()
 def actions_provider(actions_provider_bundle) -> Provider:
+    """Provider based on actions provider bundle"""
     provider = actions_provider_bundle.provider_create(name="Test Actions Provider")
     provider.host_create(fqdn=f"test-actions-host-{random_string(8)}")
     return provider
@@ -80,6 +82,7 @@ def actions_provider(actions_provider_bundle) -> Provider:
 
 @pytest.fixture()
 def simple_provider(simple_provider_bundle) -> Provider:
+    """Provider based on simple provider bundle"""
     provider = simple_provider_bundle.provider_create(name="Test Simple Provider")
     provider.host_create(fqdn=f"test-simple-host-{random_string(8)}")
     return provider
