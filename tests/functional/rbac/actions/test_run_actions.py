@@ -39,7 +39,7 @@ def _do_nothing_action_not_presented(obj):
 
 # !===== Tests ======!
 
-# pylint: disable-next=too-many-locals
+
 def test_cluster_basic(sdk_client_fs, user, user_sdk, actions_cluster, simple_cluster):
     """
     Test basic permissions on cluster objects' actions:
@@ -56,7 +56,6 @@ def test_cluster_basic(sdk_client_fs, user, user_sdk, actions_cluster, simple_cl
         _test_basic_action_run_permissions(adcm_object, sdk_client_fs, user_sdk, user, all_objects)
 
 
-# pylint: disable-next=too-many-locals
 def test_provider_basic(sdk_client_fs, user, user_sdk, actions_provider, simple_provider):
     """
     Test basic permissions on provider objects' actions:
