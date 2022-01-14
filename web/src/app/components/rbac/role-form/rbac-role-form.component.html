@@ -9,7 +9,7 @@
                               #permissions="rbacRoles">
     <ng-container *ngIf="!value?.built_in || !value" ngProjectAs="app-rbac-permission-form">
       <app-rbac-permission-form [form]="form" [options]="permissions.options$ | async"
-                                [nameHandler]="permissions.label" [idHandler]="permissions.id"
+                                [nameHandler]="nameHandler" [idHandler]="permissions.id"
                                 controlName='child'></app-rbac-permission-form>
     </ng-container>
   </adcm-input-rbac-permission>
