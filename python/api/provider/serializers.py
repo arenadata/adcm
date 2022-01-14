@@ -37,7 +37,7 @@ class ProviderSerializer(serializers.Serializer):
     prototype_id = serializers.IntegerField()
     description = serializers.CharField(required=False)
     state = serializers.CharField(read_only=True)
-    state_before_upgrade = serializers.CharField(read_only=True)
+    before_upgrade = serializers.JSONField(read_only=True)
     url = hlink('provider-details', 'id', 'provider_id')
 
     def validate_prototype_id(self, prototype_id):
