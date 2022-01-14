@@ -170,20 +170,28 @@ def _test_config_change(
                 ), f'Config value should stay the same for object {get_object_represent(admin_object)}'
 
 
-def test_host_actions(clients, actions_cluster, actions_provider, user):
+def test_host_actions(clients, actions_cluster, actions_cluster_bundle, actions_provider, user):
     """Test permissions on host actions"""
     host_action_template = '{object_type} ready for host'
-    with allure.step('Add host to cluster'):
-        first_host = actions_provider.host()
-        actions_cluster.host_add(first_host)
-        actions_service = actions_cluster.service(name='actions_service')
-        single_component = actions_service.component(name='single_component')
-        actions_cluster.hostcomponent_set((first_host, single_component))
+    service_name, component_name = 'actions_service', 'single_component'
 
-    _, host, second_host = as_user_objects(
-        clients.user, actions_provider, first_host, actions_provider.host_create(fqdn='test-new-host')
-    )
-    user_cluster_objects = cluster, _, _ = as_user_objects(
+    actions_service = actions_cluster.service(name=service_name)
+    single_component = actions_service.component(name=component_name)
+
+    second_cluster = actions_cluster_bundle.cluster_create(name='Test Second Cluster')
+    second_cluster.service_add(name=service_name)
+
+    with allure.step('Add hosts to clusters'):
+        first_host = actions_provider.host()
+        second_host = actions_provider.host_create(fqdn='test-new-host')
+        for cluster, host in ((actions_cluster, first_host), (second_cluster, second_host)):
+            cluster.host_add(host)
+            service = cluster.service(name=service_name)
+            component = service.component(name=component_name)
+            cluster.hostcomponent_set((host, component))
+
+    host, second_host = as_user_objects(clients.user, first_host, second_host)
+    cluster, _, _ = user_cluster_objects = as_user_objects(
         clients.user, actions_cluster, actions_service, single_component
     )
 
@@ -201,14 +209,31 @@ def test_host_actions(clients, actions_cluster, actions_provider, user):
 
     with allure.step('Run host actions from cluster, service and component on host in and out of cluster'):
         for role in business_roles:
-            is_allowed(host, role)
+            is_allowed(host, role).wait()
             is_denied(second_host, role)
 
     with allure.step('Check policy deletion leads to denial of host action execution'):
-        policy.delete()
+        delete_policy(policy)
         for role in business_roles:
             is_denied(host, role)
             is_denied(second_host, role)
+
+
+def test_action_on_host_available_with_cluster_parametrization(clients, actions_cluster, actions_provider, user):
+    """Test that host owned action is still available"""
+    admin_host = actions_provider.host()
+    actions_cluster.host_add(admin_host)
+    user_cluster, user_host = as_user_objects(clients.user, actions_cluster, admin_host)
+    cluster_business_role, host_business_role = action_business_role(
+        user_cluster, DO_NOTHING_ACTION
+    ), action_business_role(user_host, DO_NOTHING_ACTION)
+    policy = create_action_policy(clients.admin, user_cluster, cluster_business_role, host_business_role, user=user)
+    is_allowed(user_cluster, cluster_business_role).wait()
+    is_allowed(user_host, host_business_role).wait()
+
+    delete_policy(policy)
+    is_denied(user_cluster, cluster_business_role)
+    is_denied(user_host, host_business_role)
 
 
 # !===== Steps and checks =====!
