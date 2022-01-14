@@ -30,7 +30,7 @@ def test_cluster_hierarchy(user_sdk: ADCMClient, user, prepare_objects, sdk_clie
     """
     Parametrize role with cluster related objects
     """
-    cluster, service, component, provider, host = as_user_objects(user_sdk, prepare_objects)
+    cluster, service, component, provider, host = as_user_objects(user_sdk, *prepare_objects)
     policy = create_policy(
         sdk_client_fs, BusinessRoles.ViewApplicationConfigurations, objects=[cluster], users=[user], groups=[]
     )
@@ -65,7 +65,7 @@ def test_provider_hierarchy(user_sdk: ADCMClient, user, prepare_objects, sdk_cli
     """
     Parametrize role with provider related objects
     """
-    cluster, service, component, provider, host = as_user_objects(user_sdk, prepare_objects)
+    cluster, service, component, provider, host = as_user_objects(user_sdk, *prepare_objects)
 
     policy = create_policy(
         sdk_client_fs, BusinessRoles.ViewInfrastructureConfigurations, objects=[provider], users=[user], groups=[]
