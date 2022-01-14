@@ -49,14 +49,11 @@ def update_categories(apps, schema_editor):
 
     Role = apps.get_model('rbac', 'Role')
     ProductCategory = apps.get_model('cm', 'ProductCategory')
-    adcm_category = ProductCategory.objects.filter(value='ADCM').first()
 
     for role in Role.objects.all():
         for category_id in role_category[role.id]:
             category = ProductCategory.objects.filter(id=category_id).first()
             role.category.add(category)
-        if adcm_category and role.type == 'business':
-            role.category.add(adcm_category)
         if role.name in displayed_for_all:
             role.any_category = True
             role.save()

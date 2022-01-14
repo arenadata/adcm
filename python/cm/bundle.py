@@ -217,7 +217,6 @@ def process_adcm():
     else:
         bundle = copy_stage('adcm', sp)
         init_adcm(bundle)
-        ProductCategory.re_collect()
 
 
 def init_adcm(bundle):
@@ -322,7 +321,8 @@ def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too
             parametrized_by_type=[act.prototype.type],
         )
         role.save()
-        role.category.add(bundle.category)
+        if bundle.category:
+            role.category.add(bundle.category)
         ct = ContentType.objects.get_for_model(model)
         perm, _ = Permission.objects.get_or_create(
             content_type=ct, codename='run_object_action', name='Can run actions'
@@ -352,11 +352,13 @@ def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too
             parent_role.child.add(action_role)
 
         if parent_value['parametrized_by_type'] == 'cluster':
-            parent_role.category.add(bundle.category)
+            if bundle.category:
+                parent_role.category.add(bundle.category)
             for top_parent_name in ['Cluster Administrator']:
                 top_parent[top_parent_name].append(parent_role)
         elif parent_value['parametrized_by_type'] in ['service', 'component']:
-            parent_role.category.add(bundle.category)
+            if bundle.category:
+                parent_role.category.add(bundle.category)
             for top_parent_name in [
                 'Cluster Administrator',
                 'Service Administrator',

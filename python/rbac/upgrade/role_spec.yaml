@@ -14,8 +14,6 @@ roles:
         app_name: cm
         model: HostProvider
       any_category: true
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -29,8 +27,6 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -44,8 +40,6 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -59,8 +53,6 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: true
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -181,8 +173,6 @@ roles:
         - cluster
         - service
         - component
-      category:
-        - ADCM
       child:
         - View cluster configurations
         - View service configurations
@@ -198,8 +188,6 @@ roles:
       parametrized_by:
         - provider
         - host
-      category:
-        - ADCM
       child:
         - View provider configurations
         - View host configurations
@@ -211,8 +199,6 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: true
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -337,8 +323,6 @@ roles:
         - cluster
         - service
         - component
-      category:
-        - ADCM
       child:
         - Edit cluster configurations
         - Edit service configurations
@@ -354,8 +338,6 @@ roles:
       parametrized_by:
         - provider
         - host
-      category:
-        - ADCM
       child:
         - Edit provider configurations
         - Edit host configurations
@@ -404,8 +386,6 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       any_category: true
-      category:
-        - ADCM
       child:
         - View cluster imports
         - View service imports
@@ -416,8 +396,6 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: true
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -470,8 +448,6 @@ roles:
       parametrized_by:
         - cluster
         - service
-      category:
-        - ADCM
       child:
         - Manage cluster imports
         - Manage service imports
@@ -487,8 +463,6 @@ roles:
         app_name: cm
         model: Cluster
       any_category: true
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -507,8 +481,6 @@ roles:
         app_name: cm
         model: ClusterObject
       any_category: true
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -527,8 +499,6 @@ roles:
         app_name: cm
         model: Host
       any_category: true
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -548,8 +518,6 @@ roles:
         app_name: cm
         model: Cluster
       any_category: true
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -569,8 +537,6 @@ roles:
         app_name: cm
         model: Cluster
       any_category: true
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -589,8 +555,6 @@ roles:
         app_name: cm
         model: Cluster
       any_category: true
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -604,8 +568,6 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: true
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -624,8 +586,6 @@ roles:
         app_name: cm
         model: Cluster
       any_category: true
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -681,8 +641,6 @@ roles:
         app_name: cm
         model: Cluster
       any_category: false
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -701,8 +659,6 @@ roles:
         app_name: cm
         model: HostProvider
       any_category: false
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -716,8 +672,6 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: true
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -731,8 +685,6 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -746,8 +698,6 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
-      category:
-        - ADCM
       apps:
         - label: cm
           models:
@@ -762,8 +712,6 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
@@ -779,8 +727,6 @@ roles:
       any_category: false
       child:
         - View users
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
@@ -796,8 +742,6 @@ roles:
       any_category: false
       child:
         - View users
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
@@ -813,8 +757,6 @@ roles:
       any_category: false
       child:
         - View users
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
@@ -828,8 +770,6 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
@@ -845,8 +785,6 @@ roles:
       any_category: false
       child:
         - View roles
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
@@ -862,8 +800,6 @@ roles:
       any_category: false
       child:
         - View roles
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
@@ -879,8 +815,6 @@ roles:
       any_category: false
       child:
         - View roles
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
@@ -894,8 +828,6 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
@@ -911,8 +843,6 @@ roles:
       any_category: false
       child:
         - View group
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
@@ -928,8 +858,6 @@ roles:
       any_category: false
       child:
         - View group
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
@@ -945,8 +873,6 @@ roles:
       any_category: false
       child:
         - View group
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
@@ -960,8 +886,6 @@ roles:
       module_name: rbac.roles
       class_name: ModelRole
       any_category: false
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
@@ -977,8 +901,6 @@ roles:
       any_category: false
       child:
         - View policy
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
@@ -994,8 +916,6 @@ roles:
       any_category: false
       child:
         - View policy
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
@@ -1011,8 +931,6 @@ roles:
       any_category: false
       child:
         - View policy
-      category:
-        - ADCM
       apps:
         - label: rbac
           models:
