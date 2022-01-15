@@ -54,13 +54,13 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
         Validators.required,
         Validators.minLength(1),
         Validators.maxLength(150),
-        Validators.pattern('^[a-zA-Z]*$')
+        Validators.pattern('^[a-zA-Z\\s]*$')
       ]),
       last_name: new FormControl(null, [
         Validators.required,
         Validators.minLength(1),
         Validators.maxLength(150),
-        Validators.pattern('^[a-zA-Z]*$')
+        Validators.pattern('^[a-zA-Z\\s]*$')
       ]),
       email: new FormControl(null, [
         Validators.required,
