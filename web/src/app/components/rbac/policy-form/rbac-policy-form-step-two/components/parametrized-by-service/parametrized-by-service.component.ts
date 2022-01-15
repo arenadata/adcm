@@ -12,7 +12,7 @@ export class ParametrizedByServiceComponent extends ParametrizedByDirective {
   roleFilter = '';
 
   serviceHandler: AdwpStringHandler<IRbacObjectCandidateServiceModel> = (service: IRbacObjectCandidateServiceModel) => service.name;
-  serviceComparator: AdwpIdentityMatcher<IRbacObjectCandidateServiceModel> = (item1: IRbacObjectCandidateServiceModel, item2: IRbacObjectCandidateServiceModel) => (item1.name === item2.name);
+  serviceComparator: AdwpIdentityMatcher<IRbacObjectCandidateServiceModel> = (item1: IRbacObjectCandidateServiceModel, item2: IRbacObjectCandidateServiceModel) => (item1?.name === item2?.name);
 
   isError(name: string): boolean {
     const f = this.object.get(name);
