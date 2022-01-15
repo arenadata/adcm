@@ -12,7 +12,6 @@ import {
   IRbacObjectCandidateServiceModel
 } from '../../../models/rbac/rbac-object-candidate';
 import { rbacPolicyObjectValidator } from './validators/object-validator';
-import { onlyOne } from './validators/provider-or-host';
 
 const INITIAL_OBJECT = {
   cluster: [],
@@ -126,8 +125,7 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
             host: new FormControl(null, [Validators.required]),
           }, {
             validators: [
-              rbacPolicyObjectValidator(roleControl),
-              onlyOne('host', 'provider'),
+              rbacPolicyObjectValidator(roleControl)
             ]
           })
         })

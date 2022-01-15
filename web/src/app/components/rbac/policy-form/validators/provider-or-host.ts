@@ -1,4 +1,5 @@
 import { FormGroup, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { isEmptyObject } from '../../../../core/types';
 
 export const onlyOne = (firstControlName: string, secondControlName: string): ValidatorFn => (group: FormGroup): ValidationErrors | null => {
   if (!group) {
@@ -14,13 +15,14 @@ export const onlyOne = (firstControlName: string, secondControlName: string): Va
 
   const value1 = firstControl.value;
   const value2 = secondControl.value;
+  const emptyValue = (value: any) => !value || isEmptyObject(value) || (Array.isArray(value) && value.length === 0);
 
-  if (value1?.length) {
+  if (!emptyValue(value1)) {
     secondControl.enabled && secondControl.disable({
       onlySelf: true,
       emitEvent: false
     });
-  } else if (value2?.length) {
+  } else if (!emptyValue(value2)) {
     firstControl.enabled && firstControl.disable({
       onlySelf: true,
       emitEvent: false
