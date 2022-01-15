@@ -55,7 +55,7 @@ export class RbacRoleFormComponent extends RbacFormDirective<RbacRoleModel> impl
       any_category: new FormControl(null),
       built_in: new FormControl(null),
       type: new FormControl('role'),
-      category: new FormControl([]),
+      category: new FormControl({ value: [], disabled: this.value?.built_in }),
       parametrized_by_type: new FormControl([]),
       child: new FormControl([], [
         Validators.required
