@@ -16,7 +16,7 @@ export class RbacGroupService implements EntityAbstractService {
 
   model(value?: any): FormModel {
     return {
-      name: 'new group',
+      name: 'Group',
       value: value
     };
   }
