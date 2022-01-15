@@ -70,6 +70,7 @@ export interface BaseEntity extends AdcmEntity {
   status?: number | string;
   concerns: Concern[];
   locked: boolean;
+  main_info?: string;
 }
 
 export interface ApiFlat {
