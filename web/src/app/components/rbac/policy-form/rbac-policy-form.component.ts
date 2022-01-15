@@ -109,7 +109,7 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
             Validators.required,
             Validators.maxLength(255),
             Validators.minLength(1),
-            Validators.pattern('^[a-zA-Z0-9()[]<>{},._-\\s]*$')
+            Validators.pattern('^[a-zA-Z0-9()<>{},._-\\s]*$')
           ]),
           description: new FormControl(null),
           role: roleControl,

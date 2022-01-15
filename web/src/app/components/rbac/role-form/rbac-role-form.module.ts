@@ -6,6 +6,10 @@ import { AdwpFormElementModule } from '@adwp-ui/widgets';
 import { AdcmInputRbacPermissionModule } from '../../../shared/form-elements/adcm-input-rbac-permission/adcm-input-rbac-permission.module';
 import { RbacPermissionFormModule } from '../permission-form/rbac-permission-form.module';
 import { RbacRolesAsOptionsModule } from './options/rbac-roles-as-options.module';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 
 
 @NgModule({
@@ -21,7 +25,11 @@ import { RbacRolesAsOptionsModule } from './options/rbac-roles-as-options.module
     ReactiveFormsModule,
     AdcmInputRbacPermissionModule,
     RbacPermissionFormModule,
-    RbacRolesAsOptionsModule
+    RbacRolesAsOptionsModule,
+    MatFormFieldModule,
+    MatChipsModule,
+    MatIconModule,
+    MatButtonModule
   ],
 })
 export class RbacRoleFormModule {
