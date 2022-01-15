@@ -105,7 +105,12 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
     this.form = new FormGroup({
       steps: new FormArray([
         new FormGroup({
-          name: new FormControl(null, [Validators.required]),
+          name: new FormControl(null, [
+            Validators.required,
+            Validators.maxLength(255),
+            Validators.minLength(1),
+            Validators.pattern('^[a-zA-Z0-9()[]<>{},._-\\s]*$')
+          ]),
           description: new FormControl(null),
           role: roleControl,
           user: new FormControl([]),
