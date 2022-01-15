@@ -15,7 +15,7 @@ export class RbacRoleService implements EntityAbstractService {
 
   model(value?: any): FormModel {
     return {
-      name: 'new role',
+      name: 'Role',
       value: value
     };
   }

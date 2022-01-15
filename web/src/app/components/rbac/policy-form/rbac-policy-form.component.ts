@@ -31,7 +31,6 @@ const INITIAL_OBJECT = {
 })
 export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> implements OnInit {
   static EXPORT_TO_JSON = (value): RbacPolicyModel => {
-    console.log('EXPORT_TO_JSON: ', value);
     if (!value) {
       return null;
     }
