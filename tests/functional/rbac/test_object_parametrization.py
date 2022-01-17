@@ -23,12 +23,13 @@ from tests.functional.rbac.conftest import (
     is_allowed,
     delete_policy,
     is_denied,
+    TEST_USER_CREDENTIALS,
 )
 
 
-def test_cluster_hierarchy(user_sdk: ADCMClient, user, prepare_objects, sdk_client_fs):
+def test_lower_cluster_hierarchy(user_sdk: ADCMClient, user, prepare_objects, sdk_client_fs):
     """
-    Parametrize role with cluster related objects
+    Test that cluster role can be applied to lower cluster objects - services and components
     """
     cluster, service, component, provider, host = as_user_objects(user_sdk, prepare_objects)
     policy = create_policy(
@@ -59,6 +60,33 @@ def test_cluster_hierarchy(user_sdk: ADCMClient, user, prepare_objects, sdk_clie
     is_allowed(component, BusinessRoles.ViewApplicationConfigurations)
     is_denied(provider, BusinessRoles.ViewInfrastructureConfigurations)
     is_denied(host, BusinessRoles.ViewInfrastructureConfigurations)
+
+
+def test_service_in_cluster_hierarchy(user, prepare_objects, sdk_client_fs, second_objects):
+    """
+    Test that service related role can be parametrized by cluster
+    """
+    cluster_via_admin, *_ = prepare_objects
+    cluster_via_admin.service_add(name="new_service")
+
+    service_role = {"id": sdk_client_fs.role(name=BusinessRoles.RemoveService.value.role_name).id}
+    cluster_role = {"id": sdk_client_fs.role(name=BusinessRoles.AddService.value.role_name).id}
+    common_role = sdk_client_fs.role_create(
+        "Common role", display_name="Common role", child=[service_role, cluster_role]
+    )
+    sdk_client_fs.policy_create(
+        name="Common policy", role=common_role, objects=[cluster_via_admin], user=[user], group=[]
+    )
+
+    username, password = TEST_USER_CREDENTIALS
+    user_sdk = ADCMClient(url=sdk_client_fs.url, user=username, password=password)
+    cluster, service, *_ = as_user_objects(user_sdk, prepare_objects)
+    second_cluster, *_ = as_user_objects(user_sdk, second_objects)
+
+    for service in cluster.service_list():
+        is_allowed(cluster, BusinessRoles.RemoveService, service)
+    for service in second_cluster.service_list():
+        is_denied(second_cluster, BusinessRoles.RemoveService, service)
 
 
 def test_provider_hierarchy(user_sdk: ADCMClient, user, prepare_objects, sdk_client_fs):
@@ -127,6 +155,7 @@ def test_host_and_cluster_roles(sdk_client_fs):
     """
     Test that cluster and host roles is allowed to use together
     """
+    # TODO replace RemoveHosts permission to some host action and check that we can run it
     cluster_role = {"id": sdk_client_fs.role(name=BusinessRoles.ViewApplicationConfigurations.value.role_name).id}
     host_role = {"id": sdk_client_fs.role(name=BusinessRoles.RemoveHosts.value.role_name).id}
     with allure.step("Assert that create role with cluster and host parametrization is allowed"):

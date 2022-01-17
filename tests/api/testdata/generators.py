@@ -36,19 +36,14 @@ class MaxRetriesError(Exception):
     """Raise when limit of retries exceeded"""
 
 
-class DoNotDiscover:  # pylint: disable=too-few-public-methods
-    """Will not be discovered as a test class"""
-
-    __test__ = False
-
-
 @attr.dataclass(repr=False)
-class TestData(DoNotDiscover):  # pylint: disable=too-few-public-methods
+class TestData:  # pylint: disable=too-few-public-methods
     """Pair of request and expected response for api tests"""
 
     request: Request
     response: ExpectedResponse
     description: Optional[str] = None
+    __test__ = False
 
     def __repr__(self):
         return (
@@ -57,22 +52,24 @@ class TestData(DoNotDiscover):  # pylint: disable=too-few-public-methods
         )
 
 
-class TestDataWithPreparedBody(NamedTuple, DoNotDiscover):
+class TestDataWithPreparedBody(NamedTuple):
     """
     Class for separating request body and data needed to send and assert it
     """
 
     test_data: TestData
     test_body: dict
+    __test__ = False
 
 
-class TestDataWithPreparedPath(NamedTuple, DoNotDiscover):
+class TestDataWithPreparedPath(NamedTuple):
     """
     Class for testing with custom request endpoint path
     """
 
     test_data: TestData
     request_path: str
+    __test__ = False
 
 
 def _fill_pytest_param(

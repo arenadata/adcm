@@ -198,12 +198,14 @@ def delete_policy(policy):
     policy.delete()
 
 
+# pylint: disable-next=too-many-arguments
 def create_policy(
     sdk_client,
     permission: Union[BusinessRoles, List[BusinessRoles]],
     objects: list,
     users: List[User],
     groups: List[Group],
+    use_all_objects=False,
 ):
     """Create a new policy for the user and role"""
     obj_dict = {
@@ -224,7 +226,9 @@ def create_policy(
         display_name=role_name,
         child=child,
     )
-    if role.parametrized_by_type:
+    if use_all_objects:
+        suitable_objects = objects
+    elif role.parametrized_by_type:
         suitable_objects = list(itertools.chain(*[obj_dict[obj_type] for obj_type in role.parametrized_by_type]))
         with allure.step(f"Suitable policy objects: {suitable_objects}"):
             pass
