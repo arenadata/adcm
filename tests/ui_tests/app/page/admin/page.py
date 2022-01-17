@@ -542,11 +542,12 @@ class AdminPoliciesPage(GeneralAdminPage):
             self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.role_select)
             self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.FirstStep.role_item)
             available_roles = self.find_elements(AdminPoliciesLocators.AddPolicyPopup.FirstStep.role_item)
-            assert role in [a.text for a in available_roles], f"There are no role {role} in select role popup"
             for available_role in available_roles:
                 if available_role.text == role:
                     available_role.click()
                     break
+            else:
+                raise AssertionError(f"There are no role {role} in select role popup")
 
         def fill_users_or_group_select(items, available_items):
             for item in items.split(","):
