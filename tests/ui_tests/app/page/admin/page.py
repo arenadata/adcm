@@ -555,6 +555,7 @@ class AdminPoliciesPage(GeneralAdminPage):
                     if available_item.text == item:
                         self.scroll_to(available_item)
                         available_item.click()
+                        break
                 else:
                     raise AssertionError(f"There are no item {item} in select popup")
 
