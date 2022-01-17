@@ -69,8 +69,8 @@ class AdminUsersLocators:
         first_name = Locator(By.NAME, "first_name", "New user first name")
         last_name = Locator(By.NAME, "last_name", "New user last name")
         email = Locator(By.NAME, "email", "New user email")
-        create_button = Locator(By.XPATH, "//button[./span[contains(text(), 'Create')]]", "Create user save button")
-        update_button = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Update user save button")
+        create_button = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Create user save button")
+        update_button = Locator(By.XPATH, "//button[./span[contains(text(), 'Update')]]", "Update user save button")
 
 
 class AdminGroupsLocators:
@@ -98,7 +98,7 @@ class AdminGroupsLocators:
         users_select = Locator(By.CSS_SELECTOR, "adwp-input-select[label='Select users'] adwp-select", "select users")
         users_item = Locator(By.CSS_SELECTOR, "adwp-selection-list mat-list-option", "select items for users")
 
-        create_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Create')]]", "Create button")
+        create_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Save button")
 
         class UserRow:
             """Locators for user row in creating groups popup"""

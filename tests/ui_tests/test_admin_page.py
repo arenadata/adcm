@@ -64,7 +64,6 @@ class TestAdminIntroPage:
 
         users_page = AdminUsersPage(app_fs.driver, app_fs.adcm.url).open()
         intro_page = users_page.open_settings_menu()
-        intro_page.wait_page_is_opened()
         intro_page.check_all_elements()
         intro_page.check_admin_toolbar()
 
@@ -77,7 +76,6 @@ class TestAdminSettingsPage:
 
         intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url).open()
         settings_page = intro_page.open_settings_menu()
-        settings_page.wait_page_is_opened()
         settings_page.check_all_elements()
         settings_page.check_admin_toolbar()
 
@@ -154,7 +152,6 @@ class TestAdminUsersPage:
 
         intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url).open()
         users_page = intro_page.open_users_menu()
-        users_page.wait_page_is_opened()
         users_page.check_all_elements()
         users_page.check_admin_toolbar()
 
@@ -234,7 +231,6 @@ class TestAdminRolesPage:
 
         intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url).open()
         roles_page = intro_page.open_roles_menu()
-        roles_page.wait_page_is_opened()
         roles_page.check_all_elements()
         roles_page.check_default_roles()
         with allure.step('Check that there are 4 default roles'):
@@ -318,7 +314,6 @@ class TestAdminGroupsPage:
 
         intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url).open()
         groups_page = intro_page.open_groups_menu()
-        groups_page.wait_page_is_opened()
         groups_page.check_all_elements()
         groups_page.check_admin_toolbar()
 
@@ -372,7 +367,6 @@ class TestAdminPolicyPage:
 
         intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url).open()
         policies_page = intro_page.open_policies_menu()
-        policies_page.wait_page_is_opened()
         policies_page.check_all_elements()
         policies_page.check_admin_toolbar()
 
@@ -418,7 +412,7 @@ class TestAdminPolicyPage:
             self.custom_policy.users,
             self.custom_policy.groups,
         )
-        policies_page.select_all_groups()
+        policies_page.select_all_policies()
         policies_page.click_delete_button()
         with allure.step('Check that policy has been deleted'):
-            assert len(policies_page.table.get_all_rows()) == 1, "There should be 1 default groups"
+            assert len(policies_page.table.get_all_rows()) == 1, "There should be 1 default policy"
