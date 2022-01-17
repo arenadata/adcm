@@ -1,7 +1,7 @@
 import { Component, forwardRef, Input, OnInit } from '@angular/core';
 import { BaseFormDirective } from '../../../../shared/add-component';
 import { AbstractControl, FormGroup } from '@angular/forms';
-import { AdwpStringHandler } from '@adwp-ui/widgets';
+import { AdwpStringHandler, Entity } from '@adwp-ui/widgets';
 import {
   IRbacObjectCandidateHostModel,
   IRbacObjectCandidateModel,
@@ -11,7 +11,6 @@ import { ADD_SERVICE_PROVIDER } from '../../../../shared/add-component/add-servi
 import { RbacObjectCandidateService } from '../../../../services/rbac-object-candidate.service';
 import { filter, startWith, switchMap } from 'rxjs/operators';
 import { RbacRoleModel } from '../../../../models/rbac/rbac-role.model';
-import { Entity } from '../../../../../../../../adwp_ui/projects/widgets/src/lib/models/entity';
 
 
 @Component({
