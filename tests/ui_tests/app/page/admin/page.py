@@ -551,11 +551,12 @@ class AdminPoliciesPage(GeneralAdminPage):
 
         def fill_users_or_group_select(items, available_items):
             for item in items.split(","):
-                assert item in [u.text for u in available_items], f"There are no {item} in select role popup"
                 for available_item in available_items:
                     if available_item.text == item:
                         self.scroll_to(available_item)
                         available_item.click()
+                else:
+                    raise AssertionError(f"There are no item {item} in select popup")
 
         if users:
             with allure.step(f"Select users {users} in popup"):
