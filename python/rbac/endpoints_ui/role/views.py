@@ -33,12 +33,15 @@ class RoleSerializer(serializers.Serializer):
 
 
 class RoleViewSet(mixins.ListModelMixin, GenericPermViewSet):
-    queryset = models.Role.objects.filter(type=models.RoleTypes.role).all()
+    queryset = models.Role.objects.all()
     serializer_class = RoleSerializer
 
     @action(methods=['get'], detail=True)
     def object_candidate(self, request, **kwargs):
         role = self.get_object()
+        if role.type != models.RoleTypes.role.value:
+            return {'cluster': [], 'provider': [], 'service': [], 'host': []}
+
         clusters = []
         providers = []
         services = []
