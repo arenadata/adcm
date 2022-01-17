@@ -65,7 +65,7 @@ class AdminGroupInfo:
 
 @dataclass
 class AdminPolicyInfo:
-    """Information about poicy"""
+    """Information about policy"""
 
     name: str
     description: Optional[str]
