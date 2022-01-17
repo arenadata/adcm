@@ -578,7 +578,7 @@ class AdminPoliciesPage(GeneralAdminPage):
         self.wait_element_hide(AdminPoliciesLocators.AddPolicyPopup.block)
 
     def get_all_policies(self) -> [str]:
-        """Get all policies info."""
+        """Get all policies info and returns list with policies names."""
 
         policies_items = []
         policies_rows = self.table.get_all_rows()

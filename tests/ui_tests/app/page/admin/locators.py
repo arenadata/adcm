@@ -23,6 +23,7 @@ from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMe
 
 # pylint: disable=too-few-public-methods
 
+
 class CommonAdminPagesLocators:
     """Common locators for admin pages"""
 
