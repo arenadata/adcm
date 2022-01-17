@@ -22,13 +22,14 @@ def fill_category(apps, schema_editor):
     ProductCategory = apps.get_model('cm', 'ProductCategory')
     Prototype = apps.get_model('cm', 'Prototype')
     for bundle in Bundle.objects.all():
-        prototype = Prototype.objects.filter(bundle=bundle, name=bundle.name).first()
-        value = prototype.display_name or bundle.name
-        category, _ = ProductCategory.objects.get_or_create(
-            value=value, visible=bundle.name != 'ADCM'
-        )
-        bundle.category = category
-        bundle.save()
+        prototype = Prototype.objects.filter(
+            bundle=bundle, name=bundle.name, type='cluster'
+        ).first()
+        if prototype:  # skip non-product bundles
+            value = prototype.display_name or bundle.name
+            category, _ = ProductCategory.objects.get_or_create(value=value)
+            bundle.category = category
+            bundle.save()
 
 
 class Migration(migrations.Migration):

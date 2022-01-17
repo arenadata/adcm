@@ -199,18 +199,17 @@ class ProductCategory(ADCMModel):
     value = models.CharField(max_length=160, unique=True)
     visible = models.BooleanField(default=True)
 
-    _invisible_categories = ('ADCM',)
-
     @classmethod
     def re_collect(cls) -> None:
         """Re-sync category list with installed bundles"""
         for bundle in Bundle.objects.filter(category=None).all():
-            prototype = Prototype.objects.filter(bundle=bundle, name=bundle.name).first()
-            value = prototype.display_name or bundle.name
-            bundle.category, _ = cls.objects.get_or_create(
-                value=value, visible=bundle.name not in cls._invisible_categories
-            )
-            bundle.save()
+            prototype = Prototype.objects.filter(
+                bundle=bundle, name=bundle.name, type=PrototypeEnum.Cluster.value
+            ).first()
+            if prototype:
+                value = prototype.display_name or bundle.name
+                bundle.category, _ = cls.objects.get_or_create(value=value)
+                bundle.save()
         for category in cls.objects.all():
             if category.bundle_set.count() == 0:
                 category.delete()  # TODO: ensure that's enough
