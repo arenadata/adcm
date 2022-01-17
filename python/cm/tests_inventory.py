@@ -73,6 +73,7 @@ class TestInventory(TestCase):
                 'version': '2.2',
                 'state': 'created',
                 'multi_state': [],
+                'before_upgrade': {'state': None},
             },
             'services': {},
         }
@@ -100,6 +101,7 @@ class TestInventory(TestCase):
                 'host_prototype_id': 1,
                 'state': 'created',
                 'multi_state': [],
+                'before_upgrade': {'state': None},
             }
         }
         self.assertDictEqual(config, test_config)
@@ -176,6 +178,7 @@ class TestInventory(TestCase):
                         'host_prototype_id': 1,
                         'state': 'created',
                         'multi_state': [],
+                        'before_upgrade': {'state': None},
                     }
                 },
             }
