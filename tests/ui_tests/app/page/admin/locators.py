@@ -23,6 +23,14 @@ from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMe
 
 # pylint: disable=too-few-public-methods
 
+class CommonAdminPagesLocators:
+    """Common locators for admin pages"""
+
+    create_btn = Locator(By.CSS_SELECTOR, "app-add-button button", "Create button")
+    delete_btn = Locator(By.CSS_SELECTOR, ".controls>button", "Delete Group button")
+    field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
+    item = Locator(By.CSS_SELECTOR, "adwp-selection-list mat-list-option", "select items")
+
 
 class AdminIntroLocators:
     """Locators for Admin Intro menu"""
@@ -73,11 +81,8 @@ class AdminUsersLocators:
         update_button = Locator(By.XPATH, "//button[./span[contains(text(), 'Update')]]", "Update user save button")
 
 
-class AdminGroupsLocators:
+class AdminGroupsLocators(CommonAdminPagesLocators):
     """Locators for Admin Groups menu"""
-
-    create_group_btn = Locator(By.CSS_SELECTOR, "app-add-button button", "Create Group button")
-    delete_btn = Locator(By.CSS_SELECTOR, ".controls>button", "Delete Group button")
 
     class GroupRow:
         """Row with groups info"""
@@ -91,12 +96,10 @@ class AdminGroupsLocators:
         """Locators for creating groups popup"""
 
         block = Locator(By.CSS_SELECTOR, "app-rbac-group-form", "Add group popup block")
-        field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
 
         name_input = Locator(By.CSS_SELECTOR, "adwp-input[label='Group name'] input", "Input name")
         description_input = Locator(By.CSS_SELECTOR, "adwp-input[label='Description'] input", "Input description")
         users_select = Locator(By.CSS_SELECTOR, "adwp-input-select[label='Select users'] adwp-select", "select users")
-        users_item = Locator(By.CSS_SELECTOR, "adwp-selection-list mat-list-option", "select items for users")
 
         create_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Save button")
 
@@ -106,11 +109,8 @@ class AdminGroupsLocators:
             checkbox = Locator(By.CSS_SELECTOR, "mat-pseudo-checkbox", "Group checkbox")
 
 
-class AdminRolesLocators:
+class AdminRolesLocators(CommonAdminPagesLocators):
     """Locators for Admin Roles menu"""
-
-    create_role_btn = Locator(By.CSS_SELECTOR, "app-add-button button", "Create role button")
-    delete_btn = Locator(By.CSS_SELECTOR, ".controls>button", "Delete role button")
 
     class RoleRow:
         """Row with role info"""
@@ -124,7 +124,6 @@ class AdminRolesLocators:
         """Locators for creating roles popup"""
 
         block = Locator(By.CSS_SELECTOR, "app-rbac-role-form", "Add role popup block")
-        field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
         role_name_input = Locator(
             By.CSS_SELECTOR, "adwp-input[controlname='display_name'] input", "Input for role name"
         )
@@ -166,11 +165,8 @@ class AdminRolesLocators:
         )
 
 
-class AdminPoliciesLocators:
+class AdminPoliciesLocators(CommonAdminPagesLocators):
     """Locators for Admin Policies menu"""
-
-    create_policy_btn = Locator(By.CSS_SELECTOR, "app-add-button button", "Create policy button")
-    delete_btn = Locator(By.CSS_SELECTOR, ".controls>button", "Delete policy button")
 
     class PolicyRow:
         """Row with policy info"""
@@ -183,8 +179,6 @@ class AdminPoliciesLocators:
 
         block = Locator(By.CSS_SELECTOR, "app-rbac-policy-form>mat-horizontal-stepper", "Add policy popup block")
 
-        field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
-
         class FirstStep:
             """Locators for first step"""
 
@@ -196,10 +190,8 @@ class AdminPoliciesLocators:
             )
 
             users_select = Locator(By.CSS_SELECTOR, "adwp-input-select[label='User'] adwp-select", "select users")
-            users_item = Locator(By.CSS_SELECTOR, "adwp-selection-list mat-list-option", "select items for users")
 
             group_select = Locator(By.CSS_SELECTOR, "adwp-input-select[label='Group'] adwp-select", "select group")
-            group_item = Locator(By.CSS_SELECTOR, "adwp-selection-list mat-list-option", "select items for group")
 
             next_btn_first = Locator(
                 By.CSS_SELECTOR,
