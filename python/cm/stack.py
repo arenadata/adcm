@@ -97,8 +97,7 @@ def check_adcm_config(conf_file):
         rules = ruyaml.round_trip_load(fd)
     try:
         with open(conf_file, encoding='utf_8') as fd:
-            ruyaml.version_info = (0, 15, 0)  # switch off duplicate keys error
-            data = ruyaml.round_trip_load(fd, version="1.1")
+            data = cm.checker.round_trip_load(fd, version="1.1", allow_duplicate_keys=True)
     except (ruyaml.parser.ParserError, ruyaml.scanner.ScannerError, NotImplementedError) as e:
         err('STACK_LOAD_ERROR', f'YAML decode "{conf_file}" error: {e}')
     except ruyaml.error.ReusedAnchorWarning as e:
@@ -216,13 +215,21 @@ def check_versions(proto, conf, label):
     if 'min' in conf['versions'] and 'min_strict' in conf['versions']:
         msg = 'min and min_strict can not be used simultaneously in versions of {} ({})'
         err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
-    if 'min' not in conf['versions'] and 'min_strict' not in conf['versions'] and 'import' not in label:
+    if (
+        'min' not in conf['versions']
+        and 'min_strict' not in conf['versions']
+        and 'import' not in label
+    ):
         msg = 'min or min_strict should be present in versions of {} ({})'
         err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
     if 'max' in conf['versions'] and 'max_strict' in conf['versions']:
         msg = 'max and max_strict can not be used simultaneously in versions of {} ({})'
         err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
-    if 'max' not in conf['versions'] and 'max_strict' not in conf['versions'] and 'import' not in label:
+    if (
+        'max' not in conf['versions']
+        and 'max_strict' not in conf['versions']
+        and 'import' not in label
+    ):
         msg = 'max and max_strict should be present in versions of {} ({})'
         err('INVALID_VERSION_DEFINITION', msg.format(label, ref))
     for name in ('min', 'min_strict', 'max', 'max_strict'):
