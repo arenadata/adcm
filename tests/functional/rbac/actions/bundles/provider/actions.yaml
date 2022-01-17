@@ -25,15 +25,15 @@
     - name: "Change the value"
       adcm_config:
         type: "provider"
-        key: "somenum"
-        value: "{{ job.config.valofnum }}"
+        key: "longstring"
+        value: "{{ job.config.valofarg }}"
       tags:
         - change_provider
 
     - name: "Change the value"
       adcm_config:
         type: "host"
-        key: "somenum"
-        value: "{{ job.config.valofnum }}"
+        key: "longstring"
+        value: "{{ job.config.valofarg }}"
       tags:
         - change_host

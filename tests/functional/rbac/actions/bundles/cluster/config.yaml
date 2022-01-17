@@ -26,6 +26,11 @@
       required: false
       default: 0
 
+    - name: longstring
+      type: string
+      required: false
+      default: start
+
   actions: &actions
     do_nothing: &job
       type: job
@@ -63,8 +68,8 @@
       states:
         available: any
       config:
-        - name: valofnum
-          type: integer
+        - name: valofarg
+          type: string
 
 - type: service
   version: 0.45
@@ -78,6 +83,7 @@
 
     change_service_config:
       <<: *change_cluster_config
+      display_name: Change Service Configuration
       params:
         ansible_tags: change_service
 
@@ -89,6 +95,7 @@
         <<: *change_service_config_actions
         change_component_config:
           <<: *change_cluster_config
+          display_name: Change Component Configuration
           params:
             ansible_tags: change_component
 
