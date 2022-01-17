@@ -9,6 +9,7 @@
         [compareWith]="serviceComparator"
         (selectionChange)="reset()"
       >
+        <mat-option [value]="null">--</mat-option>
         <mat-option
           *ngFor="let service of candidates.service"
           [value]="service">
@@ -24,7 +25,7 @@
   </div>
 
   <app-parametrized-by-cluster
-    *ngIf="!!serviceSelect.value?.clusters"
+    *ngIf="!!serviceSelect.value?.clusters && !serviceSelect.disabled"
     [object]="object"
     [candidates]="serviceSelect.value | getParents"
     [isParent]="true"

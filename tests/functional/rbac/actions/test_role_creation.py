@@ -10,28 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test permissions on actions: role creation, assignment and application"""
+"""Test policies, roles, permissions created after bundle upload"""
+
 from operator import itemgetter
 from typing import Iterable, List, Tuple, Set, NamedTuple, Iterator
 
-import pytest
 import allure
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCMClient, Cluster, Bundle, Prototype, Service, Role
-from adcm_pytest_plugin.utils import get_data_dir, catch_failed
+from adcm_pytest_plugin.utils import catch_failed
 
+from tests.functional.rbac.actions.conftest import ALL_SERVICE_NAMES
 from tests.library.assertions import is_superset_of, is_in_collection, is_not_in_collection, does_not_intersect
 from tests.functional.rbac.conftest import RbacRoles, RoleType
-
-# pylint: disable=redefined-outer-name
-
-ALL_SERVICE_NAMES = (
-    "actions_service",
-    "config_changing_service",
-    "only_component_actions",
-    "only_service_actions",
-    "no_components",
-)
 
 
 class RoleShortInfo(NamedTuple):
@@ -40,21 +31,6 @@ class RoleShortInfo(NamedTuple):
     id: int
     name: str
     categories: tuple
-
-
-# !===== Fixtures =====!
-
-
-@pytest.fixture()
-def actions_cluster_bundle(sdk_client_fs) -> Bundle:
-    """Upload bundle of the cluster with "sophisticated" actions"""
-    return sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster"))
-
-
-@pytest.fixture()
-def actions_provider_bundle(sdk_client_fs) -> Bundle:
-    """Upload bundle of the provider with "sophisticated" actions"""
-    return sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
 
 
 # !===== Tests ======!

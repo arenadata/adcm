@@ -43,27 +43,28 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
         Validators.required,
         Validators.minLength(1),
         Validators.maxLength(150),
-        Validators.pattern('^[a-zA-Z0-9_]*$')
+        Validators.pattern('^[a-zA-Z0-9_.-]*$')
       ]),
       password: new FormControl(null, [
         Validators.required,
-        Validators.minLength(5),
+        Validators.minLength(1),
         Validators.maxLength(128)
       ]),
       first_name: new FormControl(null, [
         Validators.required,
         Validators.minLength(1),
         Validators.maxLength(150),
-        Validators.pattern('^[a-zA-Z]*$')
+        Validators.pattern('^[a-zA-Z\\s]*$')
       ]),
       last_name: new FormControl(null, [
         Validators.required,
         Validators.minLength(1),
         Validators.maxLength(150),
-        Validators.pattern('^[a-zA-Z]*$')
+        Validators.pattern('^[a-zA-Z\\s]*$')
       ]),
       email: new FormControl(null, [
         Validators.required,
+        Validators.maxLength(254),
         Validators.email
       ]),
       group: new FormControl([])

@@ -11,6 +11,7 @@ import { ADD_SERVICE_PROVIDER } from '../../../../shared/add-component/add-servi
 import { RbacObjectCandidateService } from '../../../../services/rbac-object-candidate.service';
 import { filter, startWith, switchMap } from 'rxjs/operators';
 import { RbacRoleModel } from '../../../../models/rbac/rbac-role.model';
+import { Entity } from '../../../../../../../../adwp_ui/projects/widgets/src/lib/models/entity';
 
 
 @Component({
@@ -50,11 +51,18 @@ export class RbacPolicyFormStepTwoComponent extends BaseFormDirective implements
       this.takeUntil()
     ).subscribe((candidates: IRbacObjectCandidateModel) => {
       this.candidates = candidates;
+
+      // Set service & parents values
       const selectedService = this.object.get('service')?.value;
       const serviceCandidate = candidates.service.find((s) => selectedService?.name === s?.name);
+      const selectedParents: (Pick<Entity, 'id'>)[] | null = this.object.get('parent')?.value;
+      const selectedClusters = selectedParents && selectedParents.map((item: Pick<Entity, 'id'>) => {
+        return serviceCandidate && serviceCandidate.clusters.find((cluster) => cluster.id === item.id);
+      }).filter(Boolean);
 
-      if (selectedService && serviceCandidate) {
+      if (selectedService && serviceCandidate && selectedClusters) {
         this.object.get('service').setValue(serviceCandidate);
+        this.object.get('parent').setValue(selectedClusters);
       }
     });
   }

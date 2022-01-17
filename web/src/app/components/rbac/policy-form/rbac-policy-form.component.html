@@ -8,6 +8,7 @@
           (roleChanged)="step2Component.reset(initialObject)"
         ></app-rbac-policy-form-step-one>
         <div class="controls">
+          <button mat-raised-button color="primary" (click)="onCancel()">Cancel</button>
           <button [disabled]="step(0).invalid" mat-raised-button matStepperNext color="accent">Next</button>
         </div>
       </mat-step>
@@ -15,6 +16,7 @@
         <app-rbac-policy-form-step-two #step2Component [form]="step(1)"></app-rbac-policy-form-step-two>
         <div class="controls">
           <button mat-button matStepperPrevious>Back</button>
+          <button mat-raised-button color="primary" (click)="onCancel()">Cancel</button>
           <button mat-raised-button matStepperNext color="accent" [disabled]="step(1).invalid">Next</button>
         </div>
       </mat-step>

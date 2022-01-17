@@ -32,13 +32,17 @@ def sync_object_and_role(adcm, fields: dict) -> dict:
     if role is None:
         return new_fields
 
-    new_fields['object'] = [
-        {
-            'id': random.choice(get_endpoint_data(adcm=adcm, endpoint=Endpoints[object_type.capitalize()]))["id"],
-            'type': object_type,
-        }
-        for object_type in role['parametrized_by_type']
-    ]
+    new_fields['object'] = []
+    for object_type in role['parametrized_by_type']:
+        role_object = random.choice(get_endpoint_data(adcm=adcm, endpoint=Endpoints[object_type.capitalize()]))
+        new_fields["object"].append(
+            {
+                'id': role_object["id"],
+                'name': role_object.get("name", role_object.get("fqdn")),
+                'type': object_type,
+            }
+        )
+
     return new_fields
 
 

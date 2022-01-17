@@ -21,28 +21,3 @@
         msg: "Never gonna give you up"
       tags:
         - compare
-
-    - name: "Change the value"
-      adcm_config:
-        type: "cluster"
-        key: "somenum"
-        value: "{{ job.config.valofnum }}"
-      tags:
-        - change_cluster
-
-    - name: "Change the value"
-      adcm_config:
-        type: "service"
-        key: "somenum"
-        value: "{{ job.config.valofnum }}"
-      tags:
-        - change_service
-
-    - name: "Change the value"
-      adcm_config:
-        type: "component"
-        key: "somenum"
-        value: "{{ job.config.valofnum }}"
-      tags:
-        - change_component
-

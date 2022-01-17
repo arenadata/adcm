@@ -12,8 +12,8 @@
 
 - type: provider
   version: 10
-  name: simple_provider
-  display_name: Simple Provider
+  name: actions_provider
+  display_name: Actions Provider
 
   config: &simple_config
     - name: boolean
@@ -25,6 +25,11 @@
       type: integer
       required: false
       default: 0
+
+    - name: longstring
+      type: string
+      required: false
+      default: start
 
   actions: &jobs
     do_nothing: &job
@@ -63,13 +68,13 @@
       states:
         available: any
       config:
-        - name: valofnum
-          type: integer
+        - name: valofarg
+          type: string
 
 - type: host
   version: 1.0
-  name: simple_host
-  display_name: Simple Host
+  name: actions_host
+  display_name: Actions Host
 
   config: *simple_config
 
@@ -78,5 +83,6 @@
 
     change_host_config:
       <<: *change_provider_config
+      display_name: "Change Host Configuration"
       params:
         ansible_tags: change_host

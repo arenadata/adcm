@@ -12,7 +12,6 @@ import {
   IRbacObjectCandidateServiceModel
 } from '../../../models/rbac/rbac-object-candidate';
 import { rbacPolicyObjectValidator } from './validators/object-validator';
-import { onlyOne } from './validators/provider-or-host';
 
 const INITIAL_OBJECT = {
   cluster: [],
@@ -31,7 +30,6 @@ const INITIAL_OBJECT = {
 })
 export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> implements OnInit {
   static EXPORT_TO_JSON = (value): RbacPolicyModel => {
-    console.log('EXPORT_TO_JSON: ', value);
     if (!value) {
       return null;
     }
@@ -88,7 +86,7 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
           {
             object: {
               cluster: value.object.filter((item: IRbacObjectCandidateClusterModel) => item.type === 'cluster'),
-              parent: [],
+              parent: value.object.reduce((acc: any[], item: IRbacObjectCandidateClusterModel) => [...acc, { id: item.id }], []),
               service: value.object.find((item: IRbacObjectCandidateServiceModel) => item.type === 'service') || '',
               provider: value.object.filter((item: IRbacObjectCandidateProviderModel) => item.type === 'provider'),
               host: value.object.filter((item: IRbacObjectCandidateHostModel) => item.type === 'host'),
@@ -105,7 +103,12 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
     this.form = new FormGroup({
       steps: new FormArray([
         new FormGroup({
-          name: new FormControl(null, [Validators.required]),
+          name: new FormControl(null, [
+            Validators.required,
+            Validators.maxLength(255),
+            Validators.minLength(1),
+            Validators.pattern('^[a-zA-Z0-9()<>{},._-\\s]*$')
+          ]),
           description: new FormControl(null),
           role: roleControl,
           user: new FormControl([]),
@@ -122,8 +125,7 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
             host: new FormControl(null, [Validators.required]),
           }, {
             validators: [
-              rbacPolicyObjectValidator(roleControl),
-              onlyOne('host', 'provider'),
+              rbacPolicyObjectValidator(roleControl)
             ]
           })
         })

@@ -24,6 +24,8 @@ from api.api_views import (
     permission_denied,
 )
 from api.job.serializers import RunTaskSerializer
+
+from cm.job import get_host_object
 from cm.models import (
     Host,
     Action,
@@ -145,6 +147,9 @@ class RunTask(GenericAPIPermView):
 
         if user.has_perm('cm.add_task'):
             return True
+
+        if action.host_action:
+            obj = get_host_object(action, obj.cluster)
 
         if not user.has_perm('cm.run_object_action', obj):
             return False

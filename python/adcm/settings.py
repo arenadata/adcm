@@ -257,6 +257,9 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'django.template': {
+            'level': 'ERROR',
+        },
         'django.utils.autoreload': {
             'level': 'INFO',
         },

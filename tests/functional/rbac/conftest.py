@@ -14,7 +14,7 @@ import itertools
 import os
 from enum import Enum
 from operator import methodcaller
-from typing import Callable, NamedTuple, Union, List
+from typing import Callable, NamedTuple, Union, List, Tuple
 
 import allure
 import pytest
@@ -27,10 +27,17 @@ from adcm_pytest_plugin.utils import catch_failed, random_string
 
 # Enum names doesn't conform to UPPER_CASE naming style
 # pylint: disable=invalid-name
-from tests.functional.tools import get_object_represent
+from tests.functional.tools import get_object_represent, AnyADCMObject
 
 TEST_USER_CREDENTIALS = "test_user", "password"
 DATA_DIR = os.path.join(os.path.dirname(__file__), "test_business_permissions_data")
+
+
+class SDKClients(NamedTuple):
+    """Container for admin and user ADCM clients"""
+
+    admin: ADCMClient
+    user: ADCMClient
 
 
 class RoleType(Enum):
@@ -135,6 +142,12 @@ def user_sdk(user, adcm_fs) -> ADCMClient:
 
 
 @pytest.fixture()
+def clients(sdk_client_fs, user_sdk) -> SDKClients:
+    """Get "container" with admin and user clients"""
+    return SDKClients(sdk_client_fs, user_sdk)
+
+
+@pytest.fixture()
 def user_policy(request, user, sdk_client_fs, prepare_objects):
     """
     Create testing role and policy
@@ -180,16 +193,9 @@ def second_objects(sdk_client_fs):
     return cluster, service, component, provider, host
 
 
-def as_user_objects(user_sdk: ADCMClient, base_objects):
+def as_user_objects(user_sdk: ADCMClient, *objects: AnyADCMObject) -> Tuple[AnyADCMObject, ...]:
     """Get prepared objects via tested user sdk"""
-    cluster, service, component, provider, host = base_objects
-    return (
-        user_sdk.cluster(id=cluster.id),
-        user_sdk.service(id=service.id),
-        user_sdk.component(id=component.id),
-        user_sdk.provider(id=provider.id),
-        user_sdk.host(id=host.id),
-    )
+    return tuple((obj.__class__(user_sdk._api, id=obj.id) for obj in objects))  # pylint: disable=protected-access
 
 
 @allure.step("Delete policy")
@@ -198,12 +204,14 @@ def delete_policy(policy):
     policy.delete()
 
 
+# pylint: disable-next=too-many-arguments
 def create_policy(
     sdk_client,
     permission: Union[BusinessRoles, List[BusinessRoles]],
     objects: list,
     users: List[User],
     groups: List[Group],
+    use_all_objects=False,
 ):
     """Create a new policy for the user and role"""
     obj_dict = {
@@ -224,7 +232,9 @@ def create_policy(
         display_name=role_name,
         child=child,
     )
-    if role.parametrized_by_type:
+    if use_all_objects:
+        suitable_objects = objects
+    elif role.parametrized_by_type:
         suitable_objects = list(itertools.chain(*[obj_dict[obj_type] for obj_type in role.parametrized_by_type]))
         with allure.step(f"Suitable policy objects: {suitable_objects}"):
             pass
@@ -237,29 +247,31 @@ def create_policy(
     return policy
 
 
-def is_allowed(base_object: Union[BaseAPIObject, ADCMClient], business_role: BusinessRoles, *args, **kwargs):
+def is_allowed(
+    base_object: Union[BaseAPIObject, ADCMClient], business_role: Union[BusinessRole, BusinessRoles], *args, **kwargs
+):
     """
     Assert that role is allowed on object
     """
-    with allure.step(
-        f"Assert that {business_role.value.role_name} on {get_object_represent(base_object)} is allowed"
-    ), catch_failed(
+    role: BusinessRole = business_role.value if isinstance(business_role, BusinessRoles) else business_role
+    with allure.step(f"Assert that {role.role_name} on {get_object_represent(base_object)} is allowed"), catch_failed(
         (AccessIsDenied, NoSuchEndpointOrAccessIsDenied),
-        f"{business_role.value.role_name} on {get_object_represent(base_object)} should be allowed",
+        f"{role.role_name} on {get_object_represent(base_object)} should be allowed",
     ):
-        business_role.value.method_call(base_object, *args, **kwargs)
+        return role.method_call(base_object, *args, **kwargs)
 
 
-def is_denied(base_object: Union[BaseAPIObject, ADCMClient], business_role: BusinessRoles, *args, **kwargs):
+def is_denied(
+    base_object: Union[BaseAPIObject, ADCMClient], business_role: Union[BusinessRole, BusinessRoles], *args, **kwargs
+):
     """
     Assert that role is denied on object
     """
-    with allure.step(f"Assert that {business_role.value.role_name} on {get_object_represent(base_object)} is denied"):
+    role: BusinessRole = business_role.value if isinstance(business_role, BusinessRoles) else business_role
+    with allure.step(f"Assert that {role.role_name} on {get_object_represent(base_object)} is denied"):
         try:
-            business_role.value.method_call(base_object, *args, **kwargs)
+            role.method_call(base_object, *args, **kwargs)
         except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied):
             pass
         else:
-            raise AssertionError(
-                f"{business_role.value.role_name} on {get_object_represent(base_object)} should not be allowed"
-            )
+            raise AssertionError(f"{role.role_name} on {get_object_represent(base_object)} should not be allowed")
