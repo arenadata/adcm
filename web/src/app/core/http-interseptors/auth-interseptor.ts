@@ -16,7 +16,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
 import { AuthService } from '@app/core/auth/auth.service';
-import { ChannelService, keyChannelStrim, PreloaderService } from '../services';
+import { ChannelService, keyChannelStrim, PreloaderService, ResponseError, ResponseErrorCode } from '../services';
 
 const EXCLUDE_URLS = ['/api/v1/rbac/token/', '/assets/config.json'];
 
@@ -51,14 +51,10 @@ export class AuthInterceptor implements HttpInterceptor {
         if (res.status === 500) this.router.navigate(['/500']);
 
         /** no need to show notification because error handling on landing page */
-        const exclude = ['USER_NOT_FOUND', 'AUTH_ERROR', 'CONFIG_NOT_FOUND'];
+        const exclude = [ResponseErrorCode.UserNotFound, ResponseErrorCode.AuthError, ResponseErrorCode.ConfigNotFound];
 
         if (!exclude.includes(res.error.code)) {
-          const message =
-            res.statusText === 'Unknown Error' || res.statusText === 'Gateway Timeout'
-              ? 'No connection to back-end. Check your internet connection.'
-              : `[ ${res.statusText.toUpperCase()} ] ${res.error.code ? ` ${res.error.code} -- ${res.error.desc}` : res.error?.detail || ''}`;
-          this.channel.next(keyChannelStrim.notifying, `${message}::error`);
+          this.channel.next<ResponseError>(keyChannelStrim.error, res);
         }
 
         return throwError(res);
