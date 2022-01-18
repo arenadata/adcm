@@ -142,7 +142,10 @@ export class BaseListDirective {
     if (!p.keys.length && listParamStr) {
       const json = JSON.parse(listParamStr);
       if (json[this.typeName]) {
-        this.parent.router.navigate(['./', json[this.typeName]], { relativeTo: this.parent.route });
+        this.parent.router.navigate(['./', json[this.typeName]], {
+          relativeTo: this.parent.route,
+          replaceUrl: true,
+        });
         return false;
       }
     }

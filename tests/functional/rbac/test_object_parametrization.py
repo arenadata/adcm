@@ -80,8 +80,8 @@ def test_service_in_cluster_hierarchy(user, prepare_objects, sdk_client_fs, seco
 
     username, password = TEST_USER_CREDENTIALS
     user_sdk = ADCMClient(url=sdk_client_fs.url, user=username, password=password)
-    cluster, service, *_ = as_user_objects(user_sdk, prepare_objects)
-    second_cluster, *_ = as_user_objects(user_sdk, second_objects)
+    cluster, service, *_ = as_user_objects(user_sdk, *prepare_objects)
+    second_cluster, *_ = as_user_objects(user_sdk, *second_objects)
 
     for service in cluster.service_list():
         is_allowed(cluster, BusinessRoles.RemoveService, service)
