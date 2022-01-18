@@ -35,6 +35,7 @@ NEW_ACTION = "New Job"
 ACTION_TO_BE_DELETED = "Soon I Will Be Gone"
 CHANGED_ACTION_NAME = "New Display Name"
 ACTION_NAME_BEFORE_CHANGE = "Old Display Name"
+MIMIC_NAME = "Whoops"
 
 
 @pytest.fixture()
@@ -117,7 +118,8 @@ class TestActionRolesOnUpgrade:
         new_cluster = self.upgrade_cluster(old_cluster)
         self.check_permissions_after_upgrade(all_business_roles, user_object_map)
         self.check_action_with_changed_display_name_not_allowed_by_name(user_object_map)
-        self.check_new_action_can_be_launched(clients.admin, user, new_cluster)
+        self.check_new_action_can_be_launched(clients, user, new_cluster)
+        self.check_new_action_with_old_display_name(user_object_map)
 
     @allure.step('Check permissions working as expected before upgrade')
     def check_permissions_before_upgrade(self, all_business_roles, user_object_map):
@@ -141,9 +143,6 @@ class TestActionRolesOnUpgrade:
     @allure.step('Check permissions working as expected after upgrade')
     def check_permissions_after_upgrade(self, all_business_roles, user_object_map):
         """Check that correct permissions are allowed/denied after cluster upgrade"""
-        for obj in user_object_map.values():
-            obj.reread()
-
         self.check_roles_are_allowed(
             user_object_map,
             tuple(
@@ -169,14 +168,21 @@ class TestActionRolesOnUpgrade:
             raise AssertionError("Action that changed display name shouldn't be allowed to run")
 
     @allure.step('Check that new action in bundle can be launched when policy is created')
-    def check_new_action_can_be_launched(self, admin_client, user, upgraded_cluster: Cluster):
+    def check_new_action_can_be_launched(self, clients, user, upgraded_cluster: Cluster):
         """Check that policy can be created to run new action from cluster bundle and action actually can be launched"""
         service = upgraded_cluster.service()
         component = service.component()
-        for adcm_object in upgraded_cluster, service, component:
+        for adcm_object in as_user_objects(clients.user, upgraded_cluster, service, component):
             business_role = action_business_role(adcm_object, NEW_ACTION)
-            create_action_policy(admin_client, adcm_object, business_role, user=user)
+            create_action_policy(clients.admin, adcm_object, business_role, user=user)
             is_allowed(adcm_object, business_role).wait()
+
+    @allure.step('Check display_name based role works on "mimic" action')
+    def check_new_action_with_old_display_name(self, user_object_map):
+        """Check that new action that have display_name of another action from old version can be launched"""
+        cluster = user_object_map['Cluster']
+        business_role = action_business_role(cluster, MIMIC_NAME)
+        is_allowed(cluster, business_role)
 
     def check_roles_are_allowed(
         self,

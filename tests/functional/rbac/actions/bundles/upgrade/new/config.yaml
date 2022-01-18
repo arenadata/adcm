@@ -44,6 +44,14 @@
       <<: *job
       display_name: "No Rights"
 
+    changeling:
+      <<: *job
+      display_name: "Oi"
+
+    mimic:
+      <<: *job
+      display_name: "Whoops"
+
 - type: service
   version: 0.6
   name: servicemaster
