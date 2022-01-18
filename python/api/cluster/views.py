@@ -21,12 +21,20 @@ import cm.api
 import cm.bundle
 import cm.job
 import cm.status_api
-from api.api_views import ListView, PageView, PageViewAdd, InterfaceView, DetailViewDelete
-from api.api_views import GenericAPIPermView
-from api.api_views import create, update, check_obj, check_custom_perm
+from api.api_views import (
+    DetailViewDelete,
+    GenericAPIPermView,
+    InterfaceView,
+    ListView,
+    PageView,
+    PageViewAdd,
+    check_custom_perm,
+    check_obj,
+    create,
+    update,
+)
 from cm.errors import AdcmEx
-from cm.models import Cluster, Host, HostComponent, Prototype
-from cm.models import ClusterObject, Upgrade, ClusterBind
+from cm.models import Cluster, HostComponent, Prototype, ClusterObject, Upgrade, ClusterBind
 from . import serializers
 
 
@@ -263,88 +271,18 @@ class StatusList(GenericAPIView, InterfaceView):
     model_name = Cluster
     serializer_class = serializers.StatusSerializer
 
-    def ui_status(self, cluster, host_component):
-        cluster_map = cm.status_api.get_object_map(cluster, 'cluster')
-
-        def get_status(key, obj_id):
-            if cluster_map is None:
-                return 32
-            if str(obj_id) in cluster_map[key]:
-                return cluster_map[key][str(obj_id)]['status']
-            else:
-                return 0
-
-        service_map = {}
-        for hc in host_component:
-            if hc.service.id not in service_map:
-                service_map[hc.service.id] = {'service': hc.service, 'hc': {}}
-            if hc.component.id not in service_map[hc.service.id]['hc']:
-                service_map[hc.service.id]['hc'][hc.component.id] = {
-                    'comp': hc.component,
-                    'hosts': [],
-                }
-            service_map[hc.service.id]['hc'][hc.component.id]['hosts'].append(hc.host)
-
-        # convert map to list
-        service_list = []
-        for srv in service_map.values():
-            hc_list = []
-            for hc in srv['hc'].values():
-                host_comp_list = []
-                for host in hc['hosts']:
-                    host_comp_list.append(
-                        {
-                            'id': host.id,
-                            'name': host.fqdn,
-                            'status': cm.status_api.get_host_comp_status(host, hc['comp']),
-                        }
-                    )
-                hc_list.append(
-                    {
-                        'id': hc['comp'].id,
-                        'name': hc['comp'].display_name,
-                        'status': cm.status_api.get_component_status(hc['comp']),
-                        'hosts': host_comp_list,
-                    }
-                )
-            service_list.append(
-                {
-                    'id': srv['service'].id,
-                    'name': srv['service'].display_name,
-                    'status': get_status('services', srv['service'].id),
-                    'hc': hc_list,
-                }
-            )
-
-        host_list = []
-        for host in Host.obj.filter(cluster=cluster):
-            host_list.append(
-                {
-                    'id': host.id,
-                    'name': host.fqdn,
-                    'status': get_status('hosts', host.id),
-                }
-            )
-
-        return {
-            'name': cluster.name,
-            'status': 32 if cluster_map is None else cluster_map.get('status', 0),
-            'chilren': {
-                'hosts': host_list,
-                'services': service_list,
-            },
-        }
-
     def get(self, request, cluster_id):
         """
         Show all hosts and components in a specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
-        obj = self.get_queryset().filter(cluster=cluster)
+        host_components = self.get_queryset().filter(cluster=cluster)
         if self.for_ui(request):
-            return Response(self.ui_status(cluster, obj))
+            return Response(cm.status_api.make_ui_cluster_status(cluster, host_components))
         else:
-            serializer = self.serializer_class(obj, many=True, context={'request': request})
+            serializer = self.serializer_class(
+                host_components, many=True, context={'request': request}
+            )
             return Response(serializer.data)
 
 

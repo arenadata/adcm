@@ -231,33 +231,14 @@ class StatusList(GenericAPIView, InterfaceView):
     model_name = Host
     queryset = HostComponent.objects.all()
 
-    def ui_status(self, host, host_components):
-        host_map = cm.status_api.get_object_map(host, 'host')
-
-        comp_list = []
-        for hc in host_components:
-            comp_list.append(
-                {
-                    'id': hc.component.id,
-                    'name': hc.component.display_name,
-                    'status': cm.status_api.get_component_status(hc.component),
-                }
-            )
-        return {
-            'id': host.id,
-            'name': host.fqdn,
-            'status': 32 if host_map is None else host_map.get('status', 0),
-            'hc': comp_list,
-        }
-
     def get(self, request, host_id, cluster_id=None):
         """
         Show all components in a specified host
         """
         host = check_obj(Host, host_id)
-        hc_queryset = self.get_queryset().filter(host=host)
         if self.for_ui(request):
-            return Response(self.ui_status(host, hc_queryset))
+            host_components = self.get_queryset().filter(host=host)
+            return Response(cm.status_api.make_ui_host_status(host, host_components))
         else:
             serializer = self.serializer_class(host, context={'request': request})
             return Response(serializer.data)
