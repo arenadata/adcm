@@ -12,16 +12,39 @@
 import { Injectable } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
+import { HttpErrorResponse } from '@angular/common/http';
 
 export enum keyChannelStrim {
   'scroll',
   'notifying',
-  'load_complete'
+  'load_complete',
+  'error',
 }
 
 export interface IBroadcast<TKey = keyChannelStrim> {
   key: TKey;
   value: any;
+}
+
+export enum ResponseErrorLevel {
+  Error = 'error',
+}
+
+export enum ResponseErrorCode {
+  InvalidObjectDefinition = 'INVALID_OBJECT_DEFINITION',
+  UserNotFound = 'USER_NOT_FOUND',
+  AuthError = 'AUTH_ERROR',
+  ConfigNotFound = 'CONFIG_NOT_FOUND',
+}
+
+export interface ResponseError extends HttpErrorResponse {
+  error: {
+    args?: string;
+    desc?: string;
+    detail?: string;
+    code?: ResponseErrorCode;
+    level?: ResponseErrorLevel;
+  };
 }
 
 @Injectable({

@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, InjectionToken, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, HostBinding, InjectionToken, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { FieldDirective } from '@app/shared/form-elements/field.directive';
 import { BaseMapListDirective } from '@app/shared/form-elements/map.component';
@@ -24,10 +24,6 @@ export const CONFIG_FIELD = new InjectionToken('Config field');
   selector: 'app-field',
   templateUrl: './field.component.html',
   styleUrls: ['./field.component.scss'],
-  host: {
-    class: 'field-row w100 d-flex ',
-    '[class.read-only]': 'options.read_only'
-  },
   providers: [
     { provide: CONFIG_FIELD, useExisting: FieldComponent }
   ]
@@ -35,6 +31,12 @@ export const CONFIG_FIELD = new InjectionToken('Config field');
 export class FieldComponent extends BaseDirective implements OnInit, OnChanges {
   @Input()
   options: IFieldOptions;
+
+  @HostBinding('class.read-only') get readOnly() {
+    return this.options.read_only;
+  }
+  @HostBinding('class') hostClass = 'field-row w100 d-flex';
+
   @Input()
   form: FormGroup;
   currentFormGroup: FormGroup;

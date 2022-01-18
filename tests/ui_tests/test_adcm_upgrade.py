@@ -21,8 +21,10 @@ from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import StaleElementReferenceException
+from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.app import ADCMTest
+from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.bundle_list.page import BundleListPage
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
@@ -30,6 +32,22 @@ from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.app.page.profile.page import ProfilePage
 from tests.upgrade_utils import upgrade_adcm_version
+
+
+class PreviousCommonPopupLocators:  # pylint: disable=too-few-public-methods
+    """ADCM previous popup locators"""
+
+    block = Locator(By.CSS_SELECTOR, "simple-snack-bar", "Popup block")
+    text = Locator(By.CSS_SELECTOR, "simple-snack-bar>span", "Popup info message")
+
+
+class PreviousAdminIntroPage(AdminIntroPage):
+    """Admin page before popup locators refactoring"""
+
+    def get_info_popup_text(self):
+        """Get text from info popup"""
+        self.wait_element_visible(PreviousCommonPopupLocators.block)
+        return self.wait_element_visible(PreviousCommonPopupLocators.text, timeout=5).text
 
 
 def old_adcm_image() -> Tuple[str, str]:
@@ -76,7 +94,7 @@ def test_upgrade_adcm(
     with allure.step('Login to ADCM with UI'):
         login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
         login_page.login_user(**credentials)
-        intro_page = AdminIntroPage(login_page.driver, login_page.base_url)
+        intro_page = PreviousAdminIntroPage(login_page.driver, login_page.base_url)
         intro_page.wait_page_is_opened()
         intro_page.wait_config_loaded()
     with allure.step('Start ADCM upgrade with client'):

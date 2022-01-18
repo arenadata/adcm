@@ -9,13 +9,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
+import cm.status_api
 from api.api_views import PageView, check_obj, DetailViewRO, InterfaceView
 from cm.models import ServiceComponent, ClusterObject, Cluster, HostComponent
 from . import serializers
-import cm.status_api
 
 
 class ComponentListView(PageView):
@@ -64,31 +65,14 @@ class StatusList(GenericAPIView, InterfaceView):
     model_name = ServiceComponent
     queryset = HostComponent.objects.all()
 
-    def ui_status(self, component, host_components):
-        host_list = []
-        for hc in host_components:
-            host_list.append(
-                {
-                    'id': hc.host.id,
-                    'name': hc.host.fqdn,
-                    'status': cm.status_api.get_host_comp_status(hc.host, hc.component),
-                }
-            )
-        return {
-            'id': component.id,
-            'name': component.display_name,
-            'status': cm.status_api.get_component_status(component),
-            'hosts': host_list,
-        }
-
     def get(self, request, component_id, cluster_id=None, service_id=None):
         """
         Show all components in a specified host
         """
         component = check_obj(ServiceComponent, component_id)
-        hc_queryset = self.get_queryset().filter(component=component)
         if self.for_ui(request):
-            return Response(self.ui_status(component, hc_queryset))
+            host_components = self.get_queryset().filter(component=component)
+            return Response(cm.status_api.make_ui_component_status(component, host_components))
         else:
             serializer = self.serializer_class(component, context={'request': request})
             return Response(serializer.data)

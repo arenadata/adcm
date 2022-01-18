@@ -35,7 +35,9 @@ export class RbacPolicyService implements EntityAbstractService {
   }
 
   getList(param?: Params): Observable<RbacPolicyModel[]> {
-    return this.api.get<ListResult<RbacPolicyModel>>(`${environment.apiRoot}rbac/policy/`, param)
+    const p = { 'built_in': 'false', ...param || {} };
+
+    return this.api.get<ListResult<RbacPolicyModel>>(`${environment.apiRoot}rbac/policy/`, p)
       .pipe(map((list) => list.results));
   }
 
