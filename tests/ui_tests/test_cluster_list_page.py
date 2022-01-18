@@ -906,6 +906,37 @@ class TestClusterGroupConfigPage:
 class TestClusterStatusPage:
     """Tests for the /cluster/{}/status page"""
 
+    one_successful = 'successful 1/1'
+    one_negative = 'successful 0/1'
+
+    success_status = [
+        StatusRowInfo(True, CLUSTER_NAME, 'successful 2/2', SUCCESS_COLOR, None),
+        StatusRowInfo(True, 'Hosts', one_successful, SUCCESS_COLOR, None),
+        StatusRowInfo(True, None, None, None, 'test-host'),
+        StatusRowInfo(True, 'Services', one_successful, SUCCESS_COLOR, None),
+        StatusRowInfo(True, SERVICE_NAME, one_successful, SUCCESS_COLOR, None),
+        StatusRowInfo(True, 'first', one_successful, SUCCESS_COLOR, None),
+        StatusRowInfo(True, None, None, None, 'test-host'),
+    ]
+    host_negative_status = [
+        StatusRowInfo(True, CLUSTER_NAME, 'successful 1/2', NEGATIVE_COLOR, None),
+        StatusRowInfo(True, 'Hosts', one_negative, NEGATIVE_COLOR, None),
+        StatusRowInfo(True, None, None, None, 'test-host'),
+        StatusRowInfo(True, 'Services', one_successful, SUCCESS_COLOR, None),
+        StatusRowInfo(True, SERVICE_NAME, one_successful, SUCCESS_COLOR, None),
+        StatusRowInfo(True, 'first', one_successful, SUCCESS_COLOR, None),
+        StatusRowInfo(True, None, None, None, 'test-host'),
+    ]
+    host_and_component_negative_status = [
+        StatusRowInfo(True, CLUSTER_NAME, 'successful 0/2', NEGATIVE_COLOR, None),
+        StatusRowInfo(True, 'Hosts', one_negative, NEGATIVE_COLOR, None),
+        StatusRowInfo(True, None, None, None, 'test-host'),
+        StatusRowInfo(True, 'Services', one_negative, NEGATIVE_COLOR, None),
+        StatusRowInfo(True, SERVICE_NAME, one_negative, NEGATIVE_COLOR, None),
+        StatusRowInfo(True, 'first', one_negative, NEGATIVE_COLOR, None),
+        StatusRowInfo(True, None, None, None, 'test-host'),
+    ]
+
     def test_open_by_tab_cluster_status_page(self, app_fs, create_community_cluster):
         """Test open /cluster/{}/config from left menu"""
         cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
@@ -917,36 +948,6 @@ class TestClusterStatusPage:
         self, app_fs, adcm_fs, sdk_client_fs, create_community_cluster_with_host_and_service
     ):
         """Changes status on cluster/{}/status page"""
-        one_successful = 'successful 1/1'
-        one_negative = 'successful 0/1'
-
-        success_status = [
-            StatusRowInfo(True, CLUSTER_NAME, 'successful 2/2', SUCCESS_COLOR, None),
-            StatusRowInfo(True, 'Hosts', one_successful, SUCCESS_COLOR, None),
-            StatusRowInfo(True, None, None, None, 'test-host'),
-            StatusRowInfo(True, 'Services', one_successful, SUCCESS_COLOR, None),
-            StatusRowInfo(True, SERVICE_NAME, one_successful, SUCCESS_COLOR, None),
-            StatusRowInfo(True, 'first', one_successful, SUCCESS_COLOR, None),
-            StatusRowInfo(True, None, None, None, 'test-host'),
-        ]
-        host_negative_status = [
-            StatusRowInfo(True, CLUSTER_NAME, 'successful 1/2', NEGATIVE_COLOR, None),
-            StatusRowInfo(True, 'Hosts', one_negative, NEGATIVE_COLOR, None),
-            StatusRowInfo(True, None, None, None, 'test-host'),
-            StatusRowInfo(True, 'Services', one_successful, SUCCESS_COLOR, None),
-            StatusRowInfo(True, SERVICE_NAME, one_successful, SUCCESS_COLOR, None),
-            StatusRowInfo(True, 'first', one_successful, SUCCESS_COLOR, None),
-            StatusRowInfo(True, None, None, None, 'test-host'),
-        ]
-        host_and_component_negative_status = [
-            StatusRowInfo(True, CLUSTER_NAME, 'successful 0/2', NEGATIVE_COLOR, None),
-            StatusRowInfo(True, 'Hosts', one_negative, NEGATIVE_COLOR, None),
-            StatusRowInfo(True, None, None, None, 'test-host'),
-            StatusRowInfo(True, 'Services', one_negative, NEGATIVE_COLOR, None),
-            StatusRowInfo(True, SERVICE_NAME, one_negative, NEGATIVE_COLOR, None),
-            StatusRowInfo(True, 'first', one_negative, NEGATIVE_COLOR, None),
-            StatusRowInfo(True, None, None, None, 'test-host'),
-        ]
         cluster, host = create_community_cluster_with_host_and_service
         cluster_component = cluster.service(name=SERVICE_NAME).component(name=COMPONENT_NAME)
         cluster.hostcomponent_set((host, cluster_component))
@@ -955,19 +956,40 @@ class TestClusterStatusPage:
         with allure.step("Check positive status"):
             status_changer.enable_cluster(cluster)
             cluster_status_page.driver.refresh()
-            cluster_status_page.compare_current_and_expected_state(success_status)
+            cluster_status_page.compare_current_and_expected_state(self.success_status)
         with allure.step("Check negative status on host"):
             status_changer.set_host_negative_status(host)
             cluster_status_page.driver.refresh()
-            cluster_status_page.compare_current_and_expected_state(host_negative_status)
+            cluster_status_page.compare_current_and_expected_state(self.host_negative_status)
         with allure.step("Check negative status on service"):
             status_changer.set_component_negative_status((host, cluster_component))
             cluster_status_page.driver.refresh()
-            cluster_status_page.compare_current_and_expected_state(host_and_component_negative_status)
+            cluster_status_page.compare_current_and_expected_state(self.host_and_component_negative_status)
         with allure.step("Check collapse button"):
             with cluster_status_page.wait_rows_collapsed():
                 cluster_status_page.click_collapse_all_btn()
             assert len(cluster_status_page.get_all_rows()) == 1, "Status rows should have been collapsed"
+
+    def test_service_passive_status_on_cluster_status_page(
+        self, app_fs, adcm_fs, create_host, sdk_client_fs: ADCMClient
+    ):
+        """Check that service status with monitoring: passive don't break status tree"""
+        bundle = cluster_bundle(sdk_client_fs, "service_monitoring_passive")
+        cluster = bundle.cluster_create(name=CLUSTER_NAME)
+        service = cluster.service_add(name=SERVICE_NAME)
+        host = cluster.host_add(create_host)
+        cluster.hostcomponent_set((host, service))
+
+        service_status_page = ClusterStatusPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+        status_changer = ADCMObjectStatusChanger(sdk_client_fs, adcm_fs)
+        with allure.step("Check positive status"):
+            status_changer.enable_cluster(cluster)
+            service_status_page.driver.refresh()
+            service_status_page.compare_current_and_expected_state(self.success_status)
+        with allure.step("Check negative status on service"):
+            status_changer.set_component_negative_status((host, service.component()))
+            service_status_page.driver.refresh()
+            service_status_page.compare_current_and_expected_state(self.host_and_component_negative_status)
 
 
 class TestClusterImportPage:

@@ -499,15 +499,15 @@ class TestHostStatusPage:
 
         success_status = [
             StatusRowInfo(
-                has_icon=True, group_name='best-host', state='successful 1/1', state_color=SUCCESS_COLOR, link=None
+                icon_status=True, group_name='best-host', state='successful 1/1', state_color=SUCCESS_COLOR, link=None
             ),
-            StatusRowInfo(has_icon=True, group_name=None, state=None, state_color=None, link=None),
+            StatusRowInfo(icon_status=True, group_name=None, state=None, state_color=None, link=None),
         ]
         negative_status = [
             StatusRowInfo(
-                has_icon=True, group_name='best-host', state='successful 0/1', state_color=NEGATIVE_COLOR, link=None
+                icon_status=True, group_name='best-host', state='successful 0/1', state_color=NEGATIVE_COLOR, link=None
             ),
-            StatusRowInfo(has_icon=True, group_name=None, state=None, state_color=None, link=None),
+            StatusRowInfo(icon_status=True, group_name=None, state=None, state_color=None, link=None),
         ]
 
         with allure.step("Create hostcomponent"):
