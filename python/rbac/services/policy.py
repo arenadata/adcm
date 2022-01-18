@@ -92,8 +92,11 @@ def policy_create(name: str, role: Role, built_in: bool = False, **kwargs):
 
     objects = kwargs.get('object', [])
     _check_objects(role, objects)
+    description = kwargs.get('description', '')
     try:
-        policy = Policy.objects.create(name=name, role=role, built_in=built_in)
+        policy = Policy.objects.create(
+            name=name, role=role, built_in=built_in, description=description
+        )
     except IntegrityError as exc:
         raise AdwpEx('POLICY_CREATE_ERROR', msg=f'Policy creation failed with error {exc}') from exc
     for obj in objects:
@@ -132,6 +135,8 @@ def policy_update(policy: Policy, **kwargs) -> Policy:
 
     if 'name' in kwargs:
         policy.name = kwargs['name']
+    if 'description' in kwargs:
+        policy.description = kwargs['description']
     if role is not None:
         policy.role = role
     if users is not None:

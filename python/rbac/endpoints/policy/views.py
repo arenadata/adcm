@@ -106,6 +106,7 @@ class PolicySerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
         fields = (
             'id',
             'name',
+            'description',
             'object',
             'built_in',
             'role',
