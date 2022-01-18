@@ -81,7 +81,7 @@ roles:
                 - view_config_of
 
     - name: View cluster configurations
-      description: The ability to view the service configuration page
+      description: The ability to view the cluster configuration page
       type: business
       parametrized_by:
         - cluster
@@ -91,7 +91,7 @@ roles:
         app_name: cm
         model: Cluster
       child:
-        - View service config
+        - View cluster config
         - View config endpoints
 
 
