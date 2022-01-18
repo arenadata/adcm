@@ -54,7 +54,7 @@ class ObjectPageMenuLocators:
     users_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_users']", "Tab admin users")
     groups_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_groups']", "Tab admin groups")
     roles_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_roles']", "Tab admin roles")
-
+    policies_tab = Locator(By.CSS_SELECTOR, "a[adcm_test='tab_policies']", "Tab admin policies")
     warn_icon = Locator(By.CSS_SELECTOR, "mat-icon[color='warn']", 'Icon "!"')
 
 
