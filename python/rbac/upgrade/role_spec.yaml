@@ -1188,6 +1188,7 @@ roles:
         - View host configurations
         - Edit service configurations
         - Edit component configurations
+        - View host-components
         - Manage imports
 
     - name: Cluster Administrator
