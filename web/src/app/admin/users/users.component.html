@@ -1,6 +1,6 @@
 <div class="controls">
   <app-add-button class="add-button" [dialogConfig]="dialogConfig" [component]="component">
-    Create {{ type }}
+    Add new {{ type }}
   </app-add-button>
   <button mat-raised-button color="primary" (click)="deleteEntities()" [disabled]="!(data$ | async | hasSelected)">
     <mat-icon>delete</mat-icon>
