@@ -27,7 +27,7 @@ from tests.functional.rbac.conftest import (
 @use_role(BusinessRoles.ViewADCMSettings)
 def test_view_adcm_settings(user_policy, user_sdk: ADCMClient, prepare_objects):
     """Test that View ADCM Settings role is ok"""
-    cluster = as_user_objects(user_sdk, prepare_objects[0])
+    (cluster,) = as_user_objects(user_sdk, prepare_objects[0])
 
     is_allowed(user_sdk.adcm(), BusinessRoles.ViewADCMSettings)
     is_denied(user_sdk.adcm(), BusinessRoles.EditADCMSettings)
@@ -40,7 +40,7 @@ def test_view_adcm_settings(user_policy, user_sdk: ADCMClient, prepare_objects):
 @use_role(BusinessRoles.EditADCMSettings)
 def test_edit_adcm_settings(user_policy, user_sdk: ADCMClient, prepare_objects):
     """Test that Edit ADCM Settings role is ok"""
-    cluster = as_user_objects(user_sdk, prepare_objects[0])
+    (cluster,) = as_user_objects(user_sdk, prepare_objects[0])
 
     is_allowed(user_sdk.adcm(), BusinessRoles.ViewADCMSettings)
     is_allowed(user_sdk.adcm(), BusinessRoles.EditADCMSettings)
