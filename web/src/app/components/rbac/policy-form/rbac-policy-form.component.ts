@@ -55,7 +55,7 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
   get steps(): AbstractControl | null { return this.form.get('steps'); }
 
   get title(): string {
-    return this.value ? 'Save' : 'Create';
+    return this.value ? 'Update' : 'Add';
   }
 
   step(id: number): FormGroup | null {
