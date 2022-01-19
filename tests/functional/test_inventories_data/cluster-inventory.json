@@ -35,7 +35,7 @@
               "cluster_multi_state"
             ],
             "before_upgrade": {
-              "state": ""
+              "state": null
             }
           },
           "services": {
