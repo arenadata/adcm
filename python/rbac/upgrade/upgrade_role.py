@@ -41,9 +41,7 @@ def upgrade(data: dict):
             child_role = new_roles[child]
             role_obj.child.add(child_role)
         role_obj.save()
-
-    for policy in Policy.objects.all():
-        policy.apply()
+    re_apply_all_polices()
 
 
 def find_role(name: str, roles: list):
@@ -182,5 +180,4 @@ def init_roles():
         log.info(msg)
     else:
         msg = f'Roles are already at version {rm.version}'
-    re_apply_all_polices()
     return msg

@@ -63,7 +63,7 @@ roles:
               codenames:
                 - add
 
-    - name: View cluster configurations
+    - name: View cluster config
       description: The ability to view the cluster configuration page
       type: hidden
       parametrized_by:
@@ -80,7 +80,22 @@ roles:
               codenames:
                 - view_config_of
 
-    - name: View service configurations
+    - name: View cluster configurations
+      description: The ability to view the cluster configuration page
+      type: business
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      child:
+        - View cluster config
+        - View config endpoints
+
+
+    - name: View service config
       description: The ability to view the service configuration page
       type: hidden
       parametrized_by:
@@ -97,7 +112,21 @@ roles:
               codenames:
                 - view_config_of
 
-    - name: View component configurations
+    - name: View service configurations
+      description: The ability to view the service configuration page
+      type: business
+      parametrized_by:
+        - service
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: ClusterObject
+      child:
+        - View service config
+        - View config endpoints
+
+    - name: View component config
       description: The ability to view the component configuration page
       type: hidden
       parametrized_by:
@@ -114,7 +143,21 @@ roles:
               codenames:
                 - view_config_of
 
-    - name: View provider configurations
+    - name: View component configurations
+      description: The ability to view the component configuration page
+      type: business
+      parametrized_by:
+        - component
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: ServiceComponent
+      child:
+        - View component config
+        - View config endpoints
+
+    - name: View provider config
       description: The ability to view the provider configuration page
       type: hidden
       parametrized_by:
@@ -131,7 +174,21 @@ roles:
               codenames:
                 - view_config_of
 
-    - name: View host configurations
+    - name: View provider configurations
+      description: The ability to view the provider configuration page
+      type: business
+      parametrized_by:
+        - provider
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: HostProvider
+      child:
+        - View provider config
+        - View config endpoints
+
+    - name: View host config
       description: The ability to view the host configuration page
       type: hidden
       parametrized_by:
@@ -148,6 +205,20 @@ roles:
               codenames:
                 - view_config_of
 
+    - name: View host configurations
+      description: The ability to view the host configuration page
+      type: business
+      parametrized_by:
+        - host
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: Host
+      child:
+        - View host config
+        - View config endpoints
+
     - name: View config endpoints
       description: The ability to view list of all configs separatly
       type: hidden
@@ -163,42 +234,14 @@ roles:
             codenames:
               - view
 
-    - name: View application configurations
-      description: The ability to view the configuration of cluster, service and component.
-      type: business
-      module_name: rbac.roles
-      class_name: ParentRole
-      any_category: true
-      parametrized_by:
-        - cluster
-        - service
-        - component
-      child:
-        - View cluster configurations
-        - View service configurations
-        - View component configurations
-        - View config endpoints
-
-    - name: View infrastructure configurations
-      description: The ability to view configuration of provider and host.
-      type: business
-      module_name: rbac.roles
-      class_name: ParentRole
-      any_category: true
-      parametrized_by:
-        - provider
-        - host
-      child:
-        - View provider configurations
-        - View host configurations
-        - View config endpoints
-
     - name: View any object configuration
       description: The ability to view config page of all objects except ADCM settings
       type: business
       module_name: rbac.roles
       class_name: ModelRole
       any_category: true
+      child:
+        - View config endpoints
       apps:
         - label: cm
           models:
@@ -206,7 +249,7 @@ roles:
               codenames:
                 - view_config_of
 
-    - name: Edit cluster configurations
+    - name: Edit cluster config
       description: The ability to change and add new cluster configuration
       type: hidden
       parametrized_by:
@@ -224,7 +267,21 @@ roles:
                 - view_config_of
                 - change_config_of
 
-    - name: Edit service configurations
+    - name: Edit cluster configurations
+      description: The ability to change and add new cluster configuration
+      type: business
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      child:
+        - Edit cluster config
+        - Edit config endpoints
+
+    - name: Edit service config
       description: The ability to change and add new service configuration
       type: hidden
       parametrized_by:
@@ -242,7 +299,21 @@ roles:
                 - view_config_of
                 - change_config_of
 
-    - name: Edit component configurations
+    - name: Edit service configurations
+      description: The ability to change and add new service configuration
+      type: business
+      parametrized_by:
+        - service
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: ClusterObject
+      child:
+        - Edit service config
+        - Edit config endpoints
+
+    - name: Edit component config
       description: The ability to change and add new component configuration
       type: hidden
       parametrized_by:
@@ -260,7 +331,21 @@ roles:
                 - view_config_of
                 - change_config_of
 
-    - name: Edit provider configurations
+    - name: Edit component configurations
+      description: The ability to change and add new component configuration
+      type: business
+      parametrized_by:
+        - component
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: ServiceComponent
+      child:
+        - Edit component config
+        - Edit config endpoints
+
+    - name: Edit provider config
       description: The ability to change and add new provider configuration
       type: hidden
       parametrized_by:
@@ -278,7 +363,21 @@ roles:
                 - view_config_of
                 - change_config_of
 
-    - name: Edit host configurations
+    - name: Edit provider configurations
+      description: The ability to change and add new provider configuration
+      type: business
+      parametrized_by:
+        - provider
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: HostProvider
+      child:
+        - Edit provider config
+        - Edit config endpoints
+
+    - name: Edit host config
       description: The ability to change and add new host configuration
       type: hidden
       parametrized_by:
@@ -296,6 +395,20 @@ roles:
                 - view_config_of
                 - change_config_of
 
+    - name: Edit host configurations
+      description: The ability to change and add new host configuration
+      type: business
+      parametrized_by:
+        - host
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: Host
+      child:
+        - Edit host config
+        - Edit config endpoints
+
     - name: Edit config endpoints
       description: The ability to edit list of all configs separatly
       type: hidden
@@ -312,36 +425,6 @@ roles:
               codenames:
                 - view
                 - change
-
-    - name: Edit application configurations
-      description: The ability to edit the configuration of cluster, service and component.
-      type: business
-      module_name: rbac.roles
-      class_name: ParentRole
-      any_category: true
-      parametrized_by:
-        - cluster
-        - service
-        - component
-      child:
-        - Edit cluster configurations
-        - Edit service configurations
-        - Edit component configurations
-        - Edit config endpoints
-
-    - name: Edit infrastructure configurations
-      description: The ability to edit the configuration of provider and host
-      type: business
-      module_name: rbac.roles
-      class_name: ParentRole
-      any_category: true
-      parametrized_by:
-        - provider
-        - host
-      child:
-        - Edit provider configurations
-        - Edit host configurations
-        - Edit config endpoints
 
     - name: View cluster imports
       description: The ability to view the cluster import page
@@ -594,7 +677,7 @@ roles:
                 - view_host_components_of
                 - edit_host_components_of
 
-    - name: Upgrade application bundle
+    - name: Upgrade cluster bundle
       description: Update the cluster bundle
       type: business
       parametrized_by:
@@ -612,7 +695,7 @@ roles:
                 - view_upgrade_of
                 - do_upgrade_of
 
-    - name: Upgrade infrastructure bundle
+    - name: Upgrade provider bundle
       description: Update the provider bundle
       type: business
       parametrized_by:
@@ -1088,10 +1171,8 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       child:
-        - Base role
         - View any object host-components
         - View any object configuration
-        - View config endpoints
         - View any object import
 
     - name: Service Administrator
@@ -1104,8 +1185,10 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       child:
-        - ADCM User
-        - Edit application configurations
+        - View host configurations
+        - Edit service configurations
+        - Edit component configurations
+        - View host-components
         - Manage imports
 
     - name: Cluster Administrator
@@ -1119,13 +1202,15 @@ roles:
       class_name: ParentRole
       child:
         - Service Administrator
+        - Edit cluster configurations
+        - Edit host configurations
         - Edit host-components
         - Add service
         - Remove service
         - Remove hosts
         - Map hosts
         - Unmap hosts
-        - Upgrade application bundle
+        - Upgrade cluster bundle
         - Create host
         - Upload bundle
         - Remove bundle
@@ -1141,8 +1226,9 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       child:
-        - Edit infrastructure configurations
-        - Upgrade infrastructure bundle
+        - Edit provider configurations
+        - Edit host configurations
+        - Upgrade provider bundle
         - Create host
         - Remove hosts
         - Upload bundle
