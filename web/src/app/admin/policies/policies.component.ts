@@ -41,6 +41,10 @@ export class PoliciesComponent extends RbacEntityListDirective<RbacPolicyModel> 
       value: (row) => row.name,
     },
     {
+      label: 'Description',
+      value: (row) => row.description,
+    },
+    {
       label: 'Role',
       value: (row) => (row.role as any as RbacRoleModel).name,
     },
