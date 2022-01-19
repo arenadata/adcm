@@ -78,7 +78,7 @@ export class ListService implements IListService<Entities> {
         params = { ...params['params'], 'expand': 'child' };
         return this.api.getList(`${environment.apiRoot}rbac/role/`, convertToParamMap(params), { type: 'role' });
       case 'policy':
-        params = { ...params['params'], 'expand': 'child', 'built_in': 'false' };
+        params = { ...params['params'], 'expand': 'child,role,user,group,object', 'built_in': 'false' };
         return this.api.getList(`${environment.apiRoot}rbac/policy/`, convertToParamMap(params));
       default:
         return this.api.root.pipe(switchMap((root) => this.api.getList<Entities>(root[this.current.typeName], p)));
