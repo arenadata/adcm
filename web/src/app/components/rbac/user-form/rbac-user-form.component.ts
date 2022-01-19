@@ -65,7 +65,8 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
       email: new FormControl(null, [
         Validators.required,
         Validators.maxLength(254),
-        Validators.email
+        // regexp from django
+        Validators.pattern('(^[-!#$%&\'*+\\/=?^_`{}|~0-9A-Za-z]+(.[-!#$%&\'*+\\/=?^_`{}|~0-9A-Za-z]+)*|^"([\\001-\\010\\013\\014\\016-\\037!#-[]-\\177]|\\[\\001-\\011\\013\\014\\016-\\177])*")@((?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?.)+)(?:[A-Za-z0-9-]{2,63}(?<!-))$')
       ]),
       group: new FormControl([])
     }),
