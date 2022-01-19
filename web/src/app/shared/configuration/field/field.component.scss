@@ -1,3 +1,5 @@
+@import "src/mixins";
+
 :host {
   flex-wrap: wrap;
 
@@ -30,9 +32,7 @@
   }
 
   & > .read-only {
-    background-color: #484848;
-    font-style: italic;
-    color: #a7a7a7;
+    @include read-only-field;
   }
 
   .compare-list-container {
