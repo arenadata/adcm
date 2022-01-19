@@ -13,6 +13,7 @@
 """Tests for actions inventory"""
 
 import json
+from typing import Optional
 
 from uuid import uuid4
 
@@ -25,7 +26,7 @@ from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.docker_utils import get_file_from_container
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 
-from tests.functional.tools import create_config_group_and_add_host
+from tests.functional.tools import create_config_group_and_add_host, BEFORE_UPGRADE_DEFAULT_STATE
 from tests.functional.conftest import only_clean_adcm
 
 # pylint: disable=redefined-outer-name
@@ -97,6 +98,49 @@ def test_check_inventories_file(cluster: Cluster, provider: Provider, adcm_fs: A
         ), "Content of file inventory.json doesn't match expected. See attachments for more info."
     with allure.step('Check that object attributes are available in ansible script'):
         run_cluster_action_and_assert_result(cluster, 'check')
+
+
+class TestStateBeforeUpgrade:
+    """Test that state before upgrade is correctly presented in inventory.json file"""
+
+    @pytest.fixture()
+    def old_cluster(self, sdk_client_fs) -> Cluster:  # pylint: disable=no-self-use
+        """Upload old and new version of cluster, create old one"""
+        old_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "upgrade", "old"))
+        sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "upgrade", "new"))
+        return old_bundle.cluster_create(name="Test Cluster")
+
+    def test_before_upgrade_in_inventory(self, adcm_fs, old_cluster):
+        """Test value of before upgrade state in inventory.json before and after upgrade"""
+        with allure.step('Check before_upgrade state before upgrade'):
+            task = old_cluster.action(name="do_nothing").run()
+            task.wait()
+            self.check_before_upgrade_state_equal_to(
+                BEFORE_UPGRADE_DEFAULT_STATE, _get_inventory_file(adcm_fs, task.id)
+            )
+        with allure.step('Check before_upgrade state after upgrade'):
+            state_before_upgrade = old_cluster.state
+            old_cluster.upgrade().do()
+            old_cluster.reread()
+            task = old_cluster.action(name="do_nothing").run()
+            task.wait()
+            self.check_before_upgrade_state_equal_to(state_before_upgrade, _get_inventory_file(adcm_fs, task.id))
+
+    # pylint: disable-next=no-self-use
+    def check_before_upgrade_state_equal_to(self, expected_state: Optional[str], inventory: dict):
+        """Check that `state` key in inventory dictionary is equal to expected"""
+        with utils.catch_failed(KeyError, "Structure of inventory.json file is unexpected"):
+            actual_state = inventory["all"]["children"]["CLUSTER"]["vars"]["cluster"]["before_upgrade"]["state"]
+        assert (
+            actual_state == expected_state
+        ), f'Before upgrade state should be "{expected_state}", but actual state is "{actual_state}"'
+
+
+def _get_inventory_file(adcm_fs: ADCM, task_id: int) -> dict:
+    """Get inventory.json file from ADCM as dict"""
+    file = get_file_from_container(adcm_fs, f'/adcm/data/run/{task_id}/', 'inventory.json')
+    content = file.read().decode('utf8')
+    return json.loads(content)
 
 
 def _attach_inventory_file(request: SubRequest, inventory_content: str, name: str):
