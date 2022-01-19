@@ -22,7 +22,7 @@
           </button>
           <button *ngIf="!readonly" class="adcm-input-rbac-permissions__selected-filter-clear" mat-icon-button
                   appTooltip="Clear all selected permissions"
-                  (click)="form.controls[controlName].reset([])">
+                  (click)="reset(form.controls[controlName], chipListInput)">
             <mat-icon>cancel</mat-icon>
           </button>
         </div>

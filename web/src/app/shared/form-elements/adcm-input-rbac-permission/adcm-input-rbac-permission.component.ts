@@ -59,4 +59,9 @@ export class AdcmInputRbacPermissionComponent {
       chipListInput.focus();
     }
   }
+  
+  reset(control: AbstractControl, chipListInput: HTMLInputElement): void {
+    control.reset();
+    chipListInput.value = '';
+  }
 }
