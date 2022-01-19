@@ -14,9 +14,34 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
+#
+# pylint: disable=W0212
 
 import ruyaml
+
+
+def round_trip_load(stream, version=None, preserve_quotes=None, allow_duplicate_keys=False):
+    """
+    Parse the first YAML document in a stream and produce the corresponding Python object.
+
+    This is a replace for ruyaml.round_trip_load() function which can switch off
+    duplicate YAML keys error
+    """
+    Loader = ruyaml.RoundTripLoader
+    loader = Loader(stream, version, preserve_quotes=preserve_quotes)
+    loader._constructor.allow_duplicate_keys = allow_duplicate_keys
+    try:
+        return loader._constructor.get_single_data()
+    finally:
+        loader._parser.dispose()
+        try:
+            loader._reader.reset_reader()
+        except AttributeError:
+            pass
+        try:
+            loader._scanner.reset_scanner()
+        except AttributeError:
+            pass
 
 
 class FormatError(Exception):
