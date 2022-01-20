@@ -27,6 +27,8 @@ from tests.ui_tests.app.page.admin.page import (
     AdminGroupsPage,
     AdminRoleInfo,
     AdminGroupInfo,
+    AdminPoliciesPage,
+    AdminPolicyInfo,
 )
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.utils import expect_rows_amount_change
@@ -62,7 +64,6 @@ class TestAdminIntroPage:
 
         users_page = AdminUsersPage(app_fs.driver, app_fs.adcm.url).open()
         intro_page = users_page.open_settings_menu()
-        intro_page.wait_page_is_opened()
         intro_page.check_all_elements()
         intro_page.check_admin_toolbar()
 
@@ -75,7 +76,6 @@ class TestAdminSettingsPage:
 
         intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url).open()
         settings_page = intro_page.open_settings_menu()
-        settings_page.wait_page_is_opened()
         settings_page.check_all_elements()
         settings_page.check_admin_toolbar()
 
@@ -152,7 +152,6 @@ class TestAdminUsersPage:
 
         intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url).open()
         users_page = intro_page.open_users_menu()
-        users_page.wait_page_is_opened()
         users_page.check_all_elements()
         users_page.check_admin_toolbar()
 
@@ -232,10 +231,10 @@ class TestAdminRolesPage:
 
         intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url).open()
         roles_page = intro_page.open_roles_menu()
-        roles_page.wait_page_is_opened()
         roles_page.check_all_elements()
         roles_page.check_default_roles()
-        assert len(roles_page.table.get_all_rows()) == 4, "There should be 4 default roles"
+        with allure.step('Check that there are 4 default roles'):
+            assert len(roles_page.table.get_all_rows()) == 4, "There should be 4 default roles"
         roles_page.check_admin_toolbar()
 
     def test_create_custom_role_on_roles_page(self, app_fs):
@@ -301,7 +300,8 @@ class TestAdminRolesPage:
         page.select_all_roles()
         page.click_delete_button()
         page.check_default_roles()
-        assert len(page.table.get_all_rows()) == 4, "There should be 4 default roles"
+        with allure.step('Check that role has been deleted'):
+            assert len(page.table.get_all_rows()) == 4, "There should be 4 default roles"
 
 
 class TestAdminGroupsPage:
@@ -314,7 +314,6 @@ class TestAdminGroupsPage:
 
         intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url).open()
         groups_page = intro_page.open_groups_menu()
-        groups_page.wait_page_is_opened()
         groups_page.check_all_elements()
         groups_page.check_admin_toolbar()
 
@@ -324,8 +323,9 @@ class TestAdminGroupsPage:
         groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
         groups_page.create_custom_group(self.custom_group.name, self.custom_group.description, self.custom_group.users)
         current_groups = groups_page.get_all_groups()
-        assert len(current_groups) == 1, "There should be 1 group on the page"
-        assert self.custom_group in current_groups, "Created group should be on the page"
+        with allure.step('Check that there are 1 custom group'):
+            assert len(current_groups) == 1, "There should be 1 group on the page"
+            assert self.custom_group in current_groups, "Created group should be on the page"
 
     def test_check_pagination_groups_list_page(self, app_fs):
         """Test pagination on /admin/groups page"""
@@ -347,4 +347,72 @@ class TestAdminGroupsPage:
         page.create_custom_group(self.custom_group.name, self.custom_group.description, self.custom_group.users)
         page.select_all_groups()
         page.click_delete_button()
-        assert len(page.table.get_all_rows()) == 0, "There should be 0 groups"
+        with allure.step('Check that group has been deleted'):
+            assert len(page.table.get_all_rows()) == 0, "There should be 0 groups"
+
+
+class TestAdminPolicyPage:
+    """Tests for the /admin/policies"""
+
+    custom_policy = AdminPolicyInfo(
+        name="Test policy name",
+        description="Test policy description",
+        role="ADCM User",
+        users="admin,status",
+        groups=None,
+    )
+
+    def test_open_by_tab_admin_policies_page(self, app_fs):
+        """Test open /admin/policies from left menu"""
+
+        intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url).open()
+        policies_page = intro_page.open_policies_menu()
+        policies_page.check_all_elements()
+        policies_page.check_admin_toolbar()
+
+    def test_create_policy_on_admin_groups_page(self, app_fs):
+        """Test create a group on /admin/policies"""
+
+        policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
+        policies_page.create_policy(
+            self.custom_policy.name,
+            self.custom_policy.description,
+            self.custom_policy.role,
+            self.custom_policy.users,
+            self.custom_policy.groups,
+        )
+        current_policies = policies_page.get_all_policies()
+        with allure.step('Check that there are 2 policies'):
+            assert len(current_policies) == 2, "There should be 2 policies on the page"
+            assert current_policies == ["default", self.custom_policy.name], "Created policy should be on the page"
+
+    def test_check_pagination_policy_list_page(self, app_fs):
+        """Test pagination on /admin/policies page"""
+
+        policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
+        with allure.step("Create 10 policies"):
+            for i in range(10):
+                policies_page.create_policy(
+                    f"{self.custom_policy.name}_{i}",
+                    self.custom_policy.description,
+                    self.custom_policy.role,
+                    self.custom_policy.users,
+                    self.custom_policy.groups,
+                )
+        policies_page.table.check_pagination(second_page_item_amount=1)
+
+    def test_delete_policy_from_policies_page(self, app_fs):
+        """Test delete custom group on /admin/policies page"""
+
+        policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
+        policies_page.create_policy(
+            self.custom_policy.name,
+            self.custom_policy.description,
+            self.custom_policy.role,
+            self.custom_policy.users,
+            self.custom_policy.groups,
+        )
+        policies_page.select_all_policies()
+        policies_page.click_delete_button()
+        with allure.step('Check that policy has been deleted'):
+            assert len(policies_page.table.get_all_rows()) == 1, "There should be 1 default policy"

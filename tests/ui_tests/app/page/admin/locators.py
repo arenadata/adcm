@@ -24,6 +24,15 @@ from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMe
 # pylint: disable=too-few-public-methods
 
 
+class CommonAdminPagesLocators:
+    """Common locators for admin pages"""
+
+    create_btn = Locator(By.CSS_SELECTOR, "app-add-button button", "Create button")
+    delete_btn = Locator(By.CSS_SELECTOR, ".controls>button", "Delete Group button")
+    field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
+    item = Locator(By.CSS_SELECTOR, "adwp-selection-list mat-list-option", "select items")
+
+
 class AdminIntroLocators:
     """Locators for Admin Intro menu"""
 
@@ -69,15 +78,12 @@ class AdminUsersLocators:
         first_name = Locator(By.NAME, "first_name", "New user first name")
         last_name = Locator(By.NAME, "last_name", "New user last name")
         email = Locator(By.NAME, "email", "New user email")
-        create_button = Locator(By.XPATH, "//button[./span[contains(text(), 'Create')]]", "Create user save button")
-        update_button = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Update user save button")
+        create_button = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Create user save button")
+        update_button = Locator(By.XPATH, "//button[./span[contains(text(), 'Update')]]", "Update user save button")
 
 
-class AdminGroupsLocators:
+class AdminGroupsLocators(CommonAdminPagesLocators):
     """Locators for Admin Groups menu"""
-
-    create_group_btn = Locator(By.CSS_SELECTOR, "app-add-button button", "Create Group button")
-    delete_btn = Locator(By.CSS_SELECTOR, ".controls>button", "Delete Group button")
 
     class GroupRow:
         """Row with groups info"""
@@ -91,14 +97,12 @@ class AdminGroupsLocators:
         """Locators for creating groups popup"""
 
         block = Locator(By.CSS_SELECTOR, "app-rbac-group-form", "Add group popup block")
-        field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
 
         name_input = Locator(By.CSS_SELECTOR, "adwp-input[label='Group name'] input", "Input name")
         description_input = Locator(By.CSS_SELECTOR, "adwp-input[label='Description'] input", "Input description")
         users_select = Locator(By.CSS_SELECTOR, "adwp-input-select[label='Select users'] adwp-select", "select users")
-        users_item = Locator(By.CSS_SELECTOR, "adwp-selection-list mat-list-option", "select items for users")
 
-        create_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Create')]]", "Create button")
+        create_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Save button")
 
         class UserRow:
             """Locators for user row in creating groups popup"""
@@ -106,11 +110,8 @@ class AdminGroupsLocators:
             checkbox = Locator(By.CSS_SELECTOR, "mat-pseudo-checkbox", "Group checkbox")
 
 
-class AdminRolesLocators:
+class AdminRolesLocators(CommonAdminPagesLocators):
     """Locators for Admin Roles menu"""
-
-    create_role_btn = Locator(By.CSS_SELECTOR, "app-add-button button", "Create role button")
-    delete_btn = Locator(By.CSS_SELECTOR, ".controls>button", "Delete role button")
 
     class RoleRow:
         """Row with role info"""
@@ -124,7 +125,6 @@ class AdminRolesLocators:
         """Locators for creating roles popup"""
 
         block = Locator(By.CSS_SELECTOR, "app-rbac-role-form", "Add role popup block")
-        field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
         role_name_input = Locator(
             By.CSS_SELECTOR, "adwp-input[controlname='display_name'] input", "Input for role name"
         )
@@ -164,3 +164,61 @@ class AdminRolesLocators:
         save_btn = Locator(
             By.XPATH, "//button[./span[contains(text(), 'Create') or contains(text(), 'Save')]]", "Save button"
         )
+
+
+class AdminPoliciesLocators(CommonAdminPagesLocators):
+    """Locators for Admin Policies menu"""
+
+    class PolicyRow:
+        """Row with policy info"""
+
+        checkbox = Locator(By.CSS_SELECTOR, "mat-checkbox", "policy checkbox")
+        name = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "policy name")
+
+    class AddPolicyPopup:
+        """Locators for creating policy popup"""
+
+        block = Locator(By.CSS_SELECTOR, "app-rbac-policy-form>mat-horizontal-stepper", "Add policy popup block")
+
+        class FirstStep:
+            """Locators for first step"""
+
+            name_input = Locator(By.CSS_SELECTOR, "input[name='name']", "Input name")
+            description_input = Locator(By.CSS_SELECTOR, "input[name='description']", "Input description")
+            role_select = Locator(By.CSS_SELECTOR, "mat-select[placeholder='Role']", "select role")
+            role_item = Locator(
+                By.XPATH, "//div[./mat-option//*[@placeholderlabel='Select role']]/mat-option", "select items for role"
+            )
+
+            users_select = Locator(By.CSS_SELECTOR, "adwp-input-select[label='User'] adwp-select", "select users")
+
+            group_select = Locator(By.CSS_SELECTOR, "adwp-input-select[label='Group'] adwp-select", "select group")
+
+            next_btn_first = Locator(
+                By.CSS_SELECTOR,
+                "app-rbac-policy-form-step-one~div button.mat-stepper-next",
+                "Next button from first step",
+            )
+
+        class SecondStep:
+            """Locators for second step"""
+
+            back_btn_second = Locator(
+                By.CSS_SELECTOR,
+                "app-rbac-policy-form-step-two~div button[matstepperprevious]",
+                "Back button from second step",
+            )
+            next_btn_second = Locator(
+                By.CSS_SELECTOR, "app-rbac-policy-form-step-two~div .mat-stepper-next", "Next button from second step"
+            )
+
+        class ThirdStep:
+            """Locators for third step"""
+
+            back_btn_third = Locator(
+                By.CSS_SELECTOR,
+                "app-rbac-policy-form-step-three~div button[matstepperprevious]",
+                "Next button from third step",
+            )
+            cancel_btn = Locator(By.XPATH, "//button[./span[text()='Cancel']]", "Cancel button")
+            create_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Create')]]", "Create button")

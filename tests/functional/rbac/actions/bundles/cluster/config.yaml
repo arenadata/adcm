@@ -46,9 +46,9 @@
       <<: *job
       display_name: "same_display"
 
-    action_on_host:
+    action_on_host: &host_action
       <<: *job
-      display_name: "Ready for host"
+      display_name: "Cluster ready for host"
       host_action: true
 
     on_created:
@@ -56,7 +56,7 @@
       display_name: "You cant see me"
       states:
         available:
-          - created
+          - installed
 
     change_cluster_config: &change_cluster_config
       type: job
@@ -114,14 +114,27 @@
       <<: *job
       display_name: Do not expect something from me pal
 
+    action_on_host:
+      <<: *host_action
+      display_name: "Service ready for host"
+
   components: &two_components
     simple_component:
       config: *simple_config
-      actions: *actions
+      actions:
+        <<: *actions
+        action_on_host:
+          <<: *host_action
+          display_name: Nononono
 
     single_component:
       config: *simple_config
-      actions: *actions
+      actions:
+        <<: *actions
+
+        action_on_host:
+          <<: *host_action
+          display_name: "Component ready for host"
 
 
 - type: service
@@ -134,7 +147,12 @@
   version: 1.05
   name: only_service_actions
 
-  actions: *actions
+  actions:
+    <<: *actions
+
+    action_on_host:
+      <<: *host_action
+      display_name: Nononononono
 
   components:
     no_actions_component:
@@ -147,4 +165,9 @@
 
   config: *simple_config
 
-  actions: *actions
+  actions:
+    <<: *actions
+
+    action_on_host:
+      <<: *host_action
+      display_name: Nononononono

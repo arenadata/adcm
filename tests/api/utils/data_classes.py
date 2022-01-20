@@ -388,6 +388,7 @@ class RbacNotBuiltInPolicyFields(BaseClass):
 
     id = Field(name="id", f_type=PositiveInt(), default_value=AUTO_VALUE)
     name = Field(name="name", f_type=String(max_length=160), postable=True, required=True, changeable=True)
+    description = Field(name="description", f_type=Text(), default_value='', postable=True, changeable=True)
     role = Field(
         name="role", f_type=ObjectForeignKey(RbacSimpleRoleFields), required=True, postable=True, changeable=True
     )
@@ -429,6 +430,7 @@ class RbacBuiltInPolicyFields(BaseClass):
 
     id = Field(name="id", f_type=PositiveInt(), default_value=AUTO_VALUE)
     name = Field(name="name", f_type=String(max_length=160), required=True, postable=True, changeable=True)
+    description = Field(name="description", f_type=Text(), default_value='', postable=True, changeable=True)
     role = Field(name="role", f_type=ObjectForeignKey(RbacSimpleRoleFields), required=True, postable=True)
     built_in = Field(name="built_in", f_type=Boolean(), default_value=True)
     # actually this field isn't required when role isn't parametrized

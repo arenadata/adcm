@@ -15,7 +15,7 @@
 from typing import Union, List
 
 import allure
-from adcm_client.objects import ADCMClient, Policy
+from adcm_client.objects import ADCMClient, Policy, Bundle, Prototype
 from adcm_pytest_plugin.utils import random_string
 
 from tests.functional.rbac.conftest import BusinessRole
@@ -24,7 +24,7 @@ from tests.functional.tools import AnyADCMObject
 
 def action_business_role(adcm_object: AnyADCMObject, action_display_name: str) -> BusinessRole:
     """Construct BusinessRole that allows to run action"""
-    role_name = f'{adcm_object.prototype().type.capitalize()} Action: {action_display_name}'
+    role_name = get_action_role_name(adcm_object, action_display_name)
     return BusinessRole(
         role_name, lambda user_obj, *args, **kwargs: user_obj.action(display_name=action_display_name).run(**kwargs)
     )
@@ -53,3 +53,18 @@ def create_action_policy(
         user=user if isinstance(user, list) else [user],
         group=group if isinstance(group, list) else [group],
     )
+
+
+def get_bundle_prefix(bundle: Bundle) -> str:
+    """Get Bundle based prefix for role name"""
+    return f'{bundle.name}_{bundle.version}_{bundle.edition}_'
+
+
+def get_prototype_prefix(prototype: Prototype) -> str:
+    """Get prototype based prefix for role name"""
+    return f'{prototype.type}_{prototype.display_name}_'
+
+
+def get_action_role_name(adcm_object: AnyADCMObject, action_display_name: str):
+    """Construct "umbrella" role name for an action with specified name"""
+    return f'{adcm_object.prototype().type.capitalize()} Action: {action_display_name}'
