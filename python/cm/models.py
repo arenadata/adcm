@@ -96,6 +96,11 @@ def get_object_cluster(obj):
         return None
 
 
+def get_default_before_upgrade() -> dict:
+    """Return init value for before upgrade"""
+    return {'state': None}
+
+
 class ADCMManager(models.Manager):
     """
     Custom model manager catch ObjectDoesNotExist error and re-raise it as custom
@@ -485,6 +490,7 @@ class Cluster(ADCMEntity):
         content_type_field='object_type',
         on_delete=models.CASCADE,
     )
+    before_upgrade = models.JSONField(default=get_default_before_upgrade)
 
     __error_code__ = 'CLUSTER_NOT_FOUND'
 
@@ -523,6 +529,7 @@ class HostProvider(ADCMEntity):
         content_type_field='object_type',
         on_delete=models.CASCADE,
     )
+    before_upgrade = models.JSONField(default=get_default_before_upgrade)
 
     __error_code__ = 'PROVIDER_NOT_FOUND'
 
