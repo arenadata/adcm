@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import rest_framework
+from rest_framework import permissions
 from rest_framework import routers
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -20,7 +20,6 @@ import cm.job
 import cm.stack
 import cm.status_api
 from adcm.settings import ADCM_VERSION
-
 from rbac.viewsets import GenericPermViewSet
 
 
@@ -29,11 +28,10 @@ class APIRoot(routers.APIRootView):
     Arenadata Chapel API
     """
 
-    permission_classes = (rest_framework.permissions.AllowAny,)
+    permission_classes = (permissions.AllowAny,)
     api_root_dict = {
         'adcm': 'adcm',
         'cluster': 'cluster',
-        'profile': 'profile-list',
         'provider': 'provider',
         'host': 'host',
         'service': 'service',
@@ -45,7 +43,6 @@ class APIRoot(routers.APIRootView):
         'stack': 'stack',
         'stats': 'stats',
         'task': 'task',
-        'logout': 'logout',
         'info': 'adcm-info',
         'concern': 'concern',
         'rbac': 'rbac:root',
@@ -64,7 +61,7 @@ class NameConverter:
 
 
 class ADCMInfo(APIView):
-    permission_classes = (rest_framework.permissions.AllowAny,)
+    permission_classes = (permissions.AllowAny,)
 
     def get(self, request):
         """
@@ -75,8 +72,8 @@ class ADCMInfo(APIView):
 
 class ViewInterfaceGenericViewSet(GenericPermViewSet):
     def get_serializer_class(self):
-        view = self.request.query_params.get('view', None)
-        if view == 'interface':
-            return self.ui_serializer_class
-        else:
-            return self.serializer_class
+        if self.request is not None:
+            view = self.request.query_params.get('view', None)
+            if view == 'interface':
+                return self.ui_serializer_class
+        return self.serializer_class
