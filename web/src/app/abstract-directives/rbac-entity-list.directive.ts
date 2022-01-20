@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { MatDialog } from '@angular/material/dialog';
 import { MatCheckboxChange } from '@angular/material/checkbox';
-import { Entity, IListResult, RowEventData } from '@adwp-ui/widgets';
+import { Entity, IListResult, RowEventData, IChoiceColumn } from '@adwp-ui/widgets';
 import * as Immutable from 'immutable';
 import { filter } from 'rxjs/operators';
 import { zip } from 'rxjs';
@@ -43,8 +43,13 @@ export abstract class RbacEntityListDirective<T extends Entity> extends AdwpList
   }
 
   chooseAll(event: MatCheckboxChange): void {
+    const { disabled = (row: any) => false } = (this.listColumns.find(({ type }) => type === 'choice') || {}) as IChoiceColumn<any>;
     const value: IListResult<T> = Immutable.fromJS(this.data$.value).toJS() as any;
-    value.results.forEach((row: any) => row.checked = event.checked);
+    value.results.forEach((row: any) => {
+      if (!disabled(row)) {
+        row.checked = event.checked
+      }
+    });
     this.data$.next(value);
   }
 

@@ -31,6 +31,7 @@ export class PoliciesComponent extends RbacEntityListDirective<RbacPolicyModel> 
       modelKey: 'checked',
       className: 'choice-column',
       headerClassName: 'choice-column',
+      disabled: (row) => row.built_in,
     },
     {
       label: 'Policy name',

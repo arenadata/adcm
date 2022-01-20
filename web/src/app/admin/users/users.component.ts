@@ -45,6 +45,7 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
       modelKey: 'checked',
       className: 'choice-column',
       headerClassName: 'choice-column',
+      disabled: (row) => row.built_in,
     },
     {
       label: 'Username',

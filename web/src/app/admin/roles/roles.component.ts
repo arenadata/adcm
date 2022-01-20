@@ -36,6 +36,7 @@ export class RolesComponent extends RbacEntityListDirective<RbacRoleModel> {
       modelKey: 'checked',
       className: 'choice-column',
       headerClassName: 'choice-column',
+      disabled: (row) => row.built_in,
     },
     {
       label: 'Role name',
