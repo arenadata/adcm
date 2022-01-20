@@ -17,7 +17,14 @@ from django.contrib.contenttypes.models import ContentType
 from guardian.models import UserObjectPermission, GroupObjectPermission
 from adwp_base.errors import raise_AdwpEx as err
 from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
-from cm.models import Action, ClusterObject, ServiceComponent, Host, HostComponent
+from cm.models import (
+    Action,
+    ClusterObject,
+    ServiceComponent,
+    Host,
+    HostComponent,
+    get_model_by_type,
+)
 
 
 class AbstractRole:
@@ -99,22 +106,18 @@ class ActionRole(AbstractRole):
     def apply(self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None):
         """Apply Role to User and/or Group"""
         action = Action.obj.get(id=self.params['action_id'])
-        ct = ContentType.objects.get_for_model(Action)
-        run_action, _ = Permission.objects.get_or_create(content_type=ct, codename='run_action')
         for obj in policy.get_objects(param_obj):
+            model = get_model_by_type(obj.prototype.type)
+            ct = ContentType.objects.get_for_model(model)
+            run_action, _ = Permission.objects.get_or_create(
+                content_type=ct, codename=f'run_action_{action.name}'
+            )
             if user is not None:
-                uop = UserObjectPermission.objects.assign_perm(run_action, user, action)
+                uop = UserObjectPermission.objects.assign_perm(run_action, user, obj)
                 policy.user_object_perm.add(uop)
             if group is not None:
-                gop = GroupObjectPermission.objects.assign_perm(run_action, group, action)
+                gop = GroupObjectPermission.objects.assign_perm(run_action, group, obj)
                 policy.group_object_perm.add(gop)
-            for perm in role.get_permissions():
-                if user is not None:
-                    uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
-                    policy.user_object_perm.add(uop)
-                if group is not None:
-                    gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
-                    policy.group_object_perm.add(gop)
 
 
 class ParentRole(AbstractRole):

@@ -151,11 +151,7 @@ class RunTask(GenericAPIPermView):
         if action.host_action:
             obj = get_host_object(action, obj.cluster)
 
-        if not user.has_perm('cm.run_object_action', obj):
-            return False
-        if not user.has_perm('cm.run_action', action):
-            return False
-        return True
+        return user.has_perm(f'cm.run_action_{action.name}', obj)
 
     def check_action_perm(self, action, obj):
         if not self.has_action_perm(action, obj):
