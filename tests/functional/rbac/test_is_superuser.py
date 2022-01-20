@@ -22,7 +22,7 @@ from adcm_client.wrappers.api import AccessIsDenied
 from adcm_pytest_plugin.utils import catch_failed
 
 from tests.functional.tools import get_object_represent
-from tests.functional.rbac.conftest import as_user_objects, BusinessRoles as BR, is_allowed
+from tests.functional.rbac.conftest import as_user_objects, BusinessRoles, is_allowed
 
 SUPERUSER_CREDENTIALS = {'username': 'supausa', 'password': 'youcantcrackme'}
 
@@ -58,29 +58,29 @@ def check_access_to_cluster_objects(objects, second_objects):
     second_cluster, second_service, *_ = second_objects
 
     with allure.step('Check access to basic config manipulations'):
-        for role in (BR.ViewApplicationConfigurations, BR.EditApplicationConfigurations):
-            for obj in cluster, service, component:
-                is_allowed(obj, role)
+        for obj in cluster, service, component:
+            is_allowed(obj, BusinessRoles.view_config_of(obj))
+            is_allowed(obj, BusinessRoles.edit_config_of(obj))
 
     with allure.step('Check access to import manipulations'):
         for obj in cluster, service:
-            is_allowed(obj, BR.ViewImports)
-        is_allowed(cluster, BR.ManageImports, second_cluster)
-        is_allowed(service, BR.ManageImports, second_service)
+            is_allowed(obj, BusinessRoles.ViewImports)
+        is_allowed(cluster, BusinessRoles.ManageImports, second_cluster)
+        is_allowed(service, BusinessRoles.ManageImports, second_service)
 
     with allure.step('Check access to host-related cluster manipulations'):
-        is_allowed(cluster, BR.ViewHostComponents)
-        is_allowed(cluster, BR.MapHosts, host)
-        is_allowed(cluster, BR.UnmapHosts, host)
+        is_allowed(cluster, BusinessRoles.ViewHostComponents)
+        is_allowed(cluster, BusinessRoles.MapHosts, host)
+        is_allowed(cluster, BusinessRoles.UnmapHosts, host)
         cluster.host_add(host)
-        is_allowed(cluster, BR.EditHostComponents, (host, component))
+        is_allowed(cluster, BusinessRoles.EditHostComponents, (host, component))
 
     with allure.step('Check access to manipulations with services'):
-        new_service = is_allowed(cluster, BR.AddService)
-        is_allowed(cluster, BR.RemoveService, new_service)
+        new_service = is_allowed(cluster, BusinessRoles.AddService)
+        is_allowed(cluster, BusinessRoles.RemoveService, new_service)
 
     with allure.step('Check upgrade is available'):
-        is_allowed(cluster, BR.UpgradeApplicationBundle)
+        is_allowed(cluster, BusinessRoles.UpgradeClusterBundle)
 
 
 @allure.step('Check that superuser has access to provider-related actions')
@@ -89,16 +89,17 @@ def check_access_to_provider_objects(objects):
     *_, provider, host = objects
 
     with allure.step('Check access to basic config manipulations'):
-        for role in (BR.ViewInfrastructureConfigurations, BR.EditInfrastructureConfigurations):
-            is_allowed(provider, role)
-            is_allowed(host, role)
+        is_allowed(provider, BusinessRoles.view_config_of(provider))
+        is_allowed(provider, BusinessRoles.edit_config_of(provider))
+        is_allowed(host, BusinessRoles.view_config_of(host))
+        is_allowed(host, BusinessRoles.edit_config_of(host))
 
     with allure.step('Check access to manipulations with host'):
-        new_host = is_allowed(provider, BR.CreateHost)
-        is_allowed(new_host, BR.RemoveHosts)
+        new_host = is_allowed(provider, BusinessRoles.CreateHost)
+        is_allowed(new_host, BusinessRoles.RemoveHosts)
 
     with allure.step('Check upgrade is available'):
-        is_allowed(provider, BR.UpgradeInfrastructureBundle)
+        is_allowed(provider, BusinessRoles.UpgradeProviderBundle)
 
 
 @allure.step('Check that superuser has access to general actions with RBAC and bundles')
@@ -108,31 +109,39 @@ def check_access_to_general_operations(client: ADCMClient, objects):  # pylint: 
     cluster_bundle, provider_bundle = cluster.bundle(), provider.bundle()
 
     with allure.step('Check access to manipulations with RBAC'):
-        for view_role in (BR.ViewUsers, BR.ViewGroups, BR.ViewRoles, BR.ViewPolicies):
+        for view_role in (
+            BusinessRoles.ViewUsers,
+            BusinessRoles.ViewGroups,
+            BusinessRoles.ViewRoles,
+            BusinessRoles.ViewPolicies,
+        ):
             is_allowed(client, view_role)
 
         for create, edit, remove in (
-            (BR.CreateUser, BR.EditUser, BR.RemoveUser),
-            (BR.CreateGroup, BR.EditGroup, BR.RemoveGroup),
-            (BR.CreateCustomRoles, BR.EditRoles, BR.RemoveRoles),
+            (BusinessRoles.CreateUser, BusinessRoles.EditUser, BusinessRoles.RemoveUser),
+            (BusinessRoles.CreateGroup, BusinessRoles.EditGroup, BusinessRoles.RemoveGroup),
+            (BusinessRoles.CreateCustomRoles, BusinessRoles.EditRoles, BusinessRoles.RemoveRoles),
         ):
             new_entity = is_allowed(client, create)
             is_allowed(new_entity, edit)
             is_allowed(new_entity, remove)
 
         new_policy = is_allowed(
-            client, BR.CreatePolicy, user=[client.user()], role=BR.CreateCustomRoles.value.method_call(client)
+            client,
+            BusinessRoles.CreatePolicy,
+            user=[client.user()],
+            role=BusinessRoles.CreateCustomRoles.value.method_call(client),
         )
-        is_allowed(new_policy, BR.EditPolicy)
-        is_allowed(new_policy, BR.RemovePolicy)
+        is_allowed(new_policy, BusinessRoles.EditPolicy)
+        is_allowed(new_policy, BusinessRoles.RemovePolicy)
 
     with allure.step('Check access to manipulations with cluster, provider and bundles'):
-        new_cluster = is_allowed(cluster_bundle, BR.CreateCluster)
-        is_allowed(new_cluster, BR.RemoveCluster)
-        new_hostprovider = is_allowed(provider_bundle, BR.CreateHostProvider)
-        is_allowed(new_hostprovider, BR.RemoveHostProvider)
-        new_bundle = is_allowed(client, BR.UploadBundle)
-        is_allowed(new_bundle, BR.RemoveBundle)
+        new_cluster = is_allowed(cluster_bundle, BusinessRoles.CreateCluster)
+        is_allowed(new_cluster, BusinessRoles.RemoveCluster)
+        new_hostprovider = is_allowed(provider_bundle, BusinessRoles.CreateHostProvider)
+        is_allowed(new_hostprovider, BusinessRoles.RemoveHostProvider)
+        new_bundle = is_allowed(client, BusinessRoles.UploadBundle)
+        is_allowed(new_bundle, BusinessRoles.RemoveBundle)
 
 
 @allure.step('Check that superuser is allowed to run actions')

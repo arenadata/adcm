@@ -14,7 +14,7 @@ import itertools
 import os
 from enum import Enum
 from operator import methodcaller
-from typing import Callable, NamedTuple, Union, List, Tuple
+from typing import Callable, NamedTuple, Union, List, Tuple, Collection
 
 import allure
 import pytest
@@ -73,12 +73,22 @@ class BusinessRoles(Enum):
 
     # pylint: disable=invalid-name
 
-    ViewApplicationConfigurations = BusinessRole("View application configurations", methodcaller("config"))
-    ViewInfrastructureConfigurations = BusinessRole("View infrastructure configurations", methodcaller("config"))
-    EditApplicationConfigurations = BusinessRole("Edit application configurations", methodcaller("config_set_diff", {}))
-    EditInfrastructureConfigurations = BusinessRole(
-        "Edit infrastructure configurations", methodcaller("config_set_diff", {})
-    )
+    ViewAnyObjectConfiguration = BusinessRole("View any object configuration", methodcaller("config"))
+    ViewAnyObjectHostComponents = BusinessRole("View any object host-components", methodcaller("hostcomponent"))
+    ViewAnyObjectImport = BusinessRole("View any object import", methodcaller("imports"))
+
+    ViewClusterConfigurations = BusinessRole("View cluster configurations", methodcaller("config"))
+    ViewServiceConfigurations = BusinessRole("View service configurations", methodcaller("config"))
+    ViewComponentConfigurations = BusinessRole("View component configurations", methodcaller("config"))
+    ViewProviderConfigurations = BusinessRole("View provider configurations", methodcaller("config"))
+    ViewHostConfigurations = BusinessRole("View host configurations", methodcaller("config"))
+
+    EditClusterConfigurations = BusinessRole("Edit cluster configurations", methodcaller("config_set_diff", {}))
+    EditServiceConfigurations = BusinessRole("Edit service configurations", methodcaller("config_set_diff", {}))
+    EditComponentConfigurations = BusinessRole("Edit component configurations", methodcaller("config_set_diff", {}))
+    EditProviderConfigurations = BusinessRole("Edit provider configurations", methodcaller("config_set_diff", {}))
+    EditHostConfigurations = BusinessRole("Edit host configurations", methodcaller("config_set_diff", {}))
+
     ViewImports = BusinessRole("View imports", methodcaller("imports"))
     ManageImports = BusinessRole("Manage imports", lambda x, *args: x.bind(*args))
     ViewHostComponents = BusinessRole("View host-components", methodcaller("hostcomponent"))
@@ -88,8 +98,8 @@ class BusinessRoles(Enum):
     RemoveHosts = BusinessRole("Remove hosts", methodcaller("delete"))
     MapHosts = BusinessRole("Map hosts", lambda x, *args: x.host_add(*args))
     UnmapHosts = BusinessRole("Unmap hosts", lambda x, *args: x.host_delete(*args))
-    UpgradeApplicationBundle = BusinessRole("Upgrade application bundle", lambda x: x.upgrade().do())
-    UpgradeInfrastructureBundle = BusinessRole("Upgrade infrastructure bundle", lambda x: x.upgrade().do())
+    UpgradeClusterBundle = BusinessRole("Upgrade cluster bundle", lambda x: x.upgrade().do())
+    UpgradeProviderBundle = BusinessRole("Upgrade provider bundle", lambda x: x.upgrade().do())
     CreateHostProvider = BusinessRole(
         "Create provider", lambda x: x.provider_create(name=f"new_provider {random_string(5)}")
     )
@@ -122,9 +132,34 @@ class BusinessRoles(Enum):
     )
     RemovePolicy = BusinessRole("Remove policy", methodcaller("delete"))
     EditPolicy = BusinessRole("Edit policy", lambda x: x.update(name=random_string(5)))
-    ViewAnyObjectConfiguration = BusinessRole("View any object configuration", methodcaller("config"))
-    ViewAnyObjectHostComponents = BusinessRole("View any object host-components", methodcaller("hostcomponent"))
-    ViewAnyObjectImport = BusinessRole("View any object import", methodcaller("imports"))
+
+    # aliases for view/edit_config_of funcs
+    ViewADCMConfigurations = ViewADCMSettings
+    EditADCMConfigurations = EditADCMSettings
+
+    @staticmethod
+    def view_config_of(adcm_object) -> RbacRoles:
+        """Get view config role by object's class name"""
+        return BusinessRoles[f'View{adcm_object.__class__.__name__}Configurations']
+
+    @staticmethod
+    def edit_config_of(adcm_object) -> RbacRoles:
+        """Get edit config role by object's class name"""
+        return BusinessRoles[f'Edit{adcm_object.__class__.__name__}Configurations']
+
+
+CLUSTER_VIEW_CONFIG_ROLES = (
+    BusinessRoles.ViewClusterConfigurations,
+    BusinessRoles.ViewServiceConfigurations,
+    BusinessRoles.ViewComponentConfigurations,
+)
+CLUSTER_EDIT_CONFIG_ROLES = (
+    BusinessRoles.EditClusterConfigurations,
+    BusinessRoles.EditServiceConfigurations,
+    BusinessRoles.EditComponentConfigurations,
+)
+PROVIDER_VIEW_CONFIG_ROLES = (BusinessRoles.ViewProviderConfigurations, BusinessRoles.ViewHostConfigurations)
+PROVIDER_EDIT_CONFIG_ROLES = (BusinessRoles.EditProviderConfigurations, BusinessRoles.EditHostConfigurations)
 
 
 @pytest.fixture()
@@ -156,7 +191,7 @@ def user_policy(request, user, sdk_client_fs, prepare_objects):
     return create_policy(sdk_client_fs, request.param, objects=prepare_objects, users=[user], groups=[])
 
 
-def use_role(role: BusinessRoles):
+def use_role(role: Union[BusinessRoles, Collection[BusinessRoles]]):
     """Decorate test func to prepare test user with required business role"""
     return pytest.mark.parametrize("user_policy", [role], indirect=True)
 

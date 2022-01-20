@@ -11,12 +11,13 @@
 # limitations under the License.
 
 """Test composition of built-in ADCM roles"""
-import json
+
 from typing import List
 
 import allure
 from adcm_client.objects import ADCMClient, Role, User
 
+from tests.library.assertions import is_superset_of
 from tests.functional.rbac.conftest import BusinessRoles
 
 ADCM_USER_ROLES = {
@@ -28,19 +29,31 @@ ADCM_USER_ROLES = {
     )
 }
 SERVICE_ADMIN_ROLES = {
-    *ADCM_USER_ROLES,
-    BusinessRoles.EditApplicationConfigurations.value.role_name,
-    BusinessRoles.ManageImports.value.role_name,
+    role.value.role_name
+    for role in (
+        BusinessRoles.ViewServiceConfigurations,
+        BusinessRoles.EditServiceConfigurations,
+        BusinessRoles.ViewComponentConfigurations,
+        BusinessRoles.EditComponentConfigurations,
+        BusinessRoles.ViewImports,
+        BusinessRoles.ManageImports,
+    )
 }
+
 CLUSTER_ADMIN_ROLES = SERVICE_ADMIN_ROLES.union(
     {
         role.value.role_name
         for role in (
+            BusinessRoles.ViewClusterConfigurations,
+            BusinessRoles.EditClusterConfigurations,
+            BusinessRoles.EditHostConfigurations,
+            BusinessRoles.MapHosts,
+            BusinessRoles.UnmapHosts,
             BusinessRoles.EditHostComponents,
             BusinessRoles.AddService,
             BusinessRoles.RemoveService,
             BusinessRoles.RemoveHosts,
-            BusinessRoles.UpgradeApplicationBundle,
+            BusinessRoles.UpgradeClusterBundle,
             BusinessRoles.CreateHost,
             BusinessRoles.UploadBundle,
             BusinessRoles.RemoveBundle,
@@ -51,8 +64,11 @@ CLUSTER_ADMIN_ROLES = SERVICE_ADMIN_ROLES.union(
 PROVIDER_ADMIN_ROLES = {
     role.value.role_name
     for role in (
-        BusinessRoles.UpgradeInfrastructureBundle,
-        BusinessRoles.EditInfrastructureConfigurations,
+        BusinessRoles.UpgradeProviderBundle,
+        BusinessRoles.ViewProviderConfigurations,
+        BusinessRoles.EditProviderConfigurations,
+        BusinessRoles.ViewHostConfigurations,
+        BusinessRoles.EditHostConfigurations,
         BusinessRoles.CreateHost,
         BusinessRoles.RemoveHosts,
         BusinessRoles.UploadBundle,
@@ -109,22 +125,11 @@ def test_composition(sdk_client_fs: ADCMClient):
     ):
         with allure.step(f'Check rules for role "{default_role}"'):
             children_roles = set(get_children_business_roles(sdk_client_fs.role(name=default_role)))
-            _check_all_roles_are_presented(expected_children, children_roles, default_role)
-
-
-def _check_all_roles_are_presented(expected_roles: set, found_roles: set, role_name: str):
-    """Check if all roles from expected are presented in found roles"""
-    not_found_roles = expected_roles.difference(found_roles)
-    if not_found_roles:
-        allure.attach(
-            json.dumps(sorted(found_roles), indent=2),
-            name=f'Roles of {role_name}',
-            attachment_type=allure.attachment_type.JSON,
-        )
-        raise AssertionError(
-            f'Some roles ({len(not_found_roles)}) were not found for "{role_name}".\n'
-            f'Missing roles: {_set_to_string(not_found_roles)}'
-        )
+            is_superset_of(
+                children_roles,
+                expected_children,
+                'Some of expected roles were not found.\nCheck attachment for more details.',
+            )
 
 
 def _set_to_string(set_to_convert: set) -> str:
