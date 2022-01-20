@@ -14,6 +14,7 @@ from typing import List
 
 from adwp_base.errors import AdwpEx
 from django.db import IntegrityError
+from django.db.transaction import atomic
 from rest_framework.exceptions import ValidationError
 
 from rbac.models import Role, RoleTypes
@@ -47,6 +48,7 @@ def check_role_child(child: List[Role], partial=False) -> None:
             raise ValidationError(errors)
 
 
+@atomic
 def role_create(built_in=False, type_of_role=RoleTypes.role, **kwargs) -> Role:
     """Creating Role object"""
     child = kwargs.pop('child', [])
@@ -70,6 +72,7 @@ def role_create(built_in=False, type_of_role=RoleTypes.role, **kwargs) -> Role:
     return role
 
 
+@atomic
 def role_update(role: Role, partial, **kwargs) -> Role:
     """Updating Role object"""
     child = kwargs.pop('child', [])

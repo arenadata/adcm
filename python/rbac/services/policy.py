@@ -109,6 +109,7 @@ def policy_create(name: str, role: Role, built_in: bool = False, **kwargs):
     return policy
 
 
+@atomic
 def policy_update(policy: Policy, **kwargs) -> Policy:
     """
     Update Policy object
