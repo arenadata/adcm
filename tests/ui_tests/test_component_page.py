@@ -385,9 +385,9 @@ class TestComponentStatusPage:
         ]
         negative_status = [
             StatusRowInfo(
-                icon_status=True, group_name='first', state='successful 0/1', state_color=NEGATIVE_COLOR, link=None
+                icon_status=False, group_name='first', state='successful 0/1', state_color=NEGATIVE_COLOR, link=None
             ),
-            StatusRowInfo(icon_status=True, group_name=None, state=None, state_color=None, link='test-host'),
+            StatusRowInfo(icon_status=False, group_name=None, state=None, state_color=None, link='test-host'),
         ]
 
         cluster, service, host = create_cluster_with_hostcomponents

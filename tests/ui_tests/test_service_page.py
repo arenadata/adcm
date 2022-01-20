@@ -451,9 +451,9 @@ class TestServiceStatusPage:
             StatusRowInfo(True, None, None, None, 'test-host'),
         ]
         component_negative_status = [
-            StatusRowInfo(True, 'test_service', negative, NEGATIVE_COLOR, None),
-            StatusRowInfo(True, 'first', negative, NEGATIVE_COLOR, None),
-            StatusRowInfo(True, None, None, None, 'test-host'),
+            StatusRowInfo(False, 'test_service', negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(False, 'first', negative, NEGATIVE_COLOR, None),
+            StatusRowInfo(False, None, None, None, 'test-host'),
         ]
         cluster, service, host = create_community_cluster_with_host_and_service
         cluster_component = cluster.service(name=SERVICE_NAME).component(name=COMPONENT_NAME)

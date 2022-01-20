@@ -919,22 +919,22 @@ class TestClusterStatusPage:
         StatusRowInfo(True, None, None, None, 'test-host'),
     ]
     host_negative_status = [
-        StatusRowInfo(True, CLUSTER_NAME, 'successful 1/2', NEGATIVE_COLOR, None),
-        StatusRowInfo(True, 'Hosts', one_negative, NEGATIVE_COLOR, None),
-        StatusRowInfo(True, None, None, None, 'test-host'),
+        StatusRowInfo(False, CLUSTER_NAME, 'successful 1/2', NEGATIVE_COLOR, None),
+        StatusRowInfo(False, 'Hosts', one_negative, NEGATIVE_COLOR, None),
+        StatusRowInfo(False, None, None, None, 'test-host'),
         StatusRowInfo(True, 'Services', one_successful, SUCCESS_COLOR, None),
         StatusRowInfo(True, SERVICE_NAME, one_successful, SUCCESS_COLOR, None),
         StatusRowInfo(True, 'first', one_successful, SUCCESS_COLOR, None),
         StatusRowInfo(True, None, None, None, 'test-host'),
     ]
     host_and_component_negative_status = [
-        StatusRowInfo(True, CLUSTER_NAME, 'successful 0/2', NEGATIVE_COLOR, None),
-        StatusRowInfo(True, 'Hosts', one_negative, NEGATIVE_COLOR, None),
-        StatusRowInfo(True, None, None, None, 'test-host'),
-        StatusRowInfo(True, 'Services', one_negative, NEGATIVE_COLOR, None),
-        StatusRowInfo(True, SERVICE_NAME, one_negative, NEGATIVE_COLOR, None),
-        StatusRowInfo(True, 'first', one_negative, NEGATIVE_COLOR, None),
-        StatusRowInfo(True, None, None, None, 'test-host'),
+        StatusRowInfo(False, CLUSTER_NAME, 'successful 0/2', NEGATIVE_COLOR, None),
+        StatusRowInfo(False, 'Hosts', one_negative, NEGATIVE_COLOR, None),
+        StatusRowInfo(False, None, None, None, 'test-host'),
+        StatusRowInfo(False, 'Services', one_negative, NEGATIVE_COLOR, None),
+        StatusRowInfo(False, SERVICE_NAME, one_negative, NEGATIVE_COLOR, None),
+        StatusRowInfo(False, 'first', one_negative, NEGATIVE_COLOR, None),
+        StatusRowInfo(False, None, None, None, 'test-host'),
     ]
 
     def test_open_by_tab_cluster_status_page(self, app_fs, create_community_cluster):
