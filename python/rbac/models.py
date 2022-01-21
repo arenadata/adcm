@@ -187,7 +187,7 @@ class Policy(models.Model):
 
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField(blank=True)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True)
     object = models.ManyToManyField(PolicyObject, blank=True)
     built_in = models.BooleanField(default=True)
     user = models.ManyToManyField(User, blank=True)
