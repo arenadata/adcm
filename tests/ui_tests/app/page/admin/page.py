@@ -390,20 +390,20 @@ class AdminRolesPage(GeneralAdminPage):
                 name='Service Administrator',
                 description='',
                 permissions='View host configurations, Edit service configurations, Edit component configurations, '
-                            'Manage imports, View host-components',
+                'Manage imports, View host-components',
             ),
             AdminRoleInfo(
                 name='Cluster Administrator',
                 description='',
                 permissions='Create host, Upload bundle, Edit cluster configurations, Edit host configurations, '
-                            'Add service, Remove service, Remove hosts, Map hosts, Unmap hosts, Edit host-components, '
-                            'Upgrade cluster bundle, Remove bundle, Service Administrator',
+                'Add service, Remove service, Remove hosts, Map hosts, Unmap hosts, Edit host-components, '
+                'Upgrade cluster bundle, Remove bundle, Service Administrator',
             ),
             AdminRoleInfo(
                 name='Provider Administrator',
                 description='',
                 permissions='Create host, Upload bundle, Edit provider configurations, Edit host configurations, '
-                            'Remove hosts, Upgrade provider bundle, Remove bundle',
+                'Remove hosts, Upgrade provider bundle, Remove bundle',
             ),
         ]
 
@@ -581,7 +581,7 @@ class AdminPoliciesPage(GeneralAdminPage):
         self.find_and_click(AdminPoliciesLocators.save_btn)
         self.wait_element_hide(AdminPoliciesLocators.AddPolicyPopup.block)
 
-    def get_all_policies(self) -> [str]:
+    def get_all_policies(self) -> [AdminPolicyInfo]:
         """Get all policies info and returns list with policies names."""
 
         policies_items = []
