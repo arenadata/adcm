@@ -482,3 +482,33 @@ def test_provider_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepa
     is_denied_to_view(
         cluster, service, component, second_cluster, second_service, second_component, *second_provider_objects
     )
+
+
+def test_any_object_roles(clients, user, prepare_objects):
+    """Test that ViewAnyObject... default roles works as expected with ADCM User"""
+    cluster, *_ = user_objects = as_user_objects(clients.user, *prepare_objects)
+
+    @allure.step("Check user has no access to any of objects")
+    def check_has_no_rights():
+        is_denied(cluster, BR.ViewAnyObjectImport)
+        is_denied(cluster, BR.ViewAnyObjectHostComponents)
+        is_denied_to_view(*user_objects)
+        is_denied_to_edit(*user_objects)
+
+    check_has_no_rights()
+
+    policy = clients.admin.policy_create(
+        name="ADCM User for a User",
+        role=clients.admin.role(name=RbacRoles.ADCMUser.value),
+        objects=[],
+        user=[user],
+    )
+
+    is_allowed(cluster, BR.ViewAnyObjectImport)
+    is_allowed(cluster, BR.ViewAnyObjectHostComponents)
+    is_allowed_to_view(*user_objects)
+    is_denied_to_edit(*user_objects)
+
+    delete_policy(policy)
+
+    check_has_no_rights()
