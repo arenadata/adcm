@@ -86,4 +86,6 @@ def role_update(role: Role, partial, **kwargs) -> Role:
         set_parametrized_from_child(role, child)
         update_m2m_field(role.child, child)
 
+    for policy in role.policy_set.all():
+        policy.apply()
     return role
