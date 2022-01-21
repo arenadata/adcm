@@ -177,7 +177,7 @@ class TestAdminUsersPage:
             login_page = LoginPage(users_page.driver, users_page.base_url)
             login_page.wait_page_is_opened()
             login_page.login_user(params['username'], params['new_password'])
-            AdminIntroPage(users_page.driver, users_page.base_url).wait_page_is_opened()
+            users_page.wait_page_is_opened()
 
     def test_delete_user(self, users_page: AdminUsersPage):
         """Create new user, delete it and check current user can't be deleted"""
@@ -202,19 +202,19 @@ class TestAdminUsersPage:
                 params['username']
             ), f'User {params["username"]} should not be in users list'
 
-    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2555")
     def test_change_admin_password(self, users_page: AdminUsersPage):
         """Change admin password, login with new credentials"""
 
         params = {'username': 'admin', 'password': 'new_pass'}
         users_page.update_user_info(params['username'], first_name='Best', last_name='Admin')
         users_page.change_user_password(**params)
+        users_page.driver.refresh()
         with allure.step('Check Login page is opened'):
             login_page = LoginPage(users_page.driver, users_page.base_url)
             login_page.wait_page_is_opened()
         login_page.login_user(**params)
         with allure.step('Check login was successful'):
-            users_page.wait_page_is_opened(timeout=5)
+            AdminIntroPage(users_page.driver, users_page.base_url).wait_page_is_opened(timeout=5)
 
 
 class TestAdminRolesPage:
@@ -258,7 +258,7 @@ class TestAdminRolesPage:
                 )
         page.table.check_pagination(second_page_item_amount=1)
 
-    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2531")
+    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2611")
     def test_check_role_popup_on_roles_page(self, app_fs):
         """Test changing a role on /admin/roles page"""
 
@@ -358,8 +358,9 @@ class TestAdminPolicyPage:
         name="Test policy name",
         description="Test policy description",
         role="ADCM User",
-        users="admin,status",
+        users="admin, status",
         groups=None,
+        objects=None,
     )
 
     def test_open_by_tab_admin_policies_page(self, app_fs):
@@ -382,16 +383,16 @@ class TestAdminPolicyPage:
             self.custom_policy.groups,
         )
         current_policies = policies_page.get_all_policies()
-        with allure.step('Check that there are 2 policies'):
-            assert len(current_policies) == 2, "There should be 2 policies on the page"
-            assert current_policies == ["default", self.custom_policy.name], "Created policy should be on the page"
+        with allure.step('Check that there is 1 policy'):
+            assert len(current_policies) == 1, "There should be 1 policy on the page"
+            assert current_policies == [self.custom_policy], "Created policy should be on the page"
 
     def test_check_pagination_policy_list_page(self, app_fs):
         """Test pagination on /admin/policies page"""
 
         policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
-        with allure.step("Create 10 policies"):
-            for i in range(10):
+        with allure.step("Create 11 policies"):
+            for i in range(11):
                 policies_page.create_policy(
                     f"{self.custom_policy.name}_{i}",
                     self.custom_policy.description,
@@ -415,4 +416,4 @@ class TestAdminPolicyPage:
         policies_page.select_all_policies()
         policies_page.click_delete_button()
         with allure.step('Check that policy has been deleted'):
-            assert len(policies_page.table.get_all_rows()) == 1, "There should be 1 default policy"
+            assert len(policies_page.table.get_all_rows()) == 0, "There should be 0 policies on the page"

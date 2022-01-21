@@ -31,6 +31,9 @@ class CommonAdminPagesLocators:
     delete_btn = Locator(By.CSS_SELECTOR, ".controls>button", "Delete Group button")
     field_error = TemplateLocator(By.XPATH, "//mat-error[contains(text(), '{}')]", 'Error "{}"')
     item = Locator(By.CSS_SELECTOR, "adwp-selection-list mat-list-option", "select items")
+    save_btn = Locator(
+        By.XPATH, "//button[./span[contains(text(), 'Add') or contains(text(), 'Update')]]", "Save button"
+    )
 
 
 class AdminIntroLocators:
@@ -66,7 +69,7 @@ class AdminUsersLocators:
         select_checkbox = Locator(By.XPATH, ".//span[.//input[@type='checkbox']]", "Select user checkbox in row")
         delete_btn = Locator(By.XPATH, ".//button[.//mat-icon[text()='delete']]", "Delete user button in row")
 
-    class AddUserPopup:
+    class AddUserPopup(CommonAdminPagesLocators):
         """Popup with new user info"""
 
         block = Locator(By.TAG_NAME, "mat-dialog-container", "Add user popup block")
@@ -78,8 +81,6 @@ class AdminUsersLocators:
         first_name = Locator(By.NAME, "first_name", "New user first name")
         last_name = Locator(By.NAME, "last_name", "New user last name")
         email = Locator(By.NAME, "email", "New user email")
-        create_button = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Create user save button")
-        update_button = Locator(By.XPATH, "//button[./span[contains(text(), 'Update')]]", "Update user save button")
 
 
 class AdminGroupsLocators(CommonAdminPagesLocators):
@@ -101,8 +102,6 @@ class AdminGroupsLocators(CommonAdminPagesLocators):
         name_input = Locator(By.CSS_SELECTOR, "adwp-input[label='Group name'] input", "Input name")
         description_input = Locator(By.CSS_SELECTOR, "adwp-input[label='Description'] input", "Input description")
         users_select = Locator(By.CSS_SELECTOR, "adwp-input-select[label='Select users'] adwp-select", "select users")
-
-        create_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Save')]]", "Save button")
 
         class UserRow:
             """Locators for user row in creating groups popup"""
@@ -161,10 +160,6 @@ class AdminRolesLocators(CommonAdminPagesLocators):
                 checkbox = Locator(By.CSS_SELECTOR, "mat-pseudo-checkbox", "Checkbox")
                 name = Locator(By.CSS_SELECTOR, ".mat-list-text", "Name")
 
-        save_btn = Locator(
-            By.XPATH, "//button[./span[contains(text(), 'Create') or contains(text(), 'Save')]]", "Save button"
-        )
-
 
 class AdminPoliciesLocators(CommonAdminPagesLocators):
     """Locators for Admin Policies menu"""
@@ -174,6 +169,11 @@ class AdminPoliciesLocators(CommonAdminPagesLocators):
 
         checkbox = Locator(By.CSS_SELECTOR, "mat-checkbox", "policy checkbox")
         name = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(2)", "policy name")
+        description = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(3)", "policy description")
+        role = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(4)", "policy role")
+        users = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(5)", "policy users")
+        groups = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(6)", "policy groups")
+        objects = Locator(By.CSS_SELECTOR, "mat-cell:nth-child(7)", "policy objects")
 
     class AddPolicyPopup:
         """Locators for creating policy popup"""
@@ -221,4 +221,3 @@ class AdminPoliciesLocators(CommonAdminPagesLocators):
                 "Next button from third step",
             )
             cancel_btn = Locator(By.XPATH, "//button[./span[text()='Cancel']]", "Cancel button")
-            create_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Create')]]", "Create button")
