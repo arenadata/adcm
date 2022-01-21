@@ -12,8 +12,10 @@
 
 """User view sets"""
 
+from adwp_base.errors import AdwpEx
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers
+from rest_framework import serializers, status
+
 from rbac import models
 from rbac.services import user as user_services
 from rbac.viewsets import ModelPermViewSet
@@ -109,3 +111,13 @@ class UserViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
     )
     ordering_fields = ('id', 'username', 'first_name', 'last_name', 'email', 'is_superuser')
     search_fields = ('username', 'first_name', 'last_name', 'email')
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.built_in:
+            raise AdwpEx(
+                'USER_DELETE_ERROR',
+                msg='Built-in user could not be deleted',
+                http_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+            )
+        return super().destroy(request, args, kwargs)
