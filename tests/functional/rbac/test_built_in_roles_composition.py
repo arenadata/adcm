@@ -31,11 +31,8 @@ ADCM_USER_ROLES = {
 SERVICE_ADMIN_ROLES = {
     role.value.role_name
     for role in (
-        BusinessRoles.ViewServiceConfigurations,
         BusinessRoles.EditServiceConfigurations,
-        BusinessRoles.ViewComponentConfigurations,
         BusinessRoles.EditComponentConfigurations,
-        BusinessRoles.ViewImports,
         BusinessRoles.ManageImports,
     )
 }
@@ -44,7 +41,6 @@ CLUSTER_ADMIN_ROLES = SERVICE_ADMIN_ROLES.union(
     {
         role.value.role_name
         for role in (
-            BusinessRoles.ViewClusterConfigurations,
             BusinessRoles.EditClusterConfigurations,
             BusinessRoles.EditHostConfigurations,
             BusinessRoles.MapHosts,
@@ -52,9 +48,7 @@ CLUSTER_ADMIN_ROLES = SERVICE_ADMIN_ROLES.union(
             BusinessRoles.EditHostComponents,
             BusinessRoles.AddService,
             BusinessRoles.RemoveService,
-            BusinessRoles.RemoveHosts,
             BusinessRoles.UpgradeClusterBundle,
-            BusinessRoles.CreateHost,
             BusinessRoles.UploadBundle,
             BusinessRoles.RemoveBundle,
         )
@@ -65,9 +59,7 @@ PROVIDER_ADMIN_ROLES = {
     role.value.role_name
     for role in (
         BusinessRoles.UpgradeProviderBundle,
-        BusinessRoles.ViewProviderConfigurations,
         BusinessRoles.EditProviderConfigurations,
-        BusinessRoles.ViewHostConfigurations,
         BusinessRoles.EditHostConfigurations,
         BusinessRoles.CreateHost,
         BusinessRoles.RemoveHosts,
