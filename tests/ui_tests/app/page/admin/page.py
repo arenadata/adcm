@@ -72,6 +72,7 @@ class AdminPolicyInfo:
     role: str
     users: Optional[str]
     groups: Optional[str]
+    objects: Optional[str]
 
 
 class GeneralAdminPage(BasePageObject):
@@ -231,7 +232,7 @@ class AdminUsersPage(GeneralAdminPage):
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.first_name, first_name)
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.last_name, last_name)
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.email, email)
-        self.find_and_click(AdminUsersLocators.AddUserPopup.create_button)
+        self.find_and_click(AdminUsersLocators.AddUserPopup.save_btn)
         self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
 
     @allure.step('Update user {username} info')
@@ -258,7 +259,7 @@ class AdminUsersPage(GeneralAdminPage):
         ):
             if value:
                 self.send_text_to_element(locator, value)
-        self.find_and_click(AdminUsersLocators.AddUserPopup.update_button)
+        self.find_and_click(AdminUsersLocators.AddUserPopup.save_btn)
         self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
 
     @allure.step('Change password of user {username} to {password}')
@@ -269,7 +270,7 @@ class AdminUsersPage(GeneralAdminPage):
         self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.password, password)
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.password_confirm, password)
-        self.find_and_click(AdminUsersLocators.AddUserPopup.update_button)
+        self.find_and_click(AdminUsersLocators.AddUserPopup.save_btn)
         self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
 
     @allure.step('Delete user {username}')
@@ -321,7 +322,7 @@ class AdminGroupsPage(GeneralAdminPage):
                         self.hover_element(user_chbx)
                         user_chbx.click()
             self.find_and_click(AdminGroupsLocators.AddGroupPopup.users_select)
-        self.find_and_click(AdminGroupsLocators.AddGroupPopup.create_btn)
+        self.find_and_click(AdminGroupsLocators.save_btn)
         self.wait_element_hide(AdminGroupsLocators.AddGroupPopup.block)
 
     def get_all_groups(self) -> [AdminGroupInfo]:
@@ -383,26 +384,26 @@ class AdminRolesPage(GeneralAdminPage):
             AdminRoleInfo(
                 name='ADCM User',
                 description='',
-                permissions='View config endpoints, View any object configuration, View any object import, '
-                'View any object host-components, Base role',
+                permissions='View any object configuration, View any object import, View any object host-components',
             ),
             AdminRoleInfo(
                 name='Service Administrator',
                 description='',
-                permissions='Edit application configurations, Manage imports, ADCM User',
+                permissions='View host configurations, Edit service configurations, Edit component configurations, '
+                            'Manage imports, View host-components',
             ),
             AdminRoleInfo(
                 name='Cluster Administrator',
                 description='',
-                permissions='Create host, Upload bundle, Add service, Remove service, Remove hosts, Map hosts, Unmap '
-                'hosts, Edit host-components, Upgrade application bundle, Remove bundle, '
-                'Service Administrator',
+                permissions='Create host, Upload bundle, Edit cluster configurations, Edit host configurations, '
+                            'Add service, Remove service, Remove hosts, Map hosts, Unmap hosts, Edit host-components, '
+                            'Upgrade cluster bundle, Remove bundle, Service Administrator',
             ),
             AdminRoleInfo(
                 name='Provider Administrator',
                 description='',
-                permissions='Create host, Upload bundle, Edit infrastructure configurations, Remove hosts, Upgrade '
-                'infrastructure bundle, Remove bundle',
+                permissions='Create host, Upload bundle, Edit provider configurations, Edit host configurations, '
+                            'Remove hosts, Upgrade provider bundle, Remove bundle',
             ),
         ]
 
@@ -480,12 +481,12 @@ class AdminRolesPage(GeneralAdminPage):
                         break
 
     def click_save_btn_in_role_popup(self):
-        self.find_and_click(AdminRolesLocators.AddRolePopup.save_btn)
+        self.find_and_click(AdminRolesLocators.save_btn)
 
     @allure.step('Check that save button is disabled')
     def check_save_button_disabled(self):
         assert (
-            self.find_element(AdminRolesLocators.AddRolePopup.save_btn).get_attribute("disabled") == 'true'
+            self.find_element(AdminRolesLocators.save_btn).get_attribute("disabled") == 'true'
         ), "Save role button should be disabled"
 
     @allure.step("Check {name} required error is presented")
@@ -550,7 +551,7 @@ class AdminPoliciesPage(GeneralAdminPage):
                 raise AssertionError(f"There are no role {role} in select role popup")
 
         def fill_users_or_group_select(items, available_items):
-            for item in items.split(","):
+            for item in items.split(", "):
                 for available_item in available_items:
                     if available_item.text == item:
                         self.scroll_to(available_item)
@@ -576,8 +577,8 @@ class AdminPoliciesPage(GeneralAdminPage):
         self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.next_btn_first)
         self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
         self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
-        self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.ThirdStep.create_btn)
-        self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.ThirdStep.create_btn)
+        self.wait_element_visible(AdminPoliciesLocators.save_btn)
+        self.find_and_click(AdminPoliciesLocators.save_btn)
         self.wait_element_hide(AdminPoliciesLocators.AddPolicyPopup.block)
 
     def get_all_policies(self) -> [str]:
@@ -586,7 +587,17 @@ class AdminPoliciesPage(GeneralAdminPage):
         policies_items = []
         policies_rows = self.table.get_all_rows()
         for policy in policies_rows:
-            policies_items.append(policy.text)
+            policy_groups = self.find_child(policy, AdminPoliciesLocators.PolicyRow.groups).text
+            policy_objects = self.find_child(policy, AdminPoliciesLocators.PolicyRow.objects).text
+            policy_item = AdminPolicyInfo(
+                name=self.find_child(policy, AdminPoliciesLocators.PolicyRow.name).text,
+                description=self.find_child(policy, AdminPoliciesLocators.PolicyRow.description).text,
+                role=self.find_child(policy, AdminPoliciesLocators.PolicyRow.role).text,
+                users=self.find_child(policy, AdminPoliciesLocators.PolicyRow.users).text,
+                groups=policy_groups if policy_groups else None,
+                objects=policy_objects if policy_objects else None,
+            )
+            policies_items.append(policy_item)
         return policies_items
 
     def select_all_policies(self):
