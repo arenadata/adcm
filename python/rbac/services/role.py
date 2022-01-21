@@ -16,7 +16,7 @@ from adwp_base.errors import AdwpEx
 from django.db import IntegrityError
 from rest_framework.exceptions import ValidationError
 
-from rbac.models import Role, RoleTypes, User
+from rbac.models import Role, RoleTypes
 from rbac.utils import update_m2m_field
 
 
