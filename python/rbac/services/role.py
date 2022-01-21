@@ -16,7 +16,7 @@ from adwp_base.errors import AdwpEx
 from django.db import IntegrityError
 from rest_framework.exceptions import ValidationError
 
-from rbac.models import Role, RoleTypes
+from rbac.models import Role, RoleTypes, User
 from rbac.utils import update_m2m_field
 
 
@@ -86,4 +86,6 @@ def role_update(role: Role, partial, **kwargs) -> Role:
         set_parametrized_from_child(role, child)
         update_m2m_field(role.child, child)
 
+    for policy in role.policy_set.all():
+        policy.apply()
     return role
