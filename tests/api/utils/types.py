@@ -438,9 +438,9 @@ class ForeignKeyM2M(ForeignKey):
         super().__init__(**kwargs)
         self._sp_vals_negative = [
             PreparedFieldValue(
-                [{"id": 100}],
+                [{"id": 1000}],
                 f_type=self,
-                error_messages=["Invalid pk \"100\" - object does not exist."],
+                error_messages=["Invalid pk \"1000\" - object does not exist."],
             ),
             PreparedFieldValue(
                 [{"id": 2 ** 63}],
