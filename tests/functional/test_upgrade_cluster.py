@@ -176,7 +176,6 @@ def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient, old_bundle):
         UPGRADE_ERROR.equal(e, 'cluster state', 'is not in available states list')
 
 
-@pytest.mark.skip(reason="Need new version of ADCM client")
 @pytest.mark.usefixtures("upgradable_bundle")
 def test_before_upgrade_state(old_bundle):
     """Test that field "before_upgrade" field has correct values"""
