@@ -95,6 +95,7 @@ def test_edit_application_configurations(user_policy: Policy, user_sdk: ADCMClie
     cluster, service, component, provider, host = as_user_objects(user_sdk, *prepare_objects)
     user_second_objects = as_user_objects(user_sdk, *second_objects)
 
+    is_allowed_to_view(cluster, service, component)
     is_allowed_to_edit(cluster, service, component)
     is_denied_to_edit(*user_second_objects, user_sdk.adcm(), provider, host)
     delete_policy(user_policy)
@@ -108,6 +109,7 @@ def test_edit_infrastructure_configurations(user_policy: Policy, user_sdk: ADCMC
     cluster, service, component, provider, host = as_user_objects(user_sdk, *prepare_objects)
     user_second_objects = as_user_objects(user_sdk, *second_objects)
 
+    is_allowed_to_view(provider, host)
     is_allowed_to_edit(provider, host)
     is_denied_to_edit(*user_second_objects, user_sdk.adcm(), cluster, service, component)
     delete_policy(user_policy)
