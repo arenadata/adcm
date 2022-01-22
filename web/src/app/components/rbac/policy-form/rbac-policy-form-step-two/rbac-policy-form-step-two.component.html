@@ -5,12 +5,12 @@
     </app-parametrized-by-cluster>
   </ng-template>
 
-  <ng-template [ngIf]="role | parametrizedBy: ['service', 'component']">
+  <ng-template [ngIf]="role | parametrizedBy: ['service'] : ['component','host']">
     <app-parametrized-by-service [object]="object" [candidates]="candidates">
     </app-parametrized-by-service>
   </ng-template>
 
-  <ng-template [ngIf]="role | parametrizedBy: ['host']">
+  <ng-template [ngIf]="role | parametrizedBy: ['provider', 'host']">
     <app-parametrized-by-host [object]="object" [candidates]="candidates">
     </app-parametrized-by-host>
   </ng-template>
