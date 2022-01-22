@@ -44,7 +44,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
         CustomValidators.required,
         Validators.minLength(2),
         Validators.maxLength(150),
-        Validators.pattern('^[a-zA-Z0-9_.-]*$')
+        Validators.pattern('^[a-zA-Z0-9_.-\/]*$')
       ]),
       password: new FormControl(null, [
         CustomValidators.required,
