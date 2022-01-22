@@ -32,7 +32,8 @@ export class RbacPermissionFormComponent extends RbacFormDirective<RbacRoleModel
   controlName: string;
 
   filter: Params = {
-    type: 'business'
+    type: 'business',
+    limit: 100
   };
 
   categories$: Observable<string[]>;
