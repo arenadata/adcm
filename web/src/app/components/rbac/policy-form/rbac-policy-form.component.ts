@@ -12,6 +12,7 @@ import {
   IRbacObjectCandidateServiceModel
 } from '../../../models/rbac/rbac-object-candidate';
 import { rbacPolicyObjectValidator } from './validators/object-validator';
+import { CustomValidators } from '../../../shared/validators/custom-validators';
 
 const INITIAL_OBJECT = {
   cluster: [],
@@ -104,7 +105,7 @@ export class RbacPolicyFormComponent extends RbacFormDirective<RbacPolicyModel> 
       steps: new FormArray([
         new FormGroup({
           name: new FormControl(null, [
-            Validators.required,
+            CustomValidators.required,
             Validators.maxLength(255),
             Validators.minLength(2),
             Validators.pattern('^[a-zA-Z0-9()<>{},._-\\s]*$')

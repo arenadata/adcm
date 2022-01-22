@@ -4,6 +4,7 @@ import { RbacFormDirective } from '@app/shared/add-component/rbac-form.directive
 import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
 import { RbacUserService } from '@app/services/rbac-user.service';
 import { RbacUserModel } from '@app/models/rbac/rbac-user.model';
+import { CustomValidators } from '../../../shared/validators/custom-validators';
 
 /** The password and the confirm password must be equals  */
 export const passwordsConfirmValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
@@ -40,30 +41,30 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
       url: new FormControl(null),
       profile: new FormControl(null),
       username: new FormControl(null, [
-        Validators.required,
+        CustomValidators.required,
         Validators.minLength(2),
         Validators.maxLength(150),
         Validators.pattern('^[a-zA-Z0-9_.-]*$')
       ]),
       password: new FormControl(null, [
-        Validators.required,
+        CustomValidators.required,
         Validators.minLength(2),
         Validators.maxLength(128)
       ]),
       first_name: new FormControl(null, [
-        Validators.required,
+        CustomValidators.required,
         Validators.minLength(2),
         Validators.maxLength(150),
         Validators.pattern('^[a-zA-Z\\s]*$')
       ]),
       last_name: new FormControl(null, [
-        Validators.required,
+        CustomValidators.required,
         Validators.minLength(2),
         Validators.maxLength(150),
         Validators.pattern('^[a-zA-Z\\s]*$')
       ]),
       email: new FormControl(null, [
-        Validators.required,
+        CustomValidators.required,
         Validators.maxLength(254),
         // regexp from django
         Validators.pattern('(^[-!#$%&\'*+\\/=?^_`{}|~0-9A-Za-z]+(.[-!#$%&\'*+\\/=?^_`{}|~0-9A-Za-z]+)*|^"([\\001-\\010\\013\\014\\016-\\037!#-[]-\\177]|\\[\\001-\\011\\013\\014\\016-\\177])*")@((?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?.)+)(?:[A-Za-z0-9-]{2,63}(?<!-))$')
@@ -72,7 +73,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
     }),
     confirm: new FormGroup({
       password: new FormControl('', [
-        Validators.required,
+        CustomValidators.required,
         Validators.minLength(5),
         Validators.maxLength(128)
       ])
