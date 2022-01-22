@@ -7,6 +7,7 @@ import { RbacRoleModel } from '@app/models/rbac/rbac-role.model';
 import { RbacPermissionFormComponent } from '../permission-form/rbac-permission-form.component';
 import { AdwpStringHandler } from '@adwp-ui/widgets';
 import { MatChipInputEvent } from '@angular/material/chips';
+import { CustomValidators } from '../../../shared/validators/custom-validators';
 
 @Component({
   selector: 'app-rbac-role-form',
@@ -47,7 +48,7 @@ export class RbacRoleFormComponent extends RbacFormDirective<RbacRoleModel> impl
       name: new FormControl({ value: '', disabled: this.value?.built_in }),
       description: new FormControl({ value: '', disabled: this.value?.built_in }),
       display_name: new FormControl({ value: '', disabled: this.value?.built_in }, [
-        Validators.required,
+        CustomValidators.required,
         Validators.minLength(2),
         Validators.maxLength(160),
         Validators.pattern('^[a-zA-Z0-9()<>{},._-\\s]*$')

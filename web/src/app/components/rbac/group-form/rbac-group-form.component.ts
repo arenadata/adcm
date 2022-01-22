@@ -4,6 +4,7 @@ import { RbacFormDirective } from '@app/shared/add-component/rbac-form.directive
 import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
 import { RbacGroupService } from '@app/services/rbac-group.service';
 import { RbacGroupModel } from '@app/models/rbac/rbac-group.model';
+import { CustomValidators } from '../../../shared/validators/custom-validators';
 
 @Component({
   selector: 'app-rbac-group-form',
@@ -17,7 +18,7 @@ export class RbacGroupFormComponent extends RbacFormDirective<RbacGroupModel> {
   form = new FormGroup({
     id: new FormControl(null),
     name: new FormControl(null, [
-      Validators.required,
+      CustomValidators.required,
       Validators.minLength(2),
       Validators.maxLength(150),
       Validators.pattern('^[a-zA-Z0-9()<>{},._-\\s]*$')
