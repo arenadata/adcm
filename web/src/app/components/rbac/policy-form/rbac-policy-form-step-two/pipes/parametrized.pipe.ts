@@ -6,8 +6,8 @@ import { RbacRoleModel, RbacRoleParametrizedBy } from '../../../../../models/rba
 })
 export class ParametrizedPipe implements PipeTransform {
 
-  transform(role: RbacRoleModel, values: RbacRoleParametrizedBy[]): boolean {
-    return !!role.parametrized_by_type.filter((item) => values.includes(item)).length;
+  transform(role: RbacRoleModel, ...cases: RbacRoleParametrizedBy[][]): boolean {
+    return cases.some((c) => c.every((value) => role.parametrized_by_type.includes(value)));
   }
 
 }
