@@ -12,6 +12,7 @@
 import { HttpErrorResponse, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
+import { Location } from '@angular/common';
 import { Observable, throwError } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
@@ -22,7 +23,13 @@ const EXCLUDE_URLS = ['/api/v1/rbac/token/', '/assets/config.json'];
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-  constructor(private authService: AuthService, private preloader: PreloaderService, private router: Router, private channel: ChannelService) {}
+  constructor(
+    private authService: AuthService,
+    private preloader: PreloaderService,
+    private router: Router,
+    private channel: ChannelService,
+    private location: Location
+  ) {}
 
   addAuthHeader(request: HttpRequest<any>): HttpRequest<any> {
     const token = this.authService.token;
@@ -39,9 +46,18 @@ export class AuthInterceptor implements HttpInterceptor {
     request = this.addAuthHeader(request);
     return next.handle(request).pipe(
       catchError((res: HttpErrorResponse) => {
+        this.authService.redirectUrl = this.router.url;
+
         if (res.status === 401) {
-          this.authService.redirectUrl = this.router.url;
           this.router.navigate(['/login']);
+        }
+
+        if (res.status === 403) {
+          let cur_path = this.location.path();
+          this.location.back();
+          if (cur_path === this.location.path()) {
+            this.router.navigate(['/']);
+          }
         }
 
         if (res.status === 500) this.router.navigate(['/500']);
