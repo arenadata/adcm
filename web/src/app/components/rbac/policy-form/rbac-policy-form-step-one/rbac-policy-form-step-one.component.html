@@ -25,7 +25,7 @@
   </mat-form-field>
 </div>
 
-<ng-container [rbac-users-as-options]="{name: userFilter}" #users="rbacUsers">
+<ng-container [rbac-users-as-options]="{search: userFilter}" #users="rbacUsers">
   <adwp-input-select [form]="form" label="User" controlName="user"
                      [options]="users.options$ | async | falseAsEmptyArray"
                      [handler]="users.label"
@@ -33,7 +33,7 @@
   ></adwp-input-select>
 </ng-container>
 
-<ng-container [rbac-groups-as-options]="{name: groupFilter}" #groups="rbacGroups">
+<ng-container [rbac-groups-as-options]="{search: groupFilter}" #groups="rbacGroups">
   <adwp-input-select [form]="form" label="Group" controlName="group"
                      [options]="groups.options$ | async | falseAsEmptyArray"
                      [handler]="groups.label"
