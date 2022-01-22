@@ -32,8 +32,8 @@
         <button mat-flat-button color="accent" [disabled]="!optionList.list?.selectedOptions.selected.length"
                 (click)="save()">Select
         </button>
-        <ng-container *ngIf="options?.length >= 50">
-          <span class="adcm-rbac-permission__notification">50+ matches </span>
+        <ng-container *ngIf="options?.length >= 100">
+          <span class="adcm-rbac-permission__notification">100+ matches </span>
         </ng-container>
       </div>
     </div>
