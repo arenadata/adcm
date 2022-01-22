@@ -1,7 +1,8 @@
-import { Component, Input } from '@angular/core';
+import { Component, ContentChild, Input } from '@angular/core';
 import { AbstractControl, FormGroup } from '@angular/forms';
 import { ADWP_DEFAULT_MATCHER, AdwpMatcher, AdwpStringHandler } from '@adwp-ui/widgets';
 import { RbacRoleModel } from '../../../models/rbac/rbac-role.model';
+import { RbacPermissionFormComponent } from '../../../components/rbac/permission-form/rbac-permission-form.component';
 
 @Component({
   selector: 'adcm-input-rbac-permission',
@@ -24,6 +25,8 @@ export class AdcmInputRbacPermissionComponent {
   @Input() isRequired = false;
 
   @Input() readonly = false;
+
+  @ContentChild(RbacPermissionFormComponent) permissionForm: RbacPermissionFormComponent;
 
   get permissionsControl(): AbstractControl {
     return this.form.controls[this.controlName];
@@ -59,9 +62,10 @@ export class AdcmInputRbacPermissionComponent {
       chipListInput.focus();
     }
   }
-  
+
   reset(control: AbstractControl, chipListInput: HTMLInputElement): void {
-    control.reset();
+    control.reset([]);
     chipListInput.value = '';
+    this.permissionForm.value = [] as any;
   }
 }
