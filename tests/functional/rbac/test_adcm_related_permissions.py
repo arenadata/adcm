@@ -31,7 +31,7 @@ def test_view_adcm_settings(user_policy, user_sdk: ADCMClient, prepare_objects):
 
     is_allowed(user_sdk.adcm(), BusinessRoles.ViewADCMSettings)
     is_denied(user_sdk.adcm(), BusinessRoles.EditADCMSettings)
-    is_denied(cluster, BusinessRoles.ViewApplicationConfigurations)
+    is_denied(cluster, BusinessRoles.ViewClusterConfigurations)
 
     delete_policy(user_policy)
     is_denied(user_sdk.adcm(), BusinessRoles.ViewADCMSettings)
@@ -44,7 +44,7 @@ def test_edit_adcm_settings(user_policy, user_sdk: ADCMClient, prepare_objects):
 
     is_allowed(user_sdk.adcm(), BusinessRoles.ViewADCMSettings)
     is_allowed(user_sdk.adcm(), BusinessRoles.EditADCMSettings)
-    is_denied(cluster, BusinessRoles.ViewApplicationConfigurations)
+    is_denied(cluster, BusinessRoles.ViewClusterConfigurations)
 
     delete_policy(user_policy)
     is_denied(user_sdk.adcm(), BusinessRoles.ViewADCMSettings)
