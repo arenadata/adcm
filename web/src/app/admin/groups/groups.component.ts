@@ -34,6 +34,7 @@ export class GroupsComponent extends RbacEntityListDirective<RbacGroupModel> {
       modelKey: 'checked',
       className: 'choice-column',
       headerClassName: 'choice-column',
+      disabled: (row) => row.built_in,
     },
     {
       label: 'Group name',
