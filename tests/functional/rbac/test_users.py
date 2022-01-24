@@ -81,6 +81,18 @@ def test_change_password(new_user: User, sdk_client_fs: ADCMClient):
         _check_basic_actions_are_available(user_client)
 
 
+def test_delete_built_in_user(sdk_client_fs: ADCMClient):
+    """Test that deletion of built-in users is forbidden"""
+    for built_in_user in sdk_client_fs.user_list(built_in=True):
+        with allure.step(f'Try to delete built-in user {built_in_user}'):
+            try:
+                built_in_user.delete()
+            except NoSuchEndpointOrAccessIsDenied:
+                ...
+            else:
+                raise AssertionError(f'Built-in user {built_in_user} should not be allowed to be deleted')
+
+
 # !===== STEPS =====!
 
 
