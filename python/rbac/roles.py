@@ -110,7 +110,7 @@ class ActionRole(AbstractRole):
             model = get_model_by_type(obj.prototype.type)
             ct = ContentType.objects.get_for_model(model)
             run_action, _ = Permission.objects.get_or_create(
-                content_type=ct, codename=f'run_action_{action.name}'
+                content_type=ct, codename=f'run_action_{action.display_name}'
             )
             if user is not None:
                 uop = UserObjectPermission.objects.assign_perm(run_action, user, obj)
