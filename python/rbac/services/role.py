@@ -14,27 +14,18 @@ from typing import List
 
 from adwp_base.errors import AdwpEx
 from django.db import IntegrityError
+from django.db.transaction import atomic
 from rest_framework.exceptions import ValidationError
 
 from rbac.models import Role, RoleTypes
 from rbac.utils import update_m2m_field
 
 
-def set_parametrized_from_child(role, children: List[Role]):
+def check_role_child(child: List[Role], partial=False):
     param_set = set()
     cluster_hierarchy = {'cluster', 'service', 'component'}
     provider_hierarchy = {'provider'}
 
-    for child in children:
-        param_set.update(child.parametrized_by_type)
-        if param_set.intersection(provider_hierarchy) and param_set.intersection(cluster_hierarchy):
-            msg = {'This children parametrized by types from different hierarchy'}
-            raise AdwpEx('ROLE_ERROR', msg)
-    role.parametrized_by_type = list(param_set)
-    role.save()
-
-
-def check_role_child(child: List[Role], partial=False) -> None:
     if not child and not partial:
         errors = {'child': ['Roles without children make not sense']}
         raise ValidationError(errors)
@@ -45,12 +36,18 @@ def check_role_child(child: List[Role], partial=False) -> None:
         if item.type != RoleTypes.business:
             errors = {'child': ['Only business roles allowed to be included as children.']}
             raise ValidationError(errors)
+        param_set.update(item.parametrized_by_type)
+        if param_set.intersection(provider_hierarchy) and param_set.intersection(cluster_hierarchy):
+            msg = 'Combination of cluster/service/component and provider permissions is not allowed'
+            raise AdwpEx('ROLE_CONFLICT', msg)
+    return list(param_set)
 
 
+@atomic
 def role_create(built_in=False, type_of_role=RoleTypes.role, **kwargs) -> Role:
     """Creating Role object"""
     child = kwargs.pop('child', [])
-    check_role_child(child)
+    parametrized_by = check_role_child(child)
     name = kwargs.pop('name', '')
     if name == '':
         name = kwargs['display_name']
@@ -61,19 +58,21 @@ def role_create(built_in=False, type_of_role=RoleTypes.role, **kwargs) -> Role:
             type=type_of_role,
             module_name='rbac.roles',
             class_name='ParentRole',
+            parametrized_by_type=parametrized_by,
             **kwargs,
         )
     except IntegrityError as exc:
         raise AdwpEx('ROLE_CREATE_ERROR', msg=f'Role creation failed with error {exc}') from exc
-    set_parametrized_from_child(role, child)
     role.child.add(*child)
     return role
 
 
+@atomic
 def role_update(role: Role, partial, **kwargs) -> Role:
     """Updating Role object"""
     child = kwargs.pop('child', [])
-    check_role_child(child, partial)
+    parametrized_by = check_role_child(child, partial)
+    kwargs['parametrized_by_type'] = parametrized_by
     kwargs.pop('name', None)
     for key, value in kwargs.items():
         setattr(role, key, value)
@@ -83,7 +82,6 @@ def role_update(role: Role, partial, **kwargs) -> Role:
         raise AdwpEx('ROLE_UPDATE_ERROR', msg=f'Role update failed with error {exc}') from exc
 
     if child:
-        set_parametrized_from_child(role, child)
         update_m2m_field(role.child, child)
 
     for policy in role.policy_set.all():
