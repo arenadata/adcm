@@ -12,8 +12,9 @@
 
 """Group view sets"""
 
+from adwp_base.errors import AdwpEx
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers
+from rest_framework import serializers, status
 
 from rbac import models
 from rbac.services import group as group_services
@@ -94,3 +95,13 @@ class GroupViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
     filterset_fields = ('id', 'name')
     ordering_fields = ('id', 'name')
     search_fields = ('name', 'description')
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.built_in:
+            raise AdwpEx(
+                'GROUP_DELETE_ERROR',
+                msg='Built-in group could not be deleted',
+                http_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+            )
+        return super().destroy(request, args, kwargs)
