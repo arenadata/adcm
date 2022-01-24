@@ -16,8 +16,11 @@ import { FieldComponent } from '@app/shared/configuration/field/field.component'
   template: `
     <div class="group-keys-wrapper">
       <div class="group-checkbox">
-        <mat-checkbox [matTooltip]="tooltipText" [formControl]="groupControl"
-                      (change)="onChange($event)"></mat-checkbox>
+        <mat-checkbox
+          [matTooltip]="tooltipText"
+          [formControl]="groupControl"
+          (change)="onChange($event)"
+        ></mat-checkbox>
       </div>
       <div class="group-field">
         <ng-container *ngTemplateOutlet="fieldTemplate"></ng-container>
@@ -53,7 +56,16 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
 
   ngOnInit(): void {
     this._resolveAndSetupControls(this.attributeForm, this.parametersForm, this.fieldOptions);
-    Promise.resolve().then(() => this._restoreStatus());
+    Promise.resolve().then(() => {
+      this._restoreStatus();
+      this.disableIfReadOnly();
+    });
+  }
+
+  private disableIfReadOnly() {
+    if (this.field.options.read_only) {
+      this.groupControl.disable();
+    }
   }
 
   private _resolveAndSetupControls(attributeForm: FormGroup, parametersForm: FormGroup, fieldOptions: IFieldOptions): void {
