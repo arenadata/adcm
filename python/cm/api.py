@@ -128,6 +128,7 @@ def add_host(proto, provider, fqdn, desc=''):
         host.save()
         host.add_to_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(host)
+        rbac.models.re_apply_object_policy(provider)
     ctx.event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
     load_service_map()
