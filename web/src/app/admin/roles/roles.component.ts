@@ -39,8 +39,8 @@ export class RolesComponent extends RbacEntityListDirective<RbacRoleModel> {
     },
     {
       label: 'Role name',
-      sort: 'name',
-      value: (row) => row.name,
+      sort: 'display_name',
+      value: (row) => row.display_name,
     },
     {
       label: 'Description',
