@@ -547,6 +547,8 @@ def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     load_service_map()
     for service in service_map:
         rbac.models.re_apply_object_policy(service)
+    for hc in result:
+        rbac.models.re_apply_object_policy(hc.service)
     return result
 
 
