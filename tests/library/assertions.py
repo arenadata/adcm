@@ -76,3 +76,18 @@ def is_not_in_collection(item: T, collection: Collection[T], extra_message: Unio
         f"Item '{item}' was found in collection where it shouldn't be, check attachment for more details."
         + (f'Details: {message}' if message else '')
     )
+
+
+def is_empty(collection: Collection, extra_message: Union[str, Callable] = '', **kwargs) -> None:
+    """
+    Check if collection is empty (len == 0)
+    """
+    if len(collection) == 0:
+        return
+
+    allure.attach(pprint.pformat(collection), name='Collection items')
+    message = extra_message if not callable(extra_message) else extra_message(**kwargs)
+    raise AssertionError(
+        "Collection should've been empty, check attachment for more details."
+        + (f'Details: {message}' if message else '')
+    )

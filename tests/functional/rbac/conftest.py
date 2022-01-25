@@ -19,7 +19,7 @@ from typing import Callable, NamedTuple, Union, List, Tuple, Collection
 import allure
 import pytest
 from adcm_client.base import NoSuchEndpointOrAccessIsDenied, BaseAPIObject
-from adcm_client.objects import ADCMClient, User, Group, Cluster, Service, Component, Provider, Host, Bundle
+from adcm_client.objects import ADCMClient, User, Group, Cluster, Service, Component, Provider, Host, Bundle, Role
 from adcm_client.wrappers.api import AccessIsDenied
 from adcm_pytest_plugin.utils import catch_failed, random_string
 
@@ -38,6 +38,14 @@ class SDKClients(NamedTuple):
 
     admin: ADCMClient
     user: ADCMClient
+
+
+class RoleShortInfo(NamedTuple):
+    """Minimal required info for working with role info for most cases"""
+
+    id: int
+    name: str
+    categories: tuple
 
 
 class RoleType(Enum):
@@ -320,3 +328,8 @@ def is_denied(
             pass
         else:
             raise AssertionError(f"{role.role_name} on {get_object_represent(base_object)} should not be allowed")
+
+
+def extract_role_short_info(role: Role) -> RoleShortInfo:
+    """Convert API Role object to RoleShortInfo"""
+    return RoleShortInfo(role.id, role.name, tuple(role.category))
