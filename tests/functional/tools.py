@@ -24,6 +24,9 @@ from adcm_client.objects import Host, Task, Job, Cluster, Service, Component, Pr
 from adcm_pytest_plugin.utils import catch_failed
 
 
+BEFORE_UPGRADE_DEFAULT_STATE = None
+
+
 ADCMObjects = (Cluster, Service, Component, Provider, Host)
 
 ClusterRelatedObject = Union[Cluster, Service, Component]
