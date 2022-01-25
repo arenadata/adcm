@@ -33,6 +33,7 @@ SERVICE_ADMIN_ROLES = {
     for role in (
         BusinessRoles.EditServiceConfigurations,
         BusinessRoles.EditComponentConfigurations,
+        BusinessRoles.ViewHostConfigurations,
         BusinessRoles.ManageImports,
     )
 }
