@@ -40,7 +40,7 @@ export class AuthService {
   }
 
   login(login: string, password: string): Observable<{ token: string }> {
-    return this.api.post(`${environment.apiRoot}/rbac/token/`, { username: login, password }).pipe(
+    return this.api.post(`${environment.apiRoot}rbac/token/`, { username: login, password }).pipe(
       tap((response: { token: string }) => {
         let token = response && response.token;
         if (token) {

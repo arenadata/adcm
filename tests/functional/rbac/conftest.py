@@ -19,7 +19,7 @@ from typing import Callable, NamedTuple, Union, List, Tuple, Collection
 import allure
 import pytest
 from adcm_client.base import NoSuchEndpointOrAccessIsDenied, BaseAPIObject
-from adcm_client.objects import ADCMClient, User, Group, Cluster, Service, Component, Provider, Host
+from adcm_client.objects import ADCMClient, User, Group, Cluster, Service, Component, Provider, Host, Bundle
 from adcm_client.wrappers.api import AccessIsDenied
 from adcm_pytest_plugin.utils import catch_failed, random_string
 
@@ -197,16 +197,26 @@ def use_role(role: Union[BusinessRoles, Collection[BusinessRoles]]):
 
 
 @pytest.fixture()
-def prepare_objects(sdk_client_fs):
+def cluster_bundle(sdk_client_fs):
+    """Uploaded cluster bundle"""
+    return sdk_client_fs.upload_from_fs(os.path.join(DATA_DIR, "cluster"))
+
+
+@pytest.fixture()
+def provider_bundle(sdk_client_fs) -> Bundle:
+    """Uploaded provider bundle"""
+    return sdk_client_fs.upload_from_fs(os.path.join(DATA_DIR, "provider"))
+
+
+@pytest.fixture()
+def prepare_objects(sdk_client_fs, cluster_bundle, provider_bundle):
     """
     Prepare adcm objects
     Created objects should be used as a `parametrized_by_type` values on policy with tested role
     """
-    cluster_bundle = sdk_client_fs.upload_from_fs(os.path.join(DATA_DIR, "cluster"))
     cluster = cluster_bundle.cluster_create("Cluster")
     service = cluster.service_add(name="test_service")
     component = service.component(name="test_component")
-    provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(DATA_DIR, "provider"))
     provider = provider_bundle.provider_create("Provider")
     host = provider.host_create("Host")
     return cluster, service, component, provider, host

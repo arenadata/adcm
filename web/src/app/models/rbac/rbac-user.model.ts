@@ -12,6 +12,7 @@ export interface RbacUserModel {
   url: string;
   profile: IProfile;
   group: Pick<RbacGroupModel, 'id' | 'name' | 'url'>[];
+  built_in: boolean;
 
   //
   change_password: string;
