@@ -71,12 +71,12 @@ def test_create_users(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMClie
 
     is_allowed(user_sdk, BusinessRoles.ViewUsers)
     is_allowed(user_sdk, BusinessRoles.CreateUser)
-    simple_user = user_sdk.user(name="test")
+    simple_user = user_sdk.user(username="test")
     is_denied(simple_user, BusinessRoles.EditUser)
     is_denied(simple_user, BusinessRoles.RemoveUser)
 
     delete_policy(user_policy)
-    sdk_client_fs.user(name="test").delete()
+    sdk_client_fs.user(username="test").delete()
     is_denied(user_sdk, BusinessRoles.ViewUsers)
     is_denied(user_sdk, BusinessRoles.CreateUser)
 
@@ -240,7 +240,7 @@ def test_view_policies(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMCli
     """Test that "View policies" role is ok"""
     BusinessRoles.CreateCustomRoles.value.method_call(sdk_client_fs)
     custom_role = sdk_client_fs.role(name="Custom role")
-    user = sdk_client_fs.user(name="test_user")
+    user = sdk_client_fs.user(username="test_user")
 
     is_allowed(user_sdk, BusinessRoles.ViewPolicies)
     is_denied(user_sdk, BusinessRoles.CreatePolicy, role=custom_role, user=[user])
@@ -254,7 +254,7 @@ def test_create_policy(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMCli
     """Test that "Create policy" role is ok"""
     BusinessRoles.CreateCustomRoles.value.method_call(sdk_client_fs)
     custom_role = sdk_client_fs.role(name="Custom role")
-    user = sdk_client_fs.user(name="test_user")
+    user = sdk_client_fs.user(username="test_user")
 
     is_allowed(user_sdk, BusinessRoles.ViewPolicies)
     is_allowed(user_sdk, BusinessRoles.CreatePolicy, role=custom_role, user=[user])
@@ -272,7 +272,7 @@ def test_edit_policy(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMClien
     """Test that "Edit policy" role is ok"""
     BusinessRoles.CreateCustomRoles.value.method_call(sdk_client_fs)
     custom_role = sdk_client_fs.role(name="Custom role")
-    user = sdk_client_fs.user(name="test_user")
+    user = sdk_client_fs.user(username="test_user")
 
     is_allowed(user_sdk, BusinessRoles.ViewPolicies)
     is_denied(user_sdk, BusinessRoles.CreatePolicy, role=custom_role, user=[user])
@@ -292,7 +292,7 @@ def test_remove_policy(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMCli
     """Test that "Remove policy" role is ok"""
     BusinessRoles.CreateCustomRoles.value.method_call(sdk_client_fs)
     custom_role = sdk_client_fs.role(name="Custom role")
-    user = sdk_client_fs.user(name="test_user")
+    user = sdk_client_fs.user(username="test_user")
 
     is_allowed(user_sdk, BusinessRoles.ViewPolicies)
     is_denied(user_sdk, BusinessRoles.CreatePolicy, role=custom_role, user=[user])
