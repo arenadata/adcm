@@ -14,8 +14,22 @@
 
 """UI tests for /admin page"""
 
+import os
+from typing import (
+    Tuple,
+)
+
 import allure
 import pytest
+from adcm_client.objects import (
+    Bundle,
+    Cluster,
+    ADCMClient,
+    Host,
+    Service,
+    Provider,
+)
+from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import random_string
 
 from tests.ui_tests.app.app import ADCMTest
@@ -32,6 +46,12 @@ from tests.ui_tests.app.page.admin.page import (
 )
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.utils import expect_rows_amount_change
+
+BUNDLE = "cluster_with_services"
+CLUSTER_NAME = "test_cluster"
+SERVICE_NAME = "test_service_1"
+FIRST_COMPONENT_NAME = "first"
+
 
 # !===== Fixtures =====!
 
@@ -51,6 +71,37 @@ def users_page(app_fs: ADCMTest) -> AdminUsersPage:
 def settings_page(app_fs: ADCMTest) -> AdminSettingsPage:
     """Get Admin Settings Page"""
     return AdminSettingsPage(app_fs.driver, app_fs.adcm.url).open()
+
+
+@allure.step("Upload cluster bundle")
+def cluster_bundle(sdk_client_fs: ADCMClient, data_dir_name: str) -> Bundle:
+    """Upload cluster bundle"""
+
+    return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), data_dir_name))
+
+
+@pytest.fixture()
+def create_cluster_with_service(sdk_client_fs: ADCMClient) -> Tuple[Cluster, Service]:
+    """Create cluster and add service"""
+
+    bundle = cluster_bundle(sdk_client_fs, BUNDLE)
+    cluster = bundle.cluster_create(name=CLUSTER_NAME)
+    return cluster, cluster.service_add(name=SERVICE_NAME)
+
+
+@pytest.fixture()
+def create_cluster_with_component(
+    create_cluster_with_service: Tuple[Cluster, Service], sdk_client_fs: ADCMClient
+) -> Tuple[Cluster, Service, Host, Provider]:
+    """Create cluster with component"""
+
+    cluster, service = create_cluster_with_service
+    provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), 'provider'))
+    provider = provider_bundle.provider_create('test_provider')
+    host = provider.host_create('test-host')
+    cluster.host_add(host)
+    cluster.hostcomponent_set((host, service.component(name=FIRST_COMPONENT_NAME)))
+    return cluster, service, host, provider
 
 
 # !===== Tests =====!
@@ -177,7 +228,8 @@ class TestAdminUsersPage:
             login_page = LoginPage(users_page.driver, users_page.base_url)
             login_page.wait_page_is_opened()
             login_page.login_user(params['username'], params['new_password'])
-            users_page.wait_page_is_opened()
+        with allure.step('Check login was successful'):
+            AdminIntroPage(users_page.driver, users_page.base_url).wait_page_is_opened(timeout=5)
 
     def test_delete_user(self, users_page: AdminUsersPage):
         """Create new user, delete it and check current user can't be deleted"""
@@ -354,6 +406,7 @@ class TestAdminGroupsPage:
 class TestAdminPolicyPage:
     """Tests for the /admin/policies"""
 
+    custom_role_name = 'Test_Role'
     custom_policy = AdminPolicyInfo(
         name="Test policy name",
         description="Test policy description",
@@ -362,6 +415,12 @@ class TestAdminPolicyPage:
         groups=None,
         objects=None,
     )
+
+    @allure.step('Check custome policy')
+    def check_custom_policy(self, policies_page):
+        current_policies = policies_page.get_all_policies()
+        assert len(current_policies) == 1, "There should be 1 policy on the page"
+        assert current_policies == [self.custom_policy], "Created policy should be on the page"
 
     def test_open_by_tab_admin_policies_page(self, app_fs):
         """Test open /admin/policies from left menu"""
@@ -381,11 +440,12 @@ class TestAdminPolicyPage:
             self.custom_policy.role,
             self.custom_policy.users,
             self.custom_policy.groups,
+            None,
+            None,
+            None,
+            None,
         )
-        current_policies = policies_page.get_all_policies()
-        with allure.step('Check that there is 1 policy'):
-            assert len(current_policies) == 1, "There should be 1 policy on the page"
-            assert current_policies == [self.custom_policy], "Created policy should be on the page"
+        self.check_custom_policy(policies_page)
 
     def test_check_pagination_policy_list_page(self, app_fs):
         """Test pagination on /admin/policies page"""
@@ -399,6 +459,10 @@ class TestAdminPolicyPage:
                     self.custom_policy.role,
                     self.custom_policy.users,
                     self.custom_policy.groups,
+                    None,
+                    None,
+                    None,
+                    None,
                 )
         policies_page.table.check_pagination(second_page_item_amount=1)
 
@@ -412,8 +476,93 @@ class TestAdminPolicyPage:
             self.custom_policy.role,
             self.custom_policy.users,
             self.custom_policy.groups,
+            None,
+            None,
+            None,
+            None,
         )
         policies_page.select_all_policies()
         policies_page.click_delete_button()
         with allure.step('Check that policy has been deleted'):
             assert len(policies_page.table.get_all_rows()) == 0, "There should be 0 policies on the page"
+
+    def test_create_policy_for_cluster(self, sdk_client_fs, app_fs, create_cluster_with_service):
+        """Test creating policy for cluster"""
+
+        cluster, _ = create_cluster_with_service
+        self.custom_policy.role = self.custom_role_name
+        self.custom_policy.objects = cluster.name
+
+        with allure.step(f"Create test role for cluster {cluster.name}"):
+            sdk_client_fs.role_create(
+                name=self.custom_role_name,
+                display_name=self.custom_role_name,
+                child=[{'id': sdk_client_fs.role(name='Add service').id}],
+            )
+        policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
+        policies_page.create_policy(
+            self.custom_policy.name,
+            self.custom_policy.description,
+            self.custom_policy.role,
+            self.custom_policy.users,
+            self.custom_policy.groups,
+            cluster.name,
+            None,
+            None,
+            None,
+        )
+        self.check_custom_policy(policies_page)
+
+    def test_check_policy_popup_for_service(self, sdk_client_fs, app_fs, create_cluster_with_service):
+        """Test creating policy for cluster"""
+
+        cluster, service = create_cluster_with_service
+        self.custom_policy.role = self.custom_role_name
+        self.custom_policy.objects = service.name
+
+        with allure.step(f"Create test role for service {service.name}"):
+            sdk_client_fs.role_create(
+                name=self.custom_role_name,
+                display_name=self.custom_role_name,
+                child=[{'id': sdk_client_fs.role(name='View service configurations').id}],
+            )
+        policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
+        policies_page.create_policy(
+            self.custom_policy.name,
+            self.custom_policy.description,
+            self.custom_policy.role,
+            self.custom_policy.users,
+            self.custom_policy.groups,
+            None,
+            service.name,
+            cluster.name,
+            None,
+        )
+        self.check_custom_policy(policies_page)
+
+    def test_check_policy_popup_for_provider(self, sdk_client_fs, app_fs, create_cluster_with_component):
+        """Test creating policy for provider"""
+
+        _, _, _, provider = create_cluster_with_component
+        self.custom_policy.role = self.custom_role_name
+        self.custom_policy.objects = provider.name
+
+        with allure.step(f"Create test role for provider {provider.name}"):
+            sdk_client_fs.role_create(
+                name=self.custom_role_name,
+                display_name=self.custom_role_name,
+                child=[{'id': sdk_client_fs.role(name='View provider configurations').id}],
+            )
+        policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
+        policies_page.create_policy(
+            self.custom_policy.name,
+            self.custom_policy.description,
+            self.custom_policy.role,
+            self.custom_policy.users,
+            self.custom_policy.groups,
+            None,
+            None,
+            None,
+            provider.name,
+        )
+        self.check_custom_policy(policies_page)

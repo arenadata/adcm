@@ -529,13 +529,12 @@ class AdminPoliciesPage(GeneralAdminPage):
         self.find_and_click(AdminPoliciesLocators.create_btn)
         self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.block)
 
-    @allure.step('Create new policy')
-    def create_policy(
+    @allure.step('Fill first step in new policy')
+    def fill_first_step_in_policy_popup(
         self, policy_name: str, description: Optional[str], role: str, users: Optional[str], groups: Optional[str]
     ):
         if not (users or groups):
             raise ValueError("There are should be users or groups in the policy")
-        self.open_create_policy_popup()
         self.send_text_to_element(AdminPoliciesLocators.AddPolicyPopup.FirstStep.name_input, policy_name)
         if description:
             self.send_text_to_element(AdminPoliciesLocators.AddPolicyPopup.FirstStep.description_input, description)
@@ -545,41 +544,95 @@ class AdminPoliciesPage(GeneralAdminPage):
             available_roles = self.find_elements(AdminPoliciesLocators.AddPolicyPopup.FirstStep.role_item)
             for available_role in available_roles:
                 if available_role.text == role:
+                    self.scroll_to(available_role)
+                    self.hover_element(available_role)
                     available_role.click()
                     break
             else:
                 raise AssertionError(f"There are no role {role} in select role popup")
-
-        def fill_users_or_group_select(items, available_items):
-            for item in items.split(", "):
-                for available_item in available_items:
-                    if available_item.text == item:
-                        self.scroll_to(available_item)
-                        available_item.click()
-                        break
-                else:
-                    raise AssertionError(f"There are no item {item} in select popup")
-
         if users:
             with allure.step(f"Select users {users} in popup"):
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_select)
                 self.wait_element_visible(AdminPoliciesLocators.item)
                 available_users = self.find_elements(AdminPoliciesLocators.item)
-                fill_users_or_group_select(users, available_users)
+                self.fill_select_in_policy_popup(users, available_users)
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_select)
         if groups:
             with allure.step(f"Select groups {groups} in popup"):
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_select)
                 self.wait_element_visible(AdminPoliciesLocators.item)
                 available_groups = self.find_elements(AdminPoliciesLocators.item)
-                fill_users_or_group_select(groups, available_groups)
+                self.fill_select_in_policy_popup(groups, available_groups)
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_select)
         self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.next_btn_first)
+
+    def fill_select_in_policy_popup(self, items, available_items):
+        for item in items.split(", "):
+            for available_item in available_items:
+                if available_item.text == item:
+                    self.scroll_to(available_item)
+                    available_item.click()
+                    break
+            else:
+                raise AssertionError(f"There are no item {item} in select popup")
+
+    @allure.step('Fill second step in new policy')
+    def fill_second_step_in_policy_popup(
+        self, clusters: Optional[str], services: Optional[str], parent: Optional[str], providers: Optional[str]
+    ):
         self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
+
+        @allure.step(f"Select clusters in popup")
+        def fill_cluster_select(clusters_to_select):
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select)
+            self.wait_element_visible(AdminPoliciesLocators.item)
+            available_clusters = self.find_elements(AdminPoliciesLocators.item)
+            self.fill_select_in_policy_popup(clusters_to_select, available_clusters)
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select)
+
+        if clusters:
+            fill_cluster_select(clusters)
+        if services:
+            if not parent:
+                raise ValueError("There are should be parent for service")
+            with allure.step(f"Select services {services} in popup"):
+                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_select)
+                self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item)
+                available_services = self.find_elements(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item)
+                self.fill_select_in_policy_popup(services, available_services)
+                fill_cluster_select(parent)
+        if providers:
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select)
+            self.wait_element_visible(AdminPoliciesLocators.item)
+            available_providers = self.find_elements(AdminPoliciesLocators.item)
+            self.fill_select_in_policy_popup(providers, available_providers)
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select)
         self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
+
+    @allure.step('Fill third step in new policy')
+    def fill_third_step_in_policy_popup(self):
         self.wait_element_visible(AdminPoliciesLocators.save_btn)
         self.find_and_click(AdminPoliciesLocators.save_btn)
         self.wait_element_hide(AdminPoliciesLocators.AddPolicyPopup.block)
+
+    @allure.step('Create new policy')
+    def create_policy(
+        self,
+        policy_name: str,
+        description: Optional[str],
+        role: str,
+        users: Optional[str],
+        groups: Optional[str],
+        clusters: Optional[str],
+        services: Optional[str],
+        parent: Optional[str],
+        providers: Optional[str],
+    ):
+
+        self.open_create_policy_popup()
+        self.fill_first_step_in_policy_popup(policy_name, description, role, users, groups)
+        self.fill_second_step_in_policy_popup(clusters, services, parent, providers)
+        self.fill_third_step_in_policy_popup()
 
     def get_all_policies(self) -> [AdminPolicyInfo]:
         """Get all policies info and returns list with policies names."""
