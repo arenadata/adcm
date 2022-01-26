@@ -47,12 +47,23 @@ roles:
               codenames:
                 - add
 
-    - name: Upload bundle
-      description: The ability to upload Bundle
-      type: business
+    - name: Accept license
+      description: The ability to accept bundle license
+      type: hidden
       module_name: rbac.roles
       class_name: ModelRole
-      any_category: true
+      apps:
+        - label: cm
+          models:
+            - name: bundle
+              codenames:
+                - change
+
+    - name: Add bundle
+      description: The ability to upload Bundle
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
       apps:
         - label: cm
           models:
@@ -62,6 +73,19 @@ roles:
             - name: prototype
               codenames:
                 - add
+
+    - name: Upload bundle
+      description: The ability to upload Bundle
+      type: business
+      module_name: rbac.roles
+      class_name: ParentRole
+      any_category: true
+      init_params:
+        app_name: cm
+        model: Bundle
+      child:
+        - Add bundle
+        - Accept license
 
     - name: View cluster config
       description: The ability to view the cluster configuration page
