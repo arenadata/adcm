@@ -304,6 +304,7 @@ def delete_service(service):
     cluster = service.cluster
     service.delete()
     cm.issue.update_hierarchy_issues(cluster)
+    rbac.models.re_apply_object_policy(cluster)
     cm.status_api.post_event('delete', 'service', service_id)
     load_service_map()
     log.info(f'service #{service_id} is deleted')
@@ -329,6 +330,7 @@ def remove_host_from_cluster(host):
             cm.issue.update_hierarchy_issues(host)
         host.remove_from_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(cluster)
+        rbac.models.re_apply_object_policy(cluster)
     ctx.event.send_state()
     cm.status_api.post_event('remove', 'host', host.id, 'cluster', str(cluster.id))
     load_service_map()
@@ -510,6 +512,7 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
 
 def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     hc_queryset = HostComponent.objects.filter(cluster=cluster)
+    service_map = {hc.service for hc in hc_queryset}
     old_hosts = {i.host for i in hc_queryset.select_related('host').all()}
     new_hosts = {i[1] for i in host_comp_list}
     for removed_host in old_hosts.difference(new_hosts):
@@ -542,15 +545,11 @@ def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     cm.status_api.post_event('change_hostcomponentmap', 'cluster', cluster.id)
     cm.issue.update_hierarchy_issues(cluster)
     load_service_map()
-    return result
-
-
-def re_apply_policy4service(hc_map):
-    service_map = {}
-    for hc in hc_map:
-        service_map[hc.service.id] = hc.service
-    for service in service_map.values():
+    for service in service_map:
         rbac.models.re_apply_object_policy(service)
+    for hc in result:
+        rbac.models.re_apply_object_policy(hc.service)
+    return result
 
 
 def add_hc(cluster, hc_in):
@@ -558,7 +557,6 @@ def add_hc(cluster, hc_in):
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
         new_hc = save_hc(cluster, host_comp_list)
-        re_apply_policy4service(new_hc)
     return new_hc
 
 

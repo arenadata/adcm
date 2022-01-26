@@ -90,7 +90,7 @@ def test_delete_built_in_user(sdk_client_fs: ADCMClient):
             except NoSuchEndpointOrAccessIsDenied:
                 ...
             else:
-                raise AssertionError(f'Built-in user {built_in_user} should not be allowed to be deleted')
+                raise AssertionError(f'Built-in user {built_in_user.username} should not be allowed to be deleted')
 
 
 # !===== STEPS =====!
