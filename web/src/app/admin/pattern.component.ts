@@ -79,7 +79,7 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
         filter((e) => e instanceof NavigationEnd),
         this.takeUntil()
       )
-      .subscribe((e: NavigationEnd) => this.getContext(e.url));
+      .subscribe((e: NavigationEnd) => this.getContext(e.urlAfterRedirects));
 
     // auto-save and flag in to profile
     this.store
