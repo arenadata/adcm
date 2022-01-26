@@ -24,7 +24,7 @@ from api.api_views import (
     InterfaceView,
     check_custom_perm,
 )
-from cm.api import remove_host_from_cluster, delete_host
+from cm.api import remove_host_from_cluster, delete_host, add_host_to_cluster
 from cm.errors import AdcmEx
 from cm.models import (
     Cluster,
@@ -35,7 +35,7 @@ from cm.models import (
     ServiceComponent,
     HostComponent,
 )
-import cm.status_api
+from cm.status_api import make_ui_host_status
 from . import serializers
 
 
@@ -172,7 +172,7 @@ class HostListCluster(HostList):
                 cluster = check_obj(Cluster, kwargs['cluster_id'])
             host = check_obj(Host, validated_data.get('id'))
             self.check_host_perm('map_host_to', 'cluster', cluster)
-            cm.api.add_host_to_cluster(cluster, host)
+            add_host_to_cluster(cluster, host)
             return Response(self.get_serializer(host).data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -238,7 +238,7 @@ class StatusList(GenericAPIView, InterfaceView):
         host = check_obj(Host, host_id)
         if self.for_ui(request):
             host_components = self.get_queryset().filter(host=host)
-            return Response(cm.status_api.make_ui_host_status(host, host_components))
+            return Response(make_ui_host_status(host, host_components))
         else:
             serializer = self.serializer_class(host, context={'request': request})
             return Response(serializer.data)

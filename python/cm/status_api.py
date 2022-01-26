@@ -277,6 +277,7 @@ def make_ui_host_status(host: Host, host_components: Iterable[HostComponent]) ->
                 'id': hc.component.id,
                 'name': hc.component.display_name,
                 'status': get_component_status(hc.component),
+                'service_id': hc.service.id,
             }
         )
 
