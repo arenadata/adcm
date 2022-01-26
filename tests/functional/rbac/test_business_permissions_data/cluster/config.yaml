@@ -12,6 +12,7 @@
 
 - type: cluster
   name: test_cluster
+  display_name: One name
   version: 1.5
   edition: community
 

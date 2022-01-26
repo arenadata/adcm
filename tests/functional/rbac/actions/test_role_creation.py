@@ -13,7 +13,7 @@
 """Test policies, roles, permissions created after bundle upload"""
 
 from operator import itemgetter
-from typing import Iterable, List, Tuple, Set, NamedTuple, Iterator
+from typing import Iterable, List, Tuple, Set, Iterator
 
 import allure
 from adcm_client.base import ObjectNotFound
@@ -23,15 +23,7 @@ from adcm_pytest_plugin.utils import catch_failed
 from tests.library.assertions import is_superset_of, is_in_collection, is_not_in_collection, does_not_intersect
 from tests.functional.rbac.actions.utils import get_prototype_prefix, get_bundle_prefix
 from tests.functional.rbac.actions.conftest import ALL_SERVICE_NAMES
-from tests.functional.rbac.conftest import RbacRoles, RoleType
-
-
-class RoleShortInfo(NamedTuple):
-    """Minimal required info for working with role info for most cases"""
-
-    id: int
-    name: str
-    categories: tuple
+from tests.functional.rbac.conftest import RbacRoles, RoleType, RoleShortInfo, extract_role_short_info
 
 
 # !===== Tests ======!
@@ -309,13 +301,8 @@ def get_actions_role_names(full_role_prefix: str, action_names: List[dict]) -> L
 
 
 def get_roles_of_type(role_type: RoleType, client: ADCMClient):
-    """Get first 100 roles with given type"""
-    return client.role_list(type=role_type.value, paging={'limit': 100})
-
-
-def extract_role_short_info(role: Role) -> RoleShortInfo:
-    """Convert API Role object to RoleShortInfo"""
-    return RoleShortInfo(role.id, role.name, tuple(role.category))
+    """Get first 200 roles with given type"""
+    return client.role_list(type=role_type.value, paging={'limit': 200})
 
 
 def get_roles_ids_from_info(roles_short_info: Iterable[RoleShortInfo]) -> Set[int]:
