@@ -418,6 +418,8 @@ class TestAdminPolicyPage:
 
     @allure.step('Check custome policy')
     def check_custom_policy(self, policies_page):
+        """Check that there is only one created policy with expected params"""
+
         current_policies = policies_page.get_all_policies()
         assert len(current_policies) == 1, "There should be 1 policy on the page"
         assert current_policies == [self.custom_policy], "Created policy should be on the page"
