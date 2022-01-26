@@ -582,7 +582,7 @@ class AdminPoliciesPage(GeneralAdminPage):
     ):
         self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
 
-        @allure.step(f"Select clusters in popup")
+        @allure.step("Select clusters in popup")
         def fill_cluster_select(clusters_to_select):
             self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select)
             self.wait_element_visible(AdminPoliciesLocators.item)
