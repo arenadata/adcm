@@ -7,6 +7,10 @@ export interface StatusTreeSubject {
   link?: StatusTreeLinkFunc;
 }
 
+export interface HCStatusTreeSubject extends StatusTreeSubject {
+  service_id: number;
+}
+
 export interface StatusTree {
   subject: StatusTreeSubject;
   children: StatusTree[];
@@ -28,7 +32,7 @@ export interface HostComponentStatusTree extends StatusTreeSubject {
 }
 
 export interface HostStatusTree extends StatusTreeSubject {
-  hc: StatusTreeSubject[];
+  hc: HCStatusTreeSubject[];
 }
 
 export interface ServiceStatusTree extends StatusTreeSubject {

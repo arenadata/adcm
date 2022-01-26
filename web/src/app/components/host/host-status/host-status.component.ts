@@ -24,6 +24,10 @@ export class HostStatusComponent extends StatusAbstractDirective<HostStatusTree,
     super(route, store, entityService);
   }
 
+  pipeData(): any {
+    return this.entity.cluster_id;
+  }
+
   eventReceived(event: EventMessage) {
     let output;
     switch (event.object.type) {
