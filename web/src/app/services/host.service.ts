@@ -35,7 +35,7 @@ export class HostService extends EntityService<IHost> implements HavingStatusTre
     return this.api.get(`${environment.apiRoot}host/${id}/status/`);
   }
 
-  entityStatusTreeToStatusTree(input: HostStatusTree): StatusTree[] {
+  entityStatusTreeToStatusTree(input: HostStatusTree, clusterId: number): StatusTree[] {
     return [{
       subject: {
         id: input.id,
@@ -47,6 +47,7 @@ export class HostService extends EntityService<IHost> implements HavingStatusTre
           id: hc.id,
           status: hc.status,
           name: hc.name,
+          link: (id) => ['/cluster', clusterId.toString(), 'service', hc.service_id.toString(), 'component', id.toString(), 'status'],
         },
         children: [],
       })),
