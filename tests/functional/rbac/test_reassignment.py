@@ -13,11 +13,20 @@
 """Test roles reassignment in various situations"""
 
 from contextlib import contextmanager
-from typing import Dict, List, Generator
+from typing import Dict, List, Generator, Collection
 
-from adcm_client.objects import ADCMClient, Bundle
+import allure
+from adcm_client.objects import ADCMClient, Bundle, User, Policy, Host
 
-from tests.functional.rbac.conftest import BusinessRoles, is_allowed, is_denied, as_user_objects, TEST_USER_CREDENTIALS
+from tests.functional.tools import AnyADCMObject
+from tests.functional.rbac.conftest import (
+    BusinessRoles,
+    is_allowed,
+    is_denied,
+    as_user_objects,
+    TEST_USER_CREDENTIALS,
+    RbacRoles,
+)
 
 
 @contextmanager
@@ -27,6 +36,112 @@ def new_client_instance(user: str, password: str, url: str) -> Generator[ADCMCli
     Use it to "refresh" permissions.
     """
     yield ADCMClient(user=user, password=password, url=url)
+
+
+class TestReapplyTriggers:
+    """Test reapply cases"""
+
+    def test_add_remove_host_from_cluster(self, clients, prepare_objects, user):
+        """Test that policies are applied after host add/remove after the policy was assigned at first"""
+        *_, admin_provider, _ = prepare_objects
+        another_host = admin_provider.host_create(fqdn='another-host')
+        cluster, *_, host, another_host = as_user_objects(clients.user, *prepare_objects, another_host)
+
+        is_denied(host, BusinessRoles.EditHostConfigurations)
+        is_denied(another_host, BusinessRoles.EditHostConfigurations)
+        is_denied(cluster, BusinessRoles.MapHosts, host)
+
+        self.grant_role(clients.admin, user, RbacRoles.ClusterAdministrator, cluster)
+
+        is_denied(host, BusinessRoles.EditHostConfigurations)
+        is_allowed(cluster, BusinessRoles.MapHosts, host)
+        is_allowed(host, BusinessRoles.EditHostConfigurations)
+        is_denied(another_host, BusinessRoles.EditHostConfigurations)
+        is_allowed(cluster, BusinessRoles.MapHosts, another_host)
+        is_allowed(another_host, BusinessRoles.EditHostConfigurations)
+
+        is_allowed(cluster, BusinessRoles.UnmapHosts, host)
+        is_denied(host, BusinessRoles.EditHostConfigurations)
+        is_allowed(another_host, BusinessRoles.EditHostConfigurations)
+
+    def test_add_remove_service_from_cluster(self, clients, prepare_objects, user):
+        """Test that policies are applied/removed after service add/remove after the policy was assigned at first"""
+        cluster, service, *_ = as_user_objects(clients.user, *prepare_objects)
+
+        is_denied(cluster, BusinessRoles.AddService)
+        is_denied(service, BusinessRoles.EditServiceConfigurations)
+
+        self.grant_role(clients.admin, user, RbacRoles.ClusterAdministrator, cluster)
+
+        is_allowed(service, BusinessRoles.EditServiceConfigurations)
+        new_service = is_allowed(cluster, BusinessRoles.AddService)
+        is_allowed(new_service, BusinessRoles.EditServiceConfigurations)
+        is_allowed(cluster, BusinessRoles.RemoveService, new_service)
+
+        is_allowed(service, BusinessRoles.EditServiceConfigurations)
+
+    # pylint: disable=too-many-locals
+    def test_change_hostcomponent(self, clients, prepare_objects, user):
+        """Test that change of HC map correctly affects access to components"""
+        admin_cluster, *_, admin_provider, admin_host = prepare_objects
+        admin_new_service = admin_cluster.service_add(name='new_service')
+        another_host = admin_provider.host_create(fqdn='another-host')
+        admin_cluster.host_add(admin_host)
+        admin_cluster.host_add(another_host)
+
+        _, test_service, *_, host, another_host = as_user_objects(clients.user, *prepare_objects, another_host)
+
+        def _check_host_configs(allowed_on: Collection[Host] = (), denied_on: Collection[Host] = ()):
+            with new_client_instance(*TEST_USER_CREDENTIALS, clients.user.url) as user_client:
+                for obj in as_user_objects(user_client, *allowed_on):
+                    is_allowed(obj, BusinessRoles.ViewHostConfigurations)
+                for obj in as_user_objects(user_client, *denied_on):
+                    is_denied(obj, BusinessRoles.ViewHostConfigurations)
+
+        with allure.step("Check configs of hosts aren't allowed to view before Service Admin is granted to user"):
+            _check_host_configs([], [host, another_host])
+
+        self.grant_role(clients.admin, user, RbacRoles.ServiceAdministrator, test_service)
+
+        with allure.step("Check configs of hosts aren't allowed to view before HC map is set"):
+            _check_host_configs([], [host, another_host])
+
+        test_service_test_component, test_service_new_component = test_service.component(
+            name='test_component'
+        ), test_service.component(name='new_component')
+        new_service_test_component, new_service_new_component = as_user_objects(
+            clients.user,
+            admin_new_service.component(name='test_component'),
+            admin_new_service.component(name='new_component'),
+        )
+
+        with allure.step(f'Assign component of test_service on host {host.fqdn}'):
+            admin_cluster.hostcomponent_set((host, test_service_test_component))
+            _check_host_configs([host], [another_host])
+
+        with allure.step('Assign components of new_service on two hosts'):
+            admin_cluster.hostcomponent_set(
+                (host, new_service_test_component), (another_host, new_service_new_component)
+            )
+            _check_host_configs([], [host, another_host])
+
+        with allure.step(
+            f'Assign components of new_service on two hosts, and component of test_service on {another_host.fqdn}'
+        ):
+            admin_cluster.hostcomponent_set(
+                (host, new_service_test_component),
+                (another_host, new_service_new_component),
+                (another_host, test_service_new_component),
+            )
+            _check_host_configs([another_host], [host])
+
+    # pylint: disable-next=no-self-use
+    def grant_role(self, client: ADCMClient, user: User, role: RbacRoles, *objects: AnyADCMObject) -> Policy:
+        """Grant RBAC default role to a user"""
+        with allure.step(f'Grant role "{role.value}" to user {user.username}'):
+            return client.policy_create(
+                name=f'{user.username} is {role.value}', role=client.role(name=role.value), objects=objects, user=[user]
+            )
 
 
 def test_child_role_update_after_assignment(clients, user, cluster_bundle, provider_bundle):
