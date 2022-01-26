@@ -129,7 +129,12 @@ def test_acyclic(role_map: dict, roots: dict):
         tree_dive_in(role_map, {}, [v["name"]], v, v)
 
 
-EXCLUDE = {"ADCM User": True, "Cluster Administrator": True, "Service Administrator": True}
+EXCLUDE = {
+    "ADCM User": True,
+    "Cluster Administrator": True,
+    "Service Administrator": True,
+    "Provider Administrator": True,
+}
 
 
 def is_exclude(name: str) -> bool:
