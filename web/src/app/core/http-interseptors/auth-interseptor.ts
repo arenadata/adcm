@@ -53,11 +53,7 @@ export class AuthInterceptor implements HttpInterceptor {
         }
 
         if (res.status === 403) {
-          let cur_path = this.location.path();
-          this.location.back();
-          if (cur_path === this.location.path()) {
-            this.router.navigate(['/']);
-          }
+          this.router.navigate(['/403'])
         }
 
         if (res.status === 500) this.router.navigate(['/500']);

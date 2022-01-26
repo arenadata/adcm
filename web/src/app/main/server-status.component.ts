@@ -33,3 +33,10 @@ export class GatewayTimeoutComponent {}
   template: '<div>Page not found.</div>',
 })
 export class PageNotFoundComponent {}
+
+// http 403
+@Component({
+  styles: [styleCSS],
+  template: '<div>You do not have permission to perform this action.</div>',
+})
+export class ForbiddenComponent {}

@@ -6,7 +6,7 @@ import { AuthGuard } from '@app/core/auth/auth.guard';
 import { LoginComponent } from '@app/main/login/login.component';
 import { ProfileComponent } from '@app/main/profile/profile.component';
 import { SupportComponent } from '@app/main/support/support.component';
-import { FatalErrorComponent, GatewayTimeoutComponent, PageNotFoundComponent } from '@app/main/server-status.component';
+import { FatalErrorComponent, ForbiddenComponent, GatewayTimeoutComponent, PageNotFoundComponent } from '@app/main/server-status.component';
 import { HostListComponent } from '@app/components/host/host-list/host-list.component';
 import { MainInfoComponent } from '@app/shared/components';
 import { ConfigComponent } from '@app/shared/configuration/main/config.component';
@@ -99,6 +99,7 @@ const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
   { path: 'support', component: SupportComponent },
+  { path: '403', component: ForbiddenComponent },
   { path: '404', component: PageNotFoundComponent },
   { path: '500', component: FatalErrorComponent },
   { path: '504', component: GatewayTimeoutComponent },

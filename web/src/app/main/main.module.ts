@@ -19,7 +19,7 @@ import { ProfileComponent } from './profile/profile.component';
 import { SupportComponent } from './support/support.component';
 import { TopComponent } from './top/top.component';
 import { ProgressComponent } from './progress.component';
-import { PageNotFoundComponent, FatalErrorComponent, GatewayTimeoutComponent } from './server-status.component';
+import { PageNotFoundComponent, FatalErrorComponent, GatewayTimeoutComponent, ForbiddenComponent } from './server-status.component';
 import { BellComponent } from '@app/components/bell/bell.component';
 import { NotificationsComponent } from '@app/components/notifications/notifications.component';
 import { BellTaskLinkPipe } from '@app/pipes/bell-task-link.pipe';
@@ -34,6 +34,7 @@ import { BellTaskLinkPipe } from '@app/pipes/bell-task-link.pipe';
     LoginComponent,
     ProfileComponent,
     SupportComponent,
+    ForbiddenComponent,
     FatalErrorComponent,
     GatewayTimeoutComponent,
     PageNotFoundComponent,
