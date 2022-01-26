@@ -272,6 +272,8 @@ class Endpoints(Enum):
             Methods.PATCH,
             Methods.DELETE,
         ],
+        # deletion doesn't work here
+        filter_predicate=lambda i: not i['built_in'],
         data_class=RbacUserFields,
         spec_link="",
     )

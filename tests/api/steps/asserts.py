@@ -67,8 +67,8 @@ def body_should_be(response: Response, expected_body: ExpectedBody):
 
     if expected_values:
         with allure.step("Fields values should be"):
-
             actual_values = {key: value for key, value in actual_body.items() if key in expected_values}
+
             allure.attach(
                 json.dumps(expected_values, indent=2),
                 name='Expected fields values',
@@ -82,7 +82,8 @@ def body_should_be(response: Response, expected_body: ExpectedBody):
             try:
                 assert actual_values == expected_values, "Response fields values assertion failed!"
             except AssertionError as error:
-                raise BodyAssertionError(error) from error
+                if _clean_values(actual_values) != _clean_values(expected_values):
+                    raise BodyAssertionError(error) from error
     if unexpected_values:
         with allure.step("Fields values should NOT be"):
             actual_values = {key: value for key, value in actual_body.items() if key in unexpected_values}
@@ -100,4 +101,25 @@ def body_should_be(response: Response, expected_body: ExpectedBody):
                 for key, value in unexpected_values.items():
                     assert value.value != actual_values.get(key), f"Response field {key} has unexpected value"
             except AssertionError as error:
-                raise BodyAssertionError(error) from error
+                # maybe we want to check it above
+                if _clean_values(actual_values) == _clean_values(unexpected_values):
+                    raise BodyAssertionError(error) from error
+
+
+def _clean_values(to_clean: dict):
+    """Make lists and dicts cleaner to compare"""
+    # it's an awful way to do it, but otherwise we should ignore all lists
+    dict_to_clean = dict(**to_clean)
+    for key, value in dict_to_clean.items():
+        if isinstance(value, list) and len(value) > 0:
+            if isinstance(value[0], dict):
+                dicts_in_list = [_clean_values(v) for v in value]
+                # we suppose that all keys are the same
+                keys = list(value[0].keys())
+                keys.sort()
+                dict_to_clean[key] = set(tuple((k, d[k]) for k in keys) for d in dicts_in_list)
+            else:
+                value.sort()
+        elif isinstance(value, dict):
+            dict_to_clean[key] = _clean_values(value)
+    return dict_to_clean

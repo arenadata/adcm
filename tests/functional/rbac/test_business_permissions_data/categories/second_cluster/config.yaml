@@ -11,24 +11,23 @@
 # limitations under the License.
 
 - type: cluster
-  name: test_cluster
-  version: 1.5
+  name: new_cluster
+  version: 1.6
   edition: community
+  upgrade:
+    - versions:
+        min: 0.4
+        max: 1.5
+      name: upgrade to 1.6
+      states:
+        available: any
+        on_success: upgradable
 
   config: &common_config
   - name: boolean
     type: boolean
     required: false
     default: true
-  import: &common_import
-    test_cluster:
-      versions:
-        min: 1.6
-        max: 1.6
-    test_service:
-      versions:
-        min: 101
-        max: 101
 
   actions: &common_actions
     no_config: &job
@@ -47,6 +46,9 @@
         - name: some_param
           type: string
 
+  export:
+    - boolean
+
 - type: service
   name: test_service
   version: 101
@@ -55,15 +57,13 @@
 
   actions: *common_actions
 
-  components: &common_components
+  components:
     test_component:
       config: *common_config
       actions: *common_actions
-    new_component:
-      config: *common_config
-      actions: *common_actions
 
-  import: *common_import
+  export:
+    - boolean
 
 - type: service
   name: new_service
@@ -73,6 +73,7 @@
 
   actions: *common_actions
 
-  components: *common_components
-
-  import: *common_import
+  components:
+    new_component:
+      config: *common_config
+      actions: *common_actions

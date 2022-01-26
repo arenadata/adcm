@@ -11,8 +11,7 @@
 # limitations under the License.
 
 - type: cluster
-  name: another_cluster
-  display_name: Another name
+  name: test_cluster
   version: 1.6
   edition: community
   upgrade:
