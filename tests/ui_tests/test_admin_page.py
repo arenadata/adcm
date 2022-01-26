@@ -437,15 +437,10 @@ class TestAdminPolicyPage:
 
         policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
         policies_page.create_policy(
-            self.custom_policy.name,
-            self.custom_policy.description,
-            self.custom_policy.role,
-            self.custom_policy.users,
-            self.custom_policy.groups,
-            None,
-            None,
-            None,
-            None,
+            policy_name=self.custom_policy.name,
+            description=self.custom_policy.description,
+            role=self.custom_policy.role,
+            users=self.custom_policy.users,
         )
         self.check_custom_policy(policies_page)
 
@@ -456,15 +451,10 @@ class TestAdminPolicyPage:
         with allure.step("Create 11 policies"):
             for i in range(11):
                 policies_page.create_policy(
-                    f"{self.custom_policy.name}_{i}",
-                    self.custom_policy.description,
-                    self.custom_policy.role,
-                    self.custom_policy.users,
-                    self.custom_policy.groups,
-                    None,
-                    None,
-                    None,
-                    None,
+                    policy_name=f"{self.custom_policy.name}_{i}",
+                    description=self.custom_policy.description,
+                    role=self.custom_policy.role,
+                    users=self.custom_policy.users,
                 )
         policies_page.table.check_pagination(second_page_item_amount=1)
 
@@ -473,15 +463,10 @@ class TestAdminPolicyPage:
 
         policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
         policies_page.create_policy(
-            self.custom_policy.name,
-            self.custom_policy.description,
-            self.custom_policy.role,
-            self.custom_policy.users,
-            self.custom_policy.groups,
-            None,
-            None,
-            None,
-            None,
+            policy_name=self.custom_policy.name,
+            description=self.custom_policy.description,
+            role=self.custom_policy.role,
+            users=self.custom_policy.users,
         )
         policies_page.select_all_policies()
         policies_page.click_delete_button()
@@ -503,15 +488,11 @@ class TestAdminPolicyPage:
             )
         policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
         policies_page.create_policy(
-            self.custom_policy.name,
-            self.custom_policy.description,
-            self.custom_policy.role,
-            self.custom_policy.users,
-            self.custom_policy.groups,
-            cluster.name,
-            None,
-            None,
-            None,
+            policy_name=self.custom_policy.name,
+            description=self.custom_policy.description,
+            role=self.custom_policy.role,
+            users=self.custom_policy.users,
+            clusters=cluster.name,
         )
         self.check_custom_policy(policies_page)
 
@@ -530,15 +511,12 @@ class TestAdminPolicyPage:
             )
         policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
         policies_page.create_policy(
-            self.custom_policy.name,
-            self.custom_policy.description,
-            self.custom_policy.role,
-            self.custom_policy.users,
-            self.custom_policy.groups,
-            None,
-            service.name,
-            cluster.name,
-            None,
+            policy_name=self.custom_policy.name,
+            description=self.custom_policy.description,
+            role=self.custom_policy.role,
+            users=self.custom_policy.users,
+            services=service.name,
+            parent=cluster.name,
         )
         self.check_custom_policy(policies_page)
 
@@ -557,14 +535,10 @@ class TestAdminPolicyPage:
             )
         policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
         policies_page.create_policy(
-            self.custom_policy.name,
-            self.custom_policy.description,
-            self.custom_policy.role,
-            self.custom_policy.users,
-            self.custom_policy.groups,
-            None,
-            None,
-            None,
-            provider.name,
+            policy_name=self.custom_policy.name,
+            description=self.custom_policy.description,
+            role=self.custom_policy.role,
+            users=self.custom_policy.users,
+            providers=provider.name,
         )
         self.check_custom_policy(policies_page)

@@ -621,12 +621,12 @@ class AdminPoliciesPage(GeneralAdminPage):
         policy_name: str,
         description: Optional[str],
         role: str,
-        users: Optional[str],
-        groups: Optional[str],
-        clusters: Optional[str],
-        services: Optional[str],
-        parent: Optional[str],
-        providers: Optional[str],
+        users: Optional[str] = None,
+        groups: Optional[str] = None,
+        clusters: Optional[str] = None,
+        services: Optional[str] = None,
+        parent: Optional[str] = None,
+        providers: Optional[str] = None,
     ):
 
         self.open_create_policy_popup()
