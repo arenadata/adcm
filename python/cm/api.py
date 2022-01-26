@@ -47,6 +47,7 @@ from cm.models import (
     PrototypeImport,
     Role,
     ServiceComponent,
+    ConcernType,
 )
 from cm.upgrade import check_license, version_in
 
@@ -167,6 +168,8 @@ def delete_host_provider(provider):
     if hosts:
         msg = 'There is host #{} "{}" of host {}'
         err('PROVIDER_CONFLICT', msg.format(hosts[0].id, hosts[0].fqdn, obj_ref(provider)))
+    if provider.concerns.filter(type=ConcernType.Lock).exists():
+        raise AdcmEx('LOCK_ERROR')
     provider_id = provider.id
     provider.delete()
     cm.status_api.post_event('delete', 'provider', provider_id)
@@ -231,6 +234,8 @@ def delete_host(host):
     if cluster:
         msg = 'Host #{} "{}" belong to {}'
         err('HOST_CONFLICT', msg.format(host.id, host.fqdn, obj_ref(cluster)))
+    if host.concerns.filter(type=ConcernType.Lock).exists():
+        raise AdcmEx('LOCK_ERROR')
     host_id = host.id
     host.delete()
     cm.status_api.post_event('delete', 'host', host_id)
@@ -299,6 +304,8 @@ def delete_service(service):
         err('SERVICE_CONFLICT', f'Service #{service.id} has component(s) on host(s)')
     if ClusterBind.objects.filter(source_service=service).exists():
         err('SERVICE_CONFLICT', f'Service #{service.id} has exports(s)')
+    if service.concerns.filter(type=ConcernType.Lock).exists():
+        raise AdcmEx('LOCK_ERROR')
     service_id = service.id
     cluster = service.cluster
     service.delete()
@@ -309,6 +316,8 @@ def delete_service(service):
 
 
 def delete_cluster(cluster):
+    if cluster.concerns.filter(type=ConcernType.Lock).exists():
+        raise AdcmEx('LOCK_ERROR')
     cluster_id = cluster.id
     cluster.delete()
     cm.status_api.post_event('delete', 'cluster', cluster_id)
