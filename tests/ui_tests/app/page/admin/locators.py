@@ -208,6 +208,10 @@ class AdminPoliciesLocators(CommonAdminPagesLocators):
                 "app-rbac-policy-form-step-two~div button[matstepperprevious]",
                 "Back button from second step",
             )
+            cluster_select = Locator(By.CSS_SELECTOR, "app-parametrized-by-cluster adwp-select", "select cluster")
+            service_select = Locator(By.CSS_SELECTOR, "app-parametrized-by-service mat-select", "select service")
+            service_item = Locator(By.CSS_SELECTOR, ".mat-select-panel mat-option", "select service item")
+            provider_select = Locator(By.CSS_SELECTOR, "app-parametrized-by-provider adwp-select", "select provider")
             next_btn_second = Locator(
                 By.CSS_SELECTOR, "app-rbac-policy-form-step-two~div .mat-stepper-next", "Next button from second step"
             )
