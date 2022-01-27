@@ -154,6 +154,7 @@ roles:
       description: The ability to view the component configuration page
       type: hidden
       parametrized_by:
+        - service
         - component
       module_name: rbac.roles
       class_name: ObjectRole
@@ -342,6 +343,7 @@ roles:
       description: The ability to change and add new component configuration
       type: hidden
       parametrized_by:
+        - service
         - component
       module_name: rbac.roles
       class_name: ObjectRole

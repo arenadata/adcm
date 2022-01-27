@@ -13,6 +13,7 @@
 # pylint:disable=redefined-outer-name
 
 import os
+
 import pytest
 import ruyaml
 
@@ -79,18 +80,6 @@ def test_childs(role_map: map):
         if "child" in v:
             for ch in v["child"]:
                 assert ch in role_map, f'There is no such role "{ch}". Error in role "{k}"'
-
-
-def test_leaf_parametriation(spec_data: list):
-    """Leaf should has no more than one parametrized_by elements.
-    That is a restriction of apply role function.
-    """
-    for r in spec_data["roles"]:
-        if not "child" in r or not r["child"]:
-            if "parametrized_by" in r:
-                assert (
-                    len(r["parametrized_by"]) < 2
-                ), f'Role entry {r["name"]} has more then one parametrized_by entry'
 
 
 def is_in_set(allowed: list[set], value: set):
