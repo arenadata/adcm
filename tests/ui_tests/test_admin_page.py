@@ -310,7 +310,6 @@ class TestAdminRolesPage:
                 )
         page.table.check_pagination(second_page_item_amount=1)
 
-    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2611")
     def test_check_role_popup_on_roles_page(self, app_fs):
         """Test changing a role on /admin/roles page"""
 
@@ -326,10 +325,13 @@ class TestAdminRolesPage:
         with allure.step("Check that update unavailable without the role name"):
             page.fill_role_name_in_role_popup(" ")
             page.check_save_button_disabled()
-            page.check_field_is_not_correct_in_role_popup("Role name")
+            page.check_field_error_in_role_popup('Role name is required.')
+            page.check_field_error_in_role_popup('Role name too short.')
             page.fill_role_name_in_role_popup("")
             page.check_save_button_disabled()
-            page.check_field_is_required_in_role_popup("Role name")
+            page.check_field_error_in_role_popup("Role name is required.")
+            page.fill_role_name_in_role_popup("йй")
+            page.check_field_error_in_role_popup("Role name is not correct.")
         with allure.step("Check that update unavailable without permissions"):
             page.remove_permissions_in_add_role_popup(permissions_to_remove=self.custom_role.permissions.split(", "))
             page.check_save_button_disabled()

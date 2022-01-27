@@ -489,19 +489,11 @@ class AdminRolesPage(GeneralAdminPage):
             self.find_element(AdminRolesLocators.save_btn).get_attribute("disabled") == 'true'
         ), "Save role button should be disabled"
 
-    @allure.step("Check {name} required error is presented")
-    def check_field_is_required_in_role_popup(self, name: str):
-        """Assert that message "{name} is required" is presented"""
+    @allure.step("Check {error_message} error is presented")
+    def check_field_error_in_role_popup(self, error_message: str):
+        """Assert that message "{error_message}" is presented"""
 
-        message = f'{name} is required.'
-        self.check_element_should_be_visible(AdminRolesLocators.field_error(message))
-
-    @allure.step("Check {name} not correct error is presented")
-    def check_field_is_not_correct_in_role_popup(self, name: str):
-        """Assert that message "{name} is not correct" is presented"""
-
-        message = f'{name} is not correct.'
-        self.check_element_should_be_visible(AdminRolesLocators.field_error(message), timeout=6)
+        self.check_element_should_be_visible(AdminRolesLocators.field_error(error_message))
 
     def select_all_roles(self):
         self.find_elements(self.table.locators.header)[0].click()
