@@ -10,15 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=no-self-use
+
 """Test roles reassignment in various situations"""
 
 from contextlib import contextmanager
-from typing import Dict, List, Generator, Collection
+from typing import Dict, List, Generator, Collection, Tuple
 
 import allure
-from adcm_client.objects import ADCMClient, Bundle, User, Policy, Host
+import pytest
+from adcm_client.objects import ADCMClient, Bundle, User, Policy, Host, Cluster, Service, Provider, Role
 
-from tests.functional.tools import AnyADCMObject
+from tests.functional.tools import AnyADCMObject, get_object_represent
 from tests.functional.rbac.conftest import (
     BusinessRoles,
     is_allowed,
@@ -144,6 +147,75 @@ class TestReapplyTriggers:
             return client.policy_create(
                 name=f'{user.username} is {role.value}', role=client.role(name=role.value), objects=objects, user=[user]
             )
+
+
+class TestMultiplePolicyReapply:
+    """
+    Test that change of parametrization object in one of multiple policies granted to same user
+    doesn't lead to any kind of unpredictable behavior.
+    """
+
+    @pytest.fixture()
+    def objects(self, cluster_bundle, provider_bundle) -> Tuple[Cluster, Cluster, Service, Service, Provider]:
+        """Prepare various objects for multiple policies test"""
+        first_cluster = cluster_bundle.cluster_create(name='Test Cluster #1')
+        second_cluster = cluster_bundle.cluster_create(name='Test Cluster #2')
+        test_service = second_cluster.service_add(name='test_service')
+        new_service = second_cluster.service_add(name='new_service')
+        provider = provider_bundle.provider_create(name='Test Provider #1')
+        return first_cluster, second_cluster, test_service, new_service, provider
+
+    @pytest.fixture()
+    def admin_roles(self, sdk_client_fs) -> Tuple[Role, Role, Role]:
+        """
+        Find and return roles (in order):
+        - Cluster Administrator
+        - Service Administrator
+        - Provider Administrator
+        """
+        cluster_admin = sdk_client_fs.role(name=RbacRoles.ClusterAdministrator.value)
+        service_admin = sdk_client_fs.role(name=RbacRoles.ServiceAdministrator.value)
+        provider_admin = sdk_client_fs.role(name=RbacRoles.ProviderAdministrator.value)
+        return cluster_admin, service_admin, provider_admin
+
+    def test_change_one_of_policies_parametrization(self, clients, objects, admin_roles, user):
+        """
+        Assign multiple policies on different objects for the same user.
+        Change parametrization of one of policies.
+        Check if permissions are correct
+        """
+        first_cluster, second_cluster, test_service, new_service, provider = objects
+        policies = self.grant_policies_to_user(
+            clients.admin, (first_cluster, test_service, provider), admin_roles, user
+        )
+        self.check_edit_is_allowed(clients.user, first_cluster, test_service, provider)
+        self.check_edit_is_denied(clients.user, second_cluster, new_service)
+        _, service_policy, _ = policies
+        service_policy.update(object=[{'id': new_service.id, 'type': 'service'}])
+        self.check_edit_is_allowed(clients.user, first_cluster, new_service, provider)
+        self.check_edit_is_denied(clients.user, second_cluster, test_service)
+
+    @allure.step('Grant policies on Cluster #1, service of Cluster #2 and Provider #1')
+    def grant_policies_to_user(self, admin_client, cluster_service_provider, admin_roles, user) -> List[Policy]:
+        """Grant policies to user (different policy for each role)"""
+        return [
+            admin_client.policy_create(
+                name=f'Policy on {get_object_represent(obj)}', role=role, objects=[obj], user=[user]
+            )
+            for role, obj in zip(admin_roles, cluster_service_provider)
+        ]
+
+    @allure.step('Check edit is allowed')
+    def check_edit_is_allowed(self, user_client, *objects):
+        """Check edit is allowed"""
+        for obj in as_user_objects(user_client, *objects):
+            is_allowed(obj, BusinessRoles.edit_config_of(obj))
+
+    @allure.step('Check edit is denied')
+    def check_edit_is_denied(self, user_client, *objects):
+        """Check edit is denied"""
+        for obj in as_user_objects(user_client, *objects):
+            is_denied(obj, BusinessRoles.edit_config_of(obj))
 
 
 def test_child_role_update_after_assignment(clients, user, cluster_bundle, provider_bundle):
