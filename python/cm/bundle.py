@@ -20,7 +20,6 @@ import tarfile
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction, IntegrityError
-from rbac.models import Role, RoleTypes
 from version_utils import rpm
 
 import cm.stack
@@ -29,6 +28,7 @@ from adcm.settings import ADCM_VERSION
 from cm import config
 from cm.adcm_config import proto_ref, init_object_config, switch_config
 from cm.errors import raise_AdcmEx as err
+from cm.logger import log
 from cm.models import (
     ADCM,
     Action,
@@ -51,7 +51,7 @@ from cm.models import (
     Upgrade,
     get_model_by_type,
 )
-from cm.logger import log
+from rbac.models import Role, RoleTypes
 
 STAGE = (
     StagePrototype,
@@ -325,7 +325,9 @@ def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too
             role.category.add(bundle.category)
         ct = ContentType.objects.get_for_model(model)
         perm, _ = Permission.objects.get_or_create(
-            content_type=ct, codename='run_object_action', name='Can run actions'
+            content_type=ct,
+            codename=f'run_action_{act.display_name}',
+            name=f'Can run {act.display_name} actions',
         )
         role.permissions.add(perm)
         if name not in parent:
@@ -333,6 +335,10 @@ def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too
         parent[name]['children'].append(role)
 
     for parent_name, parent_value in parent.items():
+        if parent_value['parametrized_by_type'] == 'component':
+            parametrized_by_type = ['service', 'component']
+        else:
+            parametrized_by_type = [parent_value['parametrized_by_type']]
         parent_role, is_created = Role.objects.get_or_create(
             name=f'{parent_name}',
             display_name=f'{parent_name}',
@@ -340,9 +346,7 @@ def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too
             type=RoleTypes.business,
             module_name='rbac.roles',
             class_name='ParentRole',
-            parametrized_by_type=[
-                parent_value['parametrized_by_type'],
-            ],
+            parametrized_by_type=parametrized_by_type,
         )
 
         if is_created:
