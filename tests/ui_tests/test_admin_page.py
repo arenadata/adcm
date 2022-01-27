@@ -310,7 +310,6 @@ class TestAdminRolesPage:
                 )
         page.table.check_pagination(second_page_item_amount=1)
 
-    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2611")
     def test_check_role_popup_on_roles_page(self, app_fs):
         """Test changing a role on /admin/roles page"""
 

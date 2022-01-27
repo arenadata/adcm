@@ -10,9 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- type: cluster
-  name: test_cluster
-  version: 1.5
+- type: provider
+  name: test_provider
+  version: 1.3
   edition: community
 
   config: &common_config
@@ -20,15 +20,6 @@
     type: boolean
     required: false
     default: true
-  import: &common_import
-    test_cluster:
-      versions:
-        min: 1.6
-        max: 1.6
-    test_service:
-      versions:
-        min: 101
-        max: 101
 
   actions: &common_actions
     no_config: &job
@@ -47,32 +38,10 @@
         - name: some_param
           type: string
 
-- type: service
-  name: test_service
+- type: host
+  name: test_host
   version: 101
 
   config: *common_config
 
   actions: *common_actions
-
-  components: &common_components
-    test_component:
-      config: *common_config
-      actions: *common_actions
-    new_component:
-      config: *common_config
-      actions: *common_actions
-
-  import: *common_import
-
-- type: service
-  name: new_service
-  version: 101
-
-  config: *common_config
-
-  actions: *common_actions
-
-  components: *common_components
-
-  import: *common_import

@@ -30,8 +30,11 @@ def test_category_lifecycle(sdk_client_fs):
     """Test categories' behavior during bundles upload/removal"""
     expected_categories = set()
     filepaths = {
-        'clusters': {'first': os.path.join(DATA_DIR, 'cluster'), 'second': os.path.join(DATA_DIR, 'second_cluster')},
-        'providers': {'first': os.path.join(DATA_DIR, 'provider')},
+        'clusters': {
+            'first': os.path.join(DATA_DIR, 'categories', 'cluster'),
+            'second': os.path.join(DATA_DIR, 'categories', 'second_cluster'),
+        },
+        'providers': {'first': os.path.join(DATA_DIR, 'categories', 'provider')},
     }
 
     check_categories_before_bundle_upload(sdk_client_fs, expected_categories)

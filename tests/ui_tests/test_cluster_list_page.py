@@ -970,6 +970,7 @@ class TestClusterStatusPage:
                 cluster_status_page.click_collapse_all_btn()
             assert len(cluster_status_page.get_all_rows()) == 1, "Status rows should have been collapsed"
 
+    @pytest.mark.skip(reason='We need to update this test to check "real" cases and then remove this skip')
     def test_service_passive_status_on_cluster_status_page(
         self, app_fs, adcm_fs, create_host, sdk_client_fs: ADCMClient
     ):

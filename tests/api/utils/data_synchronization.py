@@ -16,6 +16,7 @@ import random
 from copy import deepcopy
 
 # pylint: disable=import-outside-toplevel
+from typing import Tuple
 
 
 def sync_object_and_role(adcm, fields: dict) -> dict:
@@ -55,26 +56,29 @@ def sync_child_roles_hierarchy(adcm, fields: dict):
         return fields
 
     child_list = fields.get("child")
+
     if not child_list or len(child_list) == 1:
         return fields
 
     def _role_by_id(roles, role_id):
-        return list(filter(lambda x: role_id == x["id"], roles))[0]
+        return next(filter(lambda x: role_id == x["id"], roles))
 
-    def _is_suitable_role(role):
+    def _has_correct_parametrization(role, allowed_parametrization: Tuple[str]):
         types = _role_by_id(all_roles, role["id"])["parametrized_by_type"]
-        if not types:
-            return True
-        is_infrastructure = "provider" in types or "host" in types
-        return is_infrastructure and should_be_infrastructure
+        return all(role_type in allowed_parametrization for role_type in types)
 
     all_roles = get_endpoint_data(adcm, endpoint=Endpoints.RbacBusinessRole)
-    for child in child_list:
-        child_role = _role_by_id(all_roles, role_id=child.get("id"))
-        role_types = child_role["parametrized_by_type"]
-        if not role_types:
-            continue
-        should_be_infrastructure = role_types[0] in ["provider", "host"]
-        fields["child"] = [{"id": role.get("id")} for role in filter(_is_suitable_role, child_list)]
-        break
+    for role in child_list:
+        role_obj = _role_by_id(all_roles, role["id"])
+        if parametrization := role_obj["parametrized_by_type"]:
+            first_parametrized_child = parametrization
+            break
+    else:
+        # none of children is parametrized, so we don't want to filter children
+        return fields
+
+    # "host" is in both hierarchies, so we want infrastructure bundle only in provider case
+    is_infrastructure = "provider" in first_parametrized_child
+    param_tuple = ("provider", "host") if is_infrastructure else ("cluster", "service", "component")
+    fields["child"] = list(filter(lambda x: _has_correct_parametrization(x, param_tuple), child_list))
     return fields

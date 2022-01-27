@@ -408,12 +408,12 @@ class ObjectForeignKey(ForeignKey):
             PreparedFieldValue(
                 {'id': 1000},
                 f_type=self,
-                error_messages=["Invalid pk \"1000\" - object does not exist."],
+                error_messages={"id": ["Invalid pk \"1000\" - object does not exist."]},
             ),
             PreparedFieldValue(
                 {'id': 2 ** 63},
                 f_type=self,
-                error_messages=[f"Invalid pk \"{2 ** 63}\" - object does not exist."],
+                error_messages={"id": [f"Invalid pk \"{2 ** 63}\" - object does not exist."]},
             ),
         ]
 
@@ -440,12 +440,12 @@ class ForeignKeyM2M(ForeignKey):
             PreparedFieldValue(
                 [{"id": 1000}],
                 f_type=self,
-                error_messages=["Invalid pk \"1000\" - object does not exist."],
+                error_messages=[{"id": ["Invalid pk \"1000\" - object does not exist."]}],
             ),
             PreparedFieldValue(
                 [{"id": 2 ** 63}],
                 f_type=self,
-                error_messages=[f"Invalid pk \"{2 ** 63}\" - object does not exist."],
+                error_messages=[{"id": [f"Invalid pk \"{2 ** 63}\" - object does not exist."]}],
             ),
         ]
 

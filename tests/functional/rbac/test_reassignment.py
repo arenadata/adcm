@@ -75,8 +75,10 @@ class TestReapplyTriggers:
 
         is_allowed(service, BusinessRoles.EditServiceConfigurations)
         new_service = is_allowed(cluster, BusinessRoles.AddService)
-        is_allowed(new_service, BusinessRoles.EditServiceConfigurations)
-        is_allowed(cluster, BusinessRoles.RemoveService, new_service)
+        with new_client_instance(*TEST_USER_CREDENTIALS, url=clients.admin.url) as client:
+            user_cluster, user_new_service = as_user_objects(client, cluster, new_service)
+            is_allowed(user_new_service, BusinessRoles.EditServiceConfigurations)
+            is_allowed(user_cluster, BusinessRoles.RemoveService, new_service)
 
         is_allowed(service, BusinessRoles.EditServiceConfigurations)
 
