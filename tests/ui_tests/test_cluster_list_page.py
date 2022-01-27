@@ -970,10 +970,12 @@ class TestClusterStatusPage:
                 cluster_status_page.click_collapse_all_btn()
             assert len(cluster_status_page.get_all_rows()) == 1, "Status rows should have been collapsed"
 
+    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2636")
     def test_service_passive_status_on_cluster_status_page(
         self, app_fs, adcm_fs, create_host, sdk_client_fs: ADCMClient
     ):
         """Check that service status with monitoring: passive don't break status tree"""
+
         bundle = cluster_bundle(sdk_client_fs, "service_monitoring_passive")
         cluster = bundle.cluster_create(name=CLUSTER_NAME)
         service = cluster.service_add(name=SERVICE_NAME)

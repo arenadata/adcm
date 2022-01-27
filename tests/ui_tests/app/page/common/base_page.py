@@ -363,7 +363,7 @@ class BasePageObject:
         """
 
         self.find_element(CommonLocators.socket, timeout=30)
-        self.find_element(CommonLocators.profile, timeout=30)
+        self.find_element(CommonLocators.profile, timeout=60)
 
     def hover_element(self, element: Union[Locator, WebElement]):
         """
