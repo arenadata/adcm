@@ -139,7 +139,7 @@ class ServiceBindSerializer(BindSerializer):
 class ServiceBindPostSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     export_cluster_id = serializers.IntegerField()
-    export_service_id = serializers.IntegerField()
+    export_service_id = serializers.IntegerField(required=False)
     export_cluster_name = serializers.CharField(read_only=True)
     export_service_name = serializers.CharField(read_only=True)
     export_cluster_prototype_name = serializers.CharField(read_only=True)

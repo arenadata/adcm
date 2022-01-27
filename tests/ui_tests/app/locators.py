@@ -17,6 +17,7 @@ from deprecated import deprecated
 
 from tests.ui_tests.app.helpers import bys
 
+
 # pylint: disable=too-few-public-methods
 
 
@@ -86,6 +87,7 @@ class Common:
 
     # Common elements
     all_childs = bys.by_css("*")
+    common_popup = bys.by_css("app-snack-bar")
 
 
 class Cluster:

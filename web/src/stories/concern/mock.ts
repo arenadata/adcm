@@ -5,6 +5,7 @@ export const ISSUE_MESSAGES_FIRST_MESSAGE: Concern = {
   id: 2039,
   blocking: true,
   type: 'issue',
+  cause: 'config',
   reason: {
     message: 'Run ${action1} action on ${component1}.',
     placeholder: {
@@ -35,6 +36,7 @@ export const ISSUE_MESSAGES_SECOND_MESSAGE: Concern = {
   id: 2040,
   blocking: true,
   type: 'issue',
+  cause: 'config',
   reason: {
     message: 'Run the following ${action2} action on this ${component2}.',
     placeholder: {
@@ -65,6 +67,7 @@ export const ISSUE_MESSAGES_VERY_LONG_MESSAGE: Concern = {
   id: 2041,
   blocking: true,
   type: 'issue',
+  cause: 'config',
   reason: {
     message: 'Run ${action1} action on ${component1}. This is a very very very very very very very very very very very very' +
       ' very very very very very very very very very very very very very very very very very very very very very very very' +

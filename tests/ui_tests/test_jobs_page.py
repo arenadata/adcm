@@ -12,18 +12,12 @@
 
 """UI tests for /jobs page"""
 
+import os
 from dataclasses import asdict
 from typing import Union, List
 
-import os
-
-import pytest
 import allure
-
-from adcm_pytest_plugin import utils
-from adcm_pytest_plugin.steps.actions import (
-    run_cluster_action_and_assert_result,
-)
+import pytest
 from adcm_client.objects import (
     ADCMClient,
     Cluster,
@@ -34,6 +28,10 @@ from adcm_client.objects import (
     Component,
     Action,
     ObjectNotFound,
+)
+from adcm_pytest_plugin import utils
+from adcm_pytest_plugin.steps.actions import (
+    run_cluster_action_and_assert_result,
 )
 
 from tests.ui_tests.app.app import ADCMTest
@@ -143,29 +141,25 @@ class TestTaskPage:
         host = provider.host_create('some-fqdn')
         _test_run_action(page, host, f'{provider.name}/{host.fqdn}')
 
-    @allure.issue(name='Firefox issues', url='https://arenadata.atlassian.net/browse/QA-334')
     @pytest.mark.smoke()
     @pytest.mark.parametrize(
         'job_info',
         [
             {
-                'expected_status': 'success',
                 'status': JobStatus.SUCCESS,
                 'action_name': SUCCESS_ACTION_DISPLAY_NAME,
             },
             {
-                'expected_status': 'failed',
                 'status': JobStatus.FAILED,
                 'action_name': FAIL_ACTION_DISPLAY_NAME,
             },
         ],
         ids=['success_job', 'failed_job'],
     )
-    @pytest.mark.usefixtures('skip_firefox')
     def test_finished_job_has_correct_info(self, job_info: dict, cluster: Cluster, page: JobListPage):
         """Run action that finishes (success/failed) and check it is displayed correctly"""
         expected_info_in_popup = {**job_info}
-        expected_status = expected_info_in_popup.pop('expected_status')
+        expected_status = expected_info_in_popup.get('status').value
         expected_info_in_table = {**expected_info_in_popup, 'invoker_objects': cluster.name}
         with allure.step(f'Run action and wait for "{expected_status}" status'):
             action = cluster.action(display_name=expected_info_in_popup['action_name'])
@@ -218,6 +212,7 @@ class TestTaskPage:
                 page.select_filter_all_tab()
             page.table.check_pagination(params['second_page'])
 
+    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2385")
     @pytest.mark.smoke()
     def test_open_task_by_click_on_name(self, cluster: Cluster, page: JobListPage):
         """Click on task name and task page should be opened"""
@@ -228,7 +223,9 @@ class TestTaskPage:
         with allure.step('Check Task detailed page is opened'):
             job_page = JobPageStdout(page.driver, page.base_url, task.id)
             job_page.wait_page_is_opened()
+            job_page.check_jobs_toolbar(LONG_ACTION_DISPLAY_NAME.upper())
 
+    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2385")
     @pytest.mark.smoke()
     @pytest.mark.parametrize('log_type', ['stdout', 'stderr'], ids=['stdout_menu', 'stderr_menu'])
     @pytest.mark.usefixtures('login_to_adcm_over_api')
@@ -249,6 +246,7 @@ class TestTaskPage:
                 },
                 job_page.get_job_info,
             )
+            job_page.check_jobs_toolbar(SUCCESS_ACTION_DISPLAY_NAME.upper())
 
     @pytest.mark.usefixtures("login_to_adcm_over_api", "clean_downloads_fs")
     def test_download_log(self, cluster: Cluster, app_fs: ADCMTest, downloads_directory):
@@ -332,7 +330,6 @@ class TestTaskHeaderPopup:
         assert 'background: transparent' in page.header.get_jobs_circle_color(), "Bell circle should be without color"
         page.header.check_acknowledge_btn_not_displayed()
 
-    @allure.issue(name='Firefox issues', url='https://arenadata.atlassian.net/browse/QA-334')
     @pytest.mark.smoke()
     @pytest.mark.parametrize(
         'job_info',
@@ -385,17 +382,13 @@ class TestTaskHeaderPopup:
         ],
         ids=['success_job', 'failed_job', 'in_progress_job', 'three_job'],
     )
-    @pytest.mark.usefixtures('login_to_adcm_over_api', 'skip_firefox')
+    @pytest.mark.usefixtures('login_to_adcm_over_api')
     def test_job_has_correct_info_in_header_popup(self, job_info: dict, cluster: Cluster, app_fs):
         """Run action that finishes (success/failed) and check it in header popup"""
 
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         cluster_page.wait_config_loaded()
-        # TODO remove sleep after fix ADCM-2279
-        # the current sleep step is a temporary solution and need to fix flaky test evidence
-        import time  # pylint: disable=import-outside-toplevel
 
-        time.sleep(2)
         for action_name, expected_status in job_info['action_name'].items():
             if action_name == LONG_ACTION_DISPLAY_NAME:
                 cluster.action(display_name=action_name).run()

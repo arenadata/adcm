@@ -10,30 +10,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+import hashlib
 import os
 import os.path
-import hashlib
-import tarfile
 import shutil
-import functools
+import tarfile
 
-from version_utils import rpm
-from django.db import transaction
 from django.db import IntegrityError
+from django.db import transaction
+from version_utils import rpm
 
-from adcm.settings import ADCM_VERSION
-from cm.logger import log
-from cm import config
 import cm.stack
 import cm.status_api
-from cm.adcm_config import proto_ref, get_prototype_config, init_object_config, switch_config
+from adcm.settings import ADCM_VERSION
+from cm import config
+from cm.adcm_config import proto_ref, init_object_config, switch_config
 from cm.errors import raise_AdcmEx as err
-from cm.models import Cluster, Host, Upgrade, StageUpgrade, ADCM
-from cm.models import Bundle, Prototype, Action, SubAction, PrototypeConfig
-from cm.models import StagePrototype, StageAction
-from cm.models import StageSubAction, StagePrototypeConfig
-from cm.models import PrototypeExport, PrototypeImport, StagePrototypeExport, StagePrototypeImport
-
+from cm.logger import log
+from cm.models import (
+    Bundle,
+    Prototype,
+    Action,
+    SubAction,
+    PrototypeConfig,
+    Cluster,
+    Host,
+    Upgrade,
+    StageUpgrade,
+    ADCM,
+    PrototypeExport,
+    PrototypeImport,
+    StagePrototypeExport,
+    StagePrototypeImport,
+    StagePrototype,
+    StageAction,
+    StageSubAction,
+    StagePrototypeConfig,
+)
 
 STAGE = (
     StagePrototype,
@@ -192,10 +206,10 @@ def process_adcm():
 
 def init_adcm(bundle):
     proto = Prototype.objects.get(type='adcm', bundle=bundle)
-    spec, _, conf, attr = get_prototype_config(proto)
     with transaction.atomic():
-        obj_conf = init_object_config(spec, conf, attr)
-        adcm = ADCM(prototype=proto, name='ADCM', config=obj_conf)
+        adcm = ADCM.objects.create(prototype=proto, name='ADCM')
+        obj_conf = init_object_config(proto, adcm)
+        adcm.config = obj_conf
         adcm.save()
     log.info('init adcm object version %s OK', proto.version)
     return adcm

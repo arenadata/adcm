@@ -270,7 +270,7 @@ export class FieldService {
    * Output form, cast to source type
    */
   public parseValue(output: IOutput, source: ISource[]): IOutput {
-    const findField = (name: string, p?: string): Partial<IFieldStack> => source.find((a) => (p ? a.name === p && a.subname === name : a.name === name) && !a.read_only);
+    const findField = (name: string, p?: string): Partial<IFieldStack> => source.find((a) => (p ? a.name === p && a.subname === name : a.name === name));
 
     const runYspecParse = (v: any, f: Partial<IFieldOptions>) => ((!v || !Object.keys(v).length) && !f.value ? f.value : this.runYspec(v, f.limits.rules));
 
@@ -317,7 +317,12 @@ export class FieldService {
   }
 
   checkValue(value: resultTypes, type: TNForm): resultTypes {
-    if (value === '' || value === null || isEmptyObject(value)) return null;
+    if (value === '' || value === null || isEmptyObject(value)) {
+      if (type === 'map') return {};
+      if (type === 'list') return [];
+      return null;
+    }
+
     if (typeof value === 'boolean') return value;
     else if (typeof value === 'string')
       switch (type) {

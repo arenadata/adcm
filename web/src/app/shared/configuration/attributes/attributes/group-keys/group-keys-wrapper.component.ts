@@ -5,7 +5,7 @@ import {
   ConfigAttributeNames,
   ConfigAttributeOptions
 } from '@app/shared/configuration/attributes/attribute.service';
-import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
+import { FormControl, FormGroup } from '@angular/forms';
 import { IFieldOptions } from '@app/shared/configuration/types';
 import { BaseDirective } from '@adwp-ui/widgets';
 import { MatCheckboxChange } from '@angular/material/checkbox';
@@ -16,8 +16,11 @@ import { FieldComponent } from '@app/shared/configuration/field/field.component'
   template: `
     <div class="group-keys-wrapper">
       <div class="group-checkbox">
-        <mat-checkbox [matTooltip]="tooltipText" [formControl]="groupControl"
-                      (change)="onChange($event)"></mat-checkbox>
+        <mat-checkbox
+          [matTooltip]="tooltipText"
+          [formControl]="groupControl"
+          (change)="onChange($event)"
+        ></mat-checkbox>
       </div>
       <div class="group-field">
         <ng-container *ngTemplateOutlet="fieldTemplate"></ng-container>
@@ -53,23 +56,32 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
 
   ngOnInit(): void {
     this._resolveAndSetupControls(this.attributeForm, this.parametersForm, this.fieldOptions);
-    Promise.resolve().then(() => this._restoreStatus());
+    Promise.resolve().then(() => {
+      this._restoreStatus();
+      this.disableIfReadOnly();
+    });
+  }
+
+  private disableIfReadOnly() {
+    if (this.field.options.read_only) {
+      this.groupControl.disable();
+    }
   }
 
   private _resolveAndSetupControls(attributeForm: FormGroup, parametersForm: FormGroup, fieldOptions: IFieldOptions): void {
-    let attributeControl: AbstractControl = attributeForm;
-    let parameterControl: AbstractControl = parametersForm;
+    let attributeControl: FormGroup = attributeForm;
+    let parameterControl: FormGroup = parametersForm;
     let disabled = this._attributeSrv.attributes.get(ConfigAttributeNames.CUSTOM_GROUP_KEYS).value;
     let text = this._attributeSrv.attributes.get(ConfigAttributeNames.CUSTOM_GROUP_KEYS).options.tooltipText;
 
-    fieldOptions.key?.split('/').reverse().forEach((key) => {
-      attributeControl = attributeControl.get(key);
-      parameterControl = parameterControl.get(key);
-      disabled = disabled[key];
-    });
+    const path = fieldOptions.key?.split('/').reverse();
 
-    this.groupControl = attributeControl as FormControl;
-    this.parameterControl = parameterControl as FormControl;
+    this.groupControl = attributeControl.get(path) as FormControl;
+    this.parameterControl = parameterControl.get(path) as FormControl;
+
+    path.forEach((part) => {
+      disabled = disabled[part];
+    });
 
     if (!disabled) {
       attributeControl.disable();

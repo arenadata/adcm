@@ -586,6 +586,7 @@ class TestChangeGroupsConfig:
                     run_cluster_action_and_assert_result(cluster, action=ACTION_NAME, config=config_updated)
                     run_cluster_action_and_assert_result(cluster, action=ACTION_MULTIJOB_NAME, config=config_updated)
 
+    @pytest.mark.full()
     def test_change_group_in_service(self, cluster_bundle, cluster_with_components):
         """Test that groups in service are allowed change"""
 
@@ -625,6 +626,7 @@ class TestChangeGroupsConfig:
                     run_service_action_and_assert_result(service, action=ACTION_NAME, config=config_updated)
                     run_service_action_and_assert_result(service, action=ACTION_MULTIJOB_NAME, config=config_updated)
 
+    @pytest.mark.full()
     def test_change_group_in_component(self, cluster_bundle, cluster_with_components):
         """Test that groups in component are allowed change"""
 
@@ -669,6 +671,7 @@ class TestChangeGroupsConfig:
                         component, action=ACTION_MULTIJOB_NAME, config=config_updated
                     )
 
+    @pytest.mark.full()
     @pytest.mark.parametrize(
         "provider_bundle",
         [
