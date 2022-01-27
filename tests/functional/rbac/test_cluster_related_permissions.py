@@ -82,9 +82,10 @@ def test_view_infrastructure_configurations(user_policy: Policy, user_sdk: ADCMC
     user_second_objects = as_user_objects(user_sdk, *second_objects)
     second_host_on_first_provider = user_sdk.host(id=provider_via_admin.host_create(fqdn="new_host").id)
 
-    is_allowed_to_view(provider, host)
-    is_denied_to_edit(provider, host)
-    is_denied_to_view(cluster, service, component, *user_second_objects, second_host_on_first_provider)
+    # second host on first provider will be allowed to view because of provider's permission
+    is_allowed_to_view(provider, host, second_host_on_first_provider)
+    is_denied_to_edit(provider, host, second_host_on_first_provider)
+    is_denied_to_view(cluster, service, component, *user_second_objects)
     delete_policy(user_policy)
     is_denied_to_view(provider, host)
 

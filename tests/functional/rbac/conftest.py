@@ -29,6 +29,17 @@ from adcm_pytest_plugin.utils import catch_failed, random_string
 # pylint: disable=invalid-name
 from tests.functional.tools import get_object_represent, AnyADCMObject
 
+
+def pytest_collection_modifyitems(session, config, items: list):
+    """Ignore adcm_with_dummy_data"""
+    # location[0] includes path (relative?) to a file with the test
+    rbac_dummy_data = tuple(
+        filter(lambda i: 'rbac' in i.location[0] and 'adcm_with_dummy_data' in i.callspec.id, items)
+    )
+    for item in rbac_dummy_data:
+        items.remove(item)
+
+
 TEST_USER_CREDENTIALS = "test_user", "password"
 DATA_DIR = os.path.join(os.path.dirname(__file__), "test_business_permissions_data")
 

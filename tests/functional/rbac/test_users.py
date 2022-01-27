@@ -17,7 +17,7 @@ import pytest
 from coreapi.exceptions import ErrorMessage
 from adcm_client.base import NoSuchEndpointOrAccessIsDenied
 from adcm_client.objects import ADCMClient, User
-from adcm_client.wrappers.api import ADCMApiError
+from adcm_client.wrappers.api import ADCMApiError, MethodNotAllowed
 
 # pylint: disable=redefined-outer-name
 
@@ -87,7 +87,7 @@ def test_delete_built_in_user(sdk_client_fs: ADCMClient):
         with allure.step(f'Try to delete built-in user {built_in_user}'):
             try:
                 built_in_user.delete()
-            except NoSuchEndpointOrAccessIsDenied:
+            except MethodNotAllowed:
                 ...
             else:
                 raise AssertionError(f'Built-in user {built_in_user.username} should not be allowed to be deleted')
