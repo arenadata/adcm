@@ -406,6 +406,7 @@ class TestHostConfigPage:
         }
         host_page = open_config(page)
         host_page.check_host_toolbar(HOST_FQDN)
+        host_page.close_info_popup()
         host_page.config.fill_config_fields_with_test_values()
         host_page.config.set_description(params["config_name_new"])
         host_page.config.save_config()
