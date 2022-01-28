@@ -9,9 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Test business permissions related to ADCM"""
+
 # pylint: disable=too-many-arguments,unused-argument
 
+import pytest
 from adcm_client.objects import ADCMClient
 
 from tests.functional.rbac.conftest import (
@@ -22,6 +25,8 @@ from tests.functional.rbac.conftest import (
     delete_policy,
     as_user_objects,
 )
+
+pytestmark = [pytest.mark.full]
 
 
 @use_role(BusinessRoles.ViewADCMSettings)

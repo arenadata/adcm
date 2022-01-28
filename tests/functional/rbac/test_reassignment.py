@@ -16,6 +16,7 @@ from contextlib import contextmanager
 from typing import Dict, List, Generator, Collection
 
 import allure
+import pytest
 from adcm_client.objects import ADCMClient, Bundle, User, Policy, Host
 
 from tests.functional.tools import AnyADCMObject
@@ -27,6 +28,9 @@ from tests.functional.rbac.conftest import (
     TEST_USER_CREDENTIALS,
     RbacRoles,
 )
+
+
+pytestmark = [pytest.mark.full]
 
 
 @contextmanager
