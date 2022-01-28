@@ -11,11 +11,10 @@
 # limitations under the License.
 
 """Methods for get endpoints data"""
+
 from tests.api.utils.endpoints import Endpoints
 from tests.api.utils.methods import Methods
-from tests.api.utils.api_objects import Request, ExpectedResponse
-
-from tests.api.utils.api_objects import ADCMTestApiWrapper
+from tests.api.utils.api_objects import Request, ExpectedResponse, ADCMTestApiWrapper
 
 
 def get_endpoint_data(adcm: ADCMTestApiWrapper, endpoint: Endpoints) -> list:
@@ -29,11 +28,15 @@ def get_endpoint_data(adcm: ADCMTestApiWrapper, endpoint: Endpoints) -> list:
         request=Request(endpoint=endpoint, method=Methods.LIST),
         expected_response=ExpectedResponse(status_code=Methods.LIST.value.default_success_code),
     )
-    if isinstance(res.json(), list):
-        return res.json()
+    result = res.json()
     # New endpoints always return a response with pagination.
     # In the future all endpoints will return that
-    return res.json().get("results")
+    if not isinstance(result, list):
+        result = result.get("results")
+    if endpoint.endpoint.filter_predicate is None:
+        return result
+    # This one is used for API endpoints with more than one data class associated with its path
+    return [item for item in result if endpoint.endpoint.filter_predicate(item)]
 
 
 def get_object_data(adcm: ADCMTestApiWrapper, endpoint: Endpoints, object_id: int) -> dict:

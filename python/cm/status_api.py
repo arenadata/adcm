@@ -11,12 +11,14 @@
 # limitations under the License.
 
 import json
+from collections import defaultdict
+from typing import Iterable
 
 import requests
 
 from cm.config import STATUS_SECRET_KEY
 from cm.logger import log
-from cm.models import ADCMEntity
+from cm.models import ADCMEntity, ServiceComponent, HostComponent, ClusterObject, Cluster, Host
 
 API_URL = "http://localhost:8020/api/v1"
 TIMEOUT = 0.01
@@ -151,7 +153,7 @@ def get_raw_status(url):
         return 4
 
 
-def get_status(obj, url):
+def get_status(obj: ADCMEntity, url: str):
     if obj.prototype.monitoring == 'passive':
         return 0
     return get_raw_status(url)
@@ -177,7 +179,7 @@ def get_host_comp_status(host, component):
     return get_status(component, f'/host/{host.id}/component/{component.id}/')
 
 
-def get_component_status(comp):
+def get_component_status(comp: ServiceComponent):
     return get_status(comp, f'/component/{comp.id}/')
 
 
@@ -189,3 +191,100 @@ def get_object_map(obj: ADCMEntity, url_type: str):
     if r is None:
         return None
     return r.json()
+
+
+def make_ui_single_host_status(host: Host) -> dict:
+    return {
+        'id': host.id,
+        'name': host.fqdn,
+        'status': get_host_status(host),
+    }
+
+
+def make_ui_component_status(
+    component: ServiceComponent, host_components: Iterable[HostComponent]
+) -> dict:
+    """Make UI representation of component's status per host"""
+    host_list = []
+    for hc in host_components:
+        host_list.append(
+            {
+                'id': hc.host.id,
+                'name': hc.host.fqdn,
+                'status': get_host_comp_status(hc.host, hc.component),
+            }
+        )
+    return {
+        'id': component.id,
+        'name': component.display_name,
+        'status': get_component_status(component),
+        'hosts': host_list,
+    }
+
+
+def make_ui_service_status(
+    service: ClusterObject, host_components: Iterable[HostComponent]
+) -> dict:
+    """Make UI representation of service and its children statuses"""
+    component_hc_map = defaultdict(list)
+    for hc in host_components:
+        component_hc_map[hc.component].append(hc)
+
+    comp_list = []
+    for component, hc_list in component_hc_map.items():
+        comp_list.append(make_ui_component_status(component, hc_list))
+
+    service_map = get_object_map(service, 'service')
+    return {
+        'id': service.id,
+        'name': service.display_name,
+        'status': 32 if service_map is None else service_map.get('status', 0),
+        'hc': comp_list,
+    }
+
+
+def make_ui_cluster_status(cluster: Cluster, host_components: Iterable[HostComponent]) -> dict:
+    """Make UI representation of cluster and its children statuses"""
+    service_hc_map = defaultdict(list)
+    for hc in host_components:
+        service_hc_map[hc.service].append(hc)
+
+    service_list = []
+    for service, hc_list in service_hc_map.items():
+        service_list.append(make_ui_service_status(service, hc_list))
+
+    host_list = []
+    for host in Host.obj.filter(cluster=cluster):
+        host_list.append(make_ui_single_host_status(host))
+
+    cluster_map = get_object_map(cluster, 'cluster')
+    return {
+        'name': cluster.name,
+        'status': 32 if cluster_map is None else cluster_map.get('status', 0),
+        'chilren': {  # backward compatibility typo
+            'hosts': host_list,
+            'services': service_list,
+        },
+    }
+
+
+def make_ui_host_status(host: Host, host_components: Iterable[HostComponent]) -> dict:
+    """Make UI representation of host and its children statuses"""
+    comp_list = []
+    for hc in host_components:
+        comp_list.append(
+            {
+                'id': hc.component.id,
+                'name': hc.component.display_name,
+                'status': get_component_status(hc.component),
+                'service_id': hc.service.id,
+            }
+        )
+
+    host_map = get_object_map(host, 'host')
+    return {
+        'id': host.id,
+        'name': host.fqdn,
+        'status': 32 if host_map is None else host_map.get('status', 0),
+        'hc': comp_list,
+    }

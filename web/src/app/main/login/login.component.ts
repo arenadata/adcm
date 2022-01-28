@@ -45,8 +45,7 @@ export class LoginComponent extends BaseDirective implements OnInit, OnDestroy {
       .subscribe(state => {
         if (state.isValid) {
           a$.unsubscribe();
-          const redirectUrl = this.auth.redirectUrl;
-          this.router.navigateByUrl(redirectUrl && redirectUrl !== 'login' && redirectUrl !== '/504' ? redirectUrl : '/admin');
+          this.router.navigateByUrl('/admin');
         } else {
           this.store.dispatch(clearProfile());
           this.message = state.message;

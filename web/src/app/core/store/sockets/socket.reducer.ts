@@ -48,6 +48,7 @@ export type EntityEvent =
   | 'change_job_status'
   | 'change_hostcomponentmap'
   | 'upgrade'
+  | 'update'
   | 'concern';
 
 export interface EventMessage {

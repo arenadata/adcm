@@ -169,7 +169,6 @@ export class BaseListDirective {
       this.refresh(m.object.id);
       return;
     }
-
     // events for the row of list
     if (this.parent.data.data.length) {
       const row = this.parent.data.data.find((a) => a.id === m.object.id);
@@ -182,6 +181,7 @@ export class BaseListDirective {
         if (m.event === 'change_status') row.status = +m.object.details.value;
         if (m.event === 'change_job_status') row.status = m.object.details.value;
         if (m.event === 'upgrade') rewriteRow(row);
+        if (m.event === 'update') this.refresh();
       }
     }
   }

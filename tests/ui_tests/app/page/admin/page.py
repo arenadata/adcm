@@ -12,7 +12,11 @@
 
 """Admin pages PageObjects classes"""
 
-from typing import List
+from dataclasses import dataclass
+from typing import (
+    List,
+    Optional,
+)
 
 import allure
 from selenium.common.exceptions import TimeoutException
@@ -23,6 +27,9 @@ from tests.ui_tests.app.page.admin.locators import (
     AdminUsersLocators,
     AdminIntroLocators,
     AdminSettingsLocators,
+    AdminGroupsLocators,
+    AdminRolesLocators,
+    AdminPoliciesLocators,
 )
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
@@ -32,56 +39,146 @@ from tests.ui_tests.app.page.common.base_page import (
 from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs_locators import DeleteDialog
+from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
+from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
+
+
+@dataclass
+class AdminRoleInfo:
+    """Information about role"""
+
+    name: str
+    description: str
+    permissions: str
+
+
+@dataclass
+class AdminGroupInfo:
+    """Information about group"""
+
+    name: str
+    description: str
+    users: str
+
+
+@dataclass
+class AdminPolicyInfo:
+    """Information about policy"""
+
+    name: str
+    description: Optional[str]
+    role: str
+    users: Optional[str]
+    groups: Optional[str]
+    objects: Optional[str]
 
 
 class GeneralAdminPage(BasePageObject):
     """Base class for admin pages"""
 
+    MENU_SUFFIX: str
     MAIN_ELEMENTS: List[Locator]
+    header: PageHeader
+    footer: PageFooter
+    config: CommonConfigMenuObj
+    table: CommonTableObj
+    toolbar: CommonToolbar
+
+    def __init__(self, driver, base_url):
+        if self.MENU_SUFFIX is None:
+            raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
+        super().__init__(driver, base_url, "/admin/" + self.MENU_SUFFIX)
+        self.header = PageHeader(self.driver, self.base_url)
+        self.footer = PageFooter(self.driver, self.base_url)
+        self.config = CommonConfigMenuObj(self.driver, self.base_url)
+        self.table = CommonTableObj(self.driver, self.base_url)
+        self.toolbar = CommonToolbar(self.driver, self.base_url)
 
     @allure.step("Assert that all main elements are presented on the page")
     def check_all_elements(self):
         """Assert presence of the MAIN_ELEMENTS"""
+
         if len(self.MAIN_ELEMENTS) == 0:
             raise AttributeError('MAIN_ELEMENTS should contain at least 1 element')
         self.assert_displayed_elements(self.MAIN_ELEMENTS)
 
+    @allure.step("Check admin toolbar")
+    def check_admin_toolbar(self):
+        """Check that admin toolbar has all required elements in place"""
+        self.assert_displayed_elements([CommonToolbarLocators.admin_link])
+
     @allure.step('Open Admin Intro page by left menu item click')
-    def open_intro_menu(self):
+    def open_intro_menu(self) -> "AdminIntroPage":
         """Open Admin Intro page by menu object click"""
+
         self.find_and_click(ObjectPageMenuLocators.intro_tab)
+        page = AdminIntroPage(self.driver, self.base_url)
+        page.wait_page_is_opened()
+        return page
 
     @allure.step('Open Admin Settings page by left menu item click')
-    def open_settings_menu(self):
+    def open_settings_menu(self) -> "AdminSettingsPage":
         """Open Admin Settings page by menu object click"""
+
         self.find_and_click(ObjectPageMenuLocators.settings_tab)
+        page = AdminSettingsPage(self.driver, self.base_url)
+        page.wait_page_is_opened()
+        return page
 
     @allure.step('Open Admin Users page by left menu item click')
-    def open_users_menu(self):
+    def open_users_menu(self) -> "AdminUsersPage":
         """Open Admin Users page by menu object click"""
+
         self.find_and_click(ObjectPageMenuLocators.users_tab)
+        page = AdminUsersPage(self.driver, self.base_url)
+        page.wait_page_is_opened()
+        return page
+
+    @allure.step('Open Admin groups page by left menu item click')
+    def open_groups_menu(self) -> "AdminGroupsPage":
+        """Open Admin groups page by menu object click"""
+
+        self.find_and_click(ObjectPageMenuLocators.groups_tab)
+        page = AdminGroupsPage(self.driver, self.base_url)
+        page.wait_page_is_opened()
+        return page
+
+    @allure.step('Open Admin Roles page by left menu item click')
+    def open_roles_menu(self) -> "AdminRolesPage":
+        """Open Admin Roles page by menu object click"""
+
+        self.find_and_click(ObjectPageMenuLocators.roles_tab)
+        page = AdminRolesPage(self.driver, self.base_url)
+        page.wait_page_is_opened()
+        return page
+
+    @allure.step('Open Admin policies page by left menu item click')
+    def open_policies_menu(self) -> "AdminPoliciesPage":
+        """Open Admin policies page by menu object click"""
+
+        self.find_and_click(ObjectPageMenuLocators.policies_tab)
+        page = AdminPoliciesPage(self.driver, self.base_url)
+        page.wait_page_is_opened()
+        return page
 
 
 class AdminIntroPage(GeneralAdminPage):
     """Admin Intro Page class"""
 
+    MENU_SUFFIX = 'intro'
     MAIN_ELEMENTS = [
         AdminIntroLocators.intro_title,
         AdminIntroLocators.intro_text,
         CommonToolbarLocators.admin_link,
     ]
 
-    def __init__(self, driver, base_url):
-        super().__init__(driver, base_url, "/admin/intro")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
-
 
 class AdminSettingsPage(GeneralAdminPage):
     """Admin Settings Page class"""
 
+    MENU_SUFFIX = 'settings'
     MAIN_ELEMENTS = [
         AdminSettingsLocators.save_btn,
         AdminSettingsLocators.search_input,
@@ -89,27 +186,16 @@ class AdminSettingsPage(GeneralAdminPage):
         CommonToolbarLocators.admin_link,
     ]
 
-    def __init__(self, driver, base_url):
-        super().__init__(driver, base_url, "/admin/settings")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
-        self.config = CommonConfigMenuObj(self.driver, self.base_url)
-
 
 class AdminUsersPage(GeneralAdminPage):
     """Admin Users Page class"""
 
+    MENU_SUFFIX = 'users'
     MAIN_ELEMENTS = [
-        AdminUsersLocators.add_user_btn,
+        AdminUsersLocators.create_user_button,
         AdminUsersLocators.user_row,
         CommonToolbarLocators.admin_link,
     ]
-
-    def __init__(self, driver, base_url):
-        super().__init__(driver, base_url, "/admin/users")
-        self.header = PageHeader(self.driver, self.base_url)
-        self.footer = PageFooter(self.driver, self.base_url)
-        self.table = CommonTableObj(self.driver, self.base_url)
 
     def get_all_user_rows(self) -> List[WebElement]:
         """Get all user rows (locator differs from self.table.get_all_rows())"""
@@ -134,13 +220,45 @@ class AdminUsersPage(GeneralAdminPage):
         return False
 
     @allure.step('Create new user "{username}" with password "{password}"')
-    def create_user(self, username: str, password: str):
+    def create_user(
+        self, username: str, password: str, first_name: str, last_name: str, email: str
+    ):  # pylint: disable-next=too-many-arguments
         """Create new user via add user popup"""
-        self.find_and_click(AdminUsersLocators.add_user_btn)
+        self.find_and_click(AdminUsersLocators.create_user_button)
         self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.username, username)
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.password, password)
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.password_confirm, password)
+        self.send_text_to_element(AdminUsersLocators.AddUserPopup.first_name, first_name)
+        self.send_text_to_element(AdminUsersLocators.AddUserPopup.last_name, last_name)
+        self.send_text_to_element(AdminUsersLocators.AddUserPopup.email, email)
+        self.find_and_click(AdminUsersLocators.AddUserPopup.save_btn)
+        self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
+
+    @allure.step('Update user {username} info')
+    def update_user_info(
+        self,
+        username: str,
+        password: Optional[str] = None,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        email: Optional[str] = None,
+    ):  # pylint: disable-next=too-many-arguments
+        """Update some of fields for user"""
+        if not (password or first_name or last_name or email):
+            raise ValueError("You should provide at least one field's value to make an update")
+        user_row = self.get_user_row_by_username(username)
+        self.find_child(user_row, AdminUsersLocators.Row.username).click()
+        self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
+        popup_locators = AdminUsersLocators.AddUserPopup
+        for value, locator in (
+            (password, popup_locators.password),
+            (first_name, popup_locators.first_name),
+            (last_name, popup_locators.last_name),
+            (email, popup_locators.email),
+        ):
+            if value:
+                self.send_text_to_element(locator, value)
         self.find_and_click(AdminUsersLocators.AddUserPopup.save_btn)
         self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
 
@@ -148,19 +266,19 @@ class AdminUsersPage(GeneralAdminPage):
     def change_user_password(self, username: str, password: str):
         """Change user password"""
         user_row = self.get_user_row_by_username(username)
-        pass_input = self.find_child(user_row, AdminUsersLocators.Row.password)
-        pass_input.send_keys(password)
-        pass_confirm_input = self.find_child(user_row, AdminUsersLocators.Row.password_confirm)
-        pass_confirm_input.send_keys(password)
-        update_pass = self.find_child(user_row, AdminUsersLocators.Row.confirm_update_btn)
-        update_pass.click()
+        self.find_child(user_row, AdminUsersLocators.Row.username).click()
+        self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
+        self.send_text_to_element(AdminUsersLocators.AddUserPopup.password, password)
+        self.send_text_to_element(AdminUsersLocators.AddUserPopup.password_confirm, password)
+        self.find_and_click(AdminUsersLocators.AddUserPopup.save_btn)
+        self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
 
     @allure.step('Delete user {username}')
     def delete_user(self, username: str):
         """Delete existing user"""
         user_row = self.get_user_row_by_username(username)
-        delete_button = self.find_child(user_row, AdminUsersLocators.Row.delete_btn)
-        delete_button.click()
+        self.find_child(user_row, AdminUsersLocators.Row.select_checkbox).click()
+        self.find_and_click(AdminUsersLocators.Row.delete_btn)
         self.wait_element_visible(DeleteDialog.body)
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
@@ -170,3 +288,371 @@ class AdminUsersPage(GeneralAdminPage):
         """Check that delete button is not presented in user row"""
         user_row = self.get_user_row_by_username(username)
         assert not self.is_child_displayed(user_row, AdminUsersLocators.Row.delete_btn, timeout=3)
+
+
+class AdminGroupsPage(GeneralAdminPage):
+    """Admin groups Page class"""
+
+    MENU_SUFFIX = 'groups'
+    MAIN_ELEMENTS = [
+        AdminIntroLocators.intro_title,
+        AdminIntroLocators.intro_text,
+        AdminGroupsLocators.create_btn,
+        AdminGroupsLocators.delete_btn,
+        CommonTable.header,
+    ]
+
+    def click_create_group_btn(self):
+        self.find_and_click(AdminGroupsLocators.create_btn)
+        self.wait_element_visible(AdminGroupsLocators.AddGroupPopup.block)
+
+    @allure.step('Create custom group {name}')
+    def create_custom_group(self, name: str, description: Optional[str], users: Optional[str]):
+        self.click_create_group_btn()
+        self.send_text_to_element(AdminGroupsLocators.AddGroupPopup.name_input, name)
+        if description:
+            self.send_text_to_element(AdminGroupsLocators.AddGroupPopup.description_input, description)
+        if users:
+            self.find_and_click(AdminGroupsLocators.AddGroupPopup.users_select)
+            self.wait_element_visible(AdminGroupsLocators.item)
+            for user in users.split(", "):
+                for user_item in self.find_elements(AdminGroupsLocators.item):
+                    if user_item.text == user:
+                        user_chbx = self.find_child(user_item, AdminGroupsLocators.AddGroupPopup.UserRow.checkbox)
+                        self.hover_element(user_chbx)
+                        user_chbx.click()
+            self.find_and_click(AdminGroupsLocators.AddGroupPopup.users_select)
+        self.find_and_click(AdminGroupsLocators.save_btn)
+        self.wait_element_hide(AdminGroupsLocators.AddGroupPopup.block)
+
+    def get_all_groups(self) -> [AdminGroupInfo]:
+        """Get all groups info."""
+
+        groups_items = []
+        groups_rows = self.table.get_all_rows()
+        for row in groups_rows:
+            row_item = AdminGroupInfo(
+                name=self.find_child(row, AdminGroupsLocators.GroupRow.name).text,
+                description=self.find_child(row, AdminGroupsLocators.GroupRow.description).text,
+                users=self.find_child(row, AdminGroupsLocators.GroupRow.users).text,
+            )
+            groups_items.append(row_item)
+        return groups_items
+
+    def select_all_groups(self):
+        self.find_elements(self.table.locators.header)[0].click()
+
+    def click_delete_button(self):
+        self.find_and_click(AdminRolesLocators.delete_btn)
+        self.wait_element_visible(DeleteDialog.body)
+        self.find_and_click(DeleteDialog.yes)
+        self.wait_element_hide(DeleteDialog.body)
+
+
+class AdminRolesPage(GeneralAdminPage):
+    """Admin Roles Page class"""
+
+    MENU_SUFFIX = 'roles'
+    MAIN_ELEMENTS = [
+        AdminIntroLocators.intro_title,
+        AdminIntroLocators.intro_text,
+        AdminRolesLocators.create_btn,
+        AdminRolesLocators.delete_btn,
+        CommonTable.header,
+        CommonTable.visible_row,
+    ]
+
+    def get_all_roles_info(self) -> [AdminRoleInfo]:
+        """Get all roles info."""
+
+        roles_items = []
+        role_rows = self.table.get_all_rows()
+        for row in role_rows:
+            row_item = AdminRoleInfo(
+                name=self.find_child(row, AdminRolesLocators.RoleRow.name).text,
+                description=self.find_child(row, AdminRolesLocators.RoleRow.description).text,
+                permissions=self.find_child(row, AdminRolesLocators.RoleRow.permissions).text,
+            )
+            roles_items.append(row_item)
+        return roles_items
+
+    @allure.step('Check default roles')
+    def check_default_roles(self):
+        """Check default roles are listed on admin page"""
+
+        default_roles = [
+            AdminRoleInfo(
+                name='ADCM User',
+                description='',
+                permissions='View any object configuration, View any object import, View any object host-components',
+            ),
+            AdminRoleInfo(
+                name='Service Administrator',
+                description='',
+                permissions='View host configurations, Edit service configurations, Edit component configurations, '
+                'Manage imports, View host-components',
+            ),
+            AdminRoleInfo(
+                name='Cluster Administrator',
+                description='',
+                permissions='Create host, Upload bundle, Edit cluster configurations, Edit host configurations, '
+                'Add service, Remove service, Remove hosts, Map hosts, Unmap hosts, Edit host-components, '
+                'Upgrade cluster bundle, Remove bundle, Service Administrator',
+            ),
+            AdminRoleInfo(
+                name='Provider Administrator',
+                description='',
+                permissions='Create host, Upload bundle, Edit provider configurations, Edit host configurations, '
+                'Remove hosts, Upgrade provider bundle, Remove bundle',
+            ),
+        ]
+
+        roles = self.get_all_roles_info()
+        for role in default_roles:
+            assert role in roles, f"Default role {role.name} is wrong or missing"
+
+    @allure.step('Check custom roles')
+    def check_custom_role(self, role: AdminRoleInfo):
+        assert role in self.get_all_roles_info(), f"Role {role.name} is wrong or missing"
+
+    @allure.step('Open create role popup')
+    def open_create_role_popup(self):
+        self.find_and_click(AdminRolesLocators.create_btn)
+        self.wait_element_visible(AdminRolesLocators.AddRolePopup.block)
+
+    @allure.step('Fill role name {role_name}')
+    def fill_role_name_in_role_popup(self, role_name: str):
+        self.send_text_to_element(AdminRolesLocators.AddRolePopup.role_name_input, role_name)
+        self.find_and_click(AdminRolesLocators.AddRolePopup.description_name_input)
+
+    @allure.step('Fill description {description}')
+    def fill_description_in_role_popup(self, description: str):
+        self.send_text_to_element(AdminRolesLocators.AddRolePopup.description_name_input, description)
+        self.find_and_click(AdminRolesLocators.AddRolePopup.role_name_input)
+
+    @allure.step('Create new role')
+    def create_role(self, role_name: str, role_description: str, role_permissions: str):
+        self.open_create_role_popup()
+        self.fill_role_name_in_role_popup(role_name)
+        self.fill_description_in_role_popup(role_description)
+        for permission in role_permissions.split(", "):
+            self.select_permission_in_add_role_popup(permission)
+        self.wait_element_visible(AdminRolesLocators.AddRolePopup.PermissionItemsBlock.item)
+        self.click_save_btn_in_role_popup()
+        self.wait_element_hide(CommonToolbarLocators.progress_bar)
+
+    @allure.step('Select permission {permission}')
+    def select_permission_in_add_role_popup(self, permission: str):
+        available_permissions = self.find_elements(
+            AdminRolesLocators.AddRolePopup.SelectPermissionsBlock.permissions_item_row
+        )
+        for perm in available_permissions:
+            if perm.text == permission:
+                perm.click()
+                self.find_and_click(AdminRolesLocators.AddRolePopup.SelectPermissionsBlock.select_btn)
+                return
+        raise ValueError(f"Permission {permission} has not found")
+
+    @allure.step('Open role {role_name}')
+    def open_role_by_name(self, role_name: str):
+        role_rows = self.table.get_all_rows()
+        for row in role_rows:
+            if role_name in row.text:
+                self.find_child(row, AdminRolesLocators.RoleRow.name).click()
+                self.wait_element_visible(AdminRolesLocators.AddRolePopup.block)
+                return
+        raise ValueError(f"Role {role_name} has not found")
+
+    @allure.step('Remove permissions {permissions_to_remove}')
+    def remove_permissions_in_add_role_popup(
+        self, permissions_to_remove: Optional[List], all_permissions: bool = False
+    ):
+
+        if all_permissions:
+            self.find_and_click(AdminRolesLocators.AddRolePopup.PermissionItemsBlock.clear_all_btn)
+        else:
+            for permission_to_remove in permissions_to_remove:
+                selected_permission = self.find_elements(AdminRolesLocators.AddRolePopup.PermissionItemsBlock.item)
+                for permission in selected_permission:
+                    if permission_to_remove in permission.text:
+                        self.find_child(
+                            permission, AdminRolesLocators.AddRolePopup.PermissionItemsBlock.PermissionItem.delete_btn
+                        ).click()
+                        break
+
+    def click_save_btn_in_role_popup(self):
+        self.find_and_click(AdminRolesLocators.save_btn)
+
+    @allure.step('Check that save button is disabled')
+    def check_save_button_disabled(self):
+        assert (
+            self.find_element(AdminRolesLocators.save_btn).get_attribute("disabled") == 'true'
+        ), "Save role button should be disabled"
+
+    @allure.step("Check {error_message} error is presented")
+    def check_field_error_in_role_popup(self, error_message: str):
+        """Assert that message "{error_message}" is presented"""
+
+        self.check_element_should_be_visible(AdminRolesLocators.field_error(error_message))
+
+    def select_all_roles(self):
+        self.find_elements(self.table.locators.header)[0].click()
+
+    def click_delete_button(self):
+        self.find_and_click(AdminRolesLocators.delete_btn)
+        self.wait_element_visible(DeleteDialog.body)
+        self.find_and_click(DeleteDialog.yes)
+        self.wait_element_hide(DeleteDialog.body)
+
+
+class AdminPoliciesPage(GeneralAdminPage):
+    """Admin Policy Page class"""
+
+    MENU_SUFFIX = 'policies'
+    MAIN_ELEMENTS = [
+        AdminIntroLocators.intro_title,
+        AdminIntroLocators.intro_text,
+        AdminGroupsLocators.create_btn,
+        AdminGroupsLocators.delete_btn,
+        CommonTable.header,
+    ]
+
+    def open_create_policy_popup(self):
+        self.find_and_click(AdminPoliciesLocators.create_btn)
+        self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.block)
+
+    @allure.step('Fill first step in new policy')
+    def fill_first_step_in_policy_popup(
+        self, policy_name: str, description: Optional[str], role: str, users: Optional[str], groups: Optional[str]
+    ):
+        if not (users or groups):
+            raise ValueError("There are should be users or groups in the policy")
+        self.send_text_to_element(AdminPoliciesLocators.AddPolicyPopup.FirstStep.name_input, policy_name)
+        if description:
+            self.send_text_to_element(AdminPoliciesLocators.AddPolicyPopup.FirstStep.description_input, description)
+        with allure.step(f"Select role {role} in popup"):
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.role_select)
+            self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.FirstStep.role_item)
+            available_roles = self.find_elements(AdminPoliciesLocators.AddPolicyPopup.FirstStep.role_item)
+            for available_role in available_roles:
+                if available_role.text == role:
+                    self.scroll_to(available_role)
+                    self.hover_element(available_role)
+                    available_role.click()
+                    break
+            else:
+                raise AssertionError(f"There are no role {role} in select role popup")
+        if users:
+            with allure.step(f"Select users {users} in popup"):
+                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_select)
+                self.wait_element_visible(AdminPoliciesLocators.item)
+                available_users = self.find_elements(AdminPoliciesLocators.item)
+                self.fill_select_in_policy_popup(users, available_users)
+                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_select)
+        if groups:
+            with allure.step(f"Select groups {groups} in popup"):
+                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_select)
+                self.wait_element_visible(AdminPoliciesLocators.item)
+                available_groups = self.find_elements(AdminPoliciesLocators.item)
+                self.fill_select_in_policy_popup(groups, available_groups)
+                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_select)
+        self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.next_btn_first)
+
+    def fill_select_in_policy_popup(self, items, available_items):
+        for item in items.split(", "):
+            for available_item in available_items:
+                if available_item.text == item:
+                    self.scroll_to(available_item)
+                    available_item.click()
+                    break
+            else:
+                raise AssertionError(f"There are no item {item} in select popup")
+
+    @allure.step('Fill second step in new policy')
+    def fill_second_step_in_policy_popup(
+        self, clusters: Optional[str], services: Optional[str], parent: Optional[str], providers: Optional[str]
+    ):
+        self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
+
+        @allure.step("Select clusters in popup")
+        def fill_cluster_select(clusters_to_select):
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select)
+            self.wait_element_visible(AdminPoliciesLocators.item)
+            available_clusters = self.find_elements(AdminPoliciesLocators.item)
+            self.fill_select_in_policy_popup(clusters_to_select, available_clusters)
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select)
+
+        if clusters:
+            fill_cluster_select(clusters)
+        if services:
+            if not parent:
+                raise ValueError("There are should be parent for service")
+            with allure.step(f"Select services {services} in popup"):
+                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_select)
+                self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item)
+                available_services = self.find_elements(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item)
+                self.fill_select_in_policy_popup(services, available_services)
+                fill_cluster_select(parent)
+        if providers:
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select)
+            self.wait_element_visible(AdminPoliciesLocators.item)
+            available_providers = self.find_elements(AdminPoliciesLocators.item)
+            self.fill_select_in_policy_popup(providers, available_providers)
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select)
+        self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
+
+    @allure.step('Fill third step in new policy')
+    def fill_third_step_in_policy_popup(self):
+        self.wait_element_visible(AdminPoliciesLocators.save_btn)
+        self.find_and_click(AdminPoliciesLocators.save_btn)
+        self.wait_element_hide(AdminPoliciesLocators.AddPolicyPopup.block)
+
+    @allure.step('Create new policy')
+    def create_policy(
+        self,
+        policy_name: str,
+        description: Optional[str],
+        role: str,
+        users: Optional[str] = None,
+        groups: Optional[str] = None,
+        clusters: Optional[str] = None,
+        services: Optional[str] = None,
+        parent: Optional[str] = None,
+        providers: Optional[str] = None,
+    ):
+
+        self.open_create_policy_popup()
+        self.fill_first_step_in_policy_popup(policy_name, description, role, users, groups)
+        self.fill_second_step_in_policy_popup(clusters, services, parent, providers)
+        self.fill_third_step_in_policy_popup()
+
+    def get_all_policies(self) -> [AdminPolicyInfo]:
+        """Get all policies info and returns list with policies names."""
+
+        policies_items = []
+        policies_rows = self.table.get_all_rows()
+        for policy in policies_rows:
+            policy_groups = self.find_child(policy, AdminPoliciesLocators.PolicyRow.groups).text
+            policy_objects = self.find_child(policy, AdminPoliciesLocators.PolicyRow.objects).text
+            policy_item = AdminPolicyInfo(
+                name=self.find_child(policy, AdminPoliciesLocators.PolicyRow.name).text,
+                description=self.find_child(policy, AdminPoliciesLocators.PolicyRow.description).text,
+                role=self.find_child(policy, AdminPoliciesLocators.PolicyRow.role).text,
+                users=self.find_child(policy, AdminPoliciesLocators.PolicyRow.users).text,
+                groups=policy_groups if policy_groups else None,
+                objects=policy_objects if policy_objects else None,
+            )
+            policies_items.append(policy_item)
+        return policies_items
+
+    def select_all_policies(self):
+        # first header element is checkbox for selecting all policies
+        self.find_elements(self.table.locators.header)[0].click()
+
+    def click_delete_button(self):
+        """Click delete button and confirm the action in dialog popup."""
+
+        self.find_and_click(AdminPoliciesLocators.delete_btn)
+        self.wait_element_visible(DeleteDialog.body)
+        self.find_and_click(DeleteDialog.yes)
+        self.wait_element_hide(DeleteDialog.body)

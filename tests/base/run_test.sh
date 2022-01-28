@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh -x
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -23,7 +23,8 @@ BASE_DIR="../../python"
 init_db() {
     rm -f db_test.db
     ${BASE_DIR}/manage.py migrate
-    ${BASE_DIR}/init_db.py 
+    ${BASE_DIR}/init_db.py
+    ${BASE_DIR}/manage.py upgraderole
     cp db_test.db fixture.db
 }
 
@@ -58,6 +59,7 @@ run_test() {
     ./server.sh stop
 }
 
+pip install -r ../../requirements.txt
 
 if [[ ! -f fixture.db ]]; then
     init_db

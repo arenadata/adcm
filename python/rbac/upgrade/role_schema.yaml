@@ -1,0 +1,132 @@
+---
+
+root:
+  match: dict
+  items:
+      version: integer
+      roles: role_list
+  required_items:
+    - version
+    - roles
+
+role_list:
+  match: list
+  item: role
+
+# Role
+
+role:
+  match: dict
+  items:
+    name: string
+    description: string
+    display_name: string
+    type: type
+    parametrized_by: object_list
+    module_name: module_name
+    class_name: class_name
+    init_params: json
+    apps: app_list
+    child: child_list
+    category: category_list
+    any_category: boolean
+  required_items:
+    - name
+    - module_name
+    - class_name
+
+module_name:
+  match: set
+  variants:
+    - rbac.roles
+
+class_name:
+  match: set
+  variants:
+    - ModelRole
+    - ObjectRole
+    - ParentRole
+
+type:
+  match: set
+  variants:
+    - business
+    - role
+    - hidden
+
+object_list:
+  match: list
+  item: object_type
+
+object_type:
+  match: set
+  variants:
+    - cluster
+    - service
+    - component
+    - provider
+    - host
+
+child_list:
+  match: list
+  item: string
+
+app_list:
+  match: list
+  item: app
+
+category_list:
+  match: list
+  item: string
+
+# Application permissions
+
+app:
+  match: dict
+  items:
+    label: string
+    models: model_list
+  required_items:
+    - label
+    - models
+
+model_list:
+  match: list
+  item: model
+
+model:
+  match: dict
+  items:
+    name: string
+    codenames: codename
+  required_items:
+    - name
+    - codenames
+
+codename:
+  match: list
+  item: string
+
+# Common types
+
+string:
+  match: string
+
+integer:
+  match: int
+
+boolean:
+  match: bool
+
+json:
+  match: any
+
+map_string_any:
+  match: dict
+  default_item: base_type
+
+base_type:
+  match: one_of
+  variants:
+    - string
+    - integer

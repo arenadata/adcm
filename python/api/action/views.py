@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rest_framework import permissions
 from rest_framework.response import Response
 
 from api.api_views import (
@@ -20,8 +21,11 @@ from api.api_views import (
     create,
     check_obj,
     filter_actions,
+    permission_denied,
 )
 from api.job.serializers import RunTaskSerializer
+
+from cm.job import get_host_object
 from cm.models import (
     Host,
     Action,
@@ -136,6 +140,22 @@ class ActionDetail(DetailViewRO):
 class RunTask(GenericAPIPermView):
     queryset = TaskLog.objects.all()
     serializer_class = RunTaskSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def has_action_perm(self, action, obj):
+        user = self.request.user
+
+        if user.has_perm('cm.add_task'):
+            return True
+
+        if action.host_action:
+            obj = get_host_object(action, obj.cluster)
+
+        return user.has_perm(f'cm.run_action_{action.display_name}', obj)
+
+    def check_action_perm(self, action, obj):
+        if not self.has_action_perm(action, obj):
+            permission_denied()
 
     def post(self, request, *args, **kwargs):
         """
@@ -143,5 +163,6 @@ class RunTask(GenericAPIPermView):
         """
         obj, action_id = get_obj(**kwargs)
         action = check_obj(Action, {'id': action_id}, 'ACTION_NOT_FOUND')
+        self.check_action_perm(action, obj)
         serializer = self.serializer_class(data=request.data, context={'request': request})
         return create(serializer, action=action, task_object=obj)

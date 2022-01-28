@@ -12,7 +12,6 @@
 
 """Methods for generate test data"""
 # pylint: disable=invalid-name
-
 from collections import ChainMap
 from http import HTTPStatus
 from typing import NamedTuple, List, Optional
@@ -44,7 +43,6 @@ class TestData:  # pylint: disable=too-few-public-methods
     request: Request
     response: ExpectedResponse
     description: Optional[str] = None
-    # Will not be discovered as a test class
     __test__ = False
 
     def __repr__(self):
@@ -61,7 +59,16 @@ class TestDataWithPreparedBody(NamedTuple):
 
     test_data: TestData
     test_body: dict
-    # Will not be discovered as a test class
+    __test__ = False
+
+
+class TestDataWithPreparedPath(NamedTuple):
+    """
+    Class for testing with custom request endpoint path
+    """
+
+    test_data: TestData
+    request_path: str
     __test__ = False
 
 
@@ -86,7 +93,7 @@ def _fill_pytest_param(
         positive_str = "negative"
     if endpoint.spec_link:
         marks.append(allure.link(url=endpoint.spec_link, name="Endpoint spec"))
-    param_id = f"{endpoint.path.replace('/', '_')}_{method.name}_{positive_str}"
+    param_id = f"{endpoint.endpoint_id}_{method.name}_{positive_str}"
     if addition:
         param_id += f"_{addition}"
     return pytest.param(value, marks=marks, id=param_id)
@@ -146,6 +153,37 @@ def get_data_for_params_check(method=Methods.GET, fields_predicate=None):
     return test_data
 
 
+def get_data_for_urls_check() -> List[TestDataWithPreparedPath]:
+    """
+    Get test data for requests with invalid url data with parent object id - /api/v1/parent/{id}/object
+    """
+    test_data = []
+    for endpoint in Endpoints:
+        if endpoint.technical:
+            continue
+        if "{id}" not in endpoint.path:
+            continue
+        for method in Methods:
+            if method not in endpoint.methods:
+                continue
+            request = Request(method=method, endpoint=endpoint)
+            response = ExpectedResponse(status_code=HTTPStatus.NOT_FOUND)
+            test_data.append(
+                _fill_pytest_param(
+                    [
+                        TestDataWithPreparedPath(
+                            TestData(request=request, response=response),
+                            request_path=endpoint.path.format(id="unexpected"),
+                        )
+                    ],
+                    endpoint=endpoint,
+                    method=method,
+                    positive=False,
+                ),
+            )
+    return test_data
+
+
 def get_positive_data_for_post_body_check():
     """
     Generates positive datasets for POST method
@@ -186,7 +224,7 @@ def get_positive_data_for_post_body_check():
                         ),
                         _get_datasets(
                             endpoint,
-                            desc="Some values for fields with POSTable=False and Required=False",
+                            desc="Changed values for fields with POSTable=False and Required=False",
                             field_conditions=lambda x: not x.postable and not x.required,
                             value_properties={"generated_value": True},
                         ),
@@ -226,7 +264,7 @@ def get_negative_data_for_post_body_check():
                         ),
                         _get_datasets(
                             endpoint,
-                            desc="Drop fields with " "Default=null AND Nullable=False AND Required=False",
+                            desc="Drop fields with Default=null AND Nullable=False AND Required=False",
                             field_conditions=lambda x: x.default_value is None
                             and (not x.required and not x.nullable and not x.dynamic_nullable),
                             value_properties={
@@ -272,7 +310,7 @@ def get_positive_data_for_patch_body_check():
                     [
                         _get_datasets(
                             endpoint,
-                            desc="Object as is (all fields) " "without any changes in field set or values",
+                            desc="Object as is (all fields) without any changes in field set or values",
                             field_conditions=lambda x: True,
                             value_properties={"unchanged_value": True},
                         ),
@@ -293,6 +331,12 @@ def get_positive_data_for_patch_body_check():
                             desc="All Changeable=True fields with special valid values",
                             method=Methods.PATCH,
                             positive_case=True,
+                        ),
+                        _get_datasets(
+                            endpoint,
+                            desc="Changed values for fields with Changeable=False and POSTable=False",
+                            field_conditions=lambda x: not x.changeable and not x.postable,
+                            value_properties={"generated_value": True},
                         ),
                     ],
                 )
@@ -423,10 +467,10 @@ def get_negative_data_for_put_body_check():
 def get_data_for_body_check(method: Methods, endpoints_with_test_sets: List[tuple], positive: bool):
     """
     Collect test sets for body testing
-    Each test set is set of data params where values is PreparedFieldValue instances
+    Each test set is set of data params where values are PreparedFieldValue instances
     :param method:
     :param endpoints_with_test_sets:
-    :param positive: collect positive or negative datasets
+    :param positive: collect positive or negative datasets.
         Negative datasets additionally checks of response body for correct errors.
         In positive cases it doesn't make sense
     """

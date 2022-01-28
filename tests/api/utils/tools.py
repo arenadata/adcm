@@ -11,10 +11,12 @@
 # limitations under the License.
 
 """Some useful methods"""
+from dataclasses import dataclass
 import random
 import socket
 import string
 from itertools import repeat
+from json import JSONEncoder
 from time import sleep
 
 import ifaddr
@@ -23,10 +25,28 @@ import allure
 from requests_toolbelt.utils import dump
 
 
+PARAMETRIZED_BY_LIST = ["cluster", "service", "component", "provider", "host"]
+
+
 class NotSet:  # pylint: disable=too-few-public-methods
     """Dummy class for no field value"""
 
     ...
+
+
+@dataclass
+class NotEqual:
+    """Class for check that actual value is not equal this"""
+
+    value: object
+
+    class Encoder(JSONEncoder):
+        """Decoder for NotEqual class"""
+
+        def default(self, o):
+            if isinstance(o, NotEqual):
+                return o.value
+            return JSONEncoder.default(self, o)
 
 
 not_set = NotSet()

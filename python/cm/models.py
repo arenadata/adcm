@@ -23,7 +23,6 @@ from enum import Enum
 from itertools import chain
 from typing import Dict, Iterable, List, Optional
 
-from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -188,11 +187,37 @@ class Bundle(ADCMModel):
     hash = models.CharField(max_length=64)
     description = models.TextField(blank=True)
     date = models.DateTimeField(auto_now=True)
+    category = models.ForeignKey('ProductCategory', on_delete=models.RESTRICT, null=True)
 
     __error_code__ = 'BUNDLE_NOT_FOUND'
 
     class Meta:
         unique_together = (('name', 'version', 'edition'),)
+
+
+class ProductCategory(ADCMModel):
+    """
+    Categories are used for some models categorization.
+    It's same as Bundle.name but unlinked from it due to simplicity reasons.
+    """
+
+    value = models.CharField(max_length=160, unique=True)
+    visible = models.BooleanField(default=True)
+
+    @classmethod
+    def re_collect(cls) -> None:
+        """Re-sync category list with installed bundles"""
+        for bundle in Bundle.objects.filter(category=None).all():
+            prototype = Prototype.objects.filter(
+                bundle=bundle, name=bundle.name, type=PrototypeEnum.Cluster.value
+            ).first()
+            if prototype:
+                value = prototype.display_name or bundle.name
+                bundle.category, _ = cls.objects.get_or_create(value=value)
+                bundle.save()
+        for category in cls.objects.all():
+            if category.bundle_set.count() == 0:
+                category.delete()  # TODO: ensure that's enough
 
 
 def get_default_from_edition():
@@ -361,6 +386,7 @@ class ADCMEntity(ADCMModel):
     state = models.CharField(max_length=64, default='created')
     _multi_state = models.JSONField(default=dict, db_column='multi_state')
     concerns = models.ManyToManyField('ConcernItem', blank=True, related_name='%(class)s_entities')
+    policy_object = GenericRelation('rbac.PolicyObject')
 
     class Meta:
         abstract = True
@@ -1152,14 +1178,6 @@ JOB_STATUS = (
 class UserProfile(ADCMModel):
     login = models.CharField(max_length=32, unique=True)
     profile = models.JSONField(default=str)
-
-
-class Role(ADCMModel):
-    name = models.CharField(max_length=32, unique=True)
-    description = models.TextField(blank=True)
-    permissions = models.ManyToManyField(Permission, blank=True)
-    user = models.ManyToManyField(User, blank=True)
-    group = models.ManyToManyField(Group, blank=True)
 
 
 class TaskLog(ADCMModel):

@@ -3,7 +3,7 @@ BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 ADCMBASE_IMAGE ?= hub.arenadata.io/adcm/base
 ADCMTEST_IMAGE ?= hub.arenadata.io/adcm/test
-ADCMBASE_TAG ?= 20211205195158
+ADCMBASE_TAG ?= 20211219230531
 
 APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
@@ -48,9 +48,13 @@ build: describe buildss buildjs ## Build final docker image and all depended tar
 testpyreqs: ## Install test prereqs into user's pip target dir
 	pip install --user -r requirements-test.txt
 
-unittests: ## Run unittests
+basetests: ## Run tests/base
 	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/tests/base $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/sh -e ./run_test.sh
+
+unittests: basetests ## Run unittests
+	docker pull $(ADCMTEST_IMAGE):$(ADCMBASE_TAG)
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/ $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) /bin/sh -c "pip install -r /adcm/requirements.txt && pip install pytest-django && pytest python"
 
 pytest: ## Run functional tests
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster-x64
@@ -72,7 +76,7 @@ ng_tests: ## Run Angular tests
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster-x64
 	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster-x64 ./ng_test.sh
 
-linters : ## Run linters
+linters: ## Run linters
 	docker pull $(ADCMTEST_IMAGE):$(ADCMBASE_TAG)
 	docker run -i --rm -v $(CURDIR)/:/source -w /source $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) \
         /bin/sh -xeo pipefail -c "/linters.sh shellcheck pylint && \
@@ -84,6 +88,6 @@ linters : ## Run linters
 npm_check: ## Run npm-check
 	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./npm_check.sh
 
-django_tests : ## Run django tests.
+django_tests: ## Run django tests.
 	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
-	docker run -e DJANGO_SETTINGS_MODULE=adcm.test -i --rm -v $(CURDIR)/:/adcm -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) python python/manage.py test cm
+	docker run -e DJANGO_SETTINGS_MODULE=adcm.test -i --rm -v $(CURDIR)/:/adcm -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/sh -c "pip install -r /adcm/requirements.txt; python python/manage.py test cm"

@@ -19,7 +19,7 @@ from django.http.request import QueryDict
 from django_filters import rest_framework as drf_filters
 
 import rest_framework.pagination
-from rest_framework import status, serializers
+from rest_framework import status, serializers, exceptions
 from rest_framework.reverse import reverse
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
@@ -34,6 +34,8 @@ from cm import config
 from cm.errors import AdcmEx
 from cm.models import Action, ADCMEntity, PrototypeConfig, ConcernType
 
+from rbac.viewsets import DjangoObjectPerm
+
 
 def check_obj(model, req, error=None):
     if isinstance(req, dict):
@@ -47,6 +49,25 @@ def hlink(view, lookup, lookup_url):
     return serializers.HyperlinkedIdentityField(
         view_name=view, lookup_field=lookup, lookup_url_kwarg=lookup_url
     )
+
+
+def permission_denied(
+    message='You do not have permission to perform this action', code=status.HTTP_403_FORBIDDEN
+):
+    raise exceptions.PermissionDenied(detail=message, code=code)
+
+
+def has_custom_permission(user, action_type, model, obj, second_perm):
+    if user.has_perm(f'cm.{action_type}_{model}', obj):
+        return True
+    if second_perm is not None and user.has_perm(f'cm.{second_perm}'):
+        return True
+    return False
+
+
+def check_custom_perm(self, action_type, model, obj, second_perm=None):
+    if not has_custom_permission(self.request.user, action_type, model, obj, second_perm):
+        permission_denied()
 
 
 def save(serializer, code, **kwargs):
@@ -144,7 +165,7 @@ class DjangoModelPerm(DjangoModelPermissions):
 
 
 class GenericAPIPermView(GenericAPIView):
-    permission_classes = (DjangoModelPerm,)
+    permission_classes = (DjangoObjectPerm,)
 
 
 class InterfaceView:
@@ -227,7 +248,7 @@ class AdcmFilterBackend(drf_filters.DjangoFilterBackend):
 class PageView(GenericAPIView, InterfaceView):
     filter_backends = (AdcmFilterBackend, AdcmOrderingFilter)
     pagination_class = rest_framework.pagination.LimitOffsetPagination
-    permission_classes = (DjangoModelPerm,)
+    permission_classes = (DjangoObjectPerm,)
 
     def get_ordering(self, request, queryset, view):
         Order = AdcmOrderingFilter()
@@ -304,7 +325,7 @@ class PageViewAdd(PageView):
 
 class ListView(GenericAPIView, InterfaceView):
     filter_backends = (AdcmFilterBackend,)
-    permission_classes = (DjangoModelPerm,)
+    permission_classes = (DjangoObjectPerm,)
 
     def get(self, request, *args, **kwargs):
         obj = self.filter_queryset(self.get_queryset())
@@ -321,7 +342,7 @@ class ListViewAdd(ListView):
 
 
 class DetailViewRO(GenericAPIView, InterfaceView):
-    permission_classes = (DjangoModelPerm,)
+    permission_classes = (DjangoObjectPerm,)
 
     def check_obj(self, kw_req):
         try:
@@ -332,7 +353,9 @@ class DetailViewRO(GenericAPIView, InterfaceView):
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         kw_req = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        return self.check_obj(kw_req)
+        obj = self.check_obj(kw_req)
+        self.check_object_permissions(self.request, obj)
+        return obj
 
     def get(self, request, *args, **kwargs):
         obj = self.get_object()

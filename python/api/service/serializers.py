@@ -21,10 +21,10 @@ from api.api_views import check_obj, filter_actions, CommonAPIURL, ObjectURL
 from api.cluster.serializers import BindSerializer
 from api.component.serializers import ComponentUISerializer
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.serializers import StringListSerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
-
+from api.serializers import StringListSerializer
 from cm import status_api
+from cm.adcm_config import get_main_info
 from cm.api import add_service_to_cluster, multi_bind, bind
 from cm.errors import AdcmEx
 from cm.models import Prototype, Action, ServiceComponent, Cluster
@@ -40,10 +40,8 @@ class ServiceSerializer(serializers.Serializer):
     url = ObjectURL(read_only=True, view_name='service-details')
 
     def validate_prototype_id(self, prototype_id):
-        prototype = check_obj(
-            Prototype, {'id': prototype_id, 'type': 'service'}, 'PROTOTYPE_NOT_FOUND'
-        )
-        return prototype
+        check_obj(Prototype, {'id': prototype_id, 'type': 'service'}, 'PROTOTYPE_NOT_FOUND')
+        return prototype_id
 
     def create(self, validated_data):
         try:
@@ -60,7 +58,8 @@ class ClusterServiceSerializer(ServiceSerializer):
     def create(self, validated_data):
         try:
             cluster = check_obj(Cluster, self.context.get('cluster_id'))
-            return add_service_to_cluster(cluster, validated_data['prototype_id'])
+            prototype = check_obj(Prototype, validated_data['prototype_id'])
+            return add_service_to_cluster(cluster, prototype)
         except IntegrityError:
             raise AdcmEx('SERVICE_CONFLICT') from None
 
@@ -99,6 +98,7 @@ class ServiceUISerializer(ServiceDetailSerializer):
     action = CommonAPIURL(view_name='object-action')
     config = CommonAPIURL(view_name='object-config')
     concerns = ConcernItemUISerializer(many=True, read_only=True)
+    main_info = serializers.SerializerMethodField()
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
@@ -114,6 +114,9 @@ class ServiceUISerializer(ServiceDetailSerializer):
 
     def get_version(self, obj):
         return obj.prototype.version
+
+    def get_main_info(self, obj):
+        return get_main_info(obj)
 
 
 class ImportPostSerializer(serializers.Serializer):
