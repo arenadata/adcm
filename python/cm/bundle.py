@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-lines
+
 import functools
 import hashlib
 import os
@@ -20,7 +22,6 @@ import tarfile
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction, IntegrityError
-from rbac.models import Role, RoleTypes
 from version_utils import rpm
 
 import cm.stack
@@ -29,6 +30,7 @@ from adcm.settings import ADCM_VERSION
 from cm import config
 from cm.adcm_config import proto_ref, init_object_config, switch_config
 from cm.errors import raise_AdcmEx as err
+from cm.logger import log
 from cm.models import (
     ADCM,
     Action,
@@ -51,7 +53,7 @@ from cm.models import (
     Upgrade,
     get_model_by_type,
 )
-from cm.logger import log
+from rbac.models import Role, RoleTypes
 
 STAGE = (
     StagePrototype,
@@ -273,18 +275,9 @@ def update_obj(dest, source, fields):
         setattr(dest, f, getattr(source, f))
 
 
-def extend_role(name, children):
-    role = Role.objects.get(name=name)
-    role.child.add(*children)
-
-
-def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too-many-lines
-    parent = {}
-    top_parent = {
-        'Cluster Administrator': [],
-        'Provider Administrator': [],
-        'Service Administrator': [],
-    }
+def cook_hidden_roles(bundle: Bundle):
+    """Prepares hidden roles"""
+    hidden_roles = {}
 
     for act in Action.objects.filter(prototype__bundle=bundle):
         name_prefix = f'{act.prototype.type} action:'.title()
@@ -325,53 +318,69 @@ def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too
             role.category.add(bundle.category)
         ct = ContentType.objects.get_for_model(model)
         perm, _ = Permission.objects.get_or_create(
-            content_type=ct, codename='run_object_action', name='Can run actions'
+            content_type=ct,
+            codename=f'run_action_{act.display_name}',
+            name=f'Can run {act.display_name} actions',
         )
         role.permissions.add(perm)
-        if name not in parent:
-            parent[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
-        parent[name]['children'].append(role)
+        if name not in hidden_roles:
+            hidden_roles[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
+        hidden_roles[name]['children'].append(role)
+    return hidden_roles
 
-    for parent_name, parent_value in parent.items():
-        parent_role, is_created = Role.objects.get_or_create(
-            name=f'{parent_name}',
-            display_name=f'{parent_name}',
-            description=f'{parent_name}',
+
+def update_built_in_roles(
+    bundle: Bundle, business_role: Role, parametrized_by_type: list, built_in_roles: dict
+):
+    """Add action role to built-in roles"""
+    if 'cluster' in parametrized_by_type:
+        if bundle.category:
+            business_role.category.add(bundle.category)
+        built_in_roles['Cluster Administrator'].child.add(business_role)
+    elif 'service' in parametrized_by_type or 'component' in parametrized_by_type:
+        if bundle.category:
+            business_role.category.add(bundle.category)
+        built_in_roles['Cluster Administrator'].child.add(business_role)
+        built_in_roles['Service Administrator'].child.add(business_role)
+    elif 'provider' in parametrized_by_type:
+        built_in_roles['Provider Administrator'].child.add(business_role)
+    elif 'host' in parametrized_by_type:
+        built_in_roles['Cluster Administrator'].child.add(business_role)
+        built_in_roles['Provider Administrator'].child.add(business_role)
+
+
+def cook_roles(bundle: Bundle):
+    """Prepares action roles"""
+    built_in_roles = {
+        'Cluster Administrator': Role.objects.get(name='Cluster Administrator'),
+        'Provider Administrator': Role.objects.get(name='Provider Administrator'),
+        'Service Administrator': Role.objects.get(name='Service Administrator'),
+    }
+    hidden_roles = cook_hidden_roles(bundle)
+
+    for business_role_name, business_role_params in hidden_roles.items():
+        if business_role_params['parametrized_by_type'] == 'component':
+            parametrized_by_type = ['service', 'component']
+        else:
+            parametrized_by_type = [business_role_params['parametrized_by_type']]
+
+        business_role, is_created = Role.objects.get_or_create(
+            name=f'{business_role_name}',
+            display_name=f'{business_role_name}',
+            description=f'{business_role_name}',
             type=RoleTypes.business,
             module_name='rbac.roles',
             class_name='ParentRole',
-            parametrized_by_type=[
-                parent_value['parametrized_by_type'],
-            ],
+            parametrized_by_type=parametrized_by_type,
         )
 
         if is_created:
-            log.info('Create business permission "%s"', parent_name)
+            log.info('Create business permission "%s"', business_role_name)
 
-        for action_role in parent_value['children']:
-            parent_role.child.add(action_role)
-
-        if parent_value['parametrized_by_type'] == 'cluster':
-            if bundle.category:
-                parent_role.category.add(bundle.category)
-            for top_parent_name in ['Cluster Administrator']:
-                top_parent[top_parent_name].append(parent_role)
-        elif parent_value['parametrized_by_type'] in ['service', 'component']:
-            if bundle.category:
-                parent_role.category.add(bundle.category)
-            for top_parent_name in [
-                'Cluster Administrator',
-                'Service Administrator',
-            ]:
-                top_parent[top_parent_name].append(parent_role)
-        elif parent_value['parametrized_by_type'] == 'provider':
-            top_parent['Provider Administrator'].append(parent_role)
-        elif parent_value['parametrized_by_type'] == 'host':
-            for top_parent_name in ['Cluster Administrator', 'Provider Administrator']:
-                top_parent[top_parent_name].append(parent_role)
-
-    for name, children in top_parent.items():
-        extend_role(name, children)
+        business_role.child.add(*business_role_params['children'])
+        update_built_in_roles(
+            bundle, business_role, parametrized_by_type, built_in_roles
+        )
 
 
 def re_check_actions():
