@@ -11,26 +11,24 @@
 # limitations under the License.
 
 """ADCM API POST body tests"""
+from copy import deepcopy
+
 # pylint: disable=redefined-outer-name
 from typing import List
-from copy import deepcopy
 
 import allure
 import pytest
 
+from tests.api.test_body import generate_body_for_checks
+from tests.api.testdata.db_filler import DbFiller
 from tests.api.testdata.generators import (
     get_positive_data_for_post_body_check,
     get_negative_data_for_post_body_check,
-    TestData,
     TestDataWithPreparedBody,
 )
-from tests.api.testdata.db_filler import DbFiller
-
+from tests.api.utils.api_objects import ADCMTestApiWrapper
 from tests.api.utils.methods import Methods
-from tests.api.utils.tools import not_set
 from tests.api.utils.types import get_fields
-
-from tests.api.utils.api_objects import ADCMTestApiWrapper, ExpectedBody
 
 pytestmark = [
     allure.suite("POST"),
@@ -47,7 +45,7 @@ def prepare_post_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
     valid_request_data = DbFiller(adcm=adcm_api_fs).generate_valid_request_data(
         endpoint=test_data_list[0].test_data.request.endpoint, method=Methods.POST
     )
-    final_test_data_list: List[TestData] = []
+    final_test_data_list: List[TestDataWithPreparedBody] = []
     for test_data_with_prepared_values in test_data_list:
         test_data, prepared_field_values = test_data_with_prepared_values
         test_data.request.data = deepcopy(valid_request_data["data"])
@@ -65,7 +63,7 @@ def prepare_post_body_data(request, adcm_api_fs: ADCMTestApiWrapper):
                 else:
                     if field.name in test_data.request.data:
                         del test_data.request.data[field.name]
-        final_test_data_list.append(test_data)
+        final_test_data_list.append(TestDataWithPreparedBody(test_data, prepared_field_values))
 
     return adcm_api_fs, final_test_data_list
 
@@ -77,13 +75,9 @@ def test_post_body_positive(prepare_post_body_data):
     Includes sets of correct field values - boundary values, nullable and required if possible.
     """
     adcm, test_data_list = prepare_post_body_data
-    for test_data in test_data_list:
-        # Set expected response fields values
-        test_data.response.body = ExpectedBody()
-        for field in get_fields(test_data.request.endpoint.data_class):
-            test_data.response.body.fields[field.name] = not_set
-            if (expected_field_value := test_data.request.data.get(field.name)) and field.postable:
-                test_data.response.body.fields[field.name] = expected_field_value
+    for test_data_with_prepared_values in test_data_list:
+        test_data, _ = test_data_with_prepared_values
+        test_data.response.body = generate_body_for_checks(test_data_with_prepared_values)
         with allure.step(f'Assert - {test_data.description}'):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)
 
@@ -96,6 +90,7 @@ def test_post_body_negative(prepare_post_body_data, flexible_assert_step):
     nullable and required if not possible, fields with incorrect types and etc.
     """
     adcm, test_data_list = prepare_post_body_data
-    for test_data in test_data_list:
+    for test_data_with_prepared_values in test_data_list:
+        test_data, _ = test_data_with_prepared_values
         with flexible_assert_step(title=f'Assert - {test_data.description}'):
             adcm.exec_request(request=test_data.request, expected_response=test_data.response)

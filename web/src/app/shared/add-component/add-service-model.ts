@@ -9,8 +9,9 @@ import { ListResult } from '@app/models/list-result';
 
 export const ADD_SERVICE_PROVIDER = new InjectionToken<IAddService>('AddService');
 
-export interface FormModel {
+export interface FormModel<T = any> {
   name: string;
+  value?: T;
   title?: string;
   form?: FormGroup;
   success?: EventEmitter<{ flag: boolean; obj: any }>;
@@ -25,6 +26,10 @@ export interface IAddService {
   Current: any;
 
   add?<T>(data: any, name?: TypeName, prototype?: StackBase): Observable<T>;
+
+  get?<T>(id: number): Observable<T>;
+
+  update?<T>(url: string, data: any): Observable<T>;
 
   getList?<T>(type: TypeName, param: Params): Observable<T[]>;
 

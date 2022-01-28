@@ -23,11 +23,11 @@ import allure
 import pytest
 import requests
 from _pytest.fixtures import SubRequest
+from adcm_client.objects import ADCMClient
 from adcm_client.wrappers.docker import ADCM
 from selenium.common.exceptions import WebDriverException
 
 from tests.conftest import CLEAN_ADCM_PARAM
-from tests.ui_tests.app.api import ADCMDirectAPIClient
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage
@@ -211,10 +211,9 @@ def login_to_adcm_over_ui(app_fs, adcm_credentials):
 
 
 @pytest.fixture()
-def another_user(app_fs: ADCMTest, adcm_credentials: dict) -> Generator[dict, None, None]:
+def another_user(sdk_client_fs: ADCMClient) -> Generator[dict, None, None]:
     """Create another user, return it's credentials, remove afterwards"""
-    api = ADCMDirectAPIClient(app_fs.adcm.url, adcm_credentials)
     user_credentials = {'username': 'blondy', 'password': 'goodbadevil'}
-    api.create_new_user(user_credentials)
+    user = sdk_client_fs.user_create(**user_credentials)
     yield user_credentials
-    api.delete_user(user_credentials['username'])
+    user.delete()

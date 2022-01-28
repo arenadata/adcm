@@ -54,6 +54,7 @@ fi
 "${adcmroot}"/python/backupdb.py
 "${adcmroot}"/python/manage.py migrate
 "${adcmroot}"/python/init_db.py
+"${adcmroot}"/python/manage.py upgraderole
 touch "${initreadyfile}"
 
 # That is sleep forever case because I have no idea how to force

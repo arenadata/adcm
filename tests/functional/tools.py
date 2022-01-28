@@ -20,7 +20,7 @@ import pytest
 from _pytest.outcomes import Failed
 from coreapi.exceptions import ErrorMessage
 from adcm_client.base import ObjectNotFound, PagingEnds
-from adcm_client.objects import Host, Task, Job, Cluster, Service, Component, Provider, GroupConfig
+from adcm_client.objects import Host, Task, Job, Cluster, Service, Component, Provider, GroupConfig, ADCMClient
 from adcm_pytest_plugin.utils import catch_failed
 
 
@@ -31,7 +31,7 @@ ADCMObjects = (Cluster, Service, Component, Provider, Host)
 
 ClusterRelatedObject = Union[Cluster, Service, Component]
 ProviderRelatedObject = Union[Provider, Host]
-AnyADCMObject = Union[ClusterRelatedObject, ProviderRelatedObject]
+AnyADCMObject = Union[ClusterRelatedObject, ProviderRelatedObject, ADCMClient]
 
 
 def get_config(adcm_object: AnyADCMObject):
@@ -66,7 +66,7 @@ def get_objects_via_pagination(
 
 def action_in_object_is_present(action: str, obj: AnyADCMObject):
     """Assert action in object is present"""
-    with allure.step(f"Assert that action {action} is present in {_get_object_represent(obj)}"):
+    with allure.step(f"Assert that action {action} is present in {get_object_represent(obj)}"):
         with catch_failed(ObjectNotFound, f"Action {action} not found in object {obj}"):
             obj.action(name=action)
 
@@ -79,8 +79,8 @@ def actions_in_objects_are_present(actions_to_obj: List[Tuple[str, AnyADCMObject
 
 def action_in_object_is_absent(action: str, obj: AnyADCMObject):
     """Assert action in object is absent"""
-    with allure.step(f"Assert that action {action} is absent in {_get_object_represent(obj)}"):
-        with catch_failed(Failed, f"Action {action} is present in {_get_object_represent(obj)}"):
+    with allure.step(f"Assert that action {action} is absent in {get_object_represent(obj)}"):
+        with catch_failed(Failed, f"Action {action} is present in {get_object_represent(obj)}"):
             with pytest.raises(ObjectNotFound):
                 obj.action(name=action)
 
@@ -91,8 +91,13 @@ def actions_in_objects_are_absent(actions_to_obj: List[Tuple[str, AnyADCMObject]
         action_in_object_is_absent(*pair)
 
 
-def _get_object_represent(obj: AnyADCMObject) -> str:
-    return f"host {obj.fqdn}" if isinstance(obj, Host) else f"{obj.__class__.__name__.lower()} {obj.name}"
+def get_object_represent(obj: AnyADCMObject) -> str:
+    """Get human readable object string"""
+    return (
+        f"host {obj.fqdn}"
+        if isinstance(obj, Host)
+        else f"{obj.__class__.__name__.lower()} {obj.name if hasattr(obj, 'name') else ''}"
+    )
 
 
 def create_config_group_and_add_host(

@@ -10,21 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import django.contrib.auth
-import rest_framework
-from rest_framework import routers, status
-from rest_framework import viewsets
-from rest_framework.authtoken.models import Token
-from rest_framework.generics import GenericAPIView
+from rest_framework import permissions
+from rest_framework import routers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-import api.serializers
 import cm.api
 import cm.job
 import cm.stack
 import cm.status_api
 from adcm.settings import ADCM_VERSION
+from rbac.viewsets import GenericPermViewSet
 
 
 class APIRoot(routers.APIRootView):
@@ -32,11 +28,10 @@ class APIRoot(routers.APIRootView):
     Arenadata Chapel API
     """
 
-    permission_classes = (rest_framework.permissions.AllowAny,)
+    permission_classes = (permissions.AllowAny,)
     api_root_dict = {
         'adcm': 'adcm',
         'cluster': 'cluster',
-        'profile': 'profile-list',
         'provider': 'provider',
         'host': 'host',
         'service': 'service',
@@ -48,13 +43,10 @@ class APIRoot(routers.APIRootView):
         'stack': 'stack',
         'stats': 'stats',
         'task': 'task',
-        'token': 'token',
-        'logout': 'logout',
-        'user': 'user-list',
-        'group': 'group-list',
-        'role': 'role-list',
         'info': 'adcm-info',
         'concern': 'concern',
+        'rbac': 'rbac:root',
+        'token': 'token',
     }
 
 
@@ -68,42 +60,8 @@ class NameConverter:
         return value
 
 
-class GetAuthToken(GenericAPIView):
-    authentication_classes = (rest_framework.authentication.TokenAuthentication,)
-    permission_classes = (rest_framework.permissions.AllowAny,)
-    serializer_class = api.serializers.AuthSerializer
-
-    def post(self, request, *args, **kwargs):
-        """
-        Provide authentication token
-
-        HTTP header for authorization:
-
-        ```Authorization: Token XXXXX```
-        """
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-        token, _created = Token.objects.get_or_create(user=user)
-        django.contrib.auth.login(
-            request, user, backend='django.contrib.auth.backends.ModelBackend'
-        )
-        return Response({'token': token.key})
-
-
-class LogOut(GenericAPIView):
-    serializer_class = api.serializers.LogOutSerializer
-
-    def post(self, request, *args, **kwargs):
-        """
-        Logout user from Django session
-        """
-        django.contrib.auth.logout(request)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
 class ADCMInfo(APIView):
-    permission_classes = (rest_framework.permissions.AllowAny,)
+    permission_classes = (permissions.AllowAny,)
 
     def get(self, request):
         """
@@ -112,10 +70,10 @@ class ADCMInfo(APIView):
         return Response({'adcm_version': ADCM_VERSION, 'google_oauth': cm.api.has_google_oauth()})
 
 
-class ViewInterfaceGenericViewSet(viewsets.GenericViewSet):
+class ViewInterfaceGenericViewSet(GenericPermViewSet):
     def get_serializer_class(self):
-        view = self.request.query_params.get('view', None)
-        if view == 'interface':
-            return self.ui_serializer_class
-        else:
-            return self.serializer_class
+        if self.request is not None:
+            view = self.request.query_params.get('view', None)
+            if view == 'interface':
+                return self.ui_serializer_class
+        return self.serializer_class

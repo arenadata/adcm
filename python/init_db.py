@@ -17,12 +17,12 @@ import string
 from itertools import chain
 import adcm.init_django  # pylint: disable=unused-import
 
-from django.contrib.auth.models import User
-
 from cm import issue
+from cm.bundle import load_adcm
+from cm.config import SECRETS_FILE
+from cm.job import abort_all
 from cm.logger import log
 from cm.models import (
-    UserProfile,
     DummyData,
     CheckLog,
     GroupCheckLog,
@@ -31,10 +31,8 @@ from cm.models import (
     ConcernType,
     ConcernItem,
 )
-from cm.bundle import load_adcm
-from cm.config import SECRETS_FILE
-from cm.job import abort_all
 from cm.status_api import Event
+from rbac.models import User
 
 
 def random_string(strlen=10):
@@ -42,17 +40,15 @@ def random_string(strlen=10):
 
 
 def create_status_user():
-    user = "status"
-    try:
-        User.objects.get(username=user)
+    username = "status"
+    if User.objects.filter(username=username).exists():
         return
-    except User.DoesNotExist:
-        pass
+
     password = random_string(40)
     token = random_string(40)
-    User.objects.create_superuser(user, "", password)
+    User.objects.create_superuser(username, "", password, built_in=True)
     with open(SECRETS_FILE, 'w', encoding='utf_8') as f:
-        json.dump({'adcmuser': {'user': user, 'password': password}, 'token': token}, f)
+        json.dump({'adcmuser': {'user': username, 'password': password}, 'token': token}, f)
     log.info('Update secret file %s OK', SECRETS_FILE)
 
 
@@ -83,14 +79,8 @@ def recheck_issues():
 
 def init():
     log.info("Start initializing ADCM DB...")
-    try:
-        User.objects.get(username='admin')
-    except User.DoesNotExist:
-        User.objects.create_superuser('admin', 'admin@example.com', 'admin')
-    try:
-        UserProfile.objects.get(login='admin')
-    except UserProfile.DoesNotExist:
-        UserProfile.objects.create(login='admin')
+    if not User.objects.filter(username='admin').exists():
+        User.objects.create_superuser('admin', 'admin@example.com', 'admin', built_in=True)
     create_status_user()
     event = Event()
     abort_all(event)

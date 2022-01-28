@@ -1,0 +1,9 @@
+<ng-container *ngIf="object && candidates">
+  <adwp-input-select [form]="object"
+                     [controlName]="isParent ? 'parent' : 'cluster'"
+                     [label]="isParent ? 'Parent' : 'Cluster'"
+                     [handler]="clusterHandler"
+                     [options]="candidates.cluster">
+
+  </adwp-input-select>
+</ng-container>

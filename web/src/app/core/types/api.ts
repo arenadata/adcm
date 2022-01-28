@@ -36,7 +36,10 @@ export type TypeName =
   'servicecomponent' |
   'component' |
   'group_config' |
-  'group_config_hosts';
+  'group_config_hosts' |
+  'group' |
+  'role' |
+  'policy';
 export type Entities = ICluster | Service | Host | Provider | Job | Task | Bundle;
 
 /**
@@ -67,6 +70,7 @@ export interface BaseEntity extends AdcmEntity {
   status?: number | string;
   concerns: Concern[];
   locked: boolean;
+  main_info?: string;
 }
 
 export interface ApiFlat {

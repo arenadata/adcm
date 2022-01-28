@@ -406,6 +406,7 @@ class TestHostConfigPage:
         }
         host_page = open_config(page)
         host_page.check_host_toolbar(HOST_FQDN)
+        host_page.close_info_popup()
         host_page.config.fill_config_fields_with_test_values()
         host_page.config.set_description(params["config_name_new"])
         host_page.config.save_config()
@@ -499,15 +500,21 @@ class TestHostStatusPage:
 
         success_status = [
             StatusRowInfo(
-                has_icon=True, group_name='best-host', state='successful 1/1', state_color=SUCCESS_COLOR, link=None
+                icon_status=True, group_name='best-host', state='successful 1/1', state_color=SUCCESS_COLOR, link=None
             ),
-            StatusRowInfo(has_icon=True, group_name=None, state=None, state_color=None, link=None),
+            StatusRowInfo(icon_status=True, group_name=None, state=None, state_color=None, link='first'),
         ]
-        negative_status = [
+        negative_status_component = [
             StatusRowInfo(
-                has_icon=True, group_name='best-host', state='successful 0/1', state_color=NEGATIVE_COLOR, link=None
+                icon_status=True, group_name='best-host', state='successful 0/1', state_color=NEGATIVE_COLOR, link=None
             ),
-            StatusRowInfo(has_icon=True, group_name=None, state=None, state_color=None, link=None),
+            StatusRowInfo(icon_status=False, group_name=None, state=None, state_color=None, link='first'),
+        ]
+        negative_status_host = [
+            StatusRowInfo(
+                icon_status=False, group_name='best-host', state='successful 0/1', state_color=NEGATIVE_COLOR, link=None
+            ),
+            StatusRowInfo(icon_status=False, group_name=None, state=None, state_color=None, link='first'),
         ]
 
         with allure.step("Create hostcomponent"):
@@ -527,11 +534,11 @@ class TestHostStatusPage:
                 (create_host, cluster.service(name="test_service").component(name="first"))
             )
             host_status_page.driver.refresh()
-            host_status_page.compare_current_and_expected_state(negative_status)
+            host_status_page.compare_current_and_expected_state(negative_status_component)
         with allure.step("Check negative status on host"):
             status_changer.set_host_negative_status(create_host)
             host_status_page.driver.refresh()
-            host_status_page.compare_current_and_expected_state(negative_status)
+            host_status_page.compare_current_and_expected_state(negative_status_host)
         with allure.step("Check collapse button"):
             with host_status_page.wait_rows_collapsed():
                 host_status_page.click_collapse_all_btn()

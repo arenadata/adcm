@@ -52,4 +52,5 @@ def test_methods(prepare_data):
     """
     adcm, test_data_list = prepare_data
     for test_data in test_data_list:
-        adcm.exec_request(request=test_data.request, expected_response=test_data.response)
+        request = test_data.request
+        adcm.exec_request(request=request, expected_response=test_data.response)

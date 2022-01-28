@@ -13,7 +13,19 @@ import { Injectable } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NavigationStart, Router } from '@angular/router';
-import { getConnectStatus, getFirstAdminLogin, getProfile, getRoot, isAuthenticated, loadProfile, loadRoot, loadStack, rootError, socketInit, State } from '@app/core/store';
+import {
+  getConnectStatus,
+  getFirstAdminLogin,
+  getProfile,
+  getRoot,
+  isAuthenticated,
+  loadProfile,
+  loadRoot,
+  loadStack,
+  rootError,
+  socketInit,
+  State
+} from '@app/core/store';
 import { select, Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
 import { filter, switchMap, tap } from 'rxjs/operators';
@@ -75,7 +87,10 @@ export class AppService {
   }
 
   getVersion(versionData: IVersionInfo): IVersionInfo {
-    return this.config.version.split('-').reduce((p, c, i) => ({ ...p, [Object.keys(versionData)[i]]: c }), {} as IVersionInfo);
+    return this.config.version.split('-').reduce((p, c, i) => ({
+      ...p,
+      [Object.keys(versionData)[i]]: c
+    }), {} as IVersionInfo);
   }
 
   initListeners() {

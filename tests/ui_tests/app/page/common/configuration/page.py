@@ -63,15 +63,17 @@ class CommonConfigMenuObj(BasePageObject):
 
     def get_all_config_rows_names(self, *, displayed_only: bool = True) -> List[WebElement]:
         """Return all config field rows names"""
-
+        # TODO it is a very special method for testing config hell
+        #  so we can't just return []
+        #  maybe here isn't a good place for it or we need a better check in config hell test
         try:
-            self.wait_element_visible(CommonConfigMenu.config_row)
-            return [
-                self.find_child(r, CommonConfigMenu.ConfigRow.name).text.rstrip(":")
-                for r in self.get_all_config_rows(displayed_only=displayed_only)
-            ]
+            self.wait_element_visible(CommonConfigMenu.config_row, timeout=120)
         except TimeoutException:
-            return []
+            raise AssertionError("Config menu fields don't appear in time")
+        return [
+            self.find_child(r, CommonConfigMenu.ConfigRow.name, timeout=2).text.rstrip(":")
+            for r in self.get_all_config_rows(displayed_only=displayed_only)
+        ]
 
     def get_config_row(self, display_name: str) -> WebElement:
         """Return config field row with provided display name"""

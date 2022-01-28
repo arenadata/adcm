@@ -71,6 +71,7 @@ ERRORS = {
     'COMPONENT_CONSTRAINT_ERROR': ("component constraint error", rfs.HTTP_409_CONFLICT, ERR),
     'BUNDLE_CONFIG_ERROR': ("bundle config error", rfs.HTTP_409_CONFLICT, ERR),
     'BUNDLE_CONFLICT': ("bundle conflict error", rfs.HTTP_409_CONFLICT, ERR),
+    'INVALID_ROLE_SPEC': ("role specification error", rfs.HTTP_409_CONFLICT, ERR),
     'ROLE_ERROR': ("role error", rfs.HTTP_409_CONFLICT, ERR),
     'INVALID_OBJECT_DEFINITION': ("invalid object definition", rfs.HTTP_409_CONFLICT, ERR),
     'INVALID_CONFIG_DEFINITION': ("invalid config definition", rfs.HTTP_409_CONFLICT, ERR),

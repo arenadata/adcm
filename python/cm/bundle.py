@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-lines
+
 import functools
 import hashlib
 import os
@@ -17,8 +19,9 @@ import os.path
 import shutil
 import tarfile
 
-from django.db import IntegrityError
-from django.db import transaction
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
+from django.db import transaction, IntegrityError
 from version_utils import rpm
 
 import cm.stack
@@ -29,25 +32,28 @@ from cm.adcm_config import proto_ref, init_object_config, switch_config
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
-    Bundle,
-    Prototype,
+    ADCM,
     Action,
-    SubAction,
-    PrototypeConfig,
+    Bundle,
     Cluster,
     Host,
-    Upgrade,
-    StageUpgrade,
-    ADCM,
+    ProductCategory,
+    Prototype,
+    PrototypeConfig,
     PrototypeExport,
     PrototypeImport,
+    StageAction,
+    StagePrototype,
+    StagePrototypeConfig,
     StagePrototypeExport,
     StagePrototypeImport,
-    StagePrototype,
-    StageAction,
     StageSubAction,
-    StagePrototypeConfig,
+    StageUpgrade,
+    SubAction,
+    Upgrade,
+    get_model_by_type,
 )
+from rbac.models import Role, RoleTypes
 
 STAGE = (
     StagePrototype,
@@ -77,6 +83,9 @@ def load_bundle(bundle_file):
         bundle = copy_stage(bundle_hash, bundle_proto)
         order_versions()
         clear_stage()
+        ProductCategory.re_collect()
+        bundle.refresh_from_db()
+        cook_roles(bundle)
         cm.status_api.post_event('create', 'bundle', bundle.id)
         return bundle
     except:
@@ -142,9 +151,17 @@ def untar_safe(bundle_hash, path):
 def untar(bundle_hash, bundle):
     path = os.path.join(config.BUNDLE_DIR, bundle_hash)
     if os.path.isdir(path):
-        existed = Bundle.objects.get(hash=bundle_hash)
-        msg = 'Bundle already exists. Name: {}, version: {}, edition: {}'
-        err('BUNDLE_ERROR', msg.format(existed.name, existed.version, existed.edition))
+        try:
+            existed = Bundle.objects.get(hash=bundle_hash)
+            msg = 'Bundle already exists. Name: {}, version: {}, edition: {}'
+            err('BUNDLE_ERROR', msg.format(existed.name, existed.version, existed.edition))
+        except Bundle.DoesNotExist:
+            log.warning(
+                (
+                    f"There is no bundle with hash {bundle_hash} in DB, ",
+                    "but there is a dir on disk with this hash. Dir will be rewrited.",
+                )
+            )
     tar = tarfile.open(bundle)
     tar.extractall(path=path)
     tar.close()
@@ -256,6 +273,114 @@ def copy_obj(orig, clone, fields):
 def update_obj(dest, source, fields):
     for f in fields:
         setattr(dest, f, getattr(source, f))
+
+
+def cook_hidden_roles(bundle: Bundle):
+    """Prepares hidden roles"""
+    hidden_roles = {}
+
+    for act in Action.objects.filter(prototype__bundle=bundle):
+        name_prefix = f'{act.prototype.type} action:'.title()
+        name = f'{name_prefix} {act.display_name}'
+        model = get_model_by_type(act.prototype.type)
+        if act.prototype.type == 'component':
+            serv_name = f'service_{act.prototype.parent.name}_'
+        else:
+            serv_name = ''
+        role_name = (
+            f'{bundle.name}_{bundle.version}_{bundle.edition}_{serv_name}'
+            f'{act.prototype.type}_{act.prototype.display_name}_{act.name}'
+        )
+        role = Role(
+            name=role_name,
+            display_name=role_name,
+            description=(
+                f'run action {act.name} of {act.prototype.type} {act.prototype.display_name}'
+            ),
+            bundle=bundle,
+            type=RoleTypes.hidden,
+            module_name='rbac.roles',
+            class_name='ActionRole',
+            init_params={
+                'action_id': act.id,
+                'app_name': 'cm',
+                'model': model.__name__,
+                'filter': {
+                    'prototype__name': act.prototype.name,
+                    'prototype__type': act.prototype.type,
+                    'prototype__bundle_id': bundle.id,
+                },
+            },
+            parametrized_by_type=[act.prototype.type],
+        )
+        role.save()
+        if bundle.category:
+            role.category.add(bundle.category)
+        ct = ContentType.objects.get_for_model(model)
+        perm, _ = Permission.objects.get_or_create(
+            content_type=ct,
+            codename=f'run_action_{act.display_name}',
+            name=f'Can run {act.display_name} actions',
+        )
+        role.permissions.add(perm)
+        if name not in hidden_roles:
+            hidden_roles[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
+        hidden_roles[name]['children'].append(role)
+    return hidden_roles
+
+
+def update_built_in_roles(
+    bundle: Bundle, business_role: Role, parametrized_by_type: list, built_in_roles: dict
+):
+    """Add action role to built-in roles"""
+    if 'cluster' in parametrized_by_type:
+        if bundle.category:
+            business_role.category.add(bundle.category)
+        built_in_roles['Cluster Administrator'].child.add(business_role)
+    elif 'service' in parametrized_by_type or 'component' in parametrized_by_type:
+        if bundle.category:
+            business_role.category.add(bundle.category)
+        built_in_roles['Cluster Administrator'].child.add(business_role)
+        built_in_roles['Service Administrator'].child.add(business_role)
+    elif 'provider' in parametrized_by_type:
+        built_in_roles['Provider Administrator'].child.add(business_role)
+    elif 'host' in parametrized_by_type:
+        built_in_roles['Cluster Administrator'].child.add(business_role)
+        built_in_roles['Provider Administrator'].child.add(business_role)
+
+
+def cook_roles(bundle: Bundle):
+    """Prepares action roles"""
+    built_in_roles = {
+        'Cluster Administrator': Role.objects.get(name='Cluster Administrator'),
+        'Provider Administrator': Role.objects.get(name='Provider Administrator'),
+        'Service Administrator': Role.objects.get(name='Service Administrator'),
+    }
+    hidden_roles = cook_hidden_roles(bundle)
+
+    for business_role_name, business_role_params in hidden_roles.items():
+        if business_role_params['parametrized_by_type'] == 'component':
+            parametrized_by_type = ['service', 'component']
+        else:
+            parametrized_by_type = [business_role_params['parametrized_by_type']]
+
+        business_role, is_created = Role.objects.get_or_create(
+            name=f'{business_role_name}',
+            display_name=f'{business_role_name}',
+            description=f'{business_role_name}',
+            type=RoleTypes.business,
+            module_name='rbac.roles',
+            class_name='ParentRole',
+            parametrized_by_type=parametrized_by_type,
+        )
+
+        if is_created:
+            log.info('Create business permission "%s"', business_role_name)
+
+        business_role.child.add(*business_role_params['children'])
+        update_built_in_roles(
+            bundle, business_role, parametrized_by_type, built_in_roles
+        )
 
 
 def re_check_actions():
@@ -846,6 +971,10 @@ def delete_bundle(bundle):
         shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
     bundle_id = bundle.id
     bundle.delete()
+    for role in Role.objects.filter(class_name='ParentRole'):
+        if not role.child.all():
+            role.delete()
+    ProductCategory.re_collect()
     cm.status_api.post_event('delete', 'bundle', bundle_id)
 
 

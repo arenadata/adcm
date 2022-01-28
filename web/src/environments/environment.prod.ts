@@ -13,6 +13,7 @@ const p = location.protocol;
 export const environment = {
   production: true,
   apiRoot: '/api/v1/',
+  apiUI: '/api/ui/',
   SERVER_URL_EVENT: `${p === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/event/`,
   SERVER_URL_STATUS: `${p === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/status/`
 };

@@ -32,7 +32,7 @@ import { ActionMasterConfigComponent } from './components/actions/master/action-
 import { MultiSortDirective } from './components/list/multi-sort.directive';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { DetailsModule } from './details/details.module';
-import { DynamicDirective, HoverDirective } from './directives';
+import { HoverDirective } from './directives';
 import { FormElementsModule } from './form-elements/form-elements.module';
 import { HostComponentsMapModule } from './host-components-map/host-components-map.module';
 import { MaterialModule } from './material.module';
@@ -55,6 +55,12 @@ import { EntityStatusToStatusTreePipe } from '@app/pipes/entity-status-to-status
 import { ServiceStatusComponent } from '@app/components/service/service-status/service-status.component';
 import { ServiceComponentStatusComponent } from '@app/components/service-component/service-component-status/service-component-status.component';
 import { StatusTreeLinkPipe } from '@app/pipes/status-tree-link.pipe';
+import { RbacUserService } from '@app/services/rbac-user.service';
+import { RbacGroupService } from '@app/services/rbac-group.service';
+import { RbacRoleService } from '@app/services/rbac-role.service';
+import { RbacPolicyService } from '@app/services/rbac-policy.service';
+import { DynamicModule } from '@app/shared/directives/dynamic/dynamic.module';
+import { RbacObjectCandidateService } from '@app/services/rbac-object-candidate.service';
 
 @NgModule({
   imports: [
@@ -72,12 +78,12 @@ import { StatusTreeLinkPipe } from '@app/pipes/status-tree-link.pipe';
     TranslateModule,
     TooltipModule,
     MatTreeModule,
+    DynamicModule,
   ],
   declarations: [
     DialogComponent,
     BreakRowPipe,
     HoverDirective,
-    DynamicDirective,
     ButtonSpinnerComponent,
     TagEscPipe,
     IssueInfoComponent,
@@ -116,7 +122,6 @@ import { StatusTreeLinkPipe } from '@app/pipes/status-tree-link.pipe';
     DialogComponent,
     BreakRowPipe,
     HoverDirective,
-    DynamicDirective,
     ButtonSpinnerComponent,
     UpgradeComponent,
     TagEscPipe,
@@ -143,6 +148,11 @@ import { StatusTreeLinkPipe } from '@app/pipes/status-tree-link.pipe';
   providers: [
     JobService,
     TaskService,
+    RbacUserService,
+    RbacGroupService,
+    RbacRoleService,
+    RbacPolicyService,
+    RbacObjectCandidateService
   ],
 })
 export class SharedModule {
