@@ -18,6 +18,7 @@ import { catchError, finalize } from 'rxjs/operators';
 
 import { AuthService } from '@app/core/auth/auth.service';
 import { ChannelService, keyChannelStrim, PreloaderService, ResponseError, ResponseErrorCode } from '../services';
+import { RouterHistoryService } from '@app/core/services/router-history.service';
 
 const EXCLUDE_URLS = ['/api/v1/rbac/token/', '/assets/config.json'];
 
@@ -28,7 +29,8 @@ export class AuthInterceptor implements HttpInterceptor {
     private preloader: PreloaderService,
     private router: Router,
     private channel: ChannelService,
-    private location: Location
+    private location: Location,
+    private routerHistory: RouterHistoryService
   ) {}
 
   addAuthHeader(request: HttpRequest<any>): HttpRequest<any> {
@@ -52,10 +54,13 @@ export class AuthInterceptor implements HttpInterceptor {
           this.router.navigate(['/login']);
         }
 
-        if (res.status === 403) {
-          let cur_path = this.location.path();
-          this.location.back();
-          if (cur_path === this.location.path()) {
+        /** redirect to previous page if it is present and method === GET */
+        if (res.status === 403 && request.method === 'GET') {
+          const previous = this.routerHistory.previous();
+
+          if (previous) {
+            this.router.navigate([previous]);
+          } else {
             this.router.navigate(['/']);
           }
         }
