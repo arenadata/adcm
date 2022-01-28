@@ -291,10 +291,6 @@ def cook_hidden_roles(bundle: Bundle):
             f'{bundle.name}_{bundle.version}_{bundle.edition}_{serv_name}'
             f'{act.prototype.type}_{act.prototype.display_name}_{act.name}'
         )
-        if act.prototype.type == 'component':
-            parametrized_by_type = ['service', act.prototype.type]
-        else:
-            parametrized_by_type = [act.prototype.type]
         role = Role(
             name=role_name,
             display_name=role_name,
@@ -315,7 +311,7 @@ def cook_hidden_roles(bundle: Bundle):
                     'prototype__bundle_id': bundle.id,
                 },
             },
-            parametrized_by_type=parametrized_by_type,
+            parametrized_by_type=[act.prototype.type],
         )
         role.save()
         if bundle.category:
@@ -328,7 +324,7 @@ def cook_hidden_roles(bundle: Bundle):
         )
         role.permissions.add(perm)
         if name not in hidden_roles:
-            hidden_roles[name] = {'parametrized_by_type': parametrized_by_type, 'children': []}
+            hidden_roles[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
         hidden_roles[name]['children'].append(role)
     return hidden_roles
 
@@ -363,6 +359,10 @@ def cook_roles(bundle: Bundle):
     hidden_roles = cook_hidden_roles(bundle)
 
     for business_role_name, business_role_params in hidden_roles.items():
+        if business_role_params['parametrized_by_type'] == 'component':
+            parametrized_by_type = ['service', 'component']
+        else:
+            parametrized_by_type = [business_role_params['parametrized_by_type']]
 
         business_role, is_created = Role.objects.get_or_create(
             name=f'{business_role_name}',
@@ -371,7 +371,7 @@ def cook_roles(bundle: Bundle):
             type=RoleTypes.business,
             module_name='rbac.roles',
             class_name='ParentRole',
-            parametrized_by_type=business_role_params['parametrized_by_type'],
+            parametrized_by_type=parametrized_by_type,
         )
 
         if is_created:
@@ -379,7 +379,7 @@ def cook_roles(bundle: Bundle):
 
         business_role.child.add(*business_role_params['children'])
         update_built_in_roles(
-            bundle, business_role, business_role_params['parametrized_by_type'], built_in_roles
+            bundle, business_role, parametrized_by_type, built_in_roles
         )
 
 

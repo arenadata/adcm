@@ -156,7 +156,7 @@ def tree_sum(role_map: dict, role: dict) -> list:
         for c in role['child']:
             child_params.extend(tree_sum(role_map, role_map[c]))
         if not is_exclude(role["name"]):
-            if not set(child_params) == set(role_params):
+            if (not set(child_params) == set(role_params)) and 'component' not in child_params:
                 raise ChildSumEx(role["name"], role_params, child_params)
     return role_params
 
