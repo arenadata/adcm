@@ -384,10 +384,11 @@ class TestDeleteHostInGroups:
         cluster.host_add(second_host)
         first_component = service.component(name=FIRST_COMPONENT_NAME)
         second_component = service.component(name=SECOND_COMPONENT_NAME)
+        cluster.hostcomponent_set((first_host, first_component), (first_host, second_component))
         cluster_group = _create_group_and_add_host(cluster, first_host)
         service_group = _create_group_and_add_host(service, first_host)
         component_group = _create_group_and_add_host(first_component, first_host)
-        cluster.hostcomponent_set((second_host, first_component), (second_host, second_component))
+        cluster.hostcomponent_set((second_host, first_component), (first_host, second_component))
         with allure.step(f'Check host "{first_host.fqdn}" is still presented in cluster config group'):
             _assert_host_is_in_group(cluster_group, first_host)
         with allure.step(f'Check host "{first_host.fqdn}" is still presented in service config group'):
