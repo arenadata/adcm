@@ -54,7 +54,10 @@ export class RouterHistoryService {
 
   private _push(event: NavigationEnd): void {
     const history = this._history.getValue();
-    const url = event.urlAfterRedirects.split(';')[0];
+
+    const matcher = /;page=\d*;limit=\d*;filter=\d*;ordering=\d*/g;
+    const url = event.urlAfterRedirects.replace(matcher, '');
+
     let value = history;
 
     if (!history[0] || history[0] !== url) {
