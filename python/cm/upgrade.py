@@ -322,6 +322,7 @@ def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> dict:
 
     with transaction.atomic():
         obj.prototype = new_proto
+        obj.before_upgrade['state'] = obj.state
         if upgrade.state_on_success:
             obj.state = upgrade.state_on_success
         obj.save()

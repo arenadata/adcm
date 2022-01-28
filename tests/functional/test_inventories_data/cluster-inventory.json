@@ -33,7 +33,10 @@
             "state": "created",
             "multi_state": [
               "cluster_multi_state"
-            ]
+            ],
+            "before_upgrade": {
+              "state": null
+            }
           },
           "services": {
             "zookeeper": {
