@@ -62,7 +62,7 @@ def update_categories(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cm', '0082_add_product_category'),
+        ('cm', '0083_add_product_category'),
         ('rbac', '0008_add_indices_20211213_1900'),
     ]
 
