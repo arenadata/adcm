@@ -430,7 +430,7 @@ class AdminRolesPage(GeneralAdminPage):
         self.send_text_to_element(AdminRolesLocators.AddRolePopup.description_name_input, description)
         self.find_and_click(AdminRolesLocators.AddRolePopup.role_name_input)
 
-    @allure.step('Fill role name {categories}')
+    @allure.step('Fill role categories {categories}')
     def fill_categories_in_role_popup(self, categories: str):
         self.send_text_to_element(AdminRolesLocators.AddRolePopup.categories_input, categories)
         self.find_and_click(AdminRolesLocators.AddRolePopup.categories_input)
