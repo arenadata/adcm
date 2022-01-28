@@ -130,6 +130,9 @@ class AdminRolesLocators(CommonAdminPagesLocators):
         description_name_input = Locator(
             By.CSS_SELECTOR, "adwp-input[controlname='description'] input", "Input for role description"
         )
+        categories_input = Locator(
+            By.CSS_SELECTOR, "mat-chip-list[formcontrolname='category'] input", "Input for role categories"
+        )
 
         class PermissionItemsBlock:
             filter_input = Locator(

@@ -341,6 +341,7 @@ class TestAdminRolesPage:
             page.check_save_button_disabled()
         page.fill_role_name_in_role_popup(custom_role_changed.name)
         page.fill_description_in_role_popup(custom_role_changed.description)
+        page.fill_categories_in_role_popup("test")
         page.select_permission_in_add_role_popup(custom_role_changed.permissions)
         page.click_save_btn_in_role_popup()
         page.check_default_roles()
