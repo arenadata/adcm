@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines
-
 import functools
 import hashlib
 import os
@@ -19,8 +17,6 @@ import os.path
 import shutil
 import tarfile
 
-from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.models import ContentType
 from django.db import transaction, IntegrityError
 from version_utils import rpm
 
@@ -51,9 +47,9 @@ from cm.models import (
     StageUpgrade,
     SubAction,
     Upgrade,
-    get_model_by_type,
 )
-from rbac.models import Role, RoleTypes
+from rbac.models import Role
+from rbac.upgrade.role import prepare_action_roles
 
 STAGE = (
     StagePrototype,
@@ -85,7 +81,7 @@ def load_bundle(bundle_file):
         clear_stage()
         ProductCategory.re_collect()
         bundle.refresh_from_db()
-        cook_roles(bundle)
+        prepare_action_roles(bundle)
         cm.status_api.post_event('create', 'bundle', bundle.id)
         return bundle
     except:
@@ -273,114 +269,6 @@ def copy_obj(orig, clone, fields):
 def update_obj(dest, source, fields):
     for f in fields:
         setattr(dest, f, getattr(source, f))
-
-
-def cook_hidden_roles(bundle: Bundle):
-    """Prepares hidden roles"""
-    hidden_roles = {}
-
-    for act in Action.objects.filter(prototype__bundle=bundle):
-        name_prefix = f'{act.prototype.type} action:'.title()
-        name = f'{name_prefix} {act.display_name}'
-        model = get_model_by_type(act.prototype.type)
-        if act.prototype.type == 'component':
-            serv_name = f'service_{act.prototype.parent.name}_'
-        else:
-            serv_name = ''
-        role_name = (
-            f'{bundle.name}_{bundle.version}_{bundle.edition}_{serv_name}'
-            f'{act.prototype.type}_{act.prototype.display_name}_{act.name}'
-        )
-        role = Role(
-            name=role_name,
-            display_name=role_name,
-            description=(
-                f'run action {act.name} of {act.prototype.type} {act.prototype.display_name}'
-            ),
-            bundle=bundle,
-            type=RoleTypes.hidden,
-            module_name='rbac.roles',
-            class_name='ActionRole',
-            init_params={
-                'action_id': act.id,
-                'app_name': 'cm',
-                'model': model.__name__,
-                'filter': {
-                    'prototype__name': act.prototype.name,
-                    'prototype__type': act.prototype.type,
-                    'prototype__bundle_id': bundle.id,
-                },
-            },
-            parametrized_by_type=[act.prototype.type],
-        )
-        role.save()
-        if bundle.category:
-            role.category.add(bundle.category)
-        ct = ContentType.objects.get_for_model(model)
-        perm, _ = Permission.objects.get_or_create(
-            content_type=ct,
-            codename=f'run_action_{act.display_name}',
-            name=f'Can run {act.display_name} actions',
-        )
-        role.permissions.add(perm)
-        if name not in hidden_roles:
-            hidden_roles[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
-        hidden_roles[name]['children'].append(role)
-    return hidden_roles
-
-
-def update_built_in_roles(
-    bundle: Bundle, business_role: Role, parametrized_by_type: list, built_in_roles: dict
-):
-    """Add action role to built-in roles"""
-    if 'cluster' in parametrized_by_type:
-        if bundle.category:
-            business_role.category.add(bundle.category)
-        built_in_roles['Cluster Administrator'].child.add(business_role)
-    elif 'service' in parametrized_by_type or 'component' in parametrized_by_type:
-        if bundle.category:
-            business_role.category.add(bundle.category)
-        built_in_roles['Cluster Administrator'].child.add(business_role)
-        built_in_roles['Service Administrator'].child.add(business_role)
-    elif 'provider' in parametrized_by_type:
-        built_in_roles['Provider Administrator'].child.add(business_role)
-    elif 'host' in parametrized_by_type:
-        built_in_roles['Cluster Administrator'].child.add(business_role)
-        built_in_roles['Provider Administrator'].child.add(business_role)
-
-
-def cook_roles(bundle: Bundle):
-    """Prepares action roles"""
-    built_in_roles = {
-        'Cluster Administrator': Role.objects.get(name='Cluster Administrator'),
-        'Provider Administrator': Role.objects.get(name='Provider Administrator'),
-        'Service Administrator': Role.objects.get(name='Service Administrator'),
-    }
-    hidden_roles = cook_hidden_roles(bundle)
-
-    for business_role_name, business_role_params in hidden_roles.items():
-        if business_role_params['parametrized_by_type'] == 'component':
-            parametrized_by_type = ['service', 'component']
-        else:
-            parametrized_by_type = [business_role_params['parametrized_by_type']]
-
-        business_role, is_created = Role.objects.get_or_create(
-            name=f'{business_role_name}',
-            display_name=f'{business_role_name}',
-            description=f'{business_role_name}',
-            type=RoleTypes.business,
-            module_name='rbac.roles',
-            class_name='ParentRole',
-            parametrized_by_type=parametrized_by_type,
-        )
-
-        if is_created:
-            log.info('Create business permission "%s"', business_role_name)
-
-        business_role.child.add(*business_role_params['children'])
-        update_built_in_roles(
-            bundle, business_role, parametrized_by_type, built_in_roles
-        )
 
 
 def re_check_actions():
