@@ -79,11 +79,13 @@ ng_tests: ## Run Angular tests
 
 linters: test_image ## Run linters
 	docker run -i --rm -e PYTHONPATH="/source/tests" -v $(CURDIR)/:/source -w /source $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) \
-        /bin/sh -eol pipefail -c "/linters.sh shellcheck pylint && \
-        /linters.sh -b ./tests -f ../tests pylint && \
-        /linters.sh -f ./tests black && \
-        /linters.sh -f ./tests/functional flake8_pytest_style && \
-        /linters.sh -f ./tests/ui_tests flake8_pytest_style"
+        /bin/sh -eol pipefail -c "/linters.sh shellcheck && \
+			/venv.sh run default pip install -r requirements.txt -r requirements-test.txt && \
+			cd python && /venv.sh run default pylint_runner --rcfile ../pylintrc &&  cd .. \
+			/linters.sh -b ./tests -f ../tests pylint && \
+			/linters.sh -f ./tests black && \
+			/linters.sh -f ./tests/functional flake8_pytest_style && \
+			/linters.sh -f ./tests/ui_tests flake8_pytest_style"
 
 npm_check: ## Run npm-check
 	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./npm_check.sh
