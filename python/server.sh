@@ -32,9 +32,10 @@ fi
 
 case "${1}" in
     "start")
+        # shellcheck disable=SC2086
         uwsgi --module="${module}" --socket "${socket}" --master --pidfile="${pidfile}" \
             --harakiri=30 --max-requests=5000 --processes=2 --vacuum \
-            --http :"${port}" --daemonize="${logfile}" "${venv}"
+            --http :"${port}" --daemonize="${logfile}" ${venv}
         ;;
     "stop")
         uwsgi --stop "${pidfile}"
