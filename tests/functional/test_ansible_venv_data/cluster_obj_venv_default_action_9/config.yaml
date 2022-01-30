@@ -1,19 +1,16 @@
 ---
 
 - type: "cluster"
-  name: "no_venv"
+  name: "obj_venv_default_action_9"
   version: "1.0"
-
-  config:
-    - type: "integer"
-      name: "int"
-      default: 0
+  venv: "default"
 
   actions: &actions
-    no_venv:
+    obj_venv_default_action_9:
       type: job
       script_type: ansible
       script: check_ansible.yaml
+      venv: "2.9"
       states:
         available: any
       config:
@@ -24,10 +21,12 @@
 
 
 - type: "service"
-  name: "no_venv"
+  name: "obj_venv_default_action_9"
   version: "1.0"
+  venv: "default"
   actions: *actions
 
   components:
-      no_venv:
+      obj_venv_default_action_9:
+        venv: "default"
         actions: *actions

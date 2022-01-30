@@ -1,13 +1,8 @@
 ---
 
-- type: "cluster"
-  name: "no_venv"
+- type: "provider"
+  name: "provider_no_venv"
   version: "1.0"
-
-  config:
-    - type: "integer"
-      name: "int"
-      default: 0
 
   actions: &actions
     no_venv:
@@ -23,11 +18,7 @@
           type: "integer"
 
 
-- type: "service"
+- type: "host"
   name: "no_venv"
   version: "1.0"
   actions: *actions
-
-  components:
-      no_venv:
-        actions: *actions

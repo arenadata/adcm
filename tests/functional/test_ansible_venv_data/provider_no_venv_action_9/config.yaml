@@ -1,19 +1,15 @@
 ---
 
-- type: "cluster"
-  name: "no_venv"
+- type: "provider"
+  name: "provider_no_venv_action_9"
   version: "1.0"
 
-  config:
-    - type: "integer"
-      name: "int"
-      default: 0
-
   actions: &actions
-    no_venv:
+    no_venv_action_9:
       type: job
       script_type: ansible
       script: check_ansible.yaml
+      venv: "2.9"
       states:
         available: any
       config:
@@ -23,11 +19,7 @@
           type: "integer"
 
 
-- type: "service"
-  name: "no_venv"
+- type: "host"
+  name: "no_venv_action_9"
   version: "1.0"
   actions: *actions
-
-  components:
-      no_venv:
-        actions: *actions

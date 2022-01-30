@@ -15,13 +15,6 @@
   gather_facts: no
 
   tasks:
-    # Just an additional check, that environment is OK, and we have all "django" and cm imports
-    # in the environment
-    - adcm_config:
-        type: "cluster"
-        key: "int"
-        value: 1
-
     - name: Assert ansible version
       assert:
         that: ansible_version.major == job.config.major and ansible_version.minor == job.config.minor
