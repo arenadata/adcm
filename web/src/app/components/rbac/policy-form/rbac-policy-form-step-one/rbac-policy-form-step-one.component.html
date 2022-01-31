@@ -11,10 +11,11 @@
       (selectionChange)="roleChanged.emit()">
       <mat-option>
         <ngx-mat-select-search noEntriesFoundLabel="No options available" placeholderLabel="Select role"
+
                                [(ngModel)]="roleFilter">
         </ngx-mat-select-search>
       </mat-option>
-      <ng-container [rbac-roles-as-options]="{name: roleFilter, type: 'role'}" #roles="rbacRoles">
+      <ng-container [rbac-roles-as-options]="{search: roleFilter, type: 'role'}" #roles="rbacRoles">
         <mat-option
           *ngFor="let role of roles.options$ | async | falseAsEmptyArray | adwpFilter:matcher:roleFilter:roles.label"
           [value]="role">
