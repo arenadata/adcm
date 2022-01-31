@@ -511,6 +511,19 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
     return host_comp_list
 
 
+def still_existed_hc(cluster, host_comp_list):
+    result = []
+    for (service, host, comp) in host_comp_list:
+        try:
+            existed_hc = HostComponent.objects.get(
+                cluster=cluster, service=service, host=host, component=comp
+            )
+            result.append(existed_hc)
+        except HostComponent.DoesNotExist:
+            continue
+    return result
+
+
 def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     hc_queryset = HostComponent.objects.filter(cluster=cluster)
     service_map = {hc.service for hc in hc_queryset}
@@ -521,15 +534,18 @@ def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     for added_host in new_hosts.difference(old_hosts):
         added_host.add_to_concerns(ctx.lock)
 
-    # Remove hosts from group for components and services without hc map
-    # TODO: refactoring remove hosts from group
-    hosts_for_remove_from_groups = list(old_hosts)
-    group_configs = GroupConfig.objects.filter(
-        object_type__model__in=['clusterobject', 'servicecomponent'],
-        hosts__in=hosts_for_remove_from_groups,
-    )
-    for group in group_configs:
-        group.hosts.remove(*hosts_for_remove_from_groups)
+    still_hc = still_existed_hc(cluster, host_comp_list)
+    host_service_of_still_hc = {(hc.host, hc.service) for hc in still_hc}
+    for removed_hc in set(hc_queryset) - set(still_hc):
+        groupconfigs = GroupConfig.objects.filter(
+            object_type__model__in=['clusterobject', 'servicecomponent'], hosts=removed_hc.host
+        )
+        for gc in groupconfigs:
+            if (gc.object_type.model == 'clusterobject') and (
+                (removed_hc.host, removed_hc.service) in host_service_of_still_hc
+            ):
+                continue
+            gc.hosts.remove(removed_hc.host)
 
     hc_queryset.delete()
     result = []
