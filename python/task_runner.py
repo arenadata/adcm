@@ -66,11 +66,16 @@ signal.signal(signal.SIGTERM, terminate_task)
 
 
 def run_job(task_id, job_id, err_file):
-    log.debug("run job #%s of task #%s", job_id, task_id)
+    log.debug("task run job #%s of task #%s", job_id, task_id)
+    cmd = [
+        '/adcm/python/job_venv_wrapper.sh',
+        TaskLog.objects.get(id=task_id).action.venv,
+        os.path.join(config.CODE_DIR, 'job_runner.py'),
+        str(job_id),
+    ]
+    log.info("task run job cmd: %s", ' '.join(cmd))
     try:
-        proc = subprocess.Popen(
-            [os.path.join(config.CODE_DIR, 'job_runner.py'), str(job_id)], stderr=err_file
-        )
+        proc = subprocess.Popen(cmd, stderr=err_file)
         res = proc.wait()
         return res
     except:

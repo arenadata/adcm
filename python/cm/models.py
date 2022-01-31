@@ -267,6 +267,7 @@ class Prototype(ADCMModel):
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
     description = models.TextField(blank=True)
     config_group_customization = models.BooleanField(default=False)
+    venv = models.CharField(default="default", max_length=160, blank=False)
 
     __error_code__ = 'PROTOTYPE_NOT_FOUND'
 
@@ -991,6 +992,24 @@ class AbstractAction(ADCMModel):
     partial_execution = models.BooleanField(default=False)
     host_action = models.BooleanField(default=False)
 
+    _venv = models.CharField(default="default", db_column="venv", max_length=160, blank=False)
+
+    @property
+    def venv(self):
+        """Property which return a venv for ansible to run.
+
+        Bundle developer could mark one action with exact venv he needs,
+        or mark all actions on prototype.
+        """
+        if self._venv == "default":
+            if self.prototype is not None:
+                return self.prototype.venv
+        return self._venv
+
+    @venv.setter
+    def venv(self, value: str):
+        self._venv = value
+
     class Meta:
         abstract = True
         unique_together = (('prototype', 'name'),)
@@ -1310,6 +1329,7 @@ class StagePrototype(ADCMModel):
     description = models.TextField(blank=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
     config_group_customization = models.BooleanField(default=False)
+    venv = models.CharField(default="default", max_length=160, blank=False)
 
     __error_code__ = 'PROTOTYPE_NOT_FOUND'
 
