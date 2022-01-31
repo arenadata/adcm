@@ -26,6 +26,7 @@ def is_superset_of(first: set, second: set, assertion_message: Union[str, Callab
     if first.issuperset(second):
         return
 
+    second = set(second)
     allure.attach(pprint.pformat(first), name='Searched set')
     allure.attach(pprint.pformat(second), name='Elements expected to be found')
     allure.attach(pprint.pformat(second.difference(first)), name='Not found elements')

@@ -20,7 +20,10 @@ from adcm_pytest_plugin.utils import random_string, catch_failed
 
 from tests.library.errorcodes import ADCMError
 from tests.functional.tools import AnyADCMObject
-from tests.functional.rbac.actions.utils import get_bundle_prefix, get_prototype_prefix
+from tests.functional.rbac.action_role_utils import (
+    get_bundle_prefix_for_role_name,
+    get_prototype_prefix_for_action_role,
+)
 
 pytestmark = [pytest.mark.full]
 
@@ -36,7 +39,10 @@ def test_policy_created_only_on_child_of_composite_action_role(sdk_client_fs, si
     action_display_name = 'Do nothing'
     custom_role_name = 'TestSuperCustomRole'
 
-    hidden_role_name = f'{get_bundle_prefix(bundle)}{get_prototype_prefix(bundle.cluster_prototype())}{action_name}'
+    hidden_role_name = (
+        f'{get_bundle_prefix_for_role_name(bundle)}'
+        f'{get_prototype_prefix_for_action_role(bundle.cluster_prototype())}{action_name}'
+    )
     hidden_role = sdk_client_fs.role(name=hidden_role_name)
     policy_creation_should_fail(sdk_client_fs, hidden_role, simple_cluster, user)
 
