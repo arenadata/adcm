@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=line-too-long
+# pylint: disable=line-too-long,too-many-statements
 
 import os
 import re
@@ -148,6 +148,7 @@ def save_prototype(path, conf, def_type, bundle_hash):
     dict_to_obj(conf, 'display_name', proto)
     dict_to_obj(conf, 'description', proto)
     dict_to_obj(conf, 'adcm_min_version', proto)
+    dict_to_obj(conf, 'venv', proto)
     dict_to_obj(conf, 'edition', proto)
     dict_to_obj(conf, 'config_group_customization', proto)
     fix_display_name(conf, proto)
@@ -198,6 +199,7 @@ def save_components(proto, conf, bundle_hash):
         dict_to_obj(cc, 'params', component)
         dict_to_obj(cc, 'constraint', component)
         dict_to_obj(cc, 'requires', component)
+        dict_to_obj(cc, 'venv', component)
         dict_to_obj(cc, 'bound_to', component)
         dict_to_obj(cc, 'config_group_customization', component)
         component.save()
@@ -395,6 +397,7 @@ def save_actions(proto, conf, bundle_hash):
         dict_to_obj(ac, 'ui_options', action)
         dict_to_obj(ac, 'params', action)
         dict_to_obj(ac, 'log_files', action)
+        dict_to_obj(ac, 'venv', action)
         fix_display_name(ac, action)
         check_action_hc(proto, ac, action_name)
         dict_to_obj(ac, 'hc_acl', action, 'hostcomponentmap')

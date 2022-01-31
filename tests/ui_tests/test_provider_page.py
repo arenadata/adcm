@@ -259,6 +259,9 @@ class TestProviderConfigPage:
 
     @pytest.mark.smoke()
     @pytest.mark.parametrize("bundle", ["provider_with_all_config_params"], indirect=True)
+    @pytest.mark.skip(
+        "Config filling method has flaky problem with filling password values, fix it and remove this skip"
+    )
     def test_save_custom_config_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
         """Test save config on provider config page"""
 

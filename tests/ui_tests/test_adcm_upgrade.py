@@ -109,8 +109,9 @@ def test_upgrade_adcm(
             'New version available. Page has been refreshed.',
         ):
             with allure.step(f'Check message "{message}" is presented'):
+                # TODO one day make first wait a long one, others shorter like 90, 30, 30 or smt like that
                 wait_until_step_succeeds(
-                    wait_info_popup_contains, page=intro_page, text=message, timeout=30, period=0.3
+                    wait_info_popup_contains, page=intro_page, text=message, timeout=77, period=0.3
                 )
     with allure.step('Wait for upgrade to finish'):
         upgrade_thread.join(timeout=60)

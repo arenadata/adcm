@@ -16,6 +16,8 @@
 
 from __future__ import unicode_literals
 
+import signal
+import time
 import os.path
 from collections.abc import Mapping
 from copy import deepcopy
@@ -31,7 +33,7 @@ from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
 
-from cm.config import FILE_DIR
+from cm.config import FILE_DIR, Job
 from cm.errors import AdcmEx
 from cm.logger import log
 
@@ -93,6 +95,11 @@ def get_object_cluster(obj):
         return obj.cluster
     else:
         return None
+
+
+def get_default_before_upgrade() -> dict:
+    """Return init value for before upgrade"""
+    return {'state': None}
 
 
 class ADCMManager(models.Manager):
@@ -262,6 +269,7 @@ class Prototype(ADCMModel):
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
     description = models.TextField(blank=True)
     config_group_customization = models.BooleanField(default=False)
+    venv = models.CharField(default="default", max_length=160, blank=False)
 
     __error_code__ = 'PROTOTYPE_NOT_FOUND'
 
@@ -511,6 +519,7 @@ class Cluster(ADCMEntity):
         content_type_field='object_type',
         on_delete=models.CASCADE,
     )
+    before_upgrade = models.JSONField(default=get_default_before_upgrade)
 
     __error_code__ = 'CLUSTER_NOT_FOUND'
 
@@ -549,6 +558,7 @@ class HostProvider(ADCMEntity):
         content_type_field='object_type',
         on_delete=models.CASCADE,
     )
+    before_upgrade = models.JSONField(default=get_default_before_upgrade)
 
     __error_code__ = 'PROVIDER_NOT_FOUND'
 
@@ -984,6 +994,24 @@ class AbstractAction(ADCMModel):
     partial_execution = models.BooleanField(default=False)
     host_action = models.BooleanField(default=False)
 
+    _venv = models.CharField(default="default", db_column="venv", max_length=160, blank=False)
+
+    @property
+    def venv(self):
+        """Property which return a venv for ansible to run.
+
+        Bundle developer could mark one action with exact venv he needs,
+        or mark all actions on prototype.
+        """
+        if self._venv == "default":
+            if self.prototype is not None:
+                return self.prototype.venv
+        return self._venv
+
+    @venv.setter
+    def venv(self, value: str):
+        self._venv = value
+
     class Meta:
         abstract = True
         unique_together = (('prototype', 'name'),)
@@ -1220,6 +1248,35 @@ class TaskLog(ADCMModel):
         self.save()
         lock.delete()
 
+    def cancel(self, event_queue: 'cm.status_api.Event' = None):
+        """
+        Cancel running task process
+        task status will be updated in separate process of task runner
+        """
+        errors = {
+            Job.FAILED: ('TASK_IS_FAILED', f'task #{self.pk} is failed'),
+            Job.ABORTED: ('TASK_IS_ABORTED', f'task #{self.pk} is aborted'),
+            Job.SUCCESS: ('TASK_IS_SUCCESS', f'task #{self.pk} is success'),
+        }
+        action = self.action
+        if action and not action.allow_to_terminate:
+            raise AdcmEx(
+                'NOT_ALLOWED_TERMINATION',
+                f'not allowed termination task #{self.pk} for action #{action.pk}',
+            )
+        if self.status in [Job.FAILED, Job.ABORTED, Job.SUCCESS]:
+            raise AdcmEx(*errors.get(self.status))
+        i = 0
+        while not JobLog.objects.filter(task=self, status=Job.RUNNING) and i < 10:
+            time.sleep(0.5)
+            i += 1
+        if i == 10:
+            raise AdcmEx('NO_JOBS_RUNNING', 'no jobs running')
+        self.unlock_affected()
+        if event_queue:
+            event_queue.send_state()
+        os.kill(self.pid, signal.SIGTERM)
+
 
 class JobLog(ADCMModel):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
@@ -1303,6 +1360,7 @@ class StagePrototype(ADCMModel):
     description = models.TextField(blank=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
     config_group_customization = models.BooleanField(default=False)
+    venv = models.CharField(default="default", max_length=160, blank=False)
 
     __error_code__ = 'PROTOTYPE_NOT_FOUND'
 

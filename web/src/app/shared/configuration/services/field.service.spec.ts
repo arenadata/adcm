@@ -213,8 +213,8 @@ describe('Configuration fields service', () => {
       field_string_0: 'a',
       field_group_1: { subname_integer_0: 12, subname_float_1: 1, subname_float_2: 1.2, subname_string_3: null },
       field_group_2: {
-        subname_map_0: null,
-        subname_list_1: null,
+        subname_map_0: {},
+        subname_list_1: [],
         subname_map_2: 'str',
         subname_list_3: 'str',
         subname_option_4: 0

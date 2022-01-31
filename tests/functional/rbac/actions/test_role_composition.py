@@ -22,6 +22,8 @@ from tests.library.errorcodes import ADCMError
 from tests.functional.tools import AnyADCMObject
 from tests.functional.rbac.actions.utils import get_bundle_prefix, get_prototype_prefix
 
+pytestmark = [pytest.mark.full]
+
 BAD_REQUEST = ADCMError('400 Bad Request', "")
 
 

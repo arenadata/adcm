@@ -17,10 +17,7 @@ import os.path
 import shutil
 import tarfile
 
-from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.models import ContentType
 from django.db import transaction, IntegrityError
-from rbac.models import Role, RoleTypes
 from version_utils import rpm
 
 import cm.stack
@@ -29,6 +26,7 @@ from adcm.settings import ADCM_VERSION
 from cm import config
 from cm.adcm_config import proto_ref, init_object_config, switch_config
 from cm.errors import raise_AdcmEx as err
+from cm.logger import log
 from cm.models import (
     ADCM,
     Action,
@@ -49,9 +47,9 @@ from cm.models import (
     StageUpgrade,
     SubAction,
     Upgrade,
-    get_model_by_type,
 )
-from cm.logger import log
+from rbac.models import Role
+from rbac.upgrade.role import prepare_action_roles
 
 STAGE = (
     StagePrototype,
@@ -83,7 +81,7 @@ def load_bundle(bundle_file):
         clear_stage()
         ProductCategory.re_collect()
         bundle.refresh_from_db()
-        cook_roles(bundle)
+        prepare_action_roles(bundle)
         cm.status_api.post_event('create', 'bundle', bundle.id)
         return bundle
     except:
@@ -273,107 +271,6 @@ def update_obj(dest, source, fields):
         setattr(dest, f, getattr(source, f))
 
 
-def extend_role(name, children):
-    role = Role.objects.get(name=name)
-    role.child.add(*children)
-
-
-def cook_roles(bundle):  # pylint: disable=too-many-branches,too-many-locals,too-many-lines
-    parent = {}
-    top_parent = {
-        'Cluster Administrator': [],
-        'Provider Administrator': [],
-        'Service Administrator': [],
-    }
-
-    for act in Action.objects.filter(prototype__bundle=bundle):
-        name_prefix = f'{act.prototype.type} action:'.title()
-        name = f'{name_prefix} {act.display_name}'
-        model = get_model_by_type(act.prototype.type)
-        if act.prototype.type == 'component':
-            serv_name = f'service_{act.prototype.parent.name}_'
-        else:
-            serv_name = ''
-        role_name = (
-            f'{bundle.name}_{bundle.version}_{bundle.edition}_{serv_name}'
-            f'{act.prototype.type}_{act.prototype.display_name}_{act.name}'
-        )
-        role = Role(
-            name=role_name,
-            display_name=role_name,
-            description=(
-                f'run action {act.name} of {act.prototype.type} {act.prototype.display_name}'
-            ),
-            bundle=bundle,
-            type=RoleTypes.hidden,
-            module_name='rbac.roles',
-            class_name='ActionRole',
-            init_params={
-                'action_id': act.id,
-                'app_name': 'cm',
-                'model': model.__name__,
-                'filter': {
-                    'prototype__name': act.prototype.name,
-                    'prototype__type': act.prototype.type,
-                    'prototype__bundle_id': bundle.id,
-                },
-            },
-            parametrized_by_type=[act.prototype.type],
-        )
-        role.save()
-        if bundle.category:
-            role.category.add(bundle.category)
-        ct = ContentType.objects.get_for_model(model)
-        perm, _ = Permission.objects.get_or_create(
-            content_type=ct, codename='run_object_action', name='Can run actions'
-        )
-        role.permissions.add(perm)
-        if name not in parent:
-            parent[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
-        parent[name]['children'].append(role)
-
-    for parent_name, parent_value in parent.items():
-        parent_role, is_created = Role.objects.get_or_create(
-            name=f'{parent_name}',
-            display_name=f'{parent_name}',
-            description=f'{parent_name}',
-            type=RoleTypes.business,
-            module_name='rbac.roles',
-            class_name='ParentRole',
-            parametrized_by_type=[
-                parent_value['parametrized_by_type'],
-            ],
-        )
-
-        if is_created:
-            log.info('Create business permission "%s"', parent_name)
-
-        for action_role in parent_value['children']:
-            parent_role.child.add(action_role)
-
-        if parent_value['parametrized_by_type'] == 'cluster':
-            if bundle.category:
-                parent_role.category.add(bundle.category)
-            for top_parent_name in ['Cluster Administrator']:
-                top_parent[top_parent_name].append(parent_role)
-        elif parent_value['parametrized_by_type'] in ['service', 'component']:
-            if bundle.category:
-                parent_role.category.add(bundle.category)
-            for top_parent_name in [
-                'Cluster Administrator',
-                'Service Administrator',
-            ]:
-                top_parent[top_parent_name].append(parent_role)
-        elif parent_value['parametrized_by_type'] == 'provider':
-            top_parent['Provider Administrator'].append(parent_role)
-        elif parent_value['parametrized_by_type'] == 'host':
-            for top_parent_name in ['Cluster Administrator', 'Provider Administrator']:
-                top_parent[top_parent_name].append(parent_role)
-
-    for name, children in top_parent.items():
-        extend_role(name, children)
-
-
 def re_check_actions():
     for act in StageAction.objects.all():
         if not act.hostcomponentmap:
@@ -518,6 +415,7 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 'display_name',
                 'description',
                 'adcm_min_version',
+                'venv',
                 'config_group_customization',
             ),
         )
@@ -588,6 +486,7 @@ def copy_stage_actons(stage_actions, prototype):
             'allow_to_terminate',
             'partial_execution',
             'host_action',
+            'venv',
         ),
     )
     Action.objects.bulk_create(actions)
@@ -651,6 +550,7 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
                 'description',
                 'adcm_min_version',
                 'config_group_customization',
+                'venv',
             ),
         )
         comp.bundle = bundle
@@ -768,6 +668,7 @@ def update_bundle_from_stage(
             p.shared = sp.shared
             p.monitoring = sp.monitoring
             p.adcm_min_version = sp.adcm_min_version
+            p.venv = sp.venv
             p.config_group_customization = sp.config_group_customization
         except Prototype.DoesNotExist:
             p = copy_obj(
@@ -787,6 +688,7 @@ def update_bundle_from_stage(
                     'display_name',
                     'description',
                     'adcm_min_version',
+                    'venv',
                     'config_group_customization',
                 ),
             )
@@ -820,6 +722,7 @@ def update_bundle_from_stage(
                         'allow_to_terminate',
                         'partial_execution',
                         'host_action',
+                        'venv',
                     ),
                 )
             except Action.DoesNotExist:
@@ -849,6 +752,7 @@ def update_bundle_from_stage(
                         'allow_to_terminate',
                         'partial_execution',
                         'host_action',
+                        'venv',
                     ),
                 )
                 action.prototype = p
