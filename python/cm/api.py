@@ -754,14 +754,6 @@ def multi_bind(cluster, service, bind_list):  # pylint: disable=too-many-locals,
         new_bind[cook_key(export_cluster, export_co)] = (pi, cbind, export_obj)
 
     with transaction.atomic():
-        for key, value in new_bind.items():
-            if key in old_bind:
-                continue
-            (pi, cb, export_obj) = value
-            check_multi_bind(pi, cluster, service, cb.source_cluster, cb.source_service, cb_list)
-            cb.save()
-            log.info('bind %s to %s', obj_ref(export_obj), obj_ref(import_obj))
-
         for key, value in old_bind.items():
             if key in new_bind:
                 continue
@@ -769,6 +761,14 @@ def multi_bind(cluster, service, bind_list):  # pylint: disable=too-many-locals,
             check_import_default(import_obj, export_obj)
             value.delete()
             log.info('unbind %s from %s', obj_ref(export_obj), obj_ref(import_obj))
+
+        for key, value in new_bind.items():
+            if key in old_bind:
+                continue
+            (pi, cb, export_obj) = value
+            check_multi_bind(pi, cluster, service, cb.source_cluster, cb.source_service)
+            cb.save()
+            log.info('bind %s to %s', obj_ref(export_obj), obj_ref(import_obj))
 
         cm.issue.update_hierarchy_issues(cluster)
 
