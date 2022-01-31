@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { Injectable, InjectionToken, Injector } from '@angular/core';
+import { Injectable, Injector } from '@angular/core';
 import { isObject, TypeName } from '@app/core/types';
 import { FieldService, IOutput, TFormOptions } from '../services/field.service';
 import { CompareConfig, IFieldOptions, IFieldStack } from '../types';

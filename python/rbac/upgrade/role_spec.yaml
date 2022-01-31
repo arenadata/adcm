@@ -171,6 +171,7 @@ roles:
       description: The ability to view the component configuration page
       type: business
       parametrized_by:
+        - service
         - component
       module_name: rbac.roles
       class_name: ParentRole
@@ -359,6 +360,7 @@ roles:
       description: The ability to change and add new component configuration
       type: business
       parametrized_by:
+        - service
         - component
       module_name: rbac.roles
       class_name: ParentRole

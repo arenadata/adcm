@@ -16,4 +16,6 @@ source /etc/adcmenv
 waitforwsgi
 
 echo "Run process_tasks ..."
+
+source "${adcmroot}/venv/default/bin/activate"
 python ${adcmroot}/python/manage.py process_tasks --log-std
