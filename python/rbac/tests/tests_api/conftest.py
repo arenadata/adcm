@@ -16,7 +16,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from init_db import init
-from rbac.upgrade.upgrade_role import init_roles
+from rbac.upgrade.role import init_roles
 
 
 @pytest.fixture

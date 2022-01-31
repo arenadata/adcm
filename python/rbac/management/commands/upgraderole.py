@@ -12,10 +12,10 @@
 
 """UpgradeRole command for Django manage.py"""
 
+from adwp_base.errors import AdwpEx
 from django.core.management.base import BaseCommand, CommandError
 
-from rbac.upgrade.upgrade_role import init_roles
-from adwp_base.errors import AdwpEx
+from rbac.upgrade.role import init_roles
 
 
 class Command(BaseCommand):
