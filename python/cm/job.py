@@ -15,9 +15,7 @@
 import json
 import os
 import shutil
-import signal
 import subprocess
-import time
 from configparser import ConfigParser
 from datetime import timedelta, datetime
 from typing import List, Tuple, Optional, Hashable, Any
@@ -150,28 +148,7 @@ def restart_task(task: TaskLog):
 
 
 def cancel_task(task: TaskLog):
-    errors = {
-        config.Job.FAILED: ('TASK_IS_FAILED', f'task #{task.pk} is failed'),
-        config.Job.ABORTED: ('TASK_IS_ABORTED', f'task #{task.pk} is aborted'),
-        config.Job.SUCCESS: ('TASK_IS_SUCCESS', f'task #{task.pk} is success'),
-    }
-    action = task.action
-    if action and not action.allow_to_terminate:
-        err(
-            'NOT_ALLOWED_TERMINATION',
-            f'not allowed termination task #{task.pk} for action #{action.pk}',
-        )
-    if task.status in [config.Job.FAILED, config.Job.ABORTED, config.Job.SUCCESS]:
-        err(*errors.get(task.status))
-    i = 0
-    while not JobLog.objects.filter(task=task, status=config.Job.RUNNING) and i < 10:
-        time.sleep(0.5)
-        i += 1
-    if i == 10:
-        err('NO_JOBS_RUNNING', 'no jobs running')
-    task.unlock_affected()
-    ctx.event.send_state()
-    os.kill(task.pid, signal.SIGTERM)
+    task.cancel(ctx.event)
 
 
 def get_host_object(action: Action, cluster: Cluster) -> Optional[ADCMEntity]:

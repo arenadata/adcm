@@ -245,10 +245,9 @@ class AdcmFilterBackend(drf_filters.DjangoFilterBackend):
         }
 
 
-class PageView(GenericAPIView, InterfaceView):
+class PageView(GenericAPIPermView, InterfaceView):
     filter_backends = (AdcmFilterBackend, AdcmOrderingFilter)
     pagination_class = rest_framework.pagination.LimitOffsetPagination
-    permission_classes = (DjangoObjectPerm,)
 
     def get_ordering(self, request, queryset, view):
         Order = AdcmOrderingFilter()
@@ -323,9 +322,8 @@ class PageViewAdd(PageView):
         return create(serializer)
 
 
-class ListView(GenericAPIView, InterfaceView):
+class ListView(GenericAPIPermView, InterfaceView):
     filter_backends = (AdcmFilterBackend,)
-    permission_classes = (DjangoObjectPerm,)
 
     def get(self, request, *args, **kwargs):
         obj = self.filter_queryset(self.get_queryset())
@@ -334,16 +332,7 @@ class ListView(GenericAPIView, InterfaceView):
         return Response(serializer.data)
 
 
-class ListViewAdd(ListView):
-    def post(self, request):
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(data=request.data, context={'request': request})
-        return create(serializer)
-
-
-class DetailViewRO(GenericAPIView, InterfaceView):
-    permission_classes = (DjangoObjectPerm,)
-
+class DetailViewRO(GenericAPIPermView, InterfaceView):
     def check_obj(self, kw_req):
         try:
             return self.get_queryset().get(**kw_req)
@@ -362,17 +351,3 @@ class DetailViewRO(GenericAPIView, InterfaceView):
         serializer_class = self.select_serializer(request)
         serializer = serializer_class(obj, context={'request': request})
         return Response(serializer.data)
-
-
-class DetailViewEdit(DetailViewRO):
-    def put(self, request, *args, **kwargs):
-        obj = self.get_object()
-        serializer = self.serializer_class(obj, data=request.data, context={'request': request})
-        return update(serializer)
-
-
-class DetailViewDelete(DetailViewRO):
-    def delete(self, request, *args, **kwargs):
-        obj = self.get_object()
-        obj.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)

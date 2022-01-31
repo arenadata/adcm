@@ -22,7 +22,6 @@ from api.api_views import (
     check_custom_perm,
     DetailViewRO,
     ListView,
-    DetailViewDelete,
     InterfaceView,
 )
 from api.stack.serializers import ImportSerializer
@@ -163,7 +162,7 @@ class ServiceBindView(ListView):
         return create(serializer, cluster=cluster, service=service)
 
 
-class ServiceBindDetailView(DetailViewDelete):
+class ServiceBindDetailView(DetailViewRO):
     queryset = ClusterBind.objects.all()
     serializer_class = BindSerializer
     check_import_perm = check_custom_perm
