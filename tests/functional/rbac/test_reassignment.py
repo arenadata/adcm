@@ -32,6 +32,9 @@ from tests.functional.rbac.conftest import (
 )
 
 
+pytestmark = [pytest.mark.full]
+
+
 @contextmanager
 def new_client_instance(user: str, password: str, url: str) -> Generator[ADCMClient, None, None]:
     """

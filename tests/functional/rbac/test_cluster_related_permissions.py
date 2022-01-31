@@ -33,6 +33,8 @@ from tests.functional.rbac.conftest import (
     PROVIDER_EDIT_CONFIG_ROLES,
 )
 
+pytestmark = [pytest.mark.full]
+
 
 def _build_view_edit_permission_check(allowed_or_denied, get_view_or_edit):
     """Helper to build multiple objects check functions"""

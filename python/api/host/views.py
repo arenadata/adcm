@@ -20,7 +20,7 @@ from api.api_views import (
     create,
     check_obj,
     PageView,
-    DetailViewDelete,
+    DetailViewRO,
     InterfaceView,
     check_custom_perm,
 )
@@ -184,7 +184,7 @@ def check_host(host, cluster):
         raise AdcmEx('FOREIGN_HOST', msg)
 
 
-class HostDetail(DetailViewDelete):
+class HostDetail(DetailViewRO):
     """
     get:
     Show host
