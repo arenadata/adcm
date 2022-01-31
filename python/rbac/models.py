@@ -67,7 +67,7 @@ class RoleTypes(models.TextChoices):
     hidden = 'hidden', 'hidden'
 
 
-class Role(models.Model):
+class Role(models.Model):  # pylint: disable=too-many-instance-attributes
     """
     Role is a list of Django permissions.
     Role can be assigned to user or to group of users
