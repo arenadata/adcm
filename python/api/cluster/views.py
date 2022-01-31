@@ -22,7 +22,7 @@ import cm.bundle
 import cm.job
 import cm.status_api
 from api.api_views import (
-    DetailViewDelete,
+    DetailViewRO,
     GenericAPIPermView,
     InterfaceView,
     ListView,
@@ -69,7 +69,7 @@ class ClusterList(PageViewAdd):
     ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
 
 
-class ClusterDetail(DetailViewDelete):
+class ClusterDetail(DetailViewRO):
     """
     get:
     Show cluster
@@ -183,7 +183,7 @@ class ClusterBindList(ListView):
         return create(serializer, cluster=cluster)
 
 
-class ClusterBindDetail(DetailViewDelete):
+class ClusterBindDetail(DetailViewRO):
     queryset = ClusterBind.objects.all()
     serializer_class = serializers.BindSerializer
     check_import_perm = check_custom_perm

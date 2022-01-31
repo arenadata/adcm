@@ -16,6 +16,8 @@
 
 from __future__ import unicode_literals
 
+import signal
+import time
 import os.path
 from collections.abc import Mapping
 from copy import deepcopy
@@ -31,7 +33,7 @@ from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
 
-from cm.config import FILE_DIR
+from cm.config import FILE_DIR, Job
 from cm.errors import AdcmEx
 from cm.logger import log
 
@@ -1245,6 +1247,35 @@ class TaskLog(ADCMModel):
         self.lock = None
         self.save()
         lock.delete()
+
+    def cancel(self, event_queue: 'cm.status_api.Event' = None):
+        """
+        Cancel running task process
+        task status will be updated in separate process of task runner
+        """
+        errors = {
+            Job.FAILED: ('TASK_IS_FAILED', f'task #{self.pk} is failed'),
+            Job.ABORTED: ('TASK_IS_ABORTED', f'task #{self.pk} is aborted'),
+            Job.SUCCESS: ('TASK_IS_SUCCESS', f'task #{self.pk} is success'),
+        }
+        action = self.action
+        if action and not action.allow_to_terminate:
+            raise AdcmEx(
+                'NOT_ALLOWED_TERMINATION',
+                f'not allowed termination task #{self.pk} for action #{action.pk}',
+            )
+        if self.status in [Job.FAILED, Job.ABORTED, Job.SUCCESS]:
+            raise AdcmEx(*errors.get(self.status))
+        i = 0
+        while not JobLog.objects.filter(task=self, status=Job.RUNNING) and i < 10:
+            time.sleep(0.5)
+            i += 1
+        if i == 10:
+            raise AdcmEx('NO_JOBS_RUNNING', 'no jobs running')
+        self.unlock_affected()
+        if event_queue:
+            event_queue.send_state()
+        os.kill(self.pid, signal.SIGTERM)
 
 
 class JobLog(ADCMModel):
