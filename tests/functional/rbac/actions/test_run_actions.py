@@ -20,6 +20,7 @@ from contextlib import contextmanager
 from typing import Type, Dict, Optional, List, Union, Callable, Tuple, Generator
 
 import allure
+import pytest
 from adcm_client.objects import ADCMClient, Cluster, Service, Component, User
 
 from tests.functional.tools import AnyADCMObject, get_object_represent
@@ -98,6 +99,7 @@ def _test_basic_action_run_permissions(adcm_object, admin_sdk, user_sdk, user, a
         is_denied(user_object, business_role)
 
 
+@pytest.mark.full()
 def test_config_change_via_plugin(clients, user, actions_cluster, actions_provider):
     """
     Test that permission on action run is enough for changing configuration with plugins.
@@ -170,6 +172,7 @@ def _test_config_change(
                 ), f'Config value should stay the same for object {get_object_represent(admin_object)}'
 
 
+@pytest.mark.full()
 def test_host_actions(clients, actions_cluster, actions_cluster_bundle, actions_provider, user):
     """Test permissions on host actions"""
     host_action_template = '{object_type} ready for host'
@@ -219,6 +222,7 @@ def test_host_actions(clients, actions_cluster, actions_cluster_bundle, actions_
             is_denied(second_host, role)
 
 
+@pytest.mark.full()
 def test_action_on_host_available_with_cluster_parametrization(clients, actions_cluster, actions_provider, user):
     """Test that host owned action is still available"""
     admin_host = actions_provider.host()

@@ -25,6 +25,8 @@ from tests.functional.rbac.action_role_utils import (
     get_prototype_prefix_for_action_role,
 )
 
+pytestmark = [pytest.mark.full]
+
 BAD_REQUEST = ADCMError('400 Bad Request', "")
 
 

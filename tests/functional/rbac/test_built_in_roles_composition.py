@@ -15,10 +15,13 @@
 from typing import List
 
 import allure
+import pytest
 from adcm_client.objects import ADCMClient, Role, User
 
 from tests.library.assertions import is_superset_of
 from tests.functional.rbac.conftest import BusinessRoles
+
+pytestmark = [pytest.mark.full]
 
 ADCM_USER_ROLES = {
     role.value.role_name
