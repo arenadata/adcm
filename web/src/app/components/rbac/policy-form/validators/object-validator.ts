@@ -1,5 +1,6 @@
 import { AbstractControl, FormGroup, ValidationErrors, ValidatorFn } from '@angular/forms';
-import { RbacRoleModel } from '../../../../models/rbac/rbac-role.model';
+import { RbacRoleModel, RbacRoleParametrizedBy } from '../../../../models/rbac/rbac-role.model';
+import { ParametrizedPipe } from '../rbac-policy-form-step-two/pipes/parametrized.pipe';
 
 enum StateVariants {
   byCluster = 'byCluster',
@@ -32,22 +33,25 @@ export const rbacPolicyObjectValidator = (roleControl: AbstractControl): Validat
     const providerControl = objectControl.controls['provider'];
     const hostControl = objectControl.controls['host'];
 
+    const parametrizedByToState = (...cases: (RbacRoleParametrizedBy | RbacRoleParametrizedBy[])[]) => new ParametrizedPipe().transform(role, ...cases);
+
     const controlsState: PolicyObjectControlsState = {
       byCluster: {
         controls: [clusterControl],
-        state: !!parametrized_by_type.find((v) => v === 'cluster') && !serviceControl.value
+        state: parametrizedByToState(['cluster']) && !serviceControl.value
       },
       byService: {
         controls: [serviceControl, parentControl],
-        state: !!parametrized_by_type.find((v) => v === 'service' || v === 'component') && !clusterControl.value?.length
+        state: parametrizedByToState(['service'], ['component']) && !clusterControl.value?.length
       },
       byProvider: {
         controls: [providerControl],
-        state: !!parametrized_by_type.find((v) => v === 'provider') && !hostControl.value?.length
+        state: parametrizedByToState(['provider']) && !hostControl.value?.length
+
       },
       byHost: {
         controls: [hostControl],
-        state: !!parametrized_by_type.find((v) => v === 'host') && !providerControl.value?.length
+        state: parametrizedByToState('host', ['host', 'provider']) && !providerControl.value?.length
       },
     };
 
