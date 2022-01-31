@@ -28,6 +28,7 @@ from tests.functional.rbac.conftest import (
 )
 from tests.functional.rbac.actions.utils import action_business_role, create_action_policy
 
+pytestmark = [pytest.mark.full]
 
 SAME_DISPLAY_ACTION_NAME = "same_display"
 DO_NOTHING_ACTION_NAME = "Do nothing"
