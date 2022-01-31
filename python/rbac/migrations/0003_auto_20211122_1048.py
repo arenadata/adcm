@@ -20,7 +20,7 @@ import rbac.models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('cm', '0081_remove_role'),
+        ('cm', '0082_remove_role'),
         ('rbac', '0001_initial'),
     ]
 

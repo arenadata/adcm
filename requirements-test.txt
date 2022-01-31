@@ -5,6 +5,7 @@ attr
 allure-pytest
 docker
 jsonschema
+pylint_runner
 pytest
 pytest-lazy-fixture
 pytest-xdist

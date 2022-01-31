@@ -35,6 +35,7 @@ import { LIST_SERVICE_PROVIDER } from '@app/shared/components/list/list-service-
 import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
 import { AddService } from '@app/shared/add-component/add.service';
 import { SnackBarComponent } from './components/snack-bar/snack-bar.component';
+import { RouterHistoryService } from '@app/core/services/router-history.service';
 
 @NgModule({
   declarations: [
@@ -79,13 +80,19 @@ import { SnackBarComponent } from './components/snack-bar/snack-bar.component';
       multi: true
     },
     {
+      provide: APP_INITIALIZER,
+      useFactory: (routerHistory: RouterHistoryService) => () => routerHistory.reset(),
+      deps: [RouterHistoryService],
+      multi: true
+    },
+    {
       provide: LIST_SERVICE_PROVIDER,
       useClass: ListService
     },
     {
       provide: ADD_SERVICE_PROVIDER,
       useClass: AddService
-    },
+    }
   ],
 })
 export class AppModule {

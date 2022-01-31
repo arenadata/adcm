@@ -33,6 +33,7 @@ common_object: &common_object
     adcm_min_version: version_rule
     config: config_obj
     actions: actions_dict
+    venv: string
   required_items: &common_object_required_items
     - type
     - name
@@ -113,6 +114,7 @@ component_dict:
     config: config_obj
     actions: actions_dict
     config_group_customization: boolean
+    venv: string
 
 comp_req_list:
   match: list
@@ -666,6 +668,7 @@ common_action: &common_action
     on_success: post_action
     hc_acl: action_hc_acl_list
     config: config_obj
+    venv: string
 
 ## Task action
 action_task_dict:

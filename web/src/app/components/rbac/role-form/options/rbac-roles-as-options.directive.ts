@@ -19,7 +19,7 @@ export class RbacRolesAsOptionsDirective extends RbacOptionsDirective {
 
   id: AdwpStringHandler<RbacRoleModel> = (item: RbacRoleModel) => String(item.id);
 
-  label: AdwpStringHandler<RbacRoleModel> = (item: RbacRoleModel) => item.name;
+  label: AdwpStringHandler<RbacRoleModel> = (item: RbacRoleModel) => item.display_name;
 
   category: AdwpHandler<RbacRoleModel, string[]> = (item: RbacRoleModel) => item.category;
 
