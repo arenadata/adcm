@@ -725,10 +725,19 @@ def check_all_status():
 
 def run_task(task: TaskLog, event, args: str = ''):
     err_file = open(os.path.join(config.LOG_DIR, 'task_runner.err'), 'a+', encoding='utf_8')
+    cmd = [
+        '/adcm/python/job_venv_wrapper.sh',
+        task.action.venv,
+        os.path.join(config.CODE_DIR, 'task_runner.py'),
+        str(task.pk),
+        args,
+    ]
+    log.info("task run cmd: %s", ' '.join(cmd))
     proc = subprocess.Popen(
-        [os.path.join(config.CODE_DIR, 'task_runner.py'), str(task.pk), args], stderr=err_file
+        cmd,
+        stderr=err_file,
     )
-    log.info("run task #%s, python process %s", task.pk, proc.pid)
+    log.info("task run #%s, python process %s", task.pk, proc.pid)
     task.pid = proc.pid
 
     set_task_status(task, config.Job.RUNNING, event)
