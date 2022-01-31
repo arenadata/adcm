@@ -2,6 +2,7 @@
 *
 !COPYRIGHT
 !LICENSE
+!assemble/app/build_venv.sh
 !conf
 !config.json
 !go/bin/runstatus

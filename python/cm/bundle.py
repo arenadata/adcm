@@ -415,6 +415,7 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 'display_name',
                 'description',
                 'adcm_min_version',
+                'venv',
                 'config_group_customization',
             ),
         )
@@ -485,6 +486,7 @@ def copy_stage_actons(stage_actions, prototype):
             'allow_to_terminate',
             'partial_execution',
             'host_action',
+            'venv',
         ),
     )
     Action.objects.bulk_create(actions)
@@ -548,6 +550,7 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
                 'description',
                 'adcm_min_version',
                 'config_group_customization',
+                'venv',
             ),
         )
         comp.bundle = bundle
@@ -665,6 +668,7 @@ def update_bundle_from_stage(
             p.shared = sp.shared
             p.monitoring = sp.monitoring
             p.adcm_min_version = sp.adcm_min_version
+            p.venv = sp.venv
             p.config_group_customization = sp.config_group_customization
         except Prototype.DoesNotExist:
             p = copy_obj(
@@ -684,6 +688,7 @@ def update_bundle_from_stage(
                     'display_name',
                     'description',
                     'adcm_min_version',
+                    'venv',
                     'config_group_customization',
                 ),
             )
@@ -717,6 +722,7 @@ def update_bundle_from_stage(
                         'allow_to_terminate',
                         'partial_execution',
                         'host_action',
+                        'venv',
                     ),
                 )
             except Action.DoesNotExist:
@@ -746,6 +752,7 @@ def update_bundle_from_stage(
                         'allow_to_terminate',
                         'partial_execution',
                         'host_action',
+                        'venv',
                     ),
                 )
                 action.prototype = p
