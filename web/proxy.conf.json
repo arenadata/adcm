@@ -8,6 +8,10 @@
     "target": "http://localhost:8000",
     "secure": false
   },
+  "/api/ui/*": {
+    "target": "http://localhost:8000",
+    "secure": false
+  },
   "/status/api/v1/*": {
     "target": "http://localhost:8000",
     "secure": false

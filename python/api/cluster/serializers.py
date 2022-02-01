@@ -31,6 +31,7 @@ from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializ
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.host.serializers import HostSerializer
 from api.serializers import StringListSerializer
+from cm.adcm_config import get_main_info
 from cm.errors import AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 
@@ -48,6 +49,7 @@ class ClusterSerializer(serializers.Serializer):
     name = serializers.CharField(help_text='cluster name')
     description = serializers.CharField(help_text='cluster description', required=False)
     state = serializers.CharField(read_only=True)
+    before_upgrade = serializers.JSONField(read_only=True)
     url = hlink('cluster-details', 'id', 'cluster_id')
 
     def validate_prototype_id(self, prototype_id):
@@ -107,6 +109,7 @@ class ClusterUISerializer(ClusterDetailSerializer):
     upgradable = serializers.SerializerMethodField()
     get_upgradable = get_upgradable_func
     concerns = ConcernItemUISerializer(many=True, read_only=True)
+    main_info = serializers.SerializerMethodField()
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
@@ -123,6 +126,9 @@ class ClusterUISerializer(ClusterDetailSerializer):
 
     def get_prototype_display_name(self, obj):
         return obj.prototype.display_name
+
+    def get_main_info(self, obj):
+        return get_main_info(obj)
 
 
 class StatusSerializer(serializers.Serializer):

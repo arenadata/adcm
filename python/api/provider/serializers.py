@@ -15,7 +15,6 @@ from rest_framework import serializers
 
 import cm
 from api.action.serializers import ActionShort
-
 from api.api_views import (
     hlink,
     check_obj,
@@ -28,6 +27,7 @@ from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializ
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import StringListSerializer
 from api.serializers import UpgradeSerializer, UrlField
+from cm.adcm_config import get_main_info
 from cm.errors import AdcmEx
 from cm.models import Action, Prototype
 
@@ -38,6 +38,7 @@ class ProviderSerializer(serializers.Serializer):
     prototype_id = serializers.IntegerField()
     description = serializers.CharField(required=False)
     state = serializers.CharField(read_only=True)
+    before_upgrade = serializers.JSONField(read_only=True)
     url = hlink('provider-details', 'id', 'provider_id')
 
     def validate_prototype_id(self, prototype_id):
@@ -80,6 +81,7 @@ class ProviderUISerializer(ProviderDetailSerializer):
     upgradable = serializers.SerializerMethodField()
     get_upgradable = get_upgradable_func
     concerns = ConcernItemUISerializer(many=True, read_only=True)
+    main_info = serializers.SerializerMethodField()
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
@@ -96,6 +98,9 @@ class ProviderUISerializer(ProviderDetailSerializer):
 
     def get_prototype_display_name(self, obj):
         return obj.prototype.display_name
+
+    def get_main_info(self, obj):
+        return get_main_info(obj)
 
 
 class UpgradeProviderSerializer(UpgradeSerializer):

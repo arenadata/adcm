@@ -46,7 +46,7 @@ export class ListService implements IListService<Entities> {
     return this.current;
   }
 
-  getList(p: ParamMap, typeName: string): Observable<ListResult<Entities>> {
+  getList(p: ParamMap, typeName: TypeName): Observable<ListResult<Entities>> {
     const listParamStr = localStorage.getItem('list:param');
     if (p?.keys.length) {
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
@@ -57,6 +57,8 @@ export class ListService implements IListService<Entities> {
       } else localStorage.setItem('list:param', JSON.stringify({ [typeName]: param }));
     }
 
+    let params = { ...(p || {}) };
+
     switch (typeName) {
       case 'host2cluster':
         return this.detail.getHosts(p);
@@ -66,6 +68,18 @@ export class ListService implements IListService<Entities> {
         return this.api.getList<Bundle>(`${environment.apiRoot}stack/bundle/`, p);
       case 'servicecomponent':
         return this.api.getList(`${environment.apiRoot}cluster/${(this.detail.Current as Service).cluster_id}/service/${this.detail.Current.id}/component`, p);
+      case 'user':
+        params = { ...params['params'], 'expand': 'group' };
+        return this.api.getList(`${environment.apiRoot}rbac/user/`, convertToParamMap(params));
+      case 'group':
+        params = { ...params['params'], 'expand': 'user' };
+        return this.api.getList(`${environment.apiRoot}rbac/group/`, convertToParamMap(params));
+      case 'role':
+        params = { ...params['params'], 'expand': 'child' };
+        return this.api.getList(`${environment.apiRoot}rbac/role/`, convertToParamMap(params), { type: 'role' });
+      case 'policy':
+        params = { ...params['params'], 'expand': 'child,role,user,group,object', 'built_in': 'false' };
+        return this.api.getList(`${environment.apiRoot}rbac/policy/`, convertToParamMap(params));
       default:
         return this.api.root.pipe(switchMap((root) => this.api.getList<Entities>(root[this.current.typeName], p)));
     }

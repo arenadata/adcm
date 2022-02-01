@@ -12,17 +12,26 @@
 import { HttpErrorResponse, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
+import { Location } from '@angular/common';
 import { Observable, throwError } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
 import { AuthService } from '@app/core/auth/auth.service';
-import { ChannelService, keyChannelStrim, PreloaderService } from '../services';
+import { ChannelService, keyChannelStrim, PreloaderService, ResponseError, ResponseErrorCode } from '../services';
+import { RouterHistoryService } from '@app/core/services/router-history.service';
 
-const EXCLUDE_URLS = ['/api/v1/token/', '/assets/config.json'];
+const EXCLUDE_URLS = ['/api/v1/rbac/token/', '/assets/config.json'];
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-  constructor(private authService: AuthService, private preloader: PreloaderService, private router: Router, private channel: ChannelService) {}
+  constructor(
+    private authService: AuthService,
+    private preloader: PreloaderService,
+    private router: Router,
+    private channel: ChannelService,
+    private location: Location,
+    private routerHistory: RouterHistoryService
+  ) {}
 
   addAuthHeader(request: HttpRequest<any>): HttpRequest<any> {
     const token = this.authService.token;
@@ -39,22 +48,30 @@ export class AuthInterceptor implements HttpInterceptor {
     request = this.addAuthHeader(request);
     return next.handle(request).pipe(
       catchError((res: HttpErrorResponse) => {
-        if (res.status === 401 || res.status === 403) {
-          this.authService.redirectUrl = this.router.url;
+        this.authService.redirectUrl = this.router.url;
+
+        if (res.status === 401) {
           this.router.navigate(['/login']);
+        }
+
+        /** redirect to previous page if it is present and method === GET */
+        if (res.status === 403 && request.method === 'GET') {
+          const previous = this.routerHistory.previous();
+
+          if (previous) {
+            this.router.navigate([previous]);
+          } else {
+            this.router.navigate(['/']);
+          }
         }
 
         if (res.status === 500) this.router.navigate(['/500']);
 
         /** no need to show notification because error handling on landing page */
-        const exclude = ['USER_NOT_FOUND', 'AUTH_ERROR', 'CONFIG_NOT_FOUND'];
+        const exclude = [ResponseErrorCode.UserNotFound, ResponseErrorCode.AuthError, ResponseErrorCode.ConfigNotFound];
 
         if (!exclude.includes(res.error.code)) {
-          const message =
-            res.statusText === 'Unknown Error' || res.statusText === 'Gateway Timeout'
-              ? 'No connection to back-end. Check your internet connection.'
-              : `[ ${res.statusText.toUpperCase()} ] ${res.error.code ? ` ${res.error.code} -- ${res.error.desc}` : res.error?.detail || ''}`;
-          this.channel.next(keyChannelStrim.notifying, `${message}::error`);
+          this.channel.next<ResponseError>(keyChannelStrim.error, res);
         }
 
         return throwError(res);

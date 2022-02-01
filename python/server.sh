@@ -24,12 +24,18 @@ if [ "${2}" ]; then
     port="${2}"
 fi
 
+if [ -d /adcm/venv/default ]; then
+    venv="--venv /adcm/venv/default/"
+else
+    venv=""
+fi
 
 case "${1}" in
     "start")
+        # shellcheck disable=SC2086
         uwsgi --module="${module}" --socket "${socket}" --master --pidfile="${pidfile}" \
             --harakiri=30 --max-requests=5000 --processes=2 --vacuum \
-            --http :"${port}" --daemonize="${logfile}"
+            --http :"${port}" --daemonize="${logfile}" ${venv}
         ;;
     "stop")
         uwsgi --stop "${pidfile}"

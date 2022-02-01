@@ -1,0 +1,9 @@
+<ng-container *ngIf="object && candidates">
+  <adwp-input-select [form]="object"
+                     controlName="host"
+                     label="Host"
+                     [handler]="hostHandler"
+                     [options]="candidates.host">
+
+  </adwp-input-select>
+</ng-container>

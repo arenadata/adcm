@@ -11,21 +11,29 @@
 # limitations under the License.
 
 from django.shortcuts import render
+from django.urls import path, include
 from rest_framework.schemas import SchemaGenerator
 
 
 def docs_md(request):
-    return render(request, 'docs-md/index.md', get_context(request))
+    return render(
+        request,
+        'docs-md/index.md',
+        get_context(request, patterns=[path('api/v1/', include('api.urls'))]),
+    )
 
 
 def docs_html(request):
-    return render(request, 'docs-html/index.html', get_context(request))
+    return render(
+        request,
+        'docs-html/index.html',
+        get_context(request, patterns=[path('api/v1/', include('api.urls'))]),
+    )
 
 
-def get_context(request):
+def get_context(request, patterns=None):
     generator = SchemaGenerator(
-        title='ArenaData Cluster Manager API',
-        description=intro()
+        title='ArenaData Cluster Manager API', description=intro(), patterns=patterns
     )
     data = generator.get_schema(request, True)
     context = {

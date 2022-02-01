@@ -1,0 +1,1261 @@
+---
+
+version: 1
+
+roles:
+    - name: Create host
+      description: The ability to add new host
+      type: business
+      module_name: rbac.roles
+      class_name: ObjectRole
+      parametrized_by:
+        - provider
+      init_params:
+        app_name: cm
+        model: HostProvider
+      any_category: true
+      apps:
+        - label: cm
+          models:
+            - name: hostprovider
+              codenames:
+                - add_host_to
+
+    - name: Create provider
+      description: The ability to add new provider
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      apps:
+        - label: cm
+          models:
+            - name: hostprovider
+              codenames:
+                - add
+
+    - name: Create cluster
+      description: The ability to add new cluster
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - add
+
+    - name: Accept license
+      description: The ability to accept bundle license
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: bundle
+              codenames:
+                - change
+
+    - name: Add bundle
+      description: The ability to upload Bundle
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: bundle
+              codenames:
+                - add
+            - name: prototype
+              codenames:
+                - add
+
+    - name: Upload bundle
+      description: The ability to upload Bundle
+      type: business
+      module_name: rbac.roles
+      class_name: ParentRole
+      any_category: true
+      init_params:
+        app_name: cm
+        model: Bundle
+      child:
+        - Add bundle
+        - Accept license
+
+    - name: View cluster config
+      description: The ability to view the cluster configuration page
+      type: hidden
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - view_config_of
+
+    - name: View cluster configurations
+      description: The ability to view the cluster configuration page
+      type: business
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      child:
+        - View cluster config
+        - View config endpoints
+
+
+    - name: View service config
+      description: The ability to view the service configuration page
+      type: hidden
+      parametrized_by:
+        - service
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: ClusterObject
+      apps:
+        - label: cm
+          models:
+            - name: clusterobject
+              codenames:
+                - view_config_of
+
+    - name: View service configurations
+      description: The ability to view the service configuration page
+      type: business
+      parametrized_by:
+        - service
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: ClusterObject
+      child:
+        - View service config
+        - View config endpoints
+
+    - name: View component config
+      description: The ability to view the component configuration page
+      type: hidden
+      parametrized_by:
+        - component
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: ServiceComponent
+      apps:
+        - label: cm
+          models:
+            - name: servicecomponent
+              codenames:
+                - view_config_of
+
+    - name: View component configurations
+      description: The ability to view the component configuration page
+      type: business
+      parametrized_by:
+        - service
+        - component
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: ServiceComponent
+      child:
+        - View component config
+        - View config endpoints
+
+    - name: View provider config
+      description: The ability to view the provider configuration page
+      type: hidden
+      parametrized_by:
+        - provider
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: HostProvider
+      apps:
+        - label: cm
+          models:
+            - name: hostprovider
+              codenames:
+                - view_config_of
+
+    - name: View provider configurations
+      description: The ability to view the provider configuration page
+      type: business
+      parametrized_by:
+        - provider
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: HostProvider
+      child:
+        - View provider config
+        - View config endpoints
+
+    - name: View host config
+      description: The ability to view the host configuration page
+      type: hidden
+      parametrized_by:
+        - host
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Host
+      apps:
+        - label: cm
+          models:
+            - name: host
+              codenames:
+                - view_config_of
+
+    - name: View host configurations
+      description: The ability to view the host configuration page
+      type: business
+      parametrized_by:
+        - host
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: Host
+      child:
+        - View host config
+        - View config endpoints
+
+    - name: View config endpoints
+      description: The ability to view list of all configs separatly
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+      - label: cm
+        models:
+          - name: objectconfig
+            codenames:
+              - view
+          - name: configlog
+            codenames:
+              - view
+
+    - name: View any object configuration
+      description: The ability to view config page of all objects except ADCM settings
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: true
+      child:
+        - View config endpoints
+      apps:
+        - label: cm
+          models:
+            - name: adcm
+              codenames:
+                - view_config_of
+
+    - name: Edit cluster config
+      description: The ability to change and add new cluster configuration
+      type: hidden
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - view_config_of
+                - change_config_of
+
+    - name: Edit cluster configurations
+      description: The ability to change and add new cluster configuration
+      type: business
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      child:
+        - Edit cluster config
+        - Edit config endpoints
+
+    - name: Edit service config
+      description: The ability to change and add new service configuration
+      type: hidden
+      parametrized_by:
+        - service
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: ClusterObject
+      apps:
+        - label: cm
+          models:
+            - name: clusterobject
+              codenames:
+                - view_config_of
+                - change_config_of
+
+    - name: Edit service configurations
+      description: The ability to change and add new service configuration
+      type: business
+      parametrized_by:
+        - service
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: ClusterObject
+      child:
+        - Edit service config
+        - Edit config endpoints
+
+    - name: Edit component config
+      description: The ability to change and add new component configuration
+      type: hidden
+      parametrized_by:
+        - component
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: ServiceComponent
+      apps:
+        - label: cm
+          models:
+            - name: servicecomponent
+              codenames:
+                - view_config_of
+                - change_config_of
+
+    - name: Edit component configurations
+      description: The ability to change and add new component configuration
+      type: business
+      parametrized_by:
+        - service
+        - component
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: ServiceComponent
+      child:
+        - Edit component config
+        - Edit config endpoints
+
+    - name: Edit provider config
+      description: The ability to change and add new provider configuration
+      type: hidden
+      parametrized_by:
+        - provider
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: HostProvider
+      apps:
+        - label: cm
+          models:
+            - name: hostprovider
+              codenames:
+                - view_config_of
+                - change_config_of
+
+    - name: Edit provider configurations
+      description: The ability to change and add new provider configuration
+      type: business
+      parametrized_by:
+        - provider
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: HostProvider
+      child:
+        - Edit provider config
+        - Edit config endpoints
+
+    - name: Edit host config
+      description: The ability to change and add new host configuration
+      type: hidden
+      parametrized_by:
+        - host
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Host
+      apps:
+        - label: cm
+          models:
+            - name: host
+              codenames:
+                - view_config_of
+                - change_config_of
+
+    - name: Edit host configurations
+      description: The ability to change and add new host configuration
+      type: business
+      parametrized_by:
+        - host
+      module_name: rbac.roles
+      class_name: ParentRole
+      init_params:
+        app_name: cm
+        model: Host
+      child:
+        - Edit host config
+        - Edit config endpoints
+
+    - name: Edit config endpoints
+      description: The ability to edit list of all configs separatly
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: objectconfig
+              codenames:
+                - view
+                - change
+            - name: configlog
+              codenames:
+                - view
+                - change
+
+    - name: View cluster imports
+      description: The ability to view the cluster import page
+      type: hidden
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - view_import_of
+
+    - name: View service imports
+      description: The ability to view the service import page
+      type: hidden
+      parametrized_by:
+        - service
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: ClusterObject
+      apps:
+        - label: cm
+          models:
+            - name: clusterobject
+              codenames:
+                - view_import_of
+
+    - name: View imports
+      description: The ability to view all imports page on cluster and service
+      type: business
+      parametrized_by:
+        - cluster
+        - service
+      module_name: rbac.roles
+      class_name: ParentRole
+      any_category: true
+      child:
+        - View cluster imports
+        - View service imports
+
+    - name: View any object import
+      description: The ability to view all services and clusters import
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: true
+      apps:
+        - label: cm
+          models:
+            - name: clusterbind
+              codenames:
+                - view
+
+    - name: Manage cluster imports
+      description: The ability to change cluster imports
+      type: hidden
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - view_import_of
+                - change_import_of
+
+    - name: Manage service imports
+      description: The ability to change service imports
+      type: hidden
+      parametrized_by:
+        - service
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: ClusterObject
+      apps:
+        - label: cm
+          models:
+            - name: clusterobject
+              codenames:
+                - view_import_of
+                - change_import_of
+
+    - name: Manage imports
+      description: The ability to manage all imports page on cluster and service
+      type: business
+      module_name: rbac.roles
+      class_name: ParentRole
+      any_category: true
+      parametrized_by:
+        - cluster
+        - service
+      child:
+        - Manage cluster imports
+        - Manage service imports
+
+    - name: Add service
+      description: The ability to add service to cluster
+      type: business
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      any_category: true
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - add_service_to
+
+    - name: Remove service
+      description: The ability to remove service from cluster
+      type: business
+      parametrized_by:
+        - service
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: ClusterObject
+      any_category: true
+      apps:
+        - label: cm
+          models:
+            - name: clusterobject
+              codenames:
+                - delete
+
+    - name: Remove hosts
+      description: The ability to remove hosts
+      type: business
+      parametrized_by:
+        - host
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Host
+      any_category: true
+      apps:
+        - label: cm
+          models:
+            - name: host
+              codenames:
+                - delete
+
+    - name: Map hosts
+      display_name: Add hosts to the Cluster
+      description: The ability to map hosts to the Cluster
+      type: business
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      any_category: true
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - map_host_to
+
+    - name: Unmap hosts
+      display_name: Remove hosts from the Cluster
+      description: The ability to unmap hosts to the Cluster
+      type: business
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      any_category: true
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - unmap_host_from
+
+    - name: View host-components
+      description: The ability to view exact cluster's host-component page
+      type: business
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      any_category: true
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - view_host_components_of
+
+    - name: View any object host-components
+      description: The ability to view host-components page of all clusters
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: true
+      apps:
+        - label: cm
+          models:
+            - name: hostcomponent
+              codenames:
+                - view
+
+    - name: Edit host-components
+      description: The ability to edit exact cluster's host-component page
+      type: business
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      any_category: true
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - view_host_components_of
+                - edit_host_components_of
+
+    - name: Upgrade cluster bundle
+      description: Update the cluster bundle
+      type: business
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - view_upgrade_of
+                - do_upgrade_of
+
+    - name: Upgrade provider bundle
+      description: Update the provider bundle
+      type: business
+      parametrized_by:
+        - provider
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: HostProvider
+      apps:
+        - label: cm
+          models:
+            - name: hostprovider
+              codenames:
+                - view_upgrade_of
+                - do_upgrade_of
+
+    - name: Remove cluster
+      description: The ability to remove cluster
+      type: business
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: Cluster
+      any_category: false
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - delete
+
+    - name: Remove provider
+      description: The ability to remove provider
+      type: business
+      parametrized_by:
+        - provider
+      module_name: rbac.roles
+      class_name: ObjectRole
+      init_params:
+        app_name: cm
+        model: HostProvider
+      any_category: false
+      apps:
+        - label: cm
+          models:
+            - name: hostprovider
+              codenames:
+                - delete
+
+    - name: Remove bundle
+      description: The ability to remove bundle
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: true
+      apps:
+        - label: cm
+          models:
+            - name: bundle
+              codenames:
+                - delete
+
+    - name: View ADCM settings
+      description: View purely adcm config
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      apps:
+        - label: cm
+          models:
+            - name: adcm
+              codenames:
+                - view_settings_of
+
+    - name: Edit ADCM settings
+      description: Edit purely adcm config
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      apps:
+        - label: cm
+          models:
+            - name: adcm
+              codenames:
+                - view_settings_of
+                - change_settings_of
+
+    - name: View users
+      description: The ability to view Users page
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      apps:
+        - label: rbac
+          models:
+            - name: user
+              codenames:
+                - view
+
+    - name: Create user
+      description: The ability to create new user
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      child:
+        - View users
+      apps:
+        - label: rbac
+          models:
+            - name: user
+              codenames:
+                - add
+
+    - name: Edit user
+      description: The ability to change information about existed user
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      child:
+        - View users
+      apps:
+        - label: rbac
+          models:
+            - name: user
+              codenames:
+                - change
+
+    - name: Remove user
+      description: The ability to delete existed user
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      child:
+        - View users
+      apps:
+        - label: rbac
+          models:
+            - name: user
+              codenames:
+                - delete
+
+    - name: View roles
+      description: The ability to view roles page
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      apps:
+        - label: rbac
+          models:
+            - name: role
+              codenames:
+                - view
+
+    - name: Create custom role
+      description: The ability to create new role
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      child:
+        - View roles
+      apps:
+        - label: rbac
+          models:
+            - name: role
+              codenames:
+                - add
+
+    - name: Edit role
+      description: The ability to change your custom role
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      child:
+        - View roles
+      apps:
+        - label: rbac
+          models:
+            - name: role
+              codenames:
+                - change
+
+    - name: Remove roles
+      description: The ability to delete custom roles
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      child:
+        - View roles
+      apps:
+        - label: rbac
+          models:
+            - name: role
+              codenames:
+                - delete
+
+    - name: View group
+      description: The ability to view group page
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      apps:
+        - label: rbac
+          models:
+            - name: group
+              codenames:
+                - view
+
+    - name: Create group
+      description: The ability to create new group
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      child:
+        - View group
+      apps:
+        - label: rbac
+          models:
+            - name: group
+              codenames:
+                - add
+
+    - name: Edit group
+      description: The ability to change group
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      child:
+        - View group
+      apps:
+        - label: rbac
+          models:
+            - name: group
+              codenames:
+                - change
+
+    - name: Remove group
+      description: The ability to delete roles
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      child:
+        - View group
+      apps:
+        - label: rbac
+          models:
+            - name: group
+              codenames:
+                - delete
+
+    - name: View policy
+      description: The ability to policy group page
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      apps:
+        - label: rbac
+          models:
+            - name: policy
+              codenames:
+                - view
+
+    - name: Create policy
+      description: The ability to create new policy
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      child:
+        - View policy
+      apps:
+        - label: rbac
+          models:
+            - name: policy
+              codenames:
+                - add
+
+    - name: Edit policy
+      description: The ability to change policies
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      child:
+        - View policy
+      apps:
+        - label: rbac
+          models:
+            - name: policy
+              codenames:
+                - change
+
+    - name: Remove policy
+      description: The ability to delete policies
+      type: business
+      module_name: rbac.roles
+      class_name: ModelRole
+      any_category: false
+      child:
+        - View policy
+      apps:
+        - label: rbac
+          models:
+            - name: policy
+              codenames:
+                - delete
+
+    - name: Base role
+      description: Default list of view permissions for all objects
+      type: hidden
+      module_name: rbac.roles
+      class_name: ParentRole
+      child:
+        - Get ADCM object
+        - Get provider
+        - Get cluster
+        - Get host
+        - Get service
+        - Get component
+        - Get task and jobs
+        - Get stack
+        - Get concerns
+
+    - name: Get ADCM object
+      description: Read access to ADCM
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: adcm
+              codenames:
+                - view
+
+    - name: Get provider
+      description: Read access to Provider
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: hostprovider
+              codenames:
+                - view
+
+    - name: Get cluster
+      description: Read access to Clusters
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - view
+
+    - name: Get host
+      description: Read access to Host
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: host
+              codenames:
+                - view
+
+    - name: Get service
+      description: Read access to Service
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: clusterobject
+              codenames:
+                - view
+
+    - name: Get component
+      description: Read access to Component
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: servicecomponent
+              codenames:
+                - view
+
+    - name: Get task and jobs
+      description: Read access to job execution information
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: tasklog
+              codenames:
+                - view
+            - name: joblog
+              codenames:
+                - view
+            - name: logstorage
+              codenames:
+                - view
+
+    - name: Get stack
+      description: Read access to all prototypes
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: prototype
+              codenames:
+                - view
+            - name: bundle
+              codenames:
+                - view
+            - name: action
+              codenames:
+                - view
+            - name: prototypeconfig
+              codenames:
+                - view
+            - name: prototypeexport
+              codenames:
+                - view
+            - name: prototypeimport
+              codenames:
+                - view
+
+    - name: Get concerns
+      description: Read access to all concerns
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: concernitem
+              codenames:
+                - view
+
+    - name: ADCM User
+      type: role
+      module_name: rbac.roles
+      class_name: ParentRole
+      child:
+        - View any object host-components
+        - View any object configuration
+        - View any object import
+
+    - name: Service Administrator
+      type: role
+      parametrized_by:
+        - service
+      init_params:
+        app_name: cm
+        model: ClusterObject
+      module_name: rbac.roles
+      class_name: ParentRole
+      child:
+        - View host configurations
+        - Edit service configurations
+        - Edit component configurations
+        - View host-components
+        - Manage imports
+
+    - name: Cluster Administrator
+      type: role
+      parametrized_by:
+        - cluster
+      init_params:
+        app_name: cm
+        model: Cluster
+      module_name: rbac.roles
+      class_name: ParentRole
+      child:
+        - Service Administrator
+        - Edit cluster configurations
+        - Edit host configurations
+        - Edit host-components
+        - Add service
+        - Remove service
+        - Remove hosts
+        - Map hosts
+        - Unmap hosts
+        - Upgrade cluster bundle
+        - Create host
+        - Upload bundle
+        - Remove bundle
+
+    - name: Provider Administrator
+      type: role
+      parametrized_by:
+        - provider
+      init_params:
+        app_name: cm
+        model: Cluster
+      module_name: rbac.roles
+      class_name: ParentRole
+      child:
+        - Edit provider configurations
+        - Edit host configurations
+        - Upgrade provider bundle
+        - Create host
+        - Remove hosts
+        - Upload bundle
+        - Remove bundle
+

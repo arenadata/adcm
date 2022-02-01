@@ -10,30 +10,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+import hashlib
 import os
 import os.path
-import hashlib
-import tarfile
 import shutil
-import functools
+import tarfile
 
+from django.db import transaction, IntegrityError
 from version_utils import rpm
-from django.db import transaction
-from django.db import IntegrityError
 
-from adcm.settings import ADCM_VERSION
-from cm.logger import log
-from cm import config
 import cm.stack
 import cm.status_api
-from cm.adcm_config import proto_ref, get_prototype_config, init_object_config, switch_config
+from adcm.settings import ADCM_VERSION
+from cm import config
+from cm.adcm_config import proto_ref, init_object_config, switch_config
 from cm.errors import raise_AdcmEx as err
-from cm.models import Cluster, Host, Upgrade, StageUpgrade, ADCM
-from cm.models import Bundle, Prototype, Action, SubAction, PrototypeConfig
-from cm.models import StagePrototype, StageAction
-from cm.models import StageSubAction, StagePrototypeConfig
-from cm.models import PrototypeExport, PrototypeImport, StagePrototypeExport, StagePrototypeImport
-
+from cm.logger import log
+from cm.models import (
+    ADCM,
+    Action,
+    Bundle,
+    Cluster,
+    Host,
+    ProductCategory,
+    Prototype,
+    PrototypeConfig,
+    PrototypeExport,
+    PrototypeImport,
+    StageAction,
+    StagePrototype,
+    StagePrototypeConfig,
+    StagePrototypeExport,
+    StagePrototypeImport,
+    StageSubAction,
+    StageUpgrade,
+    SubAction,
+    Upgrade,
+)
+from rbac.models import Role
+from rbac.upgrade.role import prepare_action_roles
 
 STAGE = (
     StagePrototype,
@@ -63,6 +79,9 @@ def load_bundle(bundle_file):
         bundle = copy_stage(bundle_hash, bundle_proto)
         order_versions()
         clear_stage()
+        ProductCategory.re_collect()
+        bundle.refresh_from_db()
+        prepare_action_roles(bundle)
         cm.status_api.post_event('create', 'bundle', bundle.id)
         return bundle
     except:
@@ -128,9 +147,17 @@ def untar_safe(bundle_hash, path):
 def untar(bundle_hash, bundle):
     path = os.path.join(config.BUNDLE_DIR, bundle_hash)
     if os.path.isdir(path):
-        existed = Bundle.objects.get(hash=bundle_hash)
-        msg = 'Bundle already exists. Name: {}, version: {}, edition: {}'
-        err('BUNDLE_ERROR', msg.format(existed.name, existed.version, existed.edition))
+        try:
+            existed = Bundle.objects.get(hash=bundle_hash)
+            msg = 'Bundle already exists. Name: {}, version: {}, edition: {}'
+            err('BUNDLE_ERROR', msg.format(existed.name, existed.version, existed.edition))
+        except Bundle.DoesNotExist:
+            log.warning(
+                (
+                    f"There is no bundle with hash {bundle_hash} in DB, ",
+                    "but there is a dir on disk with this hash. Dir will be rewrited.",
+                )
+            )
     tar = tarfile.open(bundle)
     tar.extractall(path=path)
     tar.close()
@@ -192,10 +219,10 @@ def process_adcm():
 
 def init_adcm(bundle):
     proto = Prototype.objects.get(type='adcm', bundle=bundle)
-    spec, _, conf, attr = get_prototype_config(proto)
     with transaction.atomic():
-        obj_conf = init_object_config(spec, conf, attr)
-        adcm = ADCM(prototype=proto, name='ADCM', config=obj_conf)
+        adcm = ADCM.objects.create(prototype=proto, name='ADCM')
+        obj_conf = init_object_config(proto, adcm)
+        adcm.config = obj_conf
         adcm.save()
     log.info('init adcm object version %s OK', proto.version)
     return adcm
@@ -388,6 +415,7 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 'display_name',
                 'description',
                 'adcm_min_version',
+                'venv',
                 'config_group_customization',
             ),
         )
@@ -458,6 +486,7 @@ def copy_stage_actons(stage_actions, prototype):
             'allow_to_terminate',
             'partial_execution',
             'host_action',
+            'venv',
         ),
     )
     Action.objects.bulk_create(actions)
@@ -521,6 +550,7 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
                 'description',
                 'adcm_min_version',
                 'config_group_customization',
+                'venv',
             ),
         )
         comp.bundle = bundle
@@ -638,6 +668,7 @@ def update_bundle_from_stage(
             p.shared = sp.shared
             p.monitoring = sp.monitoring
             p.adcm_min_version = sp.adcm_min_version
+            p.venv = sp.venv
             p.config_group_customization = sp.config_group_customization
         except Prototype.DoesNotExist:
             p = copy_obj(
@@ -657,6 +688,7 @@ def update_bundle_from_stage(
                     'display_name',
                     'description',
                     'adcm_min_version',
+                    'venv',
                     'config_group_customization',
                 ),
             )
@@ -690,6 +722,7 @@ def update_bundle_from_stage(
                         'allow_to_terminate',
                         'partial_execution',
                         'host_action',
+                        'venv',
                     ),
                 )
             except Action.DoesNotExist:
@@ -719,6 +752,7 @@ def update_bundle_from_stage(
                         'allow_to_terminate',
                         'partial_execution',
                         'host_action',
+                        'venv',
                     ),
                 )
                 action.prototype = p
@@ -832,6 +866,10 @@ def delete_bundle(bundle):
         shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
     bundle_id = bundle.id
     bundle.delete()
+    for role in Role.objects.filter(class_name='ParentRole'):
+        if not role.child.all():
+            role.delete()
+    ProductCategory.re_collect()
     cm.status_api.post_event('delete', 'bundle', bundle_id)
 
 

@@ -11,6 +11,7 @@
 # limitations under the License.
 
 """Module contains all field types and it special values"""
+import random
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -97,7 +98,9 @@ class PreparedFieldValue:  # pylint: disable=too-few-public-methods,function-red
                 return dbfiller.generate_new_value_for_unchangeable_fk_field(
                     f_type=self.f_type, current_field_value=current_field_value
                 )
-            return self.f_type.generate()
+            if isinstance(self.f_type, GenericForeignKeyList):
+                return dbfiller.generate_new_value_for_generic_foreign_key_list(current_value=current_field_value)
+            return self.f_type.generate_new(current_field_value)
 
         return self.value
 
@@ -210,13 +213,36 @@ class PositiveInt(BaseType):
         return randint(self._min_int64, self._max_int64)
 
 
+class SmallIntegerID(BaseType):
+    """Sort of technical type to represent small integer ID to use as a value for foreign keys"""
+
+    def __init__(self, max_value: int, **kwargs):
+        super().__init__(**kwargs)
+        self.max_value = max_value
+
+    def generate(self, **kwargs):
+        return random.randint(1, self.max_value + 1)
+
+
+class Boolean(BaseType):
+    """Boolean field type"""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.error_message_invalid_data = "Must be a valid boolean."
+        self._sp_vals_negative = ["Invalid string", 321]
+
+    def generate(self, **kwargs):
+        return random.choice([True, False])
+
+
 class String(BaseType):
     """String field type"""
 
-    def __init__(self, max_length=1024, **kwargs):
+    def __init__(self, max_length=1024, special_chars=r"!@#$%^&*\/{}[]", **kwargs):
         super().__init__(**kwargs)
         self.max_length = max_length
-        self._sp_vals_positive = ['s', r'!@#$%^&*\/{}[]', random_string(max_length)]
+        self._sp_vals_positive = ['s', special_chars, random_string(max_length)]
 
         self._sp_vals_negative = [
             generate_json_from_schema(json_schema=None),
@@ -237,6 +263,30 @@ class String(BaseType):
         return random_string(randint(1, self.max_length))
 
 
+class Username(String):
+    """Username field type"""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._sp_vals_negative.append(
+            PreparedFieldValue(value='string with spaces', error_messages=["Space symbols are not allowed"])
+        )
+
+
+class Password(BaseType):
+    """
+    Password field type
+    placeholder - it is expected value for all requests
+    """
+
+    def __init__(self, placeholder="******", **kwargs):
+        super().__init__(**kwargs)
+        self.placeholder = placeholder
+
+    def generate(self, **kwargs):
+        return random_string()
+
+
 class Text(BaseType):
     """Text field type"""
 
@@ -249,6 +299,18 @@ class Text(BaseType):
 
     def generate(self, **kwargs):
         return random_string(randint(64, 200))
+
+
+class Email(BaseType):
+    """Email field type"""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._sp_vals_negative = ["invalid string", 321]
+        self.error_message_invalid_data = "Enter a valid email address."
+
+    def generate(self, **kwargs):
+        return f"{random_string(10)}@{random_string(5).lower()}.com"
 
 
 class DateTime(BaseType):
@@ -337,6 +399,25 @@ class ForeignKey(BaseType):
         pass  # pylint: disable=unnecessary-pass
 
 
+class ObjectForeignKey(ForeignKey):
+    """Object foreign key field type (e.g. {'id': 2})"""
+
+    def __init__(self, fk_link: Type["data_classes.BaseClass"] = None, **kwargs):
+        super().__init__(fk_link=fk_link, **kwargs)
+        self._sp_vals_negative = [
+            PreparedFieldValue(
+                {'id': 1000},
+                f_type=self,
+                error_messages={"id": ["Invalid pk \"1000\" - object does not exist."]},
+            ),
+            PreparedFieldValue(
+                {'id': 2 ** 63},
+                f_type=self,
+                error_messages={"id": [f"Invalid pk \"{2 ** 63}\" - object does not exist."]},
+            ),
+        ]
+
+
 class BackReferenceFK(BaseType):
     """Back reference foreign key field type"""
 
@@ -352,6 +433,56 @@ class BackReferenceFK(BaseType):
 
 class ForeignKeyM2M(ForeignKey):
     """Foreign key many to many field type"""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._sp_vals_negative = [
+            PreparedFieldValue(
+                [{"id": 1000}],
+                f_type=self,
+                error_messages=[{"id": ["Invalid pk \"1000\" - object does not exist."]}],
+            ),
+            PreparedFieldValue(
+                [{"id": 2 ** 63}],
+                f_type=self,
+                error_messages=[{"id": [f"Invalid pk \"{2 ** 63}\" - object does not exist."]}],
+            ),
+        ]
+
+
+class GenericForeignKeyList(BaseType):
+    """List with generic foreign keys (special variant of ListOf(Json))"""
+
+    payload: List[dict]
+
+    def generate(self, **kwargs):
+        """
+        No need to directly generate such a field,
+        payload should be set during "relates_on" resolving and requested directly
+        """
+
+
+class ListOf(BaseType):
+    """List field type"""
+
+    item_type: BaseType
+
+    def __init__(self, item_type: BaseType, **kwargs):
+        self.item_type = item_type
+        super().__init__(**kwargs)
+        self._sp_vals_negative = [
+            PreparedFieldValue([neg.value], f_type=neg.f_type) for neg in item_type.get_negative_values()
+        ]
+
+    def generate(self, **kwargs):
+        return [self.item_type.generate(**kwargs)]
+
+
+class EmptyList(BaseType):
+    """Empty list type (for corner cases to ensure empty list is sent)"""
+
+    def generate(self, **kwargs):
+        return []
 
 
 @attr.dataclass
@@ -384,6 +515,11 @@ def get_fields(data_class: type, predicate: Callable = None) -> List[Field]:
     if predicate is None:
         predicate = dummy_predicate
     return [value for (key, value) in data_class.__dict__.items() if isinstance(value, Field) and predicate(value)]
+
+
+def is_password_field(field: Field) -> bool:
+    """Predicate for password fields selection"""
+    return isinstance(field.f_type, Password)
 
 
 def is_fk_field(field: Field) -> bool:

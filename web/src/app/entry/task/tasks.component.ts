@@ -41,6 +41,7 @@ export class TasksComponent extends BaseDirective implements OnInit {
   data$: BehaviorSubject<IListResult<Task>> = new BehaviorSubject(null);
   paging: BehaviorSubject<Paging> = new BehaviorSubject<Paging>(null);
   status: TaskStatus = '';
+  isFirstPaging = true;
 
   listColumns = [
     {
@@ -232,7 +233,9 @@ export class TasksComponent extends BaseDirective implements OnInit {
         status,
       },
       queryParamsHandling: 'merge',
+      replaceUrl: this.isFirstPaging,
     });
+    this.isFirstPaging = false;
 
     return this.taskService.list(params).pipe(tap(resp => this.data$.next(resp)));
   }

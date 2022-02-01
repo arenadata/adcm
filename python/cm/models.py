@@ -1,5 +1,3 @@
-# pylint: disable=too-many-lines,unsupported-membership-test,unsupported-delete-operation
-#   pylint could not understand that JSON fields are dicts
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,10 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-lines,unsupported-membership-test,unsupported-delete-operation,
+# too-many-instance-attributes
+# pylint could not understand that JSON fields are dicts
 
 from __future__ import unicode_literals
 
+import signal
+import time
 import os.path
 from collections.abc import Mapping
 from copy import deepcopy
@@ -23,7 +25,6 @@ from enum import Enum
 from itertools import chain
 from typing import Dict, Iterable, List, Optional
 
-from django.contrib.auth.models import User, Group, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -32,7 +33,7 @@ from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
 
-from cm.config import FILE_DIR
+from cm.config import FILE_DIR, Job
 from cm.errors import AdcmEx
 from cm.logger import log
 
@@ -96,6 +97,11 @@ def get_object_cluster(obj):
         return None
 
 
+def get_default_before_upgrade() -> dict:
+    """Return init value for before upgrade"""
+    return {'state': None}
+
+
 class ADCMManager(models.Manager):
     """
     Custom model manager catch ObjectDoesNotExist error and re-raise it as custom
@@ -123,7 +129,7 @@ class ADCMManager(models.Manager):
     def get(self, *args, **kwargs):
         try:
             return super().get(*args, **kwargs)
-        except ObjectDoesNotExist:
+        except (ObjectDoesNotExist, ValueError, TypeError):
             if not hasattr(self.model, '__error_code__'):
                 raise AdcmEx('NO_MODEL_ERROR_CODE', f'model: {self.model.__name__}') from None
             msg = f'{self.model.__name__} {kwargs} does not exist'
@@ -183,11 +189,37 @@ class Bundle(ADCMModel):
     hash = models.CharField(max_length=64)
     description = models.TextField(blank=True)
     date = models.DateTimeField(auto_now=True)
+    category = models.ForeignKey('ProductCategory', on_delete=models.RESTRICT, null=True)
 
     __error_code__ = 'BUNDLE_NOT_FOUND'
 
     class Meta:
         unique_together = (('name', 'version', 'edition'),)
+
+
+class ProductCategory(ADCMModel):
+    """
+    Categories are used for some models categorization.
+    It's same as Bundle.name but unlinked from it due to simplicity reasons.
+    """
+
+    value = models.CharField(max_length=160, unique=True)
+    visible = models.BooleanField(default=True)
+
+    @classmethod
+    def re_collect(cls) -> None:
+        """Re-sync category list with installed bundles"""
+        for bundle in Bundle.objects.filter(category=None).all():
+            prototype = Prototype.objects.filter(
+                bundle=bundle, name=bundle.name, type=PrototypeEnum.Cluster.value
+            ).first()
+            if prototype:
+                value = prototype.display_name or bundle.name
+                bundle.category, _ = cls.objects.get_or_create(value=value)
+                bundle.save()
+        for category in cls.objects.all():
+            if category.bundle_set.count() == 0:
+                category.delete()  # TODO: ensure that's enough
 
 
 def get_default_from_edition():
@@ -237,6 +269,7 @@ class Prototype(ADCMModel):
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
     description = models.TextField(blank=True)
     config_group_customization = models.BooleanField(default=False)
+    venv = models.CharField(default="default", max_length=160, blank=False)
 
     __error_code__ = 'PROTOTYPE_NOT_FOUND'
 
@@ -282,21 +315,33 @@ class ConfigLog(ADCMModel):
     __error_code__ = 'CONFIG_NOT_FOUND'
 
     @transaction.atomic()
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):  # pylint: disable=too-many-locals
         """Saving config and updating config groups"""
 
-        def update(origin, renovator):
+        def update(origin: dict, renovator: dict, group_keys: dict) -> None:
             """
             Updating the original dictionary with a check for the presence of keys in the original
             """
-            for key, value in renovator.items():
-                if key not in origin:
-                    continue
-                if isinstance(value, Mapping):
-                    origin[key] = update(origin.get(key, {}), value)
-                else:
-                    origin[key] = value
-            return origin
+            for key, value in group_keys.items():
+                if key in renovator:
+                    if isinstance(value, Mapping):
+                        origin.setdefault(key, {})
+                        update(origin[key], renovator[key], group_keys[key])
+                    else:
+                        if value:
+                            origin[key] = renovator[key]
+
+        def clean_attr(attrs: dict, spec: dict) -> None:
+            """Clean attr after upgrade cluster"""
+            extra_fields = []
+
+            for key in attrs.keys():
+                if key not in ['group_keys', 'custom_group_keys']:
+                    if key not in spec:
+                        extra_fields.append(key)
+
+            for field in extra_fields:
+                attrs.pop(field)
 
         DummyData.objects.filter(id=1).update(date=timezone.now())
         obj = self.obj_ref.object
@@ -309,12 +354,18 @@ class ConfigLog(ADCMModel):
                 current_group_config = ConfigLog.objects.get(id=cg.config.current)
                 group_config.obj_ref = cg.config
                 config = deepcopy(self.config)
-                update(config, diff)
+                current_group_keys = current_group_config.attr['group_keys']
+                update(config, diff, current_group_keys)
                 group_config.config = config
                 attr = deepcopy(self.attr)
-                group_keys, custom_group_keys = cg.create_group_keys(cg.get_config_spec())
+                attr.update(current_group_config.attr)
+                spec = cg.get_config_spec()
+                group_keys, custom_group_keys = cg.create_group_keys(spec)
                 attr.update({'group_keys': group_keys, 'custom_group_keys': custom_group_keys})
-                update(attr, current_group_config.attr)
+                update(attr['group_keys'], current_group_keys, current_group_keys)
+                clean_attr(attr, spec)
+                clean_attr(attr['group_keys'], spec)
+
                 group_config.attr = attr
                 group_config.description = current_group_config.description
                 group_config.save()
@@ -338,6 +389,7 @@ class ADCMEntity(ADCMModel):
     state = models.CharField(max_length=64, default='created')
     _multi_state = models.JSONField(default=dict, db_column='multi_state')
     concerns = models.ManyToManyField('ConcernItem', blank=True, related_name='%(class)s_entities')
+    policy_object = GenericRelation('rbac.PolicyObject')
 
     class Meta:
         abstract = True
@@ -467,6 +519,7 @@ class Cluster(ADCMEntity):
         content_type_field='object_type',
         on_delete=models.CASCADE,
     )
+    before_upgrade = models.JSONField(default=get_default_before_upgrade)
 
     __error_code__ = 'CLUSTER_NOT_FOUND'
 
@@ -505,6 +558,7 @@ class HostProvider(ADCMEntity):
         content_type_field='object_type',
         on_delete=models.CASCADE,
     )
+    before_upgrade = models.JSONField(default=get_default_before_upgrade)
 
     __error_code__ = 'PROVIDER_NOT_FOUND'
 
@@ -940,6 +994,24 @@ class AbstractAction(ADCMModel):
     partial_execution = models.BooleanField(default=False)
     host_action = models.BooleanField(default=False)
 
+    _venv = models.CharField(default="default", db_column="venv", max_length=160, blank=False)
+
+    @property
+    def venv(self):
+        """Property which return a venv for ansible to run.
+
+        Bundle developer could mark one action with exact venv he needs,
+        or mark all actions on prototype.
+        """
+        if self._venv == "default":
+            if self.prototype is not None:
+                return self.prototype.venv
+        return self._venv
+
+    @venv.setter
+    def venv(self, value: str):
+        self._venv = value
+
     class Meta:
         abstract = True
         unique_together = (('prototype', 'name'),)
@@ -1129,14 +1201,6 @@ class UserProfile(ADCMModel):
     profile = models.JSONField(default=str)
 
 
-class Role(ADCMModel):
-    name = models.CharField(max_length=32, unique=True)
-    description = models.TextField(blank=True)
-    permissions = models.ManyToManyField(Permission, blank=True)
-    user = models.ManyToManyField(User, blank=True)
-    group = models.ManyToManyField(Group, blank=True)
-
-
 class TaskLog(ADCMModel):
     object_id = models.PositiveIntegerField()
     object_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)
@@ -1183,6 +1247,35 @@ class TaskLog(ADCMModel):
         self.lock = None
         self.save()
         lock.delete()
+
+    def cancel(self, event_queue: 'cm.status_api.Event' = None):
+        """
+        Cancel running task process
+        task status will be updated in separate process of task runner
+        """
+        errors = {
+            Job.FAILED: ('TASK_IS_FAILED', f'task #{self.pk} is failed'),
+            Job.ABORTED: ('TASK_IS_ABORTED', f'task #{self.pk} is aborted'),
+            Job.SUCCESS: ('TASK_IS_SUCCESS', f'task #{self.pk} is success'),
+        }
+        action = self.action
+        if action and not action.allow_to_terminate:
+            raise AdcmEx(
+                'NOT_ALLOWED_TERMINATION',
+                f'not allowed termination task #{self.pk} for action #{action.pk}',
+            )
+        if self.status in [Job.FAILED, Job.ABORTED, Job.SUCCESS]:
+            raise AdcmEx(*errors.get(self.status))
+        i = 0
+        while not JobLog.objects.filter(task=self, status=Job.RUNNING) and i < 10:
+            time.sleep(0.5)
+            i += 1
+        if i == 10:
+            raise AdcmEx('NO_JOBS_RUNNING', 'no jobs running')
+        self.unlock_affected()
+        if event_queue:
+            event_queue.send_state()
+        os.kill(self.pid, signal.SIGTERM)
 
 
 class JobLog(ADCMModel):
@@ -1267,6 +1360,7 @@ class StagePrototype(ADCMModel):
     description = models.TextField(blank=True)
     monitoring = models.CharField(max_length=16, choices=MONITORING_TYPE, default='active')
     config_group_customization = models.BooleanField(default=False)
+    venv = models.CharField(default="default", max_length=160, blank=False)
 
     __error_code__ = 'PROTOTYPE_NOT_FOUND'
 

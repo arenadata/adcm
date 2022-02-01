@@ -29,6 +29,8 @@ from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocator
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs_locators import ActionDialog
+from tests.ui_tests.app.page.common.group_config_list.locators import GroupConfigListLocators
+from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigList
 from tests.ui_tests.app.page.common.import_page.locators import ImportLocators
 from tests.ui_tests.app.page.common.import_page.page import ImportPage
 from tests.ui_tests.app.page.common.status.page import StatusPage
@@ -51,6 +53,7 @@ class ServicePageMixin(BasePageObject):
     config: CommonConfigMenuObj
     toolbar: CommonToolbar
     table: CommonTableObj
+    group_config = GroupConfigList
 
     __ACTIVE_MENU_CLASS = 'active'
 
@@ -71,6 +74,7 @@ class ServicePageMixin(BasePageObject):
         self.service_id = service_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url)
+        self.group_config = GroupConfigList(self.driver, self.base_url)
 
     @allure.step("Open Main tab by menu click")
     def open_main_tab(self) -> "ServiceMainPage":
@@ -96,6 +100,14 @@ class ServicePageMixin(BasePageObject):
         page.wait_page_is_opened()
         return page
 
+    @allure.step("Open Group Configuration tab by menu click")
+    def open_group_config_tab(self) -> "ServiceGroupConfigPage":
+        """Open Group Configuration tab by menu click"""
+        self.find_and_click(ObjectPageMenuLocators.group_config_tab)
+        page = ServiceGroupConfigPage(self.driver, self.base_url, self.cluster_id, self.service_id)
+        page.wait_page_is_opened()
+        return page
+
     @allure.step("Open Status tab by menu click")
     def open_status_tab(self) -> "ServiceStatusPage":
         """Open Status tab by menu click"""
@@ -116,6 +128,9 @@ class ServicePageMixin(BasePageObject):
     def check_all_elements(self):
         """Assert all main elements presence"""
         self.assert_displayed_elements(self.MAIN_ELEMENTS)
+
+    def check_service_toolbar(self, cluster_name: str, service_name: str):
+        self.toolbar.check_toolbar_elements(["CLUSTERS", cluster_name, "SERVICES", service_name])
 
 
 class ServiceMainPage(ServicePageMixin):
@@ -192,6 +207,15 @@ class ServiceGroupConfigPage(ServicePageMixin):
     """Service page GroupConfig menu"""
 
     MENU_SUFFIX = 'group_config'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ObjectPageLocators.text,
+        GroupConfigListLocators.header_item,
+        GroupConfigListLocators.add_btn,
+        CommonTable.Pagination.next_page,
+        CommonTable.Pagination.previous_page,
+    ]
 
 
 class ServiceStatusPage(ServicePageMixin, StatusPage):

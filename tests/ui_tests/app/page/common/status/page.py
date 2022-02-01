@@ -22,12 +22,15 @@ from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.status.locators import StatusLocators
 
+SUCCESS_COLOR = '0, 230, 118'
+NEGATIVE_COLOR = '255, 152, 0'
+
 
 @dataclass
 class StatusRowInfo:
     """Information from status row"""
 
-    has_icon: bool
+    icon_status: bool
     group_name: Optional[str]
     state: Optional[str]
     state_color: Optional[str]
@@ -57,7 +60,9 @@ class StatusPage(BasePageObject):
 
         for row in page_rows:
             row_item = StatusRowInfo(
-                has_icon=self.is_child_displayed(row, row_elements.icon, timeout=1),
+                icon_status="mat-accent" in self.find_child(row, row_elements.icon).get_attribute("class")
+                if self.is_child_displayed(row, row_elements.icon, timeout=1)
+                else None,
                 group_name=get_child_text(row, row_elements.group_name),
                 state=get_child_text(row, row_elements.state),
                 state_color=self.find_child(row, row_elements.state)
@@ -86,4 +91,6 @@ class StatusPage(BasePageObject):
 
     def compare_current_and_expected_state(self, expected_state: [StatusRowInfo]):
         current_status = self.get_page_info()
-        assert current_status == expected_state, f'Status expected to be "{expected_state}", but was "{current_status}"'
+        expected = "\n".join(map(str, expected_state))
+        actual = "\n".join(map(str, current_status))
+        assert current_status == expected_state, f'Status expected to be:\n {expected}, \nbut was \n"{actual}"'

@@ -1,0 +1,9 @@
+<ng-container *ngIf="object && candidates">
+  <adwp-input-select [form]="object"
+                     controlName="provider"
+                     label="Provider"
+                     [handler]="providerHandler"
+                     [options]="candidates.provider">
+
+  </adwp-input-select>
+</ng-container>

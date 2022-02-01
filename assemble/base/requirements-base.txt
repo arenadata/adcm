@@ -9,6 +9,7 @@ djangorestframework
 drf-flex-fields==0.9.1
 drf-extensions
 django-background-tasks
+django-guardian
 social-auth-app-django
 git+git://github.com/arenadata/django-generate-secret-key.git
 # TODO jinja2 and markupsafe should be unpinned after https://arenadata.atlassian.net/browse/ADCM-2089 fixup
@@ -20,6 +21,7 @@ pyyaml
 ruyaml
 toml
 uwsgi
+jsonschema
 version_utils
 ruyaml
 yspec
@@ -29,4 +31,4 @@ jmespath
 lxml
 pycrypto
 --extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
-adwp-events==0.1.7
+adwp-events==0.1.8

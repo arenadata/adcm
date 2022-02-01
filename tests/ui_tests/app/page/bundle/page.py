@@ -17,6 +17,7 @@ import allure
 from tests.ui_tests.app.page.bundle.locators import BundleLocators, BundleMainMenuLocators
 from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
+from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 
 
 class BundlePage(BasePageObject):
@@ -26,6 +27,7 @@ class BundlePage(BasePageObject):
     header: PageHeader
     footer: PageFooter
     config: CommonConfigMenuObj
+    toolbar: CommonToolbar
 
     def __init__(self, driver, base_url, bundle_id: int):
         super().__init__(driver, base_url, "/bundle/{bundle_id}/main", bundle_id=bundle_id)
@@ -33,6 +35,7 @@ class BundlePage(BasePageObject):
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.bundle_id = bundle_id
+        self.toolbar = CommonToolbar(self.driver, self.base_url)
 
     @allure.step('Click on the "Main" menu item')
     def open_main_menu(self) -> 'BundlePage':
@@ -51,3 +54,6 @@ class BundlePage(BasePageObject):
                 BundleMainMenuLocators.text,
             ]
         )
+
+    def check_bundle_toolbar(self, bundle_name: str):
+        self.toolbar.check_toolbar_elements(["BUNDLES", bundle_name])

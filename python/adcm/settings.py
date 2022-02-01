@@ -60,6 +60,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'rbac',  # keep it above 'django.contrib.auth' in order to keep 'createsuperuser' working
     'django_generate_secret_key',
     'django_filters',
     'django.contrib.auth',
@@ -74,6 +75,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework.authtoken',
     'social_django',
+    'guardian',
     'adwp_events',
     'cm.apps.CmConfig',
 ]
@@ -108,7 +110,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'adcm.wsgi.application'
-LOGIN_URL = '/admin/login/'
+LOGIN_URL = '/api/v1/auth/login/'
 
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
@@ -128,6 +130,7 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.OrderingFilter',
+        'rest_framework.filters.SearchFilter',
     ],
     'EXCEPTION_HANDLER': 'cm.errors.custom_drf_exception_handler',
 }
@@ -144,11 +147,16 @@ DATABASES = {
         # 'HOST': 'localhost',
         # 'USER': 'adcm',
         # 'PASSWORD': 'adcm',
+        # 'TEST': {
+        #     'NAME': os.path.join(BASE_DIR, 'data/var/test.db'),
+        # },
         'OPTIONS': {
             'timeout': 20,
         },
-    }
+    },
 }
+# does not work for multi-table inherited model, but works fine as-is without user model swapping
+# AUTH_USER_MODEL = 'rbac.User'
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -166,6 +174,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
+    'guardian.backends.ObjectPermissionBackend',
     'social_core.backends.google.GoogleOAuth2',
 )
 
@@ -181,7 +190,6 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.user.user_details',
     'cm.views.get_token',
 )
-
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/'
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_WHITELISTED_DOMAINS = []
@@ -252,7 +260,13 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
-        'adwp.events': {
+        'django.template': {
+            'level': 'ERROR',
+        },
+        'django.utils.autoreload': {
+            'level': 'INFO',
+        },
+        'adwp': {
             'handlers': ['adwp_file'],
             'level': 'DEBUG',
             'propagate': True,

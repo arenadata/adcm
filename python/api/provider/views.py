@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.response import Response
 
 import cm
 from cm.models import HostProvider, Upgrade
 
 from api.api_views import create, check_obj, ListView, PageView, PageViewAdd, DetailViewRO
-from api.api_views import GenericAPIPermView
+from api.api_views import GenericAPIPermView, check_custom_perm
 import api.serializers
 from . import serializers
 
@@ -64,12 +64,15 @@ class ProviderDetail(DetailViewRO):
 class ProviderUpgrade(PageView):
     queryset = Upgrade.objects.all()
     serializer_class = serializers.UpgradeProviderSerializer
+    check_upgrade_perm = check_custom_perm
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, provider_id):  # pylint: disable=arguments-differ
         """
         List all avaliable upgrades for specified host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
+        self.check_upgrade_perm('view_upgrade_of', 'hostprovider', provider)
         obj = cm.upgrade.get_upgrade(provider, self.get_ordering(request, self.queryset, self))
         serializer = self.serializer_class(
             obj, many=True, context={'provider_id': provider.id, 'request': request}
@@ -80,12 +83,15 @@ class ProviderUpgrade(PageView):
 class ProviderUpgradeDetail(ListView):
     queryset = Upgrade.objects.all()
     serializer_class = serializers.UpgradeProviderSerializer
+    check_upgrade_perm = check_custom_perm
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, provider_id, upgrade_id):  # pylint: disable=arguments-differ
         """
         List all avaliable upgrades for specified host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
+        self.check_upgrade_perm('view_upgrade_of', 'hostprovider', provider)
         obj = self.get_queryset().get(id=upgrade_id)
         serializer = self.serializer_class(
             obj, context={'provider_id': provider.id, 'request': request}
@@ -96,11 +102,14 @@ class ProviderUpgradeDetail(ListView):
 class DoProviderUpgrade(GenericAPIPermView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.DoUpgradeSerializer
+    check_upgrade_perm = check_custom_perm
+    permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, provider_id, upgrade_id):
         """
         Do upgrade specified host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
+        self.check_upgrade_perm('do_upgrade_of', 'hostprovider', provider)
         serializer = self.serializer_class(data=request.data, context={'request': request})
         return create(serializer, upgrade_id=int(upgrade_id), obj=provider)

@@ -17,7 +17,7 @@ import { StoreModule } from '@ngrx/store';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { TranslateLoader, TranslateModule, TranslateService } from '@ngx-translate/core';
 import { HttpClient } from '@angular/common/http';
-import { AdwpUiWidgetsModule } from '@adwp-ui/widgets';
+import { AdwpPortalHostModule, AdwpUiWidgetsModule } from '@adwp-ui/widgets';
 
 import { CoreModule } from '@app/core/core.module';
 import { ConfigService } from '@app/core/services';
@@ -34,11 +34,14 @@ import { ListService } from '@app/shared/components/list/list.service';
 import { LIST_SERVICE_PROVIDER } from '@app/shared/components/list/list-service-token';
 import { ADD_SERVICE_PROVIDER } from '@app/shared/add-component/add-service-model';
 import { AddService } from '@app/shared/add-component/add.service';
+import { SnackBarComponent } from './components/snack-bar/snack-bar.component';
+import { RouterHistoryService } from '@app/core/services/router-history.service';
 
 @NgModule({
   declarations: [
     AppComponent,
     LogComponent,
+    SnackBarComponent,
   ],
   imports: [
     BrowserModule,
@@ -60,6 +63,7 @@ import { AddService } from '@app/shared/add-component/add.service';
       }
     }),
     AdwpUiWidgetsModule,
+    AdwpPortalHostModule,
   ],
   bootstrap: [AppComponent],
   providers: [
@@ -76,13 +80,20 @@ import { AddService } from '@app/shared/add-component/add.service';
       multi: true
     },
     {
+      provide: APP_INITIALIZER,
+      useFactory: (routerHistory: RouterHistoryService) => () => routerHistory.reset(),
+      deps: [RouterHistoryService],
+      multi: true
+    },
+    {
       provide: LIST_SERVICE_PROVIDER,
       useClass: ListService
     },
     {
       provide: ADD_SERVICE_PROVIDER,
       useClass: AddService
-    },
+    }
   ],
 })
-export class AppModule {}
+export class AppModule {
+}

@@ -1,3 +1,4 @@
+@use './assets/scss/mixins' as mixins;
 @import "./assets/scss/normalize";
 
 // Media Query Ranges
@@ -24,40 +25,59 @@ $spacer: 1rem !default;
 
 @import "./assets/scss/grid";
 
+html, body {
+  height: 100%;
+}
+
 body {
+  display: flex;
+  flex: 1;
+  min-height: 100%;
+  overflow-x: hidden;
   margin: 0;
   padding: 0;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
   color: #ffffff;
   background-color: #303030;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
 app-root {
-  overflow: hidden;
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
   display: flex;
-  flex-direction: column;
+  flex: 1;
+  position: relative;
 
-  & main {
+  adwp-portal-host {
+    display: flex !important;
     flex: 1;
-    display: flex;
-    overflow: auto;
   }
 
-  & footer {
-    color: #ccc;
+  adwp-portal-host > .content {
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
 
-    & div {
-      text-align: right;
-      padding: 4px 10px;
-      font-size: .8em;
+    & main {
+      flex: 1;
+      display: flex;
+      overflow: auto;
+    }
 
-      & .left {
-        float: left;
+    & footer {
+      color: #ccc;
+
+      & div {
+        text-align: right;
+        padding: 4px 10px;
+        font-size: .8em;
+
+        & .left {
+          float: left;
+        }
       }
     }
   }
@@ -415,3 +435,19 @@ mat-cell.control {
 .w100 {
   width: 100%;
 }
+
+adwp-dropdown-box {
+  z-index: 2000 !important;
+}
+
+.mat-select-panel {
+  .mat-selection-list {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+}
+
+.one-line-string {
+  @include mixins.adcm-cut-one-line-string;
+}
+

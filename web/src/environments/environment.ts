@@ -17,6 +17,7 @@ const p = location.protocol;
 export const environment = {
   production: false,
   apiRoot: '/api/v1/',
+  apiUI: '/api/ui/',
   SERVER_URL_EVENT: `${p === 'https:' ? 'wss' : 'ws'}://localhost:8000/ws/event/`,
   SERVER_URL_STATUS: `${p === 'https:' ? 'wss' : 'ws'}://localhost:8000/ws/status/`
 };

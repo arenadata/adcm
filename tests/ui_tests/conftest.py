@@ -14,44 +14,33 @@
 
 # pylint:disable=redefined-outer-name
 
-import os
 import json
+import os
 import tempfile
-
 from typing import Generator
 
-import requests
 import allure
 import pytest
-
+import requests
 from _pytest.fixtures import SubRequest
+from adcm_client.objects import ADCMClient
 from adcm_client.wrappers.docker import ADCM
 from selenium.common.exceptions import WebDriverException
 
-from tests.ui_tests.app.api import ADCMDirectAPIClient
+from tests.conftest import CLEAN_ADCM_PARAM
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage
 
-
 SELENOID_DOWNLOADS_PATH = '/home/selenium/Downloads'
 
 
-@allure.title("Additional ADCM init config")
-@pytest.fixture(
-    scope="session",
-    params=[
-        pytest.param({}, id="clean_adcm"),
-    ],
-)
-def additional_adcm_init_config(request) -> dict:
+def pytest_generate_tests(metafunc):
     """
-    Add options for ADCM init.
-    Redefine this fixture in the actual project to alter additional options of ADCM initialisation.
-    Ex. If this fixture will return {"fill_dummy_data": True}
-    then on the init stage dummy objects will be added to ADCM image
+    Parametrize for running tests on clean ADCM only
     """
-    return request.param
+    if "additional_adcm_init_config" in metafunc.fixturenames:
+        metafunc.parametrize("additional_adcm_init_config", [CLEAN_ADCM_PARAM], scope="session")
 
 
 @pytest.fixture(scope="session")
@@ -222,10 +211,9 @@ def login_to_adcm_over_ui(app_fs, adcm_credentials):
 
 
 @pytest.fixture()
-def another_user(app_fs: ADCMTest, adcm_credentials: dict) -> Generator[dict, None, None]:
+def another_user(sdk_client_fs: ADCMClient) -> Generator[dict, None, None]:
     """Create another user, return it's credentials, remove afterwards"""
-    api = ADCMDirectAPIClient(app_fs.adcm.url, adcm_credentials)
     user_credentials = {'username': 'blondy', 'password': 'goodbadevil'}
-    api.create_new_user(user_credentials)
+    user = sdk_client_fs.user_create(**user_credentials)
     yield user_credentials
-    api.delete_user(user_credentials['username'])
+    user.delete()

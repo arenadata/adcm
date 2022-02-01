@@ -14,6 +14,7 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import List
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -29,6 +30,8 @@ from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators, O
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs_locators import ActionDialog, DeleteDialog
+from tests.ui_tests.app.page.common.group_config_list.locators import GroupConfigListLocators
+from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigList
 from tests.ui_tests.app.page.common.import_page.locators import ImportLocators
 from tests.ui_tests.app.page.common.import_page.page import ImportPage
 from tests.ui_tests.app.page.common.popups.locator import HostAddPopupLocators
@@ -71,6 +74,7 @@ class ClusterPageMixin(BasePageObject):
     toolbar: CommonToolbar
     table: CommonTableObj
     host_popup: HostCreatePopupObj
+    group_config = GroupConfigList
 
     def __init__(self, driver, base_url, cluster_id: int):
         if self.MENU_SUFFIX is None:
@@ -83,39 +87,80 @@ class ClusterPageMixin(BasePageObject):
         self.toolbar = CommonToolbar(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url)
         self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
+        self.group_config = GroupConfigList(self.driver, self.base_url)
 
     def open_main_tab(self):
         """Open Main tab by menu click"""
+
         self.find_and_click(ObjectPageMenuLocators.main_tab)
+        page = ClusterMainPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
 
     def open_services_tab(self):
         """Open Services tab by menu click"""
+
         self.find_and_click(ObjectPageMenuLocators.services_tab)
+        page = ClusterServicesPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
 
     def open_hosts_tab(self):
         """Open Hosts tab by menu click"""
+
         self.find_and_click(ObjectPageMenuLocators.hosts_tab)
+        page = ClusterHostPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
 
     def open_components_tab(self):
         """Open Components tab by menu click"""
+
         self.find_and_click(ObjectPageMenuLocators.components_tab)
+        page = ClusterComponentsPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
+
+    @allure.step("Open Group Configuration tab by menu click")
+    def open_group_config_tab(self) -> "ClusterGroupConfigPage":
+        """Open Group Configuration tab by menu click"""
+
+        self.find_and_click(ObjectPageMenuLocators.group_config_tab)
+        page = ClusterGroupConfigPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
 
     def open_config_tab(self):
         """Open Configuration tab by menu click"""
+
         self.find_and_click(ObjectPageMenuLocators.config_tab)
+        page = ClusterConfigPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
 
     def open_status_tab(self):
         """Open Status tab by menu click"""
+
         self.find_and_click(ObjectPageMenuLocators.status_tab)
+        page = ClusterStatusPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
 
     def open_import_tab(self):
         """Open Import tab by menu click"""
+
         self.find_and_click(ObjectPageMenuLocators.import_tab)
+        page = ClusterImportPage(self.driver, self.base_url, self.cluster_id)
+        page.wait_page_is_opened()
+        return page
 
     @allure.step("Assert that all main elements on the page are presented")
     def check_all_elements(self):
         """Assert all main elements presence"""
         self.assert_displayed_elements(self.MAIN_ELEMENTS)
+
+    def check_cluster_toolbar(self, cluster_name: str):
+        self.toolbar.check_toolbar_elements(["CLUSTERS", cluster_name])
 
 
 class ClusterMainPage(ClusterPageMixin):
@@ -130,7 +175,7 @@ class ClusterMainPage(ClusterPageMixin):
 
 
 class ClusterServicesPage(ClusterPageMixin):
-    """Cluster page config menu"""
+    """Cluster page services menu"""
 
     MENU_SUFFIX = 'service'
     MAIN_ELEMENTS = [
@@ -236,6 +281,40 @@ class ClusterConfigPage(ClusterPageMixin):
         CommonConfigMenu.advanced_label,
         CommonConfigMenu.save_btn,
         CommonConfigMenu.history_btn,
+    ]
+
+    @allure.step('Check that group field is visible = {is_group_visible} if group is active = {is_group_active}')
+    def check_groups(
+        self,
+        group_names: List[str],
+        is_group_visible: bool = True,
+        is_group_active: bool = True,
+        is_subs_visible: bool = True,
+    ):
+        group_names_on_page = [name.text for name in self.config.get_group_names()]
+        if is_group_visible:
+            assert group_names_on_page, "There are should be groups on the page"
+            for group_name in group_names:
+                self.config.expand_or_close_group(group_name, expand=is_group_active)
+                self.config.check_subs_visibility(group_name, is_subs_visible)
+                assert group_name in group_names_on_page, f"There is no {group_name} group on the page"
+        else:
+            for group_name in group_names:
+                assert group_name not in group_names_on_page, f"There is visible '{group_name}' group on the page"
+
+
+class ClusterGroupConfigPage(ClusterPageMixin):
+    """Cluster page group config menu"""
+
+    MENU_SUFFIX = 'group_config'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ObjectPageLocators.text,
+        GroupConfigListLocators.header_item,
+        GroupConfigListLocators.add_btn,
+        CommonTable.Pagination.next_page,
+        CommonTable.Pagination.previous_page,
     ]
 
 
@@ -355,6 +434,9 @@ class ClusterHostPage(ClusterPageMixin):
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
 
+    def check_cluster_hosts_toolbar(self, cluster_name: str, host_name: str):
+        self.toolbar.check_toolbar_elements(["CLUSTERS", cluster_name, "HOSTS", host_name])
+
 
 class ClusterComponentsPage(ClusterPageMixin):
     """Cluster page components menu"""
@@ -457,7 +539,7 @@ class ClusterComponentsPage(ClusterPageMixin):
 
 
 class ClusterStatusPage(ClusterPageMixin, StatusPage):
-    """Cluster page config menu"""
+    """Cluster page status menu"""
 
     MENU_SUFFIX = 'status'
     MAIN_ELEMENTS = [

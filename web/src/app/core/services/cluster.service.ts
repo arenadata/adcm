@@ -12,26 +12,14 @@
 import { Injectable } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { ApiService } from '@app/core/api';
-import { BehaviorSubject, EMPTY, forkJoin, Observable, of, throwError } from 'rxjs';
-import { catchError, filter, map, switchMap, tap } from 'rxjs/operators';
+import { BehaviorSubject, EMPTY, forkJoin, Observable, of } from 'rxjs';
+import { filter, map, switchMap, tap } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
 
-import {
-  Bundle,
-  Entities,
-  Host,
-  IAction,
-  IImport,
-  Job,
-  License,
-  LogFile,
-  Provider,
-  Service
-} from '@app/core/types';
+import { Bundle, Entities, Host, IAction, IImport, Job, License, LogFile, Provider, Service } from '@app/core/types';
 import { environment } from '@env/environment';
 import { ServiceComponentService } from '@app/services/service-component.service';
 import { EntityNames } from '@app/models/entity-names';
-import { HttpResponseBase } from '@angular/common/http';
 import { setPathOfRoute } from '@app/store/navigation/navigation.store';
 import { EntityService } from '@app/abstract/entity-service';
 import { ICluster } from '@app/models/cluster';
@@ -177,19 +165,12 @@ export class ClusterService {
     );
   }
 
-  getMainInfo() {
-    return this.api.get<any>(`${this.Current.config}current/`).pipe(
-      map((a: any) => a.config.find((b: { name: string }) => b.name === '__main_info')),
-      filter((a) => a),
-      map((a) => a.value),
-      catchError((e: HttpResponseBase) => {
-        if (e.status === 404) {
-          return of('Nothing to display');
-        } else {
-          return throwError(e);
-        }
-      }),
-    );
+  getMainInfo(): string {
+    if (!this.Current) {
+      return '';
+    }
+
+    return this.Current.main_info || '';
   }
 
   getBundleLicenseText(): Observable<string> {

@@ -11,6 +11,8 @@
 # limitations under the License.
 
 """Tools for ADCM errors handling in tests"""
+import itertools
+from typing import List
 
 import pytest_check as check
 from pytest_check.check_methods import get_failures
@@ -36,8 +38,20 @@ class ADCMError:  # pylint: disable=too-few-public-methods
         check.equal(title, self.title, f'Expected title is "{self.title}", actual is "{title}"')
         check.equal(code, self.code, f'Expected error code is "{self.code}", actual is "{code}"')
         for i in args:
-            check.is_true(i in desc or i in error_args, f"Text '{i}' should be present in error message")
+            check.is_true(
+                i in desc or i in error_args or i in self._get_data_err_messages(error),
+                f"Text '{i}' should be present in error message",
+            )
         assert not get_failures(), "All assertions should passed"
+
+    def _get_data_err_messages(self, error) -> List[str]:  # pylint: disable=no-self-use
+        """Extract all messages from _data attribute or an error if it is presented"""
+        data = getattr(error, '_data', None)
+        if data is None:
+            return []
+        if isinstance(data, dict):
+            return list(itertools.chain(*data.values()))
+        raise ValueError('error._dict expected to be dict instance')
 
     def __str__(self):
         return f'{self.code} {self.title}'
