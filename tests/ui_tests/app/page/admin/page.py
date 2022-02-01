@@ -592,7 +592,9 @@ class AdminPoliciesPage(GeneralAdminPage):
                 self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_select)
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_select)
                 self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item)
-                self.fill_select_in_policy_popup(services, self.find_elements(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item))
+                self.fill_select_in_policy_popup(
+                    services, self.find_elements(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item)
+                )
 
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.parent_select)
                 self.wait_element_visible(AdminPoliciesLocators.item)
