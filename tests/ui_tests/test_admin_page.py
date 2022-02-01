@@ -488,7 +488,7 @@ class TestAdminPolicyPage:
             assert len(policies_page.table.get_all_rows()) == 0, "There should be 0 policies on the page"
 
     @pytest.mark.parametrize(
-        "clusters, services, providers, hosts, parents, role_name",
+        ("clusters", "services", "providers", "hosts", "parents", "role_name"),
         [
             (CLUSTER_NAME, None, None, None, None, 'View cluster configurations'),
             (None, SERVICE_NAME, None, None, CLUSTER_NAME, 'View service configurations'),
