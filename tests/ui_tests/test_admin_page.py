@@ -124,6 +124,7 @@ class TestAdminIntroPage:
 class TestAdminSettingsPage:
     """Tests for the /admin/roles"""
 
+    @pytest.mark.smoke()
     def test_open_by_tab_admin_settings_page(self, app_fs):
         """Test open /admin/settings from left menu"""
 
@@ -132,6 +133,7 @@ class TestAdminSettingsPage:
         settings_page.check_all_elements()
         settings_page.check_admin_toolbar()
 
+    @pytest.mark.full()
     def test_settings_filter(self, settings_page: AdminSettingsPage):
         """Apply different filters on Admin Settings page"""
         params = {
@@ -164,6 +166,7 @@ class TestAdminSettingsPage:
                 settings_page.config.click_on_group(params['group'])
             settings_page.config.get_config_row(params["field_display_name"])
 
+    @pytest.mark.full()
     def test_save_settings_with_different_name(self, settings_page: AdminSettingsPage):
         """Save settings with different name"""
         params = {'new_name': 'test_settings', 'field_display_name': 'client_id', 'field_value': '123'}
@@ -200,6 +203,7 @@ class TestAdminSettingsPage:
 class TestAdminUsersPage:
     """Tests for the /admin/users"""
 
+    @pytest.mark.smoke()
     def test_open_by_tab_admin_users_page(self, app_fs):
         """Test open /admin/users from left menu"""
 
@@ -280,6 +284,7 @@ class TestAdminRolesPage:
         permissions='Create provider, Create cluster, Create user, Remove policy',
     )
 
+    @pytest.mark.smoke()
     def test_open_by_tab_admin_roles_page(self, app_fs):
         """Test open /admin/roles from left menu"""
 
@@ -299,6 +304,7 @@ class TestAdminRolesPage:
         page.check_default_roles()
         page.check_custom_role(self.custom_role)
 
+    @pytest.mark.full()
     def test_check_pagination_role_list_page(self, app_fs):
         """Test pagination on /admin/roles page"""
 
@@ -349,7 +355,7 @@ class TestAdminRolesPage:
         page.check_custom_role(custom_role_changed)
 
     def test_delete_role_from_roles_page(self, app_fs):
-        """Test delete custome role on /admin/roles page"""
+        """Test delete custom role on /admin/roles page"""
 
         page = AdminRolesPage(app_fs.driver, app_fs.adcm.url).open()
         page.create_role(self.custom_role.name, self.custom_role.description, self.custom_role.permissions)
@@ -365,6 +371,7 @@ class TestAdminGroupsPage:
 
     custom_group = AdminGroupInfo(name='Test_group', description='Test description', users='admin')
 
+    @pytest.mark.smoke()
     def test_open_by_tab_admin_groups_page(self, app_fs):
         """Test open /admin/groups from left menu"""
 
@@ -383,6 +390,7 @@ class TestAdminGroupsPage:
             assert len(current_groups) == 1, "There should be 1 group on the page"
             assert self.custom_group in current_groups, "Created group should be on the page"
 
+    @pytest.mark.full()
     def test_check_pagination_groups_list_page(self, app_fs):
         """Test pagination on /admin/groups page"""
 
@@ -428,6 +436,7 @@ class TestAdminPolicyPage:
         assert len(current_policies) == 1, "There should be 1 policy on the page"
         assert current_policies == [self.custom_policy], "Created policy should be on the page"
 
+    @pytest.mark.smoke()
     def test_open_by_tab_admin_policies_page(self, app_fs):
         """Test open /admin/policies from left menu"""
 
@@ -448,6 +457,7 @@ class TestAdminPolicyPage:
         )
         self.check_custom_policy(policies_page)
 
+    @pytest.mark.full()
     def test_check_pagination_policy_list_page(self, app_fs):
         """Test pagination on /admin/policies page"""
 
