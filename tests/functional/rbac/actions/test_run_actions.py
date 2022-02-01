@@ -264,6 +264,7 @@ class TestPluginsPermissions:
         bundle = sdk_client_fs.upload_from_fs(os.path.join(DATA_DIR, "plugins", "provider"))
         return bundle.provider_create(name='test provider')
 
+    @pytest.mark.full()
     def test_run_plugins(self, clients, cluster, provider, user):
         """
         Test that ADCM plugins doesn't require any specific permissions on objects
