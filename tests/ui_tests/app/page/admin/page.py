@@ -571,48 +571,47 @@ class AdminPoliciesPage(GeneralAdminPage):
     @allure.step('Fill second step in new policy')
     def fill_second_step_in_policy_popup(
         self,
-        clusters: Optional[str],
-        services: Optional[str],
-        parent: Optional[str],
-        providers: Optional[str],
-        hosts: Optional[str],
+        clusters: Optional[str] = None,
+        services: Optional[str] = None,
+        parent: Optional[str] = None,
+        providers: Optional[str] = None,
+        hosts: Optional[str] = None,
     ):
         self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
 
+        def fill_select(locator_select: Locator, locator_items: Locator, values: str):
+            with allure.step(f"Select {values} in popup"):
+                self.wait_element_visible(locator_select)
+                self.find_and_click(locator_select)
+                self.wait_element_visible(locator_items)
+                self.fill_select_in_policy_popup(values, self.find_elements(locator_items))
+
         if clusters:
-            with allure.step(f"Select clusters {clusters} in popup"):
-                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select)
-                self.wait_element_visible(AdminPoliciesLocators.item)
-                self.fill_select_in_policy_popup(clusters, self.find_elements(AdminPoliciesLocators.item))
-                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select)
+            fill_select(
+                AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select, AdminPoliciesLocators.item, clusters
+            )
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select)
         if services:
             if not parent:
                 raise ValueError("There are should be parent for service")
-            with allure.step(f"Select services {services} in popup"):
-                self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_select)
-                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_select)
-                self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item)
-                self.fill_select_in_policy_popup(
-                    services, self.find_elements(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item)
-                )
+            fill_select(
+                AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_select,
+                AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item,
+                services,
+            )
+            fill_select(
+                AdminPoliciesLocators.AddPolicyPopup.SecondStep.parent_select, AdminPoliciesLocators.item, parent
+            )
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.parent_select)
 
-                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.parent_select)
-                self.wait_element_visible(AdminPoliciesLocators.item)
-                self.fill_select_in_policy_popup(parent, self.find_elements(AdminPoliciesLocators.item))
-                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.parent_select)
         if hosts:
-            with allure.step(f"Select hosts {hosts} in popup"):
-                self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.hosts_select)
-                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.hosts_select)
-                self.wait_element_visible(AdminPoliciesLocators.item)
-                self.fill_select_in_policy_popup(hosts, self.find_elements(AdminPoliciesLocators.item))
-                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.hosts_select)
+            fill_select(AdminPoliciesLocators.AddPolicyPopup.SecondStep.hosts_select, AdminPoliciesLocators.item, hosts)
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.hosts_select)
         if providers:
-            with allure.step(f"Select providers {providers} in popup"):
-                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select)
-                self.wait_element_visible(AdminPoliciesLocators.item)
-                self.fill_select_in_policy_popup(providers, self.find_elements(AdminPoliciesLocators.item))
-                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select)
+            fill_select(
+                AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select, AdminPoliciesLocators.item, providers
+            )
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select)
         self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
 
     @allure.step('Fill third step in new policy')

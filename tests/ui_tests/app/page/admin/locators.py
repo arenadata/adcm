@@ -209,7 +209,7 @@ class AdminPoliciesLocators(CommonAdminPagesLocators):
                 "Back button from second step",
             )
             cluster_select = Locator(By.XPATH, "//div[./span//span[text()='Cluster']]//adwp-select", "select cluster")
-            service_select = Locator(By.CSS_SELECTOR, "app-parametrized-by-service mat-select", "select service")
+            service_select = Locator(By.XPATH, "//div[./span//span[text()='Service']]//mat-select", "select service")
             service_item = Locator(By.CSS_SELECTOR, ".mat-select-panel mat-option", "select service item")
             provider_select = Locator(By.CSS_SELECTOR, "app-parametrized-by-provider adwp-select", "select provider")
             parent_select = Locator(By.XPATH, "//div[./span//span[text()='Parent']]//adwp-select", "select parent")

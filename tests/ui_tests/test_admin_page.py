@@ -524,14 +524,7 @@ class TestAdminPolicyPage:
         """Test creating policy"""
 
         self.custom_policy.role = self.custom_role_name
-        if clusters:
-            self.custom_policy.objects = clusters
-        if services:
-            self.custom_policy.objects = services
-        if providers:
-            self.custom_policy.objects = providers
-        if hosts:
-            self.custom_policy.objects = hosts
+        self.custom_policy.objects = clusters or services or providers or hosts
         with allure.step("Create test role"):
             sdk_client_fs.role_create(
                 name=self.custom_role_name,
