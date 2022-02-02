@@ -20,7 +20,7 @@ import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-from selenium.common.exceptions import StaleElementReferenceException
+from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
 from selenium.webdriver.common.by import By
 
 from tests.ui_tests.app.app import ADCMTest
@@ -62,6 +62,9 @@ def wait_info_popup_contains(page: BasePageObject, text: str):
     except StaleElementReferenceException:
         # popups changes fast, so `get_info_popup_text` can get error during text extraction
         pass
+    except TimeoutException as e:
+        # for `wait_until_step_succeeds` to correctly handle situation when popup is not presented
+        raise AssertionError('Popup element was not found') from e
 
 
 @allure.step('Check tabs opens correctly')
@@ -109,10 +112,7 @@ def test_upgrade_adcm(
             'New version available. Page has been refreshed.',
         ):
             with allure.step(f'Check message "{message}" is presented'):
-                # TODO one day make first wait a long one, others shorter like 90, 30, 30 or smt like that
-                wait_until_step_succeeds(
-                    wait_info_popup_contains, page=intro_page, text=message, timeout=77, period=0.3
-                )
+                wait_until_step_succeeds(wait_info_popup_contains, page=intro_page, text=message, timeout=60, period=2)
     with allure.step('Wait for upgrade to finish'):
         upgrade_thread.join(timeout=60)
     open_different_tabs(intro_page)
