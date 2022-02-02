@@ -112,7 +112,9 @@ def test_upgrade_adcm(
             'New version available. Page has been refreshed.',
         ):
             with allure.step(f'Check message "{message}" is presented'):
-                wait_until_step_succeeds(wait_info_popup_contains, page=intro_page, text=message, timeout=60, period=2)
+                wait_until_step_succeeds(
+                    wait_info_popup_contains, page=intro_page, text=message, timeout=77, period=0.3
+                )
     with allure.step('Wait for upgrade to finish'):
         upgrade_thread.join(timeout=60)
     open_different_tabs(intro_page)
