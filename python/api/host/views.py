@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from django_filters import rest_framework as drf_filters
+from guardian.mixins import PermissionListMixin
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -82,7 +83,7 @@ class HostFilter(drf_filters.FilterSet):
         ]
 
 
-class HostList(PageView):
+class HostList(PermissionListMixin, GenericAPIView):
     """
     get:
     List all hosts
@@ -95,6 +96,8 @@ class HostList(PageView):
     serializer_class = serializers.HostSerializer
     serializer_class_ui = serializers.HostUISerializer
     permission_classes = (IsAuthenticated,)
+    permission_required = ['cm.view_host', 'cm.delete_host']
+    get_objects_for_user_extra_kwargs = {'any_perm': True}
     check_host_perm = check_custom_perm
     filterset_class = HostFilter
     filterset_fields = (
@@ -125,11 +128,12 @@ class HostList(PageView):
         queryset = self.get_queryset()
         if 'cluster_id' in kwargs:  # List cluster hosts
             cluster = check_obj(Cluster, kwargs['cluster_id'])
-            queryset = self.get_queryset().filter(cluster=cluster)
+            queryset = queryset.filter(cluster=cluster)
         if 'provider_id' in kwargs:  # List provider hosts
             provider = check_obj(HostProvider, kwargs['provider_id'])
-            queryset = self.get_queryset().filter(provider=provider)
-        return self.get_page(self.filter_queryset(queryset), request)
+            queryset = queryset.filter(provider=provider)
+        serializer = self.get_serializer(self.filter_queryset(queryset), many=True)
+        return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
         """
