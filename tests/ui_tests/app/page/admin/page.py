@@ -576,34 +576,47 @@ class AdminPoliciesPage(GeneralAdminPage):
 
     @allure.step('Fill second step in new policy')
     def fill_second_step_in_policy_popup(
-        self, clusters: Optional[str], services: Optional[str], parent: Optional[str], providers: Optional[str]
+        self,
+        clusters: Optional[str] = None,
+        services: Optional[str] = None,
+        parent: Optional[str] = None,
+        providers: Optional[str] = None,
+        hosts: Optional[str] = None,
     ):
         self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
 
-        @allure.step("Select clusters in popup")
-        def fill_cluster_select(clusters_to_select):
-            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select)
-            self.wait_element_visible(AdminPoliciesLocators.item)
-            available_clusters = self.find_elements(AdminPoliciesLocators.item)
-            self.fill_select_in_policy_popup(clusters_to_select, available_clusters)
-            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select)
+        def fill_select(locator_select: Locator, locator_items: Locator, values: str):
+            with allure.step(f"Select {values} in popup"):
+                self.wait_element_visible(locator_select)
+                self.find_and_click(locator_select)
+                self.wait_element_visible(locator_items)
+                self.fill_select_in_policy_popup(values, self.find_elements(locator_items))
 
         if clusters:
-            fill_cluster_select(clusters)
+            fill_select(
+                AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select, AdminPoliciesLocators.item, clusters
+            )
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select)
         if services:
             if not parent:
                 raise ValueError("There are should be parent for service")
-            with allure.step(f"Select services {services} in popup"):
-                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_select)
-                self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item)
-                available_services = self.find_elements(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item)
-                self.fill_select_in_policy_popup(services, available_services)
-                fill_cluster_select(parent)
+            fill_select(
+                AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_select,
+                AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item,
+                services,
+            )
+            fill_select(
+                AdminPoliciesLocators.AddPolicyPopup.SecondStep.parent_select, AdminPoliciesLocators.item, parent
+            )
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.parent_select)
+
+        if hosts:
+            fill_select(AdminPoliciesLocators.AddPolicyPopup.SecondStep.hosts_select, AdminPoliciesLocators.item, hosts)
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.hosts_select)
         if providers:
-            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select)
-            self.wait_element_visible(AdminPoliciesLocators.item)
-            available_providers = self.find_elements(AdminPoliciesLocators.item)
-            self.fill_select_in_policy_popup(providers, available_providers)
+            fill_select(
+                AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select, AdminPoliciesLocators.item, providers
+            )
             self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select)
         self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
 
@@ -625,11 +638,12 @@ class AdminPoliciesPage(GeneralAdminPage):
         services: Optional[str] = None,
         parent: Optional[str] = None,
         providers: Optional[str] = None,
+        hosts: Optional[str] = None,
     ):
 
         self.open_create_policy_popup()
         self.fill_first_step_in_policy_popup(policy_name, description, role, users, groups)
-        self.fill_second_step_in_policy_popup(clusters, services, parent, providers)
+        self.fill_second_step_in_policy_popup(clusters, services, parent, providers, hosts)
         self.fill_third_step_in_policy_popup()
 
     def get_all_policies(self) -> [AdminPolicyInfo]:
