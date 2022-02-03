@@ -10,40 +10,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.generics import GenericAPIView
+from rest_framework import permissions
 from rest_framework.response import Response
 
 import cm.status_api
-from api.api_views import PageView, check_obj, DetailViewRO, InterfaceView
+from api.utils import check_obj
+from api.base_view import GenericUIView, PaginatedView
 from cm.models import ServiceComponent, ClusterObject, Cluster, HostComponent
 from . import serializers
 
 
-class ComponentListView(PageView):
+class ComponentListView(PaginatedView):
     queryset = ServiceComponent.objects.all()
     serializer_class = serializers.ComponentSerializer
     serializer_class_ui = serializers.ComponentUISerializer
     filterset_fields = ('cluster_id', 'service_id')
     ordering_fields = ('state', 'prototype__display_name', 'prototype__version_order')
 
-    def get(self, request, *args, **kwargs):
-        """
-        List all components
-        """
-        queryset = self.get_queryset()
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        kwargs = self.kwargs
         if 'cluster_id' in kwargs:
             cluster = check_obj(Cluster, kwargs['cluster_id'], 'CLUSTER_NOT_FOUND')
             co = check_obj(
                 ClusterObject, {'cluster': cluster, 'id': kwargs['service_id']}, 'SERVICE_NOT_FOUND'
             )
-            queryset = self.get_queryset().filter(cluster=cluster, service=co)
+            queryset = queryset.filter(cluster=cluster, service=co)
         elif 'service_id' in kwargs:
             co = check_obj(ClusterObject, {'id': kwargs['service_id']}, 'SERVICE_NOT_FOUND')
-            queryset = self.get_queryset().filter(service=co)
-        return self.get_page(self.filter_queryset(queryset), request)
+            queryset = queryset.filter(service=co)
+        return queryset
 
 
-class ComponentDetailView(DetailViewRO):
+class ComponentDetailView(GenericUIView):
     queryset = ServiceComponent.objects.all()
     serializer_class = serializers.ComponentDetailSerializer
     serializer_class_ui = serializers.ComponentUISerializer
@@ -55,12 +54,12 @@ class ComponentDetailView(DetailViewRO):
         component = check_obj(
             ServiceComponent, {'id': kwargs['component_id']}, 'COMPONENT_NOT_FOUND'
         )
-        serial_class = self.select_serializer(request)
-        serializer = serial_class(component, context={'request': request})
+        serializer = self.get_serializer(component)
         return Response(serializer.data)
 
 
-class StatusList(GenericAPIView, InterfaceView):
+class StatusList(GenericUIView):
+    permission_classes = (permissions.IsAuthenticated,)
     serializer_class = serializers.StatusSerializer
     model_name = ServiceComponent
     queryset = HostComponent.objects.all()
@@ -70,9 +69,9 @@ class StatusList(GenericAPIView, InterfaceView):
         Show all components in a specified host
         """
         component = check_obj(ServiceComponent, component_id)
-        if self.for_ui(request):
+        if self._is_for_ui():
             host_components = self.get_queryset().filter(component=component)
             return Response(cm.status_api.make_ui_component_status(component, host_components))
         else:
-            serializer = self.serializer_class(component, context={'request': request})
+            serializer = self.get_serializer(component)
             return Response(serializer.data)

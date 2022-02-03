@@ -16,13 +16,13 @@ from rest_framework.response import Response
 import cm
 from cm.models import HostProvider, Upgrade
 
-from api.api_views import create, check_obj, ListView, PageView, PageViewAdd, DetailViewRO
-from api.api_views import GenericAPIPermView, check_custom_perm
+from api.utils import create, check_obj, check_custom_perm, AdcmFilterBackend, AdcmOrderingFilter
+from api.base_view import GenericUIView, DetailView, PaginatedView
 import api.serializers
 from . import serializers
 
 
-class ProviderList(PageViewAdd):
+class ProviderList(PaginatedView):
     """
     get:
     List all host providers
@@ -38,8 +38,12 @@ class ProviderList(PageViewAdd):
     filterset_fields = ('name', 'prototype_id')
     ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
 
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        return create(serializer)
 
-class ProviderDetail(DetailViewRO):
+
+class ProviderDetail(DetailView):
     """
     get:
     Show host provider
@@ -52,7 +56,7 @@ class ProviderDetail(DetailViewRO):
     lookup_url_kwarg = 'provider_id'
     error_code = 'PROVIDER_NOT_FOUND'
 
-    def delete(self, request, provider_id):  # pylint: disable=arguments-differ
+    def delete(self, request, provider_id):
         """
         Remove host provider
         """
@@ -61,13 +65,18 @@ class ProviderDetail(DetailViewRO):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ProviderUpgrade(PageView):
+class ProviderUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
     serializer_class = serializers.UpgradeProviderSerializer
     check_upgrade_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
+    filter_backends = (AdcmFilterBackend, AdcmOrderingFilter)
 
-    def get(self, request, provider_id):  # pylint: disable=arguments-differ
+    def get_ordering(self, request, queryset, view):
+        Order = AdcmOrderingFilter()
+        return Order.get_ordering(request, queryset, view)
+
+    def get(self, request, provider_id):
         """
         List all avaliable upgrades for specified host provider
         """
@@ -80,13 +89,13 @@ class ProviderUpgrade(PageView):
         return Response(serializer.data)
 
 
-class ProviderUpgradeDetail(ListView):
+class ProviderUpgradeDetail(GenericUIView):
     queryset = Upgrade.objects.all()
     serializer_class = serializers.UpgradeProviderSerializer
     check_upgrade_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
-    def get(self, request, provider_id, upgrade_id):  # pylint: disable=arguments-differ
+    def get(self, request, provider_id, upgrade_id):
         """
         List all avaliable upgrades for specified host provider
         """
@@ -99,7 +108,7 @@ class ProviderUpgradeDetail(ListView):
         return Response(serializer.data)
 
 
-class DoProviderUpgrade(GenericAPIPermView):
+class DoProviderUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.DoUpgradeSerializer
     check_upgrade_perm = check_custom_perm
@@ -111,5 +120,5 @@ class DoProviderUpgrade(GenericAPIPermView):
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
         self.check_upgrade_perm('do_upgrade_of', 'hostprovider', provider)
-        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer = self.get_serializer(data=request.data)
         return create(serializer, upgrade_id=int(upgrade_id), obj=provider)

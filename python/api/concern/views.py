@@ -13,7 +13,7 @@
 from django.contrib.contenttypes.models import ContentType
 from django_filters import rest_framework as drf_filters
 
-from api.api_views import PageView, DetailViewRO
+from api.base_view import DetailView, PaginatedView
 from cm import models
 from cm.errors import AdcmEx
 from . import serializers
@@ -77,7 +77,7 @@ class ConcernFilter(drf_filters.FilterSet):
         return super().is_valid()
 
 
-class ConcernItemList(PageView):
+class ConcernItemList(PaginatedView):
     """
     get:
     List of all existing concern items
@@ -90,7 +90,7 @@ class ConcernItemList(PageView):
     ordering_fields = ('name',)
 
 
-class ConcernItemDetail(DetailViewRO):
+class ConcernItemDetail(DetailView):
     """
     get:
     Show concern item

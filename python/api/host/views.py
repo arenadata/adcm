@@ -12,18 +12,15 @@
 
 from django_filters import rest_framework as drf_filters
 from rest_framework import status
-from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from api.api_views import (
+from api.utils import (
     create,
     check_obj,
-    PageView,
-    DetailViewRO,
-    InterfaceView,
     check_custom_perm,
 )
+from api.base_view import GenericUIView, PaginatedView
 from cm.api import remove_host_from_cluster, delete_host, add_host_to_cluster
 from cm.errors import AdcmEx
 from cm.models import (
@@ -82,7 +79,7 @@ class HostFilter(drf_filters.FilterSet):
         ]
 
 
-class HostList(PageView):
+class HostList(PaginatedView):
     """
     get:
     List all hosts
@@ -118,18 +115,16 @@ class HostList(PageView):
         'prototype__version_order',
     )
 
-    def get(self, request, *args, **kwargs):
-        """
-        List all hosts
-        """
-        queryset = self.get_queryset()
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        kwargs = self.kwargs
         if 'cluster_id' in kwargs:  # List cluster hosts
             cluster = check_obj(Cluster, kwargs['cluster_id'])
-            queryset = self.get_queryset().filter(cluster=cluster)
+            queryset = queryset.filter(cluster=cluster)
         if 'provider_id' in kwargs:  # List provider hosts
             provider = check_obj(HostProvider, kwargs['provider_id'])
-            queryset = self.get_queryset().filter(provider=provider)
-        return self.get_page(self.filter_queryset(queryset), request)
+            queryset = queryset.filter(provider=provider)
+        return queryset
 
     def post(self, request, *args, **kwargs):
         """
@@ -184,7 +179,7 @@ def check_host(host, cluster):
         raise AdcmEx('FOREIGN_HOST', msg)
 
 
-class HostDetail(DetailViewRO):
+class HostDetail(GenericUIView):
     """
     get:
     Show host
@@ -199,16 +194,15 @@ class HostDetail(DetailViewRO):
     lookup_url_kwarg = 'host_id'
     error_code = 'HOST_NOT_FOUND'
 
-    def get(self, request, host_id, **kwargs):  # pylint: disable=arguments-differ)
+    def get(self, request, host_id, **kwargs):
         host = check_obj(Host, host_id)
         if 'cluster_id' in kwargs:
             cluster = check_obj(Cluster, kwargs['cluster_id'])
             check_host(host, cluster)
-        serial_class = self.select_serializer(request)
-        serializer = serial_class(host, context={'request': request})
+        serializer = self.get_serializer(host)
         return Response(serializer.data)
 
-    def delete(self, request, host_id, **kwargs):  # pylint: disable=arguments-differ
+    def delete(self, request, host_id, **kwargs):
         """
         Delete host
         """
@@ -226,7 +220,8 @@ class HostDetail(DetailViewRO):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class StatusList(GenericAPIView, InterfaceView):
+class StatusList(GenericUIView):
+    permission_classes = (IsAuthenticated,)
     serializer_class = serializers.StatusSerializer
     model_name = Host
     queryset = HostComponent.objects.all()
@@ -236,9 +231,9 @@ class StatusList(GenericAPIView, InterfaceView):
         Show all components in a specified host
         """
         host = check_obj(Host, host_id)
-        if self.for_ui(request):
+        if self._is_for_ui():
             host_components = self.get_queryset().filter(host=host)
             return Response(make_ui_host_status(host, host_components))
         else:
-            serializer = self.serializer_class(host, context={'request': request})
+            serializer = self.get_serializer(host)
             return Response(serializer.data)

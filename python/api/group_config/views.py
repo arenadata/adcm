@@ -25,7 +25,7 @@ from rest_framework.mixins import (
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from api.api_views import permission_denied
+from api.utils import permission_denied
 from api.views import ViewInterfaceGenericViewSet
 from cm.models import GroupConfig, Host, ObjectConfig, ConfigLog
 from . import serializers
