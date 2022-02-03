@@ -16,9 +16,11 @@ from typing import List
 import ruyaml
 from adwp_base.errors import raise_AdwpEx as err
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
+from django.utils import timezone
 
 import cm.checker
-from cm.models import ProductCategory, Bundle, Action, get_model_by_type
+from cm.models import ProductCategory, Bundle, Action, get_model_by_type, DummyData
 from rbac import log
 from rbac.models import Role, RoleMigration, Policy, Permission, re_apply_all_polices, RoleTypes
 from rbac.settings import api_settings
@@ -220,8 +222,10 @@ def update_built_in_roles(
         built_in_roles['Provider Administrator'].child.add(business_role)
 
 
+@transaction.atomic
 def prepare_action_roles(bundle: Bundle):
     """Prepares action roles"""
+    DummyData.objects.filter(id=1).update(date=timezone.now())
     built_in_roles = {
         'Cluster Administrator': Role.objects.get(name='Cluster Administrator'),
         'Provider Administrator': Role.objects.get(name='Provider Administrator'),
