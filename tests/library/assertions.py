@@ -92,3 +92,18 @@ def is_empty(collection: Collection, extra_message: Union[str, Callable] = '', *
         "Collection should've been empty, check attachment for more details."
         + (f'Details: {message}' if message else '')
     )
+
+
+def sets_are_equal(actual: set, expected: set, message: Union[str, Callable] = '', **kwargs) -> None:
+    """
+    Check if two sets are equal
+    """
+    if not (isinstance(actual, set) or isinstance(expected, set)):
+        raise ValueError('Both "actual" and "expected" arguments should be of set type')
+    if actual == expected:
+        return
+
+    allure.attach(pprint.pformat(actual), name='"Actual" collection')
+    allure.attach(pprint.pformat(expected), name='"Expected" collection')
+    message = message if not callable(message) else message(**kwargs)
+    raise AssertionError(message)
