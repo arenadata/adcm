@@ -51,6 +51,8 @@ BUNDLE = "cluster_with_services"
 CLUSTER_NAME = "test_cluster"
 SERVICE_NAME = "test_service_1"
 FIRST_COMPONENT_NAME = "first"
+PROVIDER_NAME = 'test_provider'
+HOST_NAME = 'test-host'
 
 
 # !===== Fixtures =====!
@@ -485,18 +487,49 @@ class TestAdminPolicyPage:
         with allure.step('Check that policy has been deleted'):
             assert len(policies_page.table.get_all_rows()) == 0, "There should be 0 policies on the page"
 
-    def test_create_policy_for_cluster(self, sdk_client_fs, app_fs, create_cluster_with_service):
-        """Test creating policy for cluster"""
+    @pytest.mark.parametrize(
+        ("clusters", "services", "providers", "hosts", "parents", "role_name"),
+        [
+            (CLUSTER_NAME, None, None, None, None, 'View cluster configurations'),
+            (None, SERVICE_NAME, None, None, CLUSTER_NAME, 'View service configurations'),
+            (None, None, PROVIDER_NAME, None, None, 'View provider configurations'),
+            (None, None, None, HOST_NAME, None, 'View host configurations'),
+            (None, SERVICE_NAME, None, None, CLUSTER_NAME, 'View component configurations'),
+            (CLUSTER_NAME, None, None, None, None, 'View cluster configurations, View service configurations'),
+            (
+                None,
+                SERVICE_NAME,
+                None,
+                None,
+                CLUSTER_NAME,
+                'View cluster configurations, View service configurations, View component configurations, '
+                'View host configurations',
+            ),
+            (None, None, PROVIDER_NAME, None, None, 'View provider configurations, View host configurations'),
+            (None, None, None, HOST_NAME, None, 'View provider configurations, View host configurations'),
+        ],
+    )
+    def test_check_policy_popup_for_entities(
+        self,
+        sdk_client_fs,
+        app_fs,
+        create_cluster_with_component,
+        clusters,
+        services,
+        providers,
+        hosts,
+        parents,
+        role_name,
+    ):
+        """Test creating policy"""
 
-        cluster, _ = create_cluster_with_service
         self.custom_policy.role = self.custom_role_name
-        self.custom_policy.objects = cluster.name
-
-        with allure.step(f"Create test role for cluster {cluster.name}"):
+        self.custom_policy.objects = clusters or services or providers or hosts
+        with allure.step("Create test role"):
             sdk_client_fs.role_create(
                 name=self.custom_role_name,
                 display_name=self.custom_role_name,
-                child=[{'id': sdk_client_fs.role(name='Add service').id}],
+                child=[{"id": sdk_client_fs.role(name=r).id} for r in role_name.split(", ")],
             )
         policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
         policies_page.create_policy(
@@ -504,53 +537,10 @@ class TestAdminPolicyPage:
             description=self.custom_policy.description,
             role=self.custom_policy.role,
             users=self.custom_policy.users,
-            clusters=cluster.name,
-        )
-        self.check_custom_policy(policies_page)
-
-    def test_check_policy_popup_for_service(self, sdk_client_fs, app_fs, create_cluster_with_service):
-        """Test creating policy for cluster"""
-
-        cluster, service = create_cluster_with_service
-        self.custom_policy.role = self.custom_role_name
-        self.custom_policy.objects = service.name
-
-        with allure.step(f"Create test role for service {service.name}"):
-            sdk_client_fs.role_create(
-                name=self.custom_role_name,
-                display_name=self.custom_role_name,
-                child=[{'id': sdk_client_fs.role(name='View service configurations').id}],
-            )
-        policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
-        policies_page.create_policy(
-            policy_name=self.custom_policy.name,
-            description=self.custom_policy.description,
-            role=self.custom_policy.role,
-            users=self.custom_policy.users,
-            services=service.name,
-            parent=cluster.name,
-        )
-        self.check_custom_policy(policies_page)
-
-    def test_check_policy_popup_for_provider(self, sdk_client_fs, app_fs, create_cluster_with_component):
-        """Test creating policy for provider"""
-
-        _, _, _, provider = create_cluster_with_component
-        self.custom_policy.role = self.custom_role_name
-        self.custom_policy.objects = provider.name
-
-        with allure.step(f"Create test role for provider {provider.name}"):
-            sdk_client_fs.role_create(
-                name=self.custom_role_name,
-                display_name=self.custom_role_name,
-                child=[{'id': sdk_client_fs.role(name='View provider configurations').id}],
-            )
-        policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
-        policies_page.create_policy(
-            policy_name=self.custom_policy.name,
-            description=self.custom_policy.description,
-            role=self.custom_policy.role,
-            users=self.custom_policy.users,
-            providers=provider.name,
+            clusters=clusters,
+            services=services,
+            parent=CLUSTER_NAME,
+            providers=providers,
+            hosts=hosts,
         )
         self.check_custom_policy(policies_page)
