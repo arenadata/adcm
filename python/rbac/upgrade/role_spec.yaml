@@ -1158,6 +1158,7 @@ roles:
       child:
         - Get ADCM object
         - Get bundle
+        - Get task and jobs
         - Get concerns
 
     - name: Get ADCM object
@@ -1395,6 +1396,9 @@ roles:
         - label: cm
           models:
             - name: bundle
+              codenames:
+                - view
+            - name: prototype
               codenames:
                 - view
 
