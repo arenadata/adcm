@@ -6,7 +6,7 @@ allure-pytest
 docker
 jsonschema
 pylint_runner
-pytest
+pytest~=6.0
 pytest-lazy-fixture
 pytest-xdist
 pytest-rerunfailures
