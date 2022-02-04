@@ -33,7 +33,6 @@ roles:
             - name: hostprovider
               codenames:
                 - add
-                - view
 
     - name: Create cluster
       description: The ability to add new cluster
@@ -47,7 +46,6 @@ roles:
             - name: cluster
               codenames:
                 - add
-                - view
 
     - name: Accept license
       description: The ability to accept bundle license
@@ -777,7 +775,6 @@ roles:
       init_params:
         app_name: cm
         model: Cluster
-      any_category: true
       apps:
         - label: cm
           models:
@@ -1480,7 +1477,7 @@ roles:
         - provider
       init_params:
         app_name: cm
-        model: Cluster
+        model: HostProvider
       module_name: rbac.roles
       class_name: ParentRole
       child:
