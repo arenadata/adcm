@@ -152,18 +152,15 @@ class ParentRole(AbstractRole):
                     self.find_and_apply(comp, policy, role, user, group)
                 for hc in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
                     self.find_and_apply(hc.host, policy, role, user, group)
-                for cluster in Cluster.obj.filter(id=obj.cluster.id):
-                    self.find_and_apply(cluster, policy, role, user, group)
+                self.find_and_apply(obj.cluster, policy, role, user, group)
 
             elif obj.prototype.type == 'component':
                 for hc in HostComponent.obj.filter(
                     cluster=obj.cluster, service=obj.service, component=obj
                 ):
                     self.find_and_apply(hc.host, policy, role, user, group)
-                for cluster in Cluster.obj.filter(id=obj.cluster.id):
-                    self.find_and_apply(cluster, policy, role, user, group)
-                for service in ClusterObject.obj.filter(id=obj.service.id):
-                    self.find_and_apply(service, policy, role, user, group)
+                self.find_and_apply(obj.cluster, policy, role, user, group)
+                self.find_and_apply(obj.service, policy, role, user, group)
 
             elif obj.prototype.type == 'provider':
                 for host in Host.obj.filter(provider=obj):
