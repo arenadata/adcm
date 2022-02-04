@@ -19,7 +19,6 @@ from adwp_base.errors import raise_AdwpEx as err
 from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
 from cm.models import (
     Action,
-    Cluster,
     ClusterObject,
     ServiceComponent,
     Host,
