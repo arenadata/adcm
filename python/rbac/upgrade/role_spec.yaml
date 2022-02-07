@@ -1154,6 +1154,7 @@ roles:
       class_name: ParentRole
       child:
         - Get ADCM object
+        - Get stack
         - Get bundle
         - Get task and jobs
         - Get concerns
@@ -1384,7 +1385,7 @@ roles:
               codenames:
                 - view
 
-    - name: Get bundle
+    - name: Get stack
       description: Read access to all Bundle
       type: hidden
       module_name: rbac.roles
@@ -1396,6 +1397,18 @@ roles:
               codenames:
                 - view
             - name: prototype
+              codenames:
+                - view
+
+    - name: Get bundle
+      description: Read access to all Bundle
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: bundle
               codenames:
                 - view
 
