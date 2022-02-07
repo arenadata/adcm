@@ -323,6 +323,9 @@ def save_import(proto, conf):
         if 'versions' in conf['import'][key]:
             check_versions(proto, conf['import'][key], f'import "{key}"')
             set_version(si, conf['import'][key])
+            if si.min_version > si.max_version:
+                msg = 'Min version should be less or equal max version'
+                err('INVALID_VERSION_DEFINITION', msg)
         dict_to_obj(conf['import'][key], 'required', si)
         dict_to_obj(conf['import'][key], 'multibind', si)
         dict_to_obj(conf['import'][key], 'default', si)
