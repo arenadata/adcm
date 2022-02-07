@@ -15,6 +15,7 @@ import os
 import re
 from copy import deepcopy
 from typing import Any
+from version_utils import rpm
 
 import json
 import yaml
@@ -323,9 +324,10 @@ def save_import(proto, conf):
         if 'versions' in conf['import'][key]:
             check_versions(proto, conf['import'][key], f'import "{key}"')
             set_version(si, conf['import'][key])
-            if si.min_version > si.max_version:
-                msg = 'Min version should be less or equal max version'
-                err('INVALID_VERSION_DEFINITION', msg)
+            if si.min_version and si.max_version:
+                if rpm.compare_versions(str(si.min_version), str(si.max_version)) > 0:
+                    msg = 'Min version should be less or equal max version'
+                    err('INVALID_VERSION_DEFINITION', msg)
         dict_to_obj(conf['import'][key], 'required', si)
         dict_to_obj(conf['import'][key], 'multibind', si)
         dict_to_obj(conf['import'][key], 'default', si)
