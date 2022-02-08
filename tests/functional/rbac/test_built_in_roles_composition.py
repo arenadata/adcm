@@ -26,18 +26,30 @@ pytestmark = [pytest.mark.full]
 ADCM_USER_ROLES = {
     role.value.role_name
     for role in (
+        BusinessRoles.GetCluster,
+        BusinessRoles.GetService,
+        BusinessRoles.GetComponent,
+        BusinessRoles.GetProvider,
+        BusinessRoles.GetHost,
+        BusinessRoles.GetTaskAndJob,
         BusinessRoles.ViewAnyObjectConfiguration,
         BusinessRoles.ViewAnyObjectImport,
         BusinessRoles.ViewAnyObjectHostComponents,
     )
 }
+
 SERVICE_ADMIN_ROLES = {
     role.value.role_name
     for role in (
+        BusinessRoles.GetCluster,
+        BusinessRoles.GetService,
+        BusinessRoles.GetComponent,
+        BusinessRoles.GetHost,
+        BusinessRoles.GetTaskAndJob,
         BusinessRoles.EditServiceConfigurations,
         BusinessRoles.EditComponentConfigurations,
         BusinessRoles.ViewHostConfigurations,
-        BusinessRoles.ManageImports,
+        BusinessRoles.ManageServiceImports,
     )
 }
 
@@ -45,6 +57,7 @@ CLUSTER_ADMIN_ROLES = SERVICE_ADMIN_ROLES.union(
     {
         role.value.role_name
         for role in (
+            BusinessRoles.ManageClusterImports,
             BusinessRoles.EditClusterConfigurations,
             BusinessRoles.EditHostConfigurations,
             BusinessRoles.MapHosts,
@@ -62,6 +75,9 @@ CLUSTER_ADMIN_ROLES = SERVICE_ADMIN_ROLES.union(
 PROVIDER_ADMIN_ROLES = {
     role.value.role_name
     for role in (
+        BusinessRoles.GetProvider,
+        BusinessRoles.GetHost,
+        BusinessRoles.GetTaskAndJob,
         BusinessRoles.UpgradeProviderBundle,
         BusinessRoles.EditProviderConfigurations,
         BusinessRoles.EditHostConfigurations,
@@ -74,13 +90,8 @@ PROVIDER_ADMIN_ROLES = {
 
 BASE_ROLES = {
     'Get ADCM object',
-    'Get provider',
-    'Get host',
-    'Get cluster',
-    'Get service',
-    'Get component',
-    'Get task and jobs',
     'Get stack',
+    'Get bundle',
     'Get concerns',
 }
 

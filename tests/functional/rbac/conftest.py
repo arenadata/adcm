@@ -92,6 +92,13 @@ class BusinessRoles(Enum):
 
     # pylint: disable=invalid-name
 
+    GetCluster = BusinessRole("Get cluster object", lambda x, **kwargs: x.cluster(**kwargs))
+    GetService = BusinessRole("Get service object", lambda x, **kwargs: x.service(**kwargs))
+    GetComponent = BusinessRole("Get component object", lambda x, **kwargs: x.component(**kwargs))
+    GetProvider = BusinessRole("Get provider object", lambda x, **kwargs: x.provider(**kwargs))
+    GetHost = BusinessRole("Get host object", lambda x, **kwargs: x.host(**kwargs))
+    GetTaskAndJob = BusinessRole("Get object task and jobs", lambda x, **kwargs: x.task(**kwargs))
+
     ViewAnyObjectConfiguration = BusinessRole("View any object configuration", methodcaller("config"))
     ViewAnyObjectHostComponents = BusinessRole("View any object host-components", methodcaller("hostcomponent"))
     ViewAnyObjectImport = BusinessRole("View any object import", methodcaller("imports"))
@@ -110,6 +117,8 @@ class BusinessRoles(Enum):
 
     ViewImports = BusinessRole("View imports", methodcaller("imports"))
     ManageImports = BusinessRole("Manage imports", lambda x, *args: x.bind(*args))
+    ManageClusterImports = BusinessRole("Manage cluster imports", lambda x, *args: x.bind(*args))
+    ManageServiceImports = BusinessRole("Manage service imports", lambda x, *args: x.bind(*args))
     ViewHostComponents = BusinessRole("View host-components", methodcaller("hostcomponent"))
     EditHostComponents = BusinessRole("Edit host-components", lambda x, *args: x.hostcomponent_set(*args))
     AddService = BusinessRole("Add service", methodcaller("service_add", name="new_service"))
