@@ -100,7 +100,6 @@ def test_cluster_import(sdk_client_fs: ADCMClient, path):
         cluster_import.bind(cluster)
 
 
-@pytest.mark.xfail(reason='https://arenadata.atlassian.net/browse/ADCM-2292')
 def test_import_with_zero_range(sdk_client_fs: ADCMClient):
     """Import cluster with range where min is greater than max"""
     with allure.step('Prepare clusters'):
