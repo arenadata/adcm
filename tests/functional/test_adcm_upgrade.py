@@ -230,6 +230,7 @@ class TestUpgradeFilledADCM:
     # Test itself
 
     @params.including_https
+    @pytest.mark.skip(reason='https://arenadata.atlassian.net/browse/ADCM-2659')  # remove it after the new release
     @pytest.mark.full()
     @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
     @pytest.mark.parametrize("image", [previous_adcm_version_tag()], indirect=True)
