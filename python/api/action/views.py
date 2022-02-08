@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from guardian.mixins import PermissionListMixin
 from rest_framework import permissions
 from rest_framework.response import Response
 
@@ -49,13 +50,15 @@ def get_obj(**kwargs):
     return obj, action_id
 
 
-class ActionList(GenericUIView):
+class ActionList(PermissionListMixin, GenericUIView):
     queryset = Action.objects.all()
     serializer_class = serializers.ActionSerializer
     serializer_class_ui = serializers.ActionUISerializer
     filterset_class = ActionFilter
     filterset_fields = ('name', 'button', 'button_is_null')
     filter_backends = (AdcmFilterBackend,)
+    permission_classes = (permissions.IsAuthenticated,)
+    permission_required = ['cm.view_action']
 
     def get(self, request, *args, **kwargs):  # pylint: disable=too-many-locals
         """

@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from guardian.mixins import PermissionListMixin
 from rest_framework import status, permissions
 from rest_framework.response import Response
 
@@ -22,7 +23,7 @@ import api.serializers
 from . import serializers
 
 
-class ProviderList(PaginatedView):
+class ProviderList(PermissionListMixin, PaginatedView):
     """
     get:
     List all host providers
@@ -37,6 +38,8 @@ class ProviderList(PaginatedView):
     serializer_class_post = serializers.ProviderDetailSerializer
     filterset_fields = ('name', 'prototype_id')
     ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
+    permission_classes = (permissions.DjangoModelPermissions,)
+    permission_required = ['cm.view_hostprovider']
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

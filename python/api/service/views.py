@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from guardian.mixins import PermissionListMixin
 from rest_framework import status, permissions
 from rest_framework.response import Response
 
@@ -36,9 +37,10 @@ def check_service(kwargs):
     return service
 
 
-class ServiceListView(PaginatedView):
+class ServiceListView(PermissionListMixin, PaginatedView):
     queryset = ClusterObject.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
+    permission_required = ['cm.view_clusterobject']
     check_service_perm = check_custom_perm
     serializer_class = serializers.ServiceSerializer
     serializer_class_ui = serializers.ServiceUISerializer
