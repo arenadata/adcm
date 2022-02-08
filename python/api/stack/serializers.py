@@ -16,7 +16,7 @@ from cm.logger import log  # pylint: disable=unused-import
 from cm import config
 from cm.models import ClusterObject, Prototype, Bundle
 
-from api.api_views import hlink, UrlField
+from api.utils import hlink, UrlField
 from api.serializers import UpgradeSerializer
 from api.config.serializers import ConfigSerializer
 from api.action.serializers import StackActionDetailSerializer

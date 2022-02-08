@@ -13,8 +13,8 @@
 from rest_framework import permissions
 from rest_framework.response import Response
 
-from api.api_views import ListView, GenericAPIPermView
-from api.api_views import create, update, check_obj, permission_denied
+from api.utils import create, update, check_obj, permission_denied
+from api.base_view import GenericUIView
 
 from cm.adcm_config import ui_config
 from cm.models import get_model_by_type, ConfigLog, ObjectConfig
@@ -82,7 +82,7 @@ def check_config_perm(self, action_type, object_type, obj):
         permission_denied()
 
 
-class ConfigView(ListView):
+class ConfigView(GenericUIView):
     serializer_class = serializers.HistoryCurrentPreviousConfigSerializer
     permission_classes = (permissions.IsAuthenticated,)
     check_config_perm = check_config_perm
@@ -94,15 +94,15 @@ class ConfigView(ListView):
         self.object_type = object_type
         obj, _, _ = get_obj(object_type, object_id)
         self.check_config_perm('view', object_type, obj)
-        serializer = self.serializer_class(
+        serializer = self.get_serializer(
             self.get_queryset().get(id=obj.id), context={'request': request, 'object': obj}
         )
         return Response(serializer.data)
 
 
-class ConfigHistoryView(ListView):
+class ConfigHistoryView(GenericUIView):
     serializer_class = serializers.ConfigHistorySerializer
-    update_serializer = serializers.ObjectConfigUpdateSerializer
+    serializer_class_post = serializers.ObjectConfigUpdateSerializer
     permission_classes = (permissions.IsAuthenticated,)
     check_config_perm = check_config_perm
     get_queryset = get_queryset
@@ -114,9 +114,7 @@ class ConfigHistoryView(ListView):
         obj, _, _ = get_obj(object_type, object_id)
         self.check_config_perm('view', object_type, obj)
         cl = ConfigLog.objects.filter(obj_ref=obj.config).order_by('-id')
-        serializer = self.serializer_class(
-            cl, many=True, context={'request': request, 'object': obj}
-        )
+        serializer = self.get_serializer(cl, many=True, context={'request': request, 'object': obj})
         return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
@@ -124,13 +122,13 @@ class ConfigHistoryView(ListView):
         self.object_type = object_type
         obj, _, cl = get_obj(object_type, object_id)
         self.check_config_perm('change', object_type, obj)
-        serializer = self.update_serializer(
+        serializer = self.get_serializer(
             cl, data=request.data, context={'request': request, 'object': obj}
         )
-        return create(serializer, ui=bool(self.for_ui(request)), obj=obj)
+        return create(serializer, ui=self._is_for_ui(), obj=obj)
 
 
-class ConfigVersionView(ListView):
+class ConfigVersionView(GenericUIView):
     serializer_class = serializers.ObjectConfigSerializer
     permission_classes = (permissions.IsAuthenticated,)
     check_config_perm = check_config_perm
@@ -143,13 +141,13 @@ class ConfigVersionView(ListView):
         obj, oc, _ = get_obj(object_type, object_id)
         self.check_config_perm('view', object_type, obj)
         cl = get_config_version(oc, version)
-        if self.for_ui(request):
+        if self._is_for_ui():
             cl.config = ui_config(obj, cl)
-        serializer = self.serializer_class(cl, context={'request': request})
+        serializer = self.get_serializer(cl)
         return Response(serializer.data)
 
 
-class ConfigHistoryRestoreView(GenericAPIPermView):
+class ConfigHistoryRestoreView(GenericUIView):
     serializer_class = serializers.ObjectConfigRestoreSerializer
     permission_classes = (permissions.IsAuthenticated,)
     check_config_perm = check_config_perm
@@ -162,5 +160,5 @@ class ConfigHistoryRestoreView(GenericAPIPermView):
         obj, oc, _ = get_obj(object_type, object_id)
         self.check_config_perm('change', object_type, obj)
         cl = get_config_version(oc, version)
-        serializer = self.serializer_class(cl, data=request.data, context={'request': request})
+        serializer = self.get_serializer(cl, data=request.data)
         return update(serializer)

@@ -19,7 +19,7 @@ import logrotate
 import cm.adcm_config
 from cm.adcm_config import ui_config, restore_cluster_config
 from cm.api import update_obj_config
-from api.api_views import get_api_url_kwargs, CommonAPIURL
+from api.utils import get_api_url_kwargs, CommonAPIURL
 
 
 class ConfigVersionURL(serializers.HyperlinkedIdentityField):

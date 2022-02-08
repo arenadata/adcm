@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from rest_framework import serializers
-from api.api_views import hlink
+from api.utils import hlink
 
 
 class StatsSerializer(serializers.Serializer):

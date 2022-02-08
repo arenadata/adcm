@@ -15,11 +15,11 @@ from rest_framework.response import Response
 from cm import config
 from cm.models import JobLog, TaskLog
 from api.serializers import EmptySerializer
-from api.api_views import GenericAPIPermView
+from api.base_view import GenericUIView
 from . import serializers
 
 
-class Stats(GenericAPIPermView):
+class Stats(GenericUIView):
     queryset = JobLog.objects.all()
     serializer_class = serializers.StatsSerializer
 
@@ -28,11 +28,11 @@ class Stats(GenericAPIPermView):
         Statistics
         """
         obj = JobLog(id=1)
-        serializer = self.serializer_class(obj, context={'request': request})
+        serializer = self.get_serializer(obj)
         return Response(serializer.data)
 
 
-class JobStats(GenericAPIPermView):
+class JobStats(GenericUIView):
     queryset = JobLog.objects.all()
     serializer_class = EmptySerializer
 
@@ -49,7 +49,7 @@ class JobStats(GenericAPIPermView):
         return Response(data)
 
 
-class TaskStats(GenericAPIPermView):
+class TaskStats(GenericUIView):
     queryset = TaskLog.objects.all()
     serializer_class = EmptySerializer
 

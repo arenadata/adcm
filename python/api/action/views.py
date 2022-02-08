@@ -13,16 +13,15 @@
 from rest_framework import permissions
 from rest_framework.response import Response
 
-from api.api_views import (
-    ListView,
-    DetailViewRO,
-    GenericAPIPermView,
+from api.utils import (
     ActionFilter,
+    AdcmFilterBackend,
     create,
     check_obj,
     filter_actions,
     permission_denied,
 )
+from api.base_view import GenericUIView
 from api.job.serializers import RunTaskSerializer
 
 from cm.job import get_host_object
@@ -50,12 +49,13 @@ def get_obj(**kwargs):
     return obj, action_id
 
 
-class ActionList(ListView):
+class ActionList(GenericUIView):
     queryset = Action.objects.all()
     serializer_class = serializers.ActionSerializer
     serializer_class_ui = serializers.ActionUISerializer
     filterset_class = ActionFilter
     filterset_fields = ('name', 'button', 'button_is_null')
+    filter_backends = (AdcmFilterBackend,)
 
     def get(self, request, *args, **kwargs):  # pylint: disable=too-many-locals
         """
@@ -108,14 +108,13 @@ class ActionList(ListView):
                 ),
             )
             objects = {obj.prototype.type: obj}
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(
+        serializer = self.get_serializer(
             actions, many=True, context={'request': request, 'objects': objects, 'obj': obj}
         )
         return Response(serializer.data)
 
 
-class ActionDetail(DetailViewRO):
+class ActionDetail(GenericUIView):
     queryset = Action.objects.all()
     serializer_class = serializers.ActionDetailSerializer
     serializer_class_ui = serializers.ActionUISerializer
@@ -130,14 +129,13 @@ class ActionDetail(DetailViewRO):
             objects = {'host': obj}
         else:
             objects = {action.prototype.type: obj}
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(
+        serializer = self.get_serializer(
             action, context={'request': request, 'objects': objects, 'obj': obj}
         )
         return Response(serializer.data)
 
 
-class RunTask(GenericAPIPermView):
+class RunTask(GenericUIView):
     queryset = TaskLog.objects.all()
     serializer_class = RunTaskSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -164,5 +162,5 @@ class RunTask(GenericAPIPermView):
         obj, action_id = get_obj(**kwargs)
         action = check_obj(Action, {'id': action_id}, 'ACTION_NOT_FOUND')
         self.check_action_perm(action, obj)
-        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer = self.get_serializer(data=request.data)
         return create(serializer, action=action, task_object=obj)

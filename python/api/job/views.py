@@ -14,12 +14,12 @@ import os
 import re
 
 from django.http import HttpResponse
-from rest_framework import status
-from rest_framework.generics import GenericAPIView
+from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
-from api.api_views import DetailViewRO, check_obj, PageView
+from api.utils import check_obj
+from api.base_view import GenericUIView, DetailView, PaginatedView
 from cm import config
 from cm.errors import AdcmEx
 from cm.job import get_log, restart_task, cancel_task
@@ -27,7 +27,7 @@ from cm.models import JobLog, TaskLog, LogStorage
 from . import serializers
 
 
-class JobList(PageView):
+class JobList(PaginatedView):
     """
     get:
     List all jobs
@@ -40,7 +40,8 @@ class JobList(PageView):
     ordering_fields = ('status', 'start_date', 'finish_date')
 
 
-class JobDetail(GenericAPIView):
+class JobDetail(GenericUIView):
+    permission_classes = (permissions.IsAuthenticated,)
     queryset = JobLog.objects.all()
     serializer_class = serializers.JobSerializer
 
@@ -61,23 +62,25 @@ class JobDetail(GenericAPIView):
             )
 
         job.log_files = logs
-        serializer = self.serializer_class(job, data=request.data, context={'request': request})
+        serializer = self.get_serializer(job, data=request.data)
         serializer.is_valid()
         return Response(serializer.data)
 
 
-class LogStorageListView(PageView):
+class LogStorageListView(PaginatedView):
     queryset = LogStorage.objects.all()
     serializer_class = serializers.LogStorageListSerializer
     filterset_fields = ('name', 'type', 'format')
     ordering_fields = ('id', 'name')
 
-    def get(self, request, job_id):  # pylint: disable=arguments-differ
-        obj = self.filter_queryset(LogStorage.objects.filter(job_id=job_id))
+    def get(self, request, *args, **kwargs):
+        job_id = kwargs['job_id']
+        obj = self.filter_queryset(self.get_queryset().filter(job_id=job_id))
         return self.get_page(obj, request)
 
 
-class LogStorageView(GenericAPIView):
+class LogStorageView(GenericUIView):
+    permission_classes = (permissions.IsAuthenticated,)
     queryset = LogStorage.objects.all()
     serializer_class = serializers.LogStorageSerializer
 
@@ -87,7 +90,7 @@ class LogStorageView(GenericAPIView):
             log_storage = LogStorage.objects.get(id=log_id, job=job)
         except LogStorage.DoesNotExist:
             raise AdcmEx('LOG_NOT_FOUND', f'log {log_id} not found for job {job_id}') from None
-        serializer = self.serializer_class(log_storage, context={'request': request})
+        serializer = self.get_serializer(log_storage)
         return Response(serializer.data)
 
 
@@ -120,7 +123,8 @@ def download_log_file(request, job_id, log_id):
     return response
 
 
-class LogFile(GenericAPIView):
+class LogFile(GenericUIView):
+    permission_classes = (permissions.IsAuthenticated,)
     queryset = LogStorage.objects.all()
     serializer_class = serializers.LogSerializer
 
@@ -135,11 +139,11 @@ class LogFile(GenericAPIView):
             tag = 'ansible'
 
         ls = LogStorage.obj.get(job_id=job_id, name=tag, type=_type, format=log_type)
-        serializer = self.serializer_class(ls, context={'request': request})
+        serializer = self.get_serializer(ls)
         return Response(serializer.data)
 
 
-class Task(PageView):
+class Task(PaginatedView):
     """
     get:
     List all tasks
@@ -152,7 +156,7 @@ class Task(PageView):
     ordering_fields = ('status', 'start_date', 'finish_date')
 
 
-class TaskDetail(DetailViewRO):
+class TaskDetail(DetailView):
     """
     get:
     Show task
@@ -165,7 +169,8 @@ class TaskDetail(DetailViewRO):
     error_code = 'TASK_NOT_FOUND'
 
 
-class TaskReStart(GenericAPIView):
+class TaskReStart(GenericUIView):
+    permission_classes = (permissions.IsAuthenticated,)
     queryset = TaskLog.objects.all()
     serializer_class = serializers.TaskSerializer
 
@@ -175,7 +180,8 @@ class TaskReStart(GenericAPIView):
         return Response(status=status.HTTP_200_OK)
 
 
-class TaskCancel(GenericAPIView):
+class TaskCancel(GenericUIView):
+    permission_classes = (permissions.IsAuthenticated,)
     queryset = TaskLog.objects.all()
     serializer_class = serializers.TaskSerializer
 

@@ -15,7 +15,7 @@ from rest_framework import serializers
 
 import cm
 from api.action.serializers import ActionShort
-from api.api_views import (
+from api.utils import (
     hlink,
     check_obj,
     filter_actions,
