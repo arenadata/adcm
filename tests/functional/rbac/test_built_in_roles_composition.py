@@ -41,8 +41,10 @@ ADCM_USER_ROLES = {
 SERVICE_ADMIN_ROLES = {
     role.value.role_name
     for role in (
+        BusinessRoles.GetCluster,
         BusinessRoles.GetService,
         BusinessRoles.GetComponent,
+        BusinessRoles.GetHost,
         BusinessRoles.GetTaskAndJob,
         BusinessRoles.EditServiceConfigurations,
         BusinessRoles.EditComponentConfigurations,
@@ -55,7 +57,6 @@ CLUSTER_ADMIN_ROLES = SERVICE_ADMIN_ROLES.union(
     {
         role.value.role_name
         for role in (
-            BusinessRoles.GetCluster,
             BusinessRoles.ManageClusterImports,
             BusinessRoles.EditClusterConfigurations,
             BusinessRoles.EditHostConfigurations,
