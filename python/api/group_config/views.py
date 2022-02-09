@@ -13,7 +13,6 @@
 
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import FilterSet, CharFilter
-from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.mixins import (
@@ -22,11 +21,12 @@ from rest_framework.mixins import (
     RetrieveModelMixin,
     DestroyModelMixin,
 )
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
+from api.base_view import GenericUIViewSet
 from api.utils import permission_denied
-from api.views import ViewInterfaceGenericViewSet
 from cm.models import GroupConfig, Host, ObjectConfig, ConfigLog
 from . import serializers
 
@@ -148,10 +148,10 @@ class GroupConfigConfigLogViewSet(
     RetrieveModelMixin,
     ListModelMixin,
     CreateModelMixin,
-    ViewInterfaceGenericViewSet,
+    GenericUIViewSet,
 ):  # pylint: disable=too-many-ancestors
     serializer_class = serializers.GroupConfigConfigLogSerializer
-    ui_serializer_class = serializers.UIGroupConfigConfigLogSerializer
+    serializer_class_ui = serializers.UIGroupConfigConfigLogSerializer
     permission_classes = (IsAuthenticated,)
     check_config_perm = check_config_perm
     filterset_fields = ('id',)

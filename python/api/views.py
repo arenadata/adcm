@@ -20,7 +20,6 @@ import cm.job
 import cm.stack
 import cm.status_api
 from adcm.settings import ADCM_VERSION
-from rbac.viewsets import GenericPermViewSet
 
 
 class APIRoot(routers.APIRootView):
@@ -68,12 +67,3 @@ class ADCMInfo(APIView):
         General info about ADCM
         """
         return Response({'adcm_version': ADCM_VERSION, 'google_oauth': cm.api.has_google_oauth()})
-
-
-class ViewInterfaceGenericViewSet(GenericPermViewSet):
-    def get_serializer_class(self):
-        if self.request is not None:
-            view = self.request.query_params.get('view', None)
-            if view == 'interface':
-                return self.ui_serializer_class
-        return self.serializer_class

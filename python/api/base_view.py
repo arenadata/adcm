@@ -18,6 +18,7 @@ from rest_framework import serializers
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.utils.urls import replace_query_param
+from rest_framework.viewsets import ViewSetMixin
 
 from adcm.settings import REST_FRAMEWORK
 from api.utils import AdcmFilterBackend, AdcmOrderingFilter, getlist_from_querydict
@@ -48,6 +49,10 @@ class GenericUIView(GenericAPIView):
             if self.serializer_class_ui:
                 return self.serializer_class_ui
         return super().get_serializer_class()
+
+
+class GenericUIViewSet(ViewSetMixin, GenericUIView):
+    """GenericUIView with expanded for ViewSet"""
 
 
 class PaginatedView(GenericUIView):

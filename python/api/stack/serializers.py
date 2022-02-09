@@ -12,25 +12,12 @@
 
 from rest_framework import serializers
 
-from cm.logger import log  # pylint: disable=unused-import
+from api.action.serializers import StackActionDetailSerializer
+from api.config.serializers import ConfigSerializer
+from api.serializers import UpgradeSerializer
+from api.utils import hlink
 from cm import config
 from cm.models import ClusterObject, Prototype, Bundle
-
-from api.utils import hlink, UrlField
-from api.serializers import UpgradeSerializer
-from api.config.serializers import ConfigSerializer
-from api.action.serializers import StackActionDetailSerializer
-
-
-class Stack(serializers.Serializer):
-    load = UrlField(view_name='load-bundle')
-    upload = UrlField(view_name='upload-bundle')
-    bundle = UrlField(view_name='bundle')
-    prototype = UrlField(view_name='prototype')
-    service = UrlField(view_name='service-type')
-    host = UrlField(view_name='host-type')
-    provider = UrlField(view_name='provider-type')
-    cluster = UrlField(view_name='cluster-type')
 
 
 class LoadBundle(serializers.Serializer):

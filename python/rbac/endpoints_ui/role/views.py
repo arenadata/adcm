@@ -15,12 +15,12 @@
 from collections import defaultdict
 
 from rest_framework import serializers, mixins
-from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.response import Response
 
+from api.base_view import GenericUIViewSet
 from cm import models as cm_models
 from rbac import models
-from rbac.viewsets import GenericPermViewSet
 
 
 class RoleSerializer(serializers.Serializer):
@@ -32,7 +32,7 @@ class RoleSerializer(serializers.Serializer):
     )
 
 
-class RoleViewSet(mixins.ListModelMixin, GenericPermViewSet):
+class RoleViewSet(mixins.ListModelMixin, GenericUIViewSet):
     queryset = models.Role.objects.all()
     serializer_class = RoleSerializer
 

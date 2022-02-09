@@ -21,10 +21,6 @@ from cm.models import Upgrade, GroupConfig
 from cm.upgrade import do_upgrade
 
 
-class EmptySerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-
-
 class UpgradeSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField(required=False)
