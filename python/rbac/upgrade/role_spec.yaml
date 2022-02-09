@@ -1,6 +1,6 @@
 ---
 
-version: 2
+version: 1
 
 roles:
     - name: Create host
@@ -267,7 +267,7 @@ roles:
             codenames:
               - view
 
-    - name: View any object configuration hidden
+    - name: View any object configuration
       description: The ability to view config page of all objects except ADCM settings
       type: business
       module_name: rbac.roles
@@ -741,7 +741,7 @@ roles:
               codenames:
                 - view
 
-    - name: Edit host-components hidden
+    - name: Edit host-components
       description: The ability to edit exact cluster's host-component page
       type: hidden
       parametrized_by:
