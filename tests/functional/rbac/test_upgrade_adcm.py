@@ -41,7 +41,7 @@ SERVICE_NAMES = 'test_service', 'new_service'
 NEW_USER_CREDS = 'bestname', 'nevergonnabreakmedown'
 
 
-@pytest.mark.full()
+@pytest.mark.extra_rbac()
 @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
 @pytest.mark.parametrize(
     "image",

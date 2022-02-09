@@ -32,7 +32,7 @@ from tests.functional.rbac.conftest import (
 )
 
 
-pytestmark = [pytest.mark.full]
+pytestmark = [pytest.mark.extra_rbac]
 
 
 @contextmanager

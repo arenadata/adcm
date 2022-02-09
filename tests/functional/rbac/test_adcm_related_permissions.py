@@ -26,7 +26,7 @@ from tests.functional.rbac.conftest import (
     as_user_objects,
 )
 
-pytestmark = [pytest.mark.full]
+pytestmark = [pytest.mark.extra_rbac]
 
 
 @use_role(BusinessRoles.ViewADCMSettings)
