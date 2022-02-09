@@ -267,20 +267,32 @@ roles:
             codenames:
               - view
 
-    - name: View any object configuration
+    - name: View any object configuration hidden
       description: The ability to view config page of all objects except ADCM settings
       type: business
       module_name: rbac.roles
       class_name: ModelRole
-      any_category: true
-      child:
-        - View config endpoints
       apps:
         - label: cm
           models:
             - name: adcm
               codenames:
                 - view_config_of
+            - name: cluster
+              codenames:
+                - view
+            - name: clusterobject
+              codenames:
+                - view
+            - name: servicecomponent
+              codenames:
+                - view
+            - name: host
+              codenames:
+                - view
+            - name: hostprovider
+              codenames:
+                - view
 
     - name: Edit cluster config
       description: The ability to change and add new cluster configuration
@@ -529,6 +541,12 @@ roles:
             - name: clusterbind
               codenames:
                 - view
+            - name: cluster
+              codenames:
+                - view
+            - name: clusterobject
+              codenames:
+                - view
 
     - name: Manage cluster imports
       description: The ability to change cluster imports
@@ -655,7 +673,7 @@ roles:
 
     - name: Map hosts
       description: The ability to map hosts to the Cluster
-      type: hidden
+      type: business
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -668,22 +686,8 @@ roles:
           models:
             - name: cluster
               codenames:
+                - view
                 - map_host_to
-
-    - name: Add hosts to the Cluster
-      description: The ability to map hosts to the Cluster
-      type: business
-      parametrized_by:
-        - cluster
-      module_name: rbac.roles
-      class_name: ParentRole
-      init_params:
-        app_name: cm
-        model: Cluster
-      any_category: true
-      child:
-        - Map hosts
-        - Get cluster object
 
     - name: Unmap hosts
       description: The ability to unmap hosts from the Cluster
@@ -700,26 +704,12 @@ roles:
           models:
             - name: cluster
               codenames:
+                - view
                 - unmap_host_from
 
-    - name: Remove hosts from the Cluster
-      description: The ability to upmap hosts from the Cluster
-      type: business
-      parametrized_by:
-        - cluster
-      module_name: rbac.roles
-      class_name: ParentRole
-      init_params:
-        app_name: cm
-        model: Cluster
-      any_category: true
-      child:
-        - Unmap hosts
-        - Get cluster object
-
-    - name: View host-components hidden
+    - name: View host-components
       description: The ability to view exact cluster's host-component page
-      type: hidden
+      type: business
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -732,22 +722,8 @@ roles:
           models:
             - name: cluster
               codenames:
+                - view
                 - view_host_components_of
-
-    - name: View host-components
-      description: The ability to view exact cluster's host-component page
-      type: business
-      parametrized_by:
-        - cluster
-      module_name: rbac.roles
-      class_name: ParentRole
-      init_params:
-        app_name: cm
-        model: Cluster
-      any_category: true
-      child:
-        - View host-components hidden
-        - Get cluster object
 
     - name: View any object host-components
       description: The ability to view host-components page of all clusters
@@ -780,23 +756,9 @@ roles:
           models:
             - name: cluster
               codenames:
+                - view
                 - view_host_components_of
                 - edit_host_components_of
-
-    - name: Edit host-components
-      description: The ability to edit exact cluster's host-component page
-      type: business
-      parametrized_by:
-        - cluster
-      module_name: rbac.roles
-      class_name: ParentRole
-      init_params:
-        app_name: cm
-        model: Cluster
-      any_category: true
-      child:
-        - Edit host-components hidden
-        - Get cluster object
 
     - name: Upgrade cluster bundle
       description: Update the cluster bundle
@@ -899,6 +861,7 @@ roles:
           models:
             - name: adcm
               codenames:
+                - view
                 - view_settings_of
 
     - name: Edit ADCM settings
@@ -912,6 +875,7 @@ roles:
           models:
             - name: adcm
               codenames:
+                - view
                 - view_settings_of
                 - change_settings_of
 
@@ -1449,6 +1413,7 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       child:
+        - Get task and jobs
         - Get cluster object
         - Get service object
         - Get component object
@@ -1494,6 +1459,7 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       child:
+        - Get task and jobs
         - Get provider object
         - Get host object
         - Edit provider configurations
