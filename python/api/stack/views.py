@@ -10,41 +10,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rest_framework import decorators
 from rest_framework import status
-from rest_framework.reverse import reverse
-from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication
+from rest_framework.mixins import CreateModelMixin
+from rest_framework.parsers import MultiPartParser
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
 
 import cm.api
 import cm.bundle
+from api.action.serializers import StackActionSerializer
+from api.base_view import GenericUIView, DetailView, PaginatedView, GenericUIViewSet
+from api.utils import check_obj
 from cm.models import Bundle, Prototype, Action
 from cm.models import PrototypeConfig, Upgrade, PrototypeExport
 from cm.models import PrototypeImport
-from cm.logger import log  # pylint: disable=unused-import
-
-from api.utils import check_obj
-from api.base_view import GenericUIView, DetailView, PaginatedView
-from api.action.serializers import StackActionSerializer
 from . import serializers
 
 
 class CsrfOffSessionAuthentication(SessionAuthentication):
     def enforce_csrf(self, request):
         return
-
-
-class Stack(GenericUIView):
-    queryset = Prototype.objects.all()
-    serializer_class = serializers.Stack
-
-    def get(self, request):
-        """
-        Operations with stack of services
-        """
-        obj = Bundle()
-        serializer = self.get_serializer(obj)
-        return Response(serializer.data)
 
 
 class UploadBundle(GenericUIView):
@@ -61,11 +48,16 @@ class UploadBundle(GenericUIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class LoadBundle(GenericUIView):
+class LoadBundle(CreateModelMixin, GenericUIViewSet):
     queryset = Prototype.objects.all()
     serializer_class = serializers.LoadBundle
 
-    def post(self, request):
+    @decorators.action(methods=['put'], detail=False)
+    def servicemap(self, request):
+        cm.api.load_service_map()
+        return Response(status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
         """
         post:
         Load bundle
@@ -365,12 +357,3 @@ class ProviderTypeDetail(AbstractPrototypeDetail):
 
     queryset = Prototype.objects.filter(type='provider')
     serializer_class = serializers.ProviderTypeDetailSerializer
-
-
-class LoadServiceMap(GenericUIView):
-    queryset = Prototype.objects.all()
-    serializer_class = serializers.Stack
-
-    def put(self, request):
-        cm.api.load_service_map()
-        return Response(status=status.HTTP_200_OK)

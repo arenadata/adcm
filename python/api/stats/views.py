@@ -12,35 +12,19 @@
 
 from rest_framework.response import Response
 
+from api.base_view import GenericUIView
 from cm import config
 from cm.models import JobLog, TaskLog
-from api.serializers import EmptySerializer
-from api.base_view import GenericUIView
-from . import serializers
-
-
-class Stats(GenericUIView):
-    queryset = JobLog.objects.all()
-    serializer_class = serializers.StatsSerializer
-
-    def get(self, request):
-        """
-        Statistics
-        """
-        obj = JobLog(id=1)
-        serializer = self.get_serializer(obj)
-        return Response(serializer.data)
 
 
 class JobStats(GenericUIView):
     queryset = JobLog.objects.all()
-    serializer_class = EmptySerializer
 
-    def get(self, request, job_id):
+    def get(self, request, pk):
         """
         Show jobs stats
         """
-        jobs = self.get_queryset().filter(id__gt=job_id)
+        jobs = self.get_queryset().filter(id__gt=pk)
         data = {
             config.Job.FAILED: jobs.filter(status=config.Job.FAILED).count(),
             config.Job.SUCCESS: jobs.filter(status=config.Job.SUCCESS).count(),
@@ -51,13 +35,12 @@ class JobStats(GenericUIView):
 
 class TaskStats(GenericUIView):
     queryset = TaskLog.objects.all()
-    serializer_class = EmptySerializer
 
-    def get(self, request, task_id):
+    def get(self, request, pk):
         """
         Show tasks stats
         """
-        tasks = self.get_queryset().filter(id__gt=task_id)
+        tasks = self.get_queryset().filter(id__gt=pk)
         data = {
             config.Job.FAILED: tasks.filter(status=config.Job.FAILED).count(),
             config.Job.SUCCESS: tasks.filter(status=config.Job.SUCCESS).count(),

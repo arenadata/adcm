@@ -10,12 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path
+"""Stack endpoint root view"""
 
-from . import views, root
+from rest_framework import permissions, routers
 
-urlpatterns = [
-    path('', root.StatsRoot.as_view(), {'pk': 0}, name='stats'),
-    path('task/<int:pk>/', views.TaskStats.as_view(), name='task-stats'),
-    path('job/<int:pk>/', views.JobStats.as_view(), name='job-stats'),
-]
+
+class StackRoot(routers.APIRootView):
+    """Stack Root"""
+
+    permission_classes = (permissions.AllowAny,)
+    api_root_dict = {
+        'load': 'load-bundle',
+        'upload': 'upload-bundle',
+        'bundle': 'bundle',
+        'prototype': 'prototype',
+        'service': 'service-type',
+        'host': 'host-type',
+        'provider': 'provider-type',
+        'cluster': 'cluster-type',
+    }

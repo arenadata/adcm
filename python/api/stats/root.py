@@ -10,10 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import serializers
-from api.utils import hlink
+"""Stats endpoint root view"""
+
+from rest_framework import permissions, routers
 
 
-class StatsSerializer(serializers.Serializer):
-    task = hlink('task-stats', 'id', 'task_id')
-    job = hlink('job-stats', 'id', 'job_id')
+class StatsRoot(routers.APIRootView):
+    """Stats Root"""
+
+    permission_classes = (permissions.AllowAny,)
+    api_root_dict = {
+        'task': 'task-stats',
+        'job': 'job-stats',
+    }

@@ -12,18 +12,18 @@
 
 from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin
 
-from api.views import ViewInterfaceGenericViewSet
+from api.base_view import GenericUIViewSet
 from cm.models import ConfigLog
-from .serializers import ConfigLogSerializer, UIConfigLogSerializer
 from rbac.viewsets import DjangoObjectPerm
+from .serializers import ConfigLogSerializer, UIConfigLogSerializer
 
 
 class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
-    CreateModelMixin, ListModelMixin, RetrieveModelMixin, ViewInterfaceGenericViewSet
+    CreateModelMixin, ListModelMixin, RetrieveModelMixin, GenericUIViewSet
 ):
     queryset = ConfigLog.objects.all()
     serializer_class = ConfigLogSerializer
     permission_classes = (DjangoObjectPerm,)
-    ui_serializer_class = UIConfigLogSerializer
+    serializer_class_ui = UIConfigLogSerializer
     filterset_fields = ('id', 'obj_ref')
     ordering_fields = ('id',)

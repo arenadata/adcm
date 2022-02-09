@@ -12,9 +12,9 @@
 
 """RBAC Permissions classes"""
 
+from guardian.shortcuts import get_objects_for_user
 from rest_framework import viewsets
 from rest_framework.permissions import DjangoModelPermissions, DjangoObjectPermissions
-from guardian.shortcuts import get_objects_for_user
 
 
 class DjangoModelPerm(DjangoModelPermissions):
@@ -68,13 +68,5 @@ class DjangoObjectPerm(DjangoObjectPermissions):
 
 class ModelPermViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
     """Replace of DRF ModelViewSet with view permission"""
-
-    permission_classes = (DjangoObjectPerm,)
-
-
-class GenericPermViewSet(
-    viewsets.GenericViewSet,
-):
-    """Replace of DRF GenericViewSet with view permission"""
 
     permission_classes = (DjangoObjectPerm,)
