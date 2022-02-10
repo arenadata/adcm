@@ -1,6 +1,6 @@
 ---
 
-version: 1
+version: 2
 
 roles:
     - name: Create host
@@ -13,7 +13,7 @@ roles:
       init_params:
         app_name: cm
         model: HostProvider
-      any_category: true
+      any_category: false
       apps:
         - label: cm
           models:
@@ -111,6 +111,7 @@ roles:
         - cluster
       module_name: rbac.roles
       class_name: ParentRole
+      any_category: true
       init_params:
         app_name: cm
         model: Cluster
@@ -144,6 +145,7 @@ roles:
         - service
       module_name: rbac.roles
       class_name: ParentRole
+      any_category: true
       init_params:
         app_name: cm
         model: ClusterObject
@@ -178,6 +180,7 @@ roles:
         - component
       module_name: rbac.roles
       class_name: ParentRole
+      any_category: true
       init_params:
         app_name: cm
         model: ServiceComponent
@@ -212,6 +215,7 @@ roles:
         - provider
       module_name: rbac.roles
       class_name: ParentRole
+      any_category: false
       init_params:
         app_name: cm
         model: HostProvider
@@ -244,6 +248,7 @@ roles:
         - host
       module_name: rbac.roles
       class_name: ParentRole
+      any_category: false
       init_params:
         app_name: cm
         model: Host
@@ -272,6 +277,7 @@ roles:
       type: business
       module_name: rbac.roles
       class_name: ModelRole
+      any_category: false
       apps:
         - label: cm
           models:
@@ -291,6 +297,12 @@ roles:
               codenames:
                 - view
             - name: hostprovider
+              codenames:
+                - view
+            - name: objectconfig
+              codenames:
+                - view
+            - name: configlog
               codenames:
                 - view
 
@@ -319,6 +331,7 @@ roles:
         - cluster
       module_name: rbac.roles
       class_name: ParentRole
+      any_category: true
       init_params:
         app_name: cm
         model: Cluster
@@ -352,6 +365,7 @@ roles:
         - service
       module_name: rbac.roles
       class_name: ParentRole
+      any_category: true
       init_params:
         app_name: cm
         model: ClusterObject
@@ -387,6 +401,7 @@ roles:
         - component
       module_name: rbac.roles
       class_name: ParentRole
+      any_category: true
       init_params:
         app_name: cm
         model: ServiceComponent
@@ -422,6 +437,7 @@ roles:
         - provider
       module_name: rbac.roles
       class_name: ParentRole
+      any_category: false
       init_params:
         app_name: cm
         model: HostProvider
@@ -455,6 +471,7 @@ roles:
         - host
       module_name: rbac.roles
       class_name: ParentRole
+      any_category: false
       init_params:
         app_name: cm
         model: Host
@@ -534,7 +551,7 @@ roles:
       type: business
       module_name: rbac.roles
       class_name: ModelRole
-      any_category: true
+      any_category: false
       apps:
         - label: cm
           models:
@@ -672,12 +689,14 @@ roles:
                 - delete
 
     - name: Map hosts
+      display_name: Add hosts to the Cluster
       description: The ability to map hosts to the Cluster
       type: business
       parametrized_by:
         - cluster
       module_name: rbac.roles
       class_name: ObjectRole
+      any_category: true
       init_params:
         app_name: cm
         model: Cluster
@@ -690,12 +709,14 @@ roles:
                 - map_host_to
 
     - name: Unmap hosts
+      display_name: Remove hosts from the Cluster
       description: The ability to unmap hosts from the Cluster
-      type: hidden
+      type: business
       parametrized_by:
         - cluster
       module_name: rbac.roles
       class_name: ObjectRole
+      any_category: true
       init_params:
         app_name: cm
         model: Cluster
@@ -714,6 +735,7 @@ roles:
         - cluster
       module_name: rbac.roles
       class_name: ObjectRole
+      any_category: true
       init_params:
         app_name: cm
         model: Cluster
@@ -730,7 +752,7 @@ roles:
       type: business
       module_name: rbac.roles
       class_name: ModelRole
-      any_category: true
+      any_category: false
       apps:
         - label: cm
           models:
@@ -743,11 +765,12 @@ roles:
 
     - name: Edit host-components
       description: The ability to edit exact cluster's host-component page
-      type: hidden
+      type: business
       parametrized_by:
         - cluster
       module_name: rbac.roles
       class_name: ObjectRole
+      any_category: true
       init_params:
         app_name: cm
         model: Cluster
@@ -767,6 +790,7 @@ roles:
         - cluster
       module_name: rbac.roles
       class_name: ObjectRole
+      any_category: true
       init_params:
         app_name: cm
         model: Cluster
@@ -786,6 +810,7 @@ roles:
         - provider
       module_name: rbac.roles
       class_name: ObjectRole
+      any_category: false
       init_params:
         app_name: cm
         model: HostProvider
