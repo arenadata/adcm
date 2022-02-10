@@ -21,7 +21,7 @@ from tests.functional.conftest import only_clean_adcm
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
+pytestmark = [only_clean_adcm, pytest.mark.regression]
 
 
 def _cluster_bundle(sdk_client_fs) -> Bundle:
