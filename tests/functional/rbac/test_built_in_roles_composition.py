@@ -21,7 +21,7 @@ from adcm_client.objects import ADCMClient, Role, User
 from tests.library.assertions import is_superset_of
 from tests.functional.rbac.conftest import BusinessRoles
 
-pytestmark = [pytest.mark.full]
+pytestmark = [pytest.mark.extra_rbac]
 
 ADCM_USER_ROLES = {
     role.value.role_name

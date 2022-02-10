@@ -109,7 +109,7 @@ def test_provider_hierarchy(user_sdk: ADCMClient, user, prepare_objects, sdk_cli
     is_denied(component, BusinessRoles.ViewComponentConfigurations)
 
 
-@pytest.mark.full()
+@pytest.mark.extra_rbac()
 @pytest.mark.negative()
 def test_role_with_two_hierarchy_not_allowed(sdk_client_fs):
     """
@@ -145,7 +145,7 @@ def test_role_with_two_hierarchy_not_allowed(sdk_client_fs):
         )
 
 
-@pytest.mark.full()
+@pytest.mark.extra_rbac()
 def test_host_and_cluster_roles(sdk_client_fs):
     """
     Test that cluster and host roles is allowed to use together
