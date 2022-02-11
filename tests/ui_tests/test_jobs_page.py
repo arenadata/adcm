@@ -33,6 +33,7 @@ from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
 )
+from adcm_pytest_plugin.utils import catch_failed
 
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
@@ -466,12 +467,14 @@ class TestTaskHeaderPopup:
     def test_lots_of_tasks_on_jobs_page(self, cluster_bundle, app_fs, adcm_credentials, provider):
         """Check query execution time and amount of jobs when the page starts to lag."""
 
+        page_timeout = 30
         with allure.step("Create objects and run actions"):
             [provider.host_create(f"host_{i}").action(name=SUCCESS_ACTION_NAME).run() for i in range(5000)]
         login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
         login.login_user(**adcm_credentials)
-        job_page = JobListPage(app_fs.driver, app_fs.adcm.url).open()
-        job_page.wait_page_is_opened()
+        with catch_failed(TimeoutError, f"Page did not load for {page_timeout} seconds"):
+            job_page = JobListPage(app_fs.driver, app_fs.adcm.url).open()
+            job_page.wait_page_is_opened(timeout=page_timeout)
 
 
 # !==== HELPERS =====!
