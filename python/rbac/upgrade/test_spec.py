@@ -131,39 +131,3 @@ def is_exclude(name: str) -> bool:
         return EXCLUDE[name]
     except KeyError:
         return False
-
-
-def parametrized_by(role: dict) -> list:
-    if "parametrized_by" in role:
-        return role["parametrized_by"]
-    return []
-
-
-class ChildSumEx(AssertionError):
-    def __init__(self, name: str, role: list, child: list):
-        super().__init__(
-            (
-                f'For role "{name}" parametrize_by is not a sum of child parametrization:',
-                f'{set(role)} != {set(child)}',
-            )
-        )
-
-
-def tree_sum(role_map: dict, role: dict) -> list:
-    role_params = parametrized_by(role)
-    if "child" in role:
-        child_params = []
-        for c in role['child']:
-            child_params.extend(tree_sum(role_map, role_map[c]))
-        if not is_exclude(role["name"]):
-            if (not set(child_params) == set(role_params)) and 'component' not in child_params:
-                raise ChildSumEx(role["name"], role_params, child_params)
-    return role_params
-
-
-def test_parametrization_sum(roots: dict, role_map: dict):
-    """Check that most of the roles has parametrized_by equal to sum of child's parametrized_by.
-    But with some excludes.
-    """
-    for v in roots.values():
-        tree_sum(role_map, v)

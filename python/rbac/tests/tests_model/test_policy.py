@@ -304,7 +304,7 @@ def test_parent_policy4service():
 
     p.apply()
 
-    assert not user.has_perm('cm.edit_conf_cluster', cluster)
+    assert user.has_perm('cm.edit_conf_cluster', cluster)
     assert user.has_perm('cm.edit_conf_clusterobject', service1)
     assert not user.has_perm('cm.edit_conf_clusterobject', service2)
     assert user.has_perm('cm.edit_conf_servicecomponent', comp11)
@@ -330,7 +330,7 @@ def test_parent_policy4service2():
 
     p.apply()
 
-    assert not user.has_perm('cm.edit_conf_cluster', cluster)
+    assert user.has_perm('cm.edit_conf_cluster', cluster)
     assert not user.has_perm('cm.edit_conf_clusterobject', service1)
     assert user.has_perm('cm.edit_conf_clusterobject', service2)
     assert not user.has_perm('cm.edit_conf_servicecomponent', comp11)
@@ -356,8 +356,8 @@ def test_parent_policy4component():
 
     p.apply()
 
-    assert not user.has_perm('cm.edit_conf_cluster', cluster)
-    assert not user.has_perm('cm.edit_conf_clusterobject', service1)
+    assert user.has_perm('cm.edit_conf_cluster', cluster)
+    assert user.has_perm('cm.edit_conf_clusterobject', service1)
     assert not user.has_perm('cm.edit_conf_clusterobject', service2)
     assert not user.has_perm('cm.edit_conf_servicecomponent', comp11)
     assert user.has_perm('cm.edit_conf_servicecomponent', comp12)
@@ -418,7 +418,7 @@ def test_parent_policy4host_in_service():
 
     p.apply()
 
-    assert not user.has_perm('cm.edit_conf_cluster', cluster)
+    assert user.has_perm('cm.edit_conf_cluster', cluster)
     assert user.has_perm('cm.edit_conf_clusterobject', service1)
     assert user.has_perm('cm.edit_conf_host', host1)
     assert user.has_perm('cm.edit_conf_host', host2)
@@ -443,6 +443,7 @@ def test_parent_policy4host_in_component():
 
     assert not user.has_perm('cm.edit_conf_cluster', cluster)
     assert not user.has_perm('cm.edit_conf_clusterobject', service1)
+    assert not user.has_perm('cm.edit_conf_clusterobject', service2)
     assert not user.has_perm('cm.edit_conf_servicecomponent', comp21)
     assert not user.has_perm('cm.edit_conf_host', host1)
     assert not user.has_perm('cm.edit_conf_host', host2)
@@ -450,8 +451,9 @@ def test_parent_policy4host_in_component():
 
     p.apply()
 
-    assert not user.has_perm('cm.edit_conf_cluster', cluster)
+    assert user.has_perm('cm.edit_conf_cluster', cluster)
     assert not user.has_perm('cm.edit_conf_clusterobject', service1)
+    assert user.has_perm('cm.edit_conf_clusterobject', service2)
     assert user.has_perm('cm.edit_conf_servicecomponent', comp21)
     assert user.has_perm('cm.edit_conf_host', host1)
     assert user.has_perm('cm.edit_conf_host', host2)
