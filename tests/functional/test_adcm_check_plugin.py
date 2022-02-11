@@ -14,11 +14,12 @@
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient
+from adcm_client.objects import ADCMClient, Cluster, Host
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.steps.asserts import assert_action_result
 
+from tests.functional.conftest import only_clean_adcm
 from tests.library.consts import States, MessageStates
 
 NO_FIELD = [
@@ -340,3 +341,32 @@ def test_result_no(sdk_client_fs: ADCMClient):
         log = job.log(job_id=job.id, log_id=logs[2].id)
         content = log.content[0]
         assert not content["result"], f'Result is {content["result"]}, Expected False'
+
+
+# pylint: disable=no-self-use
+class TestDatabaseIsMalformed:
+    """Test call to adcm_check from many hosts doesn't cause "database is malformed" error"""
+
+    @pytest.fixture()
+    def cluster(self, sdk_client_fs) -> Cluster:
+        """Create cluster"""
+        bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, 'parallel', 'cluster'))
+        return bundle.cluster_create('Test Cluster')
+
+    @pytest.fixture()
+    def hosts(self, sdk_client_fs, cluster) -> [Host]:
+        """Create and return 50 hosts bonded to a cluster"""
+        bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, 'parallel', 'provider'))
+        provider = bundle.provider_create('Test Provider')
+        return [cluster.host_add(provider.host_create(fqdn=f'test-host-{i}')) for i in range(50)]
+
+    @allure.issue(name='Database is malformed', url='https://arenadata.atlassian.net/browse/ADCM-2169')
+    @only_clean_adcm
+    @pytest.mark.full()
+    @pytest.mark.usefixtures('hosts')
+    def test_multiple_parallel_check_run(self, cluster):
+        """
+        Run cluster action adcm_check change on 50 hosts
+        """
+        for _ in range(5):
+            run_cluster_action_and_assert_result(cluster, 'check')
