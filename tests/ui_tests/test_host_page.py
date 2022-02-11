@@ -316,7 +316,7 @@ class TestHostMainPage:
         """Test open /host/{}/main page from left menu"""
 
         host_config_page = HostConfigPage(app_fs.driver, app_fs.adcm.url, create_host.host_id).open()
-        host_main_page = host_config_page.open_main_menu()
+        host_main_page = host_config_page.open_main_tab()
         host_main_page.check_all_elements()
         host_main_page.check_host_toolbar(HOST_FQDN)
 
@@ -491,7 +491,7 @@ class TestHostStatusPage:
         """Test open /host/{}/config from left menu"""
 
         host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, create_host.id).open()
-        host_status_page = host_main_page.open_status_menu()
+        host_status_page = host_main_page.open_status_tab()
         host_status_page.check_all_elements()
         host_status_page.check_host_toolbar(HOST_FQDN)
 

@@ -14,7 +14,7 @@
 
 import allure
 
-from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
+from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter, BaseDetailedPage
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators, ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
@@ -81,7 +81,7 @@ class ProviderPageMixin(BasePageObject):
         self.assert_displayed_elements(self.MAIN_ELEMENTS)
 
 
-class ProviderMainPage(ProviderPageMixin):
+class ProviderMainPage(ProviderPageMixin, BaseDetailedPage):
     """Provider page Main menu"""
 
     MENU_SUFFIX = 'main'

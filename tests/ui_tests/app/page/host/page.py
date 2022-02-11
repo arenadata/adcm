@@ -18,7 +18,7 @@ import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
+from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter, BaseDetailedPage
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
@@ -75,7 +75,7 @@ class HostPageMixin(BasePageObject):
         return self.find_element(ObjectPageLocators.subtitle).text
 
     @allure.step('Open "Main" menu')
-    def open_main_menu(self) -> 'HostMainPage':
+    def open_main_tab(self) -> 'HostMainPage':
         """Open 'Main' menu"""
         self.find_and_click(HostLocators.MenuNavigation.main_tab)
         page = HostMainPage(self.driver, self.base_url, self.host_id, None)
@@ -83,7 +83,7 @@ class HostPageMixin(BasePageObject):
         return page
 
     @allure.step('Open "Configuration" menu')
-    def open_config_menu(self) -> 'HostConfigPage':
+    def open_config_tab(self) -> 'HostConfigPage':
         """Open 'Configuration' menu"""
         self.find_and_click(HostLocators.MenuNavigation.config_tab)
         page = HostConfigPage(self.driver, self.base_url, self.host_id, None)
@@ -91,7 +91,7 @@ class HostPageMixin(BasePageObject):
         return page
 
     @allure.step('Open "Status" menu')
-    def open_status_menu(self) -> 'HostStatusPage':
+    def open_status_tab(self) -> 'HostStatusPage':
         """Open 'Status' menu"""
         self.find_and_click(HostLocators.MenuNavigation.status_tab)
         page = HostStatusPage(self.driver, self.base_url, self.host_id, None)
@@ -116,7 +116,7 @@ class HostPageMixin(BasePageObject):
         self.toolbar.check_toolbar_elements(["HOSTS", host_name])
 
 
-class HostMainPage(HostPageMixin):
+class HostMainPage(HostPageMixin, BaseDetailedPage):
     """Host page Main menu"""
 
     MENU_SUFFIX = 'main'

@@ -35,7 +35,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
 
 from tests.ui_tests.app.helpers.locator import Locator
-from tests.ui_tests.app.page.common.common_locators import CommonLocators
+from tests.ui_tests.app.page.common.common_locators import CommonLocators, ObjectPageLocators
 from tests.ui_tests.app.page.common.footer_locators import CommonFooterLocators
 from tests.ui_tests.app.page.common.header_locators import (
     CommonHeaderLocators,
@@ -692,3 +692,11 @@ class PageFooter(BasePageObject):
     def click_version_link_in_footer(self):
         """Click on version link in footer"""
         self.find_and_click(CommonFooterLocators.version_link)
+
+
+class BaseDetailedPage(BasePageObject):
+    """General functions to get default info from detailed page of an object"""
+
+    def get_description(self) -> str:
+        """Get description from detailed object page"""
+        return self.find_element(ObjectPageLocators.text).text
