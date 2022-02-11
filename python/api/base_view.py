@@ -19,11 +19,25 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.utils.urls import replace_query_param
 from rest_framework.viewsets import ViewSetMixin
+from rest_framework.permissions import SAFE_METHODS, DjangoModelPermissions
 
 from adcm.settings import REST_FRAMEWORK
 from api.utils import AdcmFilterBackend, AdcmOrderingFilter, getlist_from_querydict
 from cm.errors import AdcmEx
 from rbac.viewsets import DjangoObjectPerm
+
+
+class ModelPermOrReadOnlyForAuth(DjangoModelPermissions):
+    def has_permission(self, request, view):
+        if request.user and request.user.is_authenticated:
+            if request.method in SAFE_METHODS:
+                return True
+            else:
+                queryset = self._queryset(view)
+                perms = self.get_required_permissions(request.method, queryset.model)
+                return request.user.has_perms(perms)
+
+        return False
 
 
 class GenericUIView(GenericAPIView):

@@ -17,11 +17,18 @@ from rest_framework.mixins import CreateModelMixin
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.permissions import IsAuthenticated
 
 import cm.api
 import cm.bundle
 from api.action.serializers import StackActionSerializer
-from api.base_view import GenericUIView, DetailView, PaginatedView, GenericUIViewSet
+from api.base_view import (
+    GenericUIView,
+    DetailView,
+    PaginatedView,
+    GenericUIViewSet,
+    ModelPermOrReadOnlyForAuth,
+)
 from api.utils import check_obj
 from cm.models import Bundle, Prototype, Action
 from cm.models import PrototypeConfig, Upgrade, PrototypeExport
@@ -79,6 +86,7 @@ class BundleList(PaginatedView):
 
     queryset = Bundle.objects.exclude(hash='adcm')
     serializer_class = serializers.BundleSerializer
+    permission_classes = (IsAuthenticated,)
     filterset_fields = ('name', 'version')
     ordering_fields = ('name', 'version_order')
 
@@ -94,6 +102,7 @@ class BundleDetail(DetailView):
 
     queryset = Bundle.objects.all()
     serializer_class = serializers.BundleSerializer
+    permission_classes = (ModelPermOrReadOnlyForAuth,)
     lookup_field = 'id'
     lookup_url_kwarg = 'bundle_id'
     error_code = 'BUNDLE_NOT_FOUND'

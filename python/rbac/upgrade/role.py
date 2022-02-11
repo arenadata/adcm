@@ -267,6 +267,14 @@ def create_default_policy():
         Policy.objects.create(name=policy_name, role_id=role.id, built_in=True)
 
 
+def update_all_bundle_roles():
+    for bundle in Bundle.objects.exclude(name='ADCM'):
+        if not Role.objects.filter(bundle=bundle, type=RoleTypes.hidden).exists():
+            prepare_action_roles(bundle)
+            msg = f'Prepare roles for "{bundle.name}" bundle.'
+            log.info(msg)
+
+
 def init_roles():
     """
     Init or upgrade roles and permissions in DB
@@ -288,11 +296,6 @@ def init_roles():
         log.info(msg)
     else:
         msg = f'Roles are already at version {rm.version}'
-
-    for bundle in Bundle.objects.exclude(name='ADCM'):
-        if not Role.objects.filter(bundle=bundle, type=RoleTypes.hidden).exists():
-            prepare_action_roles(bundle)
-            msg = f'Prepare roles for "{bundle.name}" bundle.'
-            log.info(msg)
+    update_all_bundle_roles()
 
     return msg

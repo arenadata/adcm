@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 from cm.models import ADCM
 from api.base_view import GenericUIView, DetailView
@@ -26,6 +27,7 @@ class AdcmList(GenericUIView):
     queryset = ADCM.objects.all()
     serializer_class = serializers.AdcmSerializer
     serializer_class_ui = serializers.AdcmDetailUISerializer
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         obj = self.get_queryset()
@@ -42,6 +44,7 @@ class AdcmDetail(DetailView):
     queryset = ADCM.objects.all()
     serializer_class = serializers.AdcmDetailSerializer
     serializer_class_ui = serializers.AdcmDetailUISerializer
+    permission_classes = (IsAuthenticated,)
     lookup_field = 'id'
     lookup_url_kwarg = 'adcm_id'
     error_code = 'ADCM_NOT_FOUND'
