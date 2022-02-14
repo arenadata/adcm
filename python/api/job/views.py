@@ -14,6 +14,7 @@ import os
 import re
 
 from django.http import HttpResponse
+from guardian.mixins import PermissionListMixin
 from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -27,7 +28,7 @@ from cm.models import JobLog, TaskLog, LogStorage
 from . import serializers
 
 
-class JobList(PaginatedView):
+class JobList(PermissionListMixin, PaginatedView):
     """
     get:
     List all jobs
@@ -38,6 +39,8 @@ class JobList(PaginatedView):
     serializer_class_ui = serializers.JobSerializer
     filterset_fields = ('action_id', 'task_id', 'pid', 'status', 'start_date', 'finish_date')
     ordering_fields = ('status', 'start_date', 'finish_date')
+    permission_classes = (permissions.DjangoModelPermissions,)
+    permission_required = ['cm.view_joblog']
 
 
 class JobDetail(GenericUIView):
@@ -67,11 +70,13 @@ class JobDetail(GenericUIView):
         return Response(serializer.data)
 
 
-class LogStorageListView(PaginatedView):
+class LogStorageListView(PermissionListMixin, PaginatedView):
     queryset = LogStorage.objects.all()
     serializer_class = serializers.LogStorageListSerializer
     filterset_fields = ('name', 'type', 'format')
     ordering_fields = ('id', 'name')
+    permission_classes = (permissions.DjangoModelPermissions,)
+    permission_required = ['cm.view_logstorage']
 
     def get(self, request, *args, **kwargs):
         job_id = kwargs['job_id']
@@ -143,7 +148,7 @@ class LogFile(GenericUIView):
         return Response(serializer.data)
 
 
-class Task(PaginatedView):
+class Task(PermissionListMixin, PaginatedView):
     """
     get:
     List all tasks
@@ -154,6 +159,8 @@ class Task(PaginatedView):
     serializer_class_ui = serializers.TaskSerializer
     filterset_fields = ('action_id', 'pid', 'status', 'start_date', 'finish_date')
     ordering_fields = ('status', 'start_date', 'finish_date')
+    permission_classes = (permissions.DjangoModelPermissions,)
+    permission_required = ['cm.view_tasklog']
 
 
 class TaskDetail(DetailView):

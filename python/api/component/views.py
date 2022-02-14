@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from guardian.mixins import PermissionListMixin
 from rest_framework import permissions
 from rest_framework.response import Response
 
@@ -20,14 +21,16 @@ from cm.models import ServiceComponent, ClusterObject, Cluster, HostComponent
 from . import serializers
 
 
-class ComponentListView(PaginatedView):
+class ComponentListView(PermissionListMixin, PaginatedView):
     queryset = ServiceComponent.objects.all()
     serializer_class = serializers.ComponentSerializer
     serializer_class_ui = serializers.ComponentUISerializer
     filterset_fields = ('cluster_id', 'service_id')
     ordering_fields = ('state', 'prototype__display_name', 'prototype__version_order')
+    permission_classes = (permissions.DjangoModelPermissions,)
+    permission_required = ['cm.view_servicecomponent']
 
-    def get_queryset(self):
+    def get_queryset(self):  # pylint: disable=arguments-differ
         queryset = super().get_queryset()
         kwargs = self.kwargs
         if 'cluster_id' in kwargs:

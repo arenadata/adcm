@@ -11,8 +11,9 @@
 # limitations under the License.
 
 from django_filters import rest_framework as drf_filters
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from guardian.mixins import PermissionListMixin
+from guardian.shortcuts import get_objects_for_user
+from rest_framework import status, permissions
 from rest_framework.response import Response
 
 from api.utils import (
@@ -79,7 +80,7 @@ class HostFilter(drf_filters.FilterSet):
         ]
 
 
-class HostList(PaginatedView):
+class HostList(PermissionListMixin, PaginatedView):
     """
     get:
     List all hosts
@@ -91,7 +92,8 @@ class HostList(PaginatedView):
     queryset = Host.objects.all()
     serializer_class = serializers.HostSerializer
     serializer_class_ui = serializers.HostUISerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated,)
+    permission_required = ['cm.view_host']
     check_host_perm = check_custom_perm
     filterset_class = HostFilter
     filterset_fields = (
@@ -115,7 +117,7 @@ class HostList(PaginatedView):
         'prototype__version_order',
     )
 
-    def get_queryset(self):
+    def get_queryset(self):  # pylint: disable=arguments-differ
         queryset = super().get_queryset()
         kwargs = self.kwargs
         if 'cluster_id' in kwargs:  # List cluster hosts
@@ -124,7 +126,7 @@ class HostList(PaginatedView):
         if 'provider_id' in kwargs:  # List provider hosts
             provider = check_obj(HostProvider, kwargs['provider_id'])
             queryset = queryset.filter(provider=provider)
-        return queryset
+        return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
 
     def post(self, request, *args, **kwargs):
         """
@@ -156,7 +158,7 @@ class HostListProvider(HostList):
 
 class HostListCluster(HostList):
     serializer_class = serializers.ClusterHostSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated,)
     check_host_perm = check_custom_perm
 
     def post(self, request, *args, **kwargs):
@@ -188,7 +190,7 @@ class HostDetail(GenericUIView):
     queryset = Host.objects.all()
     serializer_class = serializers.HostDetailSerializer
     serializer_class_ui = serializers.HostUISerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated,)
     check_host_perm = check_custom_perm
     lookup_field = 'id'
     lookup_url_kwarg = 'host_id'
@@ -221,7 +223,7 @@ class HostDetail(GenericUIView):
 
 
 class StatusList(GenericUIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated,)
     serializer_class = serializers.StatusSerializer
     model_name = Host
     queryset = HostComponent.objects.all()

@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rest_framework import permissions
 from rest_framework.response import Response
 
 from api.base_view import GenericUIView
@@ -19,6 +20,7 @@ from cm.models import JobLog, TaskLog
 
 class JobStats(GenericUIView):
     queryset = JobLog.objects.all()
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, pk):
         """
@@ -35,6 +37,7 @@ class JobStats(GenericUIView):
 
 class TaskStats(GenericUIView):
     queryset = TaskLog.objects.all()
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, pk):
         """
