@@ -22,7 +22,7 @@ from django.utils import timezone
 import cm.checker
 from cm.models import ProductCategory, Bundle, Action, get_model_by_type, DummyData
 from rbac import log
-from rbac.models import Role, RoleMigration, Policy, Permission, re_apply_all_polices, RoleTypes
+from rbac.models import Role, RoleMigration, Permission, re_apply_all_polices, RoleTypes
 from rbac.settings import api_settings
 
 
@@ -256,17 +256,6 @@ def prepare_action_roles(bundle: Bundle):
         update_built_in_roles(bundle, business_role, parametrized_by_type, built_in_roles)
 
 
-def create_default_policy():
-    policy_name = 'default'
-    role = Role.objects.get(name='Base role')
-    try:
-        policy = Policy.objects.get(name=policy_name)
-        policy.role = role
-        policy.save()
-    except Policy.DoesNotExist:
-        Policy.objects.create(name=policy_name, role_id=role.id, built_in=True)
-
-
 def update_all_bundle_roles():
     for bundle in Bundle.objects.exclude(name='ADCM'):
         if not Role.objects.filter(bundle=bundle, type=RoleTypes.hidden).exists():
@@ -291,7 +280,6 @@ def init_roles():
         upgrade(role_data)
         rm.version = role_data['version']
         rm.save()
-        create_default_policy()
         msg = f'Roles are upgraded to version {rm.version}'
         log.info(msg)
     else:
