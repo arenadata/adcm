@@ -216,7 +216,7 @@ def update_built_in_roles(
 
 
 def get_view_role(parametrized_by):
-    return Role.object.get(name=f'Get {parametrized_by} object')
+    return Role.objects.get(name=f'Get {parametrized_by} object')
 
 
 @transaction.atomic
@@ -229,9 +229,9 @@ def prepare_action_roles(bundle: Bundle):
         'Service Administrator': Role.objects.get(name='Service Administrator'),
     }
     hidden_roles = prepare_hidden_roles(bundle)
-
+    view_role_list = []
     for business_role_name, business_role_params in hidden_roles.items():
-        view_role = get_view_role(business_role_params)
+        view_role_list.append(get_view_role(business_role_params))
         if business_role_params['parametrized_by_type'] == 'component':
             parametrized_by_type = ['service', 'component']
         else:
@@ -251,7 +251,7 @@ def prepare_action_roles(bundle: Bundle):
             log.info('Create business permission "%s"', business_role_name)
 
         business_role.child.add(*business_role_params['children'])
-        business_role.child.add(view_role)
+        business_role.child.add(*view_role_list)
         update_built_in_roles(bundle, business_role, parametrized_by_type, built_in_roles)
 
 

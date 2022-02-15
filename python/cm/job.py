@@ -24,6 +24,7 @@ from background_task import background
 from django.db import transaction
 from django.utils import timezone
 
+import rbac
 from cm import api, inventory, adcm_config, variant, config
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx

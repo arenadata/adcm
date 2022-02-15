@@ -1173,7 +1173,7 @@ roles:
               codenames:
                 - view
 
-    - name: Get provider object hidden
+    - name: Get provider object
       description: Read access to Provider
       type: hidden
       module_name: rbac.roles
@@ -1190,20 +1190,6 @@ roles:
               codenames:
                 - view
 
-    - name: Get provider object
-      description: Read access to Provider
-      type: hidden
-      module_name: rbac.roles
-      class_name: ParentRole
-      parametrized_by:
-        - provider
-      init_params:
-        app_name: cm
-        model: HostProvider
-      child:
-        - Get provider object hidden
-        - Get task object
-
     - name: Get cluster
       display_name: Get all clusters
       description: Read access to all Clusters
@@ -1217,7 +1203,7 @@ roles:
               codenames:
                 - view
 
-    - name: Get cluster object hidden
+    - name: Get cluster object
       description: Read access to Cluster
       type: hidden
       module_name: rbac.roles
@@ -1233,20 +1219,6 @@ roles:
             - name: cluster
               codenames:
                 - view
-
-    - name: Get cluster object
-      description: Read access to Cluster
-      type: hidden
-      module_name: rbac.roles
-      class_name: ParentRole
-      parametrized_by:
-        - cluster
-      init_params:
-        app_name: cm
-        model: Cluster
-      child:
-        - Get cluster object hidden
-        - Get task object
 
     - name: Get host
       display_name: Get all hosts
@@ -1261,7 +1233,7 @@ roles:
               codenames:
                 - view
 
-    - name: Get host object hidden
+    - name: Get host object
       description: Read access to Host
       type: hidden
       module_name: rbac.roles
@@ -1278,20 +1250,6 @@ roles:
               codenames:
                 - view
 
-    - name: Get host object
-      description: Read access to Host
-      type: hidden
-      module_name: rbac.roles
-      class_name: ParentRole
-      parametrized_by:
-        - host
-      init_params:
-        app_name: cm
-        model: Host
-      child:
-        - Get host object hidden
-        - Get task object
-
     - name: Get service
       display_name: Get all services
       description: Read access to all Services
@@ -1305,7 +1263,7 @@ roles:
               codenames:
                 - view
 
-    - name: Get service object hidden
+    - name: Get service object
       description: Read access to Service
       type: hidden
       module_name: rbac.roles
@@ -1321,20 +1279,6 @@ roles:
             - name: clusterobject
               codenames:
                 - view
-
-    - name: Get service object
-      description: Read access to Service
-      type: hidden
-      module_name: rbac.roles
-      class_name: ParentRole
-      parametrized_by:
-        - service
-      init_params:
-        app_name: cm
-        model: ClusterObject
-      child:
-        - Get service object hidden
-        - Get task object
 
     - name: Get component
       display_name: Get all components
@@ -1349,7 +1293,7 @@ roles:
               codenames:
                 - view
 
-    - name: Get component object hidden
+    - name: Get component object
       description: Read access to Component
       type: hidden
       module_name: rbac.roles
@@ -1365,20 +1309,6 @@ roles:
             - name: servicecomponent
               codenames:
                 - view
-
-    - name: Get component object
-      description: Read access to Component
-      type: hidden
-      module_name: rbac.roles
-      class_name: ParentRole
-      parametrized_by:
-        - component
-      init_params:
-        app_name: cm
-        model: ServiceComponent
-      child:
-        - Get component object hidden
-        - Get task object
 
     - name: Get task and jobs
       display_name: Get all tasks and jobs
@@ -1398,12 +1328,6 @@ roles:
             - name: logstorage
               codenames:
                 - view
-
-    - name: Get task object
-      description: Read access to TaskLog, JobLog and LogStorage of exact object
-      type: hidden
-      module_name: rbac.roles
-      class_name: TaskRole
 
     - name: Get stack
       description: Read access to all Bundle

@@ -125,34 +125,23 @@ class ActionRole(AbstractRole):
 
 def get_perm_for_model(model):
     ct = ContentType.objects.get_for_model(model)
-    perm, _ = Permission.objects.get_or_create(
-        content_type=ct, codename=f'view_{model._meta.model_name}'
-    )
+    codename = f'view_{model.__name__.lower()}'
+    perm, _ = Permission.objects.get_or_create(content_type=ct, codename=codename)
     return perm
 
 
-class TaskRole(AbstractRole):
-    """This Role apply django-guardian object permissions to view task and job logs for object"""
-
-    def apply(self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None):
-        for obj in policy.get_objects():
-            model = get_model_by_type(obj.prototype.type)
-            ct = ContentType.objects.get_for_model(model)
-            task_queryset = TaskLog.objects.filter(object_id=obj.id, object_type=ct)
-            for task in task_queryset:
-                assign_user_or_group_perm(user, group, policy, get_perm_for_model(TaskLog), task)
-                job_queryset = JobLog.objects.filter(task=task)
-                for job in job_queryset:
-                    assign_user_or_group_perm(user, group, policy, get_perm_for_model(JobLog), job)
-                    log_queryset = LogStorage.objects.filter(job=job)
-                    for log in log_queryset:
-                        assign_user_or_group_perm(
-                            user, group, policy, get_perm_for_model(LogStorage), log
-                        )
-
-
-#            for perm in role.get_permissions():
-#                assign_user_or_group_perm(user, group, policy, perm, obj)
+def apply_task_and_jobs(obj: ADCMEntity, policy: Policy, user: User, group: Group = None):
+    model = get_model_by_type(obj.prototype.type)
+    ct = ContentType.objects.get_for_model(model)
+    task_queryset = TaskLog.objects.filter(object_id=obj.id, object_type=ct)
+    for task in task_queryset:
+        assign_user_or_group_perm(user, group, policy, get_perm_for_model(TaskLog), task)
+        job_queryset = JobLog.objects.filter(task=task)
+        for job in job_queryset:
+            assign_user_or_group_perm(user, group, policy, get_perm_for_model(JobLog), job)
+            log_queryset = LogStorage.objects.filter(job=job)
+            for log in log_queryset:
+                assign_user_or_group_perm(user, group, policy, get_perm_for_model(LogStorage), log)
 
 
 class ParentRole(AbstractRole):
@@ -161,12 +150,11 @@ class ParentRole(AbstractRole):
     def find_and_apply(self, obj, policy, role, user, group=None):
         """Find Role of appropriate type and apply it to specified object"""
         for r in role.child.all():
-            if r.class_name not in ('ObjectRole', 'ActionRole', 'TaskRole'):
+            if r.class_name not in ('ObjectRole', 'ActionRole'):
                 continue
             if obj.prototype.type in r.parametrized_by_type:
                 r.apply(policy, user, group, obj)
-            if r.class_name == 'TaskRole':
-                r.apply(policy, user, group, obj)
+        apply_task_and_jobs(obj, policy, user, group)
 
     def apply(
         self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None

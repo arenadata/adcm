@@ -46,7 +46,6 @@ class_name:
     - ModelRole
     - ObjectRole
     - ParentRole
-    - TaskRole
 
 type:
   match: set
