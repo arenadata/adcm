@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from guardian.mixins import PermissionListMixin
 from rest_framework import permissions
 from rest_framework.response import Response
 
@@ -18,9 +19,10 @@ from cm import config
 from cm.models import JobLog, TaskLog
 
 
-class JobStats(GenericUIView):
+class JobStats(PermissionListMixin, GenericUIView):
     queryset = JobLog.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
+    permission_required = ['cm.view_joblog']
 
     def get(self, request, pk):
         """
@@ -35,9 +37,10 @@ class JobStats(GenericUIView):
         return Response(data)
 
 
-class TaskStats(GenericUIView):
+class TaskStats(PermissionListMixin, GenericUIView):
     queryset = TaskLog.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
+    permission_required = ['cm.view_tasklog']
 
     def get(self, request, pk):
         """
