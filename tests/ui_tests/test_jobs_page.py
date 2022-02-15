@@ -33,6 +33,7 @@ from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import (
     run_cluster_action_and_assert_result,
 )
+from adcm_pytest_plugin.utils import catch_failed
 
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
@@ -41,6 +42,7 @@ from tests.ui_tests.app.page.job_list.page import (
     JobListPage,
     JobStatus,
 )
+from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.utils import (
     wait_and_assert_ui_info,
     is_not_empty,
@@ -51,6 +53,7 @@ from tests.ui_tests.utils import (
 
 LONG_ACTION_DISPLAY_NAME = 'Long action'
 SUCCESS_ACTION_DISPLAY_NAME = 'Success action'
+SUCCESS_ACTION_NAME = 'success_action'
 FAIL_ACTION_DISPLAY_NAME = 'Fail action'
 ON_HOST_ACTION_DISPLAY_NAME = 'Component host action'
 COMPONENT_ACTION_DISPLAY_NAME = 'Component action'
@@ -212,7 +215,6 @@ class TestTaskPage:
                 page.select_filter_all_tab()
             page.table.check_pagination(params['second_page'])
 
-    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2385")
     @pytest.mark.smoke()
     def test_open_task_by_click_on_name(self, cluster: Cluster, page: JobListPage):
         """Click on task name and task page should be opened"""
@@ -225,7 +227,6 @@ class TestTaskPage:
             job_page.wait_page_is_opened()
             job_page.check_jobs_toolbar(LONG_ACTION_DISPLAY_NAME.upper())
 
-    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2385")
     @pytest.mark.smoke()
     @pytest.mark.parametrize('log_type', ['stdout', 'stderr'], ids=['stdout_menu', 'stderr_menu'])
     @pytest.mark.usefixtures('login_to_adcm_over_api')
@@ -461,6 +462,19 @@ class TestTaskHeaderPopup:
         cluster_page.header.wait_success_job_amount_from_header(1)
         assert cluster_page.header.get_in_progress_job_amount_from_header() == "0", "In progress job amount should be 0"
         assert cluster_page.header.get_failed_job_amount_from_header() == "0", "Failed job amount should be 0"
+
+    @pytest.mark.skip(reason="Test is only for https://arenadata.atlassian.net/browse/ADCM-2660")
+    def test_lots_of_tasks_on_jobs_page(self, cluster_bundle, app_fs, adcm_credentials, provider):
+        """Check query execution time and amount of jobs when the page starts to lag."""
+
+        page_timeout = 30
+        with allure.step("Create objects and run actions"):
+            [provider.host_create(f"host_{i}").action(name=SUCCESS_ACTION_NAME).run() for i in range(5000)]
+        login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
+        login.login_user(**adcm_credentials)
+        with catch_failed(TimeoutError, f"Page did not load for {page_timeout} seconds"):
+            job_page = JobListPage(app_fs.driver, app_fs.adcm.url).open()
+            job_page.wait_page_is_opened(timeout=page_timeout)
 
 
 # !==== HELPERS =====!
