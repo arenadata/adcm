@@ -1136,18 +1136,6 @@ roles:
               codenames:
                 - delete
 
-    - name: Base role
-      description: Default list of view permissions for all objects
-      type: hidden
-      module_name: rbac.roles
-      class_name: ParentRole
-      child:
-        - Get ADCM object
-        - Get stack
-        - Get bundle
-        - Get task and jobs
-        - Get concerns
-
     - name: Get ADCM object
       description: Read access to ADCM
       type: hidden

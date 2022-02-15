@@ -12,6 +12,7 @@
 
 from itertools import chain
 
+from guardian.mixins import PermissionListMixin
 from rest_framework import status, permissions
 from rest_framework.response import Response
 
@@ -47,7 +48,7 @@ def get_obj_conf(cluster_id, service_id):
     return obj
 
 
-class ClusterList(PaginatedView):
+class ClusterList(PermissionListMixin, PaginatedView):
     """
     get:
     List of all existing clusters
@@ -62,6 +63,8 @@ class ClusterList(PaginatedView):
     serializer_class_post = serializers.ClusterDetailSerializer
     filterset_fields = ('name', 'prototype_id')
     ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
+    permission_classes = (permissions.DjangoModelPermissions,)
+    permission_required = ['cm.view_cluster']
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

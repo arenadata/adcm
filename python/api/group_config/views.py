@@ -13,15 +13,13 @@
 
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import FilterSet, CharFilter
-from rest_framework import status
-from rest_framework import viewsets
+from rest_framework import status, viewsets, permissions
 from rest_framework.mixins import (
     ListModelMixin,
     CreateModelMixin,
     RetrieveModelMixin,
     DestroyModelMixin,
 )
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
@@ -70,7 +68,7 @@ class GroupConfigHostViewSet(
 ):  # pylint: disable=too-many-ancestors
     queryset = Host.objects.all()
     serializer_class = serializers.GroupConfigHostSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated,)
     check_config_perm = check_config_perm
     lookup_url_kwarg = 'host_id'
 
@@ -97,7 +95,7 @@ class GroupConfigHostCandidateViewSet(
     NestedViewSetMixin, viewsets.ReadOnlyModelViewSet
 ):  # pylint: disable=too-many-ancestors
     serializer_class = serializers.GroupConfigHostCandidateSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated,)
     check_config_perm = check_config_perm
     lookup_url_kwarg = 'host_id'
 
@@ -123,7 +121,7 @@ class GroupConfigHostCandidateViewSet(
 class GroupConfigConfigViewSet(NestedViewSetMixin, RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = ObjectConfig.objects.all()
     serializer_class = serializers.GroupConfigConfigSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated,)
     check_config_perm = check_config_perm
 
     def get_serializer_context(self):
@@ -152,7 +150,7 @@ class GroupConfigConfigLogViewSet(
 ):  # pylint: disable=too-many-ancestors
     serializer_class = serializers.GroupConfigConfigLogSerializer
     serializer_class_ui = serializers.UIGroupConfigConfigLogSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated,)
     check_config_perm = check_config_perm
     filterset_fields = ('id',)
     ordering_fields = ('id',)
@@ -186,7 +184,7 @@ class GroupConfigViewSet(
     queryset = GroupConfig.objects.all()
     serializer_class = serializers.GroupConfigSerializer
     filterset_class = GroupConfigFilterSet
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (permissions.IsAuthenticated,)
     check_config_perm = check_config_perm
 
     def perform_create(self, serializer):
