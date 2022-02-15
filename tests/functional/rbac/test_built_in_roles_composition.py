@@ -16,7 +16,10 @@ from typing import List
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, Role, User
+from adcm_client.base import NoSuchEndpointOrAccessIsDenied
+from adcm_client.objects import ADCMClient, Role
+from adcm_client.wrappers.api import AccessIsDenied
+from adcm_pytest_plugin.utils import catch_failed
 
 from tests.library.assertions import is_superset_of
 from tests.functional.rbac.conftest import BusinessRoles
@@ -26,11 +29,11 @@ pytestmark = [pytest.mark.extra_rbac]
 ADCM_USER_ROLES = {
     role.value.role_name
     for role in (
-        BusinessRoles.GetCluster,
-        BusinessRoles.GetService,
-        BusinessRoles.GetComponent,
-        BusinessRoles.GetProvider,
-        BusinessRoles.GetHost,
+        BusinessRoles.GetAllClusters,
+        BusinessRoles.GetAllServices,
+        BusinessRoles.GetAllComponents,
+        BusinessRoles.GetAllProviders,
+        BusinessRoles.GetAllHosts,
         BusinessRoles.GetTaskAndJob,
         BusinessRoles.ViewAnyObjectConfiguration,
         BusinessRoles.ViewAnyObjectImport,
@@ -88,13 +91,6 @@ PROVIDER_ADMIN_ROLES = {
     )
 }
 
-BASE_ROLES = {
-    'Get ADCM object',
-    'Get stack',
-    'Get bundle',
-    'Get concerns',
-}
-
 
 def get_children_business_roles(role: Role) -> List[str]:
     """
@@ -107,19 +103,21 @@ def get_children_business_roles(role: Role) -> List[str]:
     return result
 
 
-def test_default_role(user: User, sdk_client_fs: ADCMClient):
+@pytest.mark.usefixtures('prepare_objects')
+def test_default_role(clients):
     """
     Check that newly created user has role "ADCM User"
     """
-    policies = sdk_client_fs.policy_list()
-    user_policies = tuple(filter(lambda p: user.id in (u.id for u in p.user_list()), policies))
-    with allure.step('Check default user policy and roles'):
-        assert len(user_policies) == 1, 'User should have default policy after creation'
-        role_children = {r.name for r in user_policies[0].role().child_list()}
-        assert role_children == BASE_ROLES, (
-            f'Default roles should be {_set_to_string(BASE_ROLES)}.\n'
-            f'But the following were found: {_set_to_string(role_children)}.'
-        )
+    user_client = clients.user
+    assert user_client.bundle_list(), 'Default user should see bundles in bundle list'
+    with catch_failed(
+        (AccessIsDenied, NoSuchEndpointOrAccessIsDenied), 'Default user should be able to view ADCM objects'
+    ):
+        user_client.adcm()
+    for object_type in ('cluster', 'service', 'component', 'provider', 'host'):
+        assert (
+            len(getattr(user_client, f'{object_type}_list')()) == 0
+        ), f'List of {object_type} should be empty to default user'
 
 
 def test_composition(sdk_client_fs: ADCMClient):

@@ -31,35 +31,37 @@ from tests.functional.rbac.conftest import (
 )
 
 
-def test_lower_cluster_hierarchy(user_sdk: ADCMClient, user, prepare_objects, sdk_client_fs):
+def test_lower_cluster_hierarchy(user_sdk: ADCMClient, user, is_denied_to_user, prepare_objects, sdk_client_fs):
     """
     Test that cluster role can be applied to lower cluster objects - services and components
     """
-    cluster, service, component, provider, host = as_user_objects(user_sdk, *prepare_objects)
+    cluster, service, component, provider, host = prepare_objects
     policy = create_policy(sdk_client_fs, CLUSTER_VIEW_CONFIG_ROLES, objects=[cluster], users=[user], groups=[])
-    is_allowed(cluster, BusinessRoles.ViewClusterConfigurations)
-    is_allowed(service, BusinessRoles.ViewServiceConfigurations)
-    is_allowed(component, BusinessRoles.ViewComponentConfigurations)
-    is_denied(provider, BusinessRoles.ViewProviderConfigurations)
-    is_denied(host, BusinessRoles.ViewHostConfigurations)
+    user_cluster, user_service, user_component = as_user_objects(user_sdk, cluster, service, component)
+    is_allowed(user_cluster, BusinessRoles.ViewClusterConfigurations)
+    is_allowed(user_service, BusinessRoles.ViewServiceConfigurations)
+    is_allowed(user_component, BusinessRoles.ViewComponentConfigurations)
+    is_denied_to_user(provider, BusinessRoles.ViewProviderConfigurations)
+    is_denied_to_user(host, BusinessRoles.ViewHostConfigurations)
     delete_policy(policy)
 
     policy = create_policy(sdk_client_fs, CLUSTER_VIEW_CONFIG_ROLES, objects=[service], users=[user], groups=[])
-    is_denied(cluster, BusinessRoles.ViewClusterConfigurations)
-    is_allowed(service, BusinessRoles.ViewServiceConfigurations)
-    is_allowed(component, BusinessRoles.ViewComponentConfigurations)
-    is_denied(provider, BusinessRoles.ViewProviderConfigurations)
-    is_denied(host, BusinessRoles.ViewHostConfigurations)
+    is_denied_to_user(cluster, BusinessRoles.ViewClusterConfigurations)
+    is_allowed(user_service, BusinessRoles.ViewServiceConfigurations)
+    is_allowed(user_component, BusinessRoles.ViewComponentConfigurations)
+    is_denied_to_user(provider, BusinessRoles.ViewProviderConfigurations)
+    is_denied_to_user(host, BusinessRoles.ViewHostConfigurations)
     delete_policy(policy)
 
     create_policy(sdk_client_fs, CLUSTER_VIEW_CONFIG_ROLES, objects=[component], users=[user], groups=[])
-    is_denied(cluster, BusinessRoles.ViewClusterConfigurations)
-    is_denied(service, BusinessRoles.ViewServiceConfigurations)
-    is_allowed(component, BusinessRoles.ViewComponentConfigurations)
-    is_denied(provider, BusinessRoles.ViewProviderConfigurations)
-    is_denied(host, BusinessRoles.ViewHostConfigurations)
+    is_denied_to_user(cluster, BusinessRoles.ViewClusterConfigurations)
+    is_denied_to_user(service, BusinessRoles.ViewServiceConfigurations)
+    is_allowed(user_component, BusinessRoles.ViewComponentConfigurations)
+    is_denied_to_user(provider, BusinessRoles.ViewProviderConfigurations)
+    is_denied_to_user(host, BusinessRoles.ViewHostConfigurations)
 
 
+# pylint: disable-next=too-many-locals
 def test_service_in_cluster_hierarchy(user, prepare_objects, sdk_client_fs, second_objects):
     """
     Test that service related role can be parametrized by cluster
@@ -78,35 +80,37 @@ def test_service_in_cluster_hierarchy(user, prepare_objects, sdk_client_fs, seco
 
     username, password = TEST_USER_CREDENTIALS
     user_sdk = ADCMClient(url=sdk_client_fs.url, user=username, password=password)
-    cluster, service, *_ = as_user_objects(user_sdk, *prepare_objects)
-    second_cluster, *_ = as_user_objects(user_sdk, *second_objects)
+    cluster, *_ = as_user_objects(user_sdk, cluster_via_admin)
+    second_cluster_via_admin, *_ = second_objects
 
     for service in cluster.service_list():
         is_allowed(cluster, BusinessRoles.RemoveService, service)
-    for service in second_cluster.service_list():
-        is_denied(second_cluster, BusinessRoles.RemoveService, service)
+    for service in second_cluster_via_admin.service_list():
+        is_denied(second_cluster_via_admin, BusinessRoles.RemoveService, service, client=user_sdk)
 
 
-def test_provider_hierarchy(user_sdk: ADCMClient, user, prepare_objects, sdk_client_fs):
+def test_provider_hierarchy(user_sdk: ADCMClient, user, is_denied_to_user, prepare_objects, sdk_client_fs):
     """
     Parametrize role with provider related objects
     """
-    cluster, service, component, provider, host = as_user_objects(user_sdk, *prepare_objects)
+    cluster, service, component, provider, host = prepare_objects
 
     policy = create_policy(sdk_client_fs, PROVIDER_VIEW_CONFIG_ROLES, objects=[provider], users=[user], groups=[])
-    is_allowed(provider, BusinessRoles.ViewProviderConfigurations)
-    is_allowed(host, BusinessRoles.ViewHostConfigurations)
-    is_denied(cluster, BusinessRoles.ViewClusterConfigurations)
-    is_denied(service, BusinessRoles.ViewServiceConfigurations)
-    is_denied(component, BusinessRoles.ViewComponentConfigurations)
+
+    user_provider, user_host = as_user_objects(user_sdk, provider, host)
+    is_allowed(user_provider, BusinessRoles.ViewProviderConfigurations)
+    is_allowed(user_host, BusinessRoles.ViewHostConfigurations)
+    is_denied_to_user(cluster, BusinessRoles.ViewClusterConfigurations)
+    is_denied_to_user(service, BusinessRoles.ViewServiceConfigurations)
+    is_denied_to_user(component, BusinessRoles.ViewComponentConfigurations)
     delete_policy(policy)
 
     create_policy(sdk_client_fs, PROVIDER_VIEW_CONFIG_ROLES, objects=[host], users=[user], groups=[])
-    is_denied(provider, BusinessRoles.ViewProviderConfigurations)
-    is_allowed(host, BusinessRoles.ViewHostConfigurations)
-    is_denied(cluster, BusinessRoles.ViewClusterConfigurations)
-    is_denied(service, BusinessRoles.ViewServiceConfigurations)
-    is_denied(component, BusinessRoles.ViewComponentConfigurations)
+    is_denied_to_user(provider, BusinessRoles.ViewProviderConfigurations)
+    is_allowed(user_host, BusinessRoles.ViewHostConfigurations)
+    is_denied_to_user(cluster, BusinessRoles.ViewClusterConfigurations)
+    is_denied_to_user(service, BusinessRoles.ViewServiceConfigurations)
+    is_denied_to_user(component, BusinessRoles.ViewComponentConfigurations)
 
 
 @pytest.mark.extra_rbac()

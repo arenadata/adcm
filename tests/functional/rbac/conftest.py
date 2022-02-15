@@ -13,21 +13,38 @@
 import itertools
 import os
 from enum import Enum
+from functools import partial
 from operator import methodcaller
-from typing import Callable, NamedTuple, Union, List, Tuple, Collection
+from typing import Callable, NamedTuple, Union, List, Tuple, Collection, Optional
 
 import allure
 import pytest
-from adcm_client.base import NoSuchEndpointOrAccessIsDenied, BaseAPIObject
-from adcm_client.objects import ADCMClient, User, Group, Cluster, Service, Component, Provider, Host, Bundle, Role
+from adcm_client.base import NoSuchEndpointOrAccessIsDenied, BaseAPIObject, ObjectNotFound
+from adcm_client.objects import (
+    ADCMClient,
+    User,
+    Group,
+    Cluster,
+    Service,
+    Component,
+    Provider,
+    Host,
+    Bundle,
+    Role,
+    ADCM,
+    Policy,
+)
 from adcm_client.wrappers.api import AccessIsDenied
 from adcm_pytest_plugin.utils import catch_failed, random_string
+
+from tests.functional.rbac.checkers import Deny
+from tests.functional.tools import get_object_represent, AnyADCMObject, ADCMObjects
+
 
 # pylint: disable=redefined-outer-name,unused-argument
 
 # Enum names doesn't conform to UPPER_CASE naming style
 # pylint: disable=invalid-name
-from tests.functional.tools import get_object_represent, AnyADCMObject
 
 
 def pytest_collection_modifyitems(session, config, items: list):
@@ -85,6 +102,7 @@ class BusinessRole(NamedTuple):
 
     role_name: str
     method_call: Callable
+    check_denied: Optional[Callable] = None
 
 
 class BusinessRoles(Enum):
@@ -92,74 +110,132 @@ class BusinessRoles(Enum):
 
     # pylint: disable=invalid-name
 
+    # ADCM Client root roles
+
+    GetAllClusters = BusinessRole("Get cluster", lambda x, **kwargs: x.cluster(**kwargs))
+    GetAllServices = BusinessRole("Get service", lambda x, **kwargs: x.service(**kwargs))
+    GetAllComponents = BusinessRole("Get component", lambda x, **kwargs: x.component(**kwargs))
+    GetAllProviders = BusinessRole("Get provider", lambda x, **kwargs: x.provider(**kwargs))
+    GetAllHosts = BusinessRole("Get host", lambda x, **kwargs: x.host(**kwargs))
     GetCluster = BusinessRole("Get cluster object", lambda x, **kwargs: x.cluster(**kwargs))
     GetService = BusinessRole("Get service object", lambda x, **kwargs: x.service(**kwargs))
     GetComponent = BusinessRole("Get component object", lambda x, **kwargs: x.component(**kwargs))
     GetProvider = BusinessRole("Get provider object", lambda x, **kwargs: x.provider(**kwargs))
     GetHost = BusinessRole("Get host object", lambda x, **kwargs: x.host(**kwargs))
-    GetTaskAndJob = BusinessRole("Get object task and jobs", lambda x, **kwargs: x.task(**kwargs))
+    GetTaskAndJob = BusinessRole("Get task and jobs", lambda x, **kwargs: x.task(**kwargs))
 
-    ViewAnyObjectConfiguration = BusinessRole("View any object configuration", methodcaller("config"))
-    ViewAnyObjectHostComponents = BusinessRole("View any object host-components", methodcaller("hostcomponent"))
-    ViewAnyObjectImport = BusinessRole("View any object import", methodcaller("imports"))
-
-    ViewClusterConfigurations = BusinessRole("View cluster configurations", methodcaller("config"))
-    ViewServiceConfigurations = BusinessRole("View service configurations", methodcaller("config"))
-    ViewComponentConfigurations = BusinessRole("View component configurations", methodcaller("config"))
-    ViewProviderConfigurations = BusinessRole("View provider configurations", methodcaller("config"))
-    ViewHostConfigurations = BusinessRole("View host configurations", methodcaller("config"))
-
-    EditClusterConfigurations = BusinessRole("Edit cluster configurations", methodcaller("config_set_diff", {}))
-    EditServiceConfigurations = BusinessRole("Edit service configurations", methodcaller("config_set_diff", {}))
-    EditComponentConfigurations = BusinessRole("Edit component configurations", methodcaller("config_set_diff", {}))
-    EditProviderConfigurations = BusinessRole("Edit provider configurations", methodcaller("config_set_diff", {}))
-    EditHostConfigurations = BusinessRole("Edit host configurations", methodcaller("config_set_diff", {}))
-
-    ViewImports = BusinessRole("View imports", methodcaller("imports"))
-    ManageImports = BusinessRole("Manage imports", lambda x, *args: x.bind(*args))
-    ManageClusterImports = BusinessRole("Manage cluster imports", lambda x, *args: x.bind(*args))
-    ManageServiceImports = BusinessRole("Manage service imports", lambda x, *args: x.bind(*args))
-    ViewHostComponents = BusinessRole("View host-components", methodcaller("hostcomponent"))
-    EditHostComponents = BusinessRole("Edit host-components", lambda x, *args: x.hostcomponent_set(*args))
-    AddService = BusinessRole("Add service", methodcaller("service_add", name="new_service"))
-    RemoveService = BusinessRole("Remove service", lambda x, *args: x.service_delete(*args))
-    RemoveHosts = BusinessRole("Remove hosts", methodcaller("delete"))
-    MapHosts = BusinessRole("Map hosts", lambda x, *args: x.host_add(*args))
-    UnmapHosts = BusinessRole("Unmap hosts", lambda x, *args: x.host_delete(*args))
-    UpgradeClusterBundle = BusinessRole("Upgrade cluster bundle", lambda x: x.upgrade().do())
-    UpgradeProviderBundle = BusinessRole("Upgrade provider bundle", lambda x: x.upgrade().do())
-    CreateHostProvider = BusinessRole(
-        "Create provider", lambda x: x.provider_create(name=f"new_provider {random_string(5)}")
-    )
-    CreateHost = BusinessRole("Create host", lambda x: x.host_create(fqdn=f"new_host_{random_string(5)}"))
-    RemoveHostProvider = BusinessRole("Remove provider", methodcaller("delete"))
-    CreateCluster = BusinessRole("Create cluster", lambda x: x.cluster_create(name=f"new_cluster {random_string(5)}"))
-    RemoveCluster = BusinessRole("Remove cluster", methodcaller("delete"))
     UploadBundle = BusinessRole("Upload bundle", methodcaller("upload_from_fs", os.path.join(DATA_DIR, "dummy")))
-    RemoveBundle = BusinessRole("Remove bundle", methodcaller("delete"))
-    ViewADCMSettings = BusinessRole("View ADCM settings", methodcaller("config"))
-    EditADCMSettings = BusinessRole("Edit ADCM settings", methodcaller("config_set_diff", {}))
+
     ViewUsers = BusinessRole("View users", methodcaller("user_list"))
     CreateUser = BusinessRole("Create user", methodcaller("user_create", username="test", password="test"))
-    RemoveUser = BusinessRole("Remove user", methodcaller("delete"))
-    EditUser = BusinessRole("Edit user", lambda x: x.update(first_name=random_string(5)))
+    ViewGroups = BusinessRole("View group", methodcaller("group_list"))
+    CreateGroup = BusinessRole("Create group", methodcaller("group_create", name="test"))
     ViewRoles = BusinessRole("View roles", methodcaller("role_list"))
     CreateCustomRoles = BusinessRole(
         "Create custom role",
         methodcaller("role_create", name="Custom role", display_name="Custom role", child=[{"id": 2}]),
     )
-    RemoveRoles = BusinessRole("Remove roles", methodcaller("delete"))
-    EditRoles = BusinessRole("Edit role", lambda x: x.update(display_name=random_string(5)))
-    ViewGroups = BusinessRole("View group", methodcaller("group_list"))
-    CreateGroup = BusinessRole("Create group", methodcaller("group_create", name="test"))
-    RemoveGroup = BusinessRole("Remove group", methodcaller("delete"))
-    EditGroup = BusinessRole("Edit group", lambda x: x.update(name=random_string(5)))
     ViewPolicies = BusinessRole("View policy", methodcaller("policy_list"))
     CreatePolicy = BusinessRole(
         "Create policy", lambda x, **kwargs: x.policy_create(name="Test policy", objects=[], **kwargs)
     )
-    RemovePolicy = BusinessRole("Remove policy", methodcaller("delete"))
-    EditPolicy = BusinessRole("Edit policy", lambda x: x.update(name=random_string(5)))
+
+    # ADCM client objects roles (should be checked directly by endpoint)
+
+    ViewAnyObjectConfiguration = BusinessRole(
+        "View any object configuration", methodcaller("config"), Deny.ViewConfigOf(ADCMObjects)
+    )
+    ViewAnyObjectHostComponents = BusinessRole(
+        "View any object host-components", methodcaller("hostcomponent"), Deny.ViewHostComponentOf((Cluster, Service))
+    )
+    ViewAnyObjectImport = BusinessRole(
+        "View any object import", methodcaller("imports"), Deny.ViewImportsOf((Cluster, Service))
+    )
+
+    ViewClusterConfigurations = BusinessRole(
+        "View cluster configurations", methodcaller("config"), Deny.ViewConfigOf(Cluster)
+    )
+    ViewServiceConfigurations = BusinessRole(
+        "View service configurations", methodcaller("config"), Deny.ViewConfigOf(Service)
+    )
+    ViewComponentConfigurations = BusinessRole(
+        "View component configurations", methodcaller("config"), Deny.ViewConfigOf(Component)
+    )
+    ViewProviderConfigurations = BusinessRole(
+        "View provider configurations", methodcaller("config"), Deny.ViewConfigOf(Provider)
+    )
+    ViewHostConfigurations = BusinessRole("View host configurations", methodcaller("config"), Deny.ViewConfigOf(Host))
+
+    CreateHostProvider = BusinessRole(
+        "Create provider", lambda x: x.provider_create(name=f"new_provider {random_string(5)}"), Deny.CreateProvider
+    )
+    CreateCluster = BusinessRole(
+        "Create cluster", lambda x: x.cluster_create(name=f"new_cluster {random_string(5)}"), Deny.CreateCluster
+    )
+    EditClusterConfigurations = BusinessRole(
+        "Edit cluster configurations", methodcaller("config_set_diff", {}), Deny.ChangeConfigOf(Cluster)
+    )
+    EditServiceConfigurations = BusinessRole(
+        "Edit service configurations", methodcaller("config_set_diff", {}), Deny.ChangeConfigOf(Service)
+    )
+    EditComponentConfigurations = BusinessRole(
+        "Edit component configurations", methodcaller("config_set_diff", {}), Deny.ChangeConfigOf(Component)
+    )
+    EditProviderConfigurations = BusinessRole(
+        "Edit provider configurations", methodcaller("config_set_diff", {}), Deny.ChangeConfigOf(Provider)
+    )
+    EditHostConfigurations = BusinessRole(
+        "Edit host configurations", methodcaller("config_set_diff", {}), Deny.ChangeConfigOf(Host)
+    )
+
+    ViewImports = BusinessRole("View imports", methodcaller("imports"), Deny.ViewImportsOf((Cluster, Service)))
+    ManageImports = BusinessRole(
+        "Manage imports", lambda x, *args: x.bind(*args), Deny.ManageImportsOf((Cluster, Service))
+    )
+    ManageClusterImports = BusinessRole(
+        "Manage cluster imports", lambda x, *args: x.bind(*args), Deny.ManageImportsOf(Cluster)
+    )
+    ManageServiceImports = BusinessRole(
+        "Manage service imports", lambda x, *args: x.bind(*args), Deny.ManageImportsOf(Service)
+    )
+
+    ViewHostComponents = BusinessRole(
+        "View host-components", methodcaller("hostcomponent"), Deny.ViewHostComponentOf(Cluster)
+    )
+    EditHostComponents = BusinessRole(
+        "Edit host-components", lambda x, *args: x.hostcomponent_set(*args), Deny.EditHostComponentOf(Cluster)
+    )
+
+    AddService = BusinessRole("Add service", methodcaller("service_add", name="new_service"), Deny.AddServiceToCluster)
+    RemoveService = BusinessRole(
+        "Remove service", lambda x, *args: x.service_delete(*args), Deny.RemoveServiceFromCluster
+    )
+    RemoveHosts = BusinessRole("Remove hosts", methodcaller("delete"), Deny.Delete(Host))
+    MapHosts = BusinessRole("Map hosts", lambda x, *args: x.host_add(*args), Deny.AddHostToCluster)
+    UnmapHosts = BusinessRole("Unmap hosts", lambda x, *args: x.host_delete(*args), Deny.RemoveHostFromCluster)
+
+    UpgradeClusterBundle = BusinessRole("Upgrade cluster bundle", lambda x: x.upgrade().do(), Deny.UpgradeCluster)
+    UpgradeProviderBundle = BusinessRole("Upgrade provider bundle", lambda x: x.upgrade().do(), Deny.UpgradeProvider)
+    CreateHost = BusinessRole(
+        "Create host", lambda x: x.host_create(fqdn=f"new_host_{random_string(5)}"), Deny.CreateHost
+    )
+    RemoveHostProvider = BusinessRole("Remove provider", methodcaller("delete"), Deny.Delete(Provider))
+    RemoveCluster = BusinessRole("Remove cluster", methodcaller("delete"), Deny.Delete(Cluster))
+    RemoveBundle = BusinessRole("Remove bundle", methodcaller("delete"), Deny.Delete(Bundle))
+
+    ViewADCMSettings = BusinessRole("View ADCM settings", methodcaller("config"), Deny.ViewConfigOf(ADCM))
+    EditADCMSettings = BusinessRole(
+        "Edit ADCM settings", methodcaller("config_set_diff", {}), Deny.ChangeConfigOf(ADCM)
+    )
+
+    RemoveUser = BusinessRole("Remove user", methodcaller("delete"), Deny.Delete(User))
+    EditUser = BusinessRole("Edit user", lambda x: x.update(first_name=random_string(5)), Deny.Change(User))
+    RemoveRoles = BusinessRole("Remove roles", methodcaller("delete"), Deny.Delete(Role))
+    EditRoles = BusinessRole("Edit role", lambda x: x.update(display_name=random_string(5)), Deny.Change(Role))
+    RemoveGroup = BusinessRole("Remove group", methodcaller("delete"), Deny.Delete(Group))
+    EditGroup = BusinessRole("Edit group", lambda x: x.update(name=random_string(5)), Deny.Change(Group))
+    RemovePolicy = BusinessRole("Remove policy", methodcaller("delete"), Deny.Delete(Policy))
+    EditPolicy = BusinessRole("Edit policy", lambda x: x.update(name=random_string(5)), Deny.Change(Policy))
 
     # aliases for view/edit_config_of funcs
     ViewADCMConfigurations = ViewADCMSettings
@@ -202,6 +278,12 @@ def user_sdk(user, adcm_fs) -> ADCMClient:
     """Returns ADCMClient object from adcm_client with testing user"""
     username, password = TEST_USER_CREDENTIALS
     return ADCMClient(url=adcm_fs.url, user=username, password=password)
+
+
+@pytest.fixture()
+def is_denied_to_user(user_sdk: ADCMClient) -> Callable:
+    """Return partially initialized `is_denied` function with `client` argument set to `user_sdk`"""
+    return partial(is_denied, client=user_sdk)
 
 
 @pytest.fixture()
@@ -268,7 +350,12 @@ def second_objects(sdk_client_fs):
 
 def as_user_objects(user_sdk: ADCMClient, *objects: AnyADCMObject) -> Tuple[AnyADCMObject, ...]:
     """Get prepared objects via tested user sdk"""
-    return tuple((obj.__class__(user_sdk._api, id=obj.id) for obj in objects))  # pylint: disable=protected-access
+    api = user_sdk._api  # pylint: disable=protected-access
+    objects_repr = ", ".join(get_object_represent(obj) for obj in objects)
+    username = user_sdk.user().username
+    with allure.step(f'Get object from perspective of {username}: {objects_repr}'):
+        with catch_failed(ObjectNotFound, f"Failed to get one of following objects for {username}: {objects_repr}"):
+            return tuple((obj.__class__(api, id=obj.id) for obj in objects))
 
 
 @allure.step("Delete policy")
@@ -321,11 +408,27 @@ def create_policy(
 
 
 def is_allowed(
-    base_object: Union[BaseAPIObject, ADCMClient], business_role: Union[BusinessRole, BusinessRoles], *args, **kwargs
+    base_object: Union[BaseAPIObject, ADCMClient],
+    business_role: Union[BusinessRole, BusinessRoles],
+    *args,
+    raise_on_superuser: bool = True,
+    **kwargs,
 ):
     """
-    Assert that role is allowed on object
+    Assert that role is allowed on object.
     """
+    if raise_on_superuser:
+        if isinstance(base_object, ADCMClient):
+            is_superuser = base_object.me().is_superuser
+        else:
+            is_superuser = base_object._client.rbac.me.read()['is_superuser']  # pylint: disable=protected-access
+        if is_superuser:
+            raise ValueError(
+                "Object that is passed to `is_allowed` method should be an object representative "
+                "from a perspective of regular user, not a superuser.\n"
+                "If you want to check if the interaction is allowed to a superuser, "
+                "pass `False` to `raise_on_superuser` keyword argument."
+            )
     role: BusinessRole = business_role.value if isinstance(business_role, BusinessRoles) else business_role
     with allure.step(f"Assert that {role.role_name} on {get_object_represent(base_object)} is allowed"), catch_failed(
         (AccessIsDenied, NoSuchEndpointOrAccessIsDenied),
@@ -335,19 +438,47 @@ def is_allowed(
 
 
 def is_denied(
-    base_object: Union[BaseAPIObject, ADCMClient], business_role: Union[BusinessRole, BusinessRoles], *args, **kwargs
+    base_object: Union[BaseAPIObject, ADCMClient],
+    business_role: Union[BusinessRole, BusinessRoles],
+    *args,
+    client: Optional[ADCMClient] = None,
+    **kwargs,
 ):
     """
-    Assert that role is denied on object
+    Assert that role is denied on object.
+
+    You may find confusing how `is_allowed` and `is_denied` not mirroring themselves.
+    At first, they were: both were based purely on ADCM client and admin-user objects from it.
+    But now "getting" object is a part of permission system,
+      so we can't "get any object from user client and perform an action on it"
+      to check if action is truly denied, because we'll fail on receiving an object.
+    So we check the denial of "direct" action via API it this action is performed on another object,
+      rather than on ADCM client itself,
+      to be sure that we're not checking only the "not allowed via client" situation.
     """
     role: BusinessRole = business_role.value if isinstance(business_role, BusinessRoles) else business_role
-    with allure.step(f"Assert that {role.role_name} on {get_object_represent(base_object)} is denied"):
-        try:
-            role.method_call(base_object, *args, **kwargs)
-        except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied):
-            pass
+    object_is_client = isinstance(base_object, ADCMClient)
+    # either `base_object` should be ADCMClient or both role.check_denied and client should be presented
+    # notice that priority is given to the first part
+    if not (object_is_client or (role.check_denied and client)):
+        raise ValueError(
+            "You shouldn't try to check if the role actions is denied on objects that are not of type ADCMClient "
+            "without providing denial checker.\n"
+            "When you pass `business_role` with denial checker, you must also provide `client` argument to check "
+            "against which ADCMClient to check denial.\n"
+            "To understand motivation behind this please check documentation of `is_denied` method."
+        )
+    object_represent = get_object_represent(base_object)
+    with allure.step(f"Assert that {role.role_name} on {object_represent} is denied"):
+        if object_is_client:
+            try:
+                role.method_call(base_object, *args, **kwargs)
+            except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied):
+                pass
+            else:
+                raise AssertionError(f"{role.role_name} on {object_represent} should not be allowed")
         else:
-            raise AssertionError(f"{role.role_name} on {get_object_represent(base_object)} should not be allowed")
+            role.check_denied(client, base_object)
 
 
 def extract_role_short_info(role: Role) -> RoleShortInfo:
