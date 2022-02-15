@@ -24,6 +24,10 @@ from cm.models import (
     Host,
     HostComponent,
     get_model_by_type,
+    TaskLog,
+    JobLog,
+    LogStorage,
+    ADCMEntity,
 )
 
 
@@ -67,6 +71,15 @@ class ModelRole(AbstractRole):
                 policy.model_perm.add(pp)
 
 
+def assign_user_or_group_perm(user, group, policy, perm, obj):
+    if user is not None:
+        uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
+        policy.user_object_perm.add(uop)
+    if group is not None:
+        gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
+        policy.group_object_perm.add(gop)
+
+
 class ObjectRole(AbstractRole):
     """This Role apply django-guardian object level permissions"""
 
@@ -83,12 +96,7 @@ class ObjectRole(AbstractRole):
         """Apply Role to User and/or Group"""
         for obj in policy.get_objects(param_obj):
             for perm in role.get_permissions():
-                if user is not None:
-                    uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
-                    policy.user_object_perm.add(uop)
-                if group is not None:
-                    gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
-                    policy.group_object_perm.add(gop)
+                assign_user_or_group_perm(user, group, policy, perm, obj)
 
 
 class ActionRole(AbstractRole):
@@ -112,12 +120,39 @@ class ActionRole(AbstractRole):
             run_action, _ = Permission.objects.get_or_create(
                 content_type=ct, codename=f'run_action_{action.display_name}'
             )
-            if user is not None:
-                uop = UserObjectPermission.objects.assign_perm(run_action, user, obj)
-                policy.user_object_perm.add(uop)
-            if group is not None:
-                gop = GroupObjectPermission.objects.assign_perm(run_action, group, obj)
-                policy.group_object_perm.add(gop)
+            assign_user_or_group_perm(user, group, policy, run_action, obj)
+
+
+def get_perm_for_model(model):
+    ct = ContentType.objects.get_for_model(model)
+    perm, _ = Permission.objects.get_or_create(
+        content_type=ct, codename=f'view_{model._meta.model_name}'
+    )
+    return perm
+
+
+class TaskRole(AbstractRole):
+    """This Role apply django-guardian object permissions to view task and job logs for object"""
+
+    def apply(self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None):
+        for obj in policy.get_objects():
+            model = get_model_by_type(obj.prototype.type)
+            ct = ContentType.objects.get_for_model(model)
+            task_queryset = TaskLog.objects.filter(object_id=obj.id, object_type=ct)
+            for task in task_queryset:
+                assign_user_or_group_perm(user, group, policy, get_perm_for_model(TaskLog), task)
+                job_queryset = JobLog.objects.filter(task=task)
+                for job in job_queryset:
+                    assign_user_or_group_perm(user, group, policy, get_perm_for_model(JobLog), job)
+                    log_queryset = LogStorage.objects.filter(job=job)
+                    for log in log_queryset:
+                        assign_user_or_group_perm(
+                            user, group, policy, get_perm_for_model(LogStorage), log
+                        )
+
+
+#            for perm in role.get_permissions():
+#                assign_user_or_group_perm(user, group, policy, perm, obj)
 
 
 class ParentRole(AbstractRole):
@@ -126,9 +161,11 @@ class ParentRole(AbstractRole):
     def find_and_apply(self, obj, policy, role, user, group=None):
         """Find Role of appropriate type and apply it to specified object"""
         for r in role.child.all():
-            if r.class_name not in ('ObjectRole', 'ActionRole'):
+            if r.class_name not in ('ObjectRole', 'ActionRole', 'TaskRole'):
                 continue
             if obj.prototype.type in r.parametrized_by_type:
+                r.apply(policy, user, group, obj)
+            if r.class_name == 'TaskRole':
                 r.apply(policy, user, group, obj)
 
     def apply(

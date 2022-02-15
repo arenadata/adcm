@@ -130,7 +130,7 @@ def prepare_task(
             process_file_type(task, spec, conf)
             task.config = new_conf
             task.save()
-
+    rbac.models.re_apply_object_policy(obj)
     return task
 
 

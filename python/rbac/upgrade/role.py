@@ -189,13 +189,6 @@ def prepare_hidden_roles(bundle: Bundle):
         role.save()
         if bundle.category:
             role.category.add(bundle.category)
-        ct = ContentType.objects.get_for_model(model)
-        perm, _ = Permission.objects.get_or_create(
-            content_type=ct,
-            codename=f'run_action_{act.display_name}',
-            name=f'Can run {act.display_name} actions',
-        )
-        role.permissions.add(perm)
         if name not in hidden_roles:
             hidden_roles[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
         hidden_roles[name]['children'].append(role)
@@ -222,6 +215,10 @@ def update_built_in_roles(
         built_in_roles['Provider Administrator'].child.add(business_role)
 
 
+def get_view_role(parametrized_by):
+    return Role.object.get(name=f'Get {parametrized_by} object')
+
+
 @transaction.atomic
 def prepare_action_roles(bundle: Bundle):
     """Prepares action roles"""
@@ -234,6 +231,7 @@ def prepare_action_roles(bundle: Bundle):
     hidden_roles = prepare_hidden_roles(bundle)
 
     for business_role_name, business_role_params in hidden_roles.items():
+        view_role = get_view_role(business_role_params)
         if business_role_params['parametrized_by_type'] == 'component':
             parametrized_by_type = ['service', 'component']
         else:
@@ -253,6 +251,7 @@ def prepare_action_roles(bundle: Bundle):
             log.info('Create business permission "%s"', business_role_name)
 
         business_role.child.add(*business_role_params['children'])
+        business_role.child.add(view_role)
         update_built_in_roles(bundle, business_role, parametrized_by_type, built_in_roles)
 
 
