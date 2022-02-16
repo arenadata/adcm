@@ -32,6 +32,9 @@ from tests.ui_tests.app.page.provider.page import ProviderMainPage
 from tests.ui_tests.app.page.service.page import ServiceMainPage
 
 
+pytestmark = [pytest.mark.regression()]
+
+
 class TestMainInfo:
     """Tests on __main_info effects on UI"""
 
