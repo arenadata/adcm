@@ -138,19 +138,32 @@ def apply_jobs(task: TaskLog, policy: Policy, user: User, group: Group = None):
             assign_user_or_group_perm(user, group, policy, get_perm_for_model(LogStorage), log)
 
 
-def re_apply_policy_for_jobs(object, task):
-    id_type_dict = {}
-    object_model = object.__class__.__name__.lower()
-    if object.prototype.type == 'component':
-        object_list = [object, object.service, object.cluster]
-    elif object.prototype.type == 'service':
-        object_list = [object, object.cluster]
+def get_objects_for_policy(obj):
+    obj_type_map = {}
+    obj_type = obj.prototype.type
+    if obj_type == 'component':
+        object_list = [obj, obj.service, obj.cluster]
+    elif obj_type == 'service':
+        object_list = [obj, obj.cluster]
+    elif obj_type == 'host':
+        if obj.cluster:
+            object_list = [obj, obj.provider, obj.cluster]
+            for hc in HostComponent.objects.filter(cluster=obj.cluster, host=obj):
+                object_list.append(hc.service)
+                object_list.append(hc.component)
+        else:
+            object_list = [obj, obj.provider]
     else:
-        object_list = [object]
+        object_list = [obj]
     for obj in object_list:
-        id_type_dict[obj] = ContentType.objects.get_for_model(obj)
+        obj_type_map[obj] = ContentType.objects.get_for_model(obj)
+    return obj_type_map
 
-    for obj, ct in id_type_dict.items():
+
+def re_apply_policy_for_jobs(action_object, task):
+    obj_type_map = get_objects_for_policy(action_object)
+    object_model = action_object.__class__.__name__.lower()
+    for obj, ct in obj_type_map.items():
         for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=ct):
             for user in policy.user.all():
                 try:
@@ -160,7 +173,7 @@ def re_apply_policy_for_jobs(object, task):
                 except UserObjectPermission.DoesNotExist:
                     continue
                 if uop in policy.user_object_perm.all() and user.has_perm(
-                    f'view_{object_model}', object
+                    f'view_{object_model}', action_object
                 ):
                     apply_jobs(task, policy, user, None)
             for group in policy.group.all():
@@ -171,7 +184,7 @@ def re_apply_policy_for_jobs(object, task):
                 except UserObjectPermission.DoesNotExist:
                     continue
                 if gop in policy.group_object_perm.all() and group.has_perm(
-                    f'view_{object_model}', object
+                    f'view_{object_model}', action_object
                 ):
                     apply_jobs(task, policy, None, group)
 

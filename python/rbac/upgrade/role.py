@@ -25,8 +25,6 @@ from rbac import log
 from rbac.models import Role, RoleMigration, Permission, re_apply_all_polices, RoleTypes
 from rbac.settings import api_settings
 
-from cm.errors import AdcmEx
-
 
 def upgrade(data: dict):
     """Upgrade roles and user permissions"""
@@ -166,7 +164,7 @@ def prepare_hidden_roles(bundle: Bundle):
             f'{bundle.name}_{bundle.version}_{bundle.edition}_{serv_name}'
             f'{act.prototype.type}_{act.prototype.display_name}_{act.name}'
         )
-        role = Role(
+        role, _ = Role.objects.get_or_create(
             name=role_name,
             display_name=role_name,
             description=(
@@ -259,10 +257,9 @@ def prepare_action_roles(bundle: Bundle):
 
 def update_all_bundle_roles():
     for bundle in Bundle.objects.exclude(name='ADCM'):
-        if not Role.objects.filter(bundle=bundle, type=RoleTypes.hidden).exists():
-            prepare_action_roles(bundle)
-            msg = f'Prepare roles for "{bundle.name}" bundle.'
-            log.info(msg)
+        prepare_action_roles(bundle)
+        msg = f'Prepare roles for "{bundle.name}" bundle.'
+        log.info(msg)
 
 
 def init_roles():
