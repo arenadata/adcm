@@ -20,16 +20,14 @@ from typing import Callable, TypeVar, Any, Union, Optional, Dict, Tuple, Sized
 
 import allure
 import requests
-
 from adcm_client.objects import ADCMClient, Cluster
 from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
+from selenium.common.exceptions import StaleElementReferenceException, NoSuchElementException
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
-from selenium.common.exceptions import StaleElementReferenceException, NoSuchElementException
 
 from tests.ui_tests.app.app import ADCMTest
-from tests.ui_tests.app.configuration import Configuration
 
 ValueType = TypeVar('ValueType')
 FuncType = TypeVar('FuncType')
@@ -40,14 +38,6 @@ def _prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
     cluster_name = "_".join(path.split("/")[-1:] + [random_string()])
     cluster = bundle.cluster_create(name=cluster_name)
     return cluster
-
-
-@allure.step("Prepare cluster and get config")
-def prepare_cluster_and_get_config(sdk_client: ADCMClient, path, app):
-    """Upload bundle, create cluster and get config"""
-    cluster = _prepare_cluster(sdk_client, path)
-    config = Configuration(app.driver, f"{app.adcm.url}/cluster/{cluster.cluster_id}/config")
-    return cluster, config
 
 
 class BundleObjectDefinition(UserDict):
@@ -321,28 +311,6 @@ def wait_file_is_presented(
             assert filename in os.listdir(dirname), f'File {filename} not found in {dirname}'
 
     wait_until_step_succeeds(_check_file_is_presented, timeout=timeout, period=period)
-
-
-@allure.step('Check that all fields and groups invisible')
-def check_that_all_fields_and_groups_invisible(sdk_client: ADCMClient, path, app):
-    """Prepare cluster from `path` and check that all fields and groups invisible."""
-
-    _, config = prepare_cluster_and_get_config(sdk_client, path, app)
-
-    fields = config.get_field_groups()
-    for field in fields:
-        assert not field.is_displayed(), f"Field should be invisible. Field classes: {field.get_attribute('class')}"
-    group_names = config.get_group_elements()
-    assert not group_names, "Group elements should be invisible"
-    config.show_advanced()
-    assert config.advanced, "Advanced fields should be expanded"
-    fields = config.get_field_groups()
-    group_names = config.get_group_elements()
-    assert not group_names, "Advanced group elements should ve invisible"
-    for field in fields:
-        assert (
-            not field.is_displayed()
-        ), f"Advanced field should be invisible. Field classes: {field.get_attribute('class')}"
 
 
 @contextmanager

@@ -28,7 +28,7 @@ from adcm_client.objects import (
 )
 from adcm_pytest_plugin import params
 from adcm_pytest_plugin import utils
-
+from collections import OrderedDict
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
@@ -199,6 +199,23 @@ class TestServiceComponentPage:
 class TestServiceConfigPage:
     """Tests for the /cluster/{}/service/{}/config page"""
 
+    INVISIBLE_GROUPS = [
+        'float_invisible',
+        'boolean_invisible',
+        'integer_invisible',
+        'password_invisible',
+        'string_invisible',
+        'list_invisible',
+        'file_invisible',
+        'option_invisible',
+        'text_invisible',
+        'group_invisible',
+        'structure_invisible',
+        'map_invisible',
+        'secrettext_invisible',
+        'json_invisible',
+    ]
+
     def test_open_service_config_page_by_tab(self, app_fs, create_cluster_with_service):
         """Test open /cluster/{}/service/{}/config from left menu"""
 
@@ -248,6 +265,96 @@ class TestServiceConfigPage:
         service_config_page.config.save_config()
         service_config_page.config.compare_versions(params["config_name_old"])
         service_config_page.config.check_config_fields_history_with_test_values()
+        with allure.step("Check invisible params"):
+            config = service.config()
+            assert len(config.keys()) == 28, "There are should be 24 config parameters"
+            for group in self.INVISIBLE_GROUPS:
+                assert group in config.keys(), "Invisible group should be present in config object"
+
+    def test_save_advanced_config_on_service_config_page(self, app_fs, sdk_client_fs):
+        """Test config save with advanced params on /cluster/{}/service/{}/config page"""
+
+        params = {
+            "config_name_new": "test_name",
+            "config_name_old": "init",
+        }
+        with allure.step("Create cluster and service"):
+            bundle = cluster_bundle(sdk_client_fs, "service_with_advanced_params")
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            service = cluster.service_add(name=SERVICE_NAME)
+        service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        with allure.step("Check that rows are invisible"):
+            config_rows = service_config_page.config.get_all_config_rows()
+            assert len(config_rows) == 0, "Rows should be hidden"
+        service_config_page.config.click_on_advanced()
+        with allure.step("Check that rows are visible"):
+            config_rows = service_config_page.config.get_all_config_rows()
+            assert len(config_rows) == 16, "Rows should be visible"
+        service_config_page.config.fill_config_fields_with_test_values()
+        service_config_page.config.set_description(params["config_name_new"])
+        service_config_page.config.save_config()
+        service_config_page.config.compare_versions(params["config_name_old"])
+        service_config_page.config.check_config_fields_history_with_test_values()
+
+    @pytest.mark.parametrize(
+        "bundle_name", ["password_no_confirm_false_required_false", "password_no_confirm_true_required_false"]
+    )
+    def test_password_required_false_in_config_on_service_config_page(self, app_fs, sdk_client_fs, bundle_name):
+        """Test password field on /cluster/{}/service/{}/config page"""
+
+        with allure.step("Create cluster and service with not required password in config"):
+            bundle = cluster_bundle(sdk_client_fs, bundle_name)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            service = cluster.service_add(name=SERVICE_NAME)
+        service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        with allure.step("Check save button is enabled"):
+            assert not service_config_page.config.is_save_btn_disabled(), "Save button should be enabled"
+        service_config_page.config.save_config()
+        with allure.step("Check params"):
+            assert service.config() == OrderedDict([('password', None)]), "There should be empty password value"
+
+    def test_password_no_confirm_false_required_true_in_config_on_service_config_page(self, app_fs, sdk_client_fs):
+        """Test password field on /cluster/{}/service/{}/config page"""
+
+        with allure.step("Create cluster and service"):
+            bundle = cluster_bundle(sdk_client_fs, "password_no_confirm_false_required_true")
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            service = cluster.service_add(name=SERVICE_NAME)
+        service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        with allure.step("Check save button is disabled"):
+            assert service_config_page.config.is_save_btn_disabled(), "Save button should be disabled"
+            service_config_page.config.check_field_is_required("password")
+            service_config_page.config.check_password_confirm_required("password")
+        password_row = service_config_page.config.get_all_config_rows()[0]
+        with allure.step("Check confirm is required"):
+            service_config_page.config.type_in_field_with_few_inputs(password_row, values=["test"])
+            service_config_page.config.check_password_confirm_required("password")
+        with allure.step("Check filled password and confirm enable to save"):
+            service_config_page.config.type_in_field_with_few_inputs(password_row, values=["test", "test"], clear=True)
+            service_config_page.config.save_config()
+        with allure.step("Check params"):
+            assert service.config()["password"] is not None, "There should be password value"
+
+    def test_password_no_confirm_true_required_true_in_config_on_service_config_page(self, app_fs, sdk_client_fs):
+        """Test password field on /cluster/{}/service/{}/config page"""
+
+        with allure.step("Create cluster and service"):
+            bundle = cluster_bundle(sdk_client_fs, "password_no_confirm_true_required_true")
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            service = cluster.service_add(name=SERVICE_NAME)
+        service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
+        password_row = service_config_page.config.get_all_config_rows()[0]
+        with allure.step("Check save button is disabled"):
+            assert service_config_page.config.is_save_btn_disabled(), "Save button should be disabled"
+            service_config_page.config.check_field_is_required("password")
+            assert (
+                service_config_page.config.get_amount_of_inputs_in_row(password_row) == 1
+            ), "In password row should be only 1 field"
+        with allure.step("Check filled password and confirm enable to save"):
+            service_config_page.config.type_in_field_with_few_inputs(password_row, values=["test"], clear=True)
+            service_config_page.config.save_config()
+        with allure.step("Check params"):
+            assert service.config()["password"] is not None, "There should be password value"
 
     def test_reset_config_in_row_on_service_config_page(self, app_fs, create_cluster_with_service):
         """Test config reset on /cluster/{}/service/{}/config page"""
@@ -268,6 +375,11 @@ class TestServiceConfigPage:
         service_config_page.config.assert_input_value_is(
             expected_value=params["row_value_old"], display_name=params["row_name"]
         )
+        with allure.step("Check invisible params"):
+            config = service.config()
+            assert len(config.keys()) == 15, "There are should be 15 config parameters"
+            for group in self.INVISIBLE_GROUPS:
+                assert group in config.keys(), "Invisible group should be present in config object"
 
     def test_field_validation_on_service_config_page(self, app_fs, sdk_client_fs):
         """Test config fields validation on /cluster/{}/service/{}/config page"""
@@ -290,6 +402,9 @@ class TestServiceConfigPage:
         service_config_page.config.type_in_field_with_few_inputs(row=config_row, values=[params['wrong_value']])
         service_config_page.config.check_field_is_invalid(params['not_req_name'])
         service_config_page.config.check_config_warn_icon_on_left_menu()
+        with allure.step("Check save button is disabled"):
+            assert service_config_page.config.is_save_btn_disabled(), "Save button should be disabled"
+
         service_config_page.toolbar.check_warn_button(
             tab_name="test_service",
             expected_warn_text=[
@@ -310,6 +425,8 @@ class TestServiceConfigPage:
         service_config_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, service.id).open()
         service_config_page.config.clear_field_by_keys(params['field_name'])
         service_config_page.config.check_field_is_required(params['field_name'])
+        with allure.step("Check save button is disabled"):
+            assert service_config_page.config.is_save_btn_disabled(), "Save button should be disabled"
         service_config_page.config.type_in_field_with_few_inputs(
             row=service_config_page.config.get_all_config_rows()[0], values=[params['new_value']]
         )
