@@ -189,6 +189,13 @@ def prepare_hidden_roles(bundle: Bundle):
         role.save()
         if bundle.category:
             role.category.add(bundle.category)
+        ct = ContentType.objects.get_for_model(model)
+        perm, _ = Permission.objects.get_or_create(
+            content_type=ct,
+            codename=f'run_action_{act.display_name}',
+            name=f'Can run {act.display_name} actions',
+        )
+        role.permissions.add(perm)
         if name not in hidden_roles:
             hidden_roles[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
         hidden_roles[name]['children'].append(role)

@@ -23,7 +23,6 @@ from cm.models import (
     ServiceComponent,
     Host,
     HostComponent,
-    get_model_by_type,
     TaskLog,
     JobLog,
     LogStorage,
@@ -115,12 +114,8 @@ class ActionRole(AbstractRole):
         action = Action.obj.get(id=self.params['action_id'])
         assign_user_or_group_perm(user, group, policy, get_perm_for_model(Action), action)
         for obj in policy.get_objects(param_obj):
-            model = get_model_by_type(obj.prototype.type)
-            ct = ContentType.objects.get_for_model(model)
-            run_action, _ = Permission.objects.get_or_create(
-                content_type=ct, codename=f'run_action_{action.display_name}'
-            )
-            assign_user_or_group_perm(user, group, policy, run_action, obj)
+            for perm in role.get_permissions():
+                assign_user_or_group_perm(user, group, policy, perm, obj)
 
 
 def get_perm_for_model(model):
@@ -155,8 +150,8 @@ def get_objects_for_policy(obj):
             object_list = [obj, obj.provider]
     else:
         object_list = [obj]
-    for obj in object_list:
-        obj_type_map[obj] = ContentType.objects.get_for_model(obj)
+    for policy_object in object_list:
+        obj_type_map[policy_object] = ContentType.objects.get_for_model(policy_object)
     return obj_type_map
 
 
