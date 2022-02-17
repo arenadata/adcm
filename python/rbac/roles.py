@@ -27,7 +27,6 @@ from cm.models import (
     TaskLog,
     JobLog,
     LogStorage,
-    ADCMEntity,
 )
 
 
@@ -114,6 +113,7 @@ class ActionRole(AbstractRole):
     def apply(self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None):
         """Apply Role to User and/or Group"""
         action = Action.obj.get(id=self.params['action_id'])
+        assign_user_or_group_perm(user, group, policy, get_perm_for_model(Action), action)
         for obj in policy.get_objects(param_obj):
             model = get_model_by_type(obj.prototype.type)
             ct = ContentType.objects.get_for_model(model)
@@ -130,18 +130,50 @@ def get_perm_for_model(model):
     return perm
 
 
-def apply_task_and_jobs(obj: ADCMEntity, policy: Policy, user: User, group: Group = None):
-    model = get_model_by_type(obj.prototype.type)
-    ct = ContentType.objects.get_for_model(model)
-    task_queryset = TaskLog.objects.filter(object_id=obj.id, object_type=ct)
-    for task in task_queryset:
-        assign_user_or_group_perm(user, group, policy, get_perm_for_model(TaskLog), task)
-        job_queryset = JobLog.objects.filter(task=task)
-        for job in job_queryset:
-            assign_user_or_group_perm(user, group, policy, get_perm_for_model(JobLog), job)
-            log_queryset = LogStorage.objects.filter(job=job)
-            for log in log_queryset:
-                assign_user_or_group_perm(user, group, policy, get_perm_for_model(LogStorage), log)
+def apply_jobs(task: TaskLog, policy: Policy, user: User, group: Group = None):
+    assign_user_or_group_perm(user, group, policy, get_perm_for_model(TaskLog), task)
+    for job in JobLog.objects.filter(task=task):
+        assign_user_or_group_perm(user, group, policy, get_perm_for_model(JobLog), job)
+        for log in LogStorage.objects.filter(job=job):
+            assign_user_or_group_perm(user, group, policy, get_perm_for_model(LogStorage), log)
+
+
+def re_apply_policy_for_jobs(object, task):
+    id_type_dict = {}
+    object_model = object.__class__.__name__.lower()
+    if object.prototype.type == 'component':
+        object_list = [object, object.service, object.cluster]
+    elif object.prototype.type == 'service':
+        object_list = [object, object.cluster]
+    else:
+        object_list = [object]
+    for obj in object_list:
+        id_type_dict[obj] = ContentType.objects.get_for_model(obj)
+
+    for obj, ct in id_type_dict.items():
+        for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=ct):
+            for user in policy.user.all():
+                try:
+                    uop = UserObjectPermission.objects.get(
+                        user=user, permission__codename='view_action', object_pk=task.action.pk
+                    )
+                except UserObjectPermission.DoesNotExist:
+                    continue
+                if uop in policy.user_object_perm.all() and user.has_perm(
+                    f'view_{object_model}', object
+                ):
+                    apply_jobs(task, policy, user, None)
+            for group in policy.group.all():
+                try:
+                    gop = GroupObjectPermission.objects.get(
+                        group=group, permission__codename='view_action', object_pk=task.action.pk
+                    )
+                except UserObjectPermission.DoesNotExist:
+                    continue
+                if gop in policy.group_object_perm.all() and group.has_perm(
+                    f'view_{object_model}', object
+                ):
+                    apply_jobs(task, policy, None, group)
 
 
 class ParentRole(AbstractRole):
@@ -154,7 +186,6 @@ class ParentRole(AbstractRole):
                 continue
             if obj.prototype.type in r.parametrized_by_type:
                 r.apply(policy, user, group, obj)
-        apply_task_and_jobs(obj, policy, user, group)
 
     def apply(
         self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None

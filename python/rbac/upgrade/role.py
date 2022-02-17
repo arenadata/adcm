@@ -25,6 +25,8 @@ from rbac import log
 from rbac.models import Role, RoleMigration, Permission, re_apply_all_polices, RoleTypes
 from rbac.settings import api_settings
 
+from cm.errors import AdcmEx
+
 
 def upgrade(data: dict):
     """Upgrade roles and user permissions"""
@@ -216,7 +218,7 @@ def update_built_in_roles(
 
 
 def get_view_role(parametrized_by):
-    return Role.objects.get(name=f'Get {parametrized_by} object')
+    return Role.objects.get(name=f'Get {parametrized_by} object', built_in=True)
 
 
 @transaction.atomic
@@ -231,7 +233,7 @@ def prepare_action_roles(bundle: Bundle):
     hidden_roles = prepare_hidden_roles(bundle)
     view_role_list = []
     for business_role_name, business_role_params in hidden_roles.items():
-        view_role_list.append(get_view_role(business_role_params))
+        view_role_list.append(get_view_role(business_role_params['parametrized_by_type']))
         if business_role_params['parametrized_by_type'] == 'component':
             parametrized_by_type = ['service', 'component']
         else:

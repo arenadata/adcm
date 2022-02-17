@@ -1,6 +1,6 @@
 ---
 
-version: 5
+version: 2
 
 roles:
     - name: Create host
@@ -1381,7 +1381,6 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       child:
-        - Get task and jobs
         - Get cluster object
         - Get service object
         - Get component object
@@ -1427,7 +1426,6 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       child:
-        - Get task and jobs
         - Get provider object
         - Get host object
         - Edit provider configurations

@@ -24,7 +24,7 @@ from background_task import background
 from django.db import transaction
 from django.utils import timezone
 
-import rbac
+from rbac.roles import re_apply_policy_for_jobs
 from cm import api, inventory, adcm_config, variant, config
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx
@@ -131,7 +131,7 @@ def prepare_task(
             process_file_type(task, spec, conf)
             task.config = new_conf
             task.save()
-    rbac.models.re_apply_object_policy(obj)
+    re_apply_policy_for_jobs(obj, task)
     return task
 
 
