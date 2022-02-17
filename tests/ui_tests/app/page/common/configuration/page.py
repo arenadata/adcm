@@ -154,11 +154,23 @@ class CommonConfigMenuObj(BasePageObject):
 
     @allure.step('Check bool field')
     def assert_bool_value_is(self, row: WebElement, expected_value: bool):
-        current_bool_state = "checked" in self.find_child(row, CommonConfigMenu.ConfigRow.checkbox).get_attribute("class")
-        assert current_bool_state == expected_value, f'Expected value was {expected_value} but presented is {current_bool_state}'
+        current_bool_state = "checked" in self.find_child(row, CommonConfigMenu.ConfigRow.checkbox).get_attribute(
+            "class"
+        )
+        assert (
+            current_bool_state == expected_value
+        ), f'Expected value was {expected_value} but presented is {current_bool_state}'
 
     @allure.step('Check field "{display_name}" has value "{expected_value}"')
-    def assert_input_value_is(self, expected_value, display_name: str, *, is_password: bool = False, is_list: bool = False, is_map: bool = False):
+    def assert_input_value_is(
+        self,
+        expected_value,
+        display_name: str,
+        *,
+        is_password: bool = False,
+        is_list: bool = False,
+        is_map: bool = False,
+    ):
         """
         Assert that value in field is expected_value (using retries)
         :param expected_value: Value expected to be in input field
@@ -168,12 +180,18 @@ class CommonConfigMenuObj(BasePageObject):
 
         def _assert_value():
             if is_list:
-                input_value = [v.get_attribute("value") for v in self.find_children(self.get_config_row(display_name), self.locators.ConfigRow.input)]
+                input_value = [
+                    v.get_attribute("value")
+                    for v in self.find_children(self.get_config_row(display_name), self.locators.ConfigRow.input)
+                ]
             elif is_map:
                 input_value = dict()
-                row_values = [v.get_attribute("value") for v in self.find_children(self.get_config_row(display_name), self.locators.ConfigRow.input)]
-                for i in range(0, len(row_values)-1, 2):
-                    input_value[row_values[i]] = row_values[i+1]
+                row_values = [
+                    v.get_attribute("value")
+                    for v in self.find_children(self.get_config_row(display_name), self.locators.ConfigRow.input)
+                ]
+                for i in range(0, len(row_values) - 1, 2):
+                    input_value[row_values[i]] = row_values[i + 1]
             else:
                 input_value = self.get_input_value(row=self.get_config_row(display_name), is_password=is_password)
             assert expected_value == input_value, f'Expected value was {expected_value} but presented is {input_value}'
