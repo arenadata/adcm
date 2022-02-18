@@ -16,7 +16,7 @@ from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from guardian.models import UserObjectPermission, GroupObjectPermission
 from adwp_base.errors import raise_AdwpEx as err
-from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
+from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission, RoleTypes
 from cm.models import (
     Action,
     ClusterObject,
@@ -118,6 +118,14 @@ class ActionRole(AbstractRole):
                 assign_user_or_group_perm(user, group, policy, perm, obj)
 
 
+class TaskRole(AbstractRole):
+    def apply(self, policy, role, user, group, param_obj=None):
+        task = TaskLog.obj.get(id=self.params['task_id'])
+        for obj in policy.get_objects(param_obj):
+            if obj == task.task_object:
+                apply_jobs(task, policy, user, group)
+
+
 def get_perm_for_model(model):
     ct = ContentType.objects.get_for_model(model)
     codename = f'view_{model.__name__.lower()}'
@@ -158,6 +166,18 @@ def get_objects_for_policy(obj):
 def re_apply_policy_for_jobs(action_object, task):
     obj_type_map = get_objects_for_policy(action_object)
     object_model = action_object.__class__.__name__.lower()
+    task_role, _ = Role.objects.get_or_create(
+        name=f'View role for task {task.id}',
+        display_name=f'View role for task {task.id}',
+        description='View tasklog object with following joblog and logstorage',
+        type=RoleTypes.hidden,
+        module_name='rbac.roles',
+        class_name='TaskRole',
+        init_params={
+            'task_id': task.id,
+        },
+        parametrized_by_type=[task.task_object.prototype.type],
+    )
     for obj, ct in obj_type_map.items():
         for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=ct):
             for user in policy.user.all():
@@ -170,6 +190,7 @@ def re_apply_policy_for_jobs(action_object, task):
                 if uop in policy.user_object_perm.all() and user.has_perm(
                     f'view_{object_model}', action_object
                 ):
+                    policy.role.child.add(task_role)
                     apply_jobs(task, policy, user, None)
             for group in policy.group.all():
                 try:
@@ -181,6 +202,7 @@ def re_apply_policy_for_jobs(action_object, task):
                 if gop in policy.group_object_perm.all() and group.has_perm(
                     f'view_{object_model}', action_object
                 ):
+                    policy.role.child.add(task_role)
                     apply_jobs(task, policy, None, group)
 
 
@@ -190,7 +212,7 @@ class ParentRole(AbstractRole):
     def find_and_apply(self, obj, policy, role, user, group=None):
         """Find Role of appropriate type and apply it to specified object"""
         for r in role.child.all():
-            if r.class_name not in ('ObjectRole', 'ActionRole'):
+            if r.class_name not in ('ObjectRole', 'ActionRole', 'TaskRole'):
                 continue
             if obj.prototype.type in r.parametrized_by_type:
                 r.apply(policy, user, group, obj)
