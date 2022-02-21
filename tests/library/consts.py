@@ -11,6 +11,7 @@
 # limitations under the License.
 
 """Common consts for tests"""
+from enum import Enum
 
 
 class States:  # pylint: disable=too-few-public-methods
@@ -25,3 +26,13 @@ class MessageStates:  # pylint: disable=too-few-public-methods
 
     fail_msg = 'fail_msg'
     success_msg = 'success_msg'
+
+
+class HTTPMethod(Enum):  # pylint: disable=too-few-public-methods
+    """HTTP methods"""
+
+    GET = 'get'
+    POST = 'post'
+    PUT = 'put'
+    PATCH = 'patch'
+    DELETE = 'delete'

@@ -12,7 +12,7 @@
 
 """Test corner cases where permissions got messed up and allows more than they should be"""
 
-from typing import Iterable, Tuple
+from typing import Iterable, Tuple, Callable
 
 import allure
 import pytest
@@ -23,7 +23,6 @@ from tests.functional.rbac.conftest import (
     RbacRoles,
     is_allowed,
     as_user_objects,
-    is_denied,
     BusinessRole,
 )
 from tests.functional.rbac.actions.utils import action_business_role, create_action_policy
@@ -63,35 +62,41 @@ class TestClusterAdminRoleDoNotBreakParametrization:
         return first_cluster, second_cluster
 
     @allure.issue("https://arenadata.atlassian.net/browse/ADCM-2557")
-    def test_cluster_admin(self, clients, user, clusters):
+    def test_cluster_admin(self, clients, user, clusters, is_denied_to_user):
         """
         Test that granting "Cluster Admin" to one cluster
         doesn't lead to unauthorized access to another cluster's actions
         """
+        (
+            first_cluster_admin,
+            second_cluster_admin,
+            first_another_bundle_cluster_admin,
+            second_another_bundle_cluster_admin,
+        ) = clusters
 
-        first_cluster, second_cluster, first_another_bundle_cluster, second_another_bundle_cluster = as_user_objects(
-            clients.user, *clusters
-        )
         # will create role for each cluster with same prototype
-        same_display_role = action_business_role(first_cluster, SAME_DISPLAY_ACTION_NAME)
-        do_nothing_role = action_business_role(second_cluster, DO_NOTHING_ACTION_NAME)
+        same_display_role = action_business_role(first_cluster_admin, SAME_DISPLAY_ACTION_NAME)
+        do_nothing_role = action_business_role(second_cluster_admin, DO_NOTHING_ACTION_NAME)
 
         clients.admin.policy_create(
             name="Cluster Admin for First Cluster",
             role=clients.admin.role(display_name=RbacRoles.ClusterAdministrator.value),
-            objects=[first_cluster],
+            objects=[first_cluster_admin],
             user=[user],
         )
+
+        first_cluster, second_cluster = as_user_objects(clients.user, first_cluster_admin, second_cluster_admin)
 
         self.check_permissions(
             "Check that Cluster Admin grants permission only on one cluster",
             allowed=((first_cluster, same_display_role), (first_cluster, do_nothing_role)),
             denied=(
-                (second_cluster, same_display_role),
-                (second_cluster, do_nothing_role),
-                (first_another_bundle_cluster, do_nothing_role),
-                (second_another_bundle_cluster, do_nothing_role),
+                (second_cluster_admin, same_display_role),
+                (second_cluster_admin, do_nothing_role),
+                (first_another_bundle_cluster_admin, do_nothing_role),
+                (second_another_bundle_cluster_admin, do_nothing_role),
             ),
+            check_denied=is_denied_to_user,
         )
 
         create_action_policy(
@@ -108,18 +113,21 @@ class TestClusterAdminRoleDoNotBreakParametrization:
                 (second_cluster, same_display_role),
             ),
             denied=(
-                (second_cluster, do_nothing_role),
-                (first_another_bundle_cluster, do_nothing_role),
-                (second_another_bundle_cluster, do_nothing_role),
+                (second_cluster_admin, do_nothing_role),
+                (first_another_bundle_cluster_admin, do_nothing_role),
+                (second_another_bundle_cluster_admin, do_nothing_role),
             ),
+            check_denied=is_denied_to_user,
         )
 
         create_action_policy(
             clients.admin,
-            first_another_bundle_cluster,
+            first_another_bundle_cluster_admin,
             action_business_role(first_cluster, DO_NOTHING_ACTION_NAME),
             user=user,
         )
+
+        first_another_bundle_cluster, *_ = as_user_objects(clients.user, first_another_bundle_cluster_admin)
 
         self.check_permissions(
             "Check that Cluster Admin does not grant access to another bundle's clusters actions",
@@ -130,18 +138,20 @@ class TestClusterAdminRoleDoNotBreakParametrization:
                 (first_another_bundle_cluster, do_nothing_role),
             ),
             denied=(
-                (second_cluster, do_nothing_role),
-                (first_another_bundle_cluster, same_display_role),
-                (second_another_bundle_cluster, do_nothing_role),
-                (second_another_bundle_cluster, same_display_role),
+                (second_cluster_admin, do_nothing_role),
+                (first_another_bundle_cluster_admin, same_display_role),
+                (second_another_bundle_cluster_admin, do_nothing_role),
+                (second_another_bundle_cluster_admin, same_display_role),
             ),
+            check_denied=is_denied_to_user,
         )
 
-    def test_service_admin(self, clients, clusters_with_services, user):
+    # pylint: disable-next=too-many-locals
+    def test_service_admin(self, clients, clusters_with_services, user, is_denied_to_user):
         """Test that granting "Service Admin" role doesn't interfere"""
         first_cluster, second_cluster = clusters_with_services
-        first_service, second_service = as_user_objects(clients.user, *first_cluster.service_list())
-        another_cluster_service, *_ = as_user_objects(clients.user, second_cluster.service())
+        first_service, second_service = first_cluster.service_list()
+        another_cluster_service = second_cluster.service()
         # will create role for each cluster with same prototype
         same_display_role = action_business_role(first_service, SAME_DISPLAY_ACTION_NAME)
         do_nothing_role = action_business_role(second_service, DO_NOTHING_ACTION_NAME)
@@ -153,10 +163,13 @@ class TestClusterAdminRoleDoNotBreakParametrization:
             user=[user],
         )
 
+        user_first_service, *_ = as_user_objects(clients.user, first_service)
+
         self.check_permissions(
             "Check that Service Admin role allows actions only on one service in one cluster",
-            allowed=((first_service, do_nothing_role), (first_service, same_display_role)),
+            allowed=((user_first_service, do_nothing_role), (user_first_service, same_display_role)),
             denied=((second_service, do_nothing_role), (another_cluster_service, do_nothing_role)),
+            check_denied=is_denied_to_user,
         )
 
         create_action_policy(
@@ -166,15 +179,18 @@ class TestClusterAdminRoleDoNotBreakParametrization:
             user=user,
         )
 
+        user_second_service, *_ = as_user_objects(clients.user, second_service)
+
         self.check_permissions(
             "Check that granting permission for a single action on another service in cluster "
             "doesn't allow full access to cluster's actions",
             allowed=(
-                (first_service, do_nothing_role),
-                (first_service, same_display_role),
-                (second_service, do_nothing_role),
+                (user_first_service, do_nothing_role),
+                (user_first_service, same_display_role),
+                (user_second_service, do_nothing_role),
             ),
             denied=((second_service, same_display_role), (another_cluster_service, do_nothing_role)),
+            check_denied=is_denied_to_user,
         )
 
         create_action_policy(
@@ -184,16 +200,19 @@ class TestClusterAdminRoleDoNotBreakParametrization:
             user=user,
         )
 
+        user_another_cluster_service, *_ = as_user_objects(clients.user, another_cluster_service)
+
         self.check_permissions(
             "Check that granting permission to run a single action on another cluster's service "
             "doesn't grant extra permissions",
             allowed=(
-                (first_service, do_nothing_role),
-                (first_service, same_display_role),
-                (second_service, do_nothing_role),
-                (another_cluster_service, do_nothing_role),
+                (user_first_service, do_nothing_role),
+                (user_first_service, same_display_role),
+                (user_second_service, do_nothing_role),
+                (user_another_cluster_service, do_nothing_role),
             ),
             denied=((second_service, same_display_role), (another_cluster_service, same_display_role)),
+            check_denied=is_denied_to_user,
         )
 
     def check_permissions(
@@ -201,10 +220,11 @@ class TestClusterAdminRoleDoNotBreakParametrization:
         message: str,
         allowed: Iterable[Tuple[AnyADCMObject, BusinessRole]],
         denied: Iterable[Tuple[Cluster, BusinessRole]],
+        check_denied: Callable,
     ):
         """Check that permissions on actions works as expected"""
         with allure.step(message):
             for adcm_object, role in allowed:
                 is_allowed(adcm_object, role).wait()
             for adcm_object, role in denied:
-                is_denied(adcm_object, role)
+                check_denied(adcm_object, role)

@@ -12,21 +12,38 @@
 
 """Generic helpers for RBAC actions testing"""
 
-from typing import Union, List
+from typing import Union, List, Optional
 
 import allure
-from adcm_client.objects import ADCMClient, Policy
+from adcm_client.objects import ADCMClient, Policy, Host
 from adcm_pytest_plugin.utils import random_string
 
+from tests.library.consts import HTTPMethod
+from tests.functional.rbac.checkers import ForbiddenCallChecker
 from tests.functional.rbac.conftest import BusinessRole
 from tests.functional.tools import AnyADCMObject
 
 
-def action_business_role(adcm_object: AnyADCMObject, action_display_name: str) -> BusinessRole:
+def action_business_role(
+    adcm_object: AnyADCMObject,
+    action_display_name: str,
+    *,
+    action_on_host: Optional[Host] = None,
+    no_deny_checker: bool = False,
+) -> BusinessRole:
     """Construct BusinessRole that allows to run action"""
+    if no_deny_checker:
+        deny_checker = None
+    else:
+        action_owner = action_on_host if action_on_host else adcm_object
+        action_id = action_owner.action(display_name=action_display_name).id
+        deny_checker = ForbiddenCallChecker(action_owner.__class__, f'action/{action_id}/run', HTTPMethod.POST)
+
     role_name = get_action_role_name(adcm_object, action_display_name)
     return BusinessRole(
-        role_name, lambda user_obj, *args, **kwargs: user_obj.action(display_name=action_display_name).run(**kwargs)
+        role_name,
+        lambda user_obj, *args, **kwargs: user_obj.action(display_name=action_display_name).run(**kwargs),
+        deny_checker,
     )
 
 
@@ -58,3 +75,8 @@ def create_action_policy(
 def get_action_role_name(adcm_object: AnyADCMObject, action_display_name: str):
     """Construct "umbrella" role name for an action with specified name"""
     return f'{adcm_object.prototype().type.capitalize()} Action: {action_display_name}'
+
+
+def get_action_display_name_from_role_name(role_name: str):
+    """Get action display name from action role name"""
+    return role_name.rsplit('Action: ', maxsplit=1)[-1]
