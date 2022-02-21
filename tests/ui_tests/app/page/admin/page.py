@@ -417,7 +417,7 @@ class AdminRolesPage(GeneralAdminPage):
             AdminRoleInfo.build(
                 name='Cluster Administrator',
                 description='',
-                permissions=CLUSTER_ADMIN_ROLES,
+                permissions=CLUSTER_ADMIN_ROLES - SERVICE_ADMIN_ROLES | {'Service Administrator'},
             ),
             AdminRoleInfo.build(
                 name='Provider Administrator',

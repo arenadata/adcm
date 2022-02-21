@@ -53,6 +53,7 @@ SERVICE_ADMIN_ROLES = {
         BusinessRoles.EditComponentConfigurations,
         BusinessRoles.ViewHostConfigurations,
         BusinessRoles.ManageServiceImports,
+        BusinessRoles.ViewHostComponents,
     )
 }
 
@@ -71,6 +72,8 @@ CLUSTER_ADMIN_ROLES = SERVICE_ADMIN_ROLES.union(
             BusinessRoles.UpgradeClusterBundle,
             BusinessRoles.UploadBundle,
             BusinessRoles.RemoveBundle,
+            BusinessRoles.CreateHost,
+            BusinessRoles.RemoveHosts,
         )
     }
 )

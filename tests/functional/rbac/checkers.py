@@ -44,7 +44,10 @@ RoleTargetType = Type[RoleTargetObject]
 
 
 class ForbiddenCallChecker:  # pylint: disable=too-few-public-methods
-    """Helper to check that certain interaction with an ADCM object is truly forbidden via API"""
+    """
+    Helper class to build a checker that ensures that
+    interaction with an ADCM object is truly forbidden via direct calls to API
+    """
 
     _API_ROOT = '/api/v1/'
 
@@ -62,10 +65,12 @@ class ForbiddenCallChecker:  # pylint: disable=too-few-public-methods
         Group: 'rbac/group/{id}/',
         Role: 'rbac/role/{id}/',
         Policy: 'rbac/policy/{id}/',
-        # TODO jobs, tasks?
+        # add new entries here (jobs, tasks)
     }
 
-    # first argument is adcm_object, should allow passing kwargs
+    # Here the function is stored that will form required URL part (before suffix)
+    # for the object that was passed to `__call__` function
+    # First argument is adcm_object, it's better to allow passing kwargs
     _get_infix: Callable[..., str]
     is_of_correct_type: Callable[[RoleTargetObject], bool]
 
@@ -80,12 +85,12 @@ class ForbiddenCallChecker:  # pylint: disable=too-few-public-methods
         if special_case:
             # rework to switch maybe if you have time
             # and maybe add enum to list all possible cases not in string form
-            __special_cases = {
+            special_cases = {
                 'create-from-bundle': self._format_create_from_bundle_infix,
                 'host-on-cluster': self._format_host_on_cluster_infix,
                 'upgrade': self._format_infix_for_upgrade,
             }
-            self._get_infix = __special_cases[special_case]
+            self._get_infix = special_cases[special_case]
         else:
             self._get_infix = self._format_infix
         if isinstance(object_type, Collection):
@@ -97,6 +102,13 @@ class ForbiddenCallChecker:  # pylint: disable=too-few-public-methods
         self.method = method
 
     def __call__(self, client: ADCMClient, adcm_object: AnyADCMObject, *args, **kwargs):
+        """
+        Try to access the resource / perform an action by:
+        1. Building URL for a given object
+        2. Requesting this URL with one of HTTP methods with authorization from `client` argument
+        3. Raise an AssertionError if response was 500
+        4. Raise an AssertionError if response wasn't 403 (because it's Forbidden checker)
+        """
         suffix = f'{self._get_infix(adcm_object, client=client)}{self.url_suffix}/'
         url = parse.urljoin(client.url, f'{self._API_ROOT}{suffix}')
         call_api_method = getattr(requests, self.method.value)
