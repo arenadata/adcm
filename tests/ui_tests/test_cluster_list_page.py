@@ -670,7 +670,7 @@ class TestClusterComponentsPage:
     ):
         """Test distribution of components on hosts"""
         params = {"message": "Successfully saved."}
-        cluster, _, _ = create_community_cluster_with_host_and_service
+        cluster, *_ = create_community_cluster_with_host_and_service
         cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         host_row = cluster_components_page.find_host_row_by_name(HOST_NAME)
         component_row = cluster_components_page.find_component_row_by_name(COMPONENT_NAME)
@@ -690,7 +690,7 @@ class TestClusterComponentsPage:
         self, app_fs, create_community_cluster_with_host_and_service
     ):
         """Test restore components to hosts distribution"""
-        cluster, _, _ = create_community_cluster_with_host_and_service
+        cluster, *_ = create_community_cluster_with_host_and_service
         cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         host_row = cluster_components_page.find_host_row_by_name(HOST_NAME)
         component_row = cluster_components_page.find_component_row_by_name(COMPONENT_NAME)
@@ -709,7 +709,7 @@ class TestClusterComponentsPage:
         self, app_fs, create_community_cluster_with_host_and_service
     ):
         """Test delete component from host"""
-        cluster, _, _ = create_community_cluster_with_host_and_service
+        cluster, *_ = create_community_cluster_with_host_and_service
         cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         host_row = cluster_components_page.find_host_row_by_name(HOST_NAME)
         component_row = cluster_components_page.find_component_row_by_name(COMPONENT_NAME)
