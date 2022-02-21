@@ -223,7 +223,17 @@ def update_built_in_roles(
 
 
 def get_view_role(parametrized_by):
-    return Role.objects.get(name=f'Get {parametrized_by} object', built_in=True)
+    obj_list = []
+    if parametrized_by == 'service':
+        obj_list.append(Role.objects.get(name='Get cluster object', built_in=True))
+    if parametrized_by == 'component':
+        obj_list.append(Role.objects.get(name='Get cluster object', built_in=True))
+        obj_list.append(Role.objects.get(name='Get service object', built_in=True))
+    if parametrized_by == 'host':
+        obj_list.append(Role.objects.get(name='Get cluster object', built_in=True))
+        obj_list.append(Role.objects.get(name='Get provider object', built_in=True))
+    obj_list.append(Role.objects.get(name=f'Get {parametrized_by} object', built_in=True))
+    return obj_list
 
 
 @transaction.atomic
@@ -236,9 +246,8 @@ def prepare_action_roles(bundle: Bundle):
         'Service Administrator': Role.objects.get(name='Service Administrator'),
     }
     hidden_roles = prepare_hidden_roles(bundle)
-    view_role_list = []
     for business_role_name, business_role_params in hidden_roles.items():
-        view_role_list.append(get_view_role(business_role_params['parametrized_by_type']))
+        view_role_list = get_view_role(business_role_params['parametrized_by_type'])
         if business_role_params['parametrized_by_type'] == 'component':
             parametrized_by_type = ['service', 'component']
         else:
