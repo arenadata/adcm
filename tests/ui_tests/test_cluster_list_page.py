@@ -995,7 +995,7 @@ class TestClusterConfigPage:
         with allure.step('Check that save button is disabled'):
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
         cluster_config_page.config.check_invalid_value_message(
-            f"Field {params['filed_name']} value cannot be less than"
+            f"Field [{params['filed_name']}] value cannot be less than"
         )
 
         cluster_config_page.config.type_in_field_with_few_inputs(
@@ -1004,7 +1004,7 @@ class TestClusterConfigPage:
         with allure.step('Check that save button is disabled'):
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
         cluster_config_page.config.check_invalid_value_message(
-            f"Field {params['filed_name']} value cannot be greater than"
+            f"Field [{params['filed_name']}] value cannot be greater than"
         )
 
     @pytest.mark.parametrize(("number_type", "value"), RANGE_VALUES)

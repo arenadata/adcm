@@ -238,7 +238,7 @@ class TestServiceConfigPage:
             config_rows = service_config_page.config.get_all_config_rows()
             assert len(config_rows) == 2, "Rows are not filtered: there should be 1 group row and 1 sub group row"
             assert (
-                service_config_page.config.get_config_row_info(config_rows[0]).name == f"{params['search_param']}:"
+                service_config_page.config.get_config_row_info(config_rows[1]).name == f"{params['search_param']}:"
             ), f"Name should be {params['search_param']}"
         with service_config_page.config.wait_rows_change():
             service_config_page.config.clear_search_input()
