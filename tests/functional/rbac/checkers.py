@@ -71,7 +71,7 @@ class ForbiddenCallChecker:  # pylint: disable=too-few-public-methods
     # Here the function is stored that will form required URL part (before suffix)
     # for the object that was passed to `__call__` function
     # First argument is adcm_object, it's better to allow passing kwargs
-    _get_infix: Callable[..., str]
+    _build_resource_path: Callable[..., str]
     is_of_correct_type: Callable[[RoleTargetObject], bool]
 
     def __init__(
@@ -86,13 +86,13 @@ class ForbiddenCallChecker:  # pylint: disable=too-few-public-methods
             # rework to switch maybe if you have time
             # and maybe add enum to list all possible cases not in string form
             special_cases = {
-                'create-from-bundle': self._format_create_from_bundle_infix,
-                'host-on-cluster': self._format_host_on_cluster_infix,
-                'upgrade': self._format_infix_for_upgrade,
+                'create-from-bundle': self._build_create_from_bundle_resource_path,
+                'host-on-cluster': self._build_resource_path_for_host_on_cluster,
+                'upgrade': self._build_resource_path_for_upgrade,
             }
-            self._get_infix = special_cases[special_case]
+            self._build_resource_path = special_cases[special_case]
         else:
-            self._get_infix = self._format_infix
+            self._build_resource_path = self._build_default_resource_path
         if isinstance(object_type, Collection):
             self.is_of_correct_type = lambda obj: obj.__class__ in object_type
         else:
@@ -109,8 +109,8 @@ class ForbiddenCallChecker:  # pylint: disable=too-few-public-methods
         3. Raise an AssertionError if response was 500
         4. Raise an AssertionError if response wasn't 403 (because it's Forbidden checker)
         """
-        suffix = f'{self._get_infix(adcm_object, client=client)}{self.url_suffix}/'
-        url = parse.urljoin(client.url, f'{self._API_ROOT}{suffix}')
+        resource_path = self._build_resource_path(adcm_object)
+        url = parse.urljoin(client.url, f'{self._API_ROOT}{resource_path}')
         call_api_method = getattr(requests, self.method.value)
         with allure.step(f'Send {self.method.name} request to {url}'):
             response: requests.Response = call_api_method(
@@ -134,28 +134,32 @@ class ForbiddenCallChecker:  # pylint: disable=too-few-public-methods
                 f'Unexpected status code, call to {url} should be denied, but status code was {status_code}'
             )
 
-    def _format_infix(self, adcm_object: RoleTargetObject, **_) -> str:
+    def _build_default_resource_path(self, adcm_object: RoleTargetObject, **_) -> str:
+        """Build resource path string for "basic" entities and actions"""
         self._raise_on_incorrect_type(adcm_object)
         infix_template = self._method_map[adcm_object.__class__]
         template_format_arguments = {
             format_arg: getattr(adcm_object, format_arg)
             for format_arg in self._format_id_arg_regexp.findall(infix_template)
         }
-        return infix_template.format(**template_format_arguments)
+        return f'{infix_template.format(**template_format_arguments)}{self.url_suffix}/'
 
-    def _format_host_on_cluster_infix(self, adcm_object: Host, **_):  # pylint: disable=no-self-use
+    def _build_resource_path_for_host_on_cluster(self, adcm_object: Host, **_):  # pylint: disable=no-self-use
+        """Build resource path string for host that belongs to a cluster"""
         if not isinstance(adcm_object, Host) or not adcm_object.cluster_id:
             raise ValueError(f'Object {adcm_object} should be of type Host and be bond to a cluster')
         return f'cluster/{adcm_object.cluster_id}/host/{adcm_object.id}/'
 
-    def _format_infix_for_upgrade(self, adcm_object, **_):
+    def _build_resource_path_for_upgrade(self, adcm_object, **_):
+        """Build resource path for an upgrade action assuming there's available upgrade with id=1"""
         self._raise_on_incorrect_type(adcm_object)
         # upgrade only for cluster, provider, so nothing but id matters
         object_suffix = self._method_map[adcm_object.__class__].format(id=adcm_object.id)
         # we assume that it's always the first
-        return f'{object_suffix}upgrade/1/do'
+        return f'{object_suffix}upgrade/1/do/'
 
-    def _format_create_from_bundle_infix(self, adcm_object, **_):
+    def _build_create_from_bundle_resource_path(self, adcm_object, **_):
+        """Build resource for creating entities from the bundle object"""
         self._raise_on_incorrect_type(adcm_object)
         try:
             adcm_object.cluster_prototype()
@@ -164,6 +168,9 @@ class ForbiddenCallChecker:  # pylint: disable=too-few-public-methods
             return 'provider/'
 
     def _raise_on_incorrect_type(self, adcm_object):
+        """
+        Raise ValueError if object type is incorrect, because it means that you've passed incorrect object to call
+        """
         if not self.is_of_correct_type(adcm_object):
             raise ValueError(f'Object {adcm_object} should be of type {self.object_type}')
 
