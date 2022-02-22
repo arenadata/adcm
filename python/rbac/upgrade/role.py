@@ -34,14 +34,18 @@ def upgrade(data: dict):
 
     for role in data['roles']:
         role_obj = new_roles[role['name']]
+        task_roles = []
+        for child in role_obj.child.all():
+            if child.class_name == 'TaskRole':
+                task_roles.append(child)
         role_obj.child.clear()
         if 'child' not in role:
             continue
         for child in role['child']:
             child_role = new_roles[child]
             role_obj.child.add(child_role)
+        role_obj.child.add(*task_roles)
         role_obj.save()
-    re_apply_all_polices()
 
 
 def find_role(name: str, roles: list):
@@ -294,10 +298,11 @@ def init_roles():
         upgrade(role_data)
         rm.version = role_data['version']
         rm.save()
+        update_all_bundle_roles()
+        re_apply_all_polices()
         msg = f'Roles are upgraded to version {rm.version}'
         log.info(msg)
     else:
         msg = f'Roles are already at version {rm.version}'
-    update_all_bundle_roles()
 
     return msg
