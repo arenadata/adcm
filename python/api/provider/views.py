@@ -14,12 +14,11 @@ from guardian.mixins import PermissionListMixin
 from rest_framework import status, permissions
 from rest_framework.response import Response
 
-import cm
-from cm.models import HostProvider, Upgrade
-
-from api.utils import create, check_obj, check_custom_perm, AdcmFilterBackend, AdcmOrderingFilter
-from api.base_view import GenericUIView, DetailView, PaginatedView
 import api.serializers
+import cm
+from api.base_view import GenericUIView, DetailView, PaginatedView
+from api.utils import create, check_obj, check_custom_perm, AdcmFilterBackend, AdcmOrderingFilter
+from cm.models import HostProvider, Upgrade
 from . import serializers
 
 
@@ -38,7 +37,6 @@ class ProviderList(PermissionListMixin, PaginatedView):
     serializer_class_post = serializers.ProviderDetailSerializer
     filterset_fields = ('name', 'prototype_id')
     ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
-    permission_classes = (permissions.DjangoModelPermissions,)
     permission_required = ['cm.view_hostprovider']
 
     def post(self, request, *args, **kwargs):

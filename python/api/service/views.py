@@ -15,18 +15,17 @@ from rest_framework import status, permissions
 from rest_framework.response import Response
 
 import cm.status_api
+from api.base_view import GenericUIView, PaginatedView, DetailView
+from api.cluster.serializers import BindSerializer
+from api.stack.serializers import ImportSerializer
 from api.utils import (
     create,
     check_obj,
     check_custom_perm,
 )
-from api.base_view import GenericUIView, PaginatedView
-from api.stack.serializers import ImportSerializer
-from api.cluster.serializers import BindSerializer
-
 from cm.api import delete_service, get_import, unbind
 from cm.models import Cluster, ClusterObject, Prototype, ClusterBind, HostComponent
-
+from rbac.viewsets import DjangoOnlyObjectPermissions
 from . import serializers
 
 
@@ -39,7 +38,6 @@ def check_service(kwargs):
 
 class ServiceListView(PermissionListMixin, PaginatedView):
     queryset = ClusterObject.objects.all()
-    permission_classes = (permissions.IsAuthenticated,)
     permission_required = ['cm.view_clusterobject']
     check_service_perm = check_custom_perm
     serializer_class = serializers.ServiceSerializer
@@ -76,25 +74,20 @@ class ServiceListView(PermissionListMixin, PaginatedView):
         return create(serializer)
 
 
-class ServiceDetailView(GenericUIView):
+class ServiceDetailView(PermissionListMixin, DetailView):
     queryset = ClusterObject.objects.all()
     serializer_class = serializers.ServiceDetailSerializer
     serializer_class_ui = serializers.ServiceUISerializer
-
-    def get(self, request, *args, **kwargs):
-        """
-        Show service
-        """
-        service = check_service(kwargs)
-        serializer = self.get_serializer(service)
-        return Response(serializer.data)
+    permission_classes = (DjangoOnlyObjectPermissions,)
+    lookup_url_kwarg = 'service_id'
+    permission_required = ['cm.view_clusterobject']
 
     def delete(self, request, *args, **kwargs):
         """
         Remove service from cluster
         """
-        service = check_service(kwargs)
-        delete_service(service)
+        instance = self.get_object()
+        delete_service(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

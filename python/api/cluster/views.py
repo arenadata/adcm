@@ -21,6 +21,7 @@ import cm.api
 import cm.bundle
 import cm.job
 import cm.status_api
+from api.base_view import GenericUIView, DetailView, PaginatedView
 from api.utils import (
     AdcmOrderingFilter,
     check_custom_perm,
@@ -28,9 +29,9 @@ from api.utils import (
     create,
     update,
 )
-from api.base_view import GenericUIView, DetailView, PaginatedView
 from cm.errors import AdcmEx
 from cm.models import Cluster, HostComponent, Prototype, ClusterObject, Upgrade, ClusterBind
+from rbac.viewsets import DjangoOnlyObjectPermissions
 from . import serializers
 
 
@@ -63,7 +64,6 @@ class ClusterList(PermissionListMixin, PaginatedView):
     serializer_class_post = serializers.ClusterDetailSerializer
     filterset_fields = ('name', 'prototype_id')
     ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
-    permission_classes = (permissions.DjangoModelPermissions,)
     permission_required = ['cm.view_cluster']
 
     def post(self, request, *args, **kwargs):
@@ -71,13 +71,15 @@ class ClusterList(PermissionListMixin, PaginatedView):
         return create(serializer)
 
 
-class ClusterDetail(DetailView):
+class ClusterDetail(PermissionListMixin, DetailView):
     """
     get:
     Show cluster
     """
 
     queryset = Cluster.objects.all()
+    permission_classes = (DjangoOnlyObjectPermissions,)
+    permission_required = ['cm.view_cluster']
     serializer_class = serializers.ClusterDetailSerializer
     serializer_class_ui = serializers.ClusterUISerializer
     lookup_field = 'id'

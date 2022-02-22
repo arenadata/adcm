@@ -10,26 +10,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from guardian.mixins import PermissionListMixin
 from rest_framework import permissions
 from rest_framework.response import Response
 
-from api.utils import create, update, check_obj, permission_denied
 from api.base_view import GenericUIView
-
+from api.utils import create, update, check_obj, permission_denied
 from cm.adcm_config import ui_config
+from cm.errors import AdcmEx
 from cm.models import get_model_by_type, ConfigLog, ObjectConfig
-
+from rbac.viewsets import DjangoOnlyObjectPermissions
 from . import serializers
 
 
-def get_config_version(objconf, version):
+def get_config_version(queryset, objconf, version):
     if version == 'previous':
         ver = objconf.previous
     elif version == 'current':
         ver = objconf.current
     else:
         ver = version
-    cl = ConfigLog.obj.get(obj_ref=objconf, id=ver)
+    try:
+        cl = queryset.get(obj_ref=objconf, id=ver)
+    except ConfigLog.DoesNotExist:
+        raise AdcmEx('CONFIG_NOT_FOUND') from None
     return cl
 
 
@@ -47,8 +51,7 @@ def get_obj(object_type, object_id):
     model = get_model_by_type(object_type)
     obj = model.obj.get(id=object_id)
     oc = check_obj(ObjectConfig, {type_to_model(object_type): obj}, 'CONFIG_NOT_FOUND')
-    cl = ConfigLog.obj.get(obj_ref=oc, id=oc.current)
-    return obj, oc, cl
+    return obj, oc
 
 
 def get_object_type_id_version(**kwargs):
@@ -58,107 +61,97 @@ def get_object_type_id_version(**kwargs):
     return object_type, object_id, version
 
 
-def get_queryset(self):
-    return get_model_by_type(self.object_type).objects.all()
-
-
 def has_config_perm(user, action_type, object_type, obj):
     """
-    config_of_adcm checks permission to view/change config of any object
-    settings_of_adcm checks permission to view/change only ADCM settings
+    Checks permission to view/change config of any object
     """
     model = type_to_model(object_type)
     if user.has_perm(f'cm.{action_type}_config_of_{model}', obj):
         return True
-    if user.has_perm(f'cm.{action_type}_config_of_adcm'):
-        return True
-    if user.has_perm(f'cm.{action_type}_settings_of_adcm') and object_type == 'adcm':
+    if model == 'adcm' and user.has_perm(f'cm.{action_type}_settings_of_{model}'):
         return True
     return False
 
 
-def check_config_perm(self, action_type, object_type, obj):
-    if not has_config_perm(self.request.user, action_type, object_type, obj):
+def check_config_perm(user, action_type, object_type, obj):
+    if not has_config_perm(user, action_type, object_type, obj):
         permission_denied()
 
 
 class ConfigView(GenericUIView):
+    queryset = ConfigLog.objects.all()
     serializer_class = serializers.HistoryCurrentPreviousConfigSerializer
     permission_classes = (permissions.IsAuthenticated,)
-    check_config_perm = check_config_perm
-    get_queryset = get_queryset
-    object_type = None
 
     def get(self, request, *args, **kwargs):
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
-        self.object_type = object_type
-        obj, _, _ = get_obj(object_type, object_id)
-        self.check_config_perm('view', object_type, obj)
-        serializer = self.get_serializer(
-            self.get_queryset().get(id=obj.id), context={'request': request, 'object': obj}
-        )
+        model = get_model_by_type(object_type)
+        obj = model.obj.get(id=object_id)
+        serializer = self.get_serializer(obj)
         return Response(serializer.data)
 
 
-class ConfigHistoryView(GenericUIView):
+class ConfigHistoryView(PermissionListMixin, GenericUIView):
+    queryset = ConfigLog.objects.all()
     serializer_class = serializers.ConfigHistorySerializer
     serializer_class_post = serializers.ObjectConfigUpdateSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    check_config_perm = check_config_perm
-    get_queryset = get_queryset
-    object_type = None
+    permission_required = ['cm.view_configlog']
+
+    def filter_queryset(self, queryset):
+        if not self.request.user.has_perm('cm.view_settings_of_adcm'):
+            return super().filter_queryset(queryset).filter(obj_ref__adcm__isnull=True)
+        return super().filter_queryset(queryset)
 
     def get(self, request, *args, **kwargs):
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
-        self.object_type = object_type
-        obj, _, _ = get_obj(object_type, object_id)
-        self.check_config_perm('view', object_type, obj)
-        cl = ConfigLog.objects.filter(obj_ref=obj.config).order_by('-id')
+        obj, oc = get_obj(object_type, object_id)
+        cl = self.get_queryset().filter(obj_ref=oc).order_by('-id')
         serializer = self.get_serializer(cl, many=True, context={'request': request, 'object': obj})
         return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
-        self.object_type = object_type
-        obj, _, cl = get_obj(object_type, object_id)
-        self.check_config_perm('change', object_type, obj)
-        serializer = self.get_serializer(
-            cl, data=request.data, context={'request': request, 'object': obj}
-        )
+        obj, oc = get_obj(object_type, object_id)
+        check_config_perm(request.user, 'change', object_type, obj)
+        try:
+            cl = self.get_queryset().get(obj_ref=oc, id=oc.current)
+        except ConfigLog.DoesNotExist:
+            raise AdcmEx('CONFIG_NOT_FOUND') from None
+        serializer = self.get_serializer(cl, data=request.data)
         return create(serializer, ui=self._is_for_ui(), obj=obj)
 
 
-class ConfigVersionView(GenericUIView):
+class ConfigVersionView(PermissionListMixin, GenericUIView):
+    queryset = ConfigLog.objects.all()
+    permission_classes = (DjangoOnlyObjectPermissions,)
     serializer_class = serializers.ObjectConfigSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    check_config_perm = check_config_perm
-    get_queryset = get_queryset
-    object_type = None
+    permission_required = ['cm.view_configlog']
+
+    def filter_queryset(self, queryset):
+        if not self.request.user.has_perm('cm.view_settings_of_adcm'):
+            return super().filter_queryset(queryset).filter(obj_ref__adcm__isnull=True)
+        return super().filter_queryset(queryset)
 
     def get(self, request, *args, **kwargs):
         object_type, object_id, version = get_object_type_id_version(**kwargs)
-        self.object_type = object_type
-        obj, oc, _ = get_obj(object_type, object_id)
-        self.check_config_perm('view', object_type, obj)
-        cl = get_config_version(oc, version)
+        obj, oc = get_obj(object_type, object_id)
+        cl = get_config_version(self.get_queryset(), oc, version)
         if self._is_for_ui():
             cl.config = ui_config(obj, cl)
         serializer = self.get_serializer(cl)
         return Response(serializer.data)
 
 
-class ConfigHistoryRestoreView(GenericUIView):
+class ConfigHistoryRestoreView(PermissionListMixin, GenericUIView):
+    queryset = ConfigLog.objects.all()
     serializer_class = serializers.ObjectConfigRestoreSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    check_config_perm = check_config_perm
-    get_queryset = get_queryset
-    object_type = None
+    permission_classes = (DjangoOnlyObjectPermissions,)
+    permission_required = ['cm.view_configlog']
 
     def patch(self, request, *args, **kwargs):
         object_type, object_id, version = get_object_type_id_version(**kwargs)
-        self.object_type = object_type
-        obj, oc, _ = get_obj(object_type, object_id)
-        self.check_config_perm('change', object_type, obj)
-        cl = get_config_version(oc, version)
+        obj, oc = get_obj(object_type, object_id)
+        check_config_perm(request.user, 'change', object_type, obj)
+        cl = get_config_version(self.get_queryset(), oc, version)
         serializer = self.get_serializer(cl, data=request.data)
         return update(serializer)

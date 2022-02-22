@@ -15,9 +15,10 @@ from rest_framework import permissions
 from rest_framework.response import Response
 
 import cm.status_api
-from api.utils import check_obj
 from api.base_view import GenericUIView, PaginatedView
+from api.utils import check_obj
 from cm.models import ServiceComponent, ClusterObject, Cluster, HostComponent
+from rbac.viewsets import DjangoOnlyObjectPermissions
 from . import serializers
 
 
@@ -27,7 +28,6 @@ class ComponentListView(PermissionListMixin, PaginatedView):
     serializer_class_ui = serializers.ComponentUISerializer
     filterset_fields = ('cluster_id', 'service_id')
     ordering_fields = ('state', 'prototype__display_name', 'prototype__version_order')
-    permission_classes = (permissions.DjangoModelPermissions,)
     permission_required = ['cm.view_servicecomponent']
 
     def get_queryset(self):  # pylint: disable=arguments-differ
@@ -49,6 +49,7 @@ class ComponentDetailView(GenericUIView):
     queryset = ServiceComponent.objects.all()
     serializer_class = serializers.ComponentDetailSerializer
     serializer_class_ui = serializers.ComponentUISerializer
+    permission_classes = (DjangoOnlyObjectPermissions,)
 
     def get(self, request, *args, **kwargs):
         """

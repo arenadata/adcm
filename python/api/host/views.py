@@ -16,12 +16,12 @@ from guardian.shortcuts import get_objects_for_user
 from rest_framework import status, permissions
 from rest_framework.response import Response
 
+from api.base_view import GenericUIView, PaginatedView
 from api.utils import (
     create,
     check_obj,
     check_custom_perm,
 )
-from api.base_view import GenericUIView, PaginatedView
 from cm.api import remove_host_from_cluster, delete_host, add_host_to_cluster
 from cm.errors import AdcmEx
 from cm.models import (
@@ -92,7 +92,6 @@ class HostList(PermissionListMixin, PaginatedView):
     queryset = Host.objects.all()
     serializer_class = serializers.HostSerializer
     serializer_class_ui = serializers.HostUISerializer
-    permission_classes = (permissions.IsAuthenticated,)
     permission_required = ['cm.view_host']
     check_host_perm = check_custom_perm
     filterset_class = HostFilter
@@ -158,7 +157,6 @@ class HostListProvider(HostList):
 
 class HostListCluster(HostList):
     serializer_class = serializers.ClusterHostSerializer
-    permission_classes = (permissions.IsAuthenticated,)
     check_host_perm = check_custom_perm
 
     def post(self, request, *args, **kwargs):

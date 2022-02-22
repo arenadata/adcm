@@ -12,11 +12,11 @@
 
 """RBAC Role classes"""
 
+from adwp_base.errors import raise_AdwpEx as err
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from guardian.models import UserObjectPermission, GroupObjectPermission
-from adwp_base.errors import raise_AdwpEx as err
-from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
+
 from cm.models import (
     Action,
     ClusterObject,
@@ -24,7 +24,9 @@ from cm.models import (
     Host,
     HostComponent,
     get_model_by_type,
+    GroupConfig,
 )
+from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
 
 
 class AbstractRole:
@@ -120,13 +122,50 @@ class ActionRole(AbstractRole):
                 policy.group_object_perm.add(gop)
 
 
+class ConfigRole(AbstractRole):
+    """This Role apply permission to view and add config object"""
+
+    @staticmethod
+    def assign_perm(policy, user, group, obj, perm):
+        if user is not None:
+            uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
+            policy.user_object_perm.add(uop)
+        if group is not None:
+            gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
+            policy.group_object_perm.add(gop)
+
+    def apply(self, policy: Policy, role: Role, user: User, group: Group, param_obj=None):
+        # TODO: need refactoring
+        for obj in policy.get_objects(param_obj):
+            object_type = ContentType.objects.get_for_model(obj)
+            config_groups = GroupConfig.objects.filter(object_type=object_type, object_id=obj.id)
+
+            for perm in role.get_permissions():
+
+                if perm.content_type.model == 'objectconfig':
+                    self.assign_perm(policy, user, group, obj.config, perm)
+                    for cg in config_groups:
+                        self.assign_perm(policy, user, group, cg.config, perm)
+
+                if perm.content_type.model == 'configlog':
+                    for config in obj.config.configlog_set.all():
+                        self.assign_perm(policy, user, group, config, perm)
+                    for cg in config_groups:
+                        for config in cg.config.configlog_set.all():
+                            self.assign_perm(policy, user, group, config, perm)
+
+                if perm.content_type.model == 'groupconfig':
+                    for cg in config_groups:
+                        self.assign_perm(policy, user, group, cg, perm)
+
+
 class ParentRole(AbstractRole):
     """This Role is used for complex Roles that can include other Roles"""
 
     def find_and_apply(self, obj, policy, role, user, group=None):
         """Find Role of appropriate type and apply it to specified object"""
         for r in role.child.all():
-            if r.class_name not in ('ObjectRole', 'ActionRole'):
+            if r.class_name not in ('ObjectRole', 'ActionRole', 'ConfigRole'):
                 continue
             if obj.prototype.type in r.parametrized_by_type:
                 r.apply(policy, user, group, obj)

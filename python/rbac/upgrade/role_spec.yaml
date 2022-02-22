@@ -3,9 +3,21 @@
 version: 2
 
 roles:
-    - name: Create host
+    - name: Add host
       description: The ability to add new host
-      type: business
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: host
+              codenames:
+                - add
+
+    - name: Add host to provider
+      description: The ability to add host to provider
+      type: hidden
       module_name: rbac.roles
       class_name: ObjectRole
       parametrized_by:
@@ -13,13 +25,26 @@ roles:
       init_params:
         app_name: cm
         model: HostProvider
-      any_category: false
       apps:
         - label: cm
           models:
             - name: hostprovider
               codenames:
+                - view
                 - add_host_to
+
+    - name: Create host
+      description: The ability to add new host
+      type: business
+      module_name: rbac.roles
+      class_name: ParentRole
+      parametrized_by:
+        - provider
+      any_category: false
+      child:
+        - Add host
+        - Add host to provider
+        - Get host object
 
     - name: Create provider
       description: The ability to add new provider
@@ -93,16 +118,19 @@ roles:
       parametrized_by:
         - cluster
       module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: Cluster
+      class_name: ConfigRole
       apps:
         - label: cm
           models:
-            - name: cluster
+            - name: objectconfig
               codenames:
-                - view_config_of
+                - view
+            - name: configlog
+              codenames:
+                - view
+            - name: groupconfig
+              codenames:
+                - view
 
     - name: View cluster configurations
       description: The ability to view the cluster configuration page
@@ -118,8 +146,6 @@ roles:
       child:
         - Get cluster object
         - View cluster config
-        - View config endpoints
-
 
     - name: View service config
       description: The ability to view the service configuration page
@@ -127,16 +153,19 @@ roles:
       parametrized_by:
         - service
       module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: ClusterObject
+      class_name: ConfigRole
       apps:
         - label: cm
           models:
-            - name: clusterobject
+            - name: objectconfig
               codenames:
-                - view_config_of
+                - view
+            - name: configlog
+              codenames:
+                - view
+            - name: groupconfig
+              codenames:
+                - view
 
     - name: View service configurations
       description: The ability to view the service configuration page
@@ -153,7 +182,6 @@ roles:
         - Get cluster object
         - Get service object
         - View service config
-        - View config endpoints
 
     - name: View component config
       description: The ability to view the component configuration page
@@ -161,16 +189,19 @@ roles:
       parametrized_by:
         - component
       module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: ServiceComponent
+      class_name: ConfigRole
       apps:
         - label: cm
           models:
-            - name: servicecomponent
+            - name: objectconfig
               codenames:
-                - view_config_of
+                - view
+            - name: configlog
+              codenames:
+                - view
+            - name: groupconfig
+              codenames:
+                - view
 
     - name: View component configurations
       description: The ability to view the component configuration page
@@ -189,7 +220,6 @@ roles:
         - Get service object
         - Get component object
         - View component config
-        - View config endpoints
 
     - name: View provider config
       description: The ability to view the provider configuration page
@@ -197,16 +227,19 @@ roles:
       parametrized_by:
         - provider
       module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: HostProvider
+      class_name: ConfigRole
       apps:
         - label: cm
           models:
-            - name: hostprovider
+            - name: objectconfig
               codenames:
-                - view_config_of
+                - view
+            - name: configlog
+              codenames:
+                - view
+            - name: groupconfig
+              codenames:
+                - view
 
     - name: View provider configurations
       description: The ability to view the provider configuration page
@@ -222,7 +255,6 @@ roles:
       child:
         - Get provider object
         - View provider config
-        - View config endpoints
 
     - name: View host config
       description: The ability to view the host configuration page
@@ -230,16 +262,19 @@ roles:
       parametrized_by:
         - host
       module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: Host
+      class_name: ConfigRole
       apps:
         - label: cm
           models:
-            - name: host
+            - name: objectconfig
               codenames:
-                - view_config_of
+                - view
+            - name: configlog
+              codenames:
+                - view
+            - name: groupconfig
+              codenames:
+                - view
 
     - name: View host configurations
       description: The ability to view the host configuration page
@@ -255,22 +290,6 @@ roles:
       child:
         - Get host object
         - View host config
-        - View config endpoints
-
-    - name: View config endpoints
-      description: The ability to view list of all configs separatly
-      type: hidden
-      module_name: rbac.roles
-      class_name: ModelRole
-      apps:
-      - label: cm
-        models:
-          - name: objectconfig
-            codenames:
-              - view
-          - name: configlog
-            codenames:
-              - view
 
     - name: View any object configuration
       description: The ability to view config page of all objects except ADCM settings
@@ -281,9 +300,6 @@ roles:
       apps:
         - label: cm
           models:
-            - name: adcm
-              codenames:
-                - view_config_of
             - name: cluster
               codenames:
                 - view
@@ -305,6 +321,30 @@ roles:
             - name: configlog
               codenames:
                 - view
+            - name: groupconfig
+              codenames:
+                - view
+
+    - name: Edit config
+      description: The abiluty to change and add configuration
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: objectconfig
+              codenames:
+                - change
+            - name: configlog
+              codenames:
+                - add
+                - change
+            - name: groupconfig
+              codenames:
+                - add
+                - change
+                - delete
 
     - name: Edit cluster config
       description: The ability to change and add new cluster configuration
@@ -321,7 +361,6 @@ roles:
           models:
             - name: cluster
               codenames:
-                - view_config_of
                 - change_config_of
 
     - name: Edit cluster configurations
@@ -337,8 +376,9 @@ roles:
         model: Cluster
       child:
         - Get cluster object
+        - View cluster config
+        - Edit config
         - Edit cluster config
-        - Edit config endpoints
 
     - name: Edit service config
       description: The ability to change and add new service configuration
@@ -355,7 +395,6 @@ roles:
           models:
             - name: clusterobject
               codenames:
-                - view_config_of
                 - change_config_of
 
     - name: Edit service configurations
@@ -372,8 +411,9 @@ roles:
       child:
         - Get cluster object
         - Get service object
+        - View service config
+        - Edit config
         - Edit service config
-        - Edit config endpoints
 
     - name: Edit component config
       description: The ability to change and add new component configuration
@@ -390,7 +430,6 @@ roles:
           models:
             - name: servicecomponent
               codenames:
-                - view_config_of
                 - change_config_of
 
     - name: Edit component configurations
@@ -409,8 +448,9 @@ roles:
         - Get cluster object
         - Get service object
         - Get component object
+        - View component config
+        - Edit config
         - Edit component config
-        - Edit config endpoints
 
     - name: Edit provider config
       description: The ability to change and add new provider configuration
@@ -427,7 +467,6 @@ roles:
           models:
             - name: hostprovider
               codenames:
-                - view_config_of
                 - change_config_of
 
     - name: Edit provider configurations
@@ -443,8 +482,9 @@ roles:
         model: HostProvider
       child:
         - Get provider object
+        - View provider config
+        - Edit config
         - Edit provider config
-        - Edit config endpoints
 
     - name: Edit host config
       description: The ability to change and add new host configuration
@@ -461,7 +501,6 @@ roles:
           models:
             - name: host
               codenames:
-                - view_config_of
                 - change_config_of
 
     - name: Edit host configurations
@@ -477,25 +516,11 @@ roles:
         model: Host
       child:
         - Get host object
+        - View host config
+        - Edit config
         - Edit host config
-        - Edit config endpoints
 
-    - name: Edit config endpoints
-      description: The ability to edit list of all configs separatly
-      type: hidden
-      module_name: rbac.roles
-      class_name: ModelRole
-      apps:
-        - label: cm
-          models:
-            - name: objectconfig
-              codenames:
-                - view
-                - change
-            - name: configlog
-              codenames:
-                - view
-                - change
+# TODO: Continue check roles from here, except: Add service, Map hosts and Unmap hosts
 
     - name: View cluster imports
       description: The ability to view the cluster import page
@@ -616,9 +641,21 @@ roles:
         - Manage cluster imports
         - Manage service imports
 
-    - name: Add service
+    - name: Create service
+      description: The ability to add new service
+      type: hidden
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: clusterobject
+              codenames:
+                - add
+
+    - name: Add service hidden
       description: The ability to add service to cluster
-      type: business
+      type: hidden
       parametrized_by:
         - cluster
       module_name: rbac.roles
@@ -626,7 +663,6 @@ roles:
       init_params:
         app_name: cm
         model: Cluster
-      any_category: true
       apps:
         - label: cm
           models:
@@ -634,6 +670,18 @@ roles:
               codenames:
                 - add_service_to
                 - view
+
+    - name: Add service
+      description: The ability to add service to cluster
+      type: business
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ParentRole
+      any_category: true
+      child:
+        - Create service
+        - Add service hidden
 
     - name: Remove service hidden
       description: The ability to remove service from cluster
@@ -688,15 +736,14 @@ roles:
                 - view
                 - delete
 
-    - name: Map hosts
-      display_name: Add hosts to the Cluster
+    - name: Map hosts hidden
+      display_name: Add hosts to the Cluster hidden
       description: The ability to map hosts to the Cluster
-      type: business
+      type: hidden
       parametrized_by:
         - cluster
       module_name: rbac.roles
       class_name: ObjectRole
-      any_category: true
       init_params:
         app_name: cm
         model: Cluster
@@ -708,15 +755,27 @@ roles:
                 - view
                 - map_host_to
 
-    - name: Unmap hosts
-      display_name: Remove hosts from the Cluster
-      description: The ability to unmap hosts from the Cluster
+    - name: Map hosts
+      display_name: Add hosts to the Cluster
+      description: The ability to map hosts to the Cluster
       type: business
       parametrized_by:
         - cluster
       module_name: rbac.roles
-      class_name: ObjectRole
+      class_name: ParentRole
       any_category: true
+      child:
+        - Map hosts hidden
+        - Get host
+
+    - name: Unmap hosts hidden
+      display_name: Remove hosts from the Cluster hidden
+      description: The ability to unmap hosts from the Cluster
+      type: hidden
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
       init_params:
         app_name: cm
         model: Cluster
@@ -727,6 +786,19 @@ roles:
               codenames:
                 - view
                 - unmap_host_from
+
+    - name: Unmap hosts
+      display_name: Remove hosts from the Cluster
+      description: The ability to unmap hosts from the Cluster
+      type: business
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ParentRole
+      any_category: true
+      child:
+        - Unmap hosts hidden
+        - Get host object
 
     - name: View host-components
       description: The ability to view exact cluster's host-component page
@@ -886,7 +958,6 @@ roles:
           models:
             - name: adcm
               codenames:
-                - view
                 - view_settings_of
 
     - name: Edit ADCM settings
@@ -900,7 +971,6 @@ roles:
           models:
             - name: adcm
               codenames:
-                - view
                 - view_settings_of
                 - change_settings_of
 

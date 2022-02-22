@@ -10,15 +10,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from guardian.mixins import PermissionListMixin
+from rest_framework.permissions import DjangoObjectPermissions
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from cm.models import ObjectConfig
 from .serializers import ObjectConfigSerializer
 
-from rbac.viewsets import DjangoObjectPerm
 
-
-class ObjectConfigViewSet(ReadOnlyModelViewSet):  # pylint: disable=too-many-ancestors
+class ObjectConfigViewSet(
+    PermissionListMixin, ReadOnlyModelViewSet
+):  # pylint: disable=too-many-ancestors
     queryset = ObjectConfig.objects.all()
     serializer_class = ObjectConfigSerializer
-    permission_classes = (DjangoObjectPerm,)
+    permission_classes = (DjangoObjectPermissions,)
+    permission_required = ['cm.view_objectconfig']
+
+    def filter_queryset(self, queryset):
+        if not self.request.user.has_perm('cm.view_settings_of_adcm'):
+            return super().filter_queryset(queryset).filter(adcm__isnull=True)
+        return super().filter_queryset(queryset)
