@@ -409,7 +409,7 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs):
                 ), f"Element should{' not ' if expected_editable_state is False else ' '}be editable"
             if expected['content']:
                 if field_type == 'boolean':
-                    config_page.config.assert_bool_value_is(field, expected_value=config['config'][0]['default'])
+                    config_page.config.assert_checkbox_state(field, expected_value=config['config'][0]['default'])
                 elif field_type in ("password", "secrettext"):
                     is_password_value = True if field_type == "password" else False
                     config_page.config.assert_input_value_is(
@@ -419,15 +419,12 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs):
                     config_page.config.assert_input_value_is(
                         expected_value=config['config'][0]['default'],
                         display_name=field_type,
-                        is_password=False,
                         is_list=True,
                     )
                 elif field_type == "map":
                     config_page.config.assert_input_value_is(
                         expected_value=config['config'][0]['default'],
                         display_name=field_type,
-                        is_password=False,
-                        is_list=False,
                         is_map=True,
                     )
                 elif field_type == "file":
@@ -507,7 +504,7 @@ def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, a
                     ), f"Element should{' not ' if expected_editable_state is False else ' '}be editable"
             if expected['content']:
                 if field_type == 'boolean':
-                    config_page.config.assert_bool_value_is(
+                    config_page.config.assert_checkbox_state(
                         field, expected_value=config['config'][0]['subs'][0]['default']
                     )
                 elif field_type in ("password", "secrettext"):
@@ -519,15 +516,12 @@ def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, a
                     config_page.config.assert_input_value_is(
                         expected_value=config['config'][0]['subs'][0]['default'],
                         display_name=field_type,
-                        is_password=False,
                         is_list=True,
                     )
                 elif field_type == "map":
                     config_page.config.assert_input_value_is(
                         expected_value=config['config'][0]['subs'][0]['default'],
                         display_name=field_type,
-                        is_password=False,
-                        is_list=False,
                         is_map=True,
                     )
                 elif field_type == "file":

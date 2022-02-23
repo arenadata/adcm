@@ -254,6 +254,7 @@ class TestServiceConfigPage:
         params = {
             "config_name_new": "test_name",
             "config_name_old": "init",
+            "config_parameters_amount": 28,
         }
         with allure.step("Create cluster and service"):
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_DESCRIPTION_FIELDS)
@@ -267,7 +268,9 @@ class TestServiceConfigPage:
         service_config_page.config.check_config_fields_history_with_test_values()
         with allure.step("Check invisible params"):
             config = service.config()
-            assert len(config.keys()) == 28, "There are should be 24 config parameters"
+            assert (
+                len(config.keys()) == params["config_parameters_amount"]
+            ), f"There are should be {params['config_parameters_amount']} config parameters"
             for group in self.INVISIBLE_GROUPS:
                 assert group in config.keys(), "Invisible group should be present in config object"
 
@@ -277,6 +280,7 @@ class TestServiceConfigPage:
         params = {
             "config_name_new": "test_name",
             "config_name_old": "init",
+            "rows_amount": 16,
         }
         with allure.step("Create cluster and service"):
             bundle = cluster_bundle(sdk_client_fs, "service_with_advanced_params")
@@ -289,7 +293,7 @@ class TestServiceConfigPage:
         service_config_page.config.click_on_advanced()
         with allure.step("Check that rows are visible"):
             config_rows = service_config_page.config.get_all_config_rows()
-            assert len(config_rows) == 16, "Rows should be visible"
+            assert len(config_rows) == params["rows_amount"], f"There are should be {'rows_amount'} rows"
         service_config_page.config.fill_config_fields_with_test_values()
         service_config_page.config.set_description(params["config_name_new"])
         service_config_page.config.save_config()

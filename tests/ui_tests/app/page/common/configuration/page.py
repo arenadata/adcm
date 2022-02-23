@@ -153,7 +153,7 @@ class CommonConfigMenuObj(BasePageObject):
         return self.find_child(row, locator).get_property("value")
 
     @allure.step('Check bool field')
-    def assert_bool_value_is(self, row: WebElement, expected_value: bool):
+    def assert_checkbox_state(self, row: WebElement, expected_value: bool):
         current_bool_state = "checked" in self.find_child(row, CommonConfigMenu.ConfigRow.checkbox).get_attribute(
             "class"
         )
@@ -178,6 +178,9 @@ class CommonConfigMenuObj(BasePageObject):
         :param is_password: Is field password/confirmation
         """
 
+        if is_map and is_list:
+            raise ValueError("Should be selected only map or list or non of them")
+
         def _assert_value():
             if is_list:
                 input_value = [
@@ -190,7 +193,7 @@ class CommonConfigMenuObj(BasePageObject):
                     v.get_attribute("value")
                     for v in self.find_children(self.get_config_row(display_name), self.locators.ConfigRow.input)
                 ]
-                for i in range(0, len(row_values) - 1, 2):
+                for i in range(0, len(row_values) - 1, 2):  # row values are key-value for each "input" in a map row
                     input_value[row_values[i]] = row_values[i + 1]
             else:
                 input_value = self.get_input_value(row=self.get_config_row(display_name), is_password=is_password)
