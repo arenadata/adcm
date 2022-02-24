@@ -947,7 +947,6 @@ class TestClusterConfigPage:
         cluster_config_page.config.click_on_advanced()
         with allure.step('Check that field visible and we cannot edit field'):
             for config_item in cluster_config_page.config.get_all_config_rows():
-                cluster_config_page.config.nam
                 assert config_item.is_displayed(), "Config field should be visible"
                 assert cluster_config_page.config.is_element_read_only(config_item), "Config field should be read only"
 
