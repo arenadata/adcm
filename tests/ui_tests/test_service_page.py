@@ -293,7 +293,7 @@ class TestServiceConfigPage:
         service_config_page.config.click_on_advanced()
         with allure.step("Check that rows are visible"):
             config_rows = service_config_page.config.get_all_config_rows()
-            assert len(config_rows) == params["rows_amount"], f"There are should be {'rows_amount'} rows"
+            assert len(config_rows) == params["rows_amount"], f"There should be {params['rows_amount']} rows"
         service_config_page.config.fill_config_fields_with_test_values()
         service_config_page.config.set_description(params["config_name_new"])
         service_config_page.config.save_config()

@@ -71,8 +71,7 @@ def cluster_with_service(sdk_client: ADCMClient, path) -> Cluster:
     Prepared cluster for test: create cluster, couple services and couple components.
     """
     bundle = sdk_client.upload_from_fs(path)
-    cluster_name = "_".join(path.split("/")[-1:] + [random_string()])
-    cluster = bundle.cluster_create(name=cluster_name)
+    cluster = bundle.cluster_create(name=f"Test cluster {random_string()}")
     return cluster
 
 

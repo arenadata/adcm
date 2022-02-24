@@ -766,8 +766,7 @@ class TestClusterConfigPage:
         Prepared cluster for test: create cluster, couple services and couple components.
         """
         bundle = sdk_client.upload_from_fs(path)
-        cluster_name = "_".join(path.split("/")[-1:] + [random_string()])
-        cluster = bundle.cluster_create(name=cluster_name)
+        cluster = bundle.cluster_create(name=f"Test cluster {random_string()}")
         return cluster
 
     @allure.step("Prepare cluster and get config")
@@ -948,6 +947,7 @@ class TestClusterConfigPage:
         cluster_config_page.config.click_on_advanced()
         with allure.step('Check that field visible and we cannot edit field'):
             for config_item in cluster_config_page.config.get_all_config_rows():
+                cluster_config_page.config.nam
                 assert config_item.is_displayed(), "Config field should be visible"
                 assert cluster_config_page.config.is_element_read_only(config_item), "Config field should be read only"
 
