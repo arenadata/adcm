@@ -185,24 +185,28 @@ class TestActionBasedAccess:
                 check_objects_are_not_viewable(clients.user, all_objects)
 
     @pytest.mark.extra_rbac()
-    def test_host_action_permission_grants_access_to_owner_object(self, clients, user, host):
+    def test_host_action_permission_grants_access_to_owner_object(self, clients, user, host, prepare_objects):
         """
         Test that permission on host actions grants permission to "view" host
         """
         cluster = host.cluster()
-        check_objects_are_not_viewable(clients.user, [cluster, host])
+        *other_objects, second_host = prepare_objects
+        check_objects_are_not_viewable(clients.user, (cluster, host) + prepare_objects)
         policy = create_action_policy(
             clients.admin,
             cluster,
             action_business_role(cluster, 'Host action', no_deny_checker=True),
             user=user,
         )
-        check_objects_are_viewable(clients.user, [host])
-        check_objects_are_not_viewable(clients.user, [cluster])
+        check_objects_are_viewable(clients.user, [cluster, host])
+        check_objects_are_not_viewable(clients.user, prepare_objects)
+        cluster.host_add(second_host)
+        check_objects_are_viewable(clients.user, [cluster, host, second_host])
+        check_objects_are_not_viewable(clients.user, other_objects)
         with allure.step('Change host state and check nothing broke'):
             host.action(name='host_action').run().wait()
-            check_objects_are_viewable(clients.user, [host])
-            check_objects_are_not_viewable(clients.user, [cluster])
+            check_objects_are_viewable(clients.user, [cluster, host])
+
         delete_policy(policy)
         check_objects_are_not_viewable(clients.user, [cluster, host])
 
