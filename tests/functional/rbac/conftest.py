@@ -133,7 +133,18 @@ class BusinessRoles(Enum):
     ViewRoles = BusinessRole("View roles", methodcaller("role_list"))
     CreateCustomRoles = BusinessRole(
         "Create custom role",
-        methodcaller("role_create", name="Custom role", display_name="Custom role", child=[{"id": 2}]),
+        lambda client: client.role_create(
+            name="Custom role",
+            display_name="Custom role",
+            child=[
+                {
+                    # get first business role without parametrization
+                    "id": next(
+                        filter(lambda r: r.type == 'business' and r.parametrized_by_type == [], client.role_list())
+                    ).id
+                }
+            ],
+        ),
     )
     ViewPolicies = BusinessRole("View policy", methodcaller("policy_list"))
     CreatePolicy = BusinessRole(
@@ -348,9 +359,9 @@ def second_objects(sdk_client_fs):
     return cluster, service, component, provider, host
 
 
-def get_as_client_object(api: ADCMApiWrapper, obj: AnyADCMObject):
+def get_as_client_object(api: ADCMApiWrapper, obj: AnyADCMObject, **kwargs):
     """Get representation of an object from perspective of given user (client)"""
-    return obj.__class__(api, id=obj.id)
+    return obj.__class__(api, id=obj.id, **kwargs)
 
 
 def as_user_objects(user_sdk: ADCMClient, *objects: AnyADCMObject) -> Tuple[AnyADCMObject, ...]:

@@ -105,7 +105,7 @@ class TestActionRolesOnUpgrade:
                 role,
                 user=user,
             )
-            for role in self._get_roles_filter_exclude_by_action_name(all_business_roles, self.NOT_ALLOWED_ACTIONS)
+            for role in self._get_roles_filter_exclude_by_action_name(all_business_roles, (self.NOT_ALLOWED_ACTIONS,))
         ]
 
     @pytest.mark.usefixtures("new_bundle", "old_cluster_actions_policies")
@@ -131,7 +131,7 @@ class TestActionRolesOnUpgrade:
         self.check_roles_are_allowed(
             user_client,
             object_map,
-            tuple(self._get_roles_filter_exclude_by_action_name(all_business_roles, self.NOT_ALLOWED_ACTIONS)),
+            tuple(self._get_roles_filter_exclude_by_action_name(all_business_roles, (self.NOT_ALLOWED_ACTIONS,))),
         )
         self.check_roles_are_denied(
             user_client,

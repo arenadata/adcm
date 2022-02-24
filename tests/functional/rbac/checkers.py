@@ -110,9 +110,10 @@ class ForbiddenCallChecker:  # pylint: disable=too-few-public-methods
         4. Raise an AssertionError if response wasn't 403 (because it's Forbidden checker)
         """
         resource_path = self._build_resource_path(adcm_object)
-        url = parse.urljoin(client.url, f'{self._API_ROOT}{resource_path}')
+        path_without_base_url = f'{self._API_ROOT}{resource_path}'.replace('//', '/')
+        url = parse.urljoin(client.url, path_without_base_url)
         call_api_method = getattr(requests, self.method.value)
-        with allure.step(f'Send {self.method.name} request to {url}'):
+        with allure.step(f'Send {self.method.name} request to {path_without_base_url}'):
             response: requests.Response = call_api_method(
                 url,
                 headers={

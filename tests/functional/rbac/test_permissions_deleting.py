@@ -36,7 +36,7 @@ def test_remove_user_from_policy(user_sdk: ADCMClient, user, prepare_objects, sd
     is_allowed(cluster, BusinessRoles.ViewComponentConfigurations)
     with allure.step("Remove user from policy"):
         policy.update(user=[{"id": sdk_client_fs.user(username="admin").id}])
-    is_denied(cluster, BusinessRoles.ViewClusterConfigurations)
+    is_denied(cluster, BusinessRoles.ViewClusterConfigurations, client=user_sdk)
 
 
 def test_remove_group_from_policy(user_sdk: ADCMClient, user, prepare_objects, sdk_client_fs):
