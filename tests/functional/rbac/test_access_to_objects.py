@@ -97,7 +97,7 @@ class TestAccessToBasicObjects:
                     check_objects_are_not_viewable(clients.user, provider_objects + second_objects)
                 check_objects_are_not_viewable(clients.user, all_objects)
 
-    @pytest.mark.extra_rbac
+    @pytest.mark.extra_rbac()
     def test_hierarchy_access_to_host(self, clients, user, cluster_bundle, provider_bundle):
         """
         Test that user can get host
@@ -131,6 +131,7 @@ class TestAccessToBasicObjects:
             delete_policy(policy)
             check_objects_are_not_viewable(clients.user, [first_host, second_host])
 
+    @pytest.mark.extra_rbac()
     def test_hostcomponent_set(self, clients, user, prepare_objects, second_objects):
         """
         Test that hostcomponent can be set via ADCM client: user can get component and hosts on cluster
@@ -183,6 +184,7 @@ class TestActionBasedAccess:
                 delete_policy(policy)
                 check_objects_are_not_viewable(clients.user, all_objects)
 
+    @pytest.mark.extra_rbac()
     def test_host_action_permission_grants_access_to_owner_object(self, clients, user, host):
         """
         Test that permission on host actions grants permission to "view" host
