@@ -28,6 +28,9 @@ from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.common_locators import (
+    ObjectPageLocators,
+)
+from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageMenuLocators,
     CommonLocators,
 )
@@ -149,20 +152,59 @@ class CommonConfigMenuObj(BasePageObject):
         locator = row_locators.value if not is_password else row_locators.password
         return self.find_child(row, locator).get_property("value")
 
+    @allure.step('Check bool field')
+    def assert_checkbox_state(self, row: WebElement, expected_value: bool):
+        current_bool_state = "checked" in self.find_child(row, CommonConfigMenu.ConfigRow.checkbox).get_attribute(
+            "class"
+        )
+        assert (
+            current_bool_state == expected_value
+        ), f'Expected value was {expected_value} but presented is {current_bool_state}'
+
     @allure.step('Check field "{display_name}" has value "{expected_value}"')
-    def assert_input_value_is(self, expected_value: str, display_name: str, *, is_password: bool = False):
+    def assert_input_value_is(
+        self,
+        expected_value,
+        display_name: str,
+        *,
+        is_password: bool = False,
+        is_list: bool = False,
+        is_map: bool = False,
+    ):
         """
         Assert that value in field is expected_value (using retries)
         :param expected_value: Value expected to be in input field
         :param display_name: Config field display name
         :param is_password: Is field password/confirmation
+        :param is_list: Is field a list
+        :param is_map: Is field a map
+
+        Only one parameter (is_password/is_list/is_map) should be selected.
+        If none of them is selected, field will be checked as usual input.
         """
 
         def _assert_value():
-            input_value = self.get_input_value(row=self.get_config_row(display_name), is_password=is_password)
+            if is_list:
+                input_value = [
+                    v.get_attribute("value")
+                    for v in self.find_children(self.get_config_row(display_name), self.locators.ConfigRow.input)
+                ]
+            elif is_map:
+                input_value = dict()
+                row_values = [
+                    v.get_attribute("value")
+                    for v in self.find_children(self.get_config_row(display_name), self.locators.ConfigRow.input)
+                ]
+                for i in range(0, len(row_values) - 1, 2):  # row values are key-value for each "input" in a map row
+                    input_value[row_values[i]] = row_values[i + 1]
+            else:
+                input_value = self.get_input_value(row=self.get_config_row(display_name), is_password=is_password)
             assert expected_value == input_value, f'Expected value was {expected_value} but presented is {input_value}'
 
         wait_until_step_succeeds(_assert_value, timeout=4, period=0.5)
+
+    def get_amount_of_inputs_in_row(self, row: WebElement):
+        return len(self.find_children(row, self.locators.ConfigRow.input))
 
     def reset_to_default(self, row: WebElement):
         """Click reset button"""
@@ -295,6 +337,16 @@ class CommonConfigMenuObj(BasePageObject):
         """
         message = f'Confirm [{name}] is required!'
         self.check_element_should_be_visible(self.locators.field_error(message))
+
+    @allure.step("Check invalid value error is presented")
+    def check_invalid_value_message(self, error_message: str):
+        """
+        Assert that message [{error_message}] is presented
+        """
+        self.check_element_should_be_visible(self.locators.field_error(error_message))
+
+    def is_save_btn_disabled(self):
+        return self.find_element(self.locators.save_btn).get_attribute("disabled") == 'true'
 
     def check_text_in_tooltip(self, row_name: str, tooltip_text: str):
         tooltip_icon = self.find_element(self.locators.info_tooltip_icon(row_name, row_name))
@@ -505,6 +557,11 @@ class CommonConfigMenuObj(BasePageObject):
         with allure.step("Change value in json type"):
             self.type_in_field_with_few_inputs(row='json', values=['{}'], clear=True)
 
+    def is_element_read_only(self, row: WebElement) -> bool:
+        """Check if element is read-only by checking 'read-only' in class"""
+
+        return 'read-only' in str(row.get_attribute("class"))
+
     @allure.step("Check row history on config page")
     def check_config_fields_history_with_test_values(self):
         """
@@ -550,6 +607,14 @@ class CommonConfigMenuObj(BasePageObject):
             self.wait_history_row_with_value(self.get_config_row("secrettext"), '****')
         with allure.step("Change value in json type"):
             self.wait_history_row_with_value(self.get_config_row("json"), '{"age":"24","name":"Joe","sex":"m"}')
+
+    def get_config_title(self):
+        return self.find_element(ObjectPageLocators.title).text
+
+    def is_element_editable(self, element: WebElement) -> bool:
+        """Check if app-field element is read-only by checking 'read-only' class presence"""
+
+        return 'read-only' not in str(element.get_attribute("class"))
 
 
 CONFIG_ITEMS = [

@@ -141,6 +141,155 @@
         age: '24'
         name: Joe
         sex: m
+
+    - name: float_invisible
+      type: float
+      required: false
+      default: 0.1
+      group_customization: true
+      ui_options:
+        advanced: false
+        invisible: true
+    - name: boolean_invisible
+      type: boolean
+      required: false
+      default: true
+      group_customization: true
+      ui_options:
+        advanced: false
+        invisible: true
+    - name: integer_invisible
+      type: integer
+      required: false
+      default: 16
+      group_customization: true
+      ui_options:
+        advanced: false
+        invisible: true
+    - name: password_invisible
+      type: password
+      required: false
+      default: password
+      group_customization: true
+      ui_options:
+        advanced: false
+        invisible: true
+    - name: string_invisible
+      type: string
+      required: false
+      default: string
+      group_customization: true
+      ui_options:
+        advanced: false
+        invisible: true
+    - name: list_invisible
+      type: list
+      required: false
+      group_customization: true
+      ui_options:
+        advanced: false
+        invisible: true
+      default:
+        - /dev/rdisk0s1
+        - /dev/rdisk0s2
+        - /dev/rdisk0s3
+    - name: file_invisible
+      type: file
+      required: false
+      default: ./cluster_file
+      group_customization: true
+      ui_options:
+        advanced: false
+        invisible: true
+    - name: option_invisible
+      type: option
+      required: false
+      option:
+        DAILY: DAILY
+        WEEKLY: WEEKLY
+      default: DAILY
+      group_customization: true
+      ui_options:
+        advanced: false
+        invisible: true
+    - name: text_invisible
+      type: text
+      required: false
+      default: text
+      group_customization: true
+      ui_options:
+        advanced: false
+        invisible: true
+    - name: group_invisible
+      type: group
+      activatable: True
+      active: True
+      group_customization: true
+      ui_options:
+        advanced: false
+        invisible: true
+      subs:
+        - name: usual_port
+          display_name: HTTP port
+          description: Test description usual_port
+          type: integer
+          min: 1024
+          max: 65536
+          default: 9200
+          required: yes
+          group_customization: true
+        - name: transport_port
+          display_name: Transport port
+          description: Test description transport_port
+          type: integer
+          min: 1024
+          max: 65536
+          default: 9300
+          required: yes
+          group_customization: true
+    - name: structure_invisible
+      type: structure
+      required: false
+      yspec: ./schema.yaml
+      ui_options:
+        advanced: false
+        invisible: true
+      group_customization: true
+      default:
+        - code: 1
+          country: Test1
+        - code: 2
+          country: Test2
+    - name: map_invisible
+      type: map
+      required: false
+      group_customization: true
+      ui_options:
+        advanced: false
+        invisible: true
+      default:
+        age: '24'
+        name: Joe
+        sex: m
+    - name: secrettext_invisible
+      type: secrettext
+      required: false
+      group_customization: true
+      ui_options:
+        advanced: false
+        invisible: true
+      default: "secret\npass\nword"
+    - name: json_invisible
+      type: json
+      required: false
+      group_customization: true
+      ui_options:
+        advanced: false
+        invisible: true
+      default:
+        age: '24'
+        name: Joe
+        sex: m
   components:
     first:
 

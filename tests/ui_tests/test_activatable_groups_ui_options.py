@@ -48,8 +48,7 @@ def prepare_cluster(sdk_client: ADCMClient, path) -> Cluster:
     """Create cluster"""
 
     bundle = sdk_client.upload_from_fs(path)
-    cluster_name = "_".join(path.split("/")[-1:] + [random_string()])
-    cluster = bundle.cluster_create(name=cluster_name)
+    cluster = bundle.cluster_create(name=f"Test cluster {random_string()}")
     return cluster
 
 

@@ -14,142 +14,73 @@
   name: test_cluster
   version: 1.5
   edition: community
-  actions:
-    long_action:
-      type: job
-      script: dummy_action.yaml
-      script_type: ansible
-      states:
-        available: any
-      params:
-        ansible_tags: pause
-    test_action:
-      type: job
-      script: dummy_action.yaml
-      script_type: ansible
-      states:
-        available:
-          - created
-        on_success: installed
-      params:
-        ansible_tags: dummy
-  import:
-     Pre-uploaded Dummy cluster to import:
-          versions:
-             max: 3.0
-             min: 2.2
-  config:
-    str_param:
-      type: string
-      required: false
-      default: '123'
-      description: must be changed to bar()
-    int:
-      type: integer
-      required: false
-      default: 2
-      description: must be changed to 5
-    core-site:
-      param1:
-          type: string
-          required: false
-      param2:
-          type: integer
-          required: false
+  config_group_customization: false
 
-- type: service
-  name: test_service
-  description: Test service
-  version: '1.2'
-  actions:
-    test_action:
-      type: job
-      script: dummy_action.yaml
-      script_type: ansible
-      states:
-        available:
-          - created
-        on_success: installed
-      params:
-        ansible_tags: dummy
+- name: test_service
+  type: service
+  version: '1.0'
+  config_group_customization: false
   config:
-    - name: core-site
-      type: group
-      activatable: True
-      active: True
-      ui_options:
-        advanced: false
-        invisible: false
-      subs:
-        - name: param1
-          display_name: param1
-          type: string
-          required: false
-        - name: param2
-          display_name: param2
-          type: integer
-          required: false
-
-    - name: float_invisible
+    - name: float
       type: float
       required: false
       default: 0.1
       group_customization: true
       ui_options:
-        advanced: false
-        invisible: true
-    - name: boolean_invisible
+        advanced: true
+        invisible: false
+    - name: boolean
       type: boolean
       required: false
       default: true
       group_customization: true
       ui_options:
-        advanced: false
-        invisible: true
-    - name: integer_invisible
+        advanced: true
+        invisible: false
+    - name: integer
       type: integer
       required: false
       default: 16
       group_customization: true
       ui_options:
-        advanced: false
-        invisible: true
-    - name: password_invisible
+        advanced: true
+        invisible: false
+    - name: password
       type: password
       required: false
       default: password
       group_customization: true
       ui_options:
-        advanced: false
-        invisible: true
-    - name: string_invisible
+        advanced: true
+        invisible: false
+    - name: string
       type: string
       required: false
       default: string
       group_customization: true
       ui_options:
-        advanced: false
-        invisible: true
-    - name: list_invisible
+        advanced: true
+        invisible: false
+    - name: list
       type: list
       required: false
       group_customization: true
       ui_options:
-        advanced: false
-        invisible: true
+        advanced: true
+        invisible: false
       default:
         - /dev/rdisk0s1
         - /dev/rdisk0s2
         - /dev/rdisk0s3
-    - name: file_invisible
+    - name: file
       type: file
       required: false
       default: ./cluster_file
       group_customization: true
       ui_options:
-        advanced: false
-        invisible: true
-    - name: option_invisible
+        advanced: true
+        invisible: false
+    - name: option
       type: option
       required: false
       option:
@@ -158,24 +89,24 @@
       default: DAILY
       group_customization: true
       ui_options:
-        advanced: false
-        invisible: true
-    - name: text_invisible
+        advanced: true
+        invisible: false
+    - name: text
       type: text
       required: false
       default: text
       group_customization: true
       ui_options:
-        advanced: false
-        invisible: true
-    - name: group_invisible
+        advanced: true
+        invisible: false
+    - name: group
       type: group
       activatable: True
       active: True
       group_customization: true
       ui_options:
-        advanced: false
-        invisible: true
+        advanced: true
+        invisible: false
       subs:
         - name: usual_port
           display_name: HTTP port
@@ -195,65 +126,52 @@
           default: 9300
           required: yes
           group_customization: true
-    - name: structure_invisible
+    - name: structure
       type: structure
       required: false
       yspec: ./schema.yaml
       ui_options:
-        advanced: false
-        invisible: true
+        advanced: true
+        invisible: false
       group_customization: true
       default:
         - code: 1
           country: Test1
         - code: 2
           country: Test2
-    - name: map_invisible
+    - name: map
       type: map
       required: false
       group_customization: true
       ui_options:
-        advanced: false
-        invisible: true
+        advanced: true
+        invisible: false
       default:
         age: '24'
         name: Joe
         sex: m
-    - name: secrettext_invisible
+    - name: secrettext
       type: secrettext
       required: false
       group_customization: true
       ui_options:
-        advanced: false
-        invisible: true
+        advanced: true
+        invisible: false
       default: "secret\npass\nword"
-    - name: json_invisible
+    - name: json
       type: json
       required: false
       group_customization: true
       ui_options:
-        advanced: false
-        invisible: true
+        advanced: true
+        invisible: false
       default:
         age: '24'
         name: Joe
         sex: m
-
-  import:
-     Pre-uploaded Dummy service to import:
-          versions:
-             max: 3.0
-             min: 2.2
   components:
     first:
-      actions:
-        switch_component_state:
-          type: job
-          script: dummy_action.yaml
-          script_type: ansible
-          states:
-              available:
-                - created
-              on_success: installed
-          params:
-            ansible_tags: dummy
+
+- name: test_service_2
+  type: service
+  version: '1.0'
