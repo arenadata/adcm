@@ -1387,51 +1387,6 @@ roles:
               codenames:
                 - view
 
-    - name: Get task object
-      description: Read access to Task
-      type: hidden
-      module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: TaskLog
-      apps:
-        - label: cm
-          models:
-            - name: tasklog
-              codenames:
-                - view
-
-    - name: Get job object
-      description: Read access to Job
-      type: hidden
-      module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: JobLog
-      apps:
-        - label: cm
-          models:
-            - name: joblog
-              codenames:
-                - view
-
-    - name: Get log object
-      description: Read access to Log
-      type: hidden
-      module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: LogStorage
-      apps:
-        - label: cm
-          models:
-            - name: logstorage
-              codenames:
-                - view
-
     - name: Get stack
       description: Read access to all Bundle
       type: hidden
@@ -1496,7 +1451,6 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       child:
-        - Get task and jobs
         - Get cluster object
         - Get service object
         - Get component object
@@ -1542,7 +1496,6 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       child:
-        - Get task and jobs
         - Get provider object
         - Get host object
         - Edit provider configurations
