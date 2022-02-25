@@ -39,7 +39,6 @@ def check_service(kwargs):
 class ServiceListView(PermissionListMixin, PaginatedView):
     queryset = ClusterObject.objects.all()
     permission_required = ['cm.view_clusterobject']
-    check_service_perm = check_custom_perm
     serializer_class = serializers.ServiceSerializer
     serializer_class_ui = serializers.ServiceUISerializer
     serializer_class_cluster = serializers.ClusterServiceSerializer
@@ -66,7 +65,7 @@ class ServiceListView(PermissionListMixin, PaginatedView):
             cluster = check_obj(Cluster, kwargs['cluster_id'])
         else:
             cluster = check_obj(Cluster, request.data['cluster_id'])
-        self.check_service_perm('add_service_to', 'cluster', cluster)
+        check_custom_perm(request.user, 'add_service_to', 'cluster', cluster)
         serializer = serializer_class(
             data=request.data,
             context={'request': request, 'cluster_id': kwargs.get('cluster_id', None)},
@@ -95,7 +94,6 @@ class ServiceImportView(GenericUIView):
     queryset = Prototype.objects.all()
     serializer_class = ImportSerializer
     serializer_class_post = serializers.ImportPostSerializer
-    check_import_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -103,13 +101,15 @@ class ServiceImportView(GenericUIView):
         List all imports available for specified service
         """
         service = check_service(kwargs)
-        self.check_import_perm('view_import_of', 'clusterobject', service, 'view_clusterbind')
+        check_custom_perm(
+            request.user, 'view_import_of', 'clusterobject', service, 'view_clusterbind'
+        )
         cluster = service.cluster
         return Response(get_import(cluster, service))
 
     def post(self, request, **kwargs):
         service = check_service(kwargs)
-        self.check_import_perm('change_import_of', 'clusterobject', service)
+        check_custom_perm(request.user, 'change_import_of', 'clusterobject', service)
         cluster = service.cluster
         serializer = self.get_serializer(
             data=request.data, context={'request': request, 'cluster': cluster, 'service': service}
@@ -123,7 +123,6 @@ class ServiceBindView(GenericUIView):
     queryset = ClusterBind.objects.all()
     serializer_class = serializers.ServiceBindSerializer
     serializer_class_post = serializers.ServiceBindPostSerializer
-    check_import_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -131,7 +130,9 @@ class ServiceBindView(GenericUIView):
         List all binds of service
         """
         service = check_service(kwargs)
-        self.check_import_perm('view_import_of', 'clusterobject', service, 'view_clusterbind')
+        check_custom_perm(
+            request.user, 'view_import_of', 'clusterobject', service, 'view_clusterbind'
+        )
         binds = self.get_queryset().filter(service=service)
         serializer = self.get_serializer(binds, many=True)
         return Response(serializer.data)
@@ -141,7 +142,7 @@ class ServiceBindView(GenericUIView):
         Bind two services
         """
         service = check_service(kwargs)
-        self.check_import_perm('change_import_of', 'clusterobject', service)
+        check_custom_perm(request.user, 'change_import_of', 'clusterobject', service)
         cluster = service.cluster
         serializer = self.get_serializer(data=request.data)
         return create(serializer, cluster=cluster, service=service)
@@ -150,7 +151,6 @@ class ServiceBindView(GenericUIView):
 class ServiceBindDetailView(GenericUIView):
     queryset = ClusterBind.objects.all()
     serializer_class = BindSerializer
-    check_import_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_obj(self, kwargs, bind_id):
@@ -163,7 +163,9 @@ class ServiceBindDetailView(GenericUIView):
         Show specified bind of service
         """
         service, bind = self.get_obj(kwargs, kwargs['bind_id'])
-        self.check_import_perm('view_import_of', 'clusterobject', service, 'view_clusterbind')
+        check_custom_perm(
+            request.user, 'view_import_of', 'clusterobject', service, 'view_clusterbind'
+        )
         serializer = self.get_serializer(bind)
         return Response(serializer.data)
 
@@ -172,7 +174,7 @@ class ServiceBindDetailView(GenericUIView):
         Unbind specified bind of service
         """
         service, bind = self.get_obj(kwargs, kwargs['bind_id'])
-        self.check_import_perm('change_import_of', 'clusterobject', service)
+        check_custom_perm(request.user, 'change_import_of', 'clusterobject', service)
         unbind(bind)
         return Response(status=status.HTTP_204_NO_CONTENT)
 

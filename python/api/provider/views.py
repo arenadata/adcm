@@ -69,7 +69,6 @@ class ProviderDetail(DetailView):
 class ProviderUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
     serializer_class = serializers.UpgradeProviderSerializer
-    check_upgrade_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
     filter_backends = (AdcmFilterBackend, AdcmOrderingFilter)
 
@@ -82,7 +81,7 @@ class ProviderUpgrade(GenericUIView):
         List all avaliable upgrades for specified host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        self.check_upgrade_perm('view_upgrade_of', 'hostprovider', provider)
+        check_custom_perm(request.user, 'view_upgrade_of', 'hostprovider', provider)
         obj = cm.upgrade.get_upgrade(provider, self.get_ordering(request, self.queryset, self))
         serializer = self.serializer_class(
             obj, many=True, context={'provider_id': provider.id, 'request': request}
@@ -93,7 +92,6 @@ class ProviderUpgrade(GenericUIView):
 class ProviderUpgradeDetail(GenericUIView):
     queryset = Upgrade.objects.all()
     serializer_class = serializers.UpgradeProviderSerializer
-    check_upgrade_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, provider_id, upgrade_id):
@@ -101,7 +99,7 @@ class ProviderUpgradeDetail(GenericUIView):
         List all avaliable upgrades for specified host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        self.check_upgrade_perm('view_upgrade_of', 'hostprovider', provider)
+        check_custom_perm(request.user, 'view_upgrade_of', 'hostprovider', provider)
         obj = self.get_queryset().get(id=upgrade_id)
         serializer = self.serializer_class(
             obj, context={'provider_id': provider.id, 'request': request}
@@ -112,7 +110,6 @@ class ProviderUpgradeDetail(GenericUIView):
 class DoProviderUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.DoUpgradeSerializer
-    check_upgrade_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, provider_id, upgrade_id):
@@ -120,6 +117,6 @@ class DoProviderUpgrade(GenericUIView):
         Do upgrade specified host provider
         """
         provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        self.check_upgrade_perm('do_upgrade_of', 'hostprovider', provider)
+        check_custom_perm(request.user, 'do_upgrade_of', 'hostprovider', provider)
         serializer = self.get_serializer(data=request.data)
         return create(serializer, upgrade_id=int(upgrade_id), obj=provider)

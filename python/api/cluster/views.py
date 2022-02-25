@@ -125,7 +125,6 @@ class ClusterImport(GenericUIView):
     queryset = Prototype.objects.all()
     serializer_class = api.stack.serializers.ImportSerializer
     serializer_class_post = serializers.PostImportSerializer
-    check_import_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, cluster_id):
@@ -133,7 +132,7 @@ class ClusterImport(GenericUIView):
         List all imports avaliable for specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
-        self.check_import_perm('view_import_of', 'cluster', cluster, 'view_clusterbind')
+        check_custom_perm(request.user, 'view_import_of', 'cluster', cluster, 'view_clusterbind')
         res = cm.api.get_import(cluster)
         return Response(res)
 
@@ -142,7 +141,7 @@ class ClusterImport(GenericUIView):
         Update bind for cluster
         """
         cluster = check_obj(Cluster, cluster_id)
-        self.check_import_perm('change_import_of', 'cluster', cluster)
+        check_custom_perm(request.user, 'change_import_of', 'cluster', cluster)
         serializer = self.get_serializer(
             data=request.data, context={'request': request, 'cluster': cluster}
         )
@@ -156,7 +155,6 @@ class ClusterBindList(GenericUIView):
     queryset = ClusterBind.objects.all()
     serializer_class = serializers.ClusterBindSerializer
     serializer_class_post = serializers.DoBindSerializer
-    check_import_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, cluster_id):
@@ -164,7 +162,7 @@ class ClusterBindList(GenericUIView):
         List all binds of specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
-        self.check_import_perm('view_import_of', 'cluster', cluster, 'view_clusterbind')
+        check_custom_perm(request.user, 'view_import_of', 'cluster', cluster, 'view_clusterbind')
         obj = self.get_queryset().filter(cluster=cluster, service=None)
         serializer = self.get_serializer(obj, many=True)
         return Response(serializer.data)
@@ -174,7 +172,7 @@ class ClusterBindList(GenericUIView):
         Bind two clusters
         """
         cluster = check_obj(Cluster, cluster_id)
-        self.check_import_perm('change_import_of', 'cluster', cluster)
+        check_custom_perm(request.user, 'change_import_of', 'cluster', cluster)
         serializer = self.get_serializer(data=request.data)
         return create(serializer, cluster=cluster)
 
@@ -182,7 +180,6 @@ class ClusterBindList(GenericUIView):
 class ClusterBindDetail(GenericUIView):
     queryset = ClusterBind.objects.all()
     serializer_class = serializers.BindSerializer
-    check_import_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_obj(self, cluster_id, bind_id):
@@ -194,7 +191,7 @@ class ClusterBindDetail(GenericUIView):
         Show specified bind of specified cluster
         """
         cluster, obj = self.get_obj(cluster_id, bind_id)
-        self.check_import_perm('view_import_of', 'cluster', cluster, 'view_clusterbind')
+        check_custom_perm(request.user, 'view_import_of', 'cluster', cluster, 'view_clusterbind')
         serializer = self.get_serializer(obj)
         return Response(serializer.data)
 
@@ -203,7 +200,7 @@ class ClusterBindDetail(GenericUIView):
         Unbind specified bind of specified cluster
         """
         cluster, bind = self.get_obj(cluster_id, bind_id)
-        self.check_import_perm('change_import_of', 'cluster', cluster)
+        check_custom_perm(request.user, 'change_import_of', 'cluster', cluster)
         cm.api.unbind(bind)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -211,7 +208,6 @@ class ClusterBindDetail(GenericUIView):
 class ClusterUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.UpgradeLinkSerializer
-    check_upgrade_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_ordering(self, request, queryset, view):
@@ -223,7 +219,7 @@ class ClusterUpgrade(GenericUIView):
         List all avaliable upgrades for specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
-        self.check_upgrade_perm('view_upgrade_of', 'cluster', cluster)
+        check_custom_perm(request.user, 'view_upgrade_of', 'cluster', cluster)
         obj = cm.upgrade.get_upgrade(cluster, self.get_ordering(request, self.queryset, self))
         serializer = self.serializer_class(
             obj, many=True, context={'cluster_id': cluster.id, 'request': request}
@@ -234,7 +230,6 @@ class ClusterUpgrade(GenericUIView):
 class ClusterUpgradeDetail(GenericUIView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.UpgradeLinkSerializer
-    check_upgrade_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, cluster_id, upgrade_id):
@@ -242,7 +237,7 @@ class ClusterUpgradeDetail(GenericUIView):
         List all avaliable upgrades for specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
-        self.check_upgrade_perm('view_upgrade_of', 'cluster', cluster)
+        check_custom_perm(request.user, 'view_upgrade_of', 'cluster', cluster)
         obj = self.get_queryset().get(id=upgrade_id)
         serializer = self.serializer_class(
             obj, context={'cluster_id': cluster.id, 'request': request}
@@ -253,7 +248,6 @@ class ClusterUpgradeDetail(GenericUIView):
 class DoClusterUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
     serializer_class = api.serializers.DoUpgradeSerializer
-    check_upgrade_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, cluster_id, upgrade_id):
@@ -261,7 +255,7 @@ class DoClusterUpgrade(GenericUIView):
         Do upgrade specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
-        self.check_upgrade_perm('do_upgrade_of', 'cluster', cluster)
+        check_custom_perm(request.user, 'do_upgrade_of', 'cluster', cluster)
         serializer = self.get_serializer(data=request.data)
         return create(serializer, upgrade_id=int(upgrade_id), obj=cluster)
 
@@ -290,7 +284,6 @@ class HostComponentList(GenericUIView):
     serializer_class = serializers.HostComponentSerializer
     serializer_class_ui = serializers.HostComponentUISerializer
     serializer_class_post = serializers.HostComponentSaveSerializer
-    check_hc_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, cluster_id):
@@ -298,7 +291,9 @@ class HostComponentList(GenericUIView):
         Show host <-> component map in a specified cluster
         """
         cluster = check_obj(Cluster, cluster_id)
-        self.check_hc_perm('view_host_components_of', 'cluster', cluster, 'view_hostcomponent')
+        check_custom_perm(
+            request.user, 'view_host_components_of', 'cluster', cluster, 'view_hostcomponent'
+        )
         hc = self.get_queryset().filter(cluster=cluster)
         if self._is_for_ui():
             ui_hc = HostComponent()
@@ -315,7 +310,7 @@ class HostComponentList(GenericUIView):
         Create new mapping service:component <-> host in a specified cluster.
         """
         cluster = check_obj(Cluster, cluster_id)
-        self.check_hc_perm('edit_host_components_of', 'cluster', cluster)
+        check_custom_perm(request.user, 'edit_host_components_of', 'cluster', cluster)
         serializer = self.get_serializer(
             data=request.data,
             context={
@@ -335,12 +330,13 @@ class HostComponentList(GenericUIView):
 class HostComponentDetail(GenericUIView):
     queryset = HostComponent.objects.all()
     serializer_class = serializers.HostComponentSerializer
-    check_hc_perm = check_custom_perm
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_obj(self, cluster_id, hs_id):
         cluster = check_obj(Cluster, cluster_id)
-        self.check_hc_perm('view_host_components_of', 'cluster', cluster, 'view_hostcomponent')
+        check_custom_perm(
+            self.request.user, 'view_host_components_of', 'cluster', cluster, 'view_hostcomponent'
+        )
         return check_obj(HostComponent, {'id': hs_id, 'cluster': cluster}, 'HOSTSERVICE_NOT_FOUND')
 
     def get(self, request, cluster_id, hs_id):

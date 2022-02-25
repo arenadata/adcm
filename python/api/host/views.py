@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.http.response import Http404
 from django_filters import rest_framework as drf_filters
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
@@ -34,6 +35,7 @@ from cm.models import (
     HostComponent,
 )
 from cm.status_api import make_ui_host_status
+from rbac.viewsets import DjangoOnlyObjectPermissions
 from . import serializers
 
 
@@ -93,7 +95,6 @@ class HostList(PermissionListMixin, PaginatedView):
     serializer_class = serializers.HostSerializer
     serializer_class_ui = serializers.HostUISerializer
     permission_required = ['cm.view_host']
-    check_host_perm = check_custom_perm
     filterset_class = HostFilter
     filterset_fields = (
         'cluster_id',
@@ -146,7 +147,7 @@ class HostList(PermissionListMixin, PaginatedView):
                 provider = serializer.validated_data.get(
                     'provider_id',
                 )
-            self.check_host_perm('add_host_to', 'hostprovider', provider)
+            check_custom_perm(request.user, 'add_host_to', 'hostprovider', provider)
             return create(serializer)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -157,7 +158,6 @@ class HostListProvider(HostList):
 
 class HostListCluster(HostList):
     serializer_class = serializers.ClusterHostSerializer
-    check_host_perm = check_custom_perm
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -166,7 +166,7 @@ class HostListCluster(HostList):
             if 'cluster_id' in kwargs:
                 cluster = check_obj(Cluster, kwargs['cluster_id'])
             host = check_obj(Host, validated_data.get('id'))
-            self.check_host_perm('map_host_to', 'cluster', cluster)
+            check_custom_perm(request.user, 'map_host_to', 'cluster', cluster)
             add_host_to_cluster(cluster, host)
             return Response(self.get_serializer(host).data, status=status.HTTP_201_CREATED)
         else:
@@ -179,7 +179,7 @@ def check_host(host, cluster):
         raise AdcmEx('FOREIGN_HOST', msg)
 
 
-class HostDetail(GenericUIView):
+class HostDetail(PermissionListMixin, GenericUIView):
     """
     get:
     Show host
@@ -188,34 +188,39 @@ class HostDetail(GenericUIView):
     queryset = Host.objects.all()
     serializer_class = serializers.HostDetailSerializer
     serializer_class_ui = serializers.HostUISerializer
-    permission_classes = (permissions.IsAuthenticated,)
-    check_host_perm = check_custom_perm
+    permission_classes = (DjangoOnlyObjectPermissions,)
+    permission_required = ['cm.view_host']
     lookup_field = 'id'
     lookup_url_kwarg = 'host_id'
     error_code = 'HOST_NOT_FOUND'
 
-    def get(self, request, host_id, **kwargs):
-        host = check_obj(Host, host_id)
+    def get_object(self):
+        try:
+            return super().get_object()
+        except Http404:
+            raise AdcmEx(self.error_code) from None
+
+    def get(self, request, *args, **kwargs):
+        host = self.get_object()
         if 'cluster_id' in kwargs:
             cluster = check_obj(Cluster, kwargs['cluster_id'])
             check_host(host, cluster)
         serializer = self.get_serializer(host)
         return Response(serializer.data)
 
-    def delete(self, request, host_id, **kwargs):
+    def delete(self, request, *args, **kwargs):
         """
         Delete host
         """
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
+        host = self.get_object()
         if 'cluster_id' in kwargs:
             # Remove host from cluster
             cluster = check_obj(Cluster, kwargs['cluster_id'])
             check_host(host, cluster)
-            self.check_host_perm('unmap_host_from', 'cluster', cluster)
+            check_custom_perm(request.user, 'unmap_host_from', 'cluster', cluster)
             remove_host_from_cluster(host)
         else:
             # Delete host (and all corresponding host services:components)
-            self.check_host_perm('delete', 'host', host)
             delete_host(host)
         return Response(status=status.HTTP_204_NO_CONTENT)
 

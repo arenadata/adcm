@@ -100,7 +100,7 @@ class GroupConfigHostCandidateViewSet(
     def get_queryset(self, *args, **kwargs):
         group_config_id = self.kwargs.get('parent_lookup_group_config')
         if group_config_id is None:
-            return None
+            return Host.objects.none()
         group_config = GroupConfig.obj.get(id=group_config_id)
         return group_config.host_candidate()
 
