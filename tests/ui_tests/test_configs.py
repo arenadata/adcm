@@ -441,6 +441,7 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs):
             config_page.config.check_no_rows_or_groups_on_page()
 
 
+@pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2692")
 @pytest.mark.parametrize(("config_dict", "expected"), generate_group_configs())
 @pytest.mark.usefixtures("login_to_adcm_over_api")
 def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, app_fs):
