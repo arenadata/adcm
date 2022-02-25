@@ -12,6 +12,7 @@
 
 """UI tests for /cluster page"""
 import os
+from typing import Tuple
 
 import allure
 import pytest
@@ -770,7 +771,7 @@ class TestClusterConfigPage:
         return cluster
 
     @allure.step("Prepare cluster and get config")
-    def prepare_cluster_and_config(self, sdk_client: ADCMClient, path, app) -> [Cluster, ClusterConfigPage]:
+    def prepare_cluster_and_config(self, sdk_client: ADCMClient, path, app) -> Tuple[Cluster, ClusterConfigPage]:
         """Upload bundle, create cluster and get config"""
         cluster = self.cluster_with_service(sdk_client, path)
         config = ClusterConfigPage(app.driver, app.adcm.url, cluster.cluster_id).open()

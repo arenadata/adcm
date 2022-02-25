@@ -176,10 +176,12 @@ class CommonConfigMenuObj(BasePageObject):
         :param expected_value: Value expected to be in input field
         :param display_name: Config field display name
         :param is_password: Is field password/confirmation
-        """
+        :param is_list: Is field a list
+        :param is_map: Is field a map
 
-        if is_map and is_list:
-            raise ValueError("Should be selected only map or list or non of them")
+        Only one parameter (is_password/is_list/is_map) should be selected.
+        If none of them is selected, field will be checked as usual input.
+        """
 
         def _assert_value():
             if is_list:
