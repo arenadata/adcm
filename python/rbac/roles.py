@@ -16,21 +16,20 @@ from adwp_base.errors import raise_AdwpEx as err
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from guardian.models import UserObjectPermission, GroupObjectPermission
-from adwp_base.errors import raise_AdwpEx as err
-from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission, RoleTypes
+
 from cm.models import (
     Action,
     ClusterObject,
     ServiceComponent,
     Host,
     HostComponent,
-    get_model_by_type,
     GroupConfig,
     TaskLog,
     JobLog,
     LogStorage,
 )
 from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
+from rbac.models import RoleTypes
 
 
 class AbstractRole:
@@ -213,15 +212,6 @@ def re_apply_policy_for_jobs(action_object, task):
 class ConfigRole(AbstractRole):
     """This Role apply permission to view and add config object"""
 
-    @staticmethod
-    def assign_perm(policy, user, group, obj, perm):
-        if user is not None:
-            uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
-            policy.user_object_perm.add(uop)
-        if group is not None:
-            gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
-            policy.group_object_perm.add(gop)
-
     def apply(self, policy: Policy, role: Role, user: User, group: Group, param_obj=None):
         # TODO: need refactoring
         for obj in policy.get_objects(param_obj):
@@ -231,20 +221,20 @@ class ConfigRole(AbstractRole):
             for perm in role.get_permissions():
 
                 if perm.content_type.model == 'objectconfig':
-                    self.assign_perm(policy, user, group, obj.config, perm)
+                    assign_user_or_group_perm(user, group, policy, perm, obj)
                     for cg in config_groups:
-                        self.assign_perm(policy, user, group, cg.config, perm)
+                        assign_user_or_group_perm(user, group, policy, perm, cg.config)
 
                 if perm.content_type.model == 'configlog':
                     for config in obj.config.configlog_set.all():
-                        self.assign_perm(policy, user, group, config, perm)
+                        assign_user_or_group_perm(user, group, policy, perm, config)
                     for cg in config_groups:
                         for config in cg.config.configlog_set.all():
-                            self.assign_perm(policy, user, group, config, perm)
+                            assign_user_or_group_perm(user, group, policy, perm, config)
 
                 if perm.content_type.model == 'groupconfig':
                     for cg in config_groups:
-                        self.assign_perm(policy, user, group, cg, perm)
+                        assign_user_or_group_perm(user, group, policy, perm, cg)
 
 
 class ParentRole(AbstractRole):

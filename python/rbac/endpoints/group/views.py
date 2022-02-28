@@ -13,6 +13,7 @@
 """Group view sets"""
 
 from adwp_base.errors import AdwpEx
+from guardian.mixins import PermissionListMixin
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers, status
 
@@ -87,11 +88,12 @@ class GroupSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
         return group_services.create(**validated_data)
 
 
-class GroupViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
+class GroupViewSet(PermissionListMixin, ModelPermViewSet):  # pylint: disable=too-many-ancestors
     """Group view set"""
 
     queryset = models.Group.objects.all()
     serializer_class = GroupSerializer
+    permission_required = ['rbac.view_group']
     filterset_fields = ('id', 'name')
     ordering_fields = ('id', 'name')
     search_fields = ('name', 'description')

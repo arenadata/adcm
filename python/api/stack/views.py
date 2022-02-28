@@ -107,8 +107,8 @@ class BundleDetail(DetailView):
     lookup_url_kwarg = 'bundle_id'
     error_code = 'BUNDLE_NOT_FOUND'
 
-    def delete(self, request, bundle_id):
-        bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
+    def delete(self, request, *args, **kwargs):
+        bundle = self.get_object()
         cm.bundle.delete_bundle(bundle)
         return Response(status=status.HTTP_204_NO_CONTENT)
 

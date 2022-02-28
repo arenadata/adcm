@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import jsonschema
+from guardian.mixins import PermissionListMixin
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework import status
@@ -128,9 +129,10 @@ class PolicySerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
         return role
 
 
-class PolicyViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
+class PolicyViewSet(PermissionListMixin, ModelPermViewSet):  # pylint: disable=too-many-ancestors
     queryset = Policy.objects.all()
     serializer_class = PolicySerializer
+    permission_required = ['rbac.view_policy']
     filterset_fields = ('id', 'name', 'built_in', 'role', 'user', 'group')
     ordering_fields = ('id', 'name', 'built_in', 'role')
 

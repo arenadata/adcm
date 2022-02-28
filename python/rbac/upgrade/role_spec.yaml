@@ -15,6 +15,20 @@ roles:
               codenames:
                 - add
 
+    - name: Delete host
+      description: The ability to delete host
+      type: hidden
+      module_name: rbac.roles
+      class_name: ObjectRole
+      parametrized_by:
+        - host
+      apps:
+        - label: cm
+          models:
+            - name: host
+              codenames:
+                - delete
+
     - name: Add host to provider
       description: The ability to add host to provider
       type: hidden
@@ -520,8 +534,6 @@ roles:
         - Edit config
         - Edit host config
 
-# TODO: Continue check roles from here, except: Add service, Map hosts and Unmap hosts
-
     - name: View cluster imports
       description: The ability to view the cluster import page
       type: hidden
@@ -716,6 +728,21 @@ roles:
         - Remove service hidden
         - Get cluster object
 
+    - name: Remove hosts hidden
+      display_name: Remove hosts hidden
+      description: The ability to remove host hidden
+      type: hidden
+      parametrized_by:
+        - host
+      module_name: rbac.roles
+      class_name: ObjectRole
+      apps:
+        - label: cm
+          models:
+            - name: host
+              codenames:
+                - remove
+
     - name: Remove hosts
       display_name: Remove host
       description: The ability to remove host
@@ -723,18 +750,12 @@ roles:
       parametrized_by:
         - host
       module_name: rbac.roles
-      class_name: ObjectRole
-      init_params:
-        app_name: cm
-        model: Host
+      class_name: ParentRole
       any_category: true
-      apps:
-        - label: cm
-          models:
-            - name: host
-              codenames:
-                - view
-                - delete
+      child:
+        - Get host object
+        - Delete host
+        - Remove hosts hidden
 
     - name: Map hosts hidden
       display_name: Add hosts to the Cluster hidden
@@ -765,8 +786,9 @@ roles:
       class_name: ParentRole
       any_category: true
       child:
-        - Map hosts hidden
+        - Add host
         - Get host
+        - Map hosts hidden
 
     - name: Unmap hosts hidden
       display_name: Remove hosts from the Cluster hidden
@@ -797,8 +819,23 @@ roles:
       class_name: ParentRole
       any_category: true
       child:
-        - Unmap hosts hidden
         - Get host object
+        - Delete host
+        - Unmap hosts hidden
+
+    - name: View host-components hidden
+      description: The ability to view exact cluster's host-component page
+      type: hidden
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - view_host_components_of
 
     - name: View host-components
       description: The ability to view exact cluster's host-component page
@@ -806,18 +843,14 @@ roles:
       parametrized_by:
         - cluster
       module_name: rbac.roles
-      class_name: ObjectRole
+      class_name: ParentRole
       any_category: true
-      init_params:
-        app_name: cm
-        model: Cluster
-      apps:
-        - label: cm
-          models:
-            - name: cluster
-              codenames:
-                - view
-                - view_host_components_of
+      child:
+        - Get cluster object
+        - Get service object
+        - Get component object
+        - Get host object
+        - View host-components hidden
 
     - name: View any object host-components
       description: The ability to view host-components page of all clusters
@@ -828,12 +861,35 @@ roles:
       apps:
         - label: cm
           models:
-            - name: hostcomponent
-              codenames:
-                - view
             - name: cluster
               codenames:
                 - view
+            - name: clusterobject
+              codenames:
+                - view
+            - name: servicecomponent
+              codenames:
+                - view
+            - name: host
+              codenames:
+                - view
+            - name: hostcomponent
+              codenames:
+                - view
+
+    - name: Edit host-components hidden
+      description: The ability to edit exact cluster's host-component page
+      type: hidden
+      parametrized_by:
+        - cluster
+      module_name: rbac.roles
+      class_name: ObjectRole
+      apps:
+        - label: cm
+          models:
+            - name: cluster
+              codenames:
+                - edit_host_components_of
 
     - name: Edit host-components
       description: The ability to edit exact cluster's host-component page
@@ -841,19 +897,15 @@ roles:
       parametrized_by:
         - cluster
       module_name: rbac.roles
-      class_name: ObjectRole
+      class_name: ParentRole
       any_category: true
-      init_params:
-        app_name: cm
-        model: Cluster
-      apps:
-        - label: cm
-          models:
-            - name: cluster
-              codenames:
-                - view
-                - view_host_components_of
-                - edit_host_components_of
+      child:
+        - Get cluster object
+        - Get service object
+        - Get component object
+        - Get host object
+        - View host-components hidden
+        - Edit host-components hidden
 
     - name: Upgrade cluster bundle
       description: Update the cluster bundle
@@ -944,9 +996,8 @@ roles:
           models:
             - name: bundle
               codenames:
-                - view
                 - delete
-
+# TODO: ------->
     - name: View ADCM settings
       description: View purely adcm config
       type: business
@@ -973,7 +1024,7 @@ roles:
               codenames:
                 - view_settings_of
                 - change_settings_of
-
+# TODO: <------
     - name: View users
       description: The ability to view Users page
       type: business
@@ -1000,6 +1051,7 @@ roles:
           models:
             - name: user
               codenames:
+                - view
                 - add
 
     - name: Edit user
@@ -1015,6 +1067,7 @@ roles:
           models:
             - name: user
               codenames:
+                - view
                 - change
 
     - name: Remove user
@@ -1030,6 +1083,7 @@ roles:
           models:
             - name: user
               codenames:
+                - view
                 - delete
 
     - name: View roles
@@ -1058,6 +1112,7 @@ roles:
           models:
             - name: role
               codenames:
+                - view
                 - add
 
     - name: Edit role
@@ -1073,6 +1128,7 @@ roles:
           models:
             - name: role
               codenames:
+                - view
                 - change
 
     - name: Remove roles
@@ -1088,6 +1144,7 @@ roles:
           models:
             - name: role
               codenames:
+                - view
                 - delete
 
     - name: View group
@@ -1116,6 +1173,7 @@ roles:
           models:
             - name: group
               codenames:
+                - view
                 - add
 
     - name: Edit group
@@ -1131,6 +1189,7 @@ roles:
           models:
             - name: group
               codenames:
+                - view
                 - change
 
     - name: Remove group
@@ -1146,6 +1205,7 @@ roles:
           models:
             - name: group
               codenames:
+                - view
                 - delete
 
     - name: View policy
@@ -1174,6 +1234,7 @@ roles:
           models:
             - name: policy
               codenames:
+                - view
                 - add
 
     - name: Edit policy
@@ -1189,6 +1250,7 @@ roles:
           models:
             - name: policy
               codenames:
+                - view
                 - change
 
     - name: Remove policy
@@ -1204,19 +1266,8 @@ roles:
           models:
             - name: policy
               codenames:
-                - delete
-
-    - name: Get ADCM object
-      description: Read access to ADCM
-      type: hidden
-      module_name: rbac.roles
-      class_name: ModelRole
-      apps:
-        - label: cm
-          models:
-            - name: adcm
-              codenames:
                 - view
+                - delete
 
     - name: Get provider
       display_name: Get all providers
@@ -1386,34 +1437,7 @@ roles:
             - name: logstorage
               codenames:
                 - view
-
-    - name: Get stack
-      description: Read access to all Bundle
-      type: hidden
-      module_name: rbac.roles
-      class_name: ModelRole
-      apps:
-        - label: cm
-          models:
-            - name: bundle
-              codenames:
-                - view
-            - name: prototype
-              codenames:
-                - view
-
-    - name: Get bundle
-      description: Read access to all Bundle
-      type: hidden
-      module_name: rbac.roles
-      class_name: ModelRole
-      apps:
-        - label: cm
-          models:
-            - name: bundle
-              codenames:
-                - view
-
+# TODO: ----->
     - name: Get concerns
       description: Read access to all concerns
       type: hidden
@@ -1425,7 +1449,7 @@ roles:
             - name: concernitem
               codenames:
                 - view
-
+# TODO: <------
     - name: ADCM User
       type: role
       module_name: rbac.roles

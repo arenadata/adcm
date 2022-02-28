@@ -13,6 +13,7 @@
 """User view sets"""
 
 from adwp_base.errors import AdwpEx
+from guardian.mixins import PermissionListMixin
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers, status
 
@@ -95,11 +96,12 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
         return user_services.create(**validated_data)
 
 
-class UserViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
+class UserViewSet(PermissionListMixin, ModelPermViewSet):  # pylint: disable=too-many-ancestors
     """User view set"""
 
     queryset = models.User.objects.all()
     serializer_class = UserSerializer
+    permission_required = ['rbac.view_user']
     filterset_fields = (
         'id',
         'username',

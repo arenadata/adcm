@@ -12,11 +12,12 @@
 
 from django.db.models import Q
 from django_filters import rest_framework as filters
+from guardian.mixins import PermissionListMixin
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework import status
-from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from cm.models import ProductCategory
 from rbac.models import Role
@@ -86,10 +87,11 @@ class RoleFilter(filters.FilterSet):
         )
 
 
-class RoleView(ModelPermViewSet):  # pylint: disable=too-many-ancestors
+class RoleView(PermissionListMixin, ModelPermViewSet):  # pylint: disable=too-many-ancestors
 
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
+    permission_required = ['rbac.view_role']
     filterset_class = RoleFilter
     ordering_fields = ('id', 'name', 'display_name', 'built_in', 'type')
     search_fields = ('name', 'display_name')

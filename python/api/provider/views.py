@@ -15,10 +15,18 @@ from rest_framework import status, permissions
 from rest_framework.response import Response
 
 import api.serializers
-import cm
 from api.base_view import GenericUIView, DetailView, PaginatedView
-from api.utils import create, check_obj, check_custom_perm, AdcmFilterBackend, AdcmOrderingFilter
+from api.utils import (
+    create,
+    check_obj,
+    check_custom_perm,
+    AdcmFilterBackend,
+    AdcmOrderingFilter,
+    get_object_for_user,
+)
+from cm.api import delete_host_provider
 from cm.models import HostProvider, Upgrade
+from cm.upgrade import get_upgrade
 from . import serializers
 
 
@@ -44,7 +52,7 @@ class ProviderList(PermissionListMixin, PaginatedView):
         return create(serializer)
 
 
-class ProviderDetail(DetailView):
+class ProviderDetail(PermissionListMixin, DetailView):
     """
     get:
     Show host provider
@@ -53,16 +61,17 @@ class ProviderDetail(DetailView):
     queryset = HostProvider.objects.all()
     serializer_class = serializers.ProviderDetailSerializer
     serializer_class_ui = serializers.ProviderUISerializer
+    permission_required = ['cm.view_hostprovider']
     lookup_field = 'id'
     lookup_url_kwarg = 'provider_id'
     error_code = 'PROVIDER_NOT_FOUND'
 
-    def delete(self, request, provider_id):
+    def delete(self, request, *args, **kwargs):
         """
         Remove host provider
         """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
-        cm.api.delete_host_provider(provider)
+        provider = self.get_object()
+        delete_host_provider(provider)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -72,17 +81,19 @@ class ProviderUpgrade(GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     filter_backends = (AdcmFilterBackend, AdcmOrderingFilter)
 
-    def get_ordering(self, request, queryset, view):
-        Order = AdcmOrderingFilter()
-        return Order.get_ordering(request, queryset, view)
+    def get_ordering(self):
+        order = AdcmOrderingFilter()
+        return order.get_ordering(self.request, self.get_queryset(), self)
 
-    def get(self, request, provider_id):
+    def get(self, request, *args, **kwargs):
         """
         List all avaliable upgrades for specified host provider
         """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
+        provider = get_object_for_user(
+            request.user, 'cm.view_hostprovider', HostProvider, id=kwargs['provider_id']
+        )
         check_custom_perm(request.user, 'view_upgrade_of', 'hostprovider', provider)
-        obj = cm.upgrade.get_upgrade(provider, self.get_ordering(request, self.queryset, self))
+        obj = get_upgrade(provider, self.get_ordering())
         serializer = self.serializer_class(
             obj, many=True, context={'provider_id': provider.id, 'request': request}
         )
@@ -94,13 +105,17 @@ class ProviderUpgradeDetail(GenericUIView):
     serializer_class = serializers.UpgradeProviderSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
-    def get(self, request, provider_id, upgrade_id):
+    def get(self, request, *args, **kwargs):
         """
         List all avaliable upgrades for specified host provider
         """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
+        provider = get_object_for_user(
+            request.user, 'cm.view_hostprovider', HostProvider, id=kwargs['provider_id']
+        )
         check_custom_perm(request.user, 'view_upgrade_of', 'hostprovider', provider)
-        obj = self.get_queryset().get(id=upgrade_id)
+        obj = check_obj(
+            Upgrade, {'id': kwargs['upgrade_id'], 'bundle__name': provider.prototype.bundle.name}
+        )
         serializer = self.serializer_class(
             obj, context={'provider_id': provider.id, 'request': request}
         )
@@ -112,11 +127,13 @@ class DoProviderUpgrade(GenericUIView):
     serializer_class = api.serializers.DoUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
-    def post(self, request, provider_id, upgrade_id):
+    def post(self, request, *args, **kwargs):
         """
         Do upgrade specified host provider
         """
-        provider = check_obj(HostProvider, provider_id, 'PROVIDER_NOT_FOUND')
+        provider = get_object_for_user(
+            request.user, 'cm.view_hostprovider', HostProvider, id=kwargs['provider_id']
+        )
         check_custom_perm(request.user, 'do_upgrade_of', 'hostprovider', provider)
         serializer = self.get_serializer(data=request.data)
-        return create(serializer, upgrade_id=int(upgrade_id), obj=provider)
+        return create(serializer, upgrade_id=int(kwargs['upgrade_id']), obj=provider)

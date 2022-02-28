@@ -92,7 +92,7 @@ def upgrade_role(role: dict, data: dict) -> Role:
     """Upgrade single role"""
     perm_list = get_role_permissions(role, data['roles'])
     try:
-        new_role = Role.objects.get(name=role['name'])
+        new_role = Role.objects.get(name=role['name'], built_in=True)
         new_role.permissions.clear()
     except Role.DoesNotExist:
         new_role = Role(name=role['name'])
