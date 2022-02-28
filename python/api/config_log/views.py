@@ -34,10 +34,13 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
     filterset_fields = ('id', 'obj_ref')
     ordering_fields = ('id',)
 
-    def filter_queryset(self, queryset):
-        if not self.request.user.has_perm('cm.view_settings_of_adcm'):
-            return super().filter_queryset(queryset).filter(obj_ref__adcm__isnull=True)
-        return super().filter_queryset(queryset)
+    def get_queryset(self, *args, **kwargs):
+        if self.request.user.has_perm('cm.view_settings_of_adcm'):
+            return super().get_queryset(*args, **kwargs) | ConfigLog.objects.filter(
+                obj_ref__adcm__isnull=False
+            )
+        else:
+            return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

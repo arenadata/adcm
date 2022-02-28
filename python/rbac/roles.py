@@ -129,15 +129,16 @@ class TaskRole(AbstractRole):
                 apply_jobs(task, policy, user, group)
 
 
-def get_perm_for_model(model):
+def get_perm_for_model(model, action='view'):
     ct = ContentType.objects.get_for_model(model)
-    codename = f'view_{model.__name__.lower()}'
+    codename = f'{action}_{model.__name__.lower()}'
     perm, _ = Permission.objects.get_or_create(content_type=ct, codename=codename)
     return perm
 
 
 def apply_jobs(task: TaskLog, policy: Policy, user: User, group: Group = None):
     assign_user_or_group_perm(user, group, policy, get_perm_for_model(TaskLog), task)
+    assign_user_or_group_perm(user, group, policy, get_perm_for_model(TaskLog, 'change'), task)
     for job in JobLog.objects.filter(task=task):
         assign_user_or_group_perm(user, group, policy, get_perm_for_model(JobLog), job)
         for log in LogStorage.objects.filter(job=job):
@@ -221,7 +222,7 @@ class ConfigRole(AbstractRole):
             for perm in role.get_permissions():
 
                 if perm.content_type.model == 'objectconfig':
-                    assign_user_or_group_perm(user, group, policy, perm, obj)
+                    assign_user_or_group_perm(user, group, policy, perm, obj.config)
                     for cg in config_groups:
                         assign_user_or_group_perm(user, group, policy, perm, cg.config)
 

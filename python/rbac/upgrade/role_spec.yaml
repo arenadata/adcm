@@ -997,7 +997,7 @@ roles:
             - name: bundle
               codenames:
                 - delete
-# TODO: ------->
+
     - name: View ADCM settings
       description: View purely adcm config
       type: business
@@ -1024,7 +1024,7 @@ roles:
               codenames:
                 - view_settings_of
                 - change_settings_of
-# TODO: <------
+
     - name: View users
       description: The ability to view Users page
       type: business
@@ -1437,19 +1437,7 @@ roles:
             - name: logstorage
               codenames:
                 - view
-# TODO: ----->
-    - name: Get concerns
-      description: Read access to all concerns
-      type: hidden
-      module_name: rbac.roles
-      class_name: ModelRole
-      apps:
-        - label: cm
-          models:
-            - name: concernitem
-              codenames:
-                - view
-# TODO: <------
+
     - name: ADCM User
       type: role
       module_name: rbac.roles

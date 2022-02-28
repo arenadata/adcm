@@ -16,10 +16,11 @@ from adwp_base.errors import AdwpEx
 from guardian.mixins import PermissionListMixin
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers, status
+from rest_framework.permissions import DjangoObjectPermissions
+from rest_framework.viewsets import ModelViewSet
 
 from rbac import models
 from rbac.services import user as user_services
-from rbac.viewsets import ModelPermViewSet
 
 
 class PasswordField(serializers.CharField):
@@ -96,11 +97,12 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
         return user_services.create(**validated_data)
 
 
-class UserViewSet(PermissionListMixin, ModelPermViewSet):  # pylint: disable=too-many-ancestors
+class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
     """User view set"""
 
     queryset = models.User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = (DjangoObjectPermissions,)
     permission_required = ['rbac.view_user']
     filterset_fields = (
         'id',

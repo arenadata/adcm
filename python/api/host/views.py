@@ -81,6 +81,18 @@ class HostFilter(drf_filters.FilterSet):
         ]
 
 
+def get_host_queryset(queryset, user, kwargs):
+    if 'cluster_id' in kwargs:
+        cluster = get_object_for_user(user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id'])
+        queryset = queryset.filter(cluster=cluster)
+    if 'provider_id' in kwargs:
+        provider = get_object_for_user(
+            user, 'cm.view_hostprovider', HostProvider, id=kwargs['provider_id']
+        )
+        queryset = queryset.filter(provider=provider)
+    return queryset
+
+
 class HostList(PermissionListMixin, PaginatedView):
     """
     get:
@@ -116,24 +128,9 @@ class HostList(PermissionListMixin, PaginatedView):
         'prototype__version_order',
     )
 
-    def get_queryset(self):  # pylint: disable=arguments-differ
-        queryset = super().get_queryset()
-        if 'cluster_id' in self.kwargs:  # List cluster hosts
-            cluster = get_object_for_user(
-                self.request.user,
-                'cm.view_cluster',
-                Cluster,
-                id=self.kwargs['cluster_id'],
-            )
-            queryset = queryset.filter(cluster=cluster)
-        if 'provider_id' in self.kwargs:  # List provider hosts
-            provider = get_object_for_user(
-                self.request.user,
-                'cm.view_hostprovider',
-                HostProvider,
-                id=self.kwargs['provider_id'],
-            )
-            queryset = queryset.filter(provider=provider)
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+        queryset = get_host_queryset(queryset, self.request.user, self.kwargs)
         return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
 
     def post(self, request, *args, **kwargs):
@@ -209,24 +206,9 @@ class HostDetail(PermissionListMixin, DetailView):
     lookup_url_kwarg = 'host_id'
     error_code = 'HOST_NOT_FOUND'
 
-    def get_queryset(self):  # pylint: disable=arguments-differ
-        queryset = super().get_queryset()
-        if 'cluster_id' in self.kwargs:  # List cluster hosts
-            cluster = get_object_for_user(
-                self.request.user,
-                'cm.view_cluster',
-                Cluster,
-                id=self.kwargs['cluster_id'],
-            )
-            queryset = queryset.filter(cluster=cluster)
-        if 'provider_id' in self.kwargs:  # List provider hosts
-            provider = get_object_for_user(
-                self.request.user,
-                'cm.view_hostprovider',
-                HostProvider,
-                id=self.kwargs['provider_id'],
-            )
-            queryset = queryset.filter(provider=provider)
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+        queryset = get_host_queryset(queryset, self.request.user, self.kwargs)
         return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
 
     def delete(self, request, *args, **kwargs):
@@ -253,7 +235,6 @@ class StatusList(GenericUIView):
     queryset = HostComponent.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = serializers.StatusSerializer
-    model_name = Host
 
     def get(self, request, *args, **kwargs):
         """

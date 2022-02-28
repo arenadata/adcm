@@ -26,7 +26,10 @@ class ObjectConfigViewSet(
     permission_classes = (DjangoObjectPermissions,)
     permission_required = ['cm.view_objectconfig']
 
-    def filter_queryset(self, queryset):
-        if not self.request.user.has_perm('cm.view_settings_of_adcm'):
-            return super().filter_queryset(queryset).filter(adcm__isnull=True)
-        return super().filter_queryset(queryset)
+    def get_queryset(self, *args, **kwargs):
+        if self.request.user.has_perm('cm.view_settings_of_adcm'):
+            return super().get_queryset(*args, **kwargs) | ObjectConfig.objects.filter(
+                adcm__isnull=False
+            )
+        else:
+            return super().get_queryset(*args, **kwargs).filter(adcm__isnull=True)

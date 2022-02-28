@@ -10,21 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
 from rest_framework import permissions
 from rest_framework.response import Response
 
+from api.base_view import GenericUIView
+from api.job.serializers import RunTaskSerializer
 from api.utils import (
     ActionFilter,
     AdcmFilterBackend,
     create,
-    check_obj,
     filter_actions,
     permission_denied,
+    get_object_for_user,
 )
-from api.base_view import GenericUIView
-from api.job.serializers import RunTaskSerializer
-
 from cm.job import get_host_object
 from cm.models import (
     Host,
@@ -33,6 +33,7 @@ from cm.models import (
     HostComponent,
     get_model_by_type,
 )
+from rbac.viewsets import DjangoOnlyObjectPermissions
 from . import serializers
 
 
@@ -57,7 +58,6 @@ class ActionList(PermissionListMixin, GenericUIView):
     filterset_class = ActionFilter
     filterset_fields = ('name', 'button', 'button_is_null')
     filter_backends = (AdcmFilterBackend,)
-    permission_classes = (permissions.IsAuthenticated,)
     permission_required = ['cm.view_action']
 
     def get(self, request, *args, **kwargs):  # pylint: disable=too-many-locals
@@ -117,17 +117,26 @@ class ActionList(PermissionListMixin, GenericUIView):
         return Response(serializer.data)
 
 
-class ActionDetail(GenericUIView):
+class ActionDetail(PermissionListMixin, GenericUIView):
     queryset = Action.objects.all()
     serializer_class = serializers.ActionDetailSerializer
     serializer_class_ui = serializers.ActionUISerializer
+    permission_classes = (DjangoOnlyObjectPermissions,)
+    permission_required = ['cm.view_action']
 
     def get(self, request, *args, **kwargs):
         """
         Show specified action
         """
-        obj, action_id = get_obj(**kwargs)
-        action = check_obj(Action, {'id': action_id}, 'ACTION_NOT_FOUND')
+        object_type, object_id, action_id = get_object_type_id(**kwargs)
+        model = get_model_by_type(object_type)
+        ct = ContentType.objects.get_for_model(model)
+        obj = get_object_for_user(
+            request.user, f'{ct.app_label}.view_{ct.model}', model, id=object_id
+        )
+        action = get_object_for_user(
+            request.user, 'cm.view_action', Action, id=action_id, prototype=obj.prototype
+        )
         if isinstance(obj, Host) and action.host_action:
             objects = {'host': obj}
         else:
@@ -162,8 +171,13 @@ class RunTask(GenericUIView):
         """
         Ran specified action
         """
-        obj, action_id = get_obj(**kwargs)
-        action = check_obj(Action, {'id': action_id}, 'ACTION_NOT_FOUND')
+        object_type, object_id, action_id = get_object_type_id(**kwargs)
+        model = get_model_by_type(object_type)
+        ct = ContentType.objects.get_for_model(model)
+        obj = get_object_for_user(
+            request.user, f'{ct.app_label}.view_{ct.model}', model, id=object_id
+        )
+        action = get_object_for_user(request.user, 'cm.view_action', Action, id=action_id)
         self.check_action_perm(action, obj)
         serializer = self.get_serializer(data=request.data)
         return create(serializer, action=action, task_object=obj)

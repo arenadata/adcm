@@ -112,11 +112,13 @@ class ClusterBundle(GenericUIView):
     serializer_class = ServiceSerializer
     serializer_class_ui = BundleServiceUISerializer
 
-    def get(self, request, cluster_id):
+    def get(self, request, *args, **kwargs):
         """
         List all services of specified cluster of bundle
         """
-        cluster = check_obj(Cluster, cluster_id)
+        cluster = get_object_for_user(
+            request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
+        )
         bundle = self.get_queryset().filter(bundle=cluster.prototype.bundle)
         shared = self.get_queryset().filter(shared=True).exclude(bundle=cluster.prototype.bundle)
         serializer = self.get_serializer(
@@ -131,20 +133,24 @@ class ClusterImport(GenericUIView):
     serializer_class_post = serializers.PostImportSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
-    def get(self, request, cluster_id):
+    def get(self, request, *args, **kwargs):
         """
         List all imports avaliable for specified cluster
         """
-        cluster = check_obj(Cluster, cluster_id)
+        cluster = get_object_for_user(
+            request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
+        )
         check_custom_perm(request.user, 'view_import_of', 'cluster', cluster, 'view_clusterbind')
         res = cm.api.get_import(cluster)
         return Response(res)
 
-    def post(self, request, cluster_id):
+    def post(self, request, *args, **kwargs):
         """
         Update bind for cluster
         """
-        cluster = check_obj(Cluster, cluster_id)
+        cluster = get_object_for_user(
+            request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
+        )
         check_custom_perm(request.user, 'change_import_of', 'cluster', cluster)
         serializer = self.get_serializer(
             data=request.data, context={'request': request, 'cluster': cluster}
@@ -161,21 +167,25 @@ class ClusterBindList(GenericUIView):
     serializer_class_post = serializers.DoBindSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
-    def get(self, request, cluster_id):
+    def get(self, request, *args, **kwargs):
         """
         List all binds of specified cluster
         """
-        cluster = check_obj(Cluster, cluster_id)
+        cluster = get_object_for_user(
+            request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
+        )
         check_custom_perm(request.user, 'view_import_of', 'cluster', cluster, 'view_clusterbind')
         obj = self.get_queryset().filter(cluster=cluster, service=None)
         serializer = self.get_serializer(obj, many=True)
         return Response(serializer.data)
 
-    def post(self, request, cluster_id):
+    def post(self, request, *args, **kwargs):
         """
         Bind two clusters
         """
-        cluster = check_obj(Cluster, cluster_id)
+        cluster = get_object_for_user(
+            request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
+        )
         check_custom_perm(request.user, 'change_import_of', 'cluster', cluster)
         serializer = self.get_serializer(data=request.data)
         return create(serializer, cluster=cluster)
@@ -186,24 +196,26 @@ class ClusterBindDetail(GenericUIView):
     serializer_class = serializers.BindSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
-    def get_obj(self, cluster_id, bind_id):
-        cluster = check_obj(Cluster, cluster_id)
-        return cluster, check_obj(ClusterBind, {'cluster': cluster, 'id': bind_id})
-
-    def get(self, request, cluster_id, bind_id):
+    def get(self, request, *args, **kwargs):
         """
         Show specified bind of specified cluster
         """
-        cluster, obj = self.get_obj(cluster_id, bind_id)
+        cluster = get_object_for_user(
+            request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
+        )
+        bind = check_obj(ClusterBind, {'cluster': cluster, 'id': kwargs['bind_id']})
         check_custom_perm(request.user, 'view_import_of', 'cluster', cluster, 'view_clusterbind')
-        serializer = self.get_serializer(obj)
+        serializer = self.get_serializer(bind)
         return Response(serializer.data)
 
-    def delete(self, request, cluster_id, bind_id):
+    def delete(self, request, *args, **kwargs):
         """
         Unbind specified bind of specified cluster
         """
-        cluster, bind = self.get_obj(cluster_id, bind_id)
+        cluster = get_object_for_user(
+            request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
+        )
+        bind = check_obj(ClusterBind, {'cluster': cluster, 'id': kwargs['bind_id']})
         check_custom_perm(request.user, 'change_import_of', 'cluster', cluster)
         cm.api.unbind(bind)
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -275,14 +287,15 @@ class DoClusterUpgrade(GenericUIView):
 class StatusList(GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = HostComponent.objects.all()
-    model_name = Cluster
     serializer_class = serializers.StatusSerializer
 
-    def get(self, request, cluster_id):
+    def get(self, request, *args, **kwargs):
         """
         Show all hosts and components in a specified cluster
         """
-        cluster = check_obj(Cluster, cluster_id)
+        cluster = get_object_for_user(
+            request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
+        )
         host_components = self.get_queryset().filter(cluster=cluster)
         if self._is_for_ui():
             return Response(make_ui_cluster_status(cluster, host_components))
