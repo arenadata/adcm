@@ -81,6 +81,8 @@ class LogStorageListView(PermissionListMixin, PaginatedView):
 
     def get_queryset(self, *args, **kwargs):
         queryset = super().get_queryset(*args, **kwargs)
+        if 'job_id' not in self.kwargs:
+            return queryset
         return queryset.filter(job_id=self.kwargs['job_id'])
 
 
