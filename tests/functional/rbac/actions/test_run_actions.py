@@ -23,7 +23,7 @@ from adcm_client.objects import ADCMClient, Cluster, Service, Component, User
 
 from tests.functional.tools import AnyADCMObject, get_object_represent
 from tests.functional.rbac.conftest import BusinessRole, delete_policy, is_denied, is_allowed, as_user_objects
-from tests.functional.rbac.actions.utils import action_business_role, create_action_policy
+from tests.functional.rbac.action_role_utils import action_business_role, create_action_policy
 
 
 DO_NOTHING_ACTION = 'Do nothing'

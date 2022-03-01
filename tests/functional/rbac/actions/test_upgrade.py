@@ -22,16 +22,16 @@ from adcm_client.base import NoSuchEndpointOrAccessIsDenied
 from adcm_client.objects import Bundle, Cluster, Policy, Component, Service, ADCMClient
 from adcm_client.wrappers.api import AccessIsDenied
 
-from tests.functional.rbac.checkers import ForbiddenCallChecker
+from tests.library.consts import HTTPMethod
 from tests.functional.tools import ClusterRelatedObject
+from tests.functional.rbac.checkers import ForbiddenCallChecker
 from tests.functional.rbac.conftest import BusinessRole, is_allowed, is_denied, as_user_objects
-from tests.functional.rbac.actions.conftest import DATA_DIR
-from tests.functional.rbac.actions.utils import (
+from tests.functional.rbac.action_role_utils import (
     create_action_policy,
     action_business_role,
     get_action_display_name_from_role_name,
 )
-from tests.library.consts import HTTPMethod
+from tests.functional.rbac.actions.conftest import DATA_DIR
 
 ClusterObjectClassName = Literal['Cluster', 'Service', 'Component']
 

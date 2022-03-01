@@ -25,7 +25,7 @@ from tests.functional.rbac.conftest import (
     as_user_objects,
     BusinessRole,
 )
-from tests.functional.rbac.actions.utils import action_business_role, create_action_policy
+from tests.functional.rbac.action_role_utils import action_business_role, create_action_policy
 
 pytestmark = [pytest.mark.extra_rbac]
 
