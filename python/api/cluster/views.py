@@ -119,6 +119,7 @@ class ClusterBundle(GenericUIView):
         cluster = get_object_for_user(
             request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
         )
+        check_custom_perm(request.user, 'add_service_to', 'cluster', cluster)
         bundle = self.get_queryset().filter(bundle=cluster.prototype.bundle)
         shared = self.get_queryset().filter(shared=True).exclude(bundle=cluster.prototype.bundle)
         serializer = self.get_serializer(

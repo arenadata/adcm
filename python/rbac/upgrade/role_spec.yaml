@@ -694,6 +694,7 @@ roles:
       child:
         - Create service
         - Add service hidden
+        - Get service object
 
     - name: Remove service hidden
       description: The ability to remove service from cluster
