@@ -214,8 +214,10 @@ class ConfigRole(AbstractRole):
     """This Role apply permission to view and add config object"""
 
     def apply(self, policy: Policy, role: Role, user: User, group: Group, param_obj=None):
-        # TODO: need refactoring
         for obj in policy.get_objects(param_obj):
+            if obj.config is None:
+                continue
+
             object_type = ContentType.objects.get_for_model(obj)
             config_groups = GroupConfig.objects.filter(object_type=object_type, object_id=obj.id)
 
