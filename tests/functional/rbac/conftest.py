@@ -136,14 +136,7 @@ class BusinessRoles(Enum):
         lambda client: client.role_create(
             name="Custom role",
             display_name="Custom role",
-            child=[
-                {
-                    # get first business role without parametrization
-                    "id": next(
-                        filter(lambda r: r.type == 'business' and r.parametrized_by_type == [], client.role_list())
-                    ).id
-                }
-            ],
+            child=[{"id": 5}],  # business role without parametrization
         ),
     )
     ViewPolicies = BusinessRole("View policy", methodcaller("policy_list"))
@@ -368,7 +361,7 @@ def as_user_objects(user_sdk: ADCMClient, *objects: AnyADCMObject) -> Tuple[AnyA
     """Get prepared objects via tested user sdk"""
     api = user_sdk._api  # pylint: disable=protected-access
     objects_repr = ", ".join(get_object_represent(obj) for obj in objects)
-    username = user_sdk.user().username
+    username = user_sdk.me().username
     with allure.step(f'Get object from perspective of {username}: {objects_repr}'):
         with catch_failed(ObjectNotFound, f"Failed to get one of following objects for {username}: {objects_repr}"):
             return tuple((get_as_client_object(api, obj) for obj in objects))
@@ -398,16 +391,19 @@ def create_policy(
         "host": list(filter(lambda x: isinstance(x, Host), objects)),
     }
     child = []
-    for perm in [permission] if isinstance(permission, BusinessRoles) else permission:
-        role_name = perm.value.role_name
-        business_role = sdk_client.role(name=role_name)
-        child.append({"id": business_role.id})
     role_name = f"Testing {random_string(5)}"
-    role = sdk_client.role_create(
-        name=role_name,
-        display_name=role_name,
-        child=child,
-    )
+    if isinstance(permission, Role):
+        role = permission
+    else:
+        for perm in [permission] if isinstance(permission, BusinessRoles) else permission:
+            role_name = perm.value.role_name
+            business_role = sdk_client.role(name=role_name)
+            child.append({"id": business_role.id})
+        role = sdk_client.role_create(
+            name=role_name,
+            display_name=role_name,
+            child=child,
+        )
     if use_all_objects:
         suitable_objects = objects
     elif role.parametrized_by_type:

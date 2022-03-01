@@ -118,7 +118,7 @@ class TestAccessToBasicObjects:
         with allure.step('Create policy on cluster and check "view" permission exists on added host'):
             policy = clients.admin.policy_create(
                 name='Test Policy',
-                role=clients.admin.role(name=RbacRoles.ClusterAdministrator.value),
+                role=clients.admin.role(name=BR.ViewHostComponents.value.role_name),
                 objects=[cluster],
                 user=[user],
             )
@@ -348,8 +348,7 @@ class TestAccessForJobsAndLogs:
             user=user,
         )
         with allure.step('Run action and check access to task objects'):
-            task = service.action(display_name=self.REGULAR_ACTION).run()
-            task.wait()
+            task = _run_and_wait(service, self.REGULAR_ACTION)
             self.check_access_granted_for_tasks(clients.user, [task])
         with allure.step('Delete service and check that access remains'):
             cluster.service_delete(service)
@@ -461,7 +460,7 @@ class TestAccessForJobsAndLogs:
         with allure.step(
             f'Check role {RbacRoles.ServiceAdministrator.value} grants access to task objects of service and component'
         ):
-            role = clients.admin.role(name=RbacRoles.ClusterAdministrator.value)
+            role = clients.admin.role(name=RbacRoles.ServiceAdministrator.value)
             with granted_policy(clients.admin, role, cluster, user):
                 tasks = [_run_and_wait(obj, self.REGULAR_ACTION) for obj in (service, component)]
                 self.check_access_granted_for_tasks(clients.user, tasks)
@@ -470,7 +469,7 @@ class TestAccessForJobsAndLogs:
         with allure.step(
             f'Check role {RbacRoles.ProviderAdministrator.value} grants access to task objects of provider and host'
         ):
-            role = clients.admin.role(name=RbacRoles.ClusterAdministrator.value)
+            role = clients.admin.role(name=RbacRoles.ProviderAdministrator.value)
             with granted_policy(clients.admin, role, cluster, user):
                 tasks = [_run_and_wait(obj, self.REGULAR_ACTION) for obj in (provider, host)]
                 self.check_access_granted_for_tasks(clients.user, tasks)

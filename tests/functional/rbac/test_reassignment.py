@@ -58,14 +58,16 @@ class TestReapplyTriggers:
 
         self.grant_role(clients.admin, user, RbacRoles.ClusterAdministrator, admin_cluster)
 
-        user_cluster, user_host, user_another_host = as_user_objects(
-            clients.user, admin_cluster, admin_another_host, admin_another_host
-        )
+        user_cluster, *_ = as_user_objects(clients.user, admin_cluster)
         is_denied_to_user(admin_host, BusinessRoles.EditHostConfigurations)
-        is_allowed(user_cluster, BusinessRoles.MapHosts, user_host)
+
+        is_allowed(user_cluster, BusinessRoles.MapHosts, admin_host)
+        user_host, *_ = as_user_objects(clients.user, admin_host)
         is_allowed(user_host, BusinessRoles.EditHostConfigurations)
         is_denied_to_user(admin_another_host, BusinessRoles.EditHostConfigurations)
+
         is_allowed(user_cluster, BusinessRoles.MapHosts, admin_another_host)
+        user_another_host = as_user_objects(clients.user, admin_another_host)
         is_allowed(admin_another_host, BusinessRoles.EditHostConfigurations)
 
         is_allowed(user_cluster, BusinessRoles.UnmapHosts, user_host)

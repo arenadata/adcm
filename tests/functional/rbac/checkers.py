@@ -123,17 +123,22 @@ class ForbiddenCallChecker:  # pylint: disable=too-few-public-methods
             )
         if (status_code := response.status_code) >= 500:
             raise AssertionError(f'Unhandled exception on {self.method.name} call to {url} check logs')
-        if status_code != 403:
-            try:
-                body = json.dumps(response.json(), indent=4)
-                attachment_type = allure.attachment_type.JSON
-            except requests.exceptions.JSONDecodeError:
-                body = response.text
-                attachment_type = allure.attachment_type.HTML
-            allure.attach(name=f'Response on call to {url}', body=body, attachment_type=attachment_type)
-            raise AssertionError(
-                f'Unexpected status code, call to {url} should be denied, but status code was {status_code}'
-            )
+        # if request is forbidden or object is present (404 with "correct" URL)
+        if status_code == 403 or (
+            status_code == 404
+            and not (response.headers['Content-Type'] == 'text/html' and 'Not Found' in response.text)
+        ):
+            return
+        try:
+            body = json.dumps(response.json(), indent=4)
+            attachment_type = allure.attachment_type.JSON
+        except requests.exceptions.JSONDecodeError:
+            body = response.text
+            attachment_type = allure.attachment_type.HTML
+        allure.attach(name=f'Response on call to {url}', body=body, attachment_type=attachment_type)
+        raise AssertionError(
+            f'Unexpected status code, call to {url} should be denied, but status code was {status_code}'
+        )
 
     def _build_default_resource_path(self, adcm_object: RoleTargetObject, **_) -> str:
         """Build resource path string for "basic" entities and actions"""
@@ -183,7 +188,7 @@ def _deny_endpoint_call(endpoint: str, method: HTTPMethod):
 class Deny:  # pylint: disable=too-few-public-methods
     """Description of possible "deny" checks"""
 
-    ViewConfigOf = _deny_endpoint_call('config', HTTPMethod.GET)
+    ViewConfigOf = _deny_endpoint_call('config/current', HTTPMethod.GET)
     ChangeConfigOf = _deny_endpoint_call('config/history', HTTPMethod.POST)
     AddServiceToCluster = ForbiddenCallChecker(Cluster, '', HTTPMethod.POST)
     RemoveServiceFromCluster = ForbiddenCallChecker(Cluster, '', HTTPMethod.DELETE)

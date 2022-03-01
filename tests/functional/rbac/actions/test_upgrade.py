@@ -18,7 +18,7 @@ from typing import List, Tuple, Dict, Literal, Iterable
 
 import allure
 import pytest
-from adcm_client.base import NoSuchEndpointOrAccessIsDenied
+from adcm_client.base import NoSuchEndpointOrAccessIsDenied, ObjectNotFound
 from adcm_client.objects import Bundle, Cluster, Policy, Component, Service, ADCMClient
 from adcm_client.wrappers.api import AccessIsDenied
 
@@ -105,7 +105,7 @@ class TestActionRolesOnUpgrade:
                 role,
                 user=user,
             )
-            for role in self._get_roles_filter_exclude_by_action_name(all_business_roles, (self.NOT_ALLOWED_ACTIONS,))
+            for role in self._get_roles_filter_exclude_by_action_name(all_business_roles, self.NOT_ALLOWED_ACTIONS)
         ]
 
     @pytest.mark.usefixtures("new_bundle", "old_cluster_actions_policies")
@@ -131,7 +131,7 @@ class TestActionRolesOnUpgrade:
         self.check_roles_are_allowed(
             user_client,
             object_map,
-            tuple(self._get_roles_filter_exclude_by_action_name(all_business_roles, (self.NOT_ALLOWED_ACTIONS,))),
+            tuple(self._get_roles_filter_exclude_by_action_name(all_business_roles, self.NOT_ALLOWED_ACTIONS)),
         )
         self.check_roles_are_denied(
             user_client,
@@ -171,7 +171,7 @@ class TestActionRolesOnUpgrade:
         cluster, *_ = as_user_objects(user_client, object_map['Cluster'])
         try:
             cluster.action(name='alternative_display_name').run()
-        except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied):
+        except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied, ObjectNotFound):
             pass
         else:
             raise AssertionError("Action that changed display name shouldn't be allowed to run")
@@ -215,7 +215,7 @@ class TestActionRolesOnUpgrade:
         """Check that given roles aren't allowed to be launched"""
         for role in business_roles:
             adcm_object = self._get_object_from_map_by_role_name(role.role_name, cluster_object_map)
-            action_id = adcm_object.action(display_name=get_action_display_name_from_role_name(role.method_call)).id
+            action_id = adcm_object.action(display_name=get_action_display_name_from_role_name(role.role_name)).id
             rule_with_denied = BusinessRole(
                 role.role_name,
                 role.method_call,
