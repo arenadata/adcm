@@ -127,6 +127,11 @@ class TestAccessToBasicObjects:
             cluster.host_add(second_host)
             check_objects_are_viewable(clients.user, [first_host, second_host])
 
+        with allure.step('Remove first host and check "view" permission is withdrawn'):
+            cluster.host_delete(first_host)
+            check_objects_are_viewable(clients.user, [second_host])
+            check_objects_are_viewable(clients.user, [first_host])
+
         with allure.step('Remove policy and check "view" permissions were withdrawn'):
             delete_policy(policy)
             check_objects_are_not_viewable(clients.user, [first_host, second_host])
