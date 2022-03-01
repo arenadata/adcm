@@ -34,7 +34,7 @@ from adcm_client.objects import (
     ADCM,
     Policy,
 )
-from adcm_client.wrappers.api import AccessIsDenied
+from adcm_client.wrappers.api import AccessIsDenied, ADCMApiWrapper
 from adcm_pytest_plugin.utils import catch_failed, random_string
 
 from tests.functional.rbac.checkers import Deny
@@ -348,6 +348,11 @@ def second_objects(sdk_client_fs):
     return cluster, service, component, provider, host
 
 
+def get_as_client_object(api: ADCMApiWrapper, obj: AnyADCMObject):
+    """Get representation of an object from perspective of given user (client)"""
+    return obj.__class__(api, id=obj.id)
+
+
 def as_user_objects(user_sdk: ADCMClient, *objects: AnyADCMObject) -> Tuple[AnyADCMObject, ...]:
     """Get prepared objects via tested user sdk"""
     api = user_sdk._api  # pylint: disable=protected-access
@@ -355,7 +360,7 @@ def as_user_objects(user_sdk: ADCMClient, *objects: AnyADCMObject) -> Tuple[AnyA
     username = user_sdk.user().username
     with allure.step(f'Get object from perspective of {username}: {objects_repr}'):
         with catch_failed(ObjectNotFound, f"Failed to get one of following objects for {username}: {objects_repr}"):
-            return tuple((obj.__class__(api, id=obj.id) for obj in objects))
+            return tuple((get_as_client_object(api, obj) for obj in objects))
 
 
 @allure.step("Delete policy")
