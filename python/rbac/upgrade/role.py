@@ -155,7 +155,7 @@ def get_role_spec(data: str, schema: str) -> dict:
 def prepare_hidden_roles(bundle: Bundle):
     """Prepares hidden roles"""
     hidden_roles = {}
-
+    get_host_object_role = Role.objects.get(name='Get host object', built_in=True)
     for act in Action.objects.filter(prototype__bundle=bundle):
         name_prefix = f'{act.prototype.type} action:'.title()
         name = f'{name_prefix} {act.display_name}'
@@ -203,6 +203,8 @@ def prepare_hidden_roles(bundle: Bundle):
         if name not in hidden_roles:
             hidden_roles[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
         hidden_roles[name]['children'].append(role)
+        if act.host_action and get_host_object_role not in hidden_roles[name]['children']:
+            hidden_roles[name]['children'].append(get_host_object_role)
     return hidden_roles
 
 
