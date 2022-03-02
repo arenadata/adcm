@@ -210,7 +210,7 @@ def test_add_service(user_policy: Policy, user_sdk: ADCMClient, is_denied_to_use
 
     is_allowed(cluster, BR.AddService)
     added_service = cluster.service(name="new_service")
-    is_denied_to_user(cluster, BR.RemoveService, added_service)
+    is_denied_to_user(added_service, BR.RemoveService, added_service)
     is_denied_to_user(second_cluster_via_admin, BR.AddService)
     cluster_via_admin.service(name="new_service").delete()
     delete_policy(user_policy)
@@ -262,14 +262,15 @@ def test_map_hosts(user_policy: Policy, user_sdk: ADCMClient, is_denied_to_user,
     cluster, *_ = as_user_objects(user_sdk, admin_cluster)
     admin_cluster_second, *_, admin_provider, _ = second_objects
 
-    new_host = admin_provider.host_create(fqdn="new_host")
+    admin_provider.host_create(fqdn="new_host")
     is_allowed(cluster, BR.MapHosts, admin_host)
+    admin_host.reread()
     is_denied_to_user(admin_host, BR.UnmapHosts)
     is_denied_to_user(admin_cluster_second, BR.MapHosts)
 
     delete_policy(user_policy)
 
-    is_denied_to_user(new_host, BR.MapHosts)
+    is_denied_to_user(cluster, BR.MapHosts)
 
 
 @use_role(BR.UnmapHosts)
