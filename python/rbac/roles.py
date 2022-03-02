@@ -211,46 +211,54 @@ class ParentRole(AbstractRole):
 
     def find_and_apply(self, obj, policy, role, user, group=None):
         """Find Role of appropriate type and apply it to specified object"""
-        for r in role.child.all():
-            if r.class_name not in ('ObjectRole', 'ActionRole', 'TaskRole'):
-                continue
+        for r in role.child.filter(class_name__in=['ObjectRole', 'ActionRole', 'TaskRole']):
             if obj.prototype.type in r.parametrized_by_type:
                 r.apply(policy, user, group, obj)
 
     def apply(
         self, policy: Policy, role: Role, user: User, group: Group = None, param_obj=None
-    ):  # pylint: disable=too-many-branches
+    ):  # pylint: disable=too-many-branches, too-many-nested-blocks
         """Apply Role to User and/or Group"""
+        for r in role.child.filter(class_name__in=['ModelRole', 'ParentRole']):
+            r.apply(policy, user, group, param_obj)
+
+        parametrized_by = set()
+        for r in role.child.all():
+            parametrized_by.update(set(r.parametrized_by_type))
+
         for obj in policy.get_objects(param_obj):
             self.find_and_apply(obj, policy, role, user, group)
 
             if obj.prototype.type == 'cluster':
-                for service in ClusterObject.obj.filter(cluster=obj):
-                    self.find_and_apply(service, policy, role, user, group)
-                    for comp in ServiceComponent.obj.filter(service=service):
-                        self.find_and_apply(comp, policy, role, user, group)
-                for host in Host.obj.filter(cluster=obj):
-                    self.find_and_apply(host, policy, role, user, group)
+                if 'service' in parametrized_by or 'component' in parametrized_by:
+                    for service in ClusterObject.obj.filter(cluster=obj):
+                        self.find_and_apply(service, policy, role, user, group)
+                        if 'component' in parametrized_by:
+                            for comp in ServiceComponent.obj.filter(service=service):
+                                self.find_and_apply(comp, policy, role, user, group)
+                if 'host' in parametrized_by:
+                    for host in Host.obj.filter(cluster=obj):
+                        self.find_and_apply(host, policy, role, user, group)
 
             elif obj.prototype.type == 'service':
-                for comp in ServiceComponent.obj.filter(service=obj):
-                    self.find_and_apply(comp, policy, role, user, group)
-                for hc in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
-                    self.find_and_apply(hc.host, policy, role, user, group)
+                if 'component' in parametrized_by:
+                    for comp in ServiceComponent.obj.filter(service=obj):
+                        self.find_and_apply(comp, policy, role, user, group)
+                if 'host' in parametrized_by:
+                    for hc in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
+                        self.find_and_apply(hc.host, policy, role, user, group)
                 self.find_and_apply(obj.cluster, policy, role, user, group)
 
             elif obj.prototype.type == 'component':
-                for hc in HostComponent.obj.filter(
-                    cluster=obj.cluster, service=obj.service, component=obj
-                ):
-                    self.find_and_apply(hc.host, policy, role, user, group)
+                if 'host' in parametrized_by:
+                    for hc in HostComponent.obj.filter(
+                        cluster=obj.cluster, service=obj.service, component=obj
+                    ):
+                        self.find_and_apply(hc.host, policy, role, user, group)
                 self.find_and_apply(obj.cluster, policy, role, user, group)
                 self.find_and_apply(obj.service, policy, role, user, group)
 
             elif obj.prototype.type == 'provider':
-                for host in Host.obj.filter(provider=obj):
-                    self.find_and_apply(host, policy, role, user, group)
-
-        for r in role.child.all():
-            if r.class_name in ('ModelRole', 'ParentRole'):
-                r.apply(policy, user, group, param_obj)
+                if 'host' in parametrized_by:
+                    for host in Host.obj.filter(provider=obj):
+                        self.find_and_apply(host, policy, role, user, group)

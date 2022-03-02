@@ -68,7 +68,6 @@ class TestAccessToBasicObjects:
             BR.ViewServiceConfigurations,
             BR.EditServiceConfigurations,
             BR.ViewImports,
-            # BR.ManageServiceImports,this one is hidden
             BR.ViewAnyObjectConfiguration,
         ):
             with allure.step(
@@ -456,7 +455,7 @@ class TestAccessForJobsAndLogs:
             f'Check role {RbacRoles.ServiceAdministrator.value} grants access to task objects of service and component'
         ):
             role = clients.admin.role(name=RbacRoles.ServiceAdministrator.value)
-            with granted_policy(clients.admin, role, cluster, user):
+            with granted_policy(clients.admin, role, service, user):
                 tasks = [_run_and_wait(obj, self.REGULAR_ACTION) for obj in (service, component)]
                 self.check_access_granted_for_tasks(clients.user, tasks)
             self.check_no_access_granted_for_tasks(clients.user, tasks)
@@ -465,7 +464,7 @@ class TestAccessForJobsAndLogs:
             f'Check role {RbacRoles.ProviderAdministrator.value} grants access to task objects of provider and host'
         ):
             role = clients.admin.role(name=RbacRoles.ProviderAdministrator.value)
-            with granted_policy(clients.admin, role, cluster, user):
+            with granted_policy(clients.admin, role, provider, user):
                 tasks = [_run_and_wait(obj, self.REGULAR_ACTION) for obj in (provider, host)]
                 self.check_access_granted_for_tasks(clients.user, tasks)
             self.check_no_access_granted_for_tasks(clients.user, tasks)

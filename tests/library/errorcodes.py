@@ -11,7 +11,7 @@
 # limitations under the License.
 
 """Tools for ADCM errors handling in tests"""
-import itertools
+
 from typing import List
 
 import pytest_check as check
@@ -50,7 +50,7 @@ class ADCMError:  # pylint: disable=too-few-public-methods
         if data is None:
             return []
         if isinstance(data, dict):
-            return list(itertools.chain(*data.values()))
+            return [*data.values()]
         raise ValueError('error._dict expected to be dict instance')
 
     def __str__(self):

@@ -222,18 +222,18 @@ def test_remove_service(user_policy: Policy, user_sdk: ADCMClient, is_denied_to_
     """Test that Remove service role is ok"""
     cluster_via_admin, service_via_admin, *_ = prepare_objects
     cluster, *_ = as_user_objects(user_sdk, cluster_via_admin)
-    second_cluster_via_admin, *_ = second_objects
+    second_cluster_via_admin, second_service_via_admin, *_ = second_objects
 
     is_denied_to_user(cluster_via_admin, BR.AddService)
     is_allowed(cluster, BR.RemoveService, service_via_admin)
-    is_denied_to_user(cluster_via_admin, BR.RemoveService)
+    is_denied_to_user(service_via_admin, BR.RemoveService)
 
     second_cluster_via_admin.service_add(name="new_service")
-    is_denied_to_user(second_cluster_via_admin, BR.RemoveService)
+    is_denied_to_user(second_service_via_admin, BR.RemoveService)
 
     delete_policy(user_policy)
     cluster_via_admin.service_add(name="test_service")
-    is_denied_to_user(cluster_via_admin, BR.RemoveService)
+    is_denied_to_user(service_via_admin, BR.RemoveService)
 
 
 @use_role(BR.RemoveHosts)
@@ -283,16 +283,18 @@ def test_unmap_hosts(user_policy: Policy, user_sdk: ADCMClient, is_denied_to_use
     is_denied_to_user(cluster, BR.MapHosts)
     is_denied_to_user(host_via_admin, BR.RemoveHosts)
     cluster_via_admin.host_add(host_via_admin)
-    host, *_ = as_user_objects(user_sdk, *prepare_objects)
+    host, *_ = as_user_objects(user_sdk, host_via_admin)
     is_allowed(cluster, BR.UnmapHosts, host)
 
     second_cluster_via_admin.host_add(second_host_via_admin)
+    second_host_via_admin.reread()
     is_denied_to_user(second_host_via_admin, BR.UnmapHosts)
 
     delete_policy(user_policy)
 
     new_host = provider_via_admin.host_create(fqdn="new_host")
     cluster_via_admin.host_add(new_host)
+    new_host.reread()
     is_denied_to_user(new_host, BR.UnmapHosts)
 
 
