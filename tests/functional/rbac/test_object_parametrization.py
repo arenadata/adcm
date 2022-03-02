@@ -86,7 +86,7 @@ def test_service_in_cluster_hierarchy(user, prepare_objects, sdk_client_fs, seco
     for service in cluster.service_list():
         is_allowed(cluster, BusinessRoles.RemoveService, service)
     for service in second_cluster_via_admin.service_list():
-        is_denied(second_cluster_via_admin, BusinessRoles.RemoveService, service, client=user_sdk)
+        is_denied(service, BusinessRoles.RemoveService, client=user_sdk)
 
 
 def test_provider_hierarchy(user_sdk: ADCMClient, user, is_denied_to_user, prepare_objects, sdk_client_fs):

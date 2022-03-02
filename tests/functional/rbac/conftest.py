@@ -396,8 +396,8 @@ def create_policy(
         role = permission
     else:
         for perm in [permission] if isinstance(permission, BusinessRoles) else permission:
-            role_name = perm.value.role_name
-            business_role = sdk_client.role(name=role_name)
+            business_role_name = perm.value.role_name
+            business_role = sdk_client.role(name=business_role_name)
             child.append({"id": business_role.id})
         role = sdk_client.role_create(
             name=role_name,

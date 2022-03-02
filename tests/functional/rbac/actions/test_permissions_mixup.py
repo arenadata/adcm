@@ -85,7 +85,7 @@ class TestClusterAdminRoleDoNotBreakParametrization:
             user=[user],
         )
 
-        first_cluster, second_cluster = as_user_objects(clients.user, first_cluster_admin, second_cluster_admin)
+        first_cluster, *_ = as_user_objects(clients.user, first_cluster_admin)
 
         self.check_permissions(
             "Check that Cluster Admin grants permission only on one cluster",
@@ -100,8 +100,13 @@ class TestClusterAdminRoleDoNotBreakParametrization:
         )
 
         create_action_policy(
-            clients.admin, second_cluster, action_business_role(first_cluster, SAME_DISPLAY_ACTION_NAME), user=user
+            clients.admin,
+            second_cluster_admin,
+            action_business_role(first_cluster, SAME_DISPLAY_ACTION_NAME),
+            user=user,
         )
+
+        second_cluster, *_ = as_user_objects(clients.user, second_cluster_admin)
 
         self.check_permissions(
             "Check that Cluster Admin and permission to run action works correctly",

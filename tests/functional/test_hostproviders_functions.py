@@ -99,4 +99,4 @@ def test_shouldnt_create_host_with_unknown_prototype(sdk_client_fs):
             # If adcm_client object behaviour will be changed, test may fall.
             provider.host_create(fqdn=utils.random_string())
     with allure.step("Check error provider doesn't exist"):
-        errorcodes.PROVIDER_NOT_FOUND.equal(e, "HostProvider", "doesn't exist")
+        errorcodes.PROVIDER_NOT_FOUND.equal(e, "provider doesn't exist")

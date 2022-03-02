@@ -68,7 +68,6 @@ class TestAccessToBasicObjects:
             BR.ViewServiceConfigurations,
             BR.EditServiceConfigurations,
             BR.ViewImports,
-            # BR.ManageServiceImports,this one is hidden
             BR.ViewAnyObjectConfiguration,
         ):
             with allure.step(
@@ -116,12 +115,7 @@ class TestAccessToBasicObjects:
             check_objects_are_not_viewable(clients.user, [first_host, second_host])
 
         with allure.step('Create policy on cluster and check "view" permission exists on added host'):
-            policy = clients.admin.policy_create(
-                name='Test Policy',
-                role=clients.admin.role(name=BR.ViewHostComponents.value.role_name),
-                objects=[cluster],
-                user=[user],
-            )
+            policy = create_policy(clients.admin, BR.ViewHostComponents, [cluster], [user], [])
             check_objects_are_viewable(clients.user, [first_host])
             check_objects_are_not_viewable(clients.user, [second_host])
 
@@ -461,7 +455,7 @@ class TestAccessForJobsAndLogs:
             f'Check role {RbacRoles.ServiceAdministrator.value} grants access to task objects of service and component'
         ):
             role = clients.admin.role(name=RbacRoles.ServiceAdministrator.value)
-            with granted_policy(clients.admin, role, cluster, user):
+            with granted_policy(clients.admin, role, service, user):
                 tasks = [_run_and_wait(obj, self.REGULAR_ACTION) for obj in (service, component)]
                 self.check_access_granted_for_tasks(clients.user, tasks)
             self.check_no_access_granted_for_tasks(clients.user, tasks)
@@ -470,7 +464,7 @@ class TestAccessForJobsAndLogs:
             f'Check role {RbacRoles.ProviderAdministrator.value} grants access to task objects of provider and host'
         ):
             role = clients.admin.role(name=RbacRoles.ProviderAdministrator.value)
-            with granted_policy(clients.admin, role, cluster, user):
+            with granted_policy(clients.admin, role, provider, user):
                 tasks = [_run_and_wait(obj, self.REGULAR_ACTION) for obj in (provider, host)]
                 self.check_access_granted_for_tasks(clients.user, tasks)
             self.check_no_access_granted_for_tasks(clients.user, tasks)
@@ -533,12 +527,6 @@ class TestAccessForJobsAndLogs:
         api = user_client._api  # pylint: disable=protected-access
         with allure.step(f'Check that user "{client_username}" has no access for certain tasks, jobs and logs'):
             for task in tasks:
-                # call to .action fails with "cluster not found" sometimes
-                #
-                # with allure.step(
-                #     f'Check that user "{client_username}" does not have access '
-                #     f'for task of action "{task.action().display_name}", its jobs and logs'
-                # ):
                 _expect_not_found(api, task, 'Task object should not be available directly via client')
                 for job in task.job_list():
                     _expect_not_found(api, job, 'Job object should be available directly via client')
