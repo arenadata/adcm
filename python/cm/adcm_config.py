@@ -240,6 +240,8 @@ def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many
                 return bool(get_default(old_spec[key], old_proto) == old_conf[key])
             else:
                 return True
+        if not old_spec[key].default and new_spec[key].default:
+            return True
         return False
 
     # set new default config values and gather information about activatable groups
