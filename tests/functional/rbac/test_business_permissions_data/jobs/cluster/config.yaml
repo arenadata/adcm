@@ -11,28 +11,41 @@
 # limitations under the License.
 
 - type: cluster
-  name: cluster_with_host_action
-  version: 3
+  version: 4.9
+  name: test_cluster
 
-  actions:
-    just_action:
+  actions: &actions
+    regular_action:
       type: job
       script_type: ansible
       script: ./actions.yaml
-      display_name: "Just action"
+      display_name: "Regular action"
       states:
         available: any
 
-    host_action:
-      type: job
-      script_type: ansible
-      script: ./actions.yaml
-      display_name: "Host action"
+    multijob:
+      type: task
+      display_name: "Multijob"
+      scripts:
+        - &multijob
+          name: first_step
+          script_type: ansible
+          script: ./actions.yaml
+          params:
+            ansible_tags: success
+        - <<: *multijob
+          name: second_step
+        - <<: *multijob
+          name: third_step
       states:
-        available:
-          - created
-        on_success: initialized
-        on_fail: bad_state_very_bad
-      host_action: true
+        available: any
 
+- type: service
+  version: 3.4
+  name: test_service
 
+  actions: *actions
+
+  components:
+    test_component:
+      actions: *actions

@@ -10,29 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- type: cluster
-  name: cluster_with_host_action
-  version: 3
-
-  actions:
-    just_action:
-      type: job
-      script_type: ansible
-      script: ./actions.yaml
-      display_name: "Just action"
-      states:
-        available: any
-
-    host_action:
-      type: job
-      script_type: ansible
-      script: ./actions.yaml
-      display_name: "Host action"
-      states:
-        available:
-          - created
-        on_success: initialized
-        on_fail: bad_state_very_bad
-      host_action: true
-
-
+---
+- name: "SeeMeInAction"
+  hosts: localhost
+  tasks:
+    - name: "Success"
+      assert:
+        that:
+          - 1 == 1
+        msg: "Never gonna give you up"
