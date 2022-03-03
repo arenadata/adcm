@@ -297,12 +297,14 @@ def clients(sdk_client_fs, user_sdk) -> SDKClients:
 
 
 @pytest.fixture()
-def user_policy(request, user, sdk_client_fs, prepare_objects):
+def user_policy(request, user, sdk_client_fs, user_sdk, prepare_objects):
     """
     Create testing role and policy
     Parametrize this fixture with `use_role` decorator
     """
-    return create_policy(sdk_client_fs, request.param, objects=prepare_objects, users=[user], groups=[])
+    policy = create_policy(sdk_client_fs, request.param, objects=prepare_objects, users=[user], groups=[])
+    user_sdk.reread()
+    return policy
 
 
 def use_role(role: Union[BusinessRoles, Collection[BusinessRoles]]):
