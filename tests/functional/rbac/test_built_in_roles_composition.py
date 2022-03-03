@@ -34,7 +34,6 @@ ADCM_USER_ROLES = {
         BusinessRoles.GetAllComponents,
         BusinessRoles.GetAllProviders,
         BusinessRoles.GetAllHosts,
-        BusinessRoles.GetTaskAndJob,
         BusinessRoles.ViewAnyObjectConfiguration,
         BusinessRoles.ViewAnyObjectImport,
         BusinessRoles.ViewAnyObjectHostComponents,
@@ -48,7 +47,6 @@ SERVICE_ADMIN_ROLES = {
         BusinessRoles.GetService,
         BusinessRoles.GetComponent,
         BusinessRoles.GetHost,
-        BusinessRoles.GetTaskAndJob,
         BusinessRoles.EditServiceConfigurations,
         BusinessRoles.EditComponentConfigurations,
         BusinessRoles.ViewHostConfigurations,
@@ -83,7 +81,6 @@ PROVIDER_ADMIN_ROLES = {
     for role in (
         BusinessRoles.GetProvider,
         BusinessRoles.GetHost,
-        BusinessRoles.GetTaskAndJob,
         BusinessRoles.UpgradeProviderBundle,
         BusinessRoles.EditProviderConfigurations,
         BusinessRoles.EditHostConfigurations,
