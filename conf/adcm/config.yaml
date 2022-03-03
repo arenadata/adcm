@@ -39,6 +39,7 @@
           type: integer
           required: false
           default: 365
+          min: 0
           description: |
             You can set the time (number of days) after which the logs will be deleted from the file system.
         - name: "log_rotation_in_db"
@@ -46,6 +47,7 @@
           type: integer
           required: false
           default: 365
+          min: 0
           description: |
             You can set the time (number of days) after which the logs will be deleted from the database.
     - name: "ansible_settings"
