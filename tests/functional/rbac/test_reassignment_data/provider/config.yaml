@@ -21,27 +21,8 @@
     required: false
     default: true
 
-  actions: &common_actions
-    no_config: &job
-      type: job
-      script_type: ansible
-      script: ./actions.yaml
-      display_name: "No config action"
-      states:
-        available: any
-    with_config:
-      <<: *job
-      display_name: "Action with config"
-      states:
-        available: any
-      config:
-        - name: some_param
-          type: string
-
 - type: host
   name: test_host
   version: 101
 
   config: *common_config
-
-  actions: *common_actions
