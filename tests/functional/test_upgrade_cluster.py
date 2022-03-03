@@ -274,7 +274,7 @@ class TestUpgradeWithComponent:
     def check_defaults_changed_correctly(self, service: Service):
         """Check defaults changed correctly after upgrade"""
         component = service.component(name='defaults_changed')
-        self._check_config(component.config(), {'will_have_default': None, 'have_default': 12})
+        self._check_config(component.config(), {'will_have_default': 54, 'have_default': 12})
 
     def _check_config(self, actual_config: str, expected_config: str):
         """Check configs are equal"""
