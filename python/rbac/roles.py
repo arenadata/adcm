@@ -245,7 +245,9 @@ class ParentRole(AbstractRole):
 
     def find_and_apply(self, obj, policy, role, user, group=None):
         """Find Role of appropriate type and apply it to specified object"""
-        for r in role.child.filter(class_name__in=['ObjectRole', 'ActionRole', 'TaskRole', 'ConfigRole']):
+        for r in role.child.filter(
+            class_name__in=['ObjectRole', 'ActionRole', 'TaskRole', 'ConfigRole']
+        ):
             if obj.prototype.type in r.parametrized_by_type:
                 r.apply(policy, user, group, obj)
 
@@ -281,7 +283,8 @@ class ParentRole(AbstractRole):
                 if 'host' in parametrized_by:
                     for hc in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
                         self.find_and_apply(hc.host, policy, role, user, group)
-                self.find_and_apply(obj.cluster, policy, role, user, group)
+                view_cluster_perm = Permission.objects.get(codename='view_cluster')
+                assign_user_or_group_perm(user, group, policy, view_cluster_perm, obj.cluster)
 
             elif obj.prototype.type == 'component':
                 if 'host' in parametrized_by:

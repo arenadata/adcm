@@ -193,7 +193,6 @@ roles:
         app_name: cm
         model: ClusterObject
       child:
-        - Get cluster object
         - Get service object
         - View service config
 
@@ -230,7 +229,6 @@ roles:
         app_name: cm
         model: ServiceComponent
       child:
-        - Get cluster object
         - Get service object
         - Get component object
         - View component config
@@ -423,7 +421,6 @@ roles:
         app_name: cm
         model: ClusterObject
       child:
-        - Get cluster object
         - Get service object
         - View service config
         - Edit config
@@ -459,7 +456,6 @@ roles:
         app_name: cm
         model: ServiceComponent
       child:
-        - Get cluster object
         - Get service object
         - Get component object
         - View component config
@@ -1464,7 +1460,6 @@ roles:
       module_name: rbac.roles
       class_name: ParentRole
       child:
-        - Get cluster object
         - Get service object
         - Get component object
         - Get host object

@@ -134,9 +134,8 @@ class ActionDetail(PermissionListMixin, GenericUIView):
         obj = get_object_for_user(
             request.user, f'{ct.app_label}.view_{ct.model}', model, id=object_id
         )
-        action = get_object_for_user(
-            request.user, 'cm.view_action', Action, id=action_id, prototype=obj.prototype
-        )
+        # TODO: we can access not only the actions of this object
+        action = get_object_for_user(request.user, 'cm.view_action', Action, id=action_id)
         if isinstance(obj, Host) and action.host_action:
             objects = {'host': obj}
         else:
