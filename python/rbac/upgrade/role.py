@@ -297,13 +297,14 @@ def init_roles():
     if rm is None:
         rm = RoleMigration(version=0)
     if role_data['version'] > rm.version:
-        upgrade(role_data)
-        rm.version = role_data['version']
-        rm.save()
-        update_all_bundle_roles()
-        re_apply_all_polices()
-        msg = f'Roles are upgraded to version {rm.version}'
-        log.info(msg)
+        with transaction.atomic():
+            upgrade(role_data)
+            rm.version = role_data['version']
+            rm.save()
+            update_all_bundle_roles()
+            re_apply_all_polices()
+            msg = f'Roles are upgraded to version {rm.version}'
+            log.info(msg)
     else:
         msg = f'Roles are already at version {rm.version}'
 

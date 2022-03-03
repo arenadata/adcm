@@ -29,7 +29,7 @@ from cm.models import (
     LogStorage,
 )
 from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
-from rbac.models import RoleTypes
+from rbac.models import RoleTypes, get_objects_for_policy
 
 
 class AbstractRole:
@@ -145,28 +145,6 @@ def apply_jobs(task: TaskLog, policy: Policy, user: User, group: Group = None):
             assign_user_or_group_perm(user, group, policy, get_perm_for_model(LogStorage), log)
 
 
-def get_objects_for_policy(obj):
-    obj_type_map = {}
-    obj_type = obj.prototype.type
-    if obj_type == 'component':
-        object_list = [obj, obj.service, obj.cluster]
-    elif obj_type == 'service':
-        object_list = [obj, obj.cluster]
-    elif obj_type == 'host':
-        if obj.cluster:
-            object_list = [obj, obj.provider, obj.cluster]
-            for hc in HostComponent.objects.filter(cluster=obj.cluster, host=obj):
-                object_list.append(hc.service)
-                object_list.append(hc.component)
-        else:
-            object_list = [obj, obj.provider]
-    else:
-        object_list = [obj]
-    for policy_object in object_list:
-        obj_type_map[policy_object] = ContentType.objects.get_for_model(policy_object)
-    return obj_type_map
-
-
 def re_apply_policy_for_jobs(action_object, task):
     obj_type_map = get_objects_for_policy(action_object)
     object_model = action_object.__class__.__name__.lower()
@@ -245,7 +223,9 @@ class ParentRole(AbstractRole):
 
     def find_and_apply(self, obj, policy, role, user, group=None):
         """Find Role of appropriate type and apply it to specified object"""
-        for r in role.child.filter(class_name__in=['ObjectRole', 'ActionRole', 'TaskRole', 'ConfigRole']):
+        for r in role.child.filter(
+            class_name__in=['ObjectRole', 'ActionRole', 'TaskRole', 'ConfigRole']
+        ):
             if obj.prototype.type in r.parametrized_by_type:
                 r.apply(policy, user, group, obj)
 

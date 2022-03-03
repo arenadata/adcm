@@ -23,7 +23,7 @@ from django.db.transaction import atomic
 from guardian.models import UserObjectPermission, GroupObjectPermission
 from rest_framework.exceptions import ValidationError
 
-from cm.models import Bundle, ProductCategory
+from cm.models import Bundle, ProductCategory, HostComponent
 
 
 class ObjectType(models.TextChoices):
@@ -249,13 +249,36 @@ class Policy(models.Model):
             self.role.apply(self, None, group=group)
 
 
+def get_objects_for_policy(obj):
+    obj_type_map = {}
+    obj_type = obj.prototype.type
+    if obj_type == 'component':
+        object_list = [obj, obj.service, obj.cluster]
+    elif obj_type == 'service':
+        object_list = [obj, obj.cluster]
+    elif obj_type == 'host':
+        if obj.cluster:
+            object_list = [obj, obj.provider, obj.cluster]
+            for hc in HostComponent.objects.filter(cluster=obj.cluster, host=obj):
+                object_list.append(hc.service)
+                object_list.append(hc.component)
+        else:
+            object_list = [obj, obj.provider]
+    else:
+        object_list = [obj]
+    for policy_object in object_list:
+        obj_type_map[policy_object] = ContentType.objects.get_for_model(policy_object)
+    return obj_type_map
+
+
 def re_apply_object_policy(obj):
     """
     This function search for polices linked with specified object and re apply them
     """
-    content = ContentType.objects.get_for_model(obj)
-    for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=content):
-        policy.apply()
+    obj_type_map = get_objects_for_policy(obj)
+    for obj, ct in obj_type_map.items():
+        for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=ct):
+            policy.apply()
 
 
 def re_apply_all_polices():
