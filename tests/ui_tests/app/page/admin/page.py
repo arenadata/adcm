@@ -407,22 +407,54 @@ class AdminRolesPage(GeneralAdminPage):
             AdminRoleInfo.build(
                 name='ADCM User',
                 description='',
-                permissions=ADCM_USER_ROLES,
+                permissions={
+                    'View any object import',
+                    'View any object host-components',
+                    'View any object configuration',
+                },
             ),
             AdminRoleInfo.build(
                 name='Service Administrator',
                 description='',
-                permissions=SERVICE_ADMIN_ROLES,
+                permissions={
+                    'View host configurations',
+                    'Edit component configurations',
+                    'View host-components',
+                    'Edit service configurations',
+                    'Manage imports',
+                },
             ),
             AdminRoleInfo.build(
                 name='Cluster Administrator',
                 description='',
-                permissions=CLUSTER_ADMIN_ROLES - SERVICE_ADMIN_ROLES | {'Service Administrator'},
+                permissions={
+                    'Upgrade cluster bundle',
+                    'Create host',
+                    'Unmap hosts',
+                    'Service Administrator',
+                    'Remove service',
+                    'Remove bundle',
+                    'Remove hosts',
+                    'Edit host-components',
+                    'Map hosts',
+                    'Edit host configurations',
+                    'Edit cluster configurations',
+                    'Upload bundle',
+                    'Add service',
+                },
             ),
             AdminRoleInfo.build(
                 name='Provider Administrator',
                 description='',
-                permissions=PROVIDER_ADMIN_ROLES,
+                permissions={
+                    'Create host',
+                    'Edit provider configurations',
+                    'Remove bundle',
+                    'Remove hosts',
+                    'Edit host configurations',
+                    'Upgrade provider bundle',
+                    'Upload bundle',
+                },
             ),
         ]
 
