@@ -24,12 +24,6 @@ import allure
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 
-from tests.functional.rbac.test_built_in_roles_composition import (
-    ADCM_USER_ROLES,
-    SERVICE_ADMIN_ROLES,
-    CLUSTER_ADMIN_ROLES,
-    PROVIDER_ADMIN_ROLES,
-)
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.admin.locators import (
     AdminUsersLocators,
