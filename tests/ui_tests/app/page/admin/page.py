@@ -56,14 +56,6 @@ class AdminRoleInfo:
     description: str
     permissions: str
 
-    @classmethod
-    def build(cls, name, description, permissions: Union[str, Iterable[str]]):
-        if isinstance(permissions, str):
-            permissions_ = set(perm.strip() for perm in permissions.split(','))
-        else:
-            permissions_ = set(permissions)
-        return cls(name, description, permissions_)
-
 
 @dataclass
 class AdminGroupInfo:
@@ -384,7 +376,7 @@ class AdminRolesPage(GeneralAdminPage):
         roles_items = []
         role_rows = self.table.get_all_rows()
         for row in role_rows:
-            row_item = AdminRoleInfo.build(
+            row_item = AdminRoleInfo(
                 name=self.find_child(row, AdminRolesLocators.RoleRow.name).text,
                 description=self.find_child(row, AdminRolesLocators.RoleRow.description).text,
                 permissions=self.find_child(row, AdminRolesLocators.RoleRow.permissions).text,
@@ -396,59 +388,26 @@ class AdminRolesPage(GeneralAdminPage):
     def check_default_roles(self):
         """Check default roles are listed on admin page"""
 
-        # move it to page class
         default_roles = [
-            AdminRoleInfo.build(
+            AdminRoleInfo(
                 name='ADCM User',
                 description='',
-                permissions={
-                    'View any object import',
-                    'View any object host-components',
-                    'View any object configuration',
-                },
+                permissions='View any object configuration, View any object import, View any object host-components',
             ),
-            AdminRoleInfo.build(
+            AdminRoleInfo(
                 name='Service Administrator',
                 description='',
-                permissions={
-                    'View host configurations',
-                    'Edit component configurations',
-                    'View host-components',
-                    'Edit service configurations',
-                    'Manage imports',
-                },
+                permissions='View host configurations, Edit service configurations, Edit component configurations, Manage imports, View host-components',
             ),
-            AdminRoleInfo.build(
+            AdminRoleInfo(
                 name='Cluster Administrator',
                 description='',
-                permissions={
-                    'Upgrade cluster bundle',
-                    'Create host',
-                    'Unmap hosts',
-                    'Service Administrator',
-                    'Remove service',
-                    'Remove bundle',
-                    'Remove hosts',
-                    'Edit host-components',
-                    'Map hosts',
-                    'Edit host configurations',
-                    'Edit cluster configurations',
-                    'Upload bundle',
-                    'Add service',
-                },
+                permissions='Create host, Upload bundle, Edit cluster configurations, Edit host configurations, Add service, Remove service, Remove hosts, Map hosts, Unmap hosts, Edit host-components, Upgrade cluster bundle, Remove bundle, Service Administrator',
             ),
-            AdminRoleInfo.build(
+            AdminRoleInfo(
                 name='Provider Administrator',
                 description='',
-                permissions={
-                    'Create host',
-                    'Edit provider configurations',
-                    'Remove bundle',
-                    'Remove hosts',
-                    'Edit host configurations',
-                    'Upgrade provider bundle',
-                    'Upload bundle',
-                },
+                permissions='Create host, Upload bundle, Edit provider configurations, Edit host configurations, Remove hosts, Upgrade provider bundle, Remove bundle',
             ),
         ]
 
