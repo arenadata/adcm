@@ -16,8 +16,6 @@ from dataclasses import dataclass
 from typing import (
     List,
     Optional,
-    Union,
-    Iterable,
 )
 
 import allure
