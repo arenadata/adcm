@@ -271,11 +271,11 @@ def get_objects_for_policy(obj):
     return obj_type_map
 
 
-def re_apply_object_policy(obj):
+def re_apply_object_policy(apply_object):
     """
     This function search for polices linked with specified object and re apply them
     """
-    obj_type_map = get_objects_for_policy(obj)
+    obj_type_map = get_objects_for_policy(apply_object)
     for obj, ct in obj_type_map.items():
         for policy in Policy.objects.filter(object__object_id=obj.id, object__content_type=ct):
             policy.apply()
