@@ -59,7 +59,6 @@
 - type: service
   name: test_service
   version: 1
-
   components:
     test_component:
       constraint: [0,+]

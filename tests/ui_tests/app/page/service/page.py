@@ -23,6 +23,7 @@ from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
     PageHeader,
     PageFooter,
+    BaseDetailedPage,
 )
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators
 from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
@@ -133,7 +134,7 @@ class ServicePageMixin(BasePageObject):
         self.toolbar.check_toolbar_elements(["CLUSTERS", cluster_name, "SERVICES", service_name])
 
 
-class ServiceMainPage(ServicePageMixin):
+class ServiceMainPage(ServicePageMixin, BaseDetailedPage):
     """Service page Main menu"""
 
     MENU_SUFFIX = 'main'

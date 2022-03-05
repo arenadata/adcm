@@ -15,12 +15,16 @@
 # pylint: disable=too-many-locals
 
 import itertools
-from typing import Optional, Union, Tuple
+import os
+from collections import defaultdict
+from contextlib import contextmanager
+from typing import Type, Dict, Optional, List, Union, Callable, Tuple, Generator
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, Cluster, Service, Component, User
+from adcm_client.objects import ADCMClient, Cluster, Service, Component, User, Provider
 
+from tests.functional.rbac.actions.conftest import DATA_DIR
 from tests.functional.tools import AnyADCMObject, get_object_represent
 from tests.functional.rbac.conftest import BusinessRole, delete_policy, is_denied, is_allowed, as_user_objects
 from tests.functional.rbac.action_role_utils import action_business_role, create_action_policy
@@ -240,6 +244,105 @@ def test_action_on_host_available_with_cluster_parametrization(clients, actions_
     delete_policy(policy)
     is_denied(admin_cluster, cluster_business_role, client=clients.user)
     is_denied(admin_host, host_business_role, client=clients.user)
+
+
+class TestPluginsPermissions:
+    """
+    Test that ADCM plugins doesn't require any specific permissions on objects
+    rather than permissions to run actions
+    """
+
+    # pylint: disable=no-self-use
+
+    NEW_HOST = 'new-host'
+
+    @pytest.fixture()
+    def cluster(self, sdk_client_fs):
+        """Create cluster"""
+        bundle = sdk_client_fs.upload_from_fs(os.path.join(DATA_DIR, "plugins", "cluster"))
+        return bundle.cluster_create(name='test cluster')
+
+    @pytest.fixture()
+    def provider(self, sdk_client_fs):
+        """Create provider"""
+        bundle = sdk_client_fs.upload_from_fs(os.path.join(DATA_DIR, "plugins", "provider"))
+        return bundle.provider_create(name='test provider')
+
+    @pytest.mark.full()
+    def test_run_plugins(self, clients, cluster, provider, user):
+        """
+        Test that ADCM plugins doesn't require any specific permissions on objects
+        rather than permissions to run actions
+        """
+        self.check_run_provider_based_plugins(clients, provider, user)
+        self.check_run_cluster_based_plugins(clients, cluster, provider, user)
+
+    def check_run_provider_based_plugins(self, clients, provider: Provider, user):
+        """Check add_host and remove_host permissions"""
+        admin: ADCMClient = clients.admin
+        with allure.step('Check add host on provider'):
+            with self._with_policy(admin, 'add_host', provider, user) as business_role:
+                user_provider, *_ = as_user_objects(clients.user, provider)
+                self._is_allowed(user_provider, business_role)
+                assert self.NEW_HOST in {
+                    h.fqdn for h in provider.host_list()
+                }, f'{self.NEW_HOST} should be among existing hosts'
+                host = admin.host(fqdn=self.NEW_HOST)
+        with allure.step('Check remove host on host'):
+            with self._with_policy(admin, 'remove_host', host, user) as business_role:
+                user_host, *_ = as_user_objects(clients.user, host)
+                self._is_allowed(user_host, business_role)
+                assert self.NEW_HOST not in {
+                    h.fqdn for h in provider.host_list()
+                }, f'{self.NEW_HOST} should not be among existing hosts'
+
+    def check_run_cluster_based_plugins(self, clients, cluster, provider, user):
+        """Check adcm_add_host_to_cluster, adcm_remove_host_from_cluster and adcm_hc plugins"""
+        admin = clients.admin
+        host = provider.host_create(fqdn=self.NEW_HOST)
+        with allure.step('Check adcm_add_host_to_cluster'):
+            with self._with_policy(admin, 'add_host', cluster, user) as business_role:
+                user_cluster, *_ = as_user_objects(clients.user, cluster)
+                self._is_allowed(user_cluster, business_role)
+                assert host.fqdn in {
+                    h.fqdn for h in cluster.host_list()
+                }, f'Host {host.fqdn} should be added to cluster'
+        with allure.step('Check adcm_remove_host_from_cluster'):
+            with self._with_policy(admin, 'remove_host', cluster, user) as business_role:
+                self._is_allowed(user_cluster, business_role)
+                assert host.fqdn not in {
+                    h.fqdn for h in cluster.host_list()
+                }, f'Host {host.fqdn} should be removed from cluster'
+        self._check_hostcomponent_change(clients, cluster, provider, user)
+
+    @allure.step('Check HC map change')
+    def _check_hostcomponent_change(self, clients, cluster, provider, user):
+        """Check hostcomponent change plugin"""
+        admin = clients.admin
+        user_cluster, *_ = as_user_objects(clients.user, cluster)
+        first, second = provider.host_create('first-host'), provider.host_create('second-host')
+        cluster.host_add(first)
+        cluster.host_add(second)
+        service = cluster.service_add(name='test_service')
+        component = service.component()
+        cluster.hostcomponent_set((first, component))
+        expected_hc_map = ((second.id, component.id),)
+        with self._with_policy(admin, 'change_hc_map', cluster, user) as business_role:
+            self._is_allowed(user_cluster, business_role)
+            hc_map = tuple((hc['host_id'], hc['component_id']) for hc in cluster.hostcomponent())
+            assert hc_map == expected_hc_map, f'HC map should be {expected_hc_map}, not {hc_map}'
+
+    @contextmanager
+    def _with_policy(self, admin_client, action_name: str, adcm_object, user) -> BusinessRole:
+        """Helper to create policy and remove it after"""
+        business_role = action_business_role(adcm_object, action_name)
+        policy = create_action_policy(admin_client, adcm_object, business_role, user=user)
+        yield business_role
+        delete_policy(policy)
+
+    def _is_allowed(self, adcm_object, business_role):
+        """Check if action run is allowed and it succeeds"""
+        assert is_allowed(adcm_object, business_role).wait() == 'success', 'Action should succeed'
 
 
 # !===== Steps and checks =====!

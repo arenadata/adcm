@@ -295,7 +295,8 @@ export class FieldService {
     };
 
     const __main_info = findField('__main_info');
-    return runParse(__main_info?.required ? { ...output, __main_info: __main_info.value } : { ...output });
+
+    return runParse(!!__main_info ? { ...output, __main_info: __main_info.value } : { ...output });
   }
 
   private runYspec(value: resultTypes, rules: any) {

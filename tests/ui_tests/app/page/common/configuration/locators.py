@@ -22,6 +22,7 @@ class CommonConfigMenu:
 
     group_btn = TemplateLocator(By.XPATH, "//mat-expansion-panel-header[.//span[text()='{}']]", 'Group "{}" button')
     group_row = TemplateLocator(By.XPATH, "//mat-expansion-panel[.//span[text()='{}']]", 'Group "{}" row')
+
     advanced_label = Locator(By.XPATH, "//mat-checkbox[.//span[text()='Advanced']]", "Advanced label")
     search_input = Locator(By.CSS_SELECTOR, "#config_search_input", "Search input")
     search_input_clear_btn = Locator(

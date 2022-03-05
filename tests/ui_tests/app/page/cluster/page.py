@@ -25,7 +25,7 @@ from tests.ui_tests.app.page.cluster.locators import (
     ClusterHostLocators,
     ClusterComponentsLocators,
 )
-from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter
+from tests.ui_tests.app.page.common.base_page import BasePageObject, PageHeader, PageFooter, BaseDetailedPage
 from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators, ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
@@ -163,7 +163,7 @@ class ClusterPageMixin(BasePageObject):
         self.toolbar.check_toolbar_elements(["CLUSTERS", cluster_name])
 
 
-class ClusterMainPage(ClusterPageMixin):
+class ClusterMainPage(ClusterPageMixin, BaseDetailedPage):
     """Cluster page Main menu"""
 
     MENU_SUFFIX = 'main'

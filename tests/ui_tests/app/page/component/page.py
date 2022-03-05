@@ -18,6 +18,7 @@ from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
     PageHeader,
     PageFooter,
+    BaseDetailedPage,
 )
 from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageLocators,
@@ -122,7 +123,7 @@ class ComponentPageMixin(BasePageObject):
         )
 
 
-class ComponentMainPage(ComponentPageMixin):
+class ComponentMainPage(ComponentPageMixin, BaseDetailedPage):
     """Component page Main menu"""
 
     MENU_SUFFIX = 'main'

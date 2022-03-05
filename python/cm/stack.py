@@ -15,6 +15,7 @@ import os
 import re
 from copy import deepcopy
 from typing import Any
+from version_utils import rpm
 
 import json
 import yaml
@@ -22,6 +23,7 @@ import ruyaml
 import hashlib
 import warnings
 import yspec.checker
+from django.db import IntegrityError
 
 from rest_framework import status
 
@@ -323,6 +325,10 @@ def save_import(proto, conf):
         if 'versions' in conf['import'][key]:
             check_versions(proto, conf['import'][key], f'import "{key}"')
             set_version(si, conf['import'][key])
+            if si.min_version and si.max_version:
+                if rpm.compare_versions(str(si.min_version), str(si.max_version)) > 0:
+                    msg = 'Min version should be less or equal max version'
+                    err('INVALID_VERSION_DEFINITION', msg)
         dict_to_obj(conf['import'][key], 'required', si)
         dict_to_obj(conf['import'][key], 'multibind', si)
         dict_to_obj(conf['import'][key], 'default', si)
@@ -553,41 +559,40 @@ def save_prototype_config(
             dict_json_to_obj(conf, 'default', sc)
         else:
             dict_to_obj(conf, 'default', sc)
-        return sc
+        if subname:
+            sc.subname = subname
+        try:
+            sc.save()
+        except IntegrityError:
+            msg = 'Duplicate config on {} {}, action {}, with name {} and subname {}'
+            err('INVALID_CONFIG_DEFINITION', msg.format(obj.type, obj, action, name, subname))
 
     if isinstance(conf_dict, dict):
         for (name, conf) in conf_dict.items():
             if 'type' in conf:
                 validate_name(name, f'Config key "{name}" of {ref}')
-                sc = cook_conf(proto, conf, name, '')
-                sc.save()
+                cook_conf(proto, conf, name, '')
             else:
                 validate_name(name, f'Config group "{name}" of {ref}')
                 group_conf = {'type': 'group', 'required': False}
-                sc = cook_conf(proto, group_conf, name, '')
-                sc.save()
+                cook_conf(proto, group_conf, name, '')
                 for (subname, subconf) in conf.items():
                     err_msg = f'Config key "{name}/{subname}" of {ref}'
                     validate_name(name, err_msg)
                     validate_name(subname, err_msg)
-                    sc = cook_conf(proto, subconf, name, subname)
-                    sc.subname = subname
-                    sc.save()
+                    cook_conf(proto, subconf, name, subname)
     elif isinstance(conf_dict, list):
         for conf in conf_dict:
             name = conf['name']
             validate_name(name, f'Config key "{name}" of {ref}')
-            sc = cook_conf(proto, conf, name, '')
-            sc.save()
+            cook_conf(proto, conf, name, '')
             if is_group(conf):
                 for subconf in conf['subs']:
                     subname = subconf['name']
                     err_msg = f'Config key "{name}/{subname}" of {ref}'
                     validate_name(name, err_msg)
                     validate_name(subname, err_msg)
-                    sc = cook_conf(proto, subconf, name, subname)
-                    sc.subname = subname
-                    sc.save()
+                    cook_conf(proto, subconf, name, subname)
 
 
 def validate_name(value, name):

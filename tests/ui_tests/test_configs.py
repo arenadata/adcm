@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=too-many-branches,too-many-statements
 
 """UI tests for config page"""
 
@@ -18,10 +19,13 @@ import tempfile
 import allure
 import pytest
 import yaml
-from adcm_client.objects import ADCMClient
+from adcm_client.objects import (
+    ADCMClient,
+    Cluster,
+)
 from adcm_pytest_plugin.utils import random_string
 
-from tests.ui_tests.utils import prepare_cluster_and_get_config
+from tests.ui_tests.app.page.cluster.page import ClusterConfigPage
 
 pytestmark = [pytest.mark.full()]
 
@@ -62,7 +66,26 @@ def _generate_fields():
     return fields
 
 
+def cluster_with_service(sdk_client: ADCMClient, path) -> Cluster:
+    """
+    Prepared cluster for test: create cluster, couple services and couple components.
+    """
+    bundle = sdk_client.upload_from_fs(path)
+    cluster = bundle.cluster_create(name=f"Test cluster {random_string()}")
+    return cluster
+
+
+@allure.step("Prepare cluster and get config")
+def prepare_cluster_and_config(sdk_client: ADCMClient, path, app):
+    """Upload bundle, create cluster and get config"""
+    cluster = cluster_with_service(sdk_client, path)
+    config = ClusterConfigPage(app.driver, app.adcm.url, cluster.cluster_id).open()
+    config.wait_page_is_opened()
+    return cluster, config
+
+
 FIELDS = _generate_fields()
+
 
 TYPES = ('string', 'password', 'integer', 'text', 'boolean', 'float', 'list', 'map', 'json', 'file', 'secrettext')
 
@@ -72,7 +95,7 @@ DEFAULT_VALUE = {
     "text": "text",
     "password": "password",
     "integer": 4,
-    "float": 4.0,
+    "float": 4.1,
     "boolean": True,
     "json": {},
     "map": {"name": "Joe", "age": "24", "sex": "m"},
@@ -359,41 +382,66 @@ def test_configs_fields(sdk_client_fs: ADCMClient, config_dict, app_fs):
     6. Check field configuration (depends on expected result dict and bundle configuration"""
 
     config, expected, path = _prepare_config(config_dict)
-    allure.attach.file(
-        "/".join([path, 'config.yaml']),
-        attachment_type=allure.attachment_type.YAML,
-        name='config.yaml',
-    )
+    allure.attach.file("/".join([path, 'config.yaml']), attachment_type=allure.attachment_type.YAML, name='config.yaml')
     field_type = config['config'][0]['type']
 
-    cluster, ui_config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
-
-    fields = ui_config.get_app_fields()
+    cluster, config_page = prepare_cluster_and_config(sdk_client_fs, path, app_fs)
     with allure.step('Check save button status'):
-        save_err_mess = f"Correct status for save button {[expected['save']]}"
-        button_state = ui_config.save_button_status()
-        assert expected['save'] == button_state, save_err_mess
-        if expected['save']:
-            ui_config.save_configuration()
-            ui_config.assert_no_popups_displayed()
+        expected_state = expected['save']
+        assert (
+            not (config_page.config.is_save_btn_disabled()) == expected_state
+        ), f'Save button should{" not " if expected_state is False else " "}be disabled'
+        if expected_state:
+            config_page.config.save_config()
+
     with allure.step('Check field configuration'):
         if expected['visible']:
             if expected['visible_advanced']:
-                assert not fields, "Config fields presented, expected no"
-                ui_config.show_advanced()
-                assert ui_config.advanced, 'Advanced button not clicked'
-            fields = ui_config.get_app_fields()
+                config_page.config.check_no_rows_or_groups_on_page()
+                config_page.config.click_on_advanced()
+            fields = config_page.config.get_all_config_rows()
             assert fields, 'No config fields, expected yes'
             for field in fields:
-                ui_config.assert_field_is_editable(field, expected['editable'])
+                expected_editable_state = expected['editable']
+                assert (
+                    config_page.config.is_element_editable(field) == expected_editable_state
+                ), f"Element should{' not ' if expected_editable_state is False else ' '}be editable"
             if expected['content']:
-                ui_config.assert_field_content_equal(cluster, field_type, fields[0], config['config'][0]['default'])
+                if field_type == 'boolean':
+                    config_page.config.assert_checkbox_state(field, expected_value=config['config'][0]['default'])
+                elif field_type in ("password", "secrettext"):
+                    is_password_value = True if field_type == "password" else False
+                    config_page.config.assert_input_value_is(
+                        expected_value='********', display_name=field_type, is_password=is_password_value, is_list=False
+                    )
+                elif field_type == "list":
+                    config_page.config.assert_input_value_is(
+                        expected_value=config['config'][0]['default'],
+                        display_name=field_type,
+                        is_list=True,
+                    )
+                elif field_type == "map":
+                    config_page.config.assert_input_value_is(
+                        expected_value=config['config'][0]['default'],
+                        display_name=field_type,
+                        is_map=True,
+                    )
+                elif field_type == "file":
+                    config_page.config.assert_input_value_is(expected_value="test", display_name=field_type)
+                else:
+                    expected_value = (
+                        str(config['config'][0]['default'])
+                        if field_type in ("integer", "float", "json")
+                        else config['config'][0]['default']
+                    )
+                    config_page.config.assert_input_value_is(expected_value=expected_value, display_name=field_type)
             if expected['alerts']:
-                ui_config.assert_alerts_presented(field_type)
+                config_page.config.check_invalid_value_message(field_type)
         else:
-            assert not fields, "Config fields presented, expected no"
+            config_page.config.check_no_rows_or_groups_on_page()
 
 
+@pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2692")
 @pytest.mark.parametrize(("config_dict", "expected"), generate_group_configs())
 @pytest.mark.usefixtures("login_to_adcm_over_api")
 def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, app_fs):
@@ -413,60 +461,84 @@ def test_group_configs_field(sdk_client_fs: ADCMClient, config_dict, expected, a
     6. Check field configuration (depends on expected result dict and bundle configuration)"""
 
     config, path = _prepare_group_config(config_dict)
-    allure.attach.file(
-        "/".join([path, 'config.yaml']),
-        attachment_type=allure.attachment_type.YAML,
-        name='config.yaml',
-    )
+    allure.attach.file("/".join([path, 'config.yaml']), attachment_type=allure.attachment_type.YAML, name='config.yaml')
 
     field_type = config['config'][0]['subs'][0]['type']
 
-    cluster, ui_config = prepare_cluster_and_get_config(sdk_client_fs, path, app_fs)
+    _, config_page = prepare_cluster_and_config(sdk_client_fs, path, app_fs)
 
-    groups = ui_config.get_group_elements()
-    fields = ui_config.get_app_fields()
     with allure.step('Check save button status'):
-        save_err_mess = f"Correct status for save button {[expected['save']]}"
-        assert expected['save'] == ui_config.save_button_status(), save_err_mess
-        if expected['save']:
-            ui_config.save_configuration()
-            ui_config.assert_no_popups_displayed()
+        expected_state = expected['save']
+        assert (
+            not (config_page.config.is_save_btn_disabled()) == expected_state
+        ), f'Save button should{" not " if expected_state is False else " "}be disabled'
+        if expected_state:
+            config_page.config.save_config()
+
     with allure.step('Check configuration'):
         if expected['group_visible'] and not expected['field_visible']:
             if expected['group_visible_advanced']:
-                assert not groups, 'Groups presented, expected no'
-                assert not fields, 'Fields presented, expected no'
-                ui_config.show_advanced()
-                assert ui_config.advanced, 'Advanced button not clicked'
-            groups = ui_config.get_group_elements()
-            fields = ui_config.get_app_fields()
-            assert groups, "Groups not presented, expected yes"
-            for field in fields:
-                assert not field.is_displayed()
+                config_page.config.check_no_rows_or_groups_on_page()
+                config_page.config.click_on_advanced()
+                assert len(config_page.config.get_group_names()) > 0, "Should be group visible in advanced"
+                assert len(config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
+            else:
+                assert len(config_page.config.get_group_names()) > 0, "Should be group visible in advanced"
+                assert len(config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
             if "activatable" in config['config'][0].keys():
-                ui_config.assert_group_status(groups[0], config['config'][0]['active'])
+                config_page.config.check_group_is_active(
+                    config_page.config.get_group_names()[0], config['config'][0]['active']
+                )
 
         if expected['group_visible'] and expected['field_visible']:
             if expected['field_visible_advanced'] or expected['group_visible_advanced']:
-                assert not fields, 'Fields presented, expected no'
-                ui_config.show_advanced()
-                assert ui_config.advanced, 'Advanced button not clicked'
-            groups = ui_config.get_group_elements()
-            fields = ui_config.get_app_fields()
-            assert groups, "Groups not presented, expected yes"
-            assert fields, "Fields not presented, expected yes"
-            for field in fields:
-                ui_config.assert_field_is_editable(field, expected['editable'])
+                config_page.config.check_no_rows_or_groups_on_page()
+                config_page.config.click_on_advanced()
+                fields = config_page.config.get_all_config_rows()
+                assert len(config_page.config.get_group_names()) > 0, "Should be group visible in advanced"
+                assert len(fields) > 1, "Field should be visible"
+                for field in fields:
+                    expected_editable_state = expected['editable']
+                    assert (
+                        config_page.config.is_element_editable(field) == expected_editable_state
+                    ), f"Element should{' not ' if expected_editable_state is False else ' '}be editable"
             if expected['content']:
-                default_value = config['config'][0]['subs'][0]['default']
-                ui_config.assert_field_content_equal(cluster, field_type, fields[0], default_value)
+                if field_type == 'boolean':
+                    config_page.config.assert_checkbox_state(
+                        field, expected_value=config['config'][0]['subs'][0]['default']
+                    )
+                elif field_type in ("password", "secrettext"):
+                    is_password_value = True if field_type == "password" else False
+                    config_page.config.assert_input_value_is(
+                        expected_value='********', display_name=field_type, is_password=is_password_value, is_list=False
+                    )
+                elif field_type == "list":
+                    config_page.config.assert_input_value_is(
+                        expected_value=config['config'][0]['subs'][0]['default'],
+                        display_name=field_type,
+                        is_list=True,
+                    )
+                elif field_type == "map":
+                    config_page.config.assert_input_value_is(
+                        expected_value=config['config'][0]['subs'][0]['default'],
+                        display_name=field_type,
+                        is_map=True,
+                    )
+                elif field_type == "file":
+                    config_page.config.assert_input_value_is(expected_value="test", display_name=field_type)
+                else:
+                    expected_value = (
+                        str(config['config'][0]['subs'][0]['default'])
+                        if field_type in ("integer", "float", "json")
+                        else config['config'][0]['subs'][0]['default']
+                    )
+                    config_page.config.assert_input_value_is(expected_value=expected_value, display_name=field_type)
             if expected['alerts']:
-                ui_config.assert_alerts_presented(field_type)
+                config_page.config.check_invalid_value_message(field_type)
             if "activatable" in config['config'][0].keys():
-                ui_config.assert_group_status(groups[0], config['config'][0]['active'])
+                config_page.config.check_group_is_active(
+                    config_page.config.get_group_names()[0], config['config'][0]['active']
+                )
         if not expected['group_visible']:
-            assert not groups, 'Groups presented, expected no'
-            ui_config.show_advanced()
-            assert ui_config.advanced, 'Advanced button not clicked'
-            groups = ui_config.get_group_elements()
-            assert not groups, "Groups presented, expected no"
+            config_page.config.check_no_rows_or_groups_on_page()
+            config_page.config.check_no_rows_or_groups_on_page_with_advanced()
