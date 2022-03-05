@@ -276,6 +276,7 @@ def prepare_action_roles(bundle: Bundle):
         for role_name, role_params in hidden_roles.items()
         if role_name not in existing_role_names
     ]
+    role_child = Role.child.through
     for role in itertools.chain(existing_roles, new_roles):
         params = hidden_roles[role.name]
 
