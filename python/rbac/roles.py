@@ -15,6 +15,8 @@
 from adwp_base.errors import raise_AdwpEx as err
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
+from django.utils import timezone
 from guardian.models import UserObjectPermission, GroupObjectPermission
 
 from cm.models import (
@@ -27,6 +29,7 @@ from cm.models import (
     TaskLog,
     JobLog,
     LogStorage,
+    DummyData,
 )
 from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
 from rbac.models import RoleTypes, get_objects_for_policy
@@ -73,12 +76,14 @@ class ModelRole(AbstractRole):
 
 
 def assign_user_or_group_perm(user, group, policy, perm, obj):
-    if user is not None:
-        uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
-        policy.user_object_perm.add(uop)
-    if group is not None:
-        gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
-        policy.group_object_perm.add(gop)
+    with transaction.atomic():
+        DummyData.objects.filter(id=1).update(date=timezone.now())
+        if user is not None:
+            uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
+            policy.user_object_perm.add(uop)
+        if group is not None:
+            gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
+            policy.group_object_perm.add(gop)
 
 
 class ObjectRole(AbstractRole):
@@ -241,6 +246,9 @@ class ParentRole(AbstractRole):
             parametrized_by.update(set(r.parametrized_by_type))
 
         for obj in policy.get_objects(param_obj):
+            view_cluster_perm = Permission.objects.get(codename='view_cluster')
+            view_service_perm = Permission.objects.get(codename='view_clusterobject')
+
             self.find_and_apply(obj, policy, role, user, group)
 
             if obj.prototype.type == 'cluster':
@@ -261,7 +269,6 @@ class ParentRole(AbstractRole):
                 if 'host' in parametrized_by:
                     for hc in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
                         self.find_and_apply(hc.host, policy, role, user, group)
-                view_cluster_perm = Permission.objects.get(codename='view_cluster')
                 assign_user_or_group_perm(user, group, policy, view_cluster_perm, obj.cluster)
 
             elif obj.prototype.type == 'component':
@@ -270,8 +277,8 @@ class ParentRole(AbstractRole):
                         cluster=obj.cluster, service=obj.service, component=obj
                     ):
                         self.find_and_apply(hc.host, policy, role, user, group)
-                self.find_and_apply(obj.cluster, policy, role, user, group)
-                self.find_and_apply(obj.service, policy, role, user, group)
+                assign_user_or_group_perm(user, group, policy, view_cluster_perm, obj.cluster)
+                assign_user_or_group_perm(user, group, policy, view_service_perm, obj.service)
 
             elif obj.prototype.type == 'provider':
                 if 'host' in parametrized_by:
