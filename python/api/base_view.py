@@ -16,15 +16,14 @@ import rest_framework.pagination
 from django.core.exceptions import ObjectDoesNotExist, FieldError
 from rest_framework import serializers
 from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import SAFE_METHODS, DjangoModelPermissions, DjangoObjectPermissions
 from rest_framework.response import Response
 from rest_framework.utils.urls import replace_query_param
 from rest_framework.viewsets import ViewSetMixin
-from rest_framework.permissions import SAFE_METHODS, DjangoModelPermissions
 
 from adcm.settings import REST_FRAMEWORK
 from api.utils import AdcmFilterBackend, AdcmOrderingFilter, getlist_from_querydict
 from cm.errors import AdcmEx
-from rbac.viewsets import DjangoObjectPerm
 
 
 class ModelPermOrReadOnlyForAuth(DjangoModelPermissions):
@@ -36,7 +35,6 @@ class ModelPermOrReadOnlyForAuth(DjangoModelPermissions):
                 queryset = self._queryset(view)
                 perms = self.get_required_permissions(request.method, queryset.model)
                 return request.user.has_perms(perms)
-
         return False
 
 
@@ -46,7 +44,7 @@ class GenericUIView(GenericAPIView):
     (switched by query parameter view=interface)
     """
 
-    permission_classes = (DjangoObjectPerm,)
+    permission_classes = (DjangoObjectPermissions,)
     serializer_class_post: serializers.Serializer = None
     serializer_class_ui: serializers.Serializer = None
     serializer_class: serializers.Serializer = None

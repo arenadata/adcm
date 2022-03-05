@@ -12,21 +12,27 @@
 
 """RBAC Role classes"""
 
+from adwp_base.errors import raise_AdwpEx as err
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
+from django.utils import timezone
 from guardian.models import UserObjectPermission, GroupObjectPermission
-from adwp_base.errors import raise_AdwpEx as err
-from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission, RoleTypes
+
 from cm.models import (
     Action,
     ClusterObject,
     ServiceComponent,
     Host,
     HostComponent,
+    GroupConfig,
     TaskLog,
     JobLog,
     LogStorage,
+    DummyData,
 )
+from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
+from rbac.models import RoleTypes, get_objects_for_policy
 
 
 class AbstractRole:
@@ -70,12 +76,14 @@ class ModelRole(AbstractRole):
 
 
 def assign_user_or_group_perm(user, group, policy, perm, obj):
-    if user is not None:
-        uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
-        policy.user_object_perm.add(uop)
-    if group is not None:
-        gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
-        policy.group_object_perm.add(gop)
+    with transaction.atomic():
+        DummyData.objects.filter(id=1).update(date=timezone.now())
+        if user is not None:
+            uop = UserObjectPermission.objects.assign_perm(perm, user, obj)
+            policy.user_object_perm.add(uop)
+        if group is not None:
+            gop = GroupObjectPermission.objects.assign_perm(perm, group, obj)
+            policy.group_object_perm.add(gop)
 
 
 class ObjectRole(AbstractRole):
@@ -126,41 +134,20 @@ class TaskRole(AbstractRole):
                 apply_jobs(task, policy, user, group)
 
 
-def get_perm_for_model(model):
+def get_perm_for_model(model, action='view'):
     ct = ContentType.objects.get_for_model(model)
-    codename = f'view_{model.__name__.lower()}'
+    codename = f'{action}_{model.__name__.lower()}'
     perm, _ = Permission.objects.get_or_create(content_type=ct, codename=codename)
     return perm
 
 
 def apply_jobs(task: TaskLog, policy: Policy, user: User, group: Group = None):
     assign_user_or_group_perm(user, group, policy, get_perm_for_model(TaskLog), task)
+    assign_user_or_group_perm(user, group, policy, get_perm_for_model(TaskLog, 'change'), task)
     for job in JobLog.objects.filter(task=task):
         assign_user_or_group_perm(user, group, policy, get_perm_for_model(JobLog), job)
         for log in LogStorage.objects.filter(job=job):
             assign_user_or_group_perm(user, group, policy, get_perm_for_model(LogStorage), log)
-
-
-def get_objects_for_policy(obj):
-    obj_type_map = {}
-    obj_type = obj.prototype.type
-    if obj_type == 'component':
-        object_list = [obj, obj.service, obj.cluster]
-    elif obj_type == 'service':
-        object_list = [obj, obj.cluster]
-    elif obj_type == 'host':
-        if obj.cluster:
-            object_list = [obj, obj.provider, obj.cluster]
-            for hc in HostComponent.objects.filter(cluster=obj.cluster, host=obj):
-                object_list.append(hc.service)
-                object_list.append(hc.component)
-        else:
-            object_list = [obj, obj.provider]
-    else:
-        object_list = [obj]
-    for policy_object in object_list:
-        obj_type_map[policy_object] = ContentType.objects.get_for_model(policy_object)
-    return obj_type_map
 
 
 def re_apply_policy_for_jobs(action_object, task):
@@ -206,12 +193,44 @@ def re_apply_policy_for_jobs(action_object, task):
                     apply_jobs(task, policy, None, group)
 
 
+class ConfigRole(AbstractRole):
+    """This Role apply permission to view and add config object"""
+
+    def apply(self, policy: Policy, role: Role, user: User, group: Group, param_obj=None):
+        for obj in policy.get_objects(param_obj):
+            if obj.config is None:
+                continue
+
+            object_type = ContentType.objects.get_for_model(obj)
+            config_groups = GroupConfig.objects.filter(object_type=object_type, object_id=obj.id)
+
+            for perm in role.get_permissions():
+
+                if perm.content_type.model == 'objectconfig':
+                    assign_user_or_group_perm(user, group, policy, perm, obj.config)
+                    for cg in config_groups:
+                        assign_user_or_group_perm(user, group, policy, perm, cg.config)
+
+                if perm.content_type.model == 'configlog':
+                    for config in obj.config.configlog_set.all():
+                        assign_user_or_group_perm(user, group, policy, perm, config)
+                    for cg in config_groups:
+                        for config in cg.config.configlog_set.all():
+                            assign_user_or_group_perm(user, group, policy, perm, config)
+
+                if perm.content_type.model == 'groupconfig':
+                    for cg in config_groups:
+                        assign_user_or_group_perm(user, group, policy, perm, cg)
+
+
 class ParentRole(AbstractRole):
     """This Role is used for complex Roles that can include other Roles"""
 
     def find_and_apply(self, obj, policy, role, user, group=None):
         """Find Role of appropriate type and apply it to specified object"""
-        for r in role.child.filter(class_name__in=['ObjectRole', 'ActionRole', 'TaskRole']):
+        for r in role.child.filter(
+            class_name__in=['ObjectRole', 'ActionRole', 'TaskRole', 'ConfigRole']
+        ):
             if obj.prototype.type in r.parametrized_by_type:
                 r.apply(policy, user, group, obj)
 
@@ -227,6 +246,9 @@ class ParentRole(AbstractRole):
             parametrized_by.update(set(r.parametrized_by_type))
 
         for obj in policy.get_objects(param_obj):
+            view_cluster_perm = Permission.objects.get(codename='view_cluster')
+            view_service_perm = Permission.objects.get(codename='view_clusterobject')
+
             self.find_and_apply(obj, policy, role, user, group)
 
             if obj.prototype.type == 'cluster':
@@ -247,7 +269,7 @@ class ParentRole(AbstractRole):
                 if 'host' in parametrized_by:
                     for hc in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
                         self.find_and_apply(hc.host, policy, role, user, group)
-                self.find_and_apply(obj.cluster, policy, role, user, group)
+                assign_user_or_group_perm(user, group, policy, view_cluster_perm, obj.cluster)
 
             elif obj.prototype.type == 'component':
                 if 'host' in parametrized_by:
@@ -255,8 +277,8 @@ class ParentRole(AbstractRole):
                         cluster=obj.cluster, service=obj.service, component=obj
                     ):
                         self.find_and_apply(hc.host, policy, role, user, group)
-                self.find_and_apply(obj.cluster, policy, role, user, group)
-                self.find_and_apply(obj.service, policy, role, user, group)
+                assign_user_or_group_perm(user, group, policy, view_cluster_perm, obj.cluster)
+                assign_user_or_group_perm(user, group, policy, view_service_perm, obj.service)
 
             elif obj.prototype.type == 'provider':
                 if 'host' in parametrized_by:

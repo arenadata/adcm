@@ -92,7 +92,7 @@ def upgrade_role(role: dict, data: dict) -> Role:
     """Upgrade single role"""
     perm_list = get_role_permissions(role, data['roles'])
     try:
-        new_role = Role.objects.get(name=role['name'])
+        new_role = Role.objects.get(name=role['name'], built_in=True)
         new_role.permissions.clear()
     except Role.DoesNotExist:
         new_role = Role(name=role['name'])
@@ -155,7 +155,7 @@ def get_role_spec(data: str, schema: str) -> dict:
 def prepare_hidden_roles(bundle: Bundle):
     """Prepares hidden roles"""
     hidden_roles = {}
-
+    get_host_object_role = Role.objects.get(name='Get host object', built_in=True)
     for act in Action.objects.filter(prototype__bundle=bundle):
         name_prefix = f'{act.prototype.type} action:'.title()
         name = f'{name_prefix} {act.display_name}'
@@ -203,6 +203,8 @@ def prepare_hidden_roles(bundle: Bundle):
         if name not in hidden_roles:
             hidden_roles[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
         hidden_roles[name]['children'].append(role)
+        if act.host_action and get_host_object_role not in hidden_roles[name]['children']:
+            hidden_roles[name]['children'].append(get_host_object_role)
     return hidden_roles
 
 
@@ -295,13 +297,14 @@ def init_roles():
     if rm is None:
         rm = RoleMigration(version=0)
     if role_data['version'] > rm.version:
-        upgrade(role_data)
-        rm.version = role_data['version']
-        rm.save()
-        update_all_bundle_roles()
-        re_apply_all_polices()
-        msg = f'Roles are upgraded to version {rm.version}'
-        log.info(msg)
+        with transaction.atomic():
+            upgrade(role_data)
+            rm.version = role_data['version']
+            rm.save()
+            update_all_bundle_roles()
+            re_apply_all_polices()
+            msg = f'Roles are upgraded to version {rm.version}'
+            log.info(msg)
     else:
         msg = f'Roles are already at version {rm.version}'
 

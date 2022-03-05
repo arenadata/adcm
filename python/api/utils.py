@@ -14,15 +14,32 @@
 
 from typing import List
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.http.request import QueryDict
 from django_filters import rest_framework as drf_filters
+from guardian.shortcuts import get_objects_for_user
 from rest_framework import status, serializers, exceptions
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
 import cm.upgrade
+from cm.errors import AdcmEx
 from cm.models import Action, ADCMEntity, PrototypeConfig, ConcernType
+
+
+def get_object_for_user(user, perms, klass, **kwargs):
+    try:
+        queryset = get_objects_for_user(user, perms, klass)
+        return queryset.get(**kwargs)
+    except ObjectDoesNotExist:
+        model = klass
+        if not hasattr(klass, '_default_manager'):
+            model = klass.model
+        error_code = 'NO_MODEL_ERROR_CODE'
+        if hasattr(model, '__error_code__'):
+            error_code = model.__error_code__
+        raise AdcmEx(error_code) from None
 
 
 def check_obj(model, req, error=None):
@@ -53,8 +70,8 @@ def has_custom_permission(user, action_type, model, obj, second_perm):
     return False
 
 
-def check_custom_perm(self, action_type, model, obj, second_perm=None):
-    if not has_custom_permission(self.request.user, action_type, model, obj, second_perm):
+def check_custom_perm(user, action_type, model, obj, second_perm=None):
+    if not has_custom_permission(user, action_type, model, obj, second_perm):
         permission_denied()
 
 

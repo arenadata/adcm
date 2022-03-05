@@ -15,9 +15,9 @@ from rest_framework import status
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication
 from rest_framework.mixins import CreateModelMixin
 from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.permissions import IsAuthenticated
 
 import cm.api
 import cm.bundle
@@ -107,8 +107,8 @@ class BundleDetail(DetailView):
     lookup_url_kwarg = 'bundle_id'
     error_code = 'BUNDLE_NOT_FOUND'
 
-    def delete(self, request, bundle_id):
-        bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
+    def delete(self, request, *args, **kwargs):
+        bundle = self.get_object()
         cm.bundle.delete_bundle(bundle)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -131,6 +131,7 @@ class BundleLicense(GenericUIView):
     action = 'retrieve'
     queryset = Bundle.objects.all()
     serializer_class = serializers.LicenseSerializer
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, bundle_id):
         bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
@@ -257,6 +258,7 @@ class ProviderTypeList(PaginatedView):
     serializer_class = serializers.ProviderTypeSerializer
     filterset_fields = ('name', 'bundle_id', 'display_name')
     ordering_fields = ('display_name', 'version_order')
+    permission_classes = (IsAuthenticated,)
 
 
 class ClusterTypeList(PaginatedView):

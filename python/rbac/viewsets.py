@@ -12,36 +12,14 @@
 
 """RBAC Permissions classes"""
 
-from guardian.shortcuts import get_objects_for_user
-from rest_framework import viewsets
-from rest_framework.permissions import DjangoModelPermissions, DjangoObjectPermissions
+from rest_framework.permissions import DjangoObjectPermissions
 
 
-class DjangoModelPerm(DjangoModelPermissions):
-    """
-    Similar to `DjangoModelPermissions`, but adding 'view' permissions.
-    """
-
+class DjangoOnlyObjectPermissions(DjangoObjectPermissions):
     perms_map = {
-        'GET': ['%(app_label)s.view_%(model_name)s'],
-        'OPTIONS': ['%(app_label)s.view_%(model_name)s'],
-        'HEAD': ['%(app_label)s.view_%(model_name)s'],
-        'POST': ['%(app_label)s.add_%(model_name)s'],
-        'PUT': ['%(app_label)s.change_%(model_name)s'],
-        'PATCH': ['%(app_label)s.change_%(model_name)s'],
-        'DELETE': ['%(app_label)s.delete_%(model_name)s'],
-    }
-
-
-class DjangoObjectPerm(DjangoObjectPermissions):
-    """
-    Similar to `DjangoObjectPermissions`, but adding 'view' permissions.
-    """
-
-    perms_map = {
-        'GET': ['%(app_label)s.view_%(model_name)s'],
-        'OPTIONS': ['%(app_label)s.view_%(model_name)s'],
-        'HEAD': ['%(app_label)s.view_%(model_name)s'],
+        'GET': [],
+        'OPTIONS': [],
+        'HEAD': [],
         'POST': ['%(app_label)s.add_%(model_name)s'],
         'PUT': ['%(app_label)s.change_%(model_name)s'],
         'PATCH': ['%(app_label)s.change_%(model_name)s'],
@@ -49,24 +27,4 @@ class DjangoObjectPerm(DjangoObjectPermissions):
     }
 
     def has_permission(self, request, view):
-        model_cls = self._queryset(view).model
-        model_perms = self.get_required_permissions(request.method, model_cls)
-        objects = get_objects_for_user(request.user, model_perms)
-        if objects:
-            return True
-        return super().has_permission(request, view)
-
-    def has_object_permission(self, request, view, obj):
-        model_cls = self._queryset(view).model
-        user = request.user
-        model_perms = self.get_required_permissions(request.method, model_cls)
-        object_perms = self.get_required_object_permissions(request.method, model_cls)
-        if user.has_perms(object_perms, obj) or user.has_perms(model_perms):
-            return True
-        return False
-
-
-class ModelPermViewSet(viewsets.ModelViewSet):  # pylint: disable=too-many-ancestors
-    """Replace of DRF ModelViewSet with view permission"""
-
-    permission_classes = (DjangoObjectPerm,)
+        return True
