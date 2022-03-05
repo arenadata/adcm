@@ -18,6 +18,7 @@ from adwp_base.errors import raise_AdwpEx as err
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.utils import timezone
+from silk.profiling.profiler import silk_profile
 
 import cm.checker
 from cm.models import ProductCategory, Bundle, Action, get_model_by_type, DummyData
@@ -151,7 +152,7 @@ def get_role_spec(data: str, schema: str) -> dict:
 
     return data
 
-
+@silk_profile(name='Prepare hidden roles')
 def prepare_hidden_roles(bundle: Bundle):
     """Prepares hidden roles"""
     hidden_roles = {}

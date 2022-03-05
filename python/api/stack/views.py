@@ -18,6 +18,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.permissions import IsAuthenticated
+from silk.profiling.profiler import silk_profile
 
 import cm.api
 import cm.bundle
@@ -64,6 +65,7 @@ class LoadBundle(CreateModelMixin, GenericUIViewSet):
         cm.api.load_service_map()
         return Response(status=status.HTTP_200_OK)
 
+    @silk_profile(name='Upload bundle')
     def create(self, request, *args, **kwargs):
         """
         post:

@@ -13,6 +13,7 @@
 from guardian.mixins import PermissionListMixin
 from rest_framework import status, permissions
 from rest_framework.response import Response
+from silk.profiling.profiler import silk_profile
 
 import cm.status_api
 from api.utils import (
@@ -58,6 +59,7 @@ class ServiceListView(PermissionListMixin, PaginatedView):
             queryset = queryset.filter(cluster=cluster)
         return self.get_page(self.filter_queryset(queryset), request)
 
+    @silk_profile(name='Add service to cluster')
     def post(self, request, *args, **kwargs):
         """
         Add service to cluster

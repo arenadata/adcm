@@ -16,6 +16,7 @@ from rest_framework import serializers
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.validators import ValidationError
+from silk.profiling.profiler import silk_profile
 
 from cm.models import Cluster, ClusterObject, ServiceComponent, HostProvider, Host
 from rbac.models import Policy, User, Group, Role, RoleTypes
@@ -134,6 +135,7 @@ class PolicyViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
     filterset_fields = ('id', 'name', 'built_in', 'role', 'user', 'group')
     ordering_fields = ('id', 'name', 'built_in', 'role')
 
+    @silk_profile('Create policy')
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -143,6 +145,7 @@ class PolicyViewSet(ModelPermViewSet):  # pylint: disable=too-many-ancestors
         else:
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @silk_profile('Update policy')
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         policy = self.get_object()
