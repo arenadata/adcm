@@ -390,22 +390,30 @@ class AdminRolesPage(GeneralAdminPage):
             AdminRoleInfo(
                 name='ADCM User',
                 description='',
-                permissions='View any object configuration, View any object import, View any object host-components',
+                permissions='View any object configuration, View any object import, View any object host-components, '
+                'Get provider, Get cluster, Get host, Get service, Get component, Get task and jobs',
             ),
             AdminRoleInfo(
                 name='Service Administrator',
                 description='',
-                permissions='View host configurations, Edit service configurations, Edit component configurations, Manage imports, View host-components',
+                permissions='View host configurations, Edit service configurations, Edit component configurations, '
+                'Manage service imports, View host-components, Get cluster object, Get host object, '
+                'Get service object, Get component object',
             ),
             AdminRoleInfo(
                 name='Cluster Administrator',
                 description='',
-                permissions='Create host, Upload bundle, Edit cluster configurations, Edit host configurations, Add service, Remove service, Remove hosts, Map hosts, Unmap hosts, Edit host-components, Upgrade cluster bundle, Remove bundle, Service Administrator',
+                permissions='Create host, Upload bundle, Edit cluster configurations, Edit host configurations, '
+                'Manage cluster imports, Add service, Remove service, Remove hosts, Map hosts, '
+                'Unmap hosts, Edit host-components, Upgrade cluster bundle, Remove bundle, '
+                'Service Administrator',
             ),
             AdminRoleInfo(
                 name='Provider Administrator',
                 description='',
-                permissions='Create host, Upload bundle, Edit provider configurations, Edit host configurations, Remove hosts, Upgrade provider bundle, Remove bundle',
+                permissions='Create host, Upload bundle, Edit provider configurations, Edit host configurations, '
+                'Remove hosts, Upgrade provider bundle, Remove bundle, Get provider object, '
+                'Get host object',
             ),
         ]
 
