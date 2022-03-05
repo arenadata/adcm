@@ -16,20 +16,12 @@ from dataclasses import dataclass
 from typing import (
     List,
     Optional,
-    Union,
-    Iterable,
 )
 
 import allure
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 
-from tests.functional.rbac.test_built_in_roles_composition import (
-    ADCM_USER_ROLES,
-    SERVICE_ADMIN_ROLES,
-    CLUSTER_ADMIN_ROLES,
-    PROVIDER_ADMIN_ROLES,
-)
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.admin.locators import (
     AdminUsersLocators,
@@ -61,14 +53,6 @@ class AdminRoleInfo:
     name: str
     description: str
     permissions: str
-
-    @classmethod
-    def build(cls, name, description, permissions: Union[str, Iterable[str]]):
-        if isinstance(permissions, str):
-            permissions_ = set(perm.strip() for perm in permissions.split(','))
-        else:
-            permissions_ = set(permissions)
-        return cls(name, description, permissions_)
 
 
 @dataclass
@@ -390,7 +374,7 @@ class AdminRolesPage(GeneralAdminPage):
         roles_items = []
         role_rows = self.table.get_all_rows()
         for row in role_rows:
-            row_item = AdminRoleInfo.build(
+            row_item = AdminRoleInfo(
                 name=self.find_child(row, AdminRolesLocators.RoleRow.name).text,
                 description=self.find_child(row, AdminRolesLocators.RoleRow.description).text,
                 permissions=self.find_child(row, AdminRolesLocators.RoleRow.permissions).text,
@@ -402,27 +386,34 @@ class AdminRolesPage(GeneralAdminPage):
     def check_default_roles(self):
         """Check default roles are listed on admin page"""
 
-        # move it to page class
         default_roles = [
-            AdminRoleInfo.build(
+            AdminRoleInfo(
                 name='ADCM User',
                 description='',
-                permissions=ADCM_USER_ROLES,
+                permissions='View any object configuration, View any object import, View any object host-components, '
+                'Get provider, Get cluster, Get host, Get service, Get component, Get task and jobs',
             ),
-            AdminRoleInfo.build(
+            AdminRoleInfo(
                 name='Service Administrator',
                 description='',
-                permissions=SERVICE_ADMIN_ROLES,
+                permissions='View host configurations, Edit service configurations, Edit component configurations, '
+                'Manage service imports, View host-components, Get cluster object, Get host object, '
+                'Get service object, Get component object',
             ),
-            AdminRoleInfo.build(
+            AdminRoleInfo(
                 name='Cluster Administrator',
                 description='',
-                permissions=CLUSTER_ADMIN_ROLES - SERVICE_ADMIN_ROLES | {'Service Administrator'},
+                permissions='Create host, Upload bundle, Edit cluster configurations, Edit host configurations, '
+                'Manage cluster imports, Add service, Remove service, Remove hosts, Map hosts, '
+                'Unmap hosts, Edit host-components, Upgrade cluster bundle, Remove bundle, '
+                'Service Administrator',
             ),
-            AdminRoleInfo.build(
+            AdminRoleInfo(
                 name='Provider Administrator',
                 description='',
-                permissions=PROVIDER_ADMIN_ROLES,
+                permissions='Create host, Upload bundle, Edit provider configurations, Edit host configurations, '
+                'Remove hosts, Upgrade provider bundle, Remove bundle, Get provider object, '
+                'Get host object',
             ),
         ]
 
