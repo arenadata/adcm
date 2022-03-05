@@ -11,6 +11,8 @@
 # limitations under the License.
 
 """Init or upgrade RBAC roles and permissions"""
+import itertools
+from functools import lru_cache
 from typing import List
 
 import ruyaml
@@ -227,20 +229,25 @@ def update_built_in_roles(
         built_in_roles['Provider Administrator'].child.add(business_role)
 
 
+@lru_cache()
+def _role_by_name(name: str):
+    return Role.objects.get(name=name, built_in=True)
+
 def get_view_role(parametrized_by):
     obj_list = []
     if parametrized_by == 'service':
-        obj_list.append(Role.objects.get(name='Get cluster object', built_in=True))
+        obj_list.append(_role_by_name('Get cluster object'))
     if parametrized_by == 'component':
-        obj_list.append(Role.objects.get(name='Get cluster object', built_in=True))
-        obj_list.append(Role.objects.get(name='Get service object', built_in=True))
+        obj_list.append(_role_by_name('Get cluster object'))
+        obj_list.append(_role_by_name('Get service object'))
     if parametrized_by == 'host':
-        obj_list.append(Role.objects.get(name='Get cluster object', built_in=True))
-        obj_list.append(Role.objects.get(name='Get provider object', built_in=True))
-    obj_list.append(Role.objects.get(name=f'Get {parametrized_by} object', built_in=True))
+        obj_list.append(_role_by_name('Get cluster object'))
+        obj_list.append(_role_by_name('Get provider object'))
+    obj_list.append(_role_by_name(f'Get {parametrized_by} object'))
     return obj_list
 
 
+@silk_profile(name='Prepare action roles')
 @transaction.atomic
 def prepare_action_roles(bundle: Bundle):
     """Prepares action roles"""
@@ -251,29 +258,60 @@ def prepare_action_roles(bundle: Bundle):
         'Service Administrator': Role.objects.get(name='Service Administrator'),
     }
     hidden_roles = prepare_hidden_roles(bundle)
-    for business_role_name, business_role_params in hidden_roles.items():
-        view_role_list = get_view_role(business_role_params['parametrized_by_type'])
-        if business_role_params['parametrized_by_type'] == 'component':
-            parametrized_by_type = ['service', 'component']
-        else:
-            parametrized_by_type = [business_role_params['parametrized_by_type']]
-
-        business_role, is_created = Role.objects.get_or_create(
-            name=f'{business_role_name}',
-            display_name=f'{business_role_name}',
-            description=f'{business_role_name}',
+    existing_roles = Role.objects.filter(name__in=hidden_roles.keys()).all()
+    existing_role_names = {role.name for role in existing_roles}
+    parametrize_by_service_component = ['service', 'component']
+    new_roles = [
+        Role.objects.create(
+            name=role_name,
+            display_name=role_name,
+            description=role_name,
             type=RoleTypes.business,
             module_name='rbac.roles',
             class_name='ParentRole',
-            parametrized_by_type=parametrized_by_type,
+            parametrized_by_type=[parametrized_by_type]
+            if (parametrized_by_type := role_params['parametrized_by_type']) != 'component'
+            else parametrize_by_service_component,
+        )
+        for role_name, role_params in hidden_roles.items()
+        if role_name not in existing_role_names
+    ]
+    for role in itertools.chain(existing_roles, new_roles):
+        params = hidden_roles[role.name]
+
+        parametrized_by_type = (
+            # move it to separate function
+            [by_type]
+            if (by_type := params['parametrized_by_type']) != 'component'
+            else parametrize_by_service_component
         )
 
-        if is_created:
-            log.info('Create business permission "%s"', business_role_name)
+        role.child.add(*params['children'], *get_view_role(params['parametrized_by_type']))
+        update_built_in_roles(bundle, role, parametrized_by_type, built_in_roles)
 
-        business_role.child.add(*business_role_params['children'])
-        business_role.child.add(*view_role_list)
-        update_built_in_roles(bundle, business_role, parametrized_by_type, built_in_roles)
+    # for business_role_name, business_role_params in hidden_roles.items():
+    #     view_role_list = get_view_role(business_role_params['parametrized_by_type'])
+    #     if business_role_params['parametrized_by_type'] == 'component':
+    #         parametrized_by_type = ['service', 'component']
+    #     else:
+    #         parametrized_by_type = [business_role_params['parametrized_by_type']]
+    #
+    #     business_role, is_created = Role.objects.get_or_create(
+    #         name=f'{business_role_name}',
+    #         display_name=f'{business_role_name}',
+    #         description=f'{business_role_name}',
+    #         type=RoleTypes.business,
+    #         module_name='rbac.roles',
+    #         class_name='ParentRole',
+    #         parametrized_by_type=parametrized_by_type,
+    #     )
+    #
+    #     if is_created:
+    #         log.info('Create business permission "%s"', business_role_name)
+    #
+    #     business_role.child.add(*business_role_params['children'])
+    #     business_role.child.add(*view_role_list)
+    #     update_built_in_roles(bundle, business_role, parametrized_by_type, built_in_roles)
 
 
 def update_all_bundle_roles():
