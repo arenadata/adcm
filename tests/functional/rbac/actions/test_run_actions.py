@@ -16,9 +16,8 @@
 
 import itertools
 import os
-from collections import defaultdict
 from contextlib import contextmanager
-from typing import Type, Dict, Optional, List, Union, Callable, Tuple, Generator
+from typing import Optional, Union, Tuple
 
 import allure
 import pytest
