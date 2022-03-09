@@ -356,7 +356,7 @@ class TestAccessForJobsAndLogs:
         with allure.step('Run action one more time and check access to both tasks'):
             second_task = service.action(display_name=self.REGULAR_ACTION).run()
             second_task.wait()
-            self.check_no_access_granted_for_tasks(clients.user, [task, second_task])
+            self.check_access_granted_for_tasks(clients.user, [task, second_task])
 
     def test_access_to_tasks_on_cluster_host_add_remove(
         self, cluster: Cluster, provider: Provider, clients: SDKClients, user: User

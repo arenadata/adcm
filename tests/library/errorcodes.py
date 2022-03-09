@@ -12,7 +12,7 @@
 
 """Tools for ADCM errors handling in tests"""
 
-from typing import List
+from typing import List, Iterable
 
 import pytest_check as check
 from pytest_check.check_methods import get_failures
@@ -50,7 +50,15 @@ class ADCMError:  # pylint: disable=too-few-public-methods
         if data is None:
             return []
         if isinstance(data, dict):
-            return [*data.values()]
+            messages = []
+            for val in data.values():
+                if isinstance(val, str):
+                    messages.append(val)
+                elif isinstance(val, Iterable):
+                    messages.extend(val)
+                else:
+                    messages.append(val)
+            return messages
         raise ValueError('error._dict expected to be dict instance')
 
     def __str__(self):

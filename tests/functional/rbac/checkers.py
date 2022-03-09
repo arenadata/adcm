@@ -191,7 +191,6 @@ class Deny:  # pylint: disable=too-few-public-methods
     ViewConfigOf = _deny_endpoint_call('config/current', HTTPMethod.GET)
     ChangeConfigOf = _deny_endpoint_call('config/history', HTTPMethod.POST)
     AddServiceToCluster = ForbiddenCallChecker(Cluster, 'service', HTTPMethod.POST)
-    # ???
     RemoveServiceFromCluster = ForbiddenCallChecker(Service, '', HTTPMethod.DELETE)
     AddHostToCluster = ForbiddenCallChecker(Cluster, 'host', HTTPMethod.POST)
     RemoveHostFromCluster = ForbiddenCallChecker(Host, '', HTTPMethod.DELETE, special_case='host-on-cluster')

@@ -52,7 +52,7 @@ def test_edit_adcm_settings(user_policy, user_sdk: ADCMClient, prepare_objects, 
     is_denied_to_user(cluster, BusinessRoles.ViewClusterConfigurations)
 
     delete_policy(user_policy)
-    is_denied_to_user(adcm, BusinessRoles.ViewADCMSettings)
+    is_denied_to_user(adcm, BusinessRoles.ViewADCMSettings, is_list=True)
     is_denied_to_user(adcm, BusinessRoles.EditADCMSettings)
 
 
@@ -67,7 +67,7 @@ def test_view_users(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMClient
     is_denied_to_user(simple_user, BusinessRoles.RemoveUser)
 
     delete_policy(user_policy)
-    is_denied(user_sdk, BusinessRoles.ViewUsers)
+    is_denied(user_sdk, BusinessRoles.ViewUsers, is_list=True)
 
 
 @use_role(BusinessRoles.CreateUser)
@@ -82,7 +82,7 @@ def test_create_users(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMClie
 
     delete_policy(user_policy)
     sdk_client_fs.user(username="test").delete()
-    is_denied(user_sdk, BusinessRoles.ViewUsers)
+    is_denied(user_sdk, BusinessRoles.ViewUsers, is_list=True)
     is_denied(user_sdk, BusinessRoles.CreateUser)
 
 
@@ -97,7 +97,7 @@ def test_edit_users(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMClient
     is_denied_to_user(simple_user, BusinessRoles.RemoveUser)
 
     delete_policy(user_policy)
-    is_denied_to_user(user_sdk, BusinessRoles.ViewUsers)
+    is_denied_to_user(user_sdk, BusinessRoles.ViewUsers, is_list=True)
     is_denied_to_user(simple_user, BusinessRoles.EditUser)
 
 
@@ -112,7 +112,7 @@ def test_remove_users(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMClie
     is_allowed(simple_user, BusinessRoles.RemoveUser)
 
     delete_policy(user_policy)
-    is_denied(user_sdk, BusinessRoles.ViewUsers)
+    is_denied(user_sdk, BusinessRoles.ViewUsers, is_list=True)
 
 
 @use_role(BusinessRoles.ViewGroups)
@@ -126,7 +126,7 @@ def test_view_groups(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMClien
     is_denied_to_user(simple_group, BusinessRoles.RemoveGroup)
 
     delete_policy(user_policy)
-    is_denied(user_sdk, BusinessRoles.ViewGroups)
+    is_denied(user_sdk, BusinessRoles.ViewGroups, is_list=True)
 
 
 @use_role(BusinessRoles.CreateGroup)
@@ -140,7 +140,7 @@ def test_create_groups(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMCli
 
     delete_policy(user_policy)
     sdk_client_fs.group(name="test").delete()
-    is_denied(user_sdk, BusinessRoles.ViewGroups)
+    is_denied(user_sdk, BusinessRoles.ViewGroups, is_list=True)
     is_denied(user_sdk, BusinessRoles.CreateGroup)
 
 
@@ -155,7 +155,7 @@ def test_edit_groups(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMClien
     is_denied_to_user(simple_group, BusinessRoles.RemoveGroup)
 
     delete_policy(user_policy)
-    is_denied_to_user(user_sdk, BusinessRoles.ViewGroups)
+    is_denied_to_user(user_sdk, BusinessRoles.ViewGroups, is_list=True)
     is_denied_to_user(simple_group, BusinessRoles.EditGroup)
 
 
@@ -170,7 +170,7 @@ def test_remove_groups(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMCli
     is_allowed(simple_group, BusinessRoles.RemoveGroup)
 
     delete_policy(user_policy)
-    is_denied_to_user(user_sdk, BusinessRoles.ViewGroups)
+    is_denied_to_user(user_sdk, BusinessRoles.ViewGroups, is_list=True)
 
 
 @use_role(BusinessRoles.ViewRoles)
@@ -178,9 +178,9 @@ def test_view_roles(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMClient
     """Test that "View roles" role is ok"""
 
     is_allowed(user_sdk, BusinessRoles.ViewRoles)
-    is_denied(user_sdk, BusinessRoles.ViewUsers)
-    is_denied(user_sdk, BusinessRoles.ViewGroups)
-    is_denied(user_sdk, BusinessRoles.ViewPolicies)
+    is_denied(user_sdk, BusinessRoles.ViewUsers, is_list=True)
+    is_denied(user_sdk, BusinessRoles.ViewGroups, is_list=True)
+    is_denied(user_sdk, BusinessRoles.ViewPolicies, is_list=True)
     is_denied(user_sdk, BusinessRoles.CreateCustomRoles)
 
     BusinessRoles.CreateCustomRoles.value.method_call(sdk_client_fs)
@@ -189,7 +189,7 @@ def test_view_roles(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMClient
     is_denied_to_user(custom_role, BusinessRoles.RemoveRoles)
 
     delete_policy(user_policy)
-    is_denied(user_sdk, BusinessRoles.ViewRoles)
+    is_denied(user_sdk, BusinessRoles.ViewRoles, is_list=True)
 
 
 @use_role(BusinessRoles.CreateCustomRoles)
@@ -237,7 +237,7 @@ def test_remove_roles(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMClie
 
     delete_policy(user_policy)
     BusinessRoles.CreateCustomRoles.value.method_call(sdk_client_fs)
-    is_denied(user_sdk, BusinessRoles.ViewRoles)
+    is_denied(user_sdk, BusinessRoles.ViewRoles, is_list=True)
 
 
 @use_role(BusinessRoles.ViewPolicies)
@@ -251,7 +251,7 @@ def test_view_policies(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMCli
     is_denied(user_sdk, BusinessRoles.CreatePolicy, role=custom_role, user=[user])
 
     delete_policy(user_policy)
-    is_denied(user_sdk, BusinessRoles.ViewPolicies)
+    is_denied(user_sdk, BusinessRoles.ViewPolicies, is_list=True)
 
 
 @use_role(BusinessRoles.CreatePolicy)
@@ -288,7 +288,7 @@ def test_edit_policy(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMClien
     is_denied(custom_policy, BusinessRoles.RemovePolicy, client=user_sdk)
 
     delete_policy(user_policy)
-    is_denied(user_sdk, BusinessRoles.ViewPolicies)
+    is_denied(user_sdk, BusinessRoles.ViewPolicies, is_list=True)
     is_denied(custom_policy, BusinessRoles.EditPolicy, client=user_sdk)
 
 

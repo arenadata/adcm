@@ -395,6 +395,7 @@ def test_remove_provider(
     new_policy = create_policy(
         sdk_client_fs, BR.RemoveHostProvider, objects=[second_provider_via_admin], users=[user], groups=[]
     )
+    user_sdk.reread()
     delete_policy(new_policy)
     is_denied_to_user(second_provider_via_admin, BR.RemoveHostProvider)
 
@@ -465,6 +466,7 @@ def test_service_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepar
     sdk_client_fs.policy_create(
         name=f"Policy with role {role.name}", role=role, objects=[service], user=[user], group=[]
     )
+    user_sdk.reread()
 
     allowed_user_objects = as_user_objects(user_sdk, service, component)
     is_allowed_to_view(*allowed_user_objects)
@@ -480,6 +482,7 @@ def test_cluster_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepar
     sdk_client_fs.policy_create(
         name=f"Policy with role {role.name}", role=role, objects=[cluster], user=[user], group=[]
     )
+    user_sdk.reread()
 
     allowed_user_objects = as_user_objects(user_sdk, cluster, service, component)
     is_allowed_to_view(*allowed_user_objects)
@@ -496,6 +499,7 @@ def test_provider_administrator(user, user_sdk: ADCMClient, sdk_client_fs, prepa
     sdk_client_fs.policy_create(
         name=f"Policy with role {role.name}", role=role, objects=[hostprovider], user=[user], group=[]
     )
+    user_sdk.reread()
 
     user_hostprovider, user_host = as_user_objects(user_sdk, hostprovider, host)
     is_allowed_to_view(user_hostprovider, user_host)

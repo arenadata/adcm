@@ -456,6 +456,7 @@ def is_denied(
     business_role: Union[BusinessRole, BusinessRoles],
     *args,
     client: Optional[ADCMClient] = None,
+    is_list: bool = False,
     **kwargs,
 ):
     """
@@ -469,6 +470,8 @@ def is_denied(
     So we check the denial of "direct" action via API it this action is performed on another object,
       rather than on ADCM client itself,
       to be sure that we're not checking only the "not allowed via client" situation.
+
+    `is_list` marks if called resource is "list" to check if list is empty (equal to access is denied)
     """
     role: BusinessRole = business_role.value if isinstance(business_role, BusinessRoles) else business_role
     object_is_client = isinstance(base_object, ADCMClient)
@@ -485,12 +488,17 @@ def is_denied(
     object_represent = get_object_represent(base_object)
     with allure.step(f"Assert that {role.role_name} on {object_represent} is denied"):
         if object_is_client:
-            try:
-                role.method_call(base_object, *args, **kwargs)
-            except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied):
-                pass
+            if is_list:
+                assert (
+                    len(role.method_call(base_object, *args, **kwargs)) == 0
+                ), f"{role.role_name} on {object_represent} should not be allowed: items were found in response body"
             else:
-                raise AssertionError(f"{role.role_name} on {object_represent} should not be allowed")
+                try:
+                    role.method_call(base_object, *args, **kwargs)
+                except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied):
+                    pass
+                else:
+                    raise AssertionError(f"{role.role_name} on {object_represent} should not be allowed")
         else:
             role.check_denied(client, base_object)
 
