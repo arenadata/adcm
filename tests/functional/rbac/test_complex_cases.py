@@ -40,7 +40,7 @@ class TestTwoUsers:
         return sdk_client_fs.user_create(*self._SECOND_USER_CREDS)
 
     @pytest.fixture()
-    def second_user_sdk(self, adcm_fs):
+    def second_user_sdk(self, adcm_fs, second_user):  # pylint: disable=unused-argument
         """ADCM Client for second non-superuser"""
         username, password = self._SECOND_USER_CREDS
         return ADCMClient(url=adcm_fs.url, user=username, password=password)
@@ -90,8 +90,8 @@ class TestTwoUsers:
         admin_client, first_client, second_client = sdk_client_fs, user_sdk, second_user_sdk
 
         with allure.step('Create two groups with one user in each'):
-            first_group = admin_client.group_create('First Group', user=[first_user])
-            second_group = admin_client.group_create('Second Group', user=[second_user])
+            first_group = admin_client.group_create('First Group', user=[{'id': first_user.id}])
+            second_group = admin_client.group_create('Second Group', user=[{'id': second_user.id}])
 
         with allure.step('Create two policies and assign separate group to each'):
             create_policy(admin_client, BR.EditServiceConfigurations, [service], [], [first_group])
@@ -188,9 +188,11 @@ class TestTwoUsers:
     # pylint: enable=too-many-locals
 
     def _edit_is_allowed_to(self, user_client: ADCMClient, objects: Iterable[AnyADCMObject]):
+        user_client.reread()
         for obj in as_user_objects(user_client, *objects):
             is_allowed(obj, BR.edit_config_of(obj))
 
     def _edit_is_denied_to(self, user_client: ADCMClient, objects: Iterable[AnyADCMObject]):
+        user_client.reread()
         for obj in objects:
             is_denied(obj, BR.edit_config_of(obj), client=user_client)
