@@ -15,7 +15,7 @@ from guardian.mixins import PermissionListMixin
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework import status
-from rest_framework.permissions import DjangoObjectPermissions
+from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.response import Response
 from rest_framework.validators import ValidationError
 from rest_framework.viewsets import ModelViewSet
@@ -133,7 +133,7 @@ class PolicySerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
 class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
     queryset = Policy.objects.all()
     serializer_class = PolicySerializer
-    permission_classes = (DjangoObjectPermissions,)
+    permission_classes = (DjangoModelPermissions,)
     permission_required = ['rbac.view_policy']
     filterset_fields = ('id', 'name', 'built_in', 'role', 'user', 'group')
     ordering_fields = ('id', 'name', 'built_in', 'role')

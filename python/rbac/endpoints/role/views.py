@@ -17,7 +17,7 @@ from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.permissions import DjangoObjectPermissions
+from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
@@ -92,7 +92,7 @@ class RoleView(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-a
 
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
-    permission_classes = (DjangoObjectPermissions,)
+    permission_classes = (DjangoModelPermissions,)
     permission_required = ['rbac.view_role']
     filterset_class = RoleFilter
     ordering_fields = ('id', 'name', 'display_name', 'built_in', 'type')
