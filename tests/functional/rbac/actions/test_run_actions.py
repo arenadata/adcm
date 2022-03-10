@@ -86,12 +86,18 @@ def _test_basic_action_run_permissions(adcm_object, admin_sdk, user_sdk, user, a
         check_single_action_is_allowed_on_object(DO_NOTHING_ACTION, adcm_object, user_sdk, business_role)
 
     with allure.step(f"Check that granted permission doesn't allow running '{DO_NOTHING_ACTION}' on other objects"):
-        for obj in filter(lambda x: not _do_nothing_action_not_presented(x), all_objects):
+        for obj in filter(
+            lambda x: not _is_the_same(x, adcm_object) and not _do_nothing_action_not_presented(x), all_objects
+        ):
             is_denied(obj, action_business_role(obj, DO_NOTHING_ACTION), client=user_sdk)
 
     with allure.step('Check permission withdrawn'):
         delete_policy(policy)
         is_denied(adcm_object, business_role, client=user_sdk)
+
+
+def _is_the_same(first_object, second_object) -> bool:
+    return first_object.__class__ == second_object.__class__ and first_object.id == second_object.id
 
 
 @pytest.mark.extra_rbac()
