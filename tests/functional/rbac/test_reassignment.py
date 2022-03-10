@@ -63,6 +63,7 @@ class TestReapplyTriggers:
             is_denied_to_user(admin_cluster, BusinessRoles.MapHosts)
 
         self.grant_role(clients.admin, user, RbacRoles.ClusterAdministrator, admin_cluster)
+        clients.user.reread()
 
         user_cluster, *_ = as_user_objects(clients.user, admin_cluster)
         is_denied_to_user(admin_host, BusinessRoles.EditHostConfigurations)
@@ -73,8 +74,8 @@ class TestReapplyTriggers:
         is_denied_to_user(admin_another_host, BusinessRoles.EditHostConfigurations)
 
         is_allowed(user_cluster, BusinessRoles.MapHosts, admin_another_host)
-        user_another_host = as_user_objects(clients.user, admin_another_host)
-        is_allowed(admin_another_host, BusinessRoles.EditHostConfigurations)
+        user_another_host, *_ = as_user_objects(clients.user, admin_another_host)
+        is_allowed(user_another_host, BusinessRoles.EditHostConfigurations)
 
         is_allowed(user_cluster, BusinessRoles.UnmapHosts, user_host)
         is_denied_to_user(admin_host, BusinessRoles.EditHostConfigurations)
@@ -89,6 +90,7 @@ class TestReapplyTriggers:
             is_denied_to_user(admin_service, BusinessRoles.EditServiceConfigurations)
 
         self.grant_role(clients.admin, user, RbacRoles.ClusterAdministrator, admin_cluster)
+        clients.user.reread()
         cluster, service = as_user_objects(clients.user, admin_cluster, admin_service)
 
         is_allowed(service, BusinessRoles.EditServiceConfigurations)
@@ -175,6 +177,7 @@ class TestReapplyTriggers:
                 group=[test_group],
                 objects=[admin_cluster],
             )
+            clients.user.reread()
         user_cluster, user_service, user_component = as_user_objects(
             clients.user, admin_cluster, admin_service, admin_component
         )
@@ -224,6 +227,7 @@ class TestReapplyTriggers:
                 user=[user],
                 objects=[first_cluster],
             )
+            clients.user.reread()
         with allure.step(f"Check that {role_to_check.name} is allowed for user for first cluster and denied for other"):
             is_allowed(as_user_objects(clients.user, first_cluster)[0], role_to_check)
             is_denied_to_user(admin_cluster, role_to_check)
@@ -259,6 +263,7 @@ class TestReapplyTriggers:
                 user=[user],
                 objects=[first_service],
             )
+            clients.user.reread()
 
         with allure.step(f"Check that {role_to_check.name} is allowed for user for first service and denied for other"):
             is_allowed(as_user_objects(clients.user, first_service)[0], role_to_check)
@@ -294,6 +299,7 @@ class TestReapplyTriggers:
                 user=[user],
                 objects=[first_provider],
             )
+            clients.user.reread()
         with allure.step(
             f"Check that {role_to_check.name} is allowed for user for first provider and denied for other"
         ):
@@ -349,6 +355,7 @@ class TestMultiplePolicyReapply:
         policies = self.grant_policies_to_user(
             clients.admin, (first_cluster, test_service, provider), admin_roles, user
         )
+        clients.user.reread()
         self.check_edit_is_allowed(clients.user, first_cluster, test_service, provider)
         self.check_edit_is_denied(clients.user, second_cluster, new_service)
         _, service_policy, _ = policies
