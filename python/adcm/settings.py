@@ -53,7 +53,7 @@ else:
     ADCM_VERSION = '2019.02.07.00'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -78,11 +78,9 @@ INSTALLED_APPS = [
     'guardian',
     'adwp_events',
     'cm.apps.CmConfig',
-'silk',
 ]
 
 MIDDLEWARE = [
-    'silk.middleware.SilkyMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -93,7 +91,6 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 ]
 
-SILKY_PYTHON_PROFILER = True
 
 ROOT_URLCONF = 'adcm.urls'
 
@@ -217,10 +214,10 @@ USE_TZ = True
 STATIC_ROOT = os.path.join(BASE_DIR, 'wwwroot/static/')
 STATIC_URL = '/static/'
 
-# STATICFILES_DIRS = (
-#     # Put strings here, like "/home/html/static"
-#     # Don't forget to use absolute paths, not relative paths.
-# )
+STATICFILES_DIRS = (
+    # Put strings here, like "/home/html/static"
+    # Don't forget to use absolute paths, not relative paths.
+)
 
 ADWP_EVENT_SERVER = {
     # path to json file with Event Server secret token

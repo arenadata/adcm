@@ -154,6 +154,7 @@ def get_role_spec(data: str, schema: str) -> dict:
 
     return data
 
+
 @silk_profile(name='Prepare hidden roles')
 def prepare_hidden_roles(bundle: Bundle):
     """Prepares hidden roles"""
@@ -232,6 +233,7 @@ def update_built_in_roles(
 @lru_cache()
 def _role_by_name(name: str):
     return Role.objects.get(name=name, built_in=True)
+
 
 def get_view_role(parametrized_by):
     obj_list = []
