@@ -56,7 +56,7 @@ class TestAccessToBasicObjects:
     cluster, service, component, provider, host
     """
 
-    # pylint: disable-next=too-many-locals
+    @pytest.mark.extra_rbac()  # pylint: disable-next=too-many-locals
     def test_access_to_cluster_from_service_role(self, clients, user, prepare_objects, second_objects):
         """
         Test that granting permission on service grants permission to "view" service and cluster
@@ -83,6 +83,7 @@ class TestAccessToBasicObjects:
                     check_objects_are_not_viewable(clients.user, not_viewable_objects)
                 check_objects_are_not_viewable(clients.user, all_objects)
 
+    @pytest.mark.extra_rbac()
     def test_access_to_parents_from_component_role(self, clients, user, prepare_objects, second_objects):
         """
         Test that granting permission on component grants permission to "view" component, service and cluster
@@ -327,6 +328,7 @@ class TestAccessForJobsAndLogs:
                 delete_policy(policy)
                 self.check_no_access_granted_for_tasks(clients.user, new_tasks + finished_tasks)
 
+    @pytest.mark.extra_rbac()
     def test_access_to_tasks_on_service_add_remove(self, cluster_wo_service: Cluster, clients: SDKClients, user: User):
         """
         Test that service add/remove doesn't break permission to view task objects:
@@ -358,6 +360,7 @@ class TestAccessForJobsAndLogs:
             second_task.wait()
             self.check_access_granted_for_tasks(clients.user, [task, second_task])
 
+    @pytest.mark.extra_rbac()
     def test_access_to_tasks_on_cluster_host_add_remove(
         self, cluster: Cluster, provider: Provider, clients: SDKClients, user: User
     ):
@@ -382,6 +385,7 @@ class TestAccessForJobsAndLogs:
             cluster.host_delete(host)
             self.check_access_granted_for_tasks(clients.user, [task, second_task])
 
+    @pytest.mark.extra_rbac()
     def test_access_to_tasks_on_hc_map_change(self, cluster, provider, clients, user):
         """
         Test that access for task objects is correct after HC map is changed

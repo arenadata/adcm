@@ -23,6 +23,8 @@ from adcm_client.objects import ADCMClient
 from tests.functional.rbac.conftest import create_policy, BusinessRoles as BR, as_user_objects, is_allowed, is_denied
 from tests.functional.tools import AnyADCMObject
 
+pytestmark = [pytest.mark.extra_rbac()]
+
 
 class TestTwoUsers:
     """Test permissions when two non-superusers are in play"""
