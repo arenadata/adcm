@@ -13,6 +13,7 @@
 """Test business permissions related to cluster objects"""
 
 # pylint: disable=too-many-arguments,unused-argument,too-many-locals
+import itertools
 
 import allure
 import pytest
@@ -156,7 +157,8 @@ def test_manage_imports(user_policy: Policy, user_sdk: ADCMClient, is_denied_to_
     for base_object in [admin_cluster_second, admin_service_second]:
         is_denied_to_user(base_object, BR.ViewImports)
     delete_policy(user_policy)
-    # remove binds (check out commit history)
+    for bind in itertools.chain(admin_cluster.bind_list(), admin_service.bind_list()):
+        bind.delete()
     for base_object in [admin_cluster, admin_service]:
         is_denied_to_user(base_object, BR.ViewImports)
         is_denied_to_user(base_object, BR.ManageImports, admin_service_second)
