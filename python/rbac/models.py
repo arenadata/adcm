@@ -240,6 +240,14 @@ class Policy(models.Model):
         return super().delete(using, keep_parents)
 
     @atomic
+    def apply_without_deletion(self):
+        """This function apply role over"""
+        for user in self.user.all():
+            self.role.apply(self, user, None)
+        for group in self.group.all():
+            self.role.apply(self, None, group=group)
+
+    @atomic
     def apply(self):
         """This function apply role over"""
         self.remove_permissions()
