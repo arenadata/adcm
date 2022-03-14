@@ -817,6 +817,7 @@ roles:
           models:
             - name: cluster
               codenames:
+                - view
                 - view_host_components_of
 
     - name: View host-components
@@ -828,7 +829,6 @@ roles:
       class_name: ParentRole
       any_category: true
       child:
-        - Get cluster object
         - Get service object
         - Get component object
         - Get host object
