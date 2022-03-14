@@ -24,7 +24,7 @@ from adcm_pytest_plugin.utils import random_string
 pytestmark = [pytest.mark.full()]
 
 
-TYPES = ('string', 'password', 'integer', 'text', 'boolean', 'float', 'list', 'map', 'json', 'file', 'secrettext')
+TYPES = ['string', 'password', 'integer', 'text', 'boolean', 'float', 'list', 'map', 'json', 'file', 'secrettext']
 
 
 DEFAULT_VALUE = {

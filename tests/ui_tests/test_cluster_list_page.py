@@ -926,10 +926,10 @@ class TestClusterConfigPage:
             cluster_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
     @pytest.mark.parametrize("field_type", TYPES)
-    @pytest.mark.parametrize("is_advanced", (True, False))
-    @pytest.mark.parametrize("is_default", (True, False))
-    @pytest.mark.parametrize("is_required", (True, False))
-    @pytest.mark.parametrize("is_read_only", (True, False))
+    @pytest.mark.parametrize("is_advanced", [True, False])
+    @pytest.mark.parametrize("is_default", [True, False])
+    @pytest.mark.parametrize("is_required", [True, False])
+    @pytest.mark.parametrize("is_read_only", [True, False])
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_configs_fields_invisible_true(
         self, sdk_client_fs: ADCMClient, app_fs, field_type, is_advanced, is_default, is_required, is_read_only
@@ -958,10 +958,10 @@ class TestClusterConfigPage:
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
     @pytest.mark.parametrize("field_type", TYPES)
-    @pytest.mark.parametrize("advanced", (True, False))
-    @pytest.mark.parametrize("is_default", (True, False))
-    @pytest.mark.parametrize("is_required", (True, False))
-    @pytest.mark.parametrize("is_read_only", (True, False))
+    @pytest.mark.parametrize("advanced", [True, False])
+    @pytest.mark.parametrize("is_default", [True, False])
+    @pytest.mark.parametrize("is_required", [True, False])
+    @pytest.mark.parametrize("is_read_only", [True, False])
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_configs_fields_invisible_false(
         self, sdk_client_fs: ADCMClient, app_fs, field_type, advanced, is_default, is_required, is_read_only
@@ -1067,14 +1067,14 @@ class TestClusterConfigPage:
             cluster_config_page.config.check_field_is_invalid(params["filed_name"])
 
     @pytest.mark.parametrize("field_type", TYPES)
-    @pytest.mark.parametrize("activatable", (True, False))
-    @pytest.mark.parametrize("active", (True, False))
-    @pytest.mark.parametrize("group_advanced", (True, False))
-    @pytest.mark.parametrize("is_default", (True, False))
-    @pytest.mark.parametrize("is_required", (True, False))
-    @pytest.mark.parametrize("is_read_only", (True, False))
-    @pytest.mark.parametrize("field_invisible", (True, False))
-    @pytest.mark.parametrize("field_advanced", (True, False))
+    @pytest.mark.parametrize("activatable", [True, False])
+    @pytest.mark.parametrize("active", [True, False])
+    @pytest.mark.parametrize("group_advanced", [True, False])
+    @pytest.mark.parametrize("is_default", [True, False])
+    @pytest.mark.parametrize("is_required", [True, False])
+    @pytest.mark.parametrize("is_read_only", [True, False])
+    @pytest.mark.parametrize("field_invisible", [True, False])
+    @pytest.mark.parametrize("field_advanced", [True, False])
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_group_configs_fields_invisible_true(
         self,
@@ -1125,14 +1125,14 @@ class TestClusterConfigPage:
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
     @pytest.mark.parametrize("field_type", TYPES)
-    @pytest.mark.parametrize("activatable", (True, False))
-    @pytest.mark.parametrize("active", (True, False))
-    @pytest.mark.parametrize("group_advanced", (True, False))
-    @pytest.mark.parametrize("is_default", (True, False))
-    @pytest.mark.parametrize("is_required", (True, False))
-    @pytest.mark.parametrize("is_read_only", (True, False))
-    @pytest.mark.parametrize("field_invisible", (True, False))
-    @pytest.mark.parametrize("field_advanced", (True, False))
+    @pytest.mark.parametrize("activatable", [True, False])
+    @pytest.mark.parametrize("active", [True, False])
+    @pytest.mark.parametrize("group_advanced", [True, False])
+    @pytest.mark.parametrize("is_default", [True, False])
+    @pytest.mark.parametrize("is_required", [True, False])
+    @pytest.mark.parametrize("is_read_only", [True, False])
+    @pytest.mark.parametrize("field_invisible", [True, False])
+    @pytest.mark.parametrize("field_advanced", [True, False])
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_group_configs_fields_invisible_false(
         self,
