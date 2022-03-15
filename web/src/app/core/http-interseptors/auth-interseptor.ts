@@ -55,6 +55,7 @@ export class AuthInterceptor implements HttpInterceptor {
         }
 
         /** redirect to previous page if it is present and method === GET */
+        /**
         if (res.status === 403 && request.method === 'GET') {
           const previous = this.routerHistory.previous();
 
@@ -64,6 +65,7 @@ export class AuthInterceptor implements HttpInterceptor {
             this.router.navigate(['/']);
           }
         }
+        */
 
         if (res.status === 500) this.router.navigate(['/500']);
 
