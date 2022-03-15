@@ -152,7 +152,7 @@ def _generate_cluster_hidden_action_role_names(bundles: Iterable[Bundle]) -> Set
     return {
         f'{bundle.name}_{bundle.version}_{bundle.edition}_cluster_' f'{bundle.cluster_prototype().name}_{ACTION_NAME}'
         for bundle in bundles
-    } | {'Get cluster object'}
+    }
 
 
 def _generate_service_hidden_action_role_names(bundles: Iterable[Bundle]) -> Set[str]:
@@ -160,7 +160,7 @@ def _generate_service_hidden_action_role_names(bundles: Iterable[Bundle]) -> Set
         # it's always test_service
         f'{bundle.name}_{bundle.version}_{bundle.edition}_service_test_service_{ACTION_NAME}'
         for bundle in bundles
-    } | {'Get cluster object', 'Get service object'}
+    }
 
 
 def _generate_component_hidden_action_role_names(bundles: Iterable[Bundle]) -> Set[str]:
@@ -168,4 +168,4 @@ def _generate_component_hidden_action_role_names(bundles: Iterable[Bundle]) -> S
         # it's always test_component
         f'{bundle.name}_{bundle.version}_{bundle.edition}_service_test_service_component_test_component_{ACTION_NAME}'
         for bundle in bundles
-    } | {'Get cluster object', 'Get service object', 'Get component object'}
+    }

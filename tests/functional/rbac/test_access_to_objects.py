@@ -63,23 +63,18 @@ class TestAccessToBasicObjects:
         """
         all_objects = prepare_objects + second_objects
         cluster, service, component, provider, host = prepare_objects
-        component_and_provider_objects = (component, provider, host)
+        not_viewable_objects = (component, provider, host) + second_objects
         cluster_and_service = (cluster, service)
 
-        for business_role, viewable_objects, not_viewable_objects in (
-            (BR.ViewServiceConfigurations, cluster_and_service, component_and_provider_objects + second_objects),
-            (BR.EditServiceConfigurations, cluster_and_service, component_and_provider_objects + second_objects),
-            (BR.ViewImports, (cluster, service, component), (provider, host) + second_objects),
-            (BR.ViewAnyObjectConfiguration, prepare_objects, second_objects),
-        ):
-            objects_to_check = ', '.join(map(lower_class_name, viewable_objects))
+        for business_role in (BR.ViewServiceConfigurations, BR.EditServiceConfigurations, BR.ViewImports):
+            objects_to_check = ', '.join(map(lower_class_name, cluster_and_service))
             with allure.step(
                 f'Check that granting "{business_role.value.role_name}" role to service '
                 f'gives view access to: {objects_to_check}'
             ):
                 check_objects_are_not_viewable(clients.user, all_objects)
                 with granted_policy(clients.admin, business_role, service, user):
-                    check_objects_are_viewable(clients.user, viewable_objects)
+                    check_objects_are_viewable(clients.user, cluster_and_service)
                     check_objects_are_not_viewable(clients.user, not_viewable_objects)
                 check_objects_are_not_viewable(clients.user, all_objects)
 
@@ -353,10 +348,11 @@ class TestAccessForJobsAndLogs:
             self.check_access_granted_for_tasks(clients.user, [task])
         with allure.step('Add service again'):
             service = cluster.service_add(name=self.SERVICE_NAME)
-        with allure.step('Run action one more time and check access to both tasks'):
+        with allure.step('Run action one more time and check access denied to both tasks'):
             second_task = service.action(display_name=self.REGULAR_ACTION).run()
             second_task.wait()
-            self.check_access_granted_for_tasks(clients.user, [task, second_task])
+            self.check_access_granted_for_tasks(clients.user, [task])
+            self.check_no_access_granted_for_tasks(clients.user, [second_task])
 
     def test_access_to_tasks_on_cluster_host_add_remove(
         self, cluster: Cluster, provider: Provider, clients: SDKClients, user: User
