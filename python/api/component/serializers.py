@@ -15,7 +15,7 @@
 from rest_framework import serializers
 
 from api.action.serializers import ActionShort
-from api.api_views import hlink, filter_actions, CommonAPIURL, ObjectURL
+from api.utils import hlink, filter_actions, CommonAPIURL, ObjectURL
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import StringListSerializer

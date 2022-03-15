@@ -19,7 +19,7 @@ import cm.job
 import cm.adcm_config
 from cm.models import PrototypeConfig, SubAction
 
-from api.api_views import get_api_url_kwargs
+from api.utils import get_api_url_kwargs
 from api.config.serializers import ConfigSerializerUI
 
 

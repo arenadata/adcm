@@ -12,8 +12,9 @@
 
 from django.contrib.contenttypes.models import ContentType
 from django_filters import rest_framework as drf_filters
+from rest_framework.permissions import IsAuthenticated
 
-from api.api_views import PageView, DetailViewRO
+from api.base_view import DetailView, PaginatedView
 from cm import models
 from cm.errors import AdcmEx
 from . import serializers
@@ -77,7 +78,7 @@ class ConcernFilter(drf_filters.FilterSet):
         return super().is_valid()
 
 
-class ConcernItemList(PageView):
+class ConcernItemList(PaginatedView):
     """
     get:
     List of all existing concern items
@@ -86,11 +87,12 @@ class ConcernItemList(PageView):
     queryset = models.ConcernItem.objects.all()
     serializer_class = serializers.ConcernItemSerializer
     serializer_class_ui = serializers.ConcernItemUISerializer
+    permission_classes = (IsAuthenticated,)
     filterset_class = ConcernFilter
     ordering_fields = ('name',)
 
 
-class ConcernItemDetail(DetailViewRO):
+class ConcernItemDetail(DetailView):
     """
     get:
     Show concern item
@@ -98,6 +100,7 @@ class ConcernItemDetail(DetailViewRO):
 
     queryset = models.ConcernItem.objects.all()
     serializer_class = serializers.ConcernItemDetailSerializer
+    permission_classes = (IsAuthenticated,)
     lookup_field = 'id'
     lookup_url_kwarg = 'concern_id'
     error_code = 'CONCERNITEM_NOT_FOUND'

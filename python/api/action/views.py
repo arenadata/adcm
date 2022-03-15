@@ -10,21 +10,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from itertools import compress
+
+from django.contrib.contenttypes.models import ContentType
+from guardian.mixins import PermissionListMixin
 from rest_framework import permissions
 from rest_framework.response import Response
 
-from api.api_views import (
-    ListView,
-    DetailViewRO,
-    GenericAPIPermView,
+from api.base_view import GenericUIView
+from api.job.serializers import RunTaskSerializer
+from api.utils import (
     ActionFilter,
+    AdcmFilterBackend,
     create,
-    check_obj,
     filter_actions,
     permission_denied,
+    get_object_for_user,
 )
-from api.job.serializers import RunTaskSerializer
-
 from cm.job import get_host_object
 from cm.models import (
     Host,
@@ -33,6 +35,7 @@ from cm.models import (
     HostComponent,
     get_model_by_type,
 )
+from rbac.viewsets import DjangoOnlyObjectPermissions
 from . import serializers
 
 
@@ -50,12 +53,14 @@ def get_obj(**kwargs):
     return obj, action_id
 
 
-class ActionList(ListView):
+class ActionList(PermissionListMixin, GenericUIView):
     queryset = Action.objects.all()
     serializer_class = serializers.ActionSerializer
     serializer_class_ui = serializers.ActionUISerializer
     filterset_class = ActionFilter
     filterset_fields = ('name', 'button', 'button_is_null')
+    filter_backends = (AdcmFilterBackend,)
+    permission_required = ['cm.view_action']
 
     def get(self, request, *args, **kwargs):  # pylint: disable=too-many-locals
         """
@@ -108,36 +113,46 @@ class ActionList(ListView):
                 ),
             )
             objects = {obj.prototype.type: obj}
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(
+        # added filter actions by custom perm for run actions
+        perms = [f'cm.run_action_{a.display_name}' for a in actions]
+        mask = [request.user.has_perm(perm, obj) for perm in perms]
+        actions = list(compress(actions, mask))
+        serializer = self.get_serializer(
             actions, many=True, context={'request': request, 'objects': objects, 'obj': obj}
         )
         return Response(serializer.data)
 
 
-class ActionDetail(DetailViewRO):
+class ActionDetail(PermissionListMixin, GenericUIView):
     queryset = Action.objects.all()
     serializer_class = serializers.ActionDetailSerializer
     serializer_class_ui = serializers.ActionUISerializer
+    permission_classes = (DjangoOnlyObjectPermissions,)
+    permission_required = ['cm.view_action']
 
     def get(self, request, *args, **kwargs):
         """
         Show specified action
         """
-        obj, action_id = get_obj(**kwargs)
-        action = check_obj(Action, {'id': action_id}, 'ACTION_NOT_FOUND')
+        object_type, object_id, action_id = get_object_type_id(**kwargs)
+        model = get_model_by_type(object_type)
+        ct = ContentType.objects.get_for_model(model)
+        obj = get_object_for_user(
+            request.user, f'{ct.app_label}.view_{ct.model}', model, id=object_id
+        )
+        # TODO: we can access not only the actions of this object
+        action = get_object_for_user(request.user, 'cm.view_action', Action, id=action_id)
         if isinstance(obj, Host) and action.host_action:
             objects = {'host': obj}
         else:
             objects = {action.prototype.type: obj}
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(
+        serializer = self.get_serializer(
             action, context={'request': request, 'objects': objects, 'obj': obj}
         )
         return Response(serializer.data)
 
 
-class RunTask(GenericAPIPermView):
+class RunTask(GenericUIView):
     queryset = TaskLog.objects.all()
     serializer_class = RunTaskSerializer
     permission_classes = (permissions.IsAuthenticated,)
@@ -161,8 +176,13 @@ class RunTask(GenericAPIPermView):
         """
         Ran specified action
         """
-        obj, action_id = get_obj(**kwargs)
-        action = check_obj(Action, {'id': action_id}, 'ACTION_NOT_FOUND')
+        object_type, object_id, action_id = get_object_type_id(**kwargs)
+        model = get_model_by_type(object_type)
+        ct = ContentType.objects.get_for_model(model)
+        obj = get_object_for_user(
+            request.user, f'{ct.app_label}.view_{ct.model}', model, id=object_id
+        )
+        action = get_object_for_user(request.user, 'cm.view_action', Action, id=action_id)
         self.check_action_perm(action, obj)
-        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer = self.get_serializer(data=request.data)
         return create(serializer, action=action, task_object=obj)
