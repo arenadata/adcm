@@ -185,6 +185,26 @@ class TestAdminSettingsPage:
                 f'should be {expected_value}, not {actual_value}'
             )
 
+    @pytest.mark.full()
+    def test_negative_values_in_adcm_config(self, settings_page: AdminSettingsPage):
+        """Put negative numbers in the fields of ADCM settings"""
+        params = (
+            ('Log rotation from file system', -1, 'Field [Log rotation from file system] value cannot be less than 0!'),
+            ('Log rotation from database', -1, 'Field [Log rotation from database] value cannot be less than 0!'),
+            ('Forks', 0, 'Field [Forks] value cannot be less than 1!'),
+        )
+
+        for field, inappropriate_value, error_message in params:
+            with allure.step(
+                f'Set value {inappropriate_value} to field "{field}" and expect error message: {error_message}'
+            ):
+                config_row = settings_page.config.get_config_row(field)
+                settings_page.scroll_to(config_row)
+                settings_page.config.type_in_field_with_few_inputs(
+                    row=config_row, values=[inappropriate_value], clear=True
+                )
+                settings_page.config.check_invalid_value_message(error_message)
+
     def test_reset_config(self, settings_page: AdminSettingsPage):
         """Change config field, save, reset"""
         params = {'field_display_name': 'client_id', 'init_value': '', 'changed_value': '123'}
