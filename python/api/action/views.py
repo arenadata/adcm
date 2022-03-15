@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from itertools import compress
+
 from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
 from rest_framework import permissions
@@ -111,6 +113,10 @@ class ActionList(PermissionListMixin, GenericUIView):
                 ),
             )
             objects = {obj.prototype.type: obj}
+        # added filter actions by custom perm for run actions
+        perms = [f'cm.run_action_{a.display_name}' for a in actions]
+        mask = [request.user.has_perm(perm, obj) for perm in perms]
+        actions = list(compress(actions, mask))
         serializer = self.get_serializer(
             actions, many=True, context={'request': request, 'objects': objects, 'obj': obj}
         )
