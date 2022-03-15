@@ -71,6 +71,7 @@ roles:
           models:
             - name: hostprovider
               codenames:
+                - view
                 - add
 
     - name: Create cluster
@@ -84,6 +85,7 @@ roles:
           models:
             - name: cluster
               codenames:
+                - view
                 - add
 
     - name: Accept license

@@ -133,22 +133,22 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
 
     def get_permissions(self, role: 'Role' = None):
         """Recursively get permissions of role and all her childs"""
-        role_list = []
-        perm_list = []
         if role is None:
             role = self
 
-        def get_perm(role, perm_list, role_list):
-            if role in role_list:
-                return
-            role_list.append(role)
-            for p in role.permissions.all():
-                if p not in perm_list:
-                    perm_list.append(p)
-            for child in role.child.all():
-                get_perm(child, perm_list, role_list)
-
-        get_perm(role, perm_list, role_list)
+        # the raw query was added to avoid many SQL queries
+        role_list = Role.objects.raw(
+            """
+                with recursive role_ids as (
+                    select id from rbac_role where id = %s
+                    union
+                    select role_child.to_role_id from role_ids as tmp
+                    inner join rbac_role_child as role_child on role_child.from_role_id = tmp.id
+                ) select id from role_ids;
+            """,
+            params=[role.id],
+        )
+        perm_list = list(Permission.objects.filter(role__in=role_list).distinct())
         return perm_list
 
 
