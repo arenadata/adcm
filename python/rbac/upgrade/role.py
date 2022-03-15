@@ -155,7 +155,6 @@ def get_role_spec(data: str, schema: str) -> dict:
 def prepare_hidden_roles(bundle: Bundle):
     """Prepares hidden roles"""
     hidden_roles = {}
-    get_host_object_role = Role.objects.get(name='Get host object', built_in=True)
     for act in Action.objects.filter(prototype__bundle=bundle):
         name_prefix = f'{act.prototype.type} action:'.title()
         name = f'{name_prefix} {act.display_name}'
@@ -200,11 +199,19 @@ def prepare_hidden_roles(bundle: Bundle):
             name=f'Can run {act.display_name} actions',
         )
         role.permissions.add(perm)
+        view_perm, _ = Permission.objects.get_or_create(
+            content_type=ct,
+            codename=f'view_{model.__name__.lower()}',
+        )
+        role.permissions.add(view_perm)
         if name not in hidden_roles:
             hidden_roles[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
         hidden_roles[name]['children'].append(role)
-        if act.host_action and get_host_object_role not in hidden_roles[name]['children']:
-            hidden_roles[name]['children'].append(get_host_object_role)
+        if act.host_action:
+            view_host_perm = Permission.objects.get(
+                codename='view_host',
+            )
+            role.permissions.add(view_host_perm)
     return hidden_roles
 
 
@@ -228,20 +235,6 @@ def update_built_in_roles(
         built_in_roles['Provider Administrator'].child.add(business_role)
 
 
-def get_view_role(parametrized_by):
-    obj_list = []
-    if parametrized_by == 'service':
-        obj_list.append(Role.objects.get(name='Get cluster object', built_in=True))
-    if parametrized_by == 'component':
-        obj_list.append(Role.objects.get(name='Get cluster object', built_in=True))
-        obj_list.append(Role.objects.get(name='Get service object', built_in=True))
-    if parametrized_by == 'host':
-        obj_list.append(Role.objects.get(name='Get cluster object', built_in=True))
-        obj_list.append(Role.objects.get(name='Get provider object', built_in=True))
-    obj_list.append(Role.objects.get(name=f'Get {parametrized_by} object', built_in=True))
-    return obj_list
-
-
 @transaction.atomic
 def prepare_action_roles(bundle: Bundle):
     """Prepares action roles"""
@@ -253,7 +246,6 @@ def prepare_action_roles(bundle: Bundle):
     }
     hidden_roles = prepare_hidden_roles(bundle)
     for business_role_name, business_role_params in hidden_roles.items():
-        view_role_list = get_view_role(business_role_params['parametrized_by_type'])
         if business_role_params['parametrized_by_type'] == 'component':
             parametrized_by_type = ['service', 'component']
         else:
@@ -273,7 +265,6 @@ def prepare_action_roles(bundle: Bundle):
             log.info('Create business permission "%s"', business_role_name)
 
         business_role.child.add(*business_role_params['children'])
-        business_role.child.add(*view_role_list)
         update_built_in_roles(bundle, business_role, parametrized_by_type, built_in_roles)
 
 

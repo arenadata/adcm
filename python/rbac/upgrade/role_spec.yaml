@@ -1,6 +1,6 @@
 ---
 
-version: 2
+version: 3
 
 roles:
     - name: Add host
@@ -458,7 +458,6 @@ roles:
         app_name: cm
         model: ServiceComponent
       child:
-        - Get service object
         - Get component object
         - View component config
         - Edit config
@@ -694,9 +693,9 @@ roles:
         - Add service hidden
         - Get service object
 
-    - name: Remove service hidden
+    - name: Remove service
       description: The ability to remove service from cluster
-      type: hidden
+      type: business
       parametrized_by:
         - service
       module_name: rbac.roles
@@ -704,6 +703,7 @@ roles:
       init_params:
         app_name: cm
         model: ClusterObject
+      any_category: true
       apps:
         - label: cm
           models:
@@ -711,21 +711,6 @@ roles:
               codenames:
                 - view
                 - delete
-
-    - name: Remove service
-      description: The ability to remove service from cluster
-      type: business
-      parametrized_by:
-        - service
-      module_name: rbac.roles
-      class_name: ParentRole
-      init_params:
-        app_name: cm
-        model: ClusterObject
-      any_category: true
-      child:
-        - Remove service hidden
-        - Get cluster object
 
     - name: Remove hosts hidden
       display_name: Remove hosts hidden
@@ -834,6 +819,7 @@ roles:
           models:
             - name: cluster
               codenames:
+                - view
                 - view_host_components_of
 
     - name: View host-components
@@ -845,7 +831,6 @@ roles:
       class_name: ParentRole
       any_category: true
       child:
-        - Get cluster object
         - Get service object
         - Get component object
         - Get host object

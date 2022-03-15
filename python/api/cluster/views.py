@@ -20,7 +20,6 @@ import api.serializers
 import cm.api
 import cm.bundle
 import cm.job
-import cm.status_api
 from api.base_view import GenericUIView, DetailView, PaginatedView
 from api.stack.serializers import ImportSerializer, ServiceSerializer, BundleServiceUISerializer
 from api.utils import (
