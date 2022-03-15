@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django_filters import rest_framework as filters
 from guardian.mixins import PermissionListMixin
+from rest_flex_fields import is_expanded
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework import status
@@ -22,7 +23,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from cm.models import ProductCategory
-from rbac.models import Role
+from rbac.models import Role, RoleTypes
 from rbac.services.role import role_create, role_update
 from rbac.utils import BaseRelatedSerializer
 
@@ -90,13 +91,19 @@ class RoleFilter(filters.FilterSet):
 
 class RoleView(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
 
-    queryset = Role.objects.all()
     serializer_class = RoleSerializer
     permission_classes = (DjangoModelPermissions,)
     permission_required = ['rbac.view_role']
     filterset_class = RoleFilter
     ordering_fields = ('id', 'name', 'display_name', 'built_in', 'type')
     search_fields = ('name', 'display_name')
+
+    def get_queryset(self, *args, **kwargs):
+        if is_expanded(self.request, 'child'):
+            return Role.objects.prefetch_related(
+                Prefetch('child', queryset=Role.objects.exclude(type=RoleTypes.hidden)),
+            )
+        return Role.objects.all()
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
