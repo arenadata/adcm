@@ -28,7 +28,6 @@ from adcm_client.objects import (
     Host,
     Service,
     Provider,
-    Component,
 )
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import random_string
@@ -97,7 +96,7 @@ def create_cluster_with_service(sdk_client_fs: ADCMClient) -> Tuple[Cluster, Ser
 @pytest.fixture()
 def create_cluster_with_component(
     create_cluster_with_service: Tuple[Cluster, Service], sdk_client_fs: ADCMClient
-) -> Tuple[Cluster, Service, Host, Provider, Component]:
+) -> Tuple[Cluster, Service, Host, Provider]:
     """Create cluster with component"""
 
     cluster, service = create_cluster_with_service
@@ -105,8 +104,8 @@ def create_cluster_with_component(
     provider = provider_bundle.provider_create('test_provider')
     host = provider.host_create('test-host')
     cluster.host_add(host)
-    hostcomponent = cluster.hostcomponent_set((host, service.component(name=FIRST_COMPONENT_NAME)))
-    return cluster, service, host, provider, hostcomponent
+    cluster.hostcomponent_set((host, service.component(name=FIRST_COMPONENT_NAME)))
+    return cluster, service, host, provider
 
 
 # !===== Tests =====!
@@ -612,7 +611,7 @@ class TestAdminPolicyPage:
     ):
         """Test for the permissions to service."""
 
-        cluster, service, host, provider, _ = create_cluster_with_component
+        cluster, service, host, provider = create_cluster_with_component
         with allure.step("Create test role"):
             test_role = sdk_client_fs.role_create(
                 name=self.custom_role_name,
@@ -646,7 +645,7 @@ class TestAdminPolicyPage:
     ):
         """Test for the permissions to component."""
 
-        cluster, service, host, provider, component = create_cluster_with_component
+        cluster, service, host, provider = create_cluster_with_component
         with allure.step("Create test role"):
             test_role = sdk_client_fs.role_create(
                 name=self.custom_role_name,
