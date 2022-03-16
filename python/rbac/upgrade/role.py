@@ -152,11 +152,18 @@ def get_role_spec(data: str, schema: str) -> dict:
     return data
 
 
-def get_perm(ct, codename):
-    perm, _ = Permission.objects.get_or_create(
-        content_type=ct,
-        codename=codename,
-    )
+def get_perm(ct, codename, name=None):
+    if name:
+        perm, _ = Permission.objects.get_or_create(
+            content_type=ct,
+            codename=codename,
+            name=name,
+        )
+    else:
+        perm, _ = Permission.objects.get_or_create(
+            content_type=ct,
+            codename=codename,
+        )
     return perm
 
 
@@ -201,16 +208,25 @@ def prepare_hidden_roles(bundle: Bundle):
         if bundle.category:
             role.category.add(bundle.category)
         ct = ContentType.objects.get_for_model(model)
-        role.permissions.add(get_perm(ct, f'view_{model.__name__.lower()}'))
+        model_name = model.__name__.lower()
+        role.permissions.add(get_perm(ct, f'view_{model_name}'))
         if name not in hidden_roles:
             hidden_roles[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
         hidden_roles[name]['children'].append(role)
         if act.host_action:
             ct_host = ContentType.objects.get_for_model(Host)
             role.permissions.add(get_perm(ct_host, 'view_host'))
-            role.permissions.add(get_perm(ct_host, f'run_action_{act.display_name}'))
+            role.permissions.add(
+                get_perm(
+                    ct_host, f'run_action_{act.display_name}', f'Can run {act.display_name} actions'
+                )
+            )
         else:
-            role.permissions.add(get_perm(ct, f'run_action_{act.display_name}'))
+            role.permissions.add(
+                get_perm(
+                    ct, f'run_action_{act.display_name}', f'Can run {act.display_name} actions'
+                )
+            )
 
     return hidden_roles
 
