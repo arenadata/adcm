@@ -27,7 +27,6 @@ from api.utils import (
     permission_denied,
     get_object_for_user,
 )
-from cm.job import get_host_object
 from cm.models import (
     Host,
     Action,
@@ -162,9 +161,6 @@ class RunTask(GenericUIView):
 
         if user.has_perm('cm.add_task'):
             return True
-
-        if action.host_action:
-            obj = get_host_object(action, obj.cluster)
 
         return user.has_perm(f'cm.run_action_{action.display_name}', obj)
 
