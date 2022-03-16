@@ -54,12 +54,13 @@ class GenericUIView(GenericAPIView):
         return view == 'interface'
 
     def get_serializer_class(self):
-        if self.request.method == 'POST':
-            if self.serializer_class_post:
-                return self.serializer_class_post
-        elif self._is_for_ui():
-            if self.serializer_class_ui:
-                return self.serializer_class_ui
+        if self.request is not None:
+            if self.request.method == 'POST':
+                if self.serializer_class_post:
+                    return self.serializer_class_post
+            elif self._is_for_ui():
+                if self.serializer_class_ui:
+                    return self.serializer_class_ui
         return super().get_serializer_class()
 
 
