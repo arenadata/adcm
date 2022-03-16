@@ -402,14 +402,14 @@ def check_role_wo_parametrization(clients, user, cluster_bundle, provider_bundle
     )
     policy = clients.admin.policy_create(name="User policy", role=role, user=[user])
     with new_client_instance(*TEST_USER_CREDENTIALS, clients.user.url) as user_client:
-        cluster_bundle, provider_bundle = as_user_objects(user_client, cluster_bundle, provider_bundle)
-        is_allowed(cluster_bundle, BusinessRoles.CreateCluster)
-        is_denied(provider_bundle, BusinessRoles.CreateHostProvider)
+        user_cluster_bundle, *_ = as_user_objects(user_client, cluster_bundle)
+        is_allowed(user_cluster_bundle, BusinessRoles.CreateCluster)
+        is_denied(provider_bundle, BusinessRoles.CreateHostProvider, client=clients.user)
     role.update(child=_form_children(clients.admin, BusinessRoles.CreateHostProvider))
     with new_client_instance(*TEST_USER_CREDENTIALS, clients.user.url) as user_client:
-        cluster_bundle, provider_bundle = as_user_objects(user_client, cluster_bundle, provider_bundle)
-        is_denied(cluster_bundle, BusinessRoles.CreateCluster)
-        is_allowed(provider_bundle, BusinessRoles.CreateHostProvider)
+        user_provider_bundle, *_ = as_user_objects(user_client, provider_bundle)
+        is_denied(cluster_bundle, BusinessRoles.CreateCluster, client=clients.user)
+        is_allowed(user_provider_bundle, BusinessRoles.CreateHostProvider)
     policy.delete()
     role.delete()
 
@@ -424,21 +424,23 @@ def check_role_with_parametrization(clients, user, cluster_bundle: Bundle, provi
         display_name=role_name,
         child=_form_children(clients.admin, BusinessRoles.EditClusterConfigurations),
     )
-    policy = clients.admin.policy_create(name="User policy", role=role, objects=[cluster], user=[user])
-    with new_client_instance(*TEST_USER_CREDENTIALS, clients.user.url) as user_client:
-        user_cluster, user_provider = as_user_objects(user_client, cluster, provider)
-        is_allowed(user_cluster, BusinessRoles.EditClusterConfigurations)
-        is_denied(user_provider, BusinessRoles.EditProviderConfigurations)
-    role.update(child=_form_children(clients.admin, BusinessRoles.EditProviderConfigurations))
-    with new_client_instance(*TEST_USER_CREDENTIALS, clients.user.url) as user_client:
-        user_cluster, user_provider = as_user_objects(user_client, cluster, provider)
-        is_denied(user_cluster, BusinessRoles.EditClusterConfigurations)
-        is_denied(user_provider, BusinessRoles.EditProviderConfigurations)
-    policy.update(object=[{'type': 'provider', 'id': provider.id}])
-    with new_client_instance(*TEST_USER_CREDENTIALS, clients.user.url) as user_client:
-        user_cluster, user_provider = as_user_objects(user_client, cluster, provider)
-        is_denied(user_cluster, BusinessRoles.EditClusterConfigurations)
-        is_allowed(user_provider, BusinessRoles.EditProviderConfigurations)
+    with allure.step('Create policy with role (Edit cluster config) and expect cluster config is editable'):
+        policy = clients.admin.policy_create(name="User policy", role=role, objects=[cluster], user=[user])
+        with new_client_instance(*TEST_USER_CREDENTIALS, clients.user.url) as user_client:
+            user_cluster, *_ = as_user_objects(user_client, cluster)
+            is_allowed(user_cluster, BusinessRoles.EditClusterConfigurations)
+            is_denied(provider, BusinessRoles.EditProviderConfigurations, client=user_client)
+    with allure.step('Change role child to Edit provider config and expect both cluster and provider non editable'):
+        role.update(child=_form_children(clients.admin, BusinessRoles.EditProviderConfigurations))
+        with new_client_instance(*TEST_USER_CREDENTIALS, clients.user.url) as user_client:
+            is_denied(cluster, BusinessRoles.EditClusterConfigurations, client=user_client)
+            is_denied(provider, BusinessRoles.EditProviderConfigurations, client=user_client)
+    with allure.step('Change policy object parametrization to provider and expect provider to be editable'):
+        policy.update(object=[{'type': 'provider', 'id': provider.id}])
+        with new_client_instance(*TEST_USER_CREDENTIALS, clients.user.url) as user_client:
+            user_provider, *_ = as_user_objects(user_client, provider)
+            is_denied(user_cluster, BusinessRoles.EditClusterConfigurations, client=user_client)
+            is_allowed(user_provider, BusinessRoles.EditProviderConfigurations)
     policy.delete()
     role.delete()
 

@@ -144,7 +144,9 @@ class ActionRole(AbstractRole):
         assign_user_or_group_perm(user, group, policy, get_perm_for_model(Action), action)
         for obj in policy.get_objects(param_obj):
             for perm in role.get_permissions():
-                if action.host_action and perm.codename == 'view_host':
+                if action.host_action and perm.content_type == ContentType.objects.get_for_model(
+                    Host
+                ):
                     hosts = get_host_objects(obj)
                     for host in hosts:
                         assign_user_or_group_perm(user, group, policy, perm, host)
