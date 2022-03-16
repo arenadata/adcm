@@ -15,6 +15,7 @@
 """UI tests for /admin page"""
 
 import os
+from copy import deepcopy
 from typing import (
     Tuple,
 )
@@ -449,12 +450,13 @@ class TestAdminPolicyPage:
     )
 
     @allure.step('Check custome policy')
-    def check_custom_policy(self, policies_page):
+    def check_custom_policy(self, policies_page, policy=None):
         """Check that there is only one created policy with expected params"""
 
+        policy = policy or self.custom_policy
         current_policies = policies_page.get_all_policies()
         assert len(current_policies) == 1, "There should be 1 policy on the page"
-        assert current_policies == [self.custom_policy], "Created policy should be on the page"
+        assert current_policies == [policy], "Created policy should be on the page"
 
     @pytest.mark.smoke()
     def test_open_by_tab_admin_policies_page(self, app_fs):
@@ -529,22 +531,22 @@ class TestAdminPolicyPage:
             (None, None, None, HOST_NAME, None, 'View provider configurations, View host configurations'),
         ],
     )
+    @pytest.mark.usefixtures('parents', 'create_cluster_with_component')
     def test_check_policy_popup_for_entities(
         self,
         sdk_client_fs,
         app_fs,
-        create_cluster_with_component,
         clusters,
         services,
         providers,
         hosts,
-        parents,
         role_name,
     ):
         """Test creating policy"""
 
-        self.custom_policy.role = self.custom_role_name
-        self.custom_policy.objects = clusters or services or providers or hosts
+        custom_policy = deepcopy(self.custom_policy)
+        custom_policy.role = self.custom_role_name
+        custom_policy.objects = clusters or services or providers or hosts
         with allure.step("Create test role"):
             sdk_client_fs.role_create(
                 name=self.custom_role_name,
@@ -553,14 +555,14 @@ class TestAdminPolicyPage:
             )
         policies_page = AdminPoliciesPage(app_fs.driver, app_fs.adcm.url).open()
         policies_page.create_policy(
-            policy_name=self.custom_policy.name,
-            description=self.custom_policy.description,
-            role=self.custom_policy.role,
-            users=self.custom_policy.users,
+            policy_name=custom_policy.name,
+            description=custom_policy.description,
+            role=custom_policy.role,
+            users=custom_policy.users,
             clusters=clusters,
             services=services,
             parent=CLUSTER_NAME,
             providers=providers,
             hosts=hosts,
         )
-        self.check_custom_policy(policies_page)
+        self.check_custom_policy(policies_page, policy=custom_policy)
