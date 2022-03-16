@@ -1125,14 +1125,14 @@ class TestClusterConfigPage:
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
     @pytest.mark.parametrize("field_type", TYPES)
-    @pytest.mark.parametrize("activatable", [True])
-    @pytest.mark.parametrize("active", [True])
-    @pytest.mark.parametrize("group_advanced", [False])
-    @pytest.mark.parametrize("is_default", [True])
-    @pytest.mark.parametrize("is_required", [False])
-    @pytest.mark.parametrize("is_read_only", [True])
-    @pytest.mark.parametrize("field_invisible", [False])
-    @pytest.mark.parametrize("field_advanced", [False])
+    @pytest.mark.parametrize("activatable", [True, False])
+    @pytest.mark.parametrize("active", [True, False])
+    @pytest.mark.parametrize("group_advanced", [True, False])
+    @pytest.mark.parametrize("is_default", [True, False])
+    @pytest.mark.parametrize("is_required", [True, False])
+    @pytest.mark.parametrize("is_read_only", [True, False])
+    @pytest.mark.parametrize("field_invisible", [True, False])
+    @pytest.mark.parametrize("field_advanced", [True, False])
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_group_configs_fields_invisible_false(
         self,
