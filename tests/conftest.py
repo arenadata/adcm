@@ -180,6 +180,7 @@ def adcm_image_tags(cmd_opts) -> Tuple[str, str]:
 
 # RBAC
 
+
 @pytest.fixture()
 @allure.title("Create test user")
 def user(sdk_client_fs) -> User:
