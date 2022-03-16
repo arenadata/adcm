@@ -20,7 +20,7 @@ from django.db import transaction
 from django.utils import timezone
 
 import cm.checker
-from cm.models import ProductCategory, Bundle, Action, get_model_by_type, DummyData
+from cm.models import ProductCategory, Bundle, Action, get_model_by_type, DummyData, Host
 from rbac import log
 from rbac.models import Role, RoleMigration, Permission, re_apply_all_polices, RoleTypes
 from rbac.settings import api_settings
@@ -152,6 +152,21 @@ def get_role_spec(data: str, schema: str) -> dict:
     return data
 
 
+def get_perm(ct, codename, name=None):
+    if name:
+        perm, _ = Permission.objects.get_or_create(
+            content_type=ct,
+            codename=codename,
+            name=name,
+        )
+    else:
+        perm, _ = Permission.objects.get_or_create(
+            content_type=ct,
+            codename=codename,
+        )
+    return perm
+
+
 def prepare_hidden_roles(bundle: Bundle):
     """Prepares hidden roles"""
     hidden_roles = {}
@@ -193,25 +208,26 @@ def prepare_hidden_roles(bundle: Bundle):
         if bundle.category:
             role.category.add(bundle.category)
         ct = ContentType.objects.get_for_model(model)
-        perm, _ = Permission.objects.get_or_create(
-            content_type=ct,
-            codename=f'run_action_{act.display_name}',
-            name=f'Can run {act.display_name} actions',
-        )
-        role.permissions.add(perm)
-        view_perm, _ = Permission.objects.get_or_create(
-            content_type=ct,
-            codename=f'view_{model.__name__.lower()}',
-        )
-        role.permissions.add(view_perm)
+        model_name = model.__name__.lower()
+        role.permissions.add(get_perm(ct, f'view_{model_name}'))
         if name not in hidden_roles:
             hidden_roles[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
         hidden_roles[name]['children'].append(role)
         if act.host_action:
-            view_host_perm = Permission.objects.get(
-                codename='view_host',
+            ct_host = ContentType.objects.get_for_model(Host)
+            role.permissions.add(get_perm(ct_host, 'view_host'))
+            role.permissions.add(
+                get_perm(
+                    ct_host, f'run_action_{act.display_name}', f'Can run {act.display_name} actions'
+                )
             )
-            role.permissions.add(view_host_perm)
+        else:
+            role.permissions.add(
+                get_perm(
+                    ct, f'run_action_{act.display_name}', f'Can run {act.display_name} actions'
+                )
+            )
+
     return hidden_roles
 
 

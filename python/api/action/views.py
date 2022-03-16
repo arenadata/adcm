@@ -27,7 +27,6 @@ from api.utils import (
     permission_denied,
     get_object_for_user,
 )
-from cm.job import get_host_object
 from cm.models import (
     Host,
     Action,
@@ -81,13 +80,13 @@ class ActionList(PermissionListMixin, GenericUIView):
                     cluster, _ = get_obj(object_type='cluster', cluster_id=hc.cluster_id)
                     service, _ = get_obj(object_type='service', service_id=hc.service_id)
                     component, _ = get_obj(object_type='component', component_id=hc.component_id)
-                    for obj in [cluster, service, component]:
+                    for connect_obj in [cluster, service, component]:
                         actions.update(
                             filter_actions(
-                                obj,
+                                connect_obj,
                                 self.filter_queryset(
                                     self.get_queryset().filter(
-                                        prototype=obj.prototype, host_action=True
+                                        prototype=connect_obj.prototype, host_action=True
                                     )
                                 ),
                             )
@@ -162,9 +161,6 @@ class RunTask(GenericUIView):
 
         if user.has_perm('cm.add_task'):
             return True
-
-        if action.host_action:
-            obj = get_host_object(action, obj.cluster)
 
         return user.has_perm(f'cm.run_action_{action.display_name}', obj)
 
