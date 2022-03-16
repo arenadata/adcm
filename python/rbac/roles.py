@@ -65,15 +65,11 @@ class ModelRole(AbstractRole):
         for perm in role.get_permissions():
             if group is not None:
                 group.permissions.add(perm)
-                pp, _ = PolicyPermission.objects.get_or_create(
-                    policy=policy, group=group, permission=perm
-                )
+                pp, _ = PolicyPermission.objects.get_or_create(group=group, permission=perm)
                 policy.model_perm.add(pp)
             if user is not None:
                 user.user_permissions.add(perm)
-                pp, _ = PolicyPermission.objects.get_or_create(
-                    policy=policy, user=user, permission=perm
-                )
+                pp, _ = PolicyPermission.objects.get_or_create(user=user, permission=perm)
                 policy.model_perm.add(pp)
 
 

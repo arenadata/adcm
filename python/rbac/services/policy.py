@@ -136,7 +136,6 @@ def policy_update(policy: Policy, **kwargs) -> Policy:
     objects = kwargs.get('object')
     policy_old_objects = [po.object for po in policy.object.all()]
     _check_objects(role or policy.role, objects if objects is not None else policy_old_objects)
-    policy.remove_permissions()
     if 'name' in kwargs:
         policy.name = kwargs['name']
     if 'description' in kwargs:
@@ -153,5 +152,5 @@ def policy_update(policy: Policy, **kwargs) -> Policy:
         policy.save()
     except IntegrityError as exc:
         raise AdwpEx('POLICY_UPDATE_ERROR', msg=f'Policy update failed with error {exc}') from exc
-    policy.apply_without_deletion()
+    policy.apply()
     return policy
