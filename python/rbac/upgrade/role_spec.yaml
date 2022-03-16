@@ -1,6 +1,6 @@
 ---
 
-version: 3
+version: 4
 
 roles:
     - name: Add host
@@ -1008,6 +1008,13 @@ roles:
               codenames:
                 - view_settings_of
                 - change_settings_of
+            - name: objectconfig
+              codenames:
+                - change
+            - name: configlog
+              codenames:
+                - add
+                - change
 
     - name: View users
       description: The ability to view Users page
