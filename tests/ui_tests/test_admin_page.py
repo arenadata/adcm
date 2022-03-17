@@ -609,7 +609,7 @@ class TestAdminPolicyPage:
             assert (
                 second_cluster_config_page.get_info_popup_text()
                 == "[ NOT FOUND ] CLUSTER_NOT_FOUND -- cluster doesn't exist"
-            ), f"There are no error message"
+            ), "There are no error message"
 
     def test_policy_permission_to_view_access_service(
         self, sdk_client_fs, app_fs, create_cluster_with_component, another_user
@@ -645,7 +645,7 @@ class TestAdminPolicyPage:
             assert (
                 second_service_config_page.get_info_popup_text()
                 == "[ NOT FOUND ] CLUSTER_SERVICE_NOT_FOUND -- service is not installed in specified cluster"
-            ), f"There are no error message"
+            ), "There are no error message"
 
     def test_policy_permission_to_view_access_component(
         self, sdk_client_fs, app_fs, create_cluster_with_component, another_user
@@ -684,7 +684,7 @@ class TestAdminPolicyPage:
             assert (
                 second_component_config_page.get_info_popup_text()
                 == "[ NOT FOUND ] COMPONENT_NOT_FOUND -- component doesn't exist"
-            ), f"There are no error message"
+            ), "There are no error message"
 
     def test_policy_permission_to_view_access_provider(self, sdk_client_fs, app_fs, another_user):
         """Test for the permissions to provider."""
@@ -745,4 +745,4 @@ class TestAdminPolicyPage:
             second_host_config_page.config.check_no_rows_or_groups_on_page()
             assert (
                 second_host_config_page.get_info_popup_text() == "[ NOT FOUND ] HOST_NOT_FOUND -- host doesn't exist"
-            ), f"There are no error message"
+            ), "There are no error message"
