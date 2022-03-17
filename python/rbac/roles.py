@@ -65,13 +65,11 @@ class ModelRole(AbstractRole):
         for perm in role.get_permissions():
             if group is not None:
                 group.permissions.add(perm)
-                pp = PolicyPermission(policy=policy, group=group, permission=perm)
-                pp.save()
+                pp, _ = PolicyPermission.objects.get_or_create(group=group, permission=perm)
                 policy.model_perm.add(pp)
             if user is not None:
                 user.user_permissions.add(perm)
-                pp = PolicyPermission(policy=policy, user=user, permission=perm)
-                pp.save()
+                pp, _ = PolicyPermission.objects.get_or_create(user=user, permission=perm)
                 policy.model_perm.add(pp)
 
 
@@ -105,6 +103,25 @@ class ObjectRole(AbstractRole):
                 assign_user_or_group_perm(user, group, policy, perm, obj)
 
 
+def get_host_objects(obj):
+    object_type = obj.prototype.type
+    host_list = []
+    if object_type == 'cluster':
+        for host in Host.obj.filter(cluster=obj):
+            host_list.append(host)
+    elif object_type == 'service':
+        for hc in HostComponent.obj.filter(cluster=obj.cluster, service=obj):
+            host_list.append(hc.host)
+    elif object_type == 'component':
+        for hc in HostComponent.obj.filter(cluster=obj.cluster, service=obj.service, component=obj):
+            host_list.append(hc.host)
+    elif object_type == 'provider':
+        for host in Host.obj.filter(provider=obj):
+            host_list.append(host)
+
+    return host_list
+
+
 class ActionRole(AbstractRole):
     """This Role apply permissions to run ADCM action"""
 
@@ -123,6 +140,13 @@ class ActionRole(AbstractRole):
         assign_user_or_group_perm(user, group, policy, get_perm_for_model(Action), action)
         for obj in policy.get_objects(param_obj):
             for perm in role.get_permissions():
+                if action.host_action and perm.content_type == ContentType.objects.get_for_model(
+                    Host
+                ):
+                    hosts = get_host_objects(obj)
+                    for host in hosts:
+                        assign_user_or_group_perm(user, group, policy, perm, host)
+                    continue
                 assign_user_or_group_perm(user, group, policy, perm, obj)
 
 

@@ -28,6 +28,7 @@ from cm.api import delete_host_provider
 from cm.models import HostProvider, Upgrade
 from cm.upgrade import get_upgrade
 from . import serializers
+from rbac.viewsets import DjangoOnlyObjectPermissions
 
 
 class ProviderList(PermissionListMixin, PaginatedView):
@@ -61,6 +62,7 @@ class ProviderDetail(PermissionListMixin, DetailView):
     queryset = HostProvider.objects.all()
     serializer_class = serializers.ProviderDetailSerializer
     serializer_class_ui = serializers.ProviderUISerializer
+    permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_hostprovider']
     lookup_field = 'id'
     lookup_url_kwarg = 'provider_id'

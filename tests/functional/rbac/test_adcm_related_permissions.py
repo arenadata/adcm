@@ -309,4 +309,4 @@ def test_remove_policy(user_policy, user_sdk: ADCMClient, sdk_client_fs: ADCMCli
 
     delete_policy(user_policy)
     sdk_client_fs.policy_create(name="Test policy", objects=[], role=custom_role, user=[user])
-    is_denied(user_sdk, BusinessRoles.ViewPolicies)
+    is_denied(user_sdk, BusinessRoles.ViewPolicies, is_list=True)

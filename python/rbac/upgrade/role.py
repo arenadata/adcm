@@ -20,7 +20,7 @@ from django.db import transaction
 from django.utils import timezone
 
 import cm.checker
-from cm.models import ProductCategory, Bundle, Action, get_model_by_type, DummyData
+from cm.models import ProductCategory, Bundle, Action, get_model_by_type, DummyData, Host
 from rbac import log
 from rbac.models import Role, RoleMigration, Permission, re_apply_all_polices, RoleTypes
 from rbac.settings import api_settings
@@ -152,10 +152,24 @@ def get_role_spec(data: str, schema: str) -> dict:
     return data
 
 
+def get_perm(ct, codename, name=None):
+    if name:
+        perm, _ = Permission.objects.get_or_create(
+            content_type=ct,
+            codename=codename,
+            name=name,
+        )
+    else:
+        perm, _ = Permission.objects.get_or_create(
+            content_type=ct,
+            codename=codename,
+        )
+    return perm
+
+
 def prepare_hidden_roles(bundle: Bundle):
     """Prepares hidden roles"""
     hidden_roles = {}
-    get_host_object_role = Role.objects.get(name='Get host object', built_in=True)
     for act in Action.objects.filter(prototype__bundle=bundle):
         name_prefix = f'{act.prototype.type} action:'.title()
         name = f'{name_prefix} {act.display_name}'
@@ -194,17 +208,26 @@ def prepare_hidden_roles(bundle: Bundle):
         if bundle.category:
             role.category.add(bundle.category)
         ct = ContentType.objects.get_for_model(model)
-        perm, _ = Permission.objects.get_or_create(
-            content_type=ct,
-            codename=f'run_action_{act.display_name}',
-            name=f'Can run {act.display_name} actions',
-        )
-        role.permissions.add(perm)
+        model_name = model.__name__.lower()
+        role.permissions.add(get_perm(ct, f'view_{model_name}'))
         if name not in hidden_roles:
             hidden_roles[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
         hidden_roles[name]['children'].append(role)
-        if act.host_action and get_host_object_role not in hidden_roles[name]['children']:
-            hidden_roles[name]['children'].append(get_host_object_role)
+        if act.host_action:
+            ct_host = ContentType.objects.get_for_model(Host)
+            role.permissions.add(get_perm(ct_host, 'view_host'))
+            role.permissions.add(
+                get_perm(
+                    ct_host, f'run_action_{act.display_name}', f'Can run {act.display_name} actions'
+                )
+            )
+        else:
+            role.permissions.add(
+                get_perm(
+                    ct, f'run_action_{act.display_name}', f'Can run {act.display_name} actions'
+                )
+            )
+
     return hidden_roles
 
 
@@ -228,20 +251,6 @@ def update_built_in_roles(
         built_in_roles['Provider Administrator'].child.add(business_role)
 
 
-def get_view_role(parametrized_by):
-    obj_list = []
-    if parametrized_by == 'service':
-        obj_list.append(Role.objects.get(name='Get cluster object', built_in=True))
-    if parametrized_by == 'component':
-        obj_list.append(Role.objects.get(name='Get cluster object', built_in=True))
-        obj_list.append(Role.objects.get(name='Get service object', built_in=True))
-    if parametrized_by == 'host':
-        obj_list.append(Role.objects.get(name='Get cluster object', built_in=True))
-        obj_list.append(Role.objects.get(name='Get provider object', built_in=True))
-    obj_list.append(Role.objects.get(name=f'Get {parametrized_by} object', built_in=True))
-    return obj_list
-
-
 @transaction.atomic
 def prepare_action_roles(bundle: Bundle):
     """Prepares action roles"""
@@ -253,7 +262,6 @@ def prepare_action_roles(bundle: Bundle):
     }
     hidden_roles = prepare_hidden_roles(bundle)
     for business_role_name, business_role_params in hidden_roles.items():
-        view_role_list = get_view_role(business_role_params['parametrized_by_type'])
         if business_role_params['parametrized_by_type'] == 'component':
             parametrized_by_type = ['service', 'component']
         else:
@@ -273,7 +281,6 @@ def prepare_action_roles(bundle: Bundle):
             log.info('Create business permission "%s"', business_role_name)
 
         business_role.child.add(*business_role_params['children'])
-        business_role.child.add(*view_role_list)
         update_built_in_roles(bundle, business_role, parametrized_by_type, built_in_roles)
 
 

@@ -133,22 +133,22 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
 
     def get_permissions(self, role: 'Role' = None):
         """Recursively get permissions of role and all her childs"""
-        role_list = []
-        perm_list = []
         if role is None:
             role = self
 
-        def get_perm(role, perm_list, role_list):
-            if role in role_list:
-                return
-            role_list.append(role)
-            for p in role.permissions.all():
-                if p not in perm_list:
-                    perm_list.append(p)
-            for child in role.child.all():
-                get_perm(child, perm_list, role_list)
-
-        get_perm(role, perm_list, role_list)
+        # the raw query was added to avoid many SQL queries
+        role_list = Role.objects.raw(
+            """
+                with recursive role_ids as (
+                    select id from rbac_role where id = %s
+                    union
+                    select role_child.to_role_id from role_ids as tmp
+                    inner join rbac_role_child as role_child on role_child.from_role_id = tmp.id
+                ) select id from role_ids;
+            """,
+            params=[role.id],
+        )
+        perm_list = list(Permission.objects.filter(role__in=role_list).distinct())
         return perm_list
 
 
@@ -198,26 +198,20 @@ class Policy(models.Model):
 
     def remove_permissions(self):
         for pp in self.model_perm.all():
-            if (
-                Policy.objects.filter(
-                    user=pp.user, group=pp.group, model_perm__permission=pp.permission
-                ).count()
-                > 1
-            ):
-                continue
-            if pp.user:
-                pp.user.user_permissions.remove(pp.permission)
-            if pp.group:
-                pp.group.permissions.remove(pp.permission)
-            pp.delete()
-        for pp in self.user_object_perm.all():
-            if Policy.objects.filter(user=pp.user, user_object_perm=pp).count() > 1:
-                continue
-            pp.delete()
-        for pp in self.group_object_perm.all():
-            if Policy.objects.filter(group=pp.group, group_object_perm=pp).count() > 1:
-                continue
-            pp.delete()
+            if pp.policy_set.count() <= 1:
+                if pp.user:
+                    pp.user.user_permissions.remove(pp.permission)
+                if pp.group:
+                    pp.group.permissions.remove(pp.permission)
+            pp.policy_set.remove(self)
+
+        for uop in self.user_object_perm.all():
+            if uop.policy_set.count() <= 1:
+                uop.delete()
+
+        for gop in self.group_object_perm.all():
+            if gop.policy_set.count() <= 1:
+                gop.delete()
 
     def add_object(self, obj):
         po = PolicyObject(object=obj)
@@ -238,6 +232,14 @@ class Policy(models.Model):
     def delete(self, using=None, keep_parents=False):
         self.remove_permissions()
         return super().delete(using, keep_parents)
+
+    @atomic
+    def apply_without_deletion(self):
+        """This function apply role over"""
+        for user in self.user.all():
+            self.role.apply(self, user, None)
+        for group in self.group.all():
+            self.role.apply(self, None, group=group)
 
     @atomic
     def apply(self):
