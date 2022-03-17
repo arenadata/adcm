@@ -11,17 +11,15 @@
 # limitations under the License.
 
 from django_filters import rest_framework as drf_filters
-from rest_framework import status
-from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import IsAuthenticated
+from guardian.mixins import PermissionListMixin
+from guardian.shortcuts import get_objects_for_user
+from rest_framework import status, permissions
 from rest_framework.response import Response
 
-from api.api_views import (
+from api.base_view import GenericUIView, PaginatedView, DetailView
+from api.utils import (
     create,
-    check_obj,
-    PageView,
-    DetailViewRO,
-    InterfaceView,
+    get_object_for_user,
     check_custom_perm,
 )
 from cm.api import remove_host_from_cluster, delete_host, add_host_to_cluster
@@ -36,6 +34,7 @@ from cm.models import (
     HostComponent,
 )
 from cm.status_api import make_ui_host_status
+from rbac.viewsets import DjangoOnlyObjectPermissions
 from . import serializers
 
 
@@ -82,7 +81,19 @@ class HostFilter(drf_filters.FilterSet):
         ]
 
 
-class HostList(PageView):
+def get_host_queryset(queryset, user, kwargs):
+    if 'cluster_id' in kwargs:
+        cluster = get_object_for_user(user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id'])
+        queryset = queryset.filter(cluster=cluster)
+    if 'provider_id' in kwargs:
+        provider = get_object_for_user(
+            user, 'cm.view_hostprovider', HostProvider, id=kwargs['provider_id']
+        )
+        queryset = queryset.filter(provider=provider)
+    return queryset
+
+
+class HostList(PermissionListMixin, PaginatedView):
     """
     get:
     List all hosts
@@ -94,8 +105,7 @@ class HostList(PageView):
     queryset = Host.objects.all()
     serializer_class = serializers.HostSerializer
     serializer_class_ui = serializers.HostUISerializer
-    permission_classes = (IsAuthenticated,)
-    check_host_perm = check_custom_perm
+    permission_required = ['cm.view_host']
     filterset_class = HostFilter
     filterset_fields = (
         'cluster_id',
@@ -118,18 +128,10 @@ class HostList(PageView):
         'prototype__version_order',
     )
 
-    def get(self, request, *args, **kwargs):
-        """
-        List all hosts
-        """
-        queryset = self.get_queryset()
-        if 'cluster_id' in kwargs:  # List cluster hosts
-            cluster = check_obj(Cluster, kwargs['cluster_id'])
-            queryset = self.get_queryset().filter(cluster=cluster)
-        if 'provider_id' in kwargs:  # List provider hosts
-            provider = check_obj(HostProvider, kwargs['provider_id'])
-            queryset = self.get_queryset().filter(provider=provider)
-        return self.get_page(self.filter_queryset(queryset), request)
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+        queryset = get_host_queryset(queryset, self.request.user, self.kwargs)
+        return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
 
     def post(self, request, *args, **kwargs):
         """
@@ -145,12 +147,15 @@ class HostList(PageView):
         )
         if serializer.is_valid():
             if 'provider_id' in kwargs:  # List provider hosts
-                provider = check_obj(HostProvider, kwargs['provider_id'])
-            else:
-                provider = serializer.validated_data.get(
-                    'provider_id',
+                provider = get_object_for_user(
+                    request.user, 'cm.view_hostprovider', HostProvider, id=kwargs['provider_id']
                 )
-            self.check_host_perm('add_host_to', 'hostprovider', provider)
+            else:
+                provider = serializer.validated_data.get('provider_id')
+                provider = get_object_for_user(
+                    request.user, 'cm.view_hostprovider', HostProvider, id=provider.id
+                )
+            check_custom_perm(request.user, 'add_host_to', 'hostprovider', provider)
             return create(serializer)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -161,17 +166,19 @@ class HostListProvider(HostList):
 
 class HostListCluster(HostList):
     serializer_class = serializers.ClusterHostSerializer
-    permission_classes = (IsAuthenticated,)
-    check_host_perm = check_custom_perm
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             validated_data = serializer.validated_data
             if 'cluster_id' in kwargs:
-                cluster = check_obj(Cluster, kwargs['cluster_id'])
-            host = check_obj(Host, validated_data.get('id'))
-            self.check_host_perm('map_host_to', 'cluster', cluster)
+                cluster = get_object_for_user(
+                    request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
+                )
+            host = get_object_for_user(
+                request.user, 'cm.view_host', Host, id=validated_data.get('id')
+            )
+            check_custom_perm(request.user, 'map_host_to', 'cluster', cluster)
             add_host_to_cluster(cluster, host)
             return Response(self.get_serializer(host).data, status=status.HTTP_201_CREATED)
         else:
@@ -184,7 +191,7 @@ def check_host(host, cluster):
         raise AdcmEx('FOREIGN_HOST', msg)
 
 
-class HostDetail(DetailViewRO):
+class HostDetail(PermissionListMixin, DetailView):
     """
     get:
     Show host
@@ -193,52 +200,67 @@ class HostDetail(DetailViewRO):
     queryset = Host.objects.all()
     serializer_class = serializers.HostDetailSerializer
     serializer_class_ui = serializers.HostUISerializer
-    permission_classes = (IsAuthenticated,)
-    check_host_perm = check_custom_perm
+    permission_classes = (DjangoOnlyObjectPermissions,)
+    permission_required = ['cm.view_host']
     lookup_field = 'id'
     lookup_url_kwarg = 'host_id'
     error_code = 'HOST_NOT_FOUND'
 
-    def get(self, request, host_id, **kwargs):  # pylint: disable=arguments-differ)
-        host = check_obj(Host, host_id)
-        if 'cluster_id' in kwargs:
-            cluster = check_obj(Cluster, kwargs['cluster_id'])
-            check_host(host, cluster)
-        serial_class = self.select_serializer(request)
-        serializer = serial_class(host, context={'request': request})
-        return Response(serializer.data)
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+        queryset = get_host_queryset(queryset, self.request.user, self.kwargs)
+        return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
 
-    def delete(self, request, host_id, **kwargs):  # pylint: disable=arguments-differ
+    def delete(self, request, *args, **kwargs):
         """
         Delete host
         """
-        host = check_obj(Host, host_id, 'HOST_NOT_FOUND')
+        host = self.get_object()
         if 'cluster_id' in kwargs:
             # Remove host from cluster
-            cluster = check_obj(Cluster, kwargs['cluster_id'])
+            cluster = get_object_for_user(
+                request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
+            )
             check_host(host, cluster)
-            self.check_host_perm('unmap_host_from', 'cluster', cluster)
+            check_custom_perm(request.user, 'unmap_host_from', 'cluster', cluster)
             remove_host_from_cluster(host)
         else:
             # Delete host (and all corresponding host services:components)
-            self.check_host_perm('delete', 'host', host)
+            check_custom_perm(request.user, 'remove', 'host', host)
             delete_host(host)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class StatusList(GenericAPIView, InterfaceView):
-    serializer_class = serializers.StatusSerializer
-    model_name = Host
+class StatusList(GenericUIView):
     queryset = HostComponent.objects.all()
+    permission_classes = (permissions.IsAuthenticated,)
+    serializer_class = serializers.StatusSerializer
 
-    def get(self, request, host_id, cluster_id=None):
+    def get(self, request, *args, **kwargs):
         """
         Show all components in a specified host
         """
-        host = check_obj(Host, host_id)
-        if self.for_ui(request):
+        cluster = None
+        host = get_object_for_user(request.user, 'cm.view_host', Host, id=kwargs['host_id'])
+        if 'cluster_id' in kwargs:
+            cluster = get_object_for_user(
+                request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
+            )
+        if 'provider_id' in kwargs:
+            provider = get_object_for_user(
+                request.user, 'cm.view_hostprovider', HostProvider, id=kwargs['provider_id']
+            )
+            host = get_object_for_user(
+                request.user,
+                'cm.view_host',
+                Host.objects.filter(provider=provider),
+                id=kwargs['host_id'],
+            )
+        if self._is_for_ui():
             host_components = self.get_queryset().filter(host=host)
+            if cluster is not None:
+                host_components = self.get_queryset().filter(host=host, cluster=cluster)
             return Response(make_ui_host_status(host, host_components))
         else:
-            serializer = self.serializer_class(host, context={'request': request})
+            serializer = self.get_serializer(host)
             return Response(serializer.data)

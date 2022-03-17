@@ -338,11 +338,11 @@ class Endpoints(Enum):
         filter_predicate=is_not_built_in,
     )
 
-    # Test logic for "built_in"
     RbacBuiltInPolicy = Endpoint(
         path="rbac/policy",
         methods=[Methods.GET, Methods.LIST, Methods.POST],
         data_class=RbacBuiltInPolicyFields,
         spec_link="",
+        technical=True,
         filter_predicate=is_built_in,
     )

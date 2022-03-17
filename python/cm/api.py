@@ -17,7 +17,6 @@ from django.core.exceptions import MultipleObjectsReturned
 from django.db import transaction
 from django.utils import timezone
 
-import rbac
 import cm.issue
 import cm.status_api
 from cm.adcm_config import (
@@ -52,6 +51,7 @@ from cm.models import (
     TaskLog,
 )
 from cm.upgrade import check_license, version_in
+from rbac.models import re_apply_object_policy
 
 
 def check_proto_type(proto, check_type):
@@ -131,7 +131,7 @@ def add_host(proto, provider, fqdn, desc=''):
         host.save()
         host.add_to_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(host)
-        rbac.models.re_apply_object_policy(provider)
+        re_apply_object_policy(provider)
     ctx.event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
     load_service_map()
@@ -198,7 +198,7 @@ def add_host_to_cluster(cluster, host):
         host.save()
         host.add_to_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(host)
-        rbac.models.re_apply_object_policy(cluster)
+        re_apply_object_policy(cluster)
     cm.status_api.post_event('add', 'host', host.id, 'cluster', str(cluster.id))
     load_service_map()
     log.info('host #%s %s is added to cluster #%s %s', host.id, host.fqdn, cluster.id, cluster.name)
@@ -215,7 +215,7 @@ def get_cluster_and_host(cluster_id, fqdn, host_id):
         host = Host.obj.get(id=host_id)
     else:
         err('HOST_NOT_FOUND', 'fqdn or host_id is mandatory args')
-    return (cluster, host)
+    return cluster, host
 
 
 def add_host_to_cluster_by_id(cluster_id, fqdn, host_id):
@@ -321,7 +321,7 @@ def delete_service(service, cancel_tasks=True):
     cluster = service.cluster
     service.delete()
     cm.issue.update_hierarchy_issues(cluster)
-    rbac.models.re_apply_object_policy(cluster)
+    re_apply_object_policy(cluster)
     cm.status_api.post_event('delete', 'service', service_id)
     load_service_map()
     log.info(f'service #{service_id} is deleted')
@@ -349,7 +349,7 @@ def remove_host_from_cluster(host):
             cm.issue.update_hierarchy_issues(host)
         host.remove_from_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(cluster)
-        rbac.models.re_apply_object_policy(cluster)
+        re_apply_object_policy(cluster)
     ctx.event.send_state()
     cm.status_api.post_event('remove', 'host', host.id, 'cluster', str(cluster.id))
     load_service_map()
@@ -388,7 +388,7 @@ def add_service_to_cluster(cluster, proto):
         cs.save()
         add_components_to_service(cluster, cs)
         cm.issue.update_hierarchy_issues(cs)
-        rbac.models.re_apply_object_policy(cluster)
+        re_apply_object_policy(cluster)
     cm.status_api.post_event('add', 'service', cs.id, 'cluster', str(cluster.id))
     load_service_map()
     log.info(
@@ -449,6 +449,7 @@ def update_obj_config(obj_conf, conf, attr, desc=''):
     with transaction.atomic():
         cl = save_obj_config(obj_conf, new_conf, attr, desc)
         cm.issue.update_hierarchy_issues(obj)
+        re_apply_object_policy(obj)
     if hasattr(obj_conf, 'adcm'):
         prepare_social_auth(new_conf)
     if group is not None:
@@ -581,9 +582,9 @@ def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     cm.issue.update_hierarchy_issues(cluster)
     load_service_map()
     for service in service_map:
-        rbac.models.re_apply_object_policy(service)
+        re_apply_object_policy(service)
     for hc in result:
-        rbac.models.re_apply_object_policy(hc.service)
+        re_apply_object_policy(hc.service)
     return result
 
 

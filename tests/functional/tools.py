@@ -20,7 +20,21 @@ import pytest
 from _pytest.outcomes import Failed
 from coreapi.exceptions import ErrorMessage
 from adcm_client.base import ObjectNotFound, PagingEnds
-from adcm_client.objects import Host, Task, Job, Cluster, Service, Component, Provider, GroupConfig, ADCMClient
+from adcm_client.objects import (
+    Host,
+    Task,
+    Job,
+    Cluster,
+    Service,
+    Component,
+    Provider,
+    GroupConfig,
+    ADCMClient,
+    Policy,
+    Role,
+    Group,
+    User,
+)
 from adcm_pytest_plugin.utils import catch_failed
 
 
@@ -28,10 +42,12 @@ BEFORE_UPGRADE_DEFAULT_STATE = None
 
 
 ADCMObjects = (Cluster, Service, Component, Provider, Host)
+RBACObjects = (User, Group, Role, Policy)
 
 ClusterRelatedObject = Union[Cluster, Service, Component]
 ProviderRelatedObject = Union[Provider, Host]
 AnyADCMObject = Union[ClusterRelatedObject, ProviderRelatedObject, ADCMClient]
+AnyRBACObject = Union[User, Group, Role, Policy]
 
 
 def get_config(adcm_object: AnyADCMObject):

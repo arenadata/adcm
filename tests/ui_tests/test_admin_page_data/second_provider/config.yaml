@@ -10,10 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import serializers
-from api.api_views import hlink
+---
+- type: provider
+  name: second_provider
+  version: &ver "2.15-dev"
+  config:
+    str_param:
+      type: string
+      required: false
+      default: '123'
 
-
-class StatsSerializer(serializers.Serializer):
-    task = hlink('task-stats', 'id', 'task_id')
-    job = hlink('job-stats', 'id', 'job_id')
+- type: host
+  name: "Test Host"
+  description: "Test Host Description"
+  version: *ver
+  config:
+    str_param:
+      type: string
+      required: false
+      default: '123'

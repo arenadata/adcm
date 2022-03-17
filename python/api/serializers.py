@@ -14,15 +14,11 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 from rest_framework_extensions.settings import extensions_api_settings
 
-from api.api_views import check_obj, hlink, UrlField
+from api.utils import check_obj, hlink, UrlField
 from cm.adcm_config import ui_config
 from cm.errors import raise_AdcmEx
 from cm.models import Upgrade, GroupConfig
 from cm.upgrade import do_upgrade
-
-
-class EmptySerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
 
 
 class UpgradeSerializer(serializers.Serializer):
