@@ -604,9 +604,12 @@ class TestAdminPolicyPage:
             cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
             cluster_config_page.config.check_config_fields_visibility({"str_param", "int", "param1", "param2"})
         with allure.step("Check that user can not view second cluster config"):
-            ClusterConfigPage(app_fs.driver, app_fs.adcm.url, second_cluster.id).open()
-            admin_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
-            admin_page.wait_page_is_opened()
+            second_cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, second_cluster.id).open()
+            second_cluster_config_page.config.check_no_rows_or_groups_on_page()
+            assert (
+                second_cluster_config_page.get_info_popup_text()
+                == "[ NOT FOUND ] CLUSTER_NOT_FOUND -- cluster doesn't exist"
+            ), f"There are no error message"
 
     def test_policy_permission_to_view_access_service(
         self, sdk_client_fs, app_fs, create_cluster_with_component, another_user
@@ -635,12 +638,14 @@ class TestAdminPolicyPage:
             ).open()
             service_config_page.config.check_config_fields_visibility({"str_param", "int", "param1", "param2"})
         with allure.step("Check that user can not view second service config"):
-            ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, second_service.service_id).open()
-            admin_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
-            admin_page.wait_page_is_opened()
-            assert admin_page.is_popup_presented_on_page(
-                popup_text=ERROR_MESSAGE
-            ), f"There are no error message {ERROR_MESSAGE}"
+            second_service_config_page = ServiceConfigPage(
+                app_fs.driver, app_fs.adcm.url, cluster.id, second_service.service_id
+            ).open()
+            second_service_config_page.config.check_no_rows_or_groups_on_page()
+            assert (
+                second_service_config_page.get_info_popup_text()
+                == "[ NOT FOUND ] CLUSTER_SERVICE_NOT_FOUND -- service is not installed in specified cluster"
+            ), f"There are no error message"
 
     def test_policy_permission_to_view_access_component(
         self, sdk_client_fs, app_fs, create_cluster_with_component, another_user
@@ -672,12 +677,14 @@ class TestAdminPolicyPage:
             ).open()
             component_config_page.config.check_config_fields_visibility({"str_param"})
         with allure.step("Check that user can not view second component config"):
-            ComponentConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, second_service.service_id, 2).open()
-            admin_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
-            admin_page.wait_page_is_opened()
-            assert admin_page.is_popup_presented_on_page(
-                popup_text=ERROR_MESSAGE
-            ), f"There are no error message {ERROR_MESSAGE}"
+            second_component_config_page = ComponentConfigPage(
+                app_fs.driver, app_fs.adcm.url, cluster.id, second_service.service_id, 2
+            ).open()
+            second_component_config_page.config.check_no_rows_or_groups_on_page()
+            assert (
+                second_component_config_page.get_info_popup_text()
+                == "[ NOT FOUND ] COMPONENT_NOT_FOUND -- component doesn't exist"
+            ), f"There are no error message"
 
     def test_policy_permission_to_view_access_provider(self, sdk_client_fs, app_fs, another_user):
         """Test for the permissions to provider."""
@@ -706,12 +713,8 @@ class TestAdminPolicyPage:
             provider_config_page = ProviderConfigPage(app_fs.driver, app_fs.adcm.url, provider.id).open()
             provider_config_page.config.check_config_fields_visibility({"str_param"})
         with allure.step("Check that user can not view second provider config"):
-            ProviderConfigPage(app_fs.driver, app_fs.adcm.url, second_provider.id).open()
-            admin_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
-            admin_page.wait_page_is_opened()
-            assert admin_page.is_popup_presented_on_page(
-                popup_text=ERROR_MESSAGE
-            ), f"There are no error message {ERROR_MESSAGE}"
+            second_provider_config_page = ProviderConfigPage(app_fs.driver, app_fs.adcm.url, second_provider.id).open()
+            second_provider_config_page.config.check_no_rows_or_groups_on_page()
 
     def test_policy_permission_to_view_access_host(self, sdk_client_fs, app_fs, another_user):
         """Test for the permissions to host."""
@@ -735,9 +738,11 @@ class TestAdminPolicyPage:
         login_page.login_user(**another_user)
         AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
         with allure.step("Check that user can view first host config"):
-            provider_config_page = HostConfigPage(app_fs.driver, app_fs.adcm.url, host.id).open()
-            provider_config_page.config.check_config_fields_visibility({"str_param"})
+            host_config_page = HostConfigPage(app_fs.driver, app_fs.adcm.url, host.id).open()
+            host_config_page.config.check_config_fields_visibility({"str_param"})
         with allure.step("Check that user can not view second host config"):
-            HostConfigPage(app_fs.driver, app_fs.adcm.url, second_host.id).open()
-            admin_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
-            admin_page.wait_page_is_opened()
+            second_host_config_page = HostConfigPage(app_fs.driver, app_fs.adcm.url, second_host.id).open()
+            second_host_config_page.config.check_no_rows_or_groups_on_page()
+            assert (
+                second_host_config_page.get_info_popup_text() == "[ NOT FOUND ] HOST_NOT_FOUND -- host doesn't exist"
+            ), f"There are no error message"
