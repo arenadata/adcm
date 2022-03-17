@@ -1,6 +1,6 @@
 ---
 
-version: 4
+version: 2
 
 roles:
     - name: Add host
