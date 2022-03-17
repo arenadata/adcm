@@ -13,6 +13,7 @@
 from django.db.models import Q, Prefetch
 from django_filters import rest_framework as filters
 from guardian.mixins import PermissionListMixin
+from guardian.shortcuts import get_objects_for_user
 from rest_flex_fields import is_expanded
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
@@ -99,11 +100,12 @@ class RoleView(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-a
     search_fields = ('name', 'display_name')
 
     def get_queryset(self, *args, **kwargs):
+        queryset = get_objects_for_user(**self.get_get_objects_for_user_kwargs(Role.objects.all()))
         if is_expanded(self.request, 'child'):
-            return Role.objects.prefetch_related(
-                Prefetch('child', queryset=Role.objects.exclude(type=RoleTypes.hidden)),
+            return queryset.prefetch_related(
+                Prefetch('child', queryset=queryset.exclude(type=RoleTypes.hidden)),
             )
-        return Role.objects.all()
+        return queryset
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
