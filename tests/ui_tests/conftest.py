@@ -183,20 +183,25 @@ def _write_json_file(f_name, j_data):
     return f_path
 
 
-@allure.title("Login in ADCM over API")
-@pytest.fixture()
-def login_to_adcm_over_api(app_fs, adcm_credentials):
-    """Perform login via API call"""
+def login_over_api(app_fs, credentials):
+    """Perform login with given credentials"""
     login_endpoint = f'{app_fs.adcm.url.rstrip("/")}/api/v1/token/'
     LoginPage(app_fs.driver, app_fs.adcm.url).open()
-    token = requests.post(login_endpoint, json=adcm_credentials).json()['token']
+    token = requests.post(login_endpoint, json=credentials).json()['token']
     with allure.step("Set token to localStorage"):
-        auth = {'login': adcm_credentials['username'], 'token': token}
+        auth = {'login': credentials['username'], 'token': token}
         script = f'localStorage.setItem("auth", JSON.stringify({json.dumps(auth)}))'
         app_fs.driver.execute_script(script)
         auth = app_fs.driver.execute_script("return localStorage.auth")
         assert token in auth, "Token was not set in localStorage"
-    AdminIntroPage(app_fs.driver, app_fs.adcm.url).open().wait_config_loaded()
+    return AdminIntroPage(app_fs.driver, app_fs.adcm.url).open()
+
+
+@allure.title("Login in ADCM over API")
+@pytest.fixture()
+def login_to_adcm_over_api(app_fs, adcm_credentials):
+    """Perform login via API call"""
+    login_over_api(app_fs, adcm_credentials).wait_config_loaded()
 
 
 @allure.title("Login in ADCM over UI")
