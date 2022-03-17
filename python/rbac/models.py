@@ -198,26 +198,20 @@ class Policy(models.Model):
 
     def remove_permissions(self):
         for pp in self.model_perm.all():
-            if (
-                Policy.objects.filter(
-                    user=pp.user, group=pp.group, model_perm__permission=pp.permission
-                ).count()
-                > 1
-            ):
-                continue
-            if pp.user:
-                pp.user.user_permissions.remove(pp.permission)
-            if pp.group:
-                pp.group.permissions.remove(pp.permission)
-            pp.delete()
-        for pp in self.user_object_perm.all():
-            if Policy.objects.filter(user=pp.user, user_object_perm=pp).count() > 1:
-                continue
-            pp.delete()
-        for pp in self.group_object_perm.all():
-            if Policy.objects.filter(group=pp.group, group_object_perm=pp).count() > 1:
-                continue
-            pp.delete()
+            if pp.policy_set.count() <= 1:
+                if pp.user:
+                    pp.user.user_permissions.remove(pp.permission)
+                if pp.group:
+                    pp.group.permissions.remove(pp.permission)
+            pp.policy_set.remove(self)
+
+        for uop in self.user_object_perm.all():
+            if uop.policy_set.count() <= 1:
+                uop.delete()
+
+        for gop in self.group_object_perm.all():
+            if gop.policy_set.count() <= 1:
+                gop.delete()
 
     def add_object(self, obj):
         po = PolicyObject(object=obj)
