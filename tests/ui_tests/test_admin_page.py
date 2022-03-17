@@ -45,7 +45,12 @@ from tests.ui_tests.app.page.admin.page import (
     AdminPoliciesPage,
     AdminPolicyInfo,
 )
+from tests.ui_tests.app.page.cluster.page import ClusterConfigPage
+from tests.ui_tests.app.page.component.page import ComponentConfigPage
+from tests.ui_tests.app.page.host.page import HostConfigPage
 from tests.ui_tests.app.page.login.page import LoginPage
+from tests.ui_tests.app.page.provider.page import ProviderConfigPage
+from tests.ui_tests.app.page.service.page import ServiceConfigPage
 from tests.ui_tests.utils import expect_rows_amount_change
 
 BUNDLE = "cluster_with_services"
@@ -54,12 +59,9 @@ SERVICE_NAME = "test_service_1"
 FIRST_COMPONENT_NAME = "first"
 PROVIDER_NAME = 'test_provider'
 HOST_NAME = 'test-host'
-
+ERROR_MESSAGE = "[ FORBIDDEN ] You do not have permission to perform this action"
 
 # !===== Fixtures =====!
-
-
-pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
 
 
 @pytest.fixture()
@@ -110,6 +112,7 @@ def create_cluster_with_component(
 # !===== Tests =====!
 
 
+@pytest.mark.usefixtures("login_to_adcm_over_api")
 class TestAdminIntroPage:
     """Tests for the /admin/intro"""
 
@@ -122,6 +125,7 @@ class TestAdminIntroPage:
         intro_page.check_admin_toolbar()
 
 
+@pytest.mark.usefixtures("login_to_adcm_over_api")
 class TestAdminSettingsPage:
     """Tests for the /admin/roles"""
 
@@ -221,6 +225,7 @@ class TestAdminSettingsPage:
             settings_page.config.assert_input_value_is(params['init_value'], params['field_display_name'])
 
 
+@pytest.mark.usefixtures("login_to_adcm_over_api")
 class TestAdminUsersPage:
     """Tests for the /admin/users"""
 
@@ -296,6 +301,7 @@ class TestAdminUsersPage:
             AdminIntroPage(users_page.driver, users_page.base_url).wait_page_is_opened(timeout=5)
 
 
+@pytest.mark.usefixtures("login_to_adcm_over_api")
 class TestAdminRolesPage:
     """Tests for the /admin/roles"""
 
@@ -387,6 +393,7 @@ class TestAdminRolesPage:
             assert len(page.table.get_all_rows()) == 4, "There should be 4 default roles"
 
 
+@pytest.mark.usefixtures("login_to_adcm_over_api")
 class TestAdminGroupsPage:
     """Tests for the /admin/groups"""
 
@@ -458,6 +465,7 @@ class TestAdminPolicyPage:
         assert len(current_policies) == 1, "There should be 1 policy on the page"
         assert current_policies == [policy], "Created policy should be on the page"
 
+    @pytest.mark.usefixtures("login_to_adcm_over_api")
     @pytest.mark.smoke()
     def test_open_by_tab_admin_policies_page(self, app_fs):
         """Test open /admin/policies from left menu"""
@@ -467,6 +475,7 @@ class TestAdminPolicyPage:
         policies_page.check_all_elements()
         policies_page.check_admin_toolbar()
 
+    @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_create_policy_on_admin_groups_page(self, app_fs):
         """Test create a group on /admin/policies"""
 
@@ -479,6 +488,7 @@ class TestAdminPolicyPage:
         )
         self.check_custom_policy(policies_page)
 
+    @pytest.mark.usefixtures("login_to_adcm_over_api")
     @pytest.mark.full()
     def test_check_pagination_policy_list_page(self, app_fs):
         """Test pagination on /admin/policies page"""
@@ -494,6 +504,7 @@ class TestAdminPolicyPage:
                 )
         policies_page.table.check_pagination(second_page_item_amount=1)
 
+    @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_delete_policy_from_policies_page(self, app_fs):
         """Test delete custom group on /admin/policies page"""
 
@@ -509,6 +520,7 @@ class TestAdminPolicyPage:
         with allure.step('Check that policy has been deleted'):
             assert len(policies_page.table.get_all_rows()) == 0, "There should be 0 policies on the page"
 
+    @pytest.mark.usefixtures("login_to_adcm_over_api")
     @pytest.mark.parametrize(
         ("clusters", "services", "providers", "hosts", "parents", "role_name"),
         [
@@ -566,3 +578,171 @@ class TestAdminPolicyPage:
             hosts=hosts,
         )
         self.check_custom_policy(policies_page, policy=custom_policy)
+
+    def test_policy_permission_to_view_access_cluster(
+        self, sdk_client_fs, app_fs, create_cluster_with_component, another_user
+    ):
+        """Test for the permissions to cluster."""
+
+        cluster, *_ = create_cluster_with_component
+        with allure.step("Create test role"):
+            test_role = sdk_client_fs.role_create(
+                name=self.custom_role_name,
+                display_name=self.custom_role_name,
+                child=[{"id": sdk_client_fs.role(name="View cluster configurations").id}],
+            )
+        with allure.step("Create test policy"):
+            sdk_client_fs.policy_create(
+                name="Test policy", role=test_role, user=[sdk_client_fs.user_list()[2]], objects=[cluster]
+            )
+        with allure.step("Create second cluster"):
+            second_cluster = sdk_client_fs.bundle().cluster_create(name=f"{CLUSTER_NAME}_2")
+        login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
+        login_page.login_user(**another_user)
+        AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
+        with allure.step("Check that user can view first cluster config"):
+            cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+            cluster_config_page.config.check_config_fields_visibility({"str_param", "int", "param1", "param2"})
+        with allure.step("Check that user can not view second cluster config"):
+            second_cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, second_cluster.id).open()
+            second_cluster_config_page.config.check_no_rows_or_groups_on_page()
+            assert (
+                second_cluster_config_page.get_info_popup_text()
+                == "[ NOT FOUND ] CLUSTER_NOT_FOUND -- cluster doesn't exist"
+            ), "There are no error message"
+
+    def test_policy_permission_to_view_access_service(
+        self, sdk_client_fs, app_fs, create_cluster_with_component, another_user
+    ):
+        """Test for the permissions to service."""
+
+        cluster, service, host, provider = create_cluster_with_component
+        with allure.step("Create test role"):
+            test_role = sdk_client_fs.role_create(
+                name=self.custom_role_name,
+                display_name=self.custom_role_name,
+                child=[{"id": sdk_client_fs.role(name="View service configurations").id}],
+            )
+        with allure.step("Create test policy"):
+            sdk_client_fs.policy_create(
+                name="Test policy", role=test_role, user=[sdk_client_fs.user_list()[2]], objects=[service]
+            )
+        with allure.step("Create second service"):
+            second_service = cluster.service_add(name="test_service_2")
+        login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
+        login_page.login_user(**another_user)
+        AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
+        with allure.step("Check that user can view first service config"):
+            service_config_page = ServiceConfigPage(
+                app_fs.driver, app_fs.adcm.url, cluster.id, service.service_id
+            ).open()
+            service_config_page.config.check_config_fields_visibility({"str_param", "int", "param1", "param2"})
+        with allure.step("Check that user can not view second service config"):
+            second_service_config_page = ServiceConfigPage(
+                app_fs.driver, app_fs.adcm.url, cluster.id, second_service.service_id
+            ).open()
+            second_service_config_page.config.check_no_rows_or_groups_on_page()
+            assert (
+                second_service_config_page.get_info_popup_text()
+                == "[ NOT FOUND ] CLUSTER_SERVICE_NOT_FOUND -- service is not installed in specified cluster"
+            ), "There are no error message"
+
+    def test_policy_permission_to_view_access_component(
+        self, sdk_client_fs, app_fs, create_cluster_with_component, another_user
+    ):
+        """Test for the permissions to component."""
+
+        cluster, service, host, provider = create_cluster_with_component
+        with allure.step("Create test role"):
+            test_role = sdk_client_fs.role_create(
+                name=self.custom_role_name,
+                display_name=self.custom_role_name,
+                child=[{"id": sdk_client_fs.role(name="View component configurations").id}],
+            )
+        with allure.step("Create test policy"):
+            sdk_client_fs.policy_create(
+                name="Test policy", role=test_role, user=[sdk_client_fs.user_list()[2]], objects=[service]
+            )
+        with allure.step("Create second component"):
+            second_service = cluster.service_add(name="test_service_2")
+            cluster.hostcomponent_set(
+                (host, service.component(name=FIRST_COMPONENT_NAME)), (host, second_service.component(name="second"))
+            )
+        login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
+        login_page.login_user(**another_user)
+        AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
+        with allure.step("Check that user can view first component config"):
+            component_config_page = ComponentConfigPage(
+                app_fs.driver, app_fs.adcm.url, cluster.id, service.service_id, 1
+            ).open()
+            component_config_page.config.check_config_fields_visibility({"str_param"})
+        with allure.step("Check that user can not view second component config"):
+            second_component_config_page = ComponentConfigPage(
+                app_fs.driver, app_fs.adcm.url, cluster.id, second_service.service_id, 2
+            ).open()
+            second_component_config_page.config.check_no_rows_or_groups_on_page()
+            assert (
+                second_component_config_page.get_info_popup_text()
+                == "[ NOT FOUND ] COMPONENT_NOT_FOUND -- component doesn't exist"
+            ), "There are no error message"
+
+    def test_policy_permission_to_view_access_provider(self, sdk_client_fs, app_fs, another_user):
+        """Test for the permissions to provider."""
+
+        provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), 'provider'))
+        provider = provider_bundle.provider_create('test_provider')
+        with allure.step("Create test role"):
+            test_role = sdk_client_fs.role_create(
+                name=self.custom_role_name,
+                display_name=self.custom_role_name,
+                child=[{"id": sdk_client_fs.role(name="View provider configurations").id}],
+            )
+        with allure.step("Create test policy"):
+            sdk_client_fs.policy_create(
+                name="Test policy", role=test_role, user=[sdk_client_fs.user_list()[2]], objects=[provider]
+            )
+        with allure.step("Create second provider"):
+            provider_bundle = sdk_client_fs.upload_from_fs(
+                os.path.join(utils.get_data_dir(__file__), 'second_provider')
+            )
+            second_provider = provider_bundle.provider_create('second_test_provider')
+        login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
+        login_page.login_user(**another_user)
+        AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
+        with allure.step("Check that user can view first provider config"):
+            provider_config_page = ProviderConfigPage(app_fs.driver, app_fs.adcm.url, provider.id).open()
+            provider_config_page.config.check_config_fields_visibility({"str_param"})
+        with allure.step("Check that user can not view second provider config"):
+            second_provider_config_page = ProviderConfigPage(app_fs.driver, app_fs.adcm.url, second_provider.id).open()
+            second_provider_config_page.config.check_no_rows_or_groups_on_page()
+
+    def test_policy_permission_to_view_access_host(self, sdk_client_fs, app_fs, another_user):
+        """Test for the permissions to host."""
+
+        provider_bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), 'provider'))
+        provider = provider_bundle.provider_create('test_provider')
+        host = provider.host_create('test-host')
+        with allure.step("Create test role"):
+            test_role = sdk_client_fs.role_create(
+                name=self.custom_role_name,
+                display_name=self.custom_role_name,
+                child=[{"id": sdk_client_fs.role(name="View host configurations").id}],
+            )
+        with allure.step("Create test policy"):
+            sdk_client_fs.policy_create(
+                name="Test policy", role=test_role, user=[sdk_client_fs.user_list()[2]], objects=[host]
+            )
+        with allure.step("Create second host"):
+            second_host = provider.host_create('test-host-2')
+        login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
+        login_page.login_user(**another_user)
+        AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
+        with allure.step("Check that user can view first host config"):
+            host_config_page = HostConfigPage(app_fs.driver, app_fs.adcm.url, host.id).open()
+            host_config_page.config.check_config_fields_visibility({"str_param"})
+        with allure.step("Check that user can not view second host config"):
+            second_host_config_page = HostConfigPage(app_fs.driver, app_fs.adcm.url, second_host.id).open()
+            second_host_config_page.config.check_no_rows_or_groups_on_page()
+            assert (
+                second_host_config_page.get_info_popup_text() == "[ NOT FOUND ] HOST_NOT_FOUND -- host doesn't exist"
+            ), "There are no error message"
