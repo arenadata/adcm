@@ -182,20 +182,6 @@ PROVIDER_EDIT_CONFIG_ROLES = (BusinessRoles.EditProviderConfigurations, Business
 
 
 @pytest.fixture()
-@allure.title("Create test user")
-def user(sdk_client_fs) -> User:
-    """Create user for testing"""
-    return sdk_client_fs.user_create(*TEST_USER_CREDENTIALS)
-
-
-@pytest.fixture()
-def user_sdk(user, adcm_fs) -> ADCMClient:
-    """Returns ADCMClient object from adcm_client with testing user"""
-    username, password = TEST_USER_CREDENTIALS
-    return ADCMClient(url=adcm_fs.url, user=username, password=password)
-
-
-@pytest.fixture()
 def clients(sdk_client_fs, user_sdk) -> SDKClients:
     """Get "container" with admin and user clients"""
     return SDKClients(sdk_client_fs, user_sdk)
