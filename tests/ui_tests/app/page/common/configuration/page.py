@@ -95,7 +95,7 @@ class CommonConfigMenuObj(BasePageObject):
             return []
 
     @allure.step('Saving configuration')
-    def save_config(self, load_timeout: int = 2):
+    def save_config(self, load_timeout: int = 5):
         """Save current configuration"""
 
         self.find_and_click(self.locators.save_btn)

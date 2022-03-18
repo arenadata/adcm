@@ -1125,14 +1125,14 @@ class TestClusterConfigPage:
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
     @pytest.mark.parametrize("field_type", TYPES)
-    @pytest.mark.parametrize("activatable", [True, False])
-    @pytest.mark.parametrize("active", [True, False])
-    @pytest.mark.parametrize("group_advanced", [True, False])
-    @pytest.mark.parametrize("is_default", [True, False])
-    @pytest.mark.parametrize("is_required", [True, False])
-    @pytest.mark.parametrize("is_read_only", [True, False])
-    @pytest.mark.parametrize("field_invisible", [True, False])
-    @pytest.mark.parametrize("field_advanced", [True, False])
+    @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
+    @pytest.mark.parametrize("active", [True, False], ids=("active", "inactive"))
+    @pytest.mark.parametrize("group_advanced", [True, False], ids=("group_advanced", "group_non-advanced"))
+    @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
+    @pytest.mark.parametrize("is_required", [True, False], ids=("required", "not_required"))
+    @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
+    @pytest.mark.parametrize("field_invisible", [True, False], ids=("invisible", "visible"))
+    @pytest.mark.parametrize("field_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_group_configs_fields_invisible_false(
         self,
@@ -1172,22 +1172,27 @@ class TestClusterConfigPage:
                     group_name = cluster_config_page.config.get_group_names()[0].text
                     assert group_name == 'group', "Should be group 'group' visible in advanced"
                     if activatable:
-                        cluster_config_page.config.check_group_is_active(group_name, config['config'][0]['active'])
-                    if not field_invisible and ((cluster_config_page.config.advanced and field_advanced) or not cluster_config_page.config.advanced):
-                        cluster_config_page.config.expand_or_close_group(group_name, expand=True)
-                        assert len(cluster_config_page.config.get_all_config_rows()) >= 2, "Field should be visible"
-                        if is_default:
-                            self.check_default_field_values_in_configs(
-                                cluster_config_page, config_item, field_type, config
-                            )
-                        if is_read_only and config_item.tag_name == 'app-field':
-                            assert cluster_config_page.config.is_element_read_only(
-                                config_item
-                            ), f"Config field {field_type} should be read only"
-                    else:
-                        assert len(cluster_config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
-            if expected['alerts'] and not is_read_only:
-                cluster_config_page.config.check_invalid_value_message(field_type)
+                        if not cluster_config_page.config.advanced:
+                            cluster_config_page.config.check_group_is_active(group_name, config['config'][0]['active'])
+                        if not field_invisible and (
+                            (cluster_config_page.config.advanced and field_advanced) or not field_advanced
+                        ):
+                            cluster_config_page.config.expand_or_close_group(group_name, expand=True)
+                            assert len(cluster_config_page.config.get_all_config_rows()) >= 2, "Field should be visible"
+                            if is_default:
+                                self.check_default_field_values_in_configs(
+                                    cluster_config_page, config_item, field_type, config
+                                )
+                            if is_read_only and config_item.tag_name == 'app-field':
+                                assert cluster_config_page.config.is_element_read_only(
+                                    config_item
+                                ), f"Config field {field_type} should be read only"
+                            if expected['alerts'] and not is_read_only:
+                                cluster_config_page.config.check_invalid_value_message(field_type)
+                        else:
+                            assert (
+                                len(cluster_config_page.config.get_all_config_rows()) == 1
+                            ), "Field should not be visible"
 
         cluster_config_page.config.check_save_btn_state(expected['save'])
         if group_advanced:
