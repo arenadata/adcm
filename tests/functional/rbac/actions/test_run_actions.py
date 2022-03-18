@@ -324,7 +324,6 @@ class TestPluginsPermissions:
     def _check_hostcomponent_change(self, clients, cluster, provider, user):
         """Check hostcomponent change plugin"""
         admin = clients.admin
-        user_cluster, *_ = as_user_objects(clients.user, cluster)
         first, second = provider.host_create('first-host'), provider.host_create('second-host')
         cluster.host_add(first)
         cluster.host_add(second)
@@ -333,6 +332,7 @@ class TestPluginsPermissions:
         cluster.hostcomponent_set((first, component))
         expected_hc_map = ((second.id, component.id),)
         with self._with_policy(admin, 'change_hc_map', cluster, user) as business_role:
+            user_cluster, *_ = as_user_objects(clients.user, cluster)
             self._is_allowed(user_cluster, business_role)
             hc_map = tuple((hc['host_id'], hc['component_id']) for hc in cluster.hostcomponent())
             assert hc_map == expected_hc_map, f'HC map should be {expected_hc_map}, not {hc_map}'
