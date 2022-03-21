@@ -75,12 +75,6 @@ def _regenerate_token(user: models.User) -> Token:
     return token
 
 
-def _update_default_policy(user: models.User) -> None:
-    policy = models.Policy.objects.get(name='default')
-    policy.user.add(user)
-    policy.apply()
-
-
 @transaction.atomic
 def update(
     user: models.User,
@@ -156,7 +150,6 @@ def create(
         )
     except IntegrityError as exc:
         raise AdwpEx('USER_CREATE_ERROR', msg=f'User creation failed with error {exc}') from exc
-    _update_default_policy(user)
     _update_groups(user, groups or [])
     _regenerate_token(user)
     return user

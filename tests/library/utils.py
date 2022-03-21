@@ -184,3 +184,8 @@ def get_json_or_text(response: requests.Response):
 def previous_adcm_version_tag() -> Tuple[str, str]:
     """Get tag of previous ADCM version"""
     return parametrized_by_adcm_version(adcm_min_version="2021.03.10")[0][-1]
+
+
+def lower_class_name(obj: object) -> str:
+    """Return lower class name"""
+    return obj.__class__.__name__.lower()

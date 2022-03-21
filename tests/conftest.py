@@ -19,10 +19,12 @@ import tarfile
 from pathlib import PosixPath
 from typing import Optional, List, Tuple
 
+import allure
 import pytest
 import yaml
 
 from _pytest.python import Function
+from adcm_client.objects import ADCMClient, User
 from allure_commons.model2 import TestResult, Parameter
 from allure_pytest.listener import AllureListener
 from docker.utils import parse_repository_tag
@@ -50,6 +52,8 @@ DUMMY_CLUSTER_BUNDLE = [
 CLEAN_ADCM_PARAM = pytest.param({}, id="clean_adcm")
 DUMMY_DATA_PARAM = pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data")
 DUMMY_DATA_FULL_PARAM = pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data", marks=[pytest.mark.full])
+
+TEST_USER_CREDENTIALS = "test_user", "password"
 
 
 def pytest_generate_tests(metafunc):
@@ -172,3 +176,20 @@ def adcm_image_tags(cmd_opts) -> Tuple[str, str]:
     if not cmd_opts.adcm_image:
         pytest.fail("CLI parameter adcm_image should be provided")
     return tuple(parse_repository_tag(cmd_opts.adcm_image))  # type: ignore
+
+
+# RBAC
+
+
+@pytest.fixture()
+@allure.title("Create test user")
+def user(sdk_client_fs) -> User:
+    """Create user for testing"""
+    return sdk_client_fs.user_create(*TEST_USER_CREDENTIALS)
+
+
+@pytest.fixture()
+def user_sdk(user, adcm_fs) -> ADCMClient:  # pylint: disable=unused-argument
+    """Returns ADCMClient object from adcm_client with testing user"""
+    username, password = TEST_USER_CREDENTIALS
+    return ADCMClient(url=adcm_fs.url, user=username, password=password)

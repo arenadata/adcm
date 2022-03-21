@@ -14,20 +14,22 @@ import os
 import re
 
 from django.http import HttpResponse
-from rest_framework import status
-from rest_framework.generics import GenericAPIView
+from guardian.mixins import PermissionListMixin
+from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
-from api.api_views import DetailViewRO, check_obj, PageView
+from api.base_view import GenericUIView, DetailView, PaginatedView
+from api.utils import get_object_for_user, check_custom_perm
 from cm import config
 from cm.errors import AdcmEx
 from cm.job import get_log, restart_task, cancel_task
 from cm.models import JobLog, TaskLog, LogStorage
+from rbac.viewsets import DjangoOnlyObjectPermissions
 from . import serializers
 
 
-class JobList(PageView):
+class JobList(PermissionListMixin, PaginatedView):
     """
     get:
     List all jobs
@@ -38,18 +40,22 @@ class JobList(PageView):
     serializer_class_ui = serializers.JobSerializer
     filterset_fields = ('action_id', 'task_id', 'pid', 'status', 'start_date', 'finish_date')
     ordering_fields = ('status', 'start_date', 'finish_date')
+    permission_classes = (permissions.DjangoModelPermissions,)
+    permission_required = ['cm.view_joblog']
 
 
-class JobDetail(GenericAPIView):
+class JobDetail(PermissionListMixin, GenericUIView):
     queryset = JobLog.objects.all()
+    permission_classes = (DjangoOnlyObjectPermissions,)
+    permission_required = ['cm.view_joblog']
     serializer_class = serializers.JobSerializer
 
-    def get(self, request, job_id):
+    def get(self, request, *args, **kwargs):
         """
         Show job
         """
-        job = check_obj(JobLog, job_id, 'JOB_NOT_FOUND')
-        job.log_dir = os.path.join(config.RUN_DIR, f'{job_id}')
+        job = get_object_for_user(request.user, 'cm.view_joblog', JobLog, id=kwargs['job_id'])
+        job.log_dir = os.path.join(config.RUN_DIR, f'{job.id}')
         logs = get_log(job)
         for lg in logs:
             log_id = lg['id']
@@ -61,33 +67,40 @@ class JobDetail(GenericAPIView):
             )
 
         job.log_files = logs
-        serializer = self.serializer_class(job, data=request.data, context={'request': request})
+        serializer = self.get_serializer(job, data=request.data)
         serializer.is_valid()
         return Response(serializer.data)
 
 
-class LogStorageListView(PageView):
+class LogStorageListView(PermissionListMixin, PaginatedView):
     queryset = LogStorage.objects.all()
+    permission_required = ['cm.view_logstorage']
     serializer_class = serializers.LogStorageListSerializer
     filterset_fields = ('name', 'type', 'format')
     ordering_fields = ('id', 'name')
 
-    def get(self, request, job_id):  # pylint: disable=arguments-differ
-        obj = self.filter_queryset(LogStorage.objects.filter(job_id=job_id))
-        return self.get_page(obj, request)
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+        if 'job_id' not in self.kwargs:
+            return queryset
+        return queryset.filter(job_id=self.kwargs['job_id'])
 
 
-class LogStorageView(GenericAPIView):
+class LogStorageView(PermissionListMixin, GenericUIView):
     queryset = LogStorage.objects.all()
+    permission_classes = (permissions.IsAuthenticated,)
+    permission_required = ['cm.view_logstorage']
     serializer_class = serializers.LogStorageSerializer
 
-    def get(self, request, job_id, log_id):
-        job = JobLog.obj.get(id=job_id)
+    def get(self, request, *args, **kwargs):
+        job = get_object_for_user(request.user, 'cm.view_joblog', JobLog, id=kwargs['job_id'])
         try:
-            log_storage = LogStorage.objects.get(id=log_id, job=job)
+            log_storage = self.get_queryset().get(id=kwargs['log_id'], job=job)
         except LogStorage.DoesNotExist:
-            raise AdcmEx('LOG_NOT_FOUND', f'log {log_id} not found for job {job_id}') from None
-        serializer = self.serializer_class(log_storage, context={'request': request})
+            raise AdcmEx(
+                'LOG_NOT_FOUND', f'log {kwargs["log_id"]} not found for job {kwargs["job_id"]}'
+            ) from None
+        serializer = self.get_serializer(log_storage)
         return Response(serializer.data)
 
 
@@ -120,7 +133,8 @@ def download_log_file(request, job_id, log_id):
     return response
 
 
-class LogFile(GenericAPIView):
+class LogFile(GenericUIView):
+    permission_classes = (permissions.IsAuthenticated,)
     queryset = LogStorage.objects.all()
     serializer_class = serializers.LogSerializer
 
@@ -135,51 +149,57 @@ class LogFile(GenericAPIView):
             tag = 'ansible'
 
         ls = LogStorage.obj.get(job_id=job_id, name=tag, type=_type, format=log_type)
-        serializer = self.serializer_class(ls, context={'request': request})
+        serializer = self.get_serializer(ls)
         return Response(serializer.data)
 
 
-class Task(PageView):
+class Task(PermissionListMixin, PaginatedView):
     """
     get:
     List all tasks
     """
 
     queryset = TaskLog.objects.order_by('-id')
+    permission_required = ['cm.view_tasklog']
     serializer_class = serializers.TaskListSerializer
     serializer_class_ui = serializers.TaskSerializer
     filterset_fields = ('action_id', 'pid', 'status', 'start_date', 'finish_date')
     ordering_fields = ('status', 'start_date', 'finish_date')
 
 
-class TaskDetail(DetailViewRO):
+class TaskDetail(PermissionListMixin, DetailView):
     """
     get:
     Show task
     """
 
     queryset = TaskLog.objects.all()
+    permission_required = ['cm.view_tasklog']
     serializer_class = serializers.TaskSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'task_id'
     error_code = 'TASK_NOT_FOUND'
 
 
-class TaskReStart(GenericAPIView):
+class TaskReStart(GenericUIView):
     queryset = TaskLog.objects.all()
+    permission_classes = (permissions.IsAuthenticated,)
     serializer_class = serializers.TaskSerializer
 
-    def put(self, request, task_id):
-        task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
+    def put(self, request, *args, **kwargs):
+        task = get_object_for_user(request.user, 'cm.view_tasklog', TaskLog, id=kwargs['task_id'])
+        check_custom_perm(request.user, 'change', TaskLog, task)
         restart_task(task)
         return Response(status=status.HTTP_200_OK)
 
 
-class TaskCancel(GenericAPIView):
+class TaskCancel(GenericUIView):
     queryset = TaskLog.objects.all()
+    permission_classes = (permissions.IsAuthenticated,)
     serializer_class = serializers.TaskSerializer
 
-    def put(self, request, task_id):
-        task = check_obj(TaskLog, task_id, 'TASK_NOT_FOUND')
+    def put(self, request, *args, **kwargs):
+        task = get_object_for_user(request.user, 'cm.view_tasklog', TaskLog, id=kwargs['task_id'])
+        check_custom_perm(request.user, 'change', TaskLog, task)
         cancel_task(task)
         return Response(status=status.HTTP_200_OK)

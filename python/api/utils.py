@@ -10,31 +10,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=not-callable, unused-import, too-many-locals
+# pylint: disable=not-callable, too-many-locals
 
 from typing import List
 
-from django.core.exceptions import ObjectDoesNotExist, FieldError
+from django.core.exceptions import ObjectDoesNotExist
 from django.http.request import QueryDict
 from django_filters import rest_framework as drf_filters
-
-import rest_framework.pagination
+from guardian.shortcuts import get_objects_for_user
 from rest_framework import status, serializers, exceptions
-from rest_framework.reverse import reverse
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
-from rest_framework.generics import GenericAPIView
-from rest_framework.utils.urls import replace_query_param
-from rest_framework.permissions import DjangoModelPermissions
-
-from adcm.settings import REST_FRAMEWORK
+from rest_framework.reverse import reverse
 
 import cm.upgrade
-from cm import config
 from cm.errors import AdcmEx
 from cm.models import Action, ADCMEntity, PrototypeConfig, ConcernType
 
-from rbac.viewsets import DjangoObjectPerm
+
+def get_object_for_user(user, perms, klass, **kwargs):
+    try:
+        queryset = get_objects_for_user(user, perms, klass)
+        return queryset.get(**kwargs)
+    except ObjectDoesNotExist:
+        model = klass
+        if not hasattr(klass, '_default_manager'):
+            model = klass.model
+        error_code = 'NO_MODEL_ERROR_CODE'
+        if hasattr(model, '__error_code__'):
+            error_code = model.__error_code__
+        raise AdcmEx(error_code) from None
 
 
 def check_obj(model, req, error=None):
@@ -65,8 +70,8 @@ def has_custom_permission(user, action_type, model, obj, second_perm):
     return False
 
 
-def check_custom_perm(self, action_type, model, obj, second_perm=None):
-    if not has_custom_permission(self.request.user, action_type, model, obj, second_perm):
+def check_custom_perm(user, action_type, model, obj, second_perm=None):
+    if not has_custom_permission(user, action_type, model, obj, second_perm):
         permission_denied()
 
 
@@ -148,47 +153,6 @@ class UrlField(serializers.HyperlinkedIdentityField):
         return reverse(self.view_name, kwargs=kwargs, request=request, format=format)
 
 
-class DjangoModelPerm(DjangoModelPermissions):
-    """
-    Similar to `DjangoModelPermissions`, but adding 'view' permissions.
-    """
-
-    perms_map = {
-        'GET': ['%(app_label)s.view_%(model_name)s'],
-        'OPTIONS': ['%(app_label)s.view_%(model_name)s'],
-        'HEAD': ['%(app_label)s.view_%(model_name)s'],
-        'POST': ['%(app_label)s.add_%(model_name)s'],
-        'PUT': ['%(app_label)s.change_%(model_name)s'],
-        'PATCH': ['%(app_label)s.change_%(model_name)s'],
-        'DELETE': ['%(app_label)s.delete_%(model_name)s'],
-    }
-
-
-class GenericAPIPermView(GenericAPIView):
-    permission_classes = (DjangoObjectPerm,)
-
-
-class InterfaceView:
-    def for_ui(self, request):
-        view = self.request.query_params.get('view', None)
-        return bool(view == 'interface')
-
-    def select_serializer(self, request):
-        """
-        That is special function to handle api calls from UI.
-
-        UI send special GET parameter view=interface to switch between
-        regular and extended serializer
-        """
-        if request.method == 'POST':
-            if hasattr(self, 'serializer_class_post'):
-                return self.serializer_class_post
-        elif self.for_ui(request):
-            if hasattr(self, 'serializer_class_ui'):
-                return self.serializer_class_ui
-        return self.serializer_class
-
-
 def getlist_from_querydict(query_params, field_name):
     params = query_params.get(field_name)
     if params is None:
@@ -243,111 +207,3 @@ class AdcmFilterBackend(drf_filters.DjangoFilterBackend):
             'queryset': queryset,
             'request': request,
         }
-
-
-class PageView(GenericAPIPermView, InterfaceView):
-    filter_backends = (AdcmFilterBackend, AdcmOrderingFilter)
-    pagination_class = rest_framework.pagination.LimitOffsetPagination
-
-    def get_ordering(self, request, queryset, view):
-        Order = AdcmOrderingFilter()
-        return Order.get_ordering(request, queryset, view)
-
-    def is_paged(self, request):
-        limit = self.request.query_params.get('limit', False)
-        offset = self.request.query_params.get('offset', False)
-        return bool(limit or offset)
-
-    def get_paged_link(self):
-        page = self.paginator
-        url = self.request.build_absolute_uri()
-        url = replace_query_param(url, page.limit_query_param, page.limit)
-        url = replace_query_param(url, page.offset_query_param, 0)
-        return url
-
-    def get_page(self, obj, request, context=None):
-        if not context:
-            context = {}
-        context['request'] = request
-        count = obj.count()
-        serializer_class = self.select_serializer(request)
-
-        if 'fields' in request.query_params or 'distinct' in request.query_params:
-            serializer_class = None
-            try:
-                fields = getlist_from_querydict(request.query_params, 'fields')
-                distinct = int(request.query_params.get('distinct', 0))
-
-                if fields and distinct:
-                    obj = obj.values(*fields).distinct()
-                elif fields:
-                    obj = obj.values(*fields)
-
-            except (FieldError, ValueError):
-                qp = ','.join(
-                    [
-                        f'{k}={v}'
-                        for k, v in request.query_params.items()
-                        if k in ['fields', 'distinct']
-                    ]
-                )
-                msg = f'Bad query params: {qp}'
-                raise AdcmEx('BAD_QUERY_PARAMS', msg=msg) from None
-
-        page = self.paginate_queryset(obj)
-        if self.is_paged(request):
-            if serializer_class is not None:
-                serializer = serializer_class(page, many=True, context=context)
-                page = serializer.data
-            return self.get_paginated_response(page)
-
-        if count <= REST_FRAMEWORK['PAGE_SIZE']:
-            if serializer_class is not None:
-                serializer = serializer_class(obj, many=True, context=context)
-                obj = serializer.data
-            return Response(obj)
-
-        msg = 'Response is too long, use paginated request'
-        raise AdcmEx('TOO_LONG', msg=msg, args=self.get_paged_link())
-
-    def get(self, request, *args, **kwargs):
-        obj = self.filter_queryset(self.get_queryset())
-        return self.get_page(obj, request)
-
-
-class PageViewAdd(PageView):
-    def post(self, request, *args, **kwargs):
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(data=request.data, context={'request': request})
-        return create(serializer)
-
-
-class ListView(GenericAPIPermView, InterfaceView):
-    filter_backends = (AdcmFilterBackend,)
-
-    def get(self, request, *args, **kwargs):
-        obj = self.filter_queryset(self.get_queryset())
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(obj, many=True, context={'request': request})
-        return Response(serializer.data)
-
-
-class DetailViewRO(GenericAPIPermView, InterfaceView):
-    def check_obj(self, kw_req):
-        try:
-            return self.get_queryset().get(**kw_req)
-        except ObjectDoesNotExist:
-            raise AdcmEx(self.error_code) from None
-
-    def get_object(self):
-        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-        kw_req = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        obj = self.check_obj(kw_req)
-        self.check_object_permissions(self.request, obj)
-        return obj
-
-    def get(self, request, *args, **kwargs):
-        obj = self.get_object()
-        serializer_class = self.select_serializer(request)
-        serializer = serializer_class(obj, context={'request': request})
-        return Response(serializer.data)

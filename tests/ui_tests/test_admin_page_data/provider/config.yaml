@@ -14,9 +14,18 @@
 - type: provider
   name: test_provider
   version: &ver "2.15-dev"
+  config:
+    str_param:
+      type: string
+      required: false
+      default: '123'
 
 - type: host
   name: "Test Host"
   description: "Test Host Description"
   version: *ver
-
+  config:
+    str_param:
+      type: string
+      required: false
+      default: '123'

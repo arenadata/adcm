@@ -22,6 +22,7 @@ from adcm_client.objects import Cluster, Service, Component, Provider
 from adcm_pytest_plugin.utils import get_data_dir
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result, run_provider_action_and_assert_result
 
+from tests.conftest import TEST_USER_CREDENTIALS
 from tests.functional.tools import AnyADCMObject, get_object_represent
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.cluster.page import ClusterMainPage
@@ -30,7 +31,7 @@ from tests.ui_tests.app.page.component.page import ComponentMainPage
 from tests.ui_tests.app.page.host.page import HostMainPage
 from tests.ui_tests.app.page.provider.page import ProviderMainPage
 from tests.ui_tests.app.page.service.page import ServiceMainPage
-
+from tests.ui_tests.conftest import login_over_api
 
 pytestmark = [pytest.mark.regression()]
 
@@ -56,6 +57,36 @@ class TestMainInfo:
         provider = bundle.provider_create('Test Provider')
         provider.host_create('very-cool-name')
         return provider
+
+    @pytest.fixture()
+    def login_as_custom_user(self, app_fs, user_sdk):  # pylint: disable=unused-argument
+        """Login as test user"""
+        username, password = TEST_USER_CREDENTIALS
+        login_over_api(app_fs, {'username': username, 'password': password})
+
+    @pytest.fixture()
+    def view_import_on_cluster(self, sdk_client_fs, cluster, user):
+        """Grant permission to view import on cluster to new user"""
+        role = sdk_client_fs.role_create(
+            name='Wrapper role', display_name='Wrapper', child=[{'id': sdk_client_fs.role(name='View imports').id}]
+        )
+        sdk_client_fs.policy_create(name='Policy for cluster', role=role, objects=[cluster], user=[user])
+
+    @allure.issue(url='https://arenadata.atlassian.net/browse/ADCM-2563')
+    @pytest.mark.usefixtures('login_as_custom_user', 'view_import_on_cluster')
+    def test_access_to_detailed_page(self, app_fs, cluster):
+        """
+        Test that user has access to detailed object page when there's __main_info in config,
+        but user isn't allowed to view config
+        """
+        expected_main_info = 'Paragraph One\nOf chapter III'
+        cluster_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, cluster_id=cluster.id).open()
+        cluster_page.check_all_elements()
+        assert (
+            description := cluster_page.get_description()
+        ) == expected_main_info, (
+            f'Description on cluster main page is expected to be {expected_main_info}, not {description}'
+        )
 
     @allure.issue(url='https://arenadata.atlassian.net/browse/ADCM-2676')
     @pytest.mark.usefixtures('login_to_adcm_over_api')
