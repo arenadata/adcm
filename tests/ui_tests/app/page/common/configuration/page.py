@@ -310,9 +310,13 @@ class CommonConfigMenuObj(BasePageObject):
         group = self.find_element(self.locators.group_btn(group_name))
 
         def click_on_group():
-            with self.wait_group_changed(group_name):
-                self.find_child(group, CommonLocators.mat_slide_toggle).click()
-            is_expand = "expanded" in self.find_element(self.locators.group_btn(group_name)).get_attribute("class")
+            def is_expand_group():
+                return "expanded" in self.find_element(self.locators.group_btn(group_name)).get_attribute("class")
+
+            if is_expand_group() != expand:
+                with self.wait_group_changed(group_name):
+                    self.find_child(group, CommonLocators.mat_slide_toggle).click()
+            is_expand = is_expand_group()
             assert (
                 is_expand if expand else not is_expand
             ), f"Group {group_name} should{' ' if expand else ' not '}be expanded"

@@ -1166,11 +1166,10 @@ class TestClusterConfigPage:
         _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
 
         def check_expectations():
-            cluster_config_page.config.check_save_btn_state(expected['save'])
             with allure.step('Check that field visible'):
                 for config_item in cluster_config_page.config.get_all_config_rows():
                     group_name = cluster_config_page.config.get_group_names()[0].text
-                    assert group_name == 'group', "Should be group 'group' visible in advanced"
+                    assert group_name == 'group', "Should be group 'group' visible"
                     if activatable:
                         if not cluster_config_page.config.advanced:
                             cluster_config_page.config.check_group_is_active(group_name, config['config'][0]['active'])
@@ -1188,6 +1187,8 @@ class TestClusterConfigPage:
                                     config_item
                                 ), f"Config field {field_type} should be read only"
                             if expected['alerts'] and not is_read_only:
+                                cluster_config_page.config.click_on_advanced()
+                                cluster_config_page.config.click_on_advanced()
                                 cluster_config_page.config.check_invalid_value_message(field_type)
                         else:
                             assert (
