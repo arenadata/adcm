@@ -992,13 +992,13 @@ class TestClusterConfigPage:
             if expected['alerts'] and not is_read_only:
                 cluster_config_page.config.check_invalid_value_message(field_type)
 
-        cluster_config_page.config.check_save_btn_state(expected['save'])
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
-        cluster_config_page.config.check_save_btn_state(expected['save'])
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
 
     @parametrize_by_data_subdirs(__file__, 'bundles_for_numbers_tests')
@@ -1187,15 +1187,22 @@ class TestClusterConfigPage:
                                     config_item
                                 ), f"Config field {field_type} should be read only"
                             if expected['alerts'] and not is_read_only:
-                                cluster_config_page.config.click_on_advanced()
-                                cluster_config_page.config.click_on_advanced()
+                                if field_type == "map":
+                                    is_advanced = cluster_config_page.config.advanced
+                                    cluster_config_page.driver.refresh()
+                                    cluster_config_page.config.expand_or_close_group(group_name, expand=True)
+                                    if is_advanced:
+                                        cluster_config_page.config.click_on_advanced()
+                                else:
+                                    cluster_config_page.config.click_on_advanced()
+                                    cluster_config_page.config.click_on_advanced()
                                 cluster_config_page.config.check_invalid_value_message(field_type)
                         else:
                             assert (
                                 len(cluster_config_page.config.get_all_config_rows()) == 1
                             ), "Field should not be visible"
 
-        cluster_config_page.config.check_save_btn_state(expected['save'])
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if group_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
         else:

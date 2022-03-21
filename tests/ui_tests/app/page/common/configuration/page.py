@@ -164,7 +164,7 @@ class CommonConfigMenuObj(BasePageObject):
     @allure.step('Check field "{display_name}" has value "{expected_value}"')
     def assert_input_value_is(
         self,
-        expected_value,
+        expected_value: str,
         display_name: str,
         *,
         is_password: bool = False,
@@ -185,12 +185,13 @@ class CommonConfigMenuObj(BasePageObject):
     @allure.step('Check field "{display_name}" has value "{expected_value}"')
     def assert_map_value_is(
         self,
-        expected_value,
+        expected_value: list,
         display_name: str,
     ):
         """
         Assert that value in map field is expected_value (using retries)
-        :param expected_value: Value expected to be in input field
+        :param expected_value: Value expected to be in field
+        :param expected_value: Value expected to be in field
         :param display_name: Config field display name
         """
 
@@ -209,12 +210,13 @@ class CommonConfigMenuObj(BasePageObject):
     @allure.step('Check field "{display_name}" has value "{expected_value}"')
     def assert_list_value_is(
         self,
-        expected_value,
+        expected_value: list,
         display_name: str,
     ):
         """
         Assert that value in list field is expected_value (using retries)
-        :param expected_value: Value expected to be in input field
+        :param expected_value: Value expected to be in field
+        :param expected_value: Value expected to be in field
         :param display_name: Config field display name
         """
 
@@ -377,7 +379,7 @@ class CommonConfigMenuObj(BasePageObject):
         return self.find_element(self.locators.save_btn).get_attribute("disabled") == 'true'
 
     @allure.step("Check save button status")
-    def check_save_btn_state(self, expected_state: bool):
+    def check_save_btn_state_and_save_conf(self, expected_state: bool):
         assert (
             not (self.is_save_btn_disabled()) == expected_state
         ), f'Save button should{" not " if expected_state is False else " "}be disabled'
