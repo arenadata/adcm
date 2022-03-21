@@ -264,13 +264,13 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
                 if isinstance(v, Mapping):
                     check_value_unselected_field(cc[k], nc[k], gk[k], spec[k]['fields'], obj)
                 else:
-                    is_read_only_list_or_map = (
-                        config_is_ro(obj, k, spec[k]['limits'])
-                        and spec[k]['type'] in ['list', 'map']
-                    )
+                    is_read_only_list_or_map = config_is_ro(obj, k, spec[k]['limits']) and spec[k][
+                        'type'
+                    ] in ['list', 'map']
                     if not is_read_only_list_or_map:
                         if not v and k in cc and k in nc and cc[k] != nc[k]:
-                            raise AdcmEx('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD')
+                            if bool(cc[k]) is False and bool(cc[k]) != bool(nc[k]):
+                                raise AdcmEx('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD')
 
         obj_ref = self.context['obj_ref']
         config_spec = obj_ref.object.get_config_spec()
