@@ -1190,9 +1190,9 @@ class TestClusterConfigPage:
                                 if field_type == "map":
                                     is_advanced = cluster_config_page.config.advanced
                                     cluster_config_page.driver.refresh()
-                                    cluster_config_page.config.expand_or_close_group(group_name, expand=True)
                                     if is_advanced:
                                         cluster_config_page.config.click_on_advanced()
+                                    cluster_config_page.config.expand_or_close_group(group_name, expand=True)
                                 else:
                                     cluster_config_page.config.click_on_advanced()
                                     cluster_config_page.config.click_on_advanced()
