@@ -26,7 +26,7 @@ pytestmark = [pytest.mark.full()]
 
 TYPES = ['string', 'password', 'integer', 'text', 'boolean', 'float', 'list', 'map', 'json', 'file', 'secrettext']
 
-
+CONFIG_FILE = 'config.yaml'
 DEFAULT_VALUE = {
     "string": "string",
     "text": "text",
@@ -128,10 +128,10 @@ def prepare_config(config):
     if config_info['name'] == 'file':
         with open(f"{d_name}/file.txt", 'w', encoding='utf_8') as file:
             file.write("test")
-    with open(f"{d_name}/config.yaml", 'w', encoding='utf_8') as yaml_file:
+    with open(f"{d_name}/{CONFIG_FILE}", 'w', encoding='utf_8') as yaml_file:
         yaml.dump(config[0], yaml_file)
     allure.attach.file(
-        "/".join([d_name, 'config.yaml']), attachment_type=allure.attachment_type.YAML, name='config.yaml'
+        "/".join([d_name, CONFIG_FILE]), attachment_type=allure.attachment_type.YAML, name=CONFIG_FILE
     )
     return config[0][0], config[1], d_name
 
@@ -142,9 +142,6 @@ def prepare_config(config):
 @allure.step('Generate expected result for groups')
 def generate_group_expected_result(group_config) -> dict:
     """Generate expected result for groups"""
-
-    def validate_config(field_required, default_presented, field_ro) -> bool:
-        return not ((field_required and not default_presented) or field_ro)
 
     expected_result = {
         'group_visible': not group_config['ui_options']['invisible'],
@@ -159,7 +156,7 @@ def generate_group_expected_result(group_config) -> dict:
     field_invisible = group_config['field_ui_options']['invisible']
     expected_result['field_visible_advanced'] = field_advanced and not field_invisible
     expected_result['field_visible'] = not field_invisible
-    config_valid = validate_config(group_config['required'], group_config['default'], group_config['read_only'])
+    config_valid = not ((group_config['required'] and not group_config['default']) or group_config['read_only'])
     expected_result['config_valid'] = config_valid
     invisible = group_invisible or field_invisible
     if group_config['activatable']:
@@ -168,15 +165,9 @@ def generate_group_expected_result(group_config) -> dict:
         group_active = group_config['active']
         expected_result['field_visible'] = group_active and not field_invisible
         expected_result['field_visible_advanced'] = field_advanced and group_active and not field_invisible
-        if group_active and (required and not default):
-            expected_result['save'] = False
-        else:
-            expected_result['save'] = True
+        expected_result['save'] = not(group_active and (required and not default))
         return expected_result
-    if invisible or not config_valid:
-        expected_result['save'] = False
-    else:
-        expected_result['save'] = True
+    expected_result['save'] = not(invisible or not config_valid)
     return expected_result
 
 
@@ -267,9 +258,9 @@ def prepare_group_config(config):
     if config_subs['name'] == 'file':
         with open(f"{d_name}/file.txt", 'w', encoding='utf_8') as file:
             file.write("test")
-    with open(f"{d_name}/config.yaml", 'w', encoding='utf_8') as yaml_file:
+    with open(f"{d_name}/{CONFIG_FILE}", 'w', encoding='utf_8') as yaml_file:
         yaml.dump(list(config[0]), yaml_file)
     allure.attach.file(
-        "/".join([d_name, 'config.yaml']), attachment_type=allure.attachment_type.YAML, name='config.yaml'
+        "/".join([d_name, CONFIG_FILE]), attachment_type=allure.attachment_type.YAML, name=CONFIG_FILE
     )
     return config[0][0], config[1], d_name
