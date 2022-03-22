@@ -130,9 +130,7 @@ def prepare_config(config):
             file.write("test")
     with open(f"{d_name}/{CONFIG_FILE}", 'w', encoding='utf_8') as yaml_file:
         yaml.dump(config[0], yaml_file)
-    allure.attach.file(
-        "/".join([d_name, CONFIG_FILE]), attachment_type=allure.attachment_type.YAML, name=CONFIG_FILE
-    )
+    allure.attach.file("/".join([d_name, CONFIG_FILE]), attachment_type=allure.attachment_type.YAML, name=CONFIG_FILE)
     return config[0][0], config[1], d_name
 
 
@@ -165,9 +163,9 @@ def generate_group_expected_result(group_config) -> dict:
         group_active = group_config['active']
         expected_result['field_visible'] = group_active and not field_invisible
         expected_result['field_visible_advanced'] = field_advanced and group_active and not field_invisible
-        expected_result['save'] = not(group_active and (required and not default))
+        expected_result['save'] = not (group_active and (required and not default))
         return expected_result
-    expected_result['save'] = not(invisible or not config_valid)
+    expected_result['save'] = not (invisible or not config_valid)
     return expected_result
 
 
@@ -260,7 +258,5 @@ def prepare_group_config(config):
             file.write("test")
     with open(f"{d_name}/{CONFIG_FILE}", 'w', encoding='utf_8') as yaml_file:
         yaml.dump(list(config[0]), yaml_file)
-    allure.attach.file(
-        "/".join([d_name, CONFIG_FILE]), attachment_type=allure.attachment_type.YAML, name=CONFIG_FILE
-    )
+    allure.attach.file("/".join([d_name, CONFIG_FILE]), attachment_type=allure.attachment_type.YAML, name=CONFIG_FILE)
     return config[0][0], config[1], d_name
