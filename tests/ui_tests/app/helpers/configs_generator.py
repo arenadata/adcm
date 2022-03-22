@@ -66,9 +66,7 @@ def generate_config_expected_result(config) -> dict:
     else:
         expected_result['save'] = True
         expected_result['alerts'] = False
-    if config['read_only']:
-        expected_result['save'] = False
-    if config['ui_options']['invisible']:
+    if config['read_only'] or config['ui_options']['invisible']:
         expected_result['save'] = False
     if config['ui_options']['advanced'] and not config['ui_options']['invisible']:
         expected_result['visible_advanced'] = True
@@ -146,7 +144,7 @@ def generate_group_expected_result(group_config) -> dict:
     """Generate expected result for groups"""
 
     def validate_config(field_required, default_presented, field_ro) -> bool:
-        return (field_required and not default_presented) or field_ro
+        return not ((field_required and not default_presented) or field_ro)
 
     expected_result = {
         'group_visible': not group_config['ui_options']['invisible'],
