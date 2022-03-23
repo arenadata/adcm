@@ -19,6 +19,7 @@ from typing import (
 )
 
 import allure
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 
@@ -680,3 +681,11 @@ class AdminPoliciesPage(GeneralAdminPage):
         self.wait_element_visible(DeleteDialog.body)
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
+
+    def delete_all_policies(self):
+        def delete_all():
+            self.select_all_policies()
+            self.click_delete_button()
+            assert len(self.table.get_all_rows()) == 0, "There should be 0 policies on the page"
+
+        wait_until_step_succeeds(delete_all, period=5)
