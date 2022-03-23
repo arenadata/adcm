@@ -99,7 +99,9 @@ class PreparedFieldValue:  # pylint: disable=too-few-public-methods,function-red
                     f_type=self.f_type, current_field_value=current_field_value
                 )
             if isinstance(self.f_type, GenericForeignKeyList):
-                return dbfiller.generate_new_value_for_generic_foreign_key_list(current_value=current_field_value)
+                return dbfiller.generate_new_value_for_generic_foreign_key_list(
+                    current_value=current_field_value
+                )
             return self.f_type.generate_new(current_field_value)
 
         return self.value
@@ -269,7 +271,9 @@ class Username(String):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._sp_vals_negative.append(
-            PreparedFieldValue(value='string with spaces', error_messages=["Space symbols are not allowed"])
+            PreparedFieldValue(
+                value='string with spaces', error_messages=["Space symbols are not allowed"]
+            )
         )
 
 
@@ -471,7 +475,8 @@ class ListOf(BaseType):
         self.item_type = item_type
         super().__init__(**kwargs)
         self._sp_vals_negative = [
-            PreparedFieldValue([neg.value], f_type=neg.f_type) for neg in item_type.get_negative_values()
+            PreparedFieldValue([neg.value], f_type=neg.f_type)
+            for neg in item_type.get_negative_values()
         ]
 
     def generate(self, **kwargs):
@@ -514,7 +519,11 @@ def get_fields(data_class: type, predicate: Callable = None) -> List[Field]:
 
     if predicate is None:
         predicate = dummy_predicate
-    return [value for (key, value) in data_class.__dict__.items() if isinstance(value, Field) and predicate(value)]
+    return [
+        value
+        for (key, value) in data_class.__dict__.items()
+        if isinstance(value, Field) and predicate(value)
+    ]
 
 
 def is_password_field(field: Field) -> bool:
