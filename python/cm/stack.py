@@ -210,7 +210,24 @@ def save_components(proto, conf, bundle_hash):
 
 
 def check_upgrade(proto, conf):
-    check_versions(proto, conf, f"upgrade \"{conf['name']}\"")
+    label = f"upgrade \"{conf['name']}\""
+    check_versions(proto, conf, label)
+    check_scripts(proto, conf, label)
+
+
+def check_scripts(proto, conf, label):
+    ref = proto_ref(proto)
+    count = 0
+    if 'scripts' in conf:
+        for actions in conf['scripts']:
+            if actions['script_type'] == 'internal':
+                count += 1
+                if count > 1:
+                    msg = 'Script with script_type \'internal\' must be unique in {} of {}'
+                    err('INVALID_UPGRADE_DEFINITION', msg.format(label, ref))
+                if actions['script'] != 'bundle_switch':
+                    msg = 'Script with script_type \'internal\' should be marked as \'bundle_switch\' in {} of {}'
+                    err('INVALID_UPGRADE_DEFINITION', msg.format(label, ref))
 
 
 def check_versions(proto, conf, label):
@@ -262,7 +279,7 @@ def save_upgrade(proto, conf):
     if not in_dict(conf, 'upgrade'):
         return
     for item in conf['upgrade']:
-        check_versions(proto, item, f"upgrade \"{conf['name']}\"")
+        check_upgrade(proto, item)
         upg = StageUpgrade(name=item['name'])
         set_version(upg, item)
         dict_to_obj(item, 'description', upg)
