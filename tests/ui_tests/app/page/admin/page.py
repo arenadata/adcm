@@ -557,24 +557,24 @@ class AdminPoliciesPage(GeneralAdminPage):
             with allure.step(f"Select users {users} in popup"):
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_select)
                 self.wait_element_visible(AdminPoliciesLocators.item)
-                available_users = self.find_elements(AdminPoliciesLocators.item)
-                self.fill_select_in_policy_popup(users, available_users)
+                self.fill_select_in_policy_popup(users, AdminPoliciesLocators.item)
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_select)
         if groups:
             with allure.step(f"Select groups {groups} in popup"):
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_select)
                 self.wait_element_visible(AdminPoliciesLocators.item)
-                available_groups = self.find_elements(AdminPoliciesLocators.item)
-                self.fill_select_in_policy_popup(groups, available_groups)
+                self.fill_select_in_policy_popup(groups, AdminPoliciesLocators.item)
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_select)
         self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.next_btn_first)
 
-    def fill_select_in_policy_popup(self, items, available_items):
+    def fill_select_in_policy_popup(self, items, available_items_locator):
         for item in items.split(", "):
-            for available_item in available_items:
+            self.wait_element_visible(available_items_locator)
+            for count, available_item in enumerate(self.find_elements(available_items_locator)):
                 if available_item.text == item:
-                    self.scroll_to(available_item)
-                    available_item.click()
+                    item_loc = self.find_elements(available_items_locator)[count]
+                    self.scroll_to(item_loc)
+                    item_loc.click()
                     break
             else:
                 raise AssertionError(f"There are no item {item} in select popup")
@@ -595,7 +595,7 @@ class AdminPoliciesPage(GeneralAdminPage):
                 self.wait_element_visible(locator_select)
                 self.find_and_click(locator_select)
                 self.wait_element_visible(locator_items)
-                self.fill_select_in_policy_popup(values, self.find_elements(locator_items))
+                self.fill_select_in_policy_popup(values, locator_items)
 
         if clusters:
             fill_select(
