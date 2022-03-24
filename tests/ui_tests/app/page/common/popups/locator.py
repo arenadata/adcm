@@ -27,6 +27,9 @@ class CommonPopupLocators:
     block_by_text = TemplateLocator(By.XPATH, "//app-snack-bar//div[text()='{}']", "Popup block with text {}")
     text = Locator(By.CSS_SELECTOR, "app-snack-bar .message", "Popup info message")
     hide_btn = Locator(By.XPATH, "//button[./span[text()='Hide']]", "Hide pop up button")
+    hide_btn_by_text = TemplateLocator(
+        By.XPATH, "//div[./div/div[text()='{}']]/button", "Hide pop up button with text {}"
+    )
 
 
 class HostCreationLocators:
