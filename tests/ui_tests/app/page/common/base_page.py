@@ -104,6 +104,8 @@ class BasePageObject:
                     )
 
         wait_until_step_succeeds(_open_page, period=0.5, timeout=timeout or self.default_page_timeout)
+        if self.is_element_displayed(CommonPopupLocators.block_by_text("Connection established.")):
+            self.close_info_popup()
         return self
 
     @allure.step("Close popup at the bottom of the page")
