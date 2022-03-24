@@ -189,7 +189,7 @@ class PositiveInt(BaseType):
     """Positive int field type"""
 
     _min_int64 = 0
-    _max_int64 = (2 ** 63) - 1
+    _max_int64 = (2**63) - 1
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -392,7 +392,7 @@ class ForeignKey(BaseType):
                 error_messages=["Invalid pk \"100\" - object does not exist."],
             ),
             PreparedFieldValue(
-                2 ** 63,
+                2**63,
                 f_type=self,
                 error_messages=[f"Invalid pk \"{2 ** 63}\" - object does not exist."],
             ),
@@ -415,7 +415,7 @@ class ObjectForeignKey(ForeignKey):
                 error_messages={"id": ["Invalid pk \"1000\" - object does not exist."]},
             ),
             PreparedFieldValue(
-                {'id': 2 ** 63},
+                {'id': 2**63},
                 f_type=self,
                 error_messages={"id": [f"Invalid pk \"{2 ** 63}\" - object does not exist."]},
             ),
@@ -447,7 +447,7 @@ class ForeignKeyM2M(ForeignKey):
                 error_messages=[{"id": ["Invalid pk \"1000\" - object does not exist."]}],
             ),
             PreparedFieldValue(
-                [{"id": 2 ** 63}],
+                [{"id": 2**63}],
                 f_type=self,
                 error_messages=[{"id": [f"Invalid pk \"{2 ** 63}\" - object does not exist."]}],
             ),

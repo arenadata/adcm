@@ -32,7 +32,7 @@ def gen_int(prop=None):
     if not prop:
         prop = {}
     min_value = prop.get("minimum", 0)
-    max_value = prop.get("maximum", (2 ** 63) - 1.0)
+    max_value = prop.get("maximum", (2**63) - 1.0)
     return randint(a=min_value, b=max_value)
 
 
