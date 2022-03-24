@@ -406,13 +406,13 @@ def save_actions(proto, conf, bundle_hash):
     if 'versions' in conf:
         conf['type'] = 'task'
         action_name = f"{proto.name}_{proto.version}_{proto.edition}_upgrade_{conf['name']}"
-        return save_action(proto, conf, bundle_hash, action_name)
+        upgrade_action = save_action(proto, conf, bundle_hash, action_name)
+        return upgrade_action
     if not in_dict(conf, 'actions'):
-        return
+        return None
     for action_name in sorted(conf['actions']):
         ac = conf['actions'][action_name]
         save_action(proto, ac, bundle_hash, action_name)
-    return None
 
 
 def save_action(proto, ac, bundle_hash, action_name):
