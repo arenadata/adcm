@@ -405,13 +405,14 @@ UNSET = 'unset'
 def save_actions(proto, conf, bundle_hash):
     if 'versions' in conf:
         conf['type'] = 'task'
-        return save_action(proto, conf, bundle_hash, conf['name'])
-    else:
-        if not in_dict(conf, 'actions'):
-            return
-        for action_name in sorted(conf['actions']):
-            ac = conf['actions'][action_name]
-            save_action(proto, ac, bundle_hash, action_name)
+        action_name = f"{proto.name}_{proto.version}_{proto.edition}_upgrade_{conf['name']}"
+        return save_action(proto, conf, bundle_hash, action_name)
+    if not in_dict(conf, 'actions'):
+        return
+    for action_name in sorted(conf['actions']):
+        ac = conf['actions'][action_name]
+        save_action(proto, ac, bundle_hash, action_name)
+    return None
 
 
 def save_action(proto, ac, bundle_hash, action_name):
