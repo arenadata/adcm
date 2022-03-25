@@ -25,6 +25,8 @@ import cm.job
 from cm.logger import log
 from cm.models import LogStorage, JobLog
 from cm.status_api import Event
+from cm.upgrade import bundle_switch
+from cm.errors import AdcmEx
 
 
 def open_file(root, tag, job_id):
@@ -145,12 +147,30 @@ def run_ansible(job_id):
     sys.exit(ret)
 
 
+def main(job_id):
+    job = JobLog.objects.get(id=job_id)
+    if job.sub_action and job.sub_action.script_type == 'internal':
+        event = Event()
+        upgrade = job.action.upgrade_set.all()
+        for upg in upgrade:
+            cm.job.set_job_status(job_id, config.Job.RUNNING, event)
+            try:
+                bundle_switch(job.task.task_object, upg)
+            except AdcmEx:
+                cm.job.set_job_status(job_id, config.Job.FAILED, event)
+            cm.job.set_job_status(job_id, config.Job.SUCCESS, event)
+            event.send_state()
+            sys.exit()
+    else:
+        run_ansible(job_id)
+
+
 def do():
     if len(sys.argv) < 2:
         print(f"\nUsage:\n{os.path.basename(sys.argv[0])} job_id\n")
         sys.exit(4)
     else:
-        run_ansible(sys.argv[1])
+        main(sys.argv[1])
 
 
 if __name__ == '__main__':
