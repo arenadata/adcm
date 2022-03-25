@@ -405,7 +405,8 @@ UNSET = 'unset'
 def save_actions(proto, conf, bundle_hash):
     if in_dict(conf, 'versions'):
         conf['type'] = 'task'
-        action_name = f"{proto.name}_{proto.version}_{proto.edition}_upgrade_{conf['name']}"
+        name = re.sub(r'\s+', '_', conf['name']).strip().lower()
+        action_name = f"{proto.name}_{proto.version}_{proto.edition}_upgrade_{name}"
         upgrade_action = save_action(proto, conf, bundle_hash, action_name)
         return upgrade_action
     if not in_dict(conf, 'actions'):
