@@ -267,6 +267,7 @@ class TestTaskPage:
                 downloaded_file_template.format(job_id=job_id, log_type='stderr'), app_fs, dirname=downloads_directory
             )
 
+    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2729")
     def test_invoker_object_url(self, cluster: Cluster, provider: Provider, page: JobListPage):
         """Check link to object that invoked action is correct"""
         host_fqdn = 'run-on-me'
