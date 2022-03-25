@@ -19,6 +19,7 @@ from typing import (
 )
 
 import allure
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 
@@ -39,6 +40,7 @@ from tests.ui_tests.app.page.common.base_page import (
 from tests.ui_tests.app.page.common.common_locators import ObjectPageMenuLocators
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs_locators import DeleteDialog
+from tests.ui_tests.app.page.common.popups.locator import CommonPopupLocators
 from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.locator import CommonToolbarLocators
@@ -173,6 +175,11 @@ class AdminIntroPage(GeneralAdminPage):
         AdminIntroLocators.intro_text,
         CommonToolbarLocators.admin_link,
     ]
+
+    def get_info_popup_text(self):
+        """Get text from info popup"""
+        self.wait_element_visible(CommonPopupLocators.block)
+        return self.wait_element_visible(CommonPopupLocators.text, timeout=5).text
 
 
 class AdminSettingsPage(GeneralAdminPage):
@@ -384,32 +391,36 @@ class AdminRolesPage(GeneralAdminPage):
             AdminRoleInfo(
                 name='ADCM User',
                 description='',
-                permissions='View any object configuration, View any object import, View any object host-components',
+                permissions='View any object configuration, View any object import, View any object host-components, '
+                'Get provider, Get cluster, Get host, Get service, Get component, Get task and jobs',
             ),
             AdminRoleInfo(
                 name='Service Administrator',
                 description='',
                 permissions='View host configurations, Edit service configurations, Edit component configurations, '
-                'Manage imports, View host-components',
+                'Manage service imports, View host-components, Get cluster object, Get host object, '
+                'Get service object, Get component object',
             ),
             AdminRoleInfo(
                 name='Cluster Administrator',
                 description='',
                 permissions='Create host, Upload bundle, Edit cluster configurations, Edit host configurations, '
-                'Add service, Remove service, Remove hosts, Map hosts, Unmap hosts, Edit host-components, '
-                'Upgrade cluster bundle, Remove bundle, Service Administrator',
+                'Manage cluster imports, Add service, Remove service, Remove hosts, Map hosts, '
+                'Unmap hosts, Edit host-components, Upgrade cluster bundle, Remove bundle, '
+                'Service Administrator',
             ),
             AdminRoleInfo(
                 name='Provider Administrator',
                 description='',
                 permissions='Create host, Upload bundle, Edit provider configurations, Edit host configurations, '
-                'Remove hosts, Upgrade provider bundle, Remove bundle',
+                'Remove hosts, Upgrade provider bundle, Remove bundle, Get provider object, '
+                'Get host object',
             ),
         ]
 
         roles = self.get_all_roles_info()
         for role in default_roles:
-            assert role in roles, f"Default role {role.name} is wrong or missing"
+            assert role in roles, f"Default role {role.name} is wrong or missing. Expected to find: {role} in {roles}"
 
     @allure.step('Check custom roles')
     def check_custom_role(self, role: AdminRoleInfo):
@@ -546,58 +557,71 @@ class AdminPoliciesPage(GeneralAdminPage):
             with allure.step(f"Select users {users} in popup"):
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_select)
                 self.wait_element_visible(AdminPoliciesLocators.item)
-                available_users = self.find_elements(AdminPoliciesLocators.item)
-                self.fill_select_in_policy_popup(users, available_users)
+                self.fill_select_in_policy_popup(users, AdminPoliciesLocators.item)
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_select)
         if groups:
             with allure.step(f"Select groups {groups} in popup"):
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_select)
                 self.wait_element_visible(AdminPoliciesLocators.item)
-                available_groups = self.find_elements(AdminPoliciesLocators.item)
-                self.fill_select_in_policy_popup(groups, available_groups)
+                self.fill_select_in_policy_popup(groups, AdminPoliciesLocators.item)
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_select)
         self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.next_btn_first)
 
-    def fill_select_in_policy_popup(self, items, available_items):
+    def fill_select_in_policy_popup(self, items, available_items_locator):
         for item in items.split(", "):
-            for available_item in available_items:
+            self.wait_element_visible(available_items_locator)
+            for count, available_item in enumerate(self.find_elements(available_items_locator)):
                 if available_item.text == item:
-                    self.scroll_to(available_item)
-                    available_item.click()
+                    item_loc = self.find_elements(available_items_locator)[count]
+                    self.scroll_to(item_loc)
+                    item_loc.click()
                     break
             else:
                 raise AssertionError(f"There are no item {item} in select popup")
 
     @allure.step('Fill second step in new policy')
     def fill_second_step_in_policy_popup(
-        self, clusters: Optional[str], services: Optional[str], parent: Optional[str], providers: Optional[str]
+        self,
+        clusters: Optional[str] = None,
+        services: Optional[str] = None,
+        parent: Optional[str] = None,
+        providers: Optional[str] = None,
+        hosts: Optional[str] = None,
     ):
         self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
 
-        @allure.step("Select clusters in popup")
-        def fill_cluster_select(clusters_to_select):
-            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select)
-            self.wait_element_visible(AdminPoliciesLocators.item)
-            available_clusters = self.find_elements(AdminPoliciesLocators.item)
-            self.fill_select_in_policy_popup(clusters_to_select, available_clusters)
-            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select)
+        def fill_select(locator_select: Locator, locator_items: Locator, values: str):
+            with allure.step(f"Select {values} in popup"):
+                self.wait_element_visible(locator_select)
+                self.find_and_click(locator_select)
+                self.wait_element_visible(locator_items)
+                self.fill_select_in_policy_popup(values, locator_items)
 
         if clusters:
-            fill_cluster_select(clusters)
+            fill_select(
+                AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select, AdminPoliciesLocators.item, clusters
+            )
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.cluster_select)
         if services:
             if not parent:
                 raise ValueError("There are should be parent for service")
-            with allure.step(f"Select services {services} in popup"):
-                self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_select)
-                self.wait_element_visible(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item)
-                available_services = self.find_elements(AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item)
-                self.fill_select_in_policy_popup(services, available_services)
-                fill_cluster_select(parent)
+            fill_select(
+                AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_select,
+                AdminPoliciesLocators.AddPolicyPopup.SecondStep.service_item,
+                services,
+            )
+            fill_select(
+                AdminPoliciesLocators.AddPolicyPopup.SecondStep.parent_select, AdminPoliciesLocators.item, parent
+            )
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.parent_select)
+
+        if hosts:
+            fill_select(AdminPoliciesLocators.AddPolicyPopup.SecondStep.hosts_select, AdminPoliciesLocators.item, hosts)
+            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.hosts_select)
         if providers:
-            self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select)
-            self.wait_element_visible(AdminPoliciesLocators.item)
-            available_providers = self.find_elements(AdminPoliciesLocators.item)
-            self.fill_select_in_policy_popup(providers, available_providers)
+            fill_select(
+                AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select, AdminPoliciesLocators.item, providers
+            )
             self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.provider_select)
         self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.SecondStep.next_btn_second)
 
@@ -619,11 +643,12 @@ class AdminPoliciesPage(GeneralAdminPage):
         services: Optional[str] = None,
         parent: Optional[str] = None,
         providers: Optional[str] = None,
+        hosts: Optional[str] = None,
     ):
 
         self.open_create_policy_popup()
         self.fill_first_step_in_policy_popup(policy_name, description, role, users, groups)
-        self.fill_second_step_in_policy_popup(clusters, services, parent, providers)
+        self.fill_second_step_in_policy_popup(clusters, services, parent, providers, hosts)
         self.fill_third_step_in_policy_popup()
 
     def get_all_policies(self) -> [AdminPolicyInfo]:
@@ -656,3 +681,11 @@ class AdminPoliciesPage(GeneralAdminPage):
         self.wait_element_visible(DeleteDialog.body)
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
+
+    def delete_all_policies(self):
+        def delete_all():
+            self.select_all_policies()
+            self.click_delete_button()
+            assert len(self.table.get_all_rows()) == 0, "There should be 0 policies on the page"
+
+        wait_until_step_succeeds(delete_all, period=5)

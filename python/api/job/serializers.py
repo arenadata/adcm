@@ -23,7 +23,7 @@ from cm import config
 from cm.ansible_plugin import get_check_log
 from cm.errors import AdcmEx
 from cm.models import JobLog, Host, ClusterObject, ServiceComponent, get_object_cluster
-from api.api_views import hlink
+from api.utils import hlink
 from api.concern.serializers import ConcernItemSerializer
 
 
@@ -52,23 +52,27 @@ def get_job_objects(task):
         resp.append(cook_obj('cluster', obj.cluster.id, get_object_name(obj.cluster)))
         resp.append(cook_obj('service', obj.service.id, get_object_name(obj.service)))
     elif obj_type == 'host':
-        if task.action.host_action:
-            cluster = get_object_cluster(obj)
-            resp.append(cook_obj('cluster', cluster.id, get_object_name(cluster)))
-            if task.action.prototype.type == 'service':
-                service = ClusterObject.obj.get(cluster=cluster, prototype=task.action.prototype)
-                resp.append(cook_obj('service', service.id, get_object_name(service)))
-            elif task.action.prototype.type == 'component':
-                service = ClusterObject.obj.get(
-                    cluster=cluster, prototype=task.action.prototype.parent
-                )
-                component = ServiceComponent.obj.get(
-                    cluster=cluster, service=service, prototype=task.action.prototype
-                )
-                resp.append(cook_obj('service', service.id, get_object_name(service)))
-                resp.append(cook_obj('component', component.id, get_object_name(component)))
-        else:
-            resp.append(cook_obj('provider', obj.provider.id, get_object_name(obj.provider)))
+        if task.action:
+            if task.action.host_action:
+                cluster = get_object_cluster(obj)
+                if cluster:
+                    resp.append(cook_obj('cluster', cluster.id, get_object_name(cluster)))
+                    if task.action.prototype.type == 'service':
+                        service = ClusterObject.obj.get(
+                            cluster=cluster, prototype=task.action.prototype
+                        )
+                        resp.append(cook_obj('service', service.id, get_object_name(service)))
+                    elif task.action.prototype.type == 'component':
+                        service = ClusterObject.obj.get(
+                            cluster=cluster, prototype=task.action.prototype.parent
+                        )
+                        component = ServiceComponent.obj.get(
+                            cluster=cluster, service=service, prototype=task.action.prototype
+                        )
+                        resp.append(cook_obj('service', service.id, get_object_name(service)))
+                        resp.append(cook_obj('component', component.id, get_object_name(component)))
+            else:
+                resp.append(cook_obj('provider', obj.provider.id, get_object_name(obj.provider)))
     return resp
 
 
@@ -81,19 +85,20 @@ def get_task_selector(obj, action):
     if obj.prototype.type == 'component':
         selector['cluster'] = obj.cluster.id
         selector['service'] = obj.service.id
-    if isinstance(obj, Host) and action.host_action:
+    if action and isinstance(obj, Host) and action.host_action:
         cluster = get_object_cluster(obj)
-        selector['cluster'] = cluster.id
-        if action.prototype.type == 'component':
-            service = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype.parent)
-            component = ServiceComponent.obj.get(
-                cluster=cluster, service=service, prototype=action.prototype
-            )
-            selector['service'] = service.id
-            selector['component'] = component.id
-        elif action.prototype.type == 'service':
-            service = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype)
-            selector['service'] = service.id
+        if cluster:
+            selector['cluster'] = cluster.id
+            if action.prototype.type == 'component':
+                service = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype.parent)
+                component = ServiceComponent.obj.get(
+                    cluster=cluster, service=service, prototype=action.prototype
+                )
+                selector['service'] = service.id
+                selector['component'] = component.id
+            elif action.prototype.type == 'service':
+                service = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype)
+                selector['service'] = service.id
     return selector
 
 

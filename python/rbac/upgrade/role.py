@@ -16,11 +16,13 @@ from typing import List
 import ruyaml
 from adwp_base.errors import raise_AdwpEx as err
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
+from django.utils import timezone
 
 import cm.checker
-from cm.models import ProductCategory, Bundle, Action, get_model_by_type
+from cm.models import ProductCategory, Bundle, Action, get_model_by_type, DummyData, Host
 from rbac import log
-from rbac.models import Role, RoleMigration, Policy, Permission, re_apply_all_polices, RoleTypes
+from rbac.models import Role, RoleMigration, Permission, re_apply_all_polices, RoleTypes
 from rbac.settings import api_settings
 
 
@@ -32,14 +34,18 @@ def upgrade(data: dict):
 
     for role in data['roles']:
         role_obj = new_roles[role['name']]
+        task_roles = []
+        for child in role_obj.child.all():
+            if child.class_name == 'TaskRole':
+                task_roles.append(child)
         role_obj.child.clear()
         if 'child' not in role:
             continue
         for child in role['child']:
             child_role = new_roles[child]
             role_obj.child.add(child_role)
+        role_obj.child.add(*task_roles)
         role_obj.save()
-    re_apply_all_polices()
 
 
 def find_role(name: str, roles: list):
@@ -86,7 +92,7 @@ def upgrade_role(role: dict, data: dict) -> Role:
     """Upgrade single role"""
     perm_list = get_role_permissions(role, data['roles'])
     try:
-        new_role = Role.objects.get(name=role['name'])
+        new_role = Role.objects.get(name=role['name'], built_in=True)
         new_role.permissions.clear()
     except Role.DoesNotExist:
         new_role = Role(name=role['name'])
@@ -146,10 +152,24 @@ def get_role_spec(data: str, schema: str) -> dict:
     return data
 
 
+def get_perm(ct, codename, name=None):
+    if name:
+        perm, _ = Permission.objects.get_or_create(
+            content_type=ct,
+            codename=codename,
+            name=name,
+        )
+    else:
+        perm, _ = Permission.objects.get_or_create(
+            content_type=ct,
+            codename=codename,
+        )
+    return perm
+
+
 def prepare_hidden_roles(bundle: Bundle):
     """Prepares hidden roles"""
     hidden_roles = {}
-
     for act in Action.objects.filter(prototype__bundle=bundle):
         name_prefix = f'{act.prototype.type} action:'.title()
         name = f'{name_prefix} {act.display_name}'
@@ -162,7 +182,7 @@ def prepare_hidden_roles(bundle: Bundle):
             f'{bundle.name}_{bundle.version}_{bundle.edition}_{serv_name}'
             f'{act.prototype.type}_{act.prototype.display_name}_{act.name}'
         )
-        role = Role(
+        role, _ = Role.objects.get_or_create(
             name=role_name,
             display_name=role_name,
             description=(
@@ -188,15 +208,26 @@ def prepare_hidden_roles(bundle: Bundle):
         if bundle.category:
             role.category.add(bundle.category)
         ct = ContentType.objects.get_for_model(model)
-        perm, _ = Permission.objects.get_or_create(
-            content_type=ct,
-            codename=f'run_action_{act.display_name}',
-            name=f'Can run {act.display_name} actions',
-        )
-        role.permissions.add(perm)
+        model_name = model.__name__.lower()
+        role.permissions.add(get_perm(ct, f'view_{model_name}'))
         if name not in hidden_roles:
             hidden_roles[name] = {'parametrized_by_type': act.prototype.type, 'children': []}
         hidden_roles[name]['children'].append(role)
+        if act.host_action:
+            ct_host = ContentType.objects.get_for_model(Host)
+            role.permissions.add(get_perm(ct_host, 'view_host'))
+            role.permissions.add(
+                get_perm(
+                    ct_host, f'run_action_{act.display_name}', f'Can run {act.display_name} actions'
+                )
+            )
+        else:
+            role.permissions.add(
+                get_perm(
+                    ct, f'run_action_{act.display_name}', f'Can run {act.display_name} actions'
+                )
+            )
+
     return hidden_roles
 
 
@@ -220,15 +251,16 @@ def update_built_in_roles(
         built_in_roles['Provider Administrator'].child.add(business_role)
 
 
+@transaction.atomic
 def prepare_action_roles(bundle: Bundle):
     """Prepares action roles"""
+    DummyData.objects.filter(id=1).update(date=timezone.now())
     built_in_roles = {
         'Cluster Administrator': Role.objects.get(name='Cluster Administrator'),
         'Provider Administrator': Role.objects.get(name='Provider Administrator'),
         'Service Administrator': Role.objects.get(name='Service Administrator'),
     }
     hidden_roles = prepare_hidden_roles(bundle)
-
     for business_role_name, business_role_params in hidden_roles.items():
         if business_role_params['parametrized_by_type'] == 'component':
             parametrized_by_type = ['service', 'component']
@@ -252,15 +284,11 @@ def prepare_action_roles(bundle: Bundle):
         update_built_in_roles(bundle, business_role, parametrized_by_type, built_in_roles)
 
 
-def create_default_policy():
-    policy_name = 'default'
-    role = Role.objects.get(name='Base role')
-    try:
-        policy = Policy.objects.get(name=policy_name)
-        policy.role = role
-        policy.save()
-    except Policy.DoesNotExist:
-        Policy.objects.create(name=policy_name, role_id=role.id, built_in=True)
+def update_all_bundle_roles():
+    for bundle in Bundle.objects.exclude(name='ADCM'):
+        prepare_action_roles(bundle)
+        msg = f'Prepare roles for "{bundle.name}" bundle.'
+        log.info(msg)
 
 
 def init_roles():
@@ -276,19 +304,15 @@ def init_roles():
     if rm is None:
         rm = RoleMigration(version=0)
     if role_data['version'] > rm.version:
-        upgrade(role_data)
-        rm.version = role_data['version']
-        rm.save()
-        create_default_policy()
-        msg = f'Roles are upgraded to version {rm.version}'
-        log.info(msg)
+        with transaction.atomic():
+            upgrade(role_data)
+            rm.version = role_data['version']
+            rm.save()
+            update_all_bundle_roles()
+            re_apply_all_polices()
+            msg = f'Roles are upgraded to version {rm.version}'
+            log.info(msg)
     else:
         msg = f'Roles are already at version {rm.version}'
-
-    for bundle in Bundle.objects.exclude(name='ADCM'):
-        if not Role.objects.filter(bundle=bundle, type=RoleTypes.hidden).exists():
-            prepare_action_roles(bundle)
-            msg = f'Prepare roles for "{bundle.name}" bundle.'
-            log.info(msg)
 
     return msg

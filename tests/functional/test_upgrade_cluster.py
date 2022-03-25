@@ -13,14 +13,19 @@
 # pylint: disable=redefined-outer-name
 
 """Tests for cluster upgrade"""
+
 import allure
 import coreapi
 import pytest
-from adcm_client.objects import ADCMClient, Bundle
-from adcm_pytest_plugin.utils import get_data_dir
+from coreapi.exceptions import ErrorMessage
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Service
+from adcm_pytest_plugin.utils import get_data_dir, catch_failed
+from adcm_pytest_plugin.docker_utils import ADCM
 
 from tests.library.errorcodes import UPGRADE_ERROR
-from tests.functional.tools import BEFORE_UPGRADE_DEFAULT_STATE
+from tests.functional.tools import BEFORE_UPGRADE_DEFAULT_STATE, get_object_represent
+
+# pylint: disable=no-self-use
 
 
 @pytest.fixture()
@@ -195,3 +200,84 @@ def test_before_upgrade_state(old_bundle):
         ) == state_before_upgrade, (
             f'Expected before_upgrade state was {state_before_upgrade}, but {actual_state} was found'
         )
+
+
+class TestUpgradeWithComponent:
+    """Test upgrade of cluster with cluster changes"""
+
+    _DIR = 'upgrade_with_components'
+    _GEN_CONFIG = {'some_param': 'pam-pam'}
+    _SERVICE_NAME = 'test_service'
+
+    @pytest.fixture()
+    def old_cluster(self, sdk_client_fs) -> Cluster:
+        """Create cluster from old cluster bundle"""
+        bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, self._DIR, 'old'))
+        cluster = bundle.cluster_create('Test Cluster of Old')
+        cluster.service_add(name=self._SERVICE_NAME)
+        return cluster
+
+    @pytest.fixture()
+    def new_bundle(self, sdk_client_fs) -> Bundle:
+        """Upload new cluster bundle"""
+        return sdk_client_fs.upload_from_fs(get_data_dir(__file__, self._DIR, 'new'))
+
+    @allure.issue(name='Component miss config after upgrade', url='https://arenadata.atlassian.net/browse/ADCM-2376')
+    @pytest.mark.usefixtures('new_bundle')
+    def test_upgrade_with_components(self, adcm_fs, sdk_client_fs, old_cluster):
+        """
+        Test that upgrade where new version has changes in components are working fine
+        """
+        old_cluster.upgrade().do()
+        new_cluster = sdk_client_fs.cluster(id=old_cluster.id)
+        service = new_cluster.service(name=self._SERVICE_NAME)
+        self.check_new_component_config_exists(service)
+        self.check_config_existence_status_change(service)
+        self.check_defaults_changed_correctly(service)
+        self.check_new_file_in_config_was_created(adcm_fs, service)
+
+    @allure.step('Check that config of component new in new version is presented')
+    def check_new_component_config_exists(self, service: Service):
+        """Check that component appeared in new version has config"""
+        component = service.component(name='new_component')
+        with catch_failed(ErrorMessage, f'Config of {get_object_represent(component)} should be available'):
+            config = component.config()
+        self._check_config(config, self._GEN_CONFIG)
+
+    def check_config_existence_status_change(self, service: Service):
+        """Check configs of components that have their configs added/cleared"""
+        no_config_in_old_version = 'waiting_for_config'
+        no_config_in_new_version = 'can_loose_config'
+
+        with allure.step('Check that config was created for component that has no config before'):
+            component = service.component(name=no_config_in_old_version)
+            with catch_failed(ErrorMessage, f'Config of {get_object_represent(component)} should be available'):
+                config = component.config()
+            self._check_config(config, self._GEN_CONFIG)
+
+        with allure.step('Check that config was removed from component that has config before'):
+            component = service.component(name=no_config_in_new_version)
+            self._check_config(component.config(), {})
+
+    @allure.step('Check that new file field in config has corresponding file on FS')
+    def check_new_file_in_config_was_created(self, adcm: ADCM, service: Service):
+        """Check that new file field in config is created after upgrade"""
+        files_dir = '/adcm/data/file'
+        component = service.component(name='component_new_file')
+        expected_file = f'component.{component.id}.new_file.'
+        files = adcm.container.exec_run(['ls', '-a', files_dir]).output.decode('utf-8')
+        assert (
+            expected_file in files
+        ), f'File "{expected_file}" should be presented in "{files_dir}", but dir contains:\n{files}'
+
+    @allure.step('Check defaults changed correctly')
+    def check_defaults_changed_correctly(self, service: Service):
+        """Check defaults changed correctly after upgrade"""
+        component = service.component(name='defaults_changed')
+        self._check_config(component.config(), {'will_have_default': 54, 'have_default': 12})
+
+    def _check_config(self, actual_config: str, expected_config: str):
+        """Check configs are equal"""
+        assert (
+            actual_config == expected_config
+        ), f'Config is not equal to the one that was expected.\nActual: {actual_config}\nExpected: {expected_config}'

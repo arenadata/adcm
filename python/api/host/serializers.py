@@ -13,14 +13,16 @@
 from django.db import IntegrityError
 from rest_framework import serializers
 
-import cm
 from api.action.serializers import ActionShort
-from api.api_views import hlink, check_obj, filter_actions, CommonAPIURL, ObjectURL
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
+from api.utils import hlink, check_obj, filter_actions, CommonAPIURL, ObjectURL
 from cm.adcm_config import get_main_info
+from cm.api import add_host
 from cm.errors import AdcmEx
 from cm.models import HostProvider, Prototype, Action
+from cm.stack import validate_name
+from cm.status_api import get_host_status
 
 
 class HostSerializer(serializers.Serializer):
@@ -40,11 +42,11 @@ class HostSerializer(serializers.Serializer):
         return check_obj(HostProvider, provider_id)
 
     def validate_fqdn(self, name):
-        return cm.stack.validate_name(name, 'Host name')
+        return validate_name(name, 'Host name')
 
     def create(self, validated_data):
         try:
-            return cm.api.add_host(
+            return add_host(
                 validated_data.get('prototype_id'),
                 validated_data.get('provider_id'),
                 validated_data.get('fqdn'),
@@ -65,7 +67,7 @@ class HostDetailSerializer(HostSerializer):
     locked = serializers.BooleanField(read_only=True)
 
     def get_status(self, obj):
-        return cm.status_api.get_host_status(obj)
+        return get_host_status(obj)
 
 
 class ClusterHostSerializer(HostSerializer):
@@ -83,7 +85,7 @@ class ProvideHostSerializer(HostSerializer):
         provider = check_obj(HostProvider, self.context.get('provider_id'))
         proto = Prototype.obj.get(bundle=provider.prototype.bundle, type='host')
         try:
-            return cm.api.add_host(
+            return add_host(
                 proto, provider, validated_data.get('fqdn'), validated_data.get('description', '')
             )
         except IntegrityError:
@@ -96,7 +98,7 @@ class StatusSerializer(serializers.Serializer):
     status = serializers.SerializerMethodField()
 
     def get_status(self, obj):
-        return cm.status_api.get_host_status(obj)
+        return get_host_status(obj)
 
 
 class HostUISerializer(HostDetailSerializer):

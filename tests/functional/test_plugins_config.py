@@ -16,7 +16,6 @@ from typing import Tuple, Callable
 
 import allure
 import pytest
-
 from adcm_client.objects import ADCMClient, Cluster, Provider, Host, Component, Service
 from adcm_pytest_plugin.steps.actions import (
     run_provider_action_and_assert_result,

@@ -16,28 +16,41 @@ from typing import List
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, Role, User
+from adcm_client.base import NoSuchEndpointOrAccessIsDenied
+from adcm_client.objects import ADCMClient, Role
+from adcm_client.wrappers.api import AccessIsDenied
+from adcm_pytest_plugin.utils import catch_failed
 
 from tests.library.assertions import is_superset_of
 from tests.functional.rbac.conftest import BusinessRoles
 
-pytestmark = [pytest.mark.full]
+pytestmark = [pytest.mark.extra_rbac]
 
 ADCM_USER_ROLES = {
     role.value.role_name
     for role in (
+        BusinessRoles.GetAllClusters,
+        BusinessRoles.GetAllServices,
+        BusinessRoles.GetAllComponents,
+        BusinessRoles.GetAllProviders,
+        BusinessRoles.GetAllHosts,
         BusinessRoles.ViewAnyObjectConfiguration,
         BusinessRoles.ViewAnyObjectImport,
         BusinessRoles.ViewAnyObjectHostComponents,
     )
 }
+
 SERVICE_ADMIN_ROLES = {
     role.value.role_name
     for role in (
+        BusinessRoles.GetService,
+        BusinessRoles.GetComponent,
+        BusinessRoles.GetHost,
         BusinessRoles.EditServiceConfigurations,
         BusinessRoles.EditComponentConfigurations,
         BusinessRoles.ViewHostConfigurations,
-        BusinessRoles.ManageImports,
+        BusinessRoles.ManageServiceImports,
+        BusinessRoles.ViewHostComponents,
     )
 }
 
@@ -45,6 +58,7 @@ CLUSTER_ADMIN_ROLES = SERVICE_ADMIN_ROLES.union(
     {
         role.value.role_name
         for role in (
+            BusinessRoles.ManageClusterImports,
             BusinessRoles.EditClusterConfigurations,
             BusinessRoles.EditHostConfigurations,
             BusinessRoles.MapHosts,
@@ -55,6 +69,8 @@ CLUSTER_ADMIN_ROLES = SERVICE_ADMIN_ROLES.union(
             BusinessRoles.UpgradeClusterBundle,
             BusinessRoles.UploadBundle,
             BusinessRoles.RemoveBundle,
+            BusinessRoles.CreateHost,
+            BusinessRoles.RemoveHosts,
         )
     }
 )
@@ -62,6 +78,8 @@ CLUSTER_ADMIN_ROLES = SERVICE_ADMIN_ROLES.union(
 PROVIDER_ADMIN_ROLES = {
     role.value.role_name
     for role in (
+        BusinessRoles.GetProvider,
+        BusinessRoles.GetHost,
         BusinessRoles.UpgradeProviderBundle,
         BusinessRoles.EditProviderConfigurations,
         BusinessRoles.EditHostConfigurations,
@@ -70,18 +88,6 @@ PROVIDER_ADMIN_ROLES = {
         BusinessRoles.UploadBundle,
         BusinessRoles.RemoveBundle,
     )
-}
-
-BASE_ROLES = {
-    'Get ADCM object',
-    'Get provider',
-    'Get host',
-    'Get cluster',
-    'Get service',
-    'Get component',
-    'Get task and jobs',
-    'Get stack',
-    'Get concerns',
 }
 
 
@@ -96,19 +102,21 @@ def get_children_business_roles(role: Role) -> List[str]:
     return result
 
 
-def test_default_role(user: User, sdk_client_fs: ADCMClient):
+@pytest.mark.usefixtures('prepare_objects')
+def test_default_role(clients):
     """
     Check that newly created user has role "ADCM User"
     """
-    policies = sdk_client_fs.policy_list()
-    user_policies = tuple(filter(lambda p: user.id in (u.id for u in p.user_list()), policies))
-    with allure.step('Check default user policy and roles'):
-        assert len(user_policies) == 1, 'User should have default policy after creation'
-        role_children = {r.name for r in user_policies[0].role().child_list()}
-        assert role_children == BASE_ROLES, (
-            f'Default roles should be {_set_to_string(BASE_ROLES)}.\n'
-            f'But the following were found: {_set_to_string(role_children)}.'
-        )
+    user_client = clients.user
+    assert user_client.bundle_list(), 'Default user should see bundles in bundle list'
+    with catch_failed(
+        (AccessIsDenied, NoSuchEndpointOrAccessIsDenied), 'Default user should be able to view ADCM objects'
+    ):
+        user_client.adcm()
+    for object_type in ('cluster', 'service', 'component', 'provider', 'host'):
+        assert (
+            len(getattr(user_client, f'{object_type}_list')()) == 0
+        ), f'List of {object_type} should be empty to default user'
 
 
 def test_composition(sdk_client_fs: ADCMClient):

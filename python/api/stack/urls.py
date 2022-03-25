@@ -11,18 +11,20 @@
 # limitations under the License.
 
 from django.urls import path, include
-from . import views
 
+from . import views, root
 
 PROTOTYPE_ID = '<int:prototype_id>/'
 
 
 # fmt: off
 urlpatterns = [
-    path('', views.Stack.as_view(), name='stack'),
+    path('', root.StackRoot.as_view(), name='stack'),
     path('upload/', views.UploadBundle.as_view(), name='upload-bundle'),
-    path('load/', views.LoadBundle.as_view(), name='load-bundle'),
-    path('load/servicemap/', views.LoadServiceMap.as_view(), name='load-servicemap'),
+    path('load/', views.LoadBundle.as_view({'post': 'create'}), name='load-bundle'),
+    path(
+        'load/servicemap/', views.LoadBundle.as_view({'put': 'servicemap'}), name='load-servicemap'
+    ),
     path('bundle/', include([
         path('', views.BundleList.as_view(), name='bundle'),
         path('<int:bundle_id>/', include([

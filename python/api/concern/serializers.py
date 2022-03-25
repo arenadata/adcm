@@ -13,7 +13,7 @@
 from rest_framework.reverse import reverse
 from rest_framework import serializers
 
-from api.api_views import hlink, get_api_url_kwargs
+from api.utils import hlink, get_api_url_kwargs
 
 
 class ConcernItemSerializer(serializers.Serializer):

@@ -240,6 +240,8 @@ def switch_config(  # pylint: disable=too-many-locals,too-many-branches,too-many
                 return bool(get_default(old_spec[key], old_proto) == old_conf[key])
             else:
                 return True
+        if not old_spec[key].default and new_spec[key].default:
+            return True
         return False
 
     # set new default config values and gather information about activatable groups
@@ -457,7 +459,7 @@ def ui_config(obj, cl):
         if key in flat_conf:
             item['value'] = flat_conf[key]
         else:
-            item['value'] = get_default(spec[key])
+            item['value'] = get_default(spec[key], obj.prototype)
         if flat_group_keys:
             if spec[key].type == 'group':
                 item['group'] = any((v for k, v in flat_group_keys.items() if k.startswith(key)))
@@ -740,7 +742,9 @@ def check_config_spec(
         # TODO: it is necessary to investigate the problem
         # check_read_only(obj, flat_spec, conf, old_conf)
         restore_read_only(obj, spec, conf, old_conf)
-        process_file_type(group or obj, spec, conf)
+
+    # for process_file_type() function not need `if old_conf:`
+    process_file_type(group or obj, spec, conf)
     process_password(spec, conf)
     return conf
 
@@ -907,8 +911,14 @@ def set_object_config(obj, keys, value):
 
 def get_main_info(obj: Optional[ADCMEntity]) -> Optional[str]:
     """Return __main_info for object"""
+    if obj.config is None:
+        return None
+    cl = ConfigLog.objects.get(id=obj.config.current)
     _, spec, _, _ = get_prototype_config(obj.prototype)
-    if '__main_info/' in spec:
+
+    if '__main_info' in cl.config:
+        return cl.config['__main_info']
+    elif '__main_info/' in spec:
         return get_default(spec['__main_info/'], obj.prototype)
     else:
         return None

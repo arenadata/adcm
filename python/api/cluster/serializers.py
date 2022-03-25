@@ -17,7 +17,7 @@ import cm.api
 import cm.job
 import cm.status_api
 from api.action.serializers import ActionShort
-from api.api_views import (
+from api.utils import (
     CommonAPIURL,
     ObjectURL,
     UrlField,

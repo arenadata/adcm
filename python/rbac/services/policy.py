@@ -17,9 +17,10 @@ from adwp_base.errors import AdwpEx
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from django.db.transaction import atomic
+from django.utils import timezone
 from rest_framework import status
 
-from cm.models import ADCMEntity
+from cm.models import ADCMEntity, DummyData
 from rbac.models import User, Policy, PolicyObject, Role, Group
 from rbac.utils import update_m2m_field
 
@@ -91,6 +92,7 @@ def policy_create(name: str, role: Role, built_in: bool = False, **kwargs):
     _check_subjects(users, groups)
 
     objects = kwargs.get('object', [])
+    DummyData.objects.filter(id=1).update(date=timezone.now())
     _check_objects(role, objects)
     description = kwargs.get('description', '')
     try:
@@ -124,6 +126,7 @@ def policy_update(policy: Policy, **kwargs) -> Policy:
 
     users = kwargs.get('user')
     groups = kwargs.get('group')
+    DummyData.objects.filter(id=1).update(date=timezone.now())
     _check_subjects(
         users if users is not None else policy.user.all(),
         groups if groups is not None else policy.group.all(),
@@ -133,7 +136,6 @@ def policy_update(policy: Policy, **kwargs) -> Policy:
     objects = kwargs.get('object')
     policy_old_objects = [po.object for po in policy.object.all()]
     _check_objects(role or policy.role, objects if objects is not None else policy_old_objects)
-
     if 'name' in kwargs:
         policy.name = kwargs['name']
     if 'description' in kwargs:

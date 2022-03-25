@@ -155,7 +155,7 @@ def _check_menu(
 ):
     list_page.click_on_row_child(0, HostListLocators.HostTable.HostRow.fqdn)
     host_page = HostMainPage(list_page.driver, list_page.base_url, 1, None)
-    getattr(host_page, f'open_{menu_name}_menu')()
+    getattr(host_page, f'open_{menu_name}_tab')()
     host_page.check_fqdn_equal_to(HOST_FQDN)
     bundle_label = host_page.get_bundle_label()
     # Test Host is name of host in config.yaml
@@ -245,9 +245,9 @@ class TestHostListPage:
     @pytest.mark.parametrize(
         ('row_child_name', 'menu_item_name'),
         [
-            pytest.param('fqdn', 'main_tab', id='open_host_main', marks=pytest.mark.smoke),
-            pytest.param('status', 'status_tab', id='open_status_menu'),
-            pytest.param('config', 'config_tab', id='open_config_menu'),
+            pytest.param('fqdn', 'main_tab', id='open_host_tab', marks=pytest.mark.smoke),
+            pytest.param('status', 'status_tab', id='open_status_tab'),
+            pytest.param('config', 'config_tab', id='open_config_tab'),
         ],
     )
     @pytest.mark.usefixtures('create_host')
@@ -316,7 +316,7 @@ class TestHostMainPage:
         """Test open /host/{}/main page from left menu"""
 
         host_config_page = HostConfigPage(app_fs.driver, app_fs.adcm.url, create_host.host_id).open()
-        host_main_page = host_config_page.open_main_menu()
+        host_main_page = host_config_page.open_main_tab()
         host_main_page.check_all_elements()
         host_main_page.check_host_toolbar(HOST_FQDN)
 
@@ -491,7 +491,7 @@ class TestHostStatusPage:
         """Test open /host/{}/config from left menu"""
 
         host_main_page = HostMainPage(app_fs.driver, app_fs.adcm.url, create_host.id).open()
-        host_status_page = host_main_page.open_status_menu()
+        host_status_page = host_main_page.open_status_tab()
         host_status_page.check_all_elements()
         host_status_page.check_host_toolbar(HOST_FQDN)
 
