@@ -158,9 +158,10 @@ def main(job_id):
                 bundle_switch(job.task.task_object, upg)
             except AdcmEx:
                 cm.job.set_job_status(job_id, config.Job.FAILED, event)
+                sys.exit(1)
             cm.job.set_job_status(job_id, config.Job.SUCCESS, event)
             event.send_state()
-            sys.exit()
+            sys.exit(0)
     else:
         run_ansible(job_id)
 

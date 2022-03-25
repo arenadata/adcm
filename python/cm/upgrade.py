@@ -305,7 +305,7 @@ def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
         return res
 
 
-def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade):
+def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> dict:
     old_proto = obj.prototype
     check_license(obj.prototype.bundle)
     check_license(upgrade.bundle)
@@ -322,7 +322,7 @@ def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade):
     return {'id': obj.id, 'upgradable': bool(get_upgrade(obj))}
 
 
-def bundle_switch(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> dict:
+def bundle_switch(obj: Union[Cluster, HostProvider], upgrade: Upgrade):
     old_proto = obj.prototype
     if old_proto.type == 'cluster':
         new_proto = Prototype.objects.get(bundle=upgrade.bundle, type='cluster')
@@ -349,4 +349,3 @@ def bundle_switch(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> dict:
     cm.status_api.post_event(
         'upgrade', obj.prototype.type, obj.id, 'version', str(obj.prototype.version)
     )
-    return {'id': obj.id, 'upgradable': bool(get_upgrade(obj))}

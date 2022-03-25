@@ -17,7 +17,6 @@ from django.core.exceptions import MultipleObjectsReturned
 from django.db import transaction
 from django.utils import timezone
 
-import cm.upgrade
 import cm.issue
 import cm.status_api
 from cm.adcm_config import (
@@ -32,6 +31,7 @@ from cm.adcm_config import (
 from cm.api_context import ctx
 from cm.errors import AdcmEx, raise_AdcmEx as err
 from cm.logger import log
+from cm.upgrade import check_license, version_in
 from cm.models import (
     ADCM,
     ADCMEntity,
@@ -106,7 +106,7 @@ def load_service_map():
 
 def add_cluster(proto, name, desc=''):
     check_proto_type(proto, 'cluster')
-    cm.upgrade.check_license(proto.bundle)
+    check_license(proto.bundle)
     with transaction.atomic():
         cluster = Cluster.objects.create(prototype=proto, name=name, description=desc)
         obj_conf = init_object_config(proto, cluster)
@@ -121,7 +121,7 @@ def add_cluster(proto, name, desc=''):
 
 def add_host(proto, provider, fqdn, desc=''):
     check_proto_type(proto, 'host')
-    cm.upgrade.check_license(proto.bundle)
+    check_license(proto.bundle)
     if proto.bundle != provider.prototype.bundle:
         msg = 'Host prototype bundle #{} does not match with host provider bundle #{}'
         err('FOREIGN_HOST', msg.format(proto.bundle.id, provider.prototype.bundle.id))
@@ -153,7 +153,7 @@ def add_provider_host(provider_id, fqdn, desc=''):
 
 def add_host_provider(proto, name, desc=''):
     check_proto_type(proto, 'provider')
-    cm.upgrade.check_license(proto.bundle)
+    check_license(proto.bundle)
     with transaction.atomic():
         provider = HostProvider.objects.create(prototype=proto, name=name, description=desc)
         obj_conf = init_object_config(proto, provider)
@@ -372,7 +372,7 @@ def unbind(cbind):
 
 def add_service_to_cluster(cluster, proto):
     check_proto_type(proto, 'service')
-    cm.upgrade.check_license(proto.bundle)
+    check_license(proto.bundle)
     if not proto.shared:
         if cluster.prototype.bundle != proto.bundle:
             msg = '{} does not belong to bundle "{}" {}'
@@ -618,7 +618,7 @@ def get_import(cluster, service=None):
             if pe.prototype.id in export_proto:
                 continue
             export_proto[pe.prototype.id] = True
-            if not cm.upgrade.version_in(pe.prototype.version, pi):
+            if not version_in(pe.prototype.version, pi):
                 continue
             if pe.prototype.type == 'cluster':
                 for cls in Cluster.objects.filter(prototype=pe.prototype):
@@ -752,7 +752,7 @@ def multi_bind(cluster, service, bind_list):  # pylint: disable=too-many-locals,
         if pi.name != export_obj.prototype.name:
             msg = 'Export {} does not match import name "{}"'
             err('BIND_ERROR', msg.format(obj_ref(export_obj), pi.name))
-        if not cm.upgrade.version_in(export_obj.prototype.version, pi):
+        if not version_in(export_obj.prototype.version, pi):
             msg = 'Import "{}" of {} versions ({}, {}) does not match export version: {} ({})'
             err(
                 'BIND_ERROR',
