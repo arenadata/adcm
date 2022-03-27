@@ -16,6 +16,7 @@ from contextlib import contextmanager
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.ui_tests.app.page.cluster_list.locators import ClusterListLocators
@@ -84,11 +85,13 @@ class ClusterListPage(BasePageObject):
     @allure.step("Click on import button from row")
     def click_import_btn_in_row(self, row: WebElement):
         """Click on Import button from Cluster List row"""
+
         self.find_child(row, self.table.locators.ClusterRow.imports).click()
 
     @allure.step("Run action {action_name} for cluster from row")
     def run_action_in_cluster_row(self, row: WebElement, action_name: str):
         """Run action for cluster from row"""
+
         self.click_action_btn_in_row(row)
         self.wait_element_visible(self.table.locators.ActionPopup.block)
         self.find_and_click(self.table.locators.ActionPopup.button(action_name))
@@ -96,9 +99,25 @@ class ClusterListPage(BasePageObject):
         self.find_and_click(ActionDialog.run)
         self.wait_element_hide(ActionDialog.body)
 
+    def get_all_actions_name_in_cluster(self, row: WebElement):
+        """Get all actions for cluster from row"""
+
+        self.click_action_btn_in_row(row)
+        self.wait_element_visible(self.table.locators.ActionPopup.block)
+        try:
+            actions_names = [
+                name.text for name in self.find_elements(self.table.locators.ActionPopup.action_buttons, timeout=2)
+            ]
+        except TimeoutException:
+            actions_names = []
+        self.find_and_click(self.table.locators.backdrop, is_js=True)
+        self.wait_element_hide(self.table.locators.ActionPopup.block)
+        return actions_names
+
     @contextmanager
     def wait_cluster_state_change(self, row: WebElement):
         """Wait for cluster state to change"""
+
         state_before = self.get_cluster_state_from_row(row)
         yield
 
