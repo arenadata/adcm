@@ -15,9 +15,9 @@ Dummy data generators
 """
 
 from random import randint, choice
-from genson import SchemaBuilder
 
 import allure
+from genson import SchemaBuilder
 from rstr.xeger import Xeger
 
 from tests.api.utils.tools import random_string
@@ -32,7 +32,7 @@ def gen_int(prop=None):
     if not prop:
         prop = {}
     min_value = prop.get("minimum", 0)
-    max_value = prop.get("maximum", (2 ** 63) - 1.0)
+    max_value = prop.get("maximum", (2**63) - 1.0)
     return randint(a=min_value, b=max_value)
 
 
@@ -148,7 +148,8 @@ def gen_object(prop=None):
             output[k] = _get_generator(json_prop)
 
         if k == "duration":
-            with allure.step("Set 'duration' property to 2 sec in fake generated data by JSON schema"):
+            msg = "Set 'duration' property to 2 sec in fake generated data by JSON schema"
+            with allure.step(msg):
                 output[k] = 2
 
     return output

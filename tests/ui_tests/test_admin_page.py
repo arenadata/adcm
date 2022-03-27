@@ -515,11 +515,9 @@ class TestAdminPolicyPage:
             role=self.custom_policy.role,
             users=self.custom_policy.users,
         )
-        policies_page.select_all_policies()
-        policies_page.click_delete_button()
-        with allure.step('Check that policy has been deleted'):
-            assert len(policies_page.table.get_all_rows()) == 0, "There should be 0 policies on the page"
+        policies_page.delete_all_policies()
 
+    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2729")
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     @pytest.mark.parametrize(
         ("clusters", "services", "providers", "hosts", "parents", "role_name"),
