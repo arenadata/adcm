@@ -237,6 +237,7 @@ class Upgrade(ADCMModel):
     max_strict = models.BooleanField(default=False)
     state_available = models.JSONField(default=list)
     state_on_success = models.CharField(max_length=64, blank=True)
+    action = models.OneToOneField('Action', on_delete=models.CASCADE, null=True)
 
     __error_code__ = 'UPGRADE_NOT_FOUND'
 
@@ -1381,6 +1382,7 @@ class StageUpgrade(ADCMModel):
     from_edition = models.JSONField(default=get_default_from_edition)
     state_available = models.JSONField(default=list)
     state_on_success = models.CharField(max_length=64, blank=True)
+    action = models.OneToOneField('StageAction', on_delete=models.CASCADE, null=True)
 
 
 class StageAction(AbstractAction):
