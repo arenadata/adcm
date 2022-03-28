@@ -219,15 +219,18 @@ def check_scripts(proto, conf, label):
     ref = proto_ref(proto)
     count = 0
     if 'scripts' in conf:
-        for actions in conf['scripts']:
-            if actions['script_type'] == 'internal':
+        for action in conf['scripts']:
+            if action['script_type'] == 'internal':
                 count += 1
                 if count > 1:
                     msg = 'Script with script_type \'internal\' must be unique in {} of {}'
                     err('INVALID_UPGRADE_DEFINITION', msg.format(label, ref))
-                if actions['script'] != 'bundle_switch':
+                if action['script'] != 'bundle_switch':
                     msg = 'Script with script_type \'internal\' should be marked as \'bundle_switch\' in {} of {}'
                     err('INVALID_UPGRADE_DEFINITION', msg.format(label, ref))
+        if count == 0:
+            msg = 'Scripts block in {} of {} must contain exact one block with script \'bundle_switch\''
+            err('INVALID_UPGRADE_DEFINITION', msg.format(label, ref))
 
 
 def check_versions(proto, conf, label):
