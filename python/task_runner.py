@@ -121,7 +121,10 @@ def run_task(task_id, args=None):
         job.start_date = timezone.now()
         job.save()
         res = run_job(task.id, job.id, err_file)
-        set_body_ansible(job)
+        if job.action.script_type == 'ansible' or (
+            job.sub_action and job.sub_action.script_type == 'ansible'
+        ):
+            set_body_ansible(job)
         # For multi jobs task object state and/or config can be changed by adcm plugins
         if task.task_object is not None:
             try:
