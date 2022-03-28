@@ -14,14 +14,14 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='stageupgrade',
             name='action',
-            field=models.ForeignKey(
+            field=models.OneToOneField(
                 null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.stageaction'
             ),
         ),
         migrations.AddField(
             model_name='upgrade',
             name='action',
-            field=models.ForeignKey(
+            field=models.OneToOneField(
                 null=True, on_delete=django.db.models.deletion.CASCADE, to='cm.action'
             ),
         ),

@@ -151,17 +151,15 @@ def main(job_id):
     job = JobLog.objects.get(id=job_id)
     if job.sub_action and job.sub_action.script_type == 'internal':
         event = Event()
-        upgrade = job.action.upgrade_set.all()
-        for upg in upgrade:
-            cm.job.set_job_status(job_id, config.Job.RUNNING, event)
-            try:
-                bundle_switch(job.task.task_object, upg)
-            except AdcmEx:
-                cm.job.set_job_status(job_id, config.Job.FAILED, event)
-                sys.exit(1)
-            cm.job.set_job_status(job_id, config.Job.SUCCESS, event)
-            event.send_state()
-            sys.exit(0)
+        cm.job.set_job_status(job_id, config.Job.RUNNING, event)
+        try:
+            bundle_switch(job.task.task_object, job.action.upgrade)
+        except AdcmEx:
+            cm.job.set_job_status(job_id, config.Job.FAILED, event)
+            sys.exit(1)
+        cm.job.set_job_status(job_id, config.Job.SUCCESS, event)
+        event.send_state()
+        sys.exit(0)
     else:
         run_ansible(job_id)
 

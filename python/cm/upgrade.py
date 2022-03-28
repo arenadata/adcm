@@ -23,7 +23,6 @@ from cm.adcm_config import proto_ref, obj_ref, switch_config, make_object_config
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
-    Bundle,
     Cluster,
     ClusterBind,
     ClusterObject,
@@ -35,29 +34,7 @@ from cm.models import (
     ServiceComponent,
     Upgrade,
 )
-
-
-def check_license(bundle: Bundle) -> None:
-    if bundle.license == 'unaccepted':
-        msg = 'License for bundle "{}" {} {} is not accepted'
-        err('LICENSE_ERROR', msg.format(bundle.name, bundle.version, bundle.edition))
-
-
-def version_in(version: str, ver: PrototypeImport) -> bool:
-    # log.debug('version_in: %s < %s > %s', ver.min_version, version, ver.max_version)
-    if ver.min_strict:
-        if rpm.compare_versions(version, ver.min_version) <= 0:
-            return False
-    elif ver.min_version:
-        if rpm.compare_versions(version, ver.min_version) < 0:
-            return False
-    if ver.max_strict:
-        if rpm.compare_versions(version, ver.max_version) >= 0:
-            return False
-    elif ver.max_version:
-        if rpm.compare_versions(version, ver.max_version) > 0:
-            return False
-    return True
+from cm.api import check_license, version_in
 
 
 def switch_object(obj: Union[Host, ClusterObject], new_prototype: Prototype) -> None:
@@ -329,7 +306,7 @@ def bundle_switch(obj: Union[Cluster, HostProvider], upgrade: Upgrade):
     elif old_proto.type == 'provider':
         new_proto = Prototype.objects.get(bundle=upgrade.bundle, type='provider')
     else:
-        return err('UPGRADE_ERROR', 'can upgrade only cluster or host provider')
+        err('UPGRADE_ERROR', 'can upgrade only cluster or host provider')
 
     with transaction.atomic():
         obj.prototype = new_proto

@@ -16,6 +16,7 @@ import json
 from django.core.exceptions import MultipleObjectsReturned
 from django.db import transaction
 from django.utils import timezone
+from version_utils import rpm
 
 import cm.issue
 import cm.status_api
@@ -31,7 +32,6 @@ from cm.adcm_config import (
 from cm.api_context import ctx
 from cm.errors import AdcmEx, raise_AdcmEx as err
 from cm.logger import log
-from cm.upgrade import check_license, version_in
 from cm.models import (
     ADCM,
     ADCMEntity,
@@ -50,9 +50,33 @@ from cm.models import (
     PrototypeImport,
     ServiceComponent,
     TaskLog,
+    Bundle,
 )
 
 from rbac.models import re_apply_object_policy
+
+
+def check_license(bundle: Bundle) -> None:
+    if bundle.license == 'unaccepted':
+        msg = 'License for bundle "{}" {} {} is not accepted'
+        err('LICENSE_ERROR', msg.format(bundle.name, bundle.version, bundle.edition))
+
+
+def version_in(version: str, ver: PrototypeImport) -> bool:
+    # log.debug('version_in: %s < %s > %s', ver.min_version, version, ver.max_version)
+    if ver.min_strict:
+        if rpm.compare_versions(version, ver.min_version) <= 0:
+            return False
+    elif ver.min_version:
+        if rpm.compare_versions(version, ver.min_version) < 0:
+            return False
+    if ver.max_strict:
+        if rpm.compare_versions(version, ver.max_version) >= 0:
+            return False
+    elif ver.max_version:
+        if rpm.compare_versions(version, ver.max_version) > 0:
+            return False
+    return True
 
 
 def check_proto_type(proto, check_type):
