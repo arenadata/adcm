@@ -594,7 +594,10 @@ class TestAdminPolicyPage:
             )
         with allure.step("Create test policy"):
             sdk_client_fs.policy_create(
-                name="Test policy", role=test_role, user=[sdk_client_fs.user_list()[2]], objects=[cluster]
+                name="Test policy",
+                role=test_role,
+                user=[sdk_client_fs.user(username=another_user['username'])],
+                objects=[cluster],
             )
         with allure.step("Create second cluster"):
             second_cluster = sdk_client_fs.bundle().cluster_create(name=f"{CLUSTER_NAME}_2")
@@ -622,7 +625,10 @@ class TestAdminPolicyPage:
             )
         with allure.step("Create test policy"):
             sdk_client_fs.policy_create(
-                name="Test policy", role=test_role, user=[sdk_client_fs.user_list()[2]], objects=[service]
+                name="Test policy",
+                role=test_role,
+                user=[sdk_client_fs.user(username=another_user['username'])],
+                objects=[service],
             )
         with allure.step("Create second service"):
             second_service = cluster.service_add(name="test_service_2")
