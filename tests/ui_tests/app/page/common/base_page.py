@@ -22,6 +22,7 @@ from typing import (
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from selenium.common.exceptions import ElementClickInterceptedException
 from selenium.common.exceptions import (
     NoSuchElementException,
     StaleElementReferenceException,
@@ -114,7 +115,7 @@ class BasePageObject:
             if self.is_element_displayed(CommonPopupLocators.block_by_text("Connection established.")):
                 try:
                     self.find_and_click(CommonPopupLocators.hide_btn_by_text("Connection established."))
-                except (StaleElementReferenceException, NoSuchElementException):
+                except (StaleElementReferenceException, NoSuchElementException, ElementClickInterceptedException):
                     pass
                 self.wait_element_hide(CommonPopupLocators.block_by_text("Connection established."))
         else:
