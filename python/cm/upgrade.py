@@ -17,9 +17,10 @@ from django.db import transaction
 from version_utils import rpm
 
 import cm.issue
-import cm.status_api
 import cm.job
+import cm.status_api
 from cm.adcm_config import proto_ref, obj_ref, switch_config, make_object_config
+from cm.api import check_license, version_in
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
@@ -34,7 +35,6 @@ from cm.models import (
     ServiceComponent,
     Upgrade,
 )
-from cm.api import check_license, version_in
 
 
 def switch_object(obj: Union[Host, ClusterObject], new_prototype: Prototype) -> None:
@@ -282,7 +282,7 @@ def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
         return res
 
 
-def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> dict:
+def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade, config: dict) -> dict:
     old_proto = obj.prototype
     check_license(obj.prototype.bundle)
     check_license(upgrade.bundle)
@@ -294,7 +294,7 @@ def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> dict:
     if not upgrade.action:
         bundle_switch(obj, upgrade)
     else:
-        cm.job.start_task(upgrade.action, obj, {}, {}, [], [], False)
+        cm.job.start_task(upgrade.action, obj, config, {}, [], [], False)
     obj.refresh_from_db()
     return {'id': obj.id, 'upgradable': bool(get_upgrade(obj))}
 
