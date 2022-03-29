@@ -867,6 +867,10 @@ class TestClusterConfigPage:
         )
         cluster_config_page.config.set_description(params["config_name"])
         cluster_config_page.config.save_config()
+        cluster_config_page.driver.refresh()
+        cluster_config_page.config.assert_input_value_is(
+            expected_value=params["row_value_new"], display_name=params["row_name"]
+        )
 
         config_row = cluster_config_page.config.get_all_config_rows()[0]
         cluster_config_page.config.reset_to_default(row=config_row)
@@ -1065,6 +1069,58 @@ class TestClusterConfigPage:
         with allure.step('Check that we cannot set float in integer field'):
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
             cluster_config_page.config.check_field_is_invalid(params["filed_name"])
+
+    def test_save_list_on_cluster_config_page(self, sdk_client_fs: ADCMClient, app_fs):
+        """Test set value for list field, save and refresh page"""
+
+        params = {"new_value": ["test", "test", "test"]}
+        config, expected, path = prepare_config(
+            generate_configs(
+                field_type="list",
+                invisible=False,
+                advanced=False,
+                default=True,
+                required=False,
+                read_only=False,
+            )
+        )
+        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        cluster_config_page.config.type_in_field_with_few_inputs(
+            row=cluster_config_page.config.get_all_config_rows()[0], values=params["new_value"], clear=True
+        )
+        cluster_config_page.config.save_config()
+        cluster_config_page.driver.refresh()
+        with allure.step('Check saved list values'):
+            cluster_config_page.config.assert_list_value_is(
+                expected_value=params["new_value"], display_name=config['config'][0]['name']
+            )
+
+    def test_save_map_on_cluster_config_page(self, sdk_client_fs: ADCMClient, app_fs):
+        """Test set value for map field, save and refresh page"""
+
+        params = {"new_value": {'test': 'test', 'test_2': 'test', 'test_3': 'test'}}
+        config, expected, path = prepare_config(
+            generate_configs(
+                field_type="map",
+                invisible=False,
+                advanced=False,
+                default=True,
+                required=False,
+                read_only=False,
+            )
+        )
+        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        cluster_config_page.config.type_in_field_with_few_inputs(
+            row=cluster_config_page.config.get_all_config_rows()[0],
+            values=['test', 'test', 'test_2', 'test', 'test_3', 'test'],
+            clear=True,
+        )
+        cluster_config_page.config.save_config()
+        cluster_config_page.driver.refresh()
+        with allure.step('Check saved map values'):
+            cluster_config_page.config.assert_map_value_is(
+                expected_value=params["new_value"], display_name=config['config'][0]['name']
+            )
 
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
