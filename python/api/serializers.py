@@ -36,6 +36,12 @@ class UpgradeSerializer(serializers.Serializer):
     from_edition = serializers.JSONField(required=False)
     state_available = serializers.JSONField(required=False)
     state_on_success = serializers.CharField(required=False)
+    ui_options = serializers.SerializerMethodField()
+
+    def get_ui_options(self, instance):
+        if instance.action:
+            return instance.action.ui_options
+        return {}
 
 
 class UpgradeLinkSerializer(UpgradeSerializer):
