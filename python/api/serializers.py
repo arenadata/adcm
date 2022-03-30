@@ -70,6 +70,7 @@ class DoUpgradeSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     upgradable = serializers.BooleanField(read_only=True)
     config = serializers.JSONField(required=False, default=dict)
+    task_id = serializers.IntegerField(read_only=True)
 
     def create(self, validated_data):
         upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')

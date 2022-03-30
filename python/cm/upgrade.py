@@ -291,12 +291,15 @@ def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade, config: dict
         return err('UPGRADE_ERROR', msg)
     log.info('upgrade %s version %s (upgrade #%s)', obj_ref(obj), old_proto.version, upgrade.id)
 
+    task_id = None
     if not upgrade.action:
         bundle_switch(obj, upgrade)
     else:
-        cm.job.start_task(upgrade.action, obj, config, {}, [], [], False)
+        task = cm.job.start_task(upgrade.action, obj, config, {}, [], [], False)
+        task_id = task.id
     obj.refresh_from_db()
-    return {'id': obj.id, 'upgradable': bool(get_upgrade(obj))}
+
+    return {'id': obj.id, 'upgradable': bool(get_upgrade(obj)), 'task_id': task_id}
 
 
 def bundle_switch(obj: Union[Cluster, HostProvider], upgrade: Upgrade):
