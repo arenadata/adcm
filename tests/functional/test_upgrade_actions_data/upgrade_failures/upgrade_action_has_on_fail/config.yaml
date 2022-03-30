@@ -22,6 +22,26 @@
       scripts:
         - &action
           name: first_action
+          script: ./succeed.yaml
+          script_type: ansible
+        - name: switch action
+          script: bundle_switch
+          script_type: internal
+        - <<: *action
+          script: ./fail.yaml
+          name: first action after switch
+      states:
+        available: any
+        on_success: ready_to_upgrade
+        on_fail: something_failed
+
+    - name: fail_before_bundle_switch
+      versions:
+        min: 0.1
+        max: 1.3
+      scripts:
+        - <<: *action
+          name: first_action
           script: ./fail.yaml
           script_type: ansible
         - name: switch action
@@ -30,10 +50,10 @@
         - <<: *action
           script: ./succeed.yaml
           name: first action after switch
-          on_fail: something_is_wrong
       states:
         available: any
         on_success: ready_to_upgrade
+        on_fail: something_failed
 
   config: &config
     - name: somestring
@@ -51,6 +71,15 @@
         - high
         - noon
 
+  actions:
+    restore:
+      type: job
+      script: ./restore.yaml
+      script_type: ansible
+      states:
+        available: [ something_is_wrong ]
+        on_success: upgraded
+
 - type: service
   version: 2.3
   name: test_service
@@ -60,4 +89,3 @@
   components:
     test_component:
       config: *config
-

@@ -37,11 +37,13 @@
   config: &config
     - name: somestring
       type: string
+      required: false
     - name: someint
       type: integer
       default: 12
     - name: somethingelse
       type: map
+      required: false
     - name: moar
       type: list
       default:

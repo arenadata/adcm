@@ -63,12 +63,15 @@ class TestFailedUpgradeAction:
     """Test cases when upgrade action is failed during execution"""
 
     FAILURES_DIR = 'upgrade_failures'
+    TEST_SERVICE_NAME = 'test_service'
 
     @pytest.fixture()
     def old_cluster(self, sdk_client_fs) -> Cluster:
         """Upload old cluster bundle and then create one"""
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, self.FAILURES_DIR, 'old'))
-        return bundle.cluster_create('Test Cluster for Upgrade')
+        cluster = bundle.cluster_create('Test Cluster for Upgrade')
+        cluster.service_add(name=self.TEST_SERVICE_NAME)
+        return cluster
 
     def test_fail_before_switch(self, sdk_client_fs, old_cluster):
         """
@@ -115,19 +118,32 @@ class TestFailedUpgradeAction:
         check_cluster_objects_configs_equal_bundle_default(old_cluster, bundle)
         self._check_action_list(old_cluster, {})
 
+    @pytest.mark.parametrize(
+        'upgrade_name',
+        ['fail_after_bundle_switch', 'fail_before_bundle_switch'],
+        ids=['fail_before_switch', 'fail_after_switch'],
+    )
+    def test_fail_with_both_action_states_set(self, upgrade_name: str, sdk_client_fs, old_cluster):
+        """
+        Test bundle action fails before/after bundle_switch
+        when both on_success and on_fail are presented in action block
+        """
+        self._upload_new_version(sdk_client_fs, 'upgrade_action_has_on_fail')
+        self._upgrade_and_expect_state(old_cluster, 'something_failed', name=upgrade_name)
+
     @allure.step('Upload new version of cluster bundle')
     def _upload_new_version(self, client: ADCMClient, name: str) -> Bundle:
         """Upload new version of bundle based on the given bundle file_name"""
         return client.upload_from_fs(get_data_dir(__file__, self.FAILURES_DIR, name))
 
     @allure.step('Upgrade cluster and expect it to enter the "{state}" state')
-    def _upgrade_and_expect_state(self, cluster: Cluster, state: str):
+    def _upgrade_and_expect_state(self, cluster: Cluster, state: str, **kwargs):
         """
         Upgrade cluster to a new version (expect upgrade to fail)
         and check if it's state is correct
         """
-        task = cluster.upgrade().do()
-        assert task.wait() == 'failed', 'Upgrade action should has failed'
+        task = cluster.upgrade(**kwargs).do()
+        assert task.wait() == 'failed', 'Upgrade action should have failed'
         self._check_state(cluster, state)
 
     @allure.step('Check cluster state is equal to "{state}"')
@@ -154,7 +170,9 @@ class TestFailedUpgradeAction:
         sets_are_equal(presented_action_names, action_names, message='Incorrect action list')
 
 
-def check_cluster_objects_configs_equal_bundle_default(cluster: Cluster, bundle: Bundle):
+def check_cluster_objects_configs_equal_bundle_default(
+    cluster: Cluster, bundle: Bundle, *, service_name: str = 'test_service'
+):
     """
     Check that configurations of cluster, its services and components
     are equal to configurations of newly created cluster from given bundle
@@ -163,7 +181,9 @@ def check_cluster_objects_configs_equal_bundle_default(cluster: Cluster, bundle:
         f'Check configuration of cluster {cluster.name} is equal to default configuration of cluster from {bundle.name}'
     ):
         actual_configs = _extract_configs(cluster)
-        expected_configs = _extract_configs(bundle.cluster_create(f'Cluster to take config from {random_string(4)}'))
+        cluster_with_defaults = bundle.cluster_create(f'Cluster to take config from {random_string(4)}')
+        cluster_with_defaults.service_add(name=service_name)
+        expected_configs = _extract_configs(cluster_with_defaults)
 
         if actual_configs == expected_configs:
             return
@@ -183,7 +203,6 @@ def check_cluster_objects_configs_equal_bundle_default(cluster: Cluster, bundle:
 def _extract_configs(cluster: Cluster):
     """Extract configurations of the cluster, its services and components as dict"""
     return {
-        'name': cluster.name,
         'config': dict(cluster.config()),
         'services': {
             service.name: {

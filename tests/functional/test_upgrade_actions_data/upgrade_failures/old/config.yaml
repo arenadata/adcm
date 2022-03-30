@@ -17,6 +17,7 @@
   config: &config
     - name: somestring
       type: string
+      required: false
     - name: someint
       type: integer
       default: 12
