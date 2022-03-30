@@ -15,7 +15,7 @@ Test "scripts" section of bundle's "upgrade" section
 """
 
 # pylint: disable=no-self-use
-
+import json
 import os
 from typing import Set
 
@@ -23,7 +23,8 @@ import allure
 import pytest
 from coreapi.exceptions import ErrorMessage
 from adcm_client.objects import Cluster, ADCMClient, Bundle
-from adcm_pytest_plugin.utils import get_data_dir, catch_failed, parametrize_by_data_subdirs
+from adcm_pytest_plugin.utils import get_data_dir, catch_failed, parametrize_by_data_subdirs, random_string
+from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 
 from tests.library.assertions import sets_are_equal
 from tests.library.errorcodes import INVALID_UPGRADE_DEFINITION, INVALID_OBJECT_DEFINITION
@@ -73,24 +74,32 @@ class TestFailedUpgradeAction:
         """
         Test bundle action fails before bundle_switch was performed
         """
+        old_bundle = old_cluster.bundle()
         expected_state = old_cluster.state
         expected_prototype_id = old_cluster.prototype_id
+
         self._upload_new_version(sdk_client_fs, 'before_switch')
         self._upgrade_and_expect_state(old_cluster, expected_state)
         self._check_prototype(old_cluster, expected_prototype_id)
+        check_cluster_objects_configs_equal_bundle_default(old_cluster, old_bundle)
 
     def test_fail_after_switch_with_on_fail(self, sdk_client_fs, old_cluster):
         """
         Test bundle action fails after bundle_switch was performed.
         Failed job has "on_fail" directive.
         """
-        expected_state = 'something_is_wrong'
         restore_action_name = 'restore'
+        expected_state = 'something_is_wrong'
+        expected_state_after_restore = 'upgraded'
+
         bundle = self._upload_new_version(sdk_client_fs, 'after_switch_with_on_fail')
         expected_prototype_id = bundle.cluster_prototype().id
         self._upgrade_and_expect_state(old_cluster, expected_state)
         self._check_prototype(old_cluster, expected_prototype_id)
+        check_cluster_objects_configs_equal_bundle_default(old_cluster, bundle)
         self._check_action_list(old_cluster, {restore_action_name})
+        run_cluster_action_and_assert_result(old_cluster, restore_action_name)
+        self._check_state(old_cluster, expected_state_after_restore)
 
     def test_fail_after_switch_without_on_fail(self, sdk_client_fs, old_cluster):
         """
@@ -98,10 +107,12 @@ class TestFailedUpgradeAction:
         Failed job doesn't have "on_fail" directive.
         """
         expected_state = old_cluster.state
+
         bundle = self._upload_new_version(sdk_client_fs, 'after_switch')
         expected_prototype_id = bundle.cluster_prototype().id
         self._upgrade_and_expect_state(old_cluster, expected_state)
         self._check_prototype(old_cluster, expected_prototype_id)
+        check_cluster_objects_configs_equal_bundle_default(old_cluster, bundle)
         self._check_action_list(old_cluster, {})
 
     @allure.step('Upload new version of cluster bundle')
@@ -111,9 +122,17 @@ class TestFailedUpgradeAction:
 
     @allure.step('Upgrade cluster and expect it to enter the "{state}" state')
     def _upgrade_and_expect_state(self, cluster: Cluster, state: str):
-        """Upgrade cluster to a new version and check if it's state is correct"""
+        """
+        Upgrade cluster to a new version (expect upgrade to fail)
+        and check if it's state is correct
+        """
         task = cluster.upgrade().do()
         assert task.wait() == 'failed', 'Upgrade action should has failed'
+        self._check_state(cluster, state)
+
+    @allure.step('Check cluster state is equal to "{state}"')
+    def _check_state(self, cluster: Cluster, state: str):
+        """Check state of a cluster"""
         cluster.reread()
         assert (
             actual_state := cluster.state
@@ -133,3 +152,46 @@ class TestFailedUpgradeAction:
         cluster.reread()
         presented_action_names = {a.name for a in cluster.action_list()}
         sets_are_equal(presented_action_names, action_names, message='Incorrect action list')
+
+
+def check_cluster_objects_configs_equal_bundle_default(cluster: Cluster, bundle: Bundle):
+    """
+    Check that configurations of cluster, its services and components
+    are equal to configurations of newly created cluster from given bundle
+    """
+    with allure.step(
+        f'Check configuration of cluster {cluster.name} is equal to default configuration of cluster from {bundle.name}'
+    ):
+        actual_configs = _extract_configs(cluster)
+        expected_configs = _extract_configs(bundle.cluster_create(f'Cluster to take config from {random_string(4)}'))
+
+        if actual_configs == expected_configs:
+            return
+        allure.attach(
+            json.dumps(expected_configs, indent=2),
+            name='Expected cluster objects configuration',
+            attachment_type=allure.attachment_type.JSON,
+        )
+        allure.attach(
+            json.dumps(actual_configs, indent=2),
+            name='Actual cluster objects configuration',
+            attachment_type=allure.attachment_type.JSON,
+        )
+        raise AssertionError("Cluster objects' configs aren't equal to expected, check attachments for more details")
+
+
+def _extract_configs(cluster: Cluster):
+    """Extract configurations of the cluster, its services and components as dict"""
+    return {
+        'name': cluster.name,
+        'config': dict(cluster.config()),
+        'services': {
+            service.name: {
+                'config': dict(service.config()),
+                'components': {
+                    component.name: {'config': dict(component.config())} for component in service.component_list()
+                },
+            }
+            for service in cluster.service_list()
+        },
+    }

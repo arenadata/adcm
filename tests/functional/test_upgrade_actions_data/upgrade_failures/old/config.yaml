@@ -13,3 +13,20 @@
 - type: cluster
   version: 1.2
   name: test_cluster
+
+  config: &config
+    - name: somestring
+      type: string
+    - name: someint
+      type: integer
+      default: 12
+
+- type: service
+  version: 2.3
+  name: test_service
+
+  config: *config
+
+  components:
+    test_component:
+      config: *config

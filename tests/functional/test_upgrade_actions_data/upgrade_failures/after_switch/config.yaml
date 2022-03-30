@@ -34,6 +34,20 @@
         available: any
         on_success: ready_to_upgrade
 
+  config: &config
+    - name: somestring
+      type: string
+    - name: someint
+      type: integer
+      default: 12
+    - name: somethingelse
+      type: map
+    - name: moar
+      type: list
+      default:
+        - high
+        - noon
+
   actions:
     restore:
       type: job
@@ -42,3 +56,13 @@
       states:
         available: [ something_is_wrong ]
         on_success: upgraded
+
+- type: service
+  version: 2.3
+  name: test_service
+
+  config: *config
+
+  components:
+    test_component:
+      config: *config
