@@ -37,7 +37,13 @@ class UpgradeSerializer(serializers.Serializer):
     from_edition = serializers.JSONField(required=False)
     state_available = serializers.JSONField(required=False)
     state_on_success = serializers.CharField(required=False)
+    ui_options = serializers.SerializerMethodField()
     config = serializers.SerializerMethodField()
+
+    def get_ui_options(self, instance):
+        if instance.action:
+            return instance.action.ui_options
+        return {}
 
     def get_config(self, instance):
         if instance.action is None:
@@ -45,14 +51,20 @@ class UpgradeSerializer(serializers.Serializer):
 
         if 'cluster_id' in self.context:
             obj = check_obj(Cluster, self.context['cluster_id'])
-        else:
+            proto = obj.prototype
+        elif 'provider_id' in self.context:
             obj = check_obj(HostProvider, self.context['provider_id'])
+            proto = obj.prototype
+        else:
+            obj = None
+            proto = self.context['prototype']
 
         action_conf = PrototypeConfig.objects.filter(
             prototype=instance.action.prototype, action=instance.action
         ).order_by('id')
-        _, _, _, attr = get_prototype_config(obj.prototype, instance.action)
-        get_action_variant(obj, action_conf)
+        _, _, _, attr = get_prototype_config(proto, instance.action)
+        if obj:
+            get_action_variant(obj, action_conf)
         conf = ConfigSerializerUI(action_conf, many=True, context=self.context, read_only=True)
         return {'attr': attr, 'config': conf.data}
 
