@@ -11,8 +11,8 @@
 # limitations under the License.
 
 """UI tests for /cluster page"""
+
 import os
-from typing import Tuple
 
 import allure
 import pytest
@@ -29,8 +29,16 @@ from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import get_data_dir
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
 from adcm_pytest_plugin.utils import random_string
+from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.library.status import ADCMObjectStatusChanger
+from tests.ui_tests.app.helpers.configs_generator import (
+    generate_configs,
+    prepare_config,
+    TYPES,
+    generate_group_configs,
+    prepare_group_config,
+)
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.cluster.page import (
     ClusterImportPage,
@@ -771,11 +779,39 @@ class TestClusterConfigPage:
         return cluster
 
     @allure.step("Prepare cluster and get config")
-    def prepare_cluster_and_config(self, sdk_client: ADCMClient, path, app) -> Tuple[Cluster, ClusterConfigPage]:
+    def prepare_cluster_and_config(self, sdk_client: ADCMClient, path, app):
         """Upload bundle, create cluster and get config"""
         cluster = self.cluster_with_service(sdk_client, path)
         config = ClusterConfigPage(app.driver, app.adcm.url, cluster.cluster_id).open()
+        config.wait_page_is_opened()
         return cluster, config
+
+    def check_default_field_values_in_configs(
+        self, cluster_config_page: ClusterConfigPage, config_item: WebElement, field_type: str, config
+    ):
+        main_config = config['config'][0]['subs'][0] if "subs" in config['config'][0] else config['config'][0]
+        if field_type == 'boolean':
+            cluster_config_page.config.assert_checkbox_state(config_item, expected_value=main_config['default'])
+        elif field_type in ("password", "secrettext"):
+            is_password_value = True if field_type == "password" else False
+            cluster_config_page.config.assert_input_value_is(
+                expected_value='********', display_name=field_type, is_password=is_password_value
+            )
+        elif field_type == "list":
+            cluster_config_page.config.assert_list_value_is(
+                expected_value=main_config['default'], display_name=field_type
+            )
+        elif field_type == "map":
+            cluster_config_page.config.assert_map_value_is(
+                expected_value=main_config['default'], display_name=field_type
+            )
+        elif field_type == "file":
+            cluster_config_page.config.assert_input_value_is(expected_value="test", display_name=field_type)
+        else:
+            expected_value = (
+                str(main_config['default']) if field_type in ("integer", "float", "json") else main_config['default']
+            )
+            cluster_config_page.config.assert_input_value_is(expected_value=expected_value, display_name=field_type)
 
     def test_cluster_config_page_open_by_tab(self, app_fs, create_community_cluster):
         """Test open /cluster/{}/config from left menu"""
@@ -889,33 +925,16 @@ class TestClusterConfigPage:
         for item in CONFIG_ITEMS:
             cluster_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
-    @parametrize_by_data_subdirs(__file__, "invisible_false_advanced_false")
-    def test_invisible_false_advanced_false_params_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
+    @pytest.mark.parametrize("field_type", TYPES)
+    @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
+    @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
+    @pytest.mark.parametrize("is_required", [True, False], ids=("required", "not_required"))
+    @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
+    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    def test_configs_fields_invisible_true(
+        self, sdk_client_fs: ADCMClient, app_fs, field_type, is_advanced, is_default, is_required, is_read_only
     ):
-        """Check RO fields with UI options as false
-        Scenario:
-        1. Check that field visible
-        2. Check that we cannot edit field (read-only tag presented)
-        3. Check that save button not active
-        4. Click advanced
-        5. Check that field visible
-        6. Check that we cannot edit field (read-only tag presented)
-        """
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        with allure.step('Check that field visible'):
-            for config_item in cluster_config_page.config.get_all_config_rows():
-                assert config_item.is_displayed(), "Config field should be visible"
-        with allure.step('Check that save button is disabled'):
-            assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
-        cluster_config_page.config.click_on_advanced()
-
-        with allure.step('Check that save button not active'):
-            assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should not be active'
-
-    @parametrize_by_data_subdirs(__file__, "invisible_true_advanced_true")
-    def test_invisible_true_advanced_true_params_on_cluster_config_page(self, sdk_client_fs: ADCMClient, path, app_fs):
-        """Check RO fields with UI options in true
+        """Check RO field with invisible true
         Scenario:
         1. Check that field invisible
         2. Check that save button not active
@@ -923,49 +942,64 @@ class TestClusterConfigPage:
         4. Check that field invisible
         """
 
+        _, _, path = prepare_config(
+            generate_configs(
+                field_type=field_type,
+                advanced=is_advanced,
+                default=is_default,
+                required=is_required,
+                read_only=is_read_only,
+            )
+        )
         _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-
         cluster_config_page.config.check_no_rows_or_groups_on_page()
         cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
         with allure.step('Check that save button is disabled'):
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
-    @parametrize_by_data_subdirs(__file__, "invisible_false_advanced_true")
-    def test_invisible_false_advanced_true_on_cluster_config_page(self, sdk_client_fs: ADCMClient, path, app_fs):
-        """Check RO fields with advanced true and invisible false
-        Scenario:
-        1. Check that field invisible
-        2. Check that save button not active
-        3. Click advanced
-        4. Check that field visible
-        5. Check that we cannot edit field (read-only tag presented)
-        """
+    @pytest.mark.parametrize("field_type", TYPES)
+    @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
+    @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
+    @pytest.mark.parametrize("is_required", [True, False], ids=("required", "not_required"))
+    @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
+    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    def test_configs_fields_invisible_false(
+        self, sdk_client_fs: ADCMClient, app_fs, field_type, is_advanced, is_default, is_required, is_read_only
+    ):
 
+        config, expected, path = prepare_config(
+            generate_configs(
+                field_type=field_type,
+                invisible=False,
+                advanced=is_advanced,
+                default=is_default,
+                required=is_required,
+                read_only=is_read_only,
+            )
+        )
         _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        cluster_config_page.config.check_no_rows_or_groups_on_page()
-        with allure.step('Check that save button is disabled'):
-            assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
+
+        def check_expectations():
+            with allure.step('Check that field visible'):
+                for config_item in cluster_config_page.config.get_all_config_rows():
+                    assert config_item.is_displayed(), f"Config field {field_type} should be visible"
+                    if is_default:
+                        self.check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
+                    if is_read_only:
+                        assert cluster_config_page.config.is_element_read_only(
+                            config_item
+                        ), f"Config field {field_type} should be read only"
+            if expected['alerts'] and not is_read_only:
+                cluster_config_page.config.check_invalid_value_message(field_type)
+
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        if is_advanced:
+            cluster_config_page.config.check_no_rows_or_groups_on_page()
+        else:
+            check_expectations()
         cluster_config_page.config.click_on_advanced()
-        with allure.step('Check that field visible and we cannot edit field'):
-            for config_item in cluster_config_page.config.get_all_config_rows():
-                assert config_item.is_displayed(), "Config field should be visible"
-                assert cluster_config_page.config.is_element_read_only(config_item), "Config field should be read only"
-
-    @parametrize_by_data_subdirs(__file__, "invisible_true_advanced_false")
-    def test_invisible_true_advanced_false_on_cluster_config_page(self, sdk_client_fs: ADCMClient, path, app_fs):
-        """Check RO field with invisible true and advanced false
-        Scenario:
-        1. Check that field invisible
-        2. Check that save button not active
-        3. Click advanced
-        4. Check that field invisible
-        """
-
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        cluster_config_page.config.check_no_rows_or_groups_on_page()
-        cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
-        with allure.step('Check that save button is disabled'):
-            assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        check_expectations()
 
     @parametrize_by_data_subdirs(__file__, 'bundles_for_numbers_tests')
     def test_number_validation_on_cluster_config_page(self, sdk_client_fs: ADCMClient, path, app_fs):
@@ -1032,220 +1066,161 @@ class TestClusterConfigPage:
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
             cluster_config_page.config.check_field_is_invalid(params["filed_name"])
 
-    @parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_false_field_advanced_false_invisible_false")
-    def test_group_advanced_false_invisible_false_field_advanced_false_invisible_false_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
+    @pytest.mark.parametrize("field_type", TYPES)
+    @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
+    @pytest.mark.parametrize(
+        "active", [True, pytest.param(False, marks=pytest.mark.regression)], ids=("active", "inactive")
+    )
+    @pytest.mark.parametrize("group_advanced", [True, False], ids=("group_advanced", "group_non-advanced"))
+    @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
+    @pytest.mark.parametrize("is_required", [True, False], ids=("required", "not_required"))
+    @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
+    @pytest.mark.parametrize("field_invisible", [True, False], ids=("invisible", "visible"))
+    @pytest.mark.parametrize(
+        "field_advanced",
+        [pytest.param(True, marks=pytest.mark.regression), False],
+        ids=("field_advanced", "field_non-advanced"),
+    )
+    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    def test_group_configs_fields_invisible_true(
+        self,
+        sdk_client_fs: ADCMClient,
+        app_fs,
+        field_type,
+        activatable,
+        active,
+        group_advanced,
+        is_default,
+        is_required,
+        is_read_only,
+        field_invisible,
+        field_advanced,
     ):
-        """Check group and field ui options when advanced and invisible is false
+        """Test for configuration fields with groups. Before start test actions
+        we always create configuration and expected result. All logic for test
+        expected result in functions before this test function. If we have
+        advanced fields inside configuration and group visible we check
+        field and group status after clicking advanced button. For activatable
+        groups we don't change group status. We have two types of tests for activatable
+        groups: the first one when group is active and the second when group not active.
         Scenario:
-        1. Create cluster
-        2. Get list of fields
-        3. Check that 1 field is visible
-        4. Check that 1 group visible
-        5. Enable advanced
-        6. Check that 1 field is visible
-        7. Check that 1 group is visible
-        """
+        1. Generate configuration and expected result for test
+        2. Upload bundle
+        3. Create cluster
+        4. Open configuration page
+        5. Check save button status
+        6. Check field configuration (depends on expected result dict and bundle configuration)"""
 
-        cluster, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        with allure.step('Check that 1 field and 1 group is visible'):
-            group_names = cluster_config_page.config.get_group_names()
-            assert cluster_config_page.config.get_config_title() == cluster.name, f"Title should be {cluster.name}"
-            assert len(group_names) == 1, "There should be 1 group"
-            assert len(cluster_config_page.config.get_all_config_rows()) == 2, "There should be group and field row"
-        cluster_config_page.config.click_on_advanced()
-        with allure.step('Check that 1 field and 1 group is visible'):
-            assert len(cluster_config_page.config.get_group_names()) == 1, "There should be 1 group"
-            assert len(cluster_config_page.config.get_all_config_rows()) == 2, "There should be group and field row"
-
-    @parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_true_field_advanced_true_invisible_true")
-    def test_group_advanced_true_invisible_true_field_advanced_true_invisible_true_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
-    ):
-        """Check group and field ui options when advanced and invisible is true"""
-
+        _, _, path = prepare_group_config(
+            generate_group_configs(
+                field_type=field_type,
+                activatable=activatable,
+                active=active,
+                group_advanced=group_advanced,
+                default=is_default,
+                required=is_required,
+                read_only=is_read_only,
+                field_invisible=field_invisible,
+                field_advanced=field_advanced,
+            )
+        )
         _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
         cluster_config_page.config.check_no_rows_or_groups_on_page()
         cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
+        with allure.step('Check that save button is disabled'):
+            assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
-    @parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_false_field_advanced_true_invisible_true")
-    def test_group_advanced_false_invisible_false_field_advanced_true_invisible_true_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
+    @pytest.mark.parametrize("field_type", TYPES)
+    @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
+    @pytest.mark.parametrize(
+        "active", [True, pytest.param(False, marks=pytest.mark.regression)], ids=("active", "inactive")
+    )
+    @pytest.mark.parametrize("group_advanced", [True, False], ids=("group_advanced", "group_non-advanced"))
+    @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
+    @pytest.mark.parametrize("is_required", [True, False], ids=("required", "not_required"))
+    @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
+    @pytest.mark.parametrize("field_invisible", [True, False], ids=("invisible", "visible"))
+    @pytest.mark.parametrize(
+        "field_advanced",
+        [pytest.param(True, marks=pytest.mark.regression), False],
+        ids=("field_advanced", "field_non-advanced"),
+    )
+    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    def test_group_configs_fields_invisible_false(
+        self,
+        sdk_client_fs: ADCMClient,
+        app_fs,
+        field_type,
+        activatable,
+        active,
+        group_advanced,
+        is_default,
+        is_required,
+        is_read_only,
+        field_invisible,
+        field_advanced,
     ):
-        """Invisible and advanced for groups false for fields true."""
 
+        config, expected, path = prepare_group_config(
+            generate_group_configs(
+                field_type=field_type,
+                activatable=activatable,
+                active=active,
+                group_invisible=False,
+                group_advanced=group_advanced,
+                default=is_default,
+                required=is_required,
+                read_only=is_read_only,
+                field_invisible=field_invisible,
+                field_advanced=field_advanced,
+            )
+        )
         _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        with allure.step('Check that 1 group is visible and field is not'):
-            assert len(cluster_config_page.config.get_group_names()) == 1, "There should be 1 group"
-            assert len(cluster_config_page.config.get_all_config_rows()) == 1, "There should be group and no field row"
+
+        def check_expectations():
+            with allure.step('Check that field visible'):
+                for config_item in cluster_config_page.config.get_all_config_rows():
+                    group_name = cluster_config_page.config.get_group_names()[0].text
+                    assert group_name == 'group', "Should be group 'group' visible"
+                    if activatable:
+                        if not cluster_config_page.config.advanced:
+                            cluster_config_page.config.check_group_is_active(group_name, config['config'][0]['active'])
+                        if not field_invisible and (
+                            (cluster_config_page.config.advanced and field_advanced) or not field_advanced
+                        ):
+                            cluster_config_page.config.expand_or_close_group(group_name, expand=True)
+                            assert len(cluster_config_page.config.get_all_config_rows()) >= 2, "Field should be visible"
+                            if is_default:
+                                self.check_default_field_values_in_configs(
+                                    cluster_config_page, config_item, field_type, config
+                                )
+                            if is_read_only and config_item.tag_name == 'app-field':
+                                assert cluster_config_page.config.is_element_read_only(
+                                    config_item
+                                ), f"Config field {field_type} should be read only"
+                            if expected['alerts'] and not is_read_only:
+                                if field_type == "map":
+                                    is_advanced = cluster_config_page.config.advanced
+                                    cluster_config_page.driver.refresh()
+                                    if is_advanced:
+                                        cluster_config_page.config.click_on_advanced()
+                                    cluster_config_page.config.expand_or_close_group(group_name, expand=True)
+                                else:
+                                    cluster_config_page.config.click_on_advanced()
+                                    cluster_config_page.config.click_on_advanced()
+                                cluster_config_page.config.check_invalid_value_message(field_type)
+                        else:
+                            assert (
+                                len(cluster_config_page.config.get_all_config_rows()) == 1
+                            ), "Field should not be visible"
+
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        if group_advanced:
+            cluster_config_page.config.check_no_rows_or_groups_on_page()
+        else:
+            check_expectations()
         cluster_config_page.config.click_on_advanced()
-        with allure.step('Check that 1 group is visible and field is not'):
-            assert len(cluster_config_page.config.get_group_names()) == 1, "There should be 1 group"
-            assert len(cluster_config_page.config.get_all_config_rows()) == 1, "There should be group and no field row"
-
-    @parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_true_field_advanced_false_invisible_false")
-    def test_group_advanced_true_invisible_true_field_advanced_false_invisible_false_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
-    ):
-        """Invisible and advanced for groups true for fields false.
-        In this case no elements presented on page
-        """
-
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        cluster_config_page.config.check_no_rows_or_groups_on_page()
-        cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
-
-    @parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_true_field_advanced_false_invisible_true")
-    def test_group_advanced_false_invisible_true_field_advanced_false_invisible_true_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
-    ):
-        """Invisible and advanced for groups true for fields false.
-        In this case no elements presented on page
-        """
-
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        cluster_config_page.config.check_no_rows_or_groups_on_page()
-        cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
-
-    @parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_false_field_advanced_true_invisible_false")
-    def test_group_advanced_true_invisible_false_field_advanced_true_invisible_false_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
-    ):
-        """Fields and groups visible only if advanced enabled."""
-
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        cluster_config_page.config.check_no_rows_or_groups_on_page()
-        cluster_config_page.config.click_on_advanced()
-        with allure.step('Check that 1 field and 1 group is visible'):
-            assert len(cluster_config_page.config.get_group_names()) == 1, "There should be 1 group"
-            assert len(cluster_config_page.config.get_all_config_rows()) == 2, "There should be group and field row"
-
-    @parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_false_field_advanced_false_invisible_true")
-    def test_group_advanced_false_invisible_false_field_advanced_false_invisible_true_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
-    ):
-        """Invisible and advanced for groups false for fields true"""
-
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        with allure.step('Check that 1 group is visible and field is not'):
-            assert len(cluster_config_page.config.get_group_names()) == 1, "There should be 1 group"
-            assert len(cluster_config_page.config.get_all_config_rows()) == 1, "There should be group and no field row"
-        cluster_config_page.config.click_on_advanced()
-        with allure.step('Check that 1 group is visible and field is not'):
-            assert len(cluster_config_page.config.get_group_names()) == 1, "There should be 1 group"
-            assert len(cluster_config_page.config.get_all_config_rows()) == 1, "There should be group and no field row"
-
-    @parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_false_field_advanced_true_invisible_false")
-    def test_group_advanced_false_invisible_false_field_advanced_true_invisible_false_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
-    ):
-        """Invisible and advanced for groups false for fields advanced true and invisible false"""
-
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        with allure.step('Check that 1 group is visible and field is not'):
-            assert len(cluster_config_page.config.get_group_names()) == 1, "There should be 1 group"
-            assert len(cluster_config_page.config.get_all_config_rows()) == 1, "There should be group and no field row"
-        cluster_config_page.config.click_on_advanced()
-        with allure.step('Check that 1 field and 1 group is visible'):
-            assert len(cluster_config_page.config.get_group_names()) == 1, "There should be 1 group"
-            assert len(cluster_config_page.config.get_all_config_rows()) == 2, "There should be group and field row"
-
-    @parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_true_field_advanced_false_invisible_false")
-    def test_group_advanced_false_invisible_true_field_advanced_false_invisible_false_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
-    ):
-        """Invisible and advanced for groups true for fields false.
-        In this case no elements presented on page
-        """
-
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        cluster_config_page.config.check_no_rows_or_groups_on_page()
-        cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
-
-    @parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_true_field_advanced_true_invisible_false")
-    def test_group_advanced_false_invisible_true_field_advanced_true_invisible_false_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
-    ):
-        """Invisible and advanced for groups true for fields false.
-        In this case no elements presented on page
-        """
-
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        cluster_config_page.config.check_no_rows_or_groups_on_page()
-        cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
-
-    @parametrize_by_data_subdirs(__file__, "group_advanced_false_invisible_true_field_advanced_true_invisible_true")
-    def test_group_advanced_false_invisible_true_field_advanced_true_invisible_true_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
-    ):
-        """Invisible and advanced for groups true for fields false.
-        In this case no elements presented on page
-        """
-
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        cluster_config_page.config.check_no_rows_or_groups_on_page()
-        cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
-
-    @parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_false_field_advanced_false_invisible_false")
-    def test_group_advanced_true_invisible_false_field_advanced_false_invisible_false_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
-    ):
-        """Fields and groups visible only if advanced enabled."""
-
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        cluster_config_page.config.check_no_rows_or_groups_on_page()
-        cluster_config_page.config.click_on_advanced()
-        with allure.step('Check that 1 field and 1 group is visible'):
-            assert len(cluster_config_page.config.get_group_names()) == 1, "There should be 1 group"
-            assert len(cluster_config_page.config.get_all_config_rows()) == 2, "There should be group and field row"
-
-    @parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_false_field_advanced_false_invisible_true")
-    def test_group_advanced_true_invisible_false_field_advanced_false_invisible_true_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
-    ):
-        """Invisible=false and advanced=true for groups advanced=false and invisible=true for fields"""
-
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        cluster_config_page.config.check_no_rows_or_groups_on_page()
-        cluster_config_page.config.click_on_advanced()
-        with allure.step('Check that 1 group is visible and field is not'):
-            assert len(cluster_config_page.config.get_group_names()) == 1, "There should be 1 group"
-            assert len(cluster_config_page.config.get_all_config_rows()) == 1, "There should be group and no field row"
-
-    @parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_false_field_advanced_true_invisible_true")
-    def test_group_advanced_true_invisible_false_field_advanced_true_invisible_true_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
-    ):
-        """Invisible=false and advanced=true for groups advanced=true and invisible=true for fields"""
-
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        cluster_config_page.config.check_no_rows_or_groups_on_page()
-        cluster_config_page.config.click_on_advanced()
-        with allure.step('Check that 1 group is visible and field is not'):
-            assert len(cluster_config_page.config.get_group_names()) == 1, "There should be 1 group"
-            assert len(cluster_config_page.config.get_all_config_rows()) == 1, "There should be group and no field row"
-
-    @parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_true_field_advanced_false_invisible_true")
-    def test_group_advanced_true_invisible_true_field_advanced_false_invisible_true_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
-    ):
-        """Invisible and advanced for groups true for fields false.
-        In this case no elements presented on page
-        """
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        cluster_config_page.config.check_no_rows_or_groups_on_page()
-        cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
-
-    @parametrize_by_data_subdirs(__file__, "group_advanced_true_invisible_true_field_advanced_true_invisible_false")
-    def test_group_advanced_true_invisible_true_field_advanced_true_invisible_false_on_cluster_config_page(
-        self, sdk_client_fs: ADCMClient, path, app_fs
-    ):
-        """Invisible and advanced for groups true for fields false.
-        In this case no elements presented on page
-        """
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
-        cluster_config_page.config.check_no_rows_or_groups_on_page()
-        cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
+        check_expectations()
 
 
 class TestClusterGroupConfigPage:
