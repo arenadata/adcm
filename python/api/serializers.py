@@ -21,8 +21,6 @@ from cm.errors import raise_AdcmEx
 from cm.models import Upgrade, GroupConfig, Cluster, HostProvider, PrototypeConfig
 from cm.upgrade import do_upgrade
 
-from cm.logger import log
-
 
 class UpgradeSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
