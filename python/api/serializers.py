@@ -21,6 +21,8 @@ from cm.errors import raise_AdcmEx
 from cm.models import Upgrade, GroupConfig, Cluster, HostProvider, PrototypeConfig
 from cm.upgrade import do_upgrade
 
+from cm.logger import log
+
 
 class UpgradeSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
@@ -51,14 +53,20 @@ class UpgradeSerializer(serializers.Serializer):
 
         if 'cluster_id' in self.context:
             obj = check_obj(Cluster, self.context['cluster_id'])
-        else:
+            proto = obj.prototype
+        elif 'provider_id' in self.context:
             obj = check_obj(HostProvider, self.context['provider_id'])
+            proto = obj.prototype
+        else:
+            obj = None
+            proto = self.context['prototype']
 
         action_conf = PrototypeConfig.objects.filter(
             prototype=instance.action.prototype, action=instance.action
         ).order_by('id')
-        _, _, _, attr = get_prototype_config(obj.prototype, instance.action)
-        get_action_variant(obj, action_conf)
+        _, _, _, attr = get_prototype_config(proto, instance.action)
+        if obj:
+            get_action_variant(obj, action_conf)
         conf = ConfigSerializerUI(action_conf, many=True, context=self.context, read_only=True)
         return {'attr': attr, 'config': conf.data}
 
