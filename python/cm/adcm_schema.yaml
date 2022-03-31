@@ -175,6 +175,7 @@ upgrade_obj:
     from_edition: any_or_list
     scripts: upgrade_task_list
     hc_acl: action_hc_acl_list
+    config: config_obj
   required_items:
     - name
     - versions

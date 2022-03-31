@@ -14,10 +14,11 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 from rest_framework_extensions.settings import extensions_api_settings
 
+from api.config.serializers import ConfigSerializerUI
 from api.utils import check_obj, hlink, UrlField
-from cm.adcm_config import ui_config
+from cm.adcm_config import ui_config, get_prototype_config, get_action_variant
 from cm.errors import raise_AdcmEx
-from cm.models import Upgrade, GroupConfig
+from cm.models import Upgrade, GroupConfig, Cluster, HostProvider, PrototypeConfig
 from cm.upgrade import do_upgrade
 
 
@@ -36,6 +37,24 @@ class UpgradeSerializer(serializers.Serializer):
     from_edition = serializers.JSONField(required=False)
     state_available = serializers.JSONField(required=False)
     state_on_success = serializers.CharField(required=False)
+    config = serializers.SerializerMethodField()
+
+    def get_config(self, instance):
+        if instance.action is None:
+            return {'attr': {}, 'config': []}
+
+        if 'cluster_id' in self.context:
+            obj = check_obj(Cluster, self.context['cluster_id'])
+        else:
+            obj = check_obj(HostProvider, self.context['provider_id'])
+
+        action_conf = PrototypeConfig.objects.filter(
+            prototype=instance.action.prototype, action=instance.action
+        ).order_by('id')
+        _, _, _, attr = get_prototype_config(obj.prototype, instance.action)
+        get_action_variant(obj, action_conf)
+        conf = ConfigSerializerUI(action_conf, many=True, context=self.context, read_only=True)
+        return {'attr': attr, 'config': conf.data}
 
 
 class UpgradeLinkSerializer(UpgradeSerializer):
@@ -50,11 +69,13 @@ class UpgradeLinkSerializer(UpgradeSerializer):
 class DoUpgradeSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     upgradable = serializers.BooleanField(read_only=True)
+    config = serializers.JSONField(required=False, default=dict)
     task_id = serializers.IntegerField(read_only=True)
 
     def create(self, validated_data):
         upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')
-        return do_upgrade(validated_data.get('obj'), upgrade)
+        config = validated_data.get('config')
+        return do_upgrade(validated_data.get('obj'), upgrade, config)
 
 
 class StringListSerializer(serializers.ListField):

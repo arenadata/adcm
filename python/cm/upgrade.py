@@ -282,7 +282,7 @@ def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
         return res
 
 
-def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> dict:
+def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade, config: dict) -> dict:
     old_proto = obj.prototype
     check_license(obj.prototype.bundle)
     check_license(upgrade.bundle)
@@ -295,7 +295,7 @@ def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> dict:
     if not upgrade.action:
         bundle_switch(obj, upgrade)
     else:
-        task = cm.job.start_task(upgrade.action, obj, {}, {}, [], [], False)
+        task = cm.job.start_task(upgrade.action, obj, config, {}, [], [], False)
         task_id = task.id
     obj.refresh_from_db()
 
