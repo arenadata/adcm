@@ -517,7 +517,6 @@ class TestAdminPolicyPage:
         )
         policies_page.delete_all_policies()
 
-    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2729")
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     @pytest.mark.parametrize(
         ("clusters", "services", "providers", "hosts", "parents", "role_name"),
