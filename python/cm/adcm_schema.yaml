@@ -177,6 +177,8 @@ upgrade_obj:
     hc_acl: action_hc_acl_list
     venv: string
     ui_options: json
+    config: config_obj
+
   required_items:
     - name
     - versions
