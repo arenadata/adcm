@@ -568,9 +568,8 @@ class AdminPoliciesPage(GeneralAdminPage):
             self.wait_element_visible(available_items_locator)
             for count, available_item in enumerate(self.find_elements(available_items_locator)):
                 if available_item.text == item:
-                    item_loc = self.find_elements(available_items_locator)[count]
-                    self.scroll_to(item_loc)
-                    item_loc.click()
+                    self.scroll_to(available_item)
+                    available_item.click()
                     break
             else:
                 raise AssertionError(f"There are no item {item} in select popup")
@@ -681,7 +680,8 @@ class AdminPoliciesPage(GeneralAdminPage):
     def delete_all_policies(self):
         def delete_all():
             self.select_all_policies()
-            self.click_delete_button()
+            if "disabled" not in self.find_element(AdminPoliciesLocators.delete_btn).get_attribute("class"):
+                self.click_delete_button()
             assert len(self.table.get_all_rows()) == 0, "There should be 0 policies on the page"
 
         wait_until_step_succeeds(delete_all, period=5)
