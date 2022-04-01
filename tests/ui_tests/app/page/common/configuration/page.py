@@ -95,7 +95,7 @@ class CommonConfigMenuObj(BasePageObject):
             return []
 
     @allure.step('Saving configuration')
-    def save_config(self, load_timeout: int = 2):
+    def save_config(self, load_timeout: int = 5):
         """Save current configuration"""
 
         self.find_and_click(self.locators.save_btn)
@@ -164,41 +164,67 @@ class CommonConfigMenuObj(BasePageObject):
     @allure.step('Check field "{display_name}" has value "{expected_value}"')
     def assert_input_value_is(
         self,
-        expected_value,
+        expected_value: str,
         display_name: str,
         *,
         is_password: bool = False,
-        is_list: bool = False,
-        is_map: bool = False,
     ):
         """
         Assert that value in field is expected_value (using retries)
         :param expected_value: Value expected to be in input field
         :param display_name: Config field display name
         :param is_password: Is field password/confirmation
-        :param is_list: Is field a list
-        :param is_map: Is field a map
-
-        Only one parameter (is_password/is_list/is_map) should be selected.
-        If none of them is selected, field will be checked as usual input.
         """
 
         def _assert_value():
-            if is_list:
-                input_value = [
-                    v.get_attribute("value")
-                    for v in self.find_children(self.get_config_row(display_name), self.locators.ConfigRow.input)
-                ]
-            elif is_map:
-                input_value = dict()
-                row_values = [
-                    v.get_attribute("value")
-                    for v in self.find_children(self.get_config_row(display_name), self.locators.ConfigRow.input)
-                ]
-                for i in range(0, len(row_values) - 1, 2):  # row values are key-value for each "input" in a map row
-                    input_value[row_values[i]] = row_values[i + 1]
-            else:
-                input_value = self.get_input_value(row=self.get_config_row(display_name), is_password=is_password)
+            input_value = self.get_input_value(row=self.get_config_row(display_name), is_password=is_password)
+            assert expected_value == input_value, f'Expected value was {expected_value} but presented is {input_value}'
+
+        wait_until_step_succeeds(_assert_value, timeout=4, period=0.5)
+
+    @allure.step('Check field "{display_name}" has value "{expected_value}"')
+    def assert_map_value_is(
+        self,
+        expected_value: list,
+        display_name: str,
+    ):
+        """
+        Assert that value in map field is expected_value (using retries)
+        :param expected_value: Value expected to be in field
+        :param expected_value: Value expected to be in field
+        :param display_name: Config field display name
+        """
+
+        def _assert_value():
+            input_value = dict()
+            row_values = [
+                v.get_attribute("value")
+                for v in self.find_children(self.get_config_row(display_name), self.locators.ConfigRow.input)
+            ]
+            for i in range(0, len(row_values) - 1, 2):  # row values are key-value for each "input" in a map row
+                input_value[row_values[i]] = row_values[i + 1]
+            assert expected_value == input_value, f'Expected value was {expected_value} but presented is {input_value}'
+
+        wait_until_step_succeeds(_assert_value, timeout=4, period=0.5)
+
+    @allure.step('Check field "{display_name}" has value "{expected_value}"')
+    def assert_list_value_is(
+        self,
+        expected_value: list,
+        display_name: str,
+    ):
+        """
+        Assert that value in list field is expected_value (using retries)
+        :param expected_value: Value expected to be in field
+        :param expected_value: Value expected to be in field
+        :param display_name: Config field display name
+        """
+
+        def _assert_value():
+            input_value = [
+                v.get_attribute("value")
+                for v in self.find_children(self.get_config_row(display_name), self.locators.ConfigRow.input)
+            ]
             assert expected_value == input_value, f'Expected value was {expected_value} but presented is {input_value}'
 
         wait_until_step_succeeds(_assert_value, timeout=4, period=0.5)
@@ -286,9 +312,13 @@ class CommonConfigMenuObj(BasePageObject):
         group = self.find_element(self.locators.group_btn(group_name))
 
         def click_on_group():
-            with self.wait_group_changed(group_name):
-                self.find_child(group, CommonLocators.mat_slide_toggle).click()
-            is_expand = "expanded" in self.find_element(self.locators.group_btn(group_name)).get_attribute("class")
+            def is_expand_group():
+                return "expanded" in self.find_element(self.locators.group_btn(group_name)).get_attribute("class")
+
+            if is_expand_group() != expand:
+                with self.wait_group_changed(group_name):
+                    self.find_child(group, CommonLocators.mat_slide_toggle).click()
+            is_expand = is_expand_group()
             assert (
                 is_expand if expand else not is_expand
             ), f"Group {group_name} should{' ' if expand else ' not '}be expanded"
@@ -347,6 +377,14 @@ class CommonConfigMenuObj(BasePageObject):
 
     def is_save_btn_disabled(self):
         return self.find_element(self.locators.save_btn).get_attribute("disabled") == 'true'
+
+    @allure.step("Check save button status")
+    def check_save_btn_state_and_save_conf(self, expected_state: bool):
+        assert (
+            not (self.is_save_btn_disabled()) == expected_state
+        ), f'Save button should{" not " if expected_state is False else " "}be disabled'
+        if expected_state:
+            self.save_config()
 
     def check_text_in_tooltip(self, row_name: str, tooltip_text: str):
         tooltip_icon = self.find_element(self.locators.info_tooltip_icon(row_name, row_name))
