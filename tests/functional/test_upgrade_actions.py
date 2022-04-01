@@ -237,7 +237,7 @@ class TestUpgradeActionRelations:
         cluster = bundle.cluster_create('Test Cluster for Upgrade')
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, folder_dir, file_dir))
         with allure.step("Check cluster actions list before update"):
-            actions_before = cluster.action_list().data
+            actions_before = cluster.action_list()
             assert len(actions_before) == 1, "Should be 1 action"
             assert actions_before[0].display_name == "dummy_action", "Should be action 'dummy_action'"
         cluster.upgrade().do().wait()
@@ -247,17 +247,14 @@ class TestUpgradeActionRelations:
             assert len(jobs) >= 3, "There are should be 3 or more jobs"
             assert len(
                 set(['first action after switch', 'switch action', 'first_action'])
-                & set([j.display_name for j in jobs.data])
+                & set([j.display_name for j in jobs])
             ), "Jobs names differ"
-            assert (
-                len([log for data in jobs.data for log in data.log_files]) >= 6
-            ), "There are should be 6 or more log files"
+            assert len([log for data in jobs for log in data.log_files]) >= 6, "There are should be 6 or more log files"
         with allure.step("Check cluster actions list after update"):
-            actions_after = cluster.action_list().data
-            assert len(actions_after) == 2, "Should be 2 actions"
-            assert set([action.display_name for action in actions_after]) == set(
-                [
-                    'dummy_action',
-                    'restore',
-                ]
-            ), "Should be actions 'dummy_action' and 'restore'"
+            actions_after = cluster.action_list()
+            assert len(actions_after) == 2 if "success" in folder_dir else 1, "Not all actions avaliable"
+            assert (
+                set([action.display_name for action in actions_after]) == set(['dummy_action', 'restore'])
+                if "success" in folder_dir
+                else set(['dummy_action'])
+            ), "Not all actions avaliable"
