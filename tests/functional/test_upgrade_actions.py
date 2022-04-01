@@ -250,10 +250,7 @@ class TestUpgradeActionRelations:
             jobs_expected = 3 + len(jobs_before)
             assert len(jobs) == jobs_expected, f"There are should be {jobs_expected} jobs"
             assert (
-                len(
-                    set(['first action after switch', 'switch action', 'first_action'])
-                    & set([j.display_name for j in jobs])
-                )
+                len({'first action after switch', 'switch action', 'first_action'} & {j.display_name for j in jobs})
                 == 3
             ), "Jobs names differ"
             logs_expected = 6 + len(logs_before)
@@ -263,6 +260,6 @@ class TestUpgradeActionRelations:
         with allure.step("Check cluster actions list after update"):
             actions_after = cluster.action_list()
             assert len(actions_after) == 2 if "success" in folder_dir else 1, "Not all actions avaliable"
-            assert set([action.display_name for action in actions_after]) == (
-                set(['dummy_action', 'restore']) if "success" in folder_dir else set(['dummy_action'])
+            assert {action.display_name for action in actions_after} == (
+                {'dummy_action', 'restore'} if "success" in folder_dir else {'dummy_action'}
             ), "Not all actions avaliable"
