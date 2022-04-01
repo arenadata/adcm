@@ -294,13 +294,12 @@ def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade, config: dict
     task_id = None
     if not upgrade.action:
         bundle_switch(obj, upgrade)
+        if upgrade.state_on_success:
+            obj.state = upgrade.state_on_success
+            obj.save()
     else:
         task = cm.job.start_task(upgrade.action, obj, config, {}, [], [], False)
         task_id = task.id
-
-    if upgrade.state_on_success:
-        obj.state = upgrade.state_on_success
-        obj.save()
 
     obj.refresh_from_db()
 
