@@ -255,7 +255,9 @@ class TestUpgradeActionRelations:
         with allure.step("Check cluster actions list after update"):
             actions_after = cluster.action_list().data
             assert len(actions_after) == 2, "Should be 2 actions"
-            assert [action.display_name for action in actions_after] == [
-                'dummy_action',
-                'restore',
-            ], "Should be actions 'dummy_action' and 'restore'"
+            assert set([action.display_name for action in actions_after]) == set(
+                [
+                    'dummy_action',
+                    'restore',
+                ]
+            ), "Should be actions 'dummy_action' and 'restore'"
