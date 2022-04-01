@@ -19,6 +19,7 @@ from typing import (
 )
 
 import allure
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 
@@ -390,30 +391,26 @@ class AdminRolesPage(GeneralAdminPage):
             AdminRoleInfo(
                 name='ADCM User',
                 description='',
-                permissions='View any object configuration, View any object import, View any object host-components, '
-                'Get provider, Get cluster, Get host, Get service, Get component, Get task and jobs',
+                permissions='View any object configuration, View any object import, View any object host-components',
             ),
             AdminRoleInfo(
                 name='Service Administrator',
                 description='',
                 permissions='View host configurations, Edit service configurations, Edit component configurations, '
-                'Manage service imports, View host-components, Get cluster object, Get host object, '
-                'Get service object, Get component object',
+                'View host-components',
             ),
             AdminRoleInfo(
                 name='Cluster Administrator',
                 description='',
                 permissions='Create host, Upload bundle, Edit cluster configurations, Edit host configurations, '
-                'Manage cluster imports, Add service, Remove service, Remove hosts, Map hosts, '
-                'Unmap hosts, Edit host-components, Upgrade cluster bundle, Remove bundle, '
-                'Service Administrator',
+                'Add service, Remove service, Remove hosts, Map hosts, Unmap hosts, Edit host-components, '
+                'Upgrade cluster bundle, Remove bundle, Service Administrator',
             ),
             AdminRoleInfo(
                 name='Provider Administrator',
                 description='',
                 permissions='Create host, Upload bundle, Edit provider configurations, Edit host configurations, '
-                'Remove hosts, Upgrade provider bundle, Remove bundle, Get provider object, '
-                'Get host object',
+                'Remove hosts, Upgrade provider bundle, Remove bundle',
             ),
         ]
 
@@ -556,21 +553,20 @@ class AdminPoliciesPage(GeneralAdminPage):
             with allure.step(f"Select users {users} in popup"):
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_select)
                 self.wait_element_visible(AdminPoliciesLocators.item)
-                available_users = self.find_elements(AdminPoliciesLocators.item)
-                self.fill_select_in_policy_popup(users, available_users)
+                self.fill_select_in_policy_popup(users, AdminPoliciesLocators.item)
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.users_select)
         if groups:
             with allure.step(f"Select groups {groups} in popup"):
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_select)
                 self.wait_element_visible(AdminPoliciesLocators.item)
-                available_groups = self.find_elements(AdminPoliciesLocators.item)
-                self.fill_select_in_policy_popup(groups, available_groups)
+                self.fill_select_in_policy_popup(groups, AdminPoliciesLocators.item)
                 self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.group_select)
         self.find_and_click(AdminPoliciesLocators.AddPolicyPopup.FirstStep.next_btn_first)
 
-    def fill_select_in_policy_popup(self, items, available_items):
+    def fill_select_in_policy_popup(self, items, available_items_locator):
         for item in items.split(", "):
-            for available_item in available_items:
+            self.wait_element_visible(available_items_locator)
+            for count, available_item in enumerate(self.find_elements(available_items_locator)):
                 if available_item.text == item:
                     self.scroll_to(available_item)
                     available_item.click()
@@ -594,7 +590,7 @@ class AdminPoliciesPage(GeneralAdminPage):
                 self.wait_element_visible(locator_select)
                 self.find_and_click(locator_select)
                 self.wait_element_visible(locator_items)
-                self.fill_select_in_policy_popup(values, self.find_elements(locator_items))
+                self.fill_select_in_policy_popup(values, locator_items)
 
         if clusters:
             fill_select(
@@ -680,3 +676,12 @@ class AdminPoliciesPage(GeneralAdminPage):
         self.wait_element_visible(DeleteDialog.body)
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
+
+    def delete_all_policies(self):
+        def delete_all():
+            self.select_all_policies()
+            if "disabled" not in self.find_element(AdminPoliciesLocators.delete_btn).get_attribute("class"):
+                self.click_delete_button()
+            assert len(self.table.get_all_rows()) == 0, "There should be 0 policies on the page"
+
+        wait_until_step_succeeds(delete_all, period=5)
