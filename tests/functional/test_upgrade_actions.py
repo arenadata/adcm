@@ -233,6 +233,8 @@ class TestUpgradeActionRelations:
         """
         Test bundle action fails before bundle_switch was performed
         """
+
+        jobs_before = sdk_client_fs.job_list()
         bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, folder_dir, 'old'))
         cluster = bundle.cluster_create('Test Cluster for Upgrade')
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, folder_dir, file_dir))
@@ -244,17 +246,18 @@ class TestUpgradeActionRelations:
         cluster.reread()
         with allure.step("Check jobs"):
             jobs = sdk_client_fs.job_list()
-            assert len(jobs) >= 3, "There are should be 3 or more jobs"
+            jobs_expected = 3 + len(jobs_before)
+            assert len(jobs) == jobs_expected, f"There are should be {jobs_expected} jobs"
             assert len(
                 set(['first action after switch', 'switch action', 'first_action'])
                 & set([j.display_name for j in jobs])
-            ), "Jobs names differ"
+            ) == 3, "Jobs names differ"
             assert len([log for data in jobs for log in data.log_files]) >= 6, "There are should be 6 or more log files"
         with allure.step("Check cluster actions list after update"):
             actions_after = cluster.action_list()
             assert len(actions_after) == 2 if "success" in folder_dir else 1, "Not all actions avaliable"
             assert (
-                set([action.display_name for action in actions_after]) == set(['dummy_action', 'restore'])
+                set([action.display_name for action in actions_after]) == (set(['dummy_action', 'restore'])
                 if "success" in folder_dir
-                else set(['dummy_action'])
+                else set(['dummy_action']))
             ), "Not all actions avaliable"
