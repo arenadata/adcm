@@ -294,9 +294,13 @@ def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade, config: dict
     task_id = None
     if not upgrade.action:
         bundle_switch(obj, upgrade)
+        if upgrade.state_on_success:
+            obj.state = upgrade.state_on_success
+            obj.save()
     else:
         task = cm.job.start_task(upgrade.action, obj, config, {}, [], [], False)
         task_id = task.id
+
     obj.refresh_from_db()
 
     return {'id': obj.id, 'upgradable': bool(get_upgrade(obj)), 'task_id': task_id}
@@ -314,8 +318,6 @@ def bundle_switch(obj: Union[Cluster, HostProvider], upgrade: Upgrade):
     with transaction.atomic():
         obj.prototype = new_proto
         obj.before_upgrade['state'] = obj.state
-        if upgrade.state_on_success:
-            obj.state = upgrade.state_on_success
         obj.save()
         switch_config(obj, new_proto, old_proto)
 
