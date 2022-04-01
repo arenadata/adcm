@@ -20,17 +20,17 @@ def update_adcm_config_settings(apps, schema_editor):
     ConfigLog = apps.get_model('cm', 'ConfigLog')
     for adcm in ADCM.objects.all():
         cl = ConfigLog.objects.get(id=adcm.config.current)
-        ConfigLog()
         config = cl.config
-        config['ansible_settings']['mitogen'] = False
-        obj_conf = adcm.config
-        config_log = ConfigLog(
-            obj_ref=obj_conf, config=config, attr=cl.attr, description=cl.description
-        )
-        config_log.save()
-        obj_conf.previous = obj_conf.current
-        obj_conf.current = cl.id
-        obj_conf.save()
+        if 'ansible_settings' in config and 'mitogen' in config['ansible_settings']:
+            config['ansible_settings']['mitogen'] = False
+            obj_conf = adcm.config
+            config_log = ConfigLog(
+                obj_ref=obj_conf, config=config, attr=cl.attr, description=cl.description
+            )
+            config_log.save()
+            obj_conf.previous = obj_conf.current
+            obj_conf.current = config_log.id
+            obj_conf.save()
 
 
 class Migration(migrations.Migration):
