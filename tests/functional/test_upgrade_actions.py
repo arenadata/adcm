@@ -14,7 +14,6 @@
 Test "scripts" section of bundle's "upgrade" section
 """
 
-# pylint: disable=no-self-use
 import json
 import os
 from typing import Set
@@ -27,10 +26,11 @@ from adcm_pytest_plugin.utils import get_data_dir, catch_failed, parametrize_by_
 from adcm_pytest_plugin.docker_utils import get_file_from_container
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 
+from tests.functional.conftest import only_clean_adcm
 from tests.library.assertions import sets_are_equal
 from tests.library.errorcodes import INVALID_UPGRADE_DEFINITION, INVALID_OBJECT_DEFINITION, ADCMError
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, no-self-use
 
 TEST_SERVICE_NAME = 'test_service'
 FAILURES_DIR = 'upgrade_failures'
@@ -56,87 +56,90 @@ def old_cluster(request, sdk_client_fs) -> Cluster:
     return _create_old_cluster(sdk_client_fs, *request.param)
 
 
-@parametrize_by_data_subdirs(__file__, 'validation', 'valid')
-def test_validation_succeed_on_upload(sdk_client_fs, path):
-    """Test that valid bundles with upgrade actions succeed to upload"""
-    verbose_bundle_name = os.path.basename(path).replace('_', ' ').capitalize()
-    with allure.step(f'Upload bundle "{verbose_bundle_name}" and expect it to succeed'), catch_failed(
-        ErrorMessage, f'Bundle "{verbose_bundle_name}" should be uploaded successfully'
-    ):
-        bundle = sdk_client_fs.upload_from_fs(path)
-        bundle.delete()
+class TestUpgradeActionSectionValidation:
+    """Test validation of upgrade action in bundle config"""
 
+    @parametrize_by_data_subdirs(__file__, 'validation', 'valid')
+    def test_validation_succeed_on_upload(self, sdk_client_fs, path):
+        """Test that valid bundles with upgrade actions succeed to upload"""
+        verbose_bundle_name = os.path.basename(path).replace('_', ' ').capitalize()
+        with allure.step(f'Upload bundle "{verbose_bundle_name}" and expect it to succeed'), catch_failed(
+            ErrorMessage, f'Bundle "{verbose_bundle_name}" should be uploaded successfully'
+        ):
+            bundle = sdk_client_fs.upload_from_fs(path)
+            bundle.delete()
 
-@pytest.mark.parametrize(
-    ('bundle_dir_name', 'expected_error'),
-    [
-        ('bundle_switch_in_regular_actions', INVALID_OBJECT_DEFINITION),
-        ('incorrect_internal_action', INVALID_UPGRADE_DEFINITION),
-        ('no_bundle_switch', INVALID_UPGRADE_DEFINITION),
-    ],
-    ids=lambda x: f'expect_{x.code}' if isinstance(x, ADCMError) else str(x),
-)
-def test_validation_failed_on_upload(bundle_dir_name, expected_error, sdk_client_fs):
-    """Test that invalid bundles with upgrade actions fails to upload"""
-    verbose_bundle_name = bundle_dir_name.replace('_', ' ').capitalize()
-    invalid_bundle_file = get_data_dir(__file__, 'validation', 'invalid', bundle_dir_name)
-    with allure.step(f'Upload bundle "{verbose_bundle_name}" and expect upload to fail'):
-        with pytest.raises(ErrorMessage) as e:
-            sdk_client_fs.upload_from_fs(invalid_bundle_file)
-        expected_error.equal(e)
-
-
-def _run_successful_upgrade(client, old_cluster, upgrade_name, upgrade_config):
-    with allure.step('Upload new version of cluster bundle'):
-        new_bundle = client.upload_from_fs(get_data_dir(__file__, 'successful', 'new'))
-    with allure.step('Run upgrade and expect it to be successful'):
-        upgrade_task = old_cluster.upgrade(name=upgrade_name).do(**upgrade_config)
-        assert upgrade_task.wait() == 'success', f'Upgrade {upgrade_name} failed unexpectedly'
-        check_state(old_cluster, 'ready_to_upgrade')
-    with allure.step('Check that prototype was upgraded successfully'):
-        check_prototype(old_cluster, new_bundle.cluster_prototype().id)
-        check_cluster_objects_configs_equal_bundle_default(old_cluster, new_bundle)
+    @pytest.mark.parametrize(
+        ('bundle_dir_name', 'expected_error'),
+        [
+            ('bundle_switch_in_regular_actions', INVALID_OBJECT_DEFINITION),
+            ('incorrect_internal_action', INVALID_UPGRADE_DEFINITION),
+            ('no_bundle_switch', INVALID_UPGRADE_DEFINITION),
+        ],
+        ids=lambda x: f'expect_{x.code}' if isinstance(x, ADCMError) else str(x),
+    )
+    def test_validation_failed_on_upload(self, bundle_dir_name, expected_error, sdk_client_fs):
+        """Test that invalid bundles with upgrade actions fails to upload"""
+        verbose_bundle_name = bundle_dir_name.replace('_', ' ').capitalize()
+        invalid_bundle_file = get_data_dir(__file__, 'validation', 'invalid', bundle_dir_name)
+        with allure.step(f'Upload bundle "{verbose_bundle_name}" and expect upload to fail'):
+            with pytest.raises(ErrorMessage) as e:
+                sdk_client_fs.upload_from_fs(invalid_bundle_file)
+            expected_error.equal(e)
 
 
 @create_cluster_from_old_bundle
-@pytest.mark.parametrize(
-    'upgrade_name',
-    ['simple_upgrade', 'upgrade_with_config', 'upgrade_with_non_default_venv'],
-)
-def test_successful_upgrade(upgrade_name, old_cluster: Cluster, sdk_client_fs):
-    """Test successful upgrade scenarios"""
-    upgrade_config = UPGRADE_EXTRA_ARGS.get(upgrade_name, {})
-    _run_successful_upgrade(sdk_client_fs, old_cluster, upgrade_name, upgrade_config)
+class TestSuccessfulUpgrade:
+    """Test successful scenarios of upgrade actions"""
 
+    @pytest.mark.parametrize(
+        'upgrade_name',
+        ['simple_upgrade', 'upgrade_with_config', 'upgrade_with_non_default_venv'],
+    )
+    def test_successful_upgrade(self, upgrade_name, old_cluster: Cluster, sdk_client_fs):
+        """Test successful upgrade scenarios"""
+        upgrade_config = UPGRADE_EXTRA_ARGS.get(upgrade_name, {})
+        self._run_successful_upgrade(sdk_client_fs, old_cluster, upgrade_name, upgrade_config)
 
-@create_cluster_from_old_bundle
-def test_successful_upgrade_with_content_change(sdk_client_fs, old_cluster):
-    """
-    Test successful upgrade with changing content of action file
-    and expect new content to be executed
-    """
-    upgrade_name = 'file_content_changed'
-    expected_message = 'This message came from the new bundle!'
-    _run_successful_upgrade(sdk_client_fs, old_cluster, upgrade_name, {})
-    for job_name in ('before_switch', 'after_switch'):
-        job = next(
-            filter(lambda x: x.display_name == job_name, sdk_client_fs.job_list())  # pylint: disable=cell-var-from-loop
-        )
-        assert expected_message in job.log().content, f'"{expected_message}" should be in log'
+    def test_successful_upgrade_with_content_change(self, sdk_client_fs, old_cluster):
+        """
+        Test successful upgrade with changing content of action file
+        and expect new content to be executed
+        """
+        upgrade_name = 'file_content_changed'
+        expected_message = 'This message came from the new bundle!'
+        self._run_successful_upgrade(sdk_client_fs, old_cluster, upgrade_name, {})
+        for job_name in ('before_switch', 'after_switch'):
+            job = next(
+                filter(
+                    lambda x: x.display_name == job_name, sdk_client_fs.job_list()  # pylint: disable=cell-var-from-loop
+                )
+            )
+            assert expected_message in job.log().content, f'"{expected_message}" should be in log'
 
+    @only_clean_adcm
+    def test_inventories(self, adcm_fs, sdk_client_fs, old_cluster):
+        """Check that inventories of jobs before and after bundle switch are correct"""
+        upgrade_name = 'simple_upgrade'
+        job_before_id = 1
+        job_after_id = 3
 
-@create_cluster_from_old_bundle
-def test_inventories(adcm_fs, sdk_client_fs, old_cluster):
-    """Check that inventories of jobs before and after bundle switch are correct"""
-    upgrade_name = 'simple_upgrade'
-    job_before_id = 1
-    job_after_id = 3
+        self._run_successful_upgrade(sdk_client_fs, old_cluster, upgrade_name, {})
+        with allure.step('Check inventory of job before the bundle_switch'):
+            _compare_inventory_files(adcm_fs, job_before_id)
+        with allure.step('Check inventory of job after the bundle_switch'):
+            _compare_inventory_files(adcm_fs, job_after_id)
 
-    _run_successful_upgrade(sdk_client_fs, old_cluster, upgrade_name, {})
-    with allure.step('Check inventory of job before the bundle_switch'):
-        _compare_inventory_files(adcm_fs, job_before_id)
-    with allure.step('Check inventory of job after the bundle_switch'):
-        _compare_inventory_files(adcm_fs, job_after_id)
+    def _run_successful_upgrade(self, client, old_cluster, upgrade_name, upgrade_config):
+        with allure.step('Upload new version of cluster bundle'):
+            new_bundle = client.upload_from_fs(get_data_dir(__file__, 'successful', 'new'))
+        with allure.step('Run upgrade and expect it to be successful'):
+            upgrade_task = old_cluster.upgrade(name=upgrade_name).do(**upgrade_config)
+            assert upgrade_task.wait() == 'success', f'Upgrade {upgrade_name} failed unexpectedly'
+            check_state(old_cluster, 'ready_to_upgrade')
+        with allure.step('Check that prototype was upgraded successfully'):
+            check_prototype(old_cluster, new_bundle.cluster_prototype().id)
+            check_cluster_objects_configs_equal_bundle_default(old_cluster, new_bundle)
 
 
 @pytest.mark.parametrize('old_cluster', [(FAILURES_DIR, 'old')], indirect=True, ids=['failures_old_bundle'])
