@@ -34,6 +34,13 @@
       states:
         available: any
         on_success: ready_to_upgrade
+  actions:
+    dummy_action:
+      script: dummy.yaml
+      script_type: ansible
+      type: job
+      states:
+        available: any
 
   config: &config
     - name: somestring

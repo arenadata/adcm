@@ -10,32 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- type: cluster
-  version: 1.2
-  name: test_cluster
-  actions:
-    dummy_action:
-      script: dummy.yaml
-      script_type: ansible
-      type: job
-      states:
-        available: any
+- name: Succeed action
+  hosts: localhost
+  connection: local
+  gather_facts: no
 
-  config: &config
-    - name: somestring
-      type: string
-      required: false
-    - name: someint
-      type: integer
-      default: 12
+  tasks:
+    - name: dummy action
+      debug:
+        msg: "Some message"
 
-
-- type: service
-  version: 2.3
-  name: test_service
-
-  config: *config
-
-  components:
-    test_component:
-      config: *config
