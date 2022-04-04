@@ -18,7 +18,7 @@
                   "id": 1,
                   "version": "2.0",
                   "edition": "community",
-                  "state": "ready_to_upgrade",
+                  "state": "created",
                   "multi_state": [],
                   "before_upgrade": {
                      "state": "created"
