@@ -106,7 +106,6 @@ class TestFailedUpgradeAction:
         run_cluster_action_and_assert_result(old_cluster, restore_action_name)
         self._check_state(old_cluster, expected_state_after_restore)
 
-    @pytest.mark.xfail(reason="Waiting for requirements improvement")
     def test_fail_after_switch_without_on_fail(self, sdk_client_fs, old_cluster):
         """
         Test bundle action fails after bundle_switch was performed.
