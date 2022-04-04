@@ -189,7 +189,7 @@ class TestFailedUpgradeAction:
         self._upgrade_and_expect_state(old_cluster, expected_state)
         check_prototype(old_cluster, expected_prototype_id)
         check_cluster_objects_configs_equal_bundle_default(old_cluster, bundle)
-        self._check_action_list(old_cluster, {})
+        self._check_action_list(old_cluster, set())
 
     @pytest.mark.parametrize(
         'upgrade_name',
