@@ -171,9 +171,7 @@ def provider(sdk_client_fs) -> Provider:
 
 @only_clean_adcm
 @parametrize_by_constraint('positive')
-def test_hostcomponent_constraints_positive(
-    constraint: str, hosts_amounts: List[int], cluster_bundle, provider
-):
+def test_hostcomponent_constraints_positive(constraint: str, hosts_amounts: List[int], cluster_bundle, provider):
     """
     Tests for constraints on components (positive cases)
     """
@@ -182,9 +180,7 @@ def test_hostcomponent_constraints_positive(
 
 @only_clean_adcm
 @parametrize_by_constraint('negative')
-def test_hostcomponent_constraints_negative(
-    constraint: str, hosts_amounts: List[int], cluster_bundle, provider
-):
+def test_hostcomponent_constraints_negative(constraint: str, hosts_amounts: List[int], cluster_bundle, provider):
     """
     Tests for constraints on components (negative cases)
     """
