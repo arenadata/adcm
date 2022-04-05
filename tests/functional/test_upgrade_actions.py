@@ -20,15 +20,15 @@ from typing import Set
 
 import allure
 import pytest
-from coreapi.exceptions import ErrorMessage
 from adcm_client.objects import Cluster, ADCMClient, Bundle
-from adcm_pytest_plugin.utils import get_data_dir, catch_failed, parametrize_by_data_subdirs, random_string
 from adcm_pytest_plugin.docker_utils import get_file_from_container
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
+from adcm_pytest_plugin.utils import get_data_dir, catch_failed, parametrize_by_data_subdirs, random_string
+from coreapi.exceptions import ErrorMessage
 
 from tests.functional.conftest import only_clean_adcm
 from tests.library.assertions import sets_are_equal
-from tests.library.errorcodes import INVALID_UPGRADE_DEFINITION, INVALID_OBJECT_DEFINITION, ADCMError
+from tests.library.errorcodes import INVALID_UPGRADE_DEFINITION, INVALID_OBJECT_DEFINITION
 
 # pylint: disable=redefined-outer-name, no-self-use
 
@@ -36,6 +36,9 @@ TEST_SERVICE_NAME = 'test_service'
 FAILURES_DIR = 'upgrade_failures'
 
 UPGRADE_EXTRA_ARGS = {'upgrade_with_config': {'config': {'parampampam': 'somestring'}}}
+
+
+# !===== FUNCS =====!
 
 
 create_cluster_from_old_bundle = pytest.mark.parametrize(
@@ -56,11 +59,94 @@ def old_cluster(request, sdk_client_fs) -> Cluster:
     return _create_old_cluster(sdk_client_fs, *request.param)
 
 
+@allure.step('Check cluster state is equal to "{state}"')
+def check_state(cluster: Cluster, state: str):
+    """Check state of a cluster"""
+    cluster.reread()
+    assert (actual_state := cluster.state) == state, f'State after failed upgrade should be {state}, not {actual_state}'
+
+
+@allure.step('Check that cluster prototype is equal to {expected_prototype_id}')
+def check_prototype(cluster: Cluster, expected_prototype_id: int):
+    """Check that prototype of a cluster is the same as expected"""
+    cluster.reread()
+    assert (
+        actual_id := cluster.prototype_id
+    ) == expected_prototype_id, f'Prototype of cluster should be {expected_prototype_id}, not {actual_id}'
+
+
+def check_cluster_objects_configs_equal_bundle_default(
+    cluster: Cluster, bundle: Bundle, *, service_name: str = 'test_service'
+):
+    """
+    Check that configurations of cluster, its services and components
+    are equal to configurations of newly created cluster from given bundle
+    """
+    with allure.step(
+        f'Check configuration of cluster {cluster.name} is equal to default configuration of cluster from {bundle.name}'
+    ):
+        actual_configs = _extract_configs(cluster)
+        cluster_with_defaults = bundle.cluster_create(f'Cluster to take config from {random_string(4)}')
+        cluster_with_defaults.service_add(name=service_name)
+        expected_configs = _extract_configs(cluster_with_defaults)
+
+        if actual_configs == expected_configs:
+            return
+        allure.attach(
+            json.dumps(expected_configs, indent=2),
+            name='Expected cluster objects configuration',
+            attachment_type=allure.attachment_type.JSON,
+        )
+        allure.attach(
+            json.dumps(actual_configs, indent=2),
+            name='Actual cluster objects configuration',
+            attachment_type=allure.attachment_type.JSON,
+        )
+        raise AssertionError("Cluster objects' configs aren't equal to expected, check attachments for more details")
+
+
+def _compare_inventory_files(adcm_fs, job_id: int):
+    """Compare two inventory files: one from local storage (expected) and one from docker container with ADCM"""
+    inventory_file = get_file_from_container(adcm_fs, f'/adcm/data/run/{job_id}/', 'inventory.json')
+    actual_inventory = json.loads(inventory_file.read().decode('utf-8'))
+    with open(get_data_dir(__file__, 'successful', f'inventory_{job_id}.json'), 'rb') as file:
+        expected_inventory = json.load(file)
+    if actual_inventory == expected_inventory:
+        return
+    allure.attach(
+        json.dumps(expected_inventory, indent=2),
+        name=f'Expected inventory of job {job_id}',
+        attachment_type=allure.attachment_type.JSON,
+    )
+    allure.attach(
+        json.dumps(actual_inventory, indent=2),
+        name=f'Actual inventory of job {job_id}',
+        attachment_type=allure.attachment_type.JSON,
+    )
+    raise AssertionError(f'Inventories should be equal for job {job_id}.\nSee attachments for more details.')
+
+
+def _extract_configs(cluster: Cluster):
+    """Extract configurations of the cluster, its services and components as dict"""
+    return {
+        'config': dict(cluster.config()),
+        'services': {
+            service.name: {
+                'config': dict(service.config()),
+                'components': {
+                    component.name: {'config': dict(component.config())} for component in service.component_list()
+                },
+            }
+            for service in cluster.service_list()
+        },
+    }
+
+
+# !===== TESTS =====!
+
+
 class TestUpgradeActionSectionValidation:
     """Test validation of upgrade action in bundle config"""
-
-class TestUploadValidation:
-    """Test cases when upload bundles"""
 
     @parametrize_by_data_subdirs(__file__, 'validation', 'valid')
     def test_validation_succeed_on_upload(self, sdk_client_fs, path):
@@ -227,89 +313,6 @@ class TestFailedUpgradeAction:
         cluster.reread()
         presented_action_names = {a.name for a in cluster.action_list()}
         sets_are_equal(presented_action_names, action_names, message='Incorrect action list')
-
-
-@allure.step('Check cluster state is equal to "{state}"')
-def check_state(cluster: Cluster, state: str):
-    """Check state of a cluster"""
-    cluster.reread()
-    assert (actual_state := cluster.state) == state, f'State after failed upgrade should be {state}, not {actual_state}'
-
-
-@allure.step('Check that cluster prototype is equal to {expected_prototype_id}')
-def check_prototype(cluster: Cluster, expected_prototype_id: int):
-    """Check that prototype of a cluster is the same as expected"""
-    cluster.reread()
-    assert (
-        actual_id := cluster.prototype_id
-    ) == expected_prototype_id, f'Prototype of cluster should be {expected_prototype_id}, not {actual_id}'
-
-
-def check_cluster_objects_configs_equal_bundle_default(
-    cluster: Cluster, bundle: Bundle, *, service_name: str = 'test_service'
-):
-    """
-    Check that configurations of cluster, its services and components
-    are equal to configurations of newly created cluster from given bundle
-    """
-    with allure.step(
-        f'Check configuration of cluster {cluster.name} is equal to default configuration of cluster from {bundle.name}'
-    ):
-        actual_configs = _extract_configs(cluster)
-        cluster_with_defaults = bundle.cluster_create(f'Cluster to take config from {random_string(4)}')
-        cluster_with_defaults.service_add(name=service_name)
-        expected_configs = _extract_configs(cluster_with_defaults)
-
-        if actual_configs == expected_configs:
-            return
-        allure.attach(
-            json.dumps(expected_configs, indent=2),
-            name='Expected cluster objects configuration',
-            attachment_type=allure.attachment_type.JSON,
-        )
-        allure.attach(
-            json.dumps(actual_configs, indent=2),
-            name='Actual cluster objects configuration',
-            attachment_type=allure.attachment_type.JSON,
-        )
-        raise AssertionError("Cluster objects' configs aren't equal to expected, check attachments for more details")
-
-
-def _compare_inventory_files(adcm_fs, job_id: int):
-    """Compare two inventory files: one from local storage (expected) and one from docker container with ADCM"""
-    inventory_file = get_file_from_container(adcm_fs, f'/adcm/data/run/{job_id}/', 'inventory.json')
-    actual_inventory = json.loads(inventory_file.read().decode('utf-8'))
-    with open(get_data_dir(__file__, 'successful', f'inventory_{job_id}.json'), 'rb') as file:
-        expected_inventory = json.load(file)
-    if actual_inventory == expected_inventory:
-        return
-    allure.attach(
-        json.dumps(expected_inventory, indent=2),
-        name=f'Expected inventory of job {job_id}',
-        attachment_type=allure.attachment_type.JSON,
-    )
-    allure.attach(
-        json.dumps(actual_inventory, indent=2),
-        name=f'Actual inventory of job {job_id}',
-        attachment_type=allure.attachment_type.JSON,
-    )
-    raise AssertionError(f'Inventories should be equal for job {job_id}.\nSee attachments for more details.')
-
-
-def _extract_configs(cluster: Cluster):
-    """Extract configurations of the cluster, its services and components as dict"""
-    return {
-        'config': dict(cluster.config()),
-        'services': {
-            service.name: {
-                'config': dict(service.config()),
-                'components': {
-                    component.name: {'config': dict(component.config())} for component in service.component_list()
-                },
-            }
-            for service in cluster.service_list()
-        },
-    }
 
 
 class TestUpgradeActionRelations:
