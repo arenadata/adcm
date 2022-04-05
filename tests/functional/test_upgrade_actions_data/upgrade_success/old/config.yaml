@@ -19,8 +19,8 @@
       script_type: ansible
       type: job
       states:
-        available: any
-
+        available:
+        - created
   config: &config
     - name: somestring
       type: string
@@ -28,7 +28,6 @@
     - name: someint
       type: integer
       default: 12
-
 
 - type: service
   version: 2.3
