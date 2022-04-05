@@ -229,8 +229,8 @@ class TestFailedUpgradeAction:
     def _check_before_upgrade_state(self, cluster: Cluster, state: str):
         cluster.reread()
         assert (
-                   actual_state := cluster.before_upgrade['state']
-               ) == state, f'"before_upgrade" should be {state}, not {actual_state}'
+            actual_state := cluster.before_upgrade['state']
+        ) == state, f'"before_upgrade" should be {state}, not {actual_state}'
 
     @allure.step('Check list of available actions on cluster')
     def _check_action_list(self, cluster: Cluster, action_names: Set[str]):
