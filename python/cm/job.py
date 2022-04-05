@@ -667,7 +667,8 @@ def finish_task(task: TaskLog, job: JobLog, status: str):
     state, multi_state_set, multi_state_unset = get_state(action, job, status)
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
-        set_before_upgrade_state(action, obj)
+        if hasattr(action, 'upgrade'):
+            set_before_upgrade_state(action, obj)
         set_action_state(action, task, obj, state, multi_state_set, multi_state_unset)
         restore_hc(task, action, status)
         task.unlock_affected()
