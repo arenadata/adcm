@@ -26,6 +26,7 @@ class CommonTable:
     visible_row = Locator(By.CSS_SELECTOR, "mat-row[adwphover]", "Visible table row")
     header = Locator(By.CSS_SELECTOR, "mat-header-cell>div", "Table header")
     row = Locator(By.CSS_SELECTOR, "mat-row[adwphover]", "Table row")
+    backdrop = Locator(By.CSS_SELECTOR, ".cdk-overlay-backdrop", "backdrop")
 
     class ActionPopup:
         """Common popup for action in tables."""
@@ -34,6 +35,7 @@ class CommonTable:
         button = TemplateLocator(
             By.XPATH, "//button[@adcm_test='action_btn' and ./span[text()='{}']]", "Button with action {}"
         )
+        action_buttons = Locator(By.CSS_SELECTOR, "button[adcm_test='action_btn']", "Button with action")
 
     class Pagination:
         """Common table pagination locators."""

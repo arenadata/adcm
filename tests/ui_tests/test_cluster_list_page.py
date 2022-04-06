@@ -104,6 +104,8 @@ BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
 
 
 # pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-many-lines,too-many-public-methods
+# pylint: disable=too-many-arguments
+
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
 
@@ -789,11 +791,12 @@ class TestClusterConfigPage:
     def check_default_field_values_in_configs(
         self, cluster_config_page: ClusterConfigPage, config_item: WebElement, field_type: str, config
     ):
+        """Check that input value in config is equal to the default one"""
         main_config = config['config'][0]['subs'][0] if "subs" in config['config'][0] else config['config'][0]
         if field_type == 'boolean':
             cluster_config_page.config.assert_checkbox_state(config_item, expected_value=main_config['default'])
         elif field_type in ("password", "secrettext"):
-            is_password_value = True if field_type == "password" else False
+            is_password_value = bool(field_type == "password")
             cluster_config_page.config.assert_input_value_is(
                 expected_value='********', display_name=field_type, is_password=is_password_value
             )
@@ -929,6 +932,7 @@ class TestClusterConfigPage:
         for item in CONFIG_ITEMS:
             cluster_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
+    @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
     @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
@@ -961,6 +965,7 @@ class TestClusterConfigPage:
         with allure.step('Check that save button is disabled'):
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
+    @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
     @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
@@ -970,7 +975,7 @@ class TestClusterConfigPage:
     def test_configs_fields_invisible_false(
         self, sdk_client_fs: ADCMClient, app_fs, field_type, is_advanced, is_default, is_required, is_read_only
     ):
-
+        """Test config fields that aren't invisible"""
         config, expected, path = prepare_config(
             generate_configs(
                 field_type=field_type,
@@ -1005,6 +1010,7 @@ class TestClusterConfigPage:
         cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
 
+    @pytest.mark.full()
     @parametrize_by_data_subdirs(__file__, 'bundles_for_numbers_tests')
     def test_number_validation_on_cluster_config_page(self, sdk_client_fs: ADCMClient, path, app_fs):
         """Check that we have errors and save button is not active for number field with values out of range"""
@@ -1045,6 +1051,7 @@ class TestClusterConfigPage:
             f"Field [{params['filed_name']}] value cannot be greater than"
         )
 
+    @pytest.mark.full()
     @pytest.mark.parametrize(("number_type", "value"), RANGE_VALUES)
     def test_number_in_range_values_on_cluster_config_page(self, sdk_client_fs: ADCMClient, value, app_fs, number_type):
         """Test save button is active for valid number values"""
@@ -1074,7 +1081,7 @@ class TestClusterConfigPage:
         """Test set value for list field, save and refresh page"""
 
         params = {"new_value": ["test", "test", "test"]}
-        config, expected, path = prepare_config(
+        config, _, path = prepare_config(
             generate_configs(
                 field_type="list",
                 invisible=False,
@@ -1099,7 +1106,7 @@ class TestClusterConfigPage:
         """Test set value for map field, save and refresh page"""
 
         params = {"new_value": {'test': 'test', 'test_2': 'test', 'test_3': 'test'}}
-        config, expected, path = prepare_config(
+        config, _, path = prepare_config(
             generate_configs(
                 field_type="map",
                 invisible=False,
@@ -1122,6 +1129,7 @@ class TestClusterConfigPage:
                 expected_value=params["new_value"], display_name=config['config'][0]['name']
             )
 
+    @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
     @pytest.mark.parametrize(
@@ -1186,6 +1194,7 @@ class TestClusterConfigPage:
         with allure.step('Check that save button is disabled'):
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
+    @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
     @pytest.mark.parametrize(
@@ -1201,7 +1210,7 @@ class TestClusterConfigPage:
         [pytest.param(True, marks=pytest.mark.regression), False],
         ids=("field_advanced", "field_non-advanced"),
     )
-    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    @pytest.mark.usefixtures("login_to_adcm_over_api")  # pylint: disable-next=too-many-locals
     def test_group_configs_fields_invisible_false(
         self,
         sdk_client_fs: ADCMClient,
@@ -1216,7 +1225,7 @@ class TestClusterConfigPage:
         field_invisible,
         field_advanced,
     ):
-
+        """Test group configs with not-invisible fields"""
         config, expected, path = prepare_group_config(
             generate_group_configs(
                 field_type=field_type,
@@ -1238,37 +1247,36 @@ class TestClusterConfigPage:
                 for config_item in cluster_config_page.config.get_all_config_rows():
                     group_name = cluster_config_page.config.get_group_names()[0].text
                     assert group_name == 'group', "Should be group 'group' visible"
-                    if activatable:
-                        if not cluster_config_page.config.advanced:
-                            cluster_config_page.config.check_group_is_active(group_name, config['config'][0]['active'])
-                        if not field_invisible and (
-                            (cluster_config_page.config.advanced and field_advanced) or not field_advanced
-                        ):
-                            cluster_config_page.config.expand_or_close_group(group_name, expand=True)
-                            assert len(cluster_config_page.config.get_all_config_rows()) >= 2, "Field should be visible"
-                            if is_default:
-                                self.check_default_field_values_in_configs(
-                                    cluster_config_page, config_item, field_type, config
-                                )
-                            if is_read_only and config_item.tag_name == 'app-field':
-                                assert cluster_config_page.config.is_element_read_only(
-                                    config_item
-                                ), f"Config field {field_type} should be read only"
-                            if expected['alerts'] and not is_read_only:
-                                if field_type == "map":
-                                    is_advanced = cluster_config_page.config.advanced
-                                    cluster_config_page.driver.refresh()
-                                    if is_advanced:
-                                        cluster_config_page.config.click_on_advanced()
-                                    cluster_config_page.config.expand_or_close_group(group_name, expand=True)
-                                else:
+                    if not activatable:
+                        continue
+                    if not cluster_config_page.config.advanced:
+                        cluster_config_page.config.check_group_is_active(group_name, config['config'][0]['active'])
+                    if not field_invisible and (
+                        (cluster_config_page.config.advanced and field_advanced) or not field_advanced
+                    ):
+                        cluster_config_page.config.expand_or_close_group(group_name, expand=True)
+                        assert len(cluster_config_page.config.get_all_config_rows()) >= 2, "Field should be visible"
+                        if is_default:
+                            self.check_default_field_values_in_configs(
+                                cluster_config_page, config_item, field_type, config
+                            )
+                        if is_read_only and config_item.tag_name == 'app-field':
+                            assert cluster_config_page.config.is_element_read_only(
+                                config_item
+                            ), f"Config field {field_type} should be read only"
+                        if expected['alerts'] and not is_read_only:
+                            if field_type == "map":
+                                is_advanced = cluster_config_page.config.advanced
+                                cluster_config_page.driver.refresh()
+                                if is_advanced:
                                     cluster_config_page.config.click_on_advanced()
-                                    cluster_config_page.config.click_on_advanced()
-                                cluster_config_page.config.check_invalid_value_message(field_type)
-                        else:
-                            assert (
-                                len(cluster_config_page.config.get_all_config_rows()) == 1
-                            ), "Field should not be visible"
+                                cluster_config_page.config.expand_or_close_group(group_name, expand=True)
+                            else:
+                                cluster_config_page.config.click_on_advanced()
+                                cluster_config_page.config.click_on_advanced()
+                            cluster_config_page.config.check_invalid_value_message(field_type)
+                    else:
+                        assert len(cluster_config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
 
         cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if group_advanced:
