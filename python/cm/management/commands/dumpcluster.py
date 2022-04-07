@@ -14,10 +14,16 @@
 
 import json
 import sys
+import base64
+from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
+from cm.config import ANSIBLE_SECRET, DEFAULT_SALT
 from cm.models import (
     Bundle,
     Cluster,
@@ -290,7 +296,22 @@ def get_host_component(host_component_id):
     return host_component
 
 
-def dump(cluster_id, output):
+def encrypt_data(pass_from_user, result):
+    password = pass_from_user.encode()
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=DEFAULT_SALT,
+        iterations=390000,
+        backend=default_backend(),
+    )
+    key = base64.urlsafe_b64encode(kdf.derive(password))
+    f = Fernet(key)
+    encrypted = f.encrypt(result)
+    return encrypted
+
+
+def dump(cluster_id, output, password):
     """
     Saving objects to file in JSON format
 
@@ -355,14 +376,15 @@ def dump(cluster_id, output):
     ):
         host_component = get_host_component(host_component_obj.id)
         data['host_components'].append(host_component)
-
-    result = json.dumps(data, indent=2)
+    data['adcm_password'] = ANSIBLE_SECRET
+    result = json.dumps(data, indent=2).encode('utf-8')
+    encrypted = encrypt_data(password, result)
 
     if output is not None:
-        with open(output, 'w', encoding='utf_8') as f:
-            f.write(result)
+        with open(output, 'wb') as f:
+            f.write(encrypted)
     else:
-        sys.stdout.write(result)
+        sys.stdout.write(encrypted)
 
 
 class Command(BaseCommand):
@@ -388,10 +410,14 @@ class Command(BaseCommand):
             type=int,
             help='Cluster ID',
         )
+        parser.add_argument(
+            '-p', '--password', dest='password', required=True, help='Password for file enryption'
+        )
         parser.add_argument('-o', '--output', help='Specifies file to which the output is written.')
 
     def handle(self, *args, **options):
         """Handler method"""
         cluster_id = options['cluster_id']
         output = options['output']
-        dump(cluster_id, output)
+        password = options['password']
+        dump(cluster_id, output, password)

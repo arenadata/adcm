@@ -10,10 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals, global-statement
 
 import json
+import base64
 from datetime import datetime
+from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from ansible.parsing.vault import VaultSecret, VaultAES256
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -21,6 +27,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.transaction import atomic
 from django.db.utils import IntegrityError
 
+from cm.config import ANSIBLE_SECRET, DEFAULT_SALT, ANSIBLE_VAULT_HEADER
 from cm.errors import AdcmEx
 from cm.adcm_config import save_file_type
 from cm.models import (
@@ -37,6 +44,8 @@ from cm.models import (
     PrototypeConfig,
     HostComponent,
 )
+
+OLD_ADCM_PASSWORD = None
 
 
 def deserializer_datetime_fields(obj, fields=None):
@@ -66,7 +75,7 @@ def get_prototype(**kwargs):
     return prototype
 
 
-def create_config(config):
+def create_config(config, prototype=None):
     """
     Creating current ConfigLog, previous ConfigLog and ObjectConfig objects
 
@@ -76,9 +85,9 @@ def create_config(config):
     :rtype: models.ObjectConfig
     """
     if config is not None:
-        current_config = config['current']
+        current_config = process_config(prototype, config['current'])
         deserializer_datetime_fields(current_config, ['date'])
-        previous_config = config['previous']
+        previous_config = process_config(prototype, config['previous'])
         deserializer_datetime_fields(previous_config, ['date'])
 
         conf = ObjectConfig.objects.create(current=0, previous=0)
@@ -121,10 +130,36 @@ def create_group(group, ex_hosts_list, obj):
         object_id=obj.id,
         config=config,
         object_type=ContentType.objects.get(model=model_name),
-        **group
+        **group,
     )
     gc.hosts.set(hosts)
     return ex_object_id, gc
+
+
+def switch_encoding(msg):
+    ciphertext = msg
+    if ANSIBLE_VAULT_HEADER in msg:
+        _, ciphertext = msg.split("\n")
+    vault = VaultAES256()
+    secret_old = VaultSecret(bytes(OLD_ADCM_PASSWORD, 'utf-8'))
+    data = str(vault.decrypt(ciphertext, secret_old), 'utf-8')
+    secret_new = VaultSecret(bytes(ANSIBLE_SECRET, 'utf-8'))
+    ciphertext = vault.encrypt(bytes(data, 'utf-8'), secret_new)
+    return f'{ANSIBLE_VAULT_HEADER}\n{str(ciphertext, "utf-8")}'
+
+
+def process_config(proto, config):
+    if config is not None and proto is not None:
+        conf = config['config']
+        for pconf in PrototypeConfig.objects.filter(
+            prototype=proto, type__in=('secrettext', 'password')
+        ):
+            if pconf.subname and conf[pconf.name][pconf.subname]:
+                conf[pconf.name][pconf.subname] = switch_encoding(conf[pconf.name][pconf.subname])
+            elif conf.get(pconf.name) and not pconf.subname:
+                conf[pconf.name] = switch_encoding(conf[pconf.name])
+        config['config'] = conf
+    return config
 
 
 def create_file_from_config(obj, config):
@@ -155,7 +190,7 @@ def create_cluster(cluster):
         ex_id = cluster.pop('id')
         config = cluster.pop('config')
         cluster = Cluster.objects.create(
-            prototype=prototype, config=create_config(config), **cluster
+            prototype=prototype, config=create_config(config, prototype), **cluster
         )
         create_file_from_config(cluster, config)
         return ex_id, cluster
@@ -182,7 +217,7 @@ def create_provider(provider):
         prototype = get_prototype(bundle_hash=bundle_hash, type='provider')
         config = provider.pop('config')
         provider = HostProvider.objects.create(
-            prototype=prototype, config=create_config(config), **provider
+            prototype=prototype, config=create_config(config, prototype), **provider
         )
         create_file_from_config(provider, config)
         return ex_id, provider
@@ -213,7 +248,7 @@ def create_host(host, cluster):
         new_host = Host.objects.create(
             prototype=prototype,
             provider=provider,
-            config=create_config(config),
+            config=create_config(config, prototype),
             cluster=cluster,
             **host,
         )
@@ -238,7 +273,7 @@ def create_service(service, cluster):
     ex_id = service.pop('id')
     config = service.pop('config')
     service = ClusterObject.objects.create(
-        prototype=prototype, cluster=cluster, config=create_config(config), **service
+        prototype=prototype, cluster=cluster, config=create_config(config, prototype), **service
     )
     create_file_from_config(service, config)
     return ex_id, service
@@ -269,8 +304,8 @@ def create_component(component, cluster, service):
         prototype=prototype,
         cluster=cluster,
         service=service,
-        config=create_config(config),
-        **component
+        config=create_config(config, prototype),
+        **component,
     )
     create_file_from_config(component, config)
     return ex_id, component
@@ -326,8 +361,28 @@ def check(data):
             ) from err
 
 
+def decrypt_file(pass_from_user, file):
+    password = pass_from_user.encode()
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=DEFAULT_SALT,
+        iterations=390000,
+        backend=default_backend(),
+    )
+    key = base64.urlsafe_b64encode(kdf.derive(password))
+    f = Fernet(key)
+    decrypted = f.decrypt(file.encode())
+    return decrypted
+
+
+def set_old_password(password):
+    global OLD_ADCM_PASSWORD
+    OLD_ADCM_PASSWORD = password
+
+
 @atomic
-def load(file_path):
+def load(file_path, password):
     """
     Loading and creating objects from JSON file
 
@@ -336,12 +391,14 @@ def load(file_path):
     """
     try:
         with open(file_path, 'r', encoding='utf_8') as f:
-            data = json.load(f)
+            encrypted = f.read()
+            decrypted = decrypt_file(password, encrypted)
+            data = json.loads(decrypted.decode('utf-8'))
     except FileNotFoundError as err:
         raise AdcmEx('DUMP_LOAD_CLUSTER_ERROR', msg='Loaded file not found') from err
 
     check(data)
-
+    set_old_password(data['adcm_password'])
     _, cluster = create_cluster(data['cluster'])
 
     ex_provider_ids = {}
@@ -398,9 +455,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         """Parsing command line arguments"""
-        parser.add_argument('file_path', nargs='?')
+        parser.add_argument('-i', '--input', dest='file_path', required=True)
+        parser.add_argument('-p', '--password', dest='password', required=True)
 
     def handle(self, *args, **options):
         """Handler method"""
         file_path = options.get('file_path')
-        load(file_path)
+        password = options.get('password')
+        load(file_path, password)
