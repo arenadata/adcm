@@ -27,6 +27,10 @@ from tests.library.utils import lower_class_name
 
 ACTION_NAME = 'no_config'
 
+CONFIG_EP = 'config'
+CONFIG_LOG_EP = 'config-log'
+GROUP_CONFIG_EP = 'group-config'
+
 
 @pytest.fixture()
 def prepare_configs(prepare_objects, second_objects) -> None:
@@ -107,61 +111,62 @@ def check_jobs_and_tasks(client: ADCMClient, objects):
 
 def check_configs(client: ADCMClient, objects):
     """Check configs, config groups and config logs"""
+    objects_with_group_config = _check_group_config_endpoint(client, objects)
+    expected_config_logs = _check_config_logs_endpoint(client, objects, objects_with_group_config)
+    _check_configs_endpoint(client, expected_config_logs)
 
-    config_ep = 'config'
-    config_log_ep = 'config-log'
-    group_config_ep = 'group-config'
 
-    def _get_history_of_group_config(group_config):
-        config_id = group_config.config(full=True)['url'].split('/')[-4]
-        result = _query_flat_endpoint(client, f'group-config/{group_config.id}/config/{config_id}/config-log/')
-        return result
+@allure.step(f'Check tasks at "{GROUP_CONFIG_EP}/" endpoint based on object type, object_id and config_id')
+def _check_group_config_endpoint(client, objects):
+    objects_with_group_config = tuple(
+        filter(lambda x: not isinstance(x, Host) and not isinstance(x, ADCM) and x.group_config(), objects)
+    )
+    expected_group_configs = {
+        (lower_class_name(obj), obj.id, obj.group_config()[0].config_id) for obj in objects_with_group_config
+    }
+    actual_group_configs = {
+        (group_config['object_type'], group_config['object_id'], group_config['config_id'])
+        for group_config in _query_flat_endpoint(client, GROUP_CONFIG_EP)
+    }
+    sets_are_equal(
+        actual_group_configs,
+        expected_group_configs,
+        f'Group configs at flat endpoint "{GROUP_CONFIG_EP}"/ are not the same as expected',
+    )
+    return objects_with_group_config
 
-    with allure.step(f'Check tasks at "{group_config_ep}/" endpoint based on object type, object_id and config_id'):
-        objects_with_group_config = tuple(
-            filter(lambda x: not isinstance(x, Host) and not isinstance(x, ADCM) and x.group_config(), objects)
+
+@allure.step(f'Check config logs at "{CONFIG_LOG_EP}/" endpoint based on config_id')
+def _check_config_logs_endpoint(client, objects, objects_with_group_config):
+    expected_config_logs = {
+        config['id'] for config in itertools.chain.from_iterable([obj.config_history(full=True) for obj in objects])
+    } | {
+        config_log['id']
+        for config_log in itertools.chain.from_iterable(
+            _get_history_of_group_config(client, obj.group_config()[0]) for obj in objects_with_group_config
         )
-        expected_group_configs = {
-            (lower_class_name(obj), obj.id, obj.group_config()[0].config_id) for obj in objects_with_group_config
-        }
-        actual_group_configs = {
-            (group_config['object_type'], group_config['object_id'], group_config['config_id'])
-            for group_config in _query_flat_endpoint(client, group_config_ep)
-        }
-        sets_are_equal(
-            actual_group_configs,
-            expected_group_configs,
-            f'Group configs at flat endpoint "{group_config_ep}"/ are not the same as expected',
-        )
+    }
+    actual_config_logs = {config['id'] for config in _query_flat_endpoint(client, CONFIG_LOG_EP)}
+    sets_are_equal(
+        actual_config_logs,
+        expected_config_logs,
+        f'Config logs at flat endpoint "{CONFIG_LOG_EP}/" are not the same as expected',
+    )
+    return expected_config_logs
 
-    with allure.step(f'Check config logs at "{config_log_ep}/" endpoint based on config_id'):
-        expected_config_logs = {
-            config['id'] for config in itertools.chain.from_iterable([obj.config_history(full=True) for obj in objects])
-        } | {
-            config_log['id']
-            for config_log in itertools.chain.from_iterable(
-                _get_history_of_group_config(obj.group_config()[0]) for obj in objects_with_group_config
-            )
-        }
-        # obj.group_config()[0].config(full=True)['url'].split('/')[-4]
-        actual_config_logs = {config['id'] for config in _query_flat_endpoint(client, config_log_ep)}
-        sets_are_equal(
-            actual_config_logs,
-            expected_config_logs,
-            f'Config logs at flat endpoint "{config_log_ep}/" are not the same as expected',
-        )
 
-    with allure.step(f'Check configs at "{config_ep}/" endpoint based on config_id (obj_ref)'):
-        # at this point we sure that we see only the things we are allowed to see
-        expected_configs = {
-            config['obj_ref']
-            for config in _query_flat_endpoint(client, config_log_ep)
-            if config['id'] in expected_config_logs
-        }
-        actual_configs = {config['id'] for config in _query_flat_endpoint(client, config_ep)}
-        sets_are_equal(
-            actual_configs, expected_configs, f'Configs at flat endpoint "{config_ep}/" are not the same as expected'
-        )
+@allure.step(f'Check configs at "{CONFIG_EP}/" endpoint based on config_id (obj_ref)')
+def _check_configs_endpoint(client, expected_config_logs):
+    # at this point we sure that we see only the things we are allowed to see
+    expected_configs = {
+        config['obj_ref']
+        for config in _query_flat_endpoint(client, CONFIG_LOG_EP)
+        if config['id'] in expected_config_logs
+    }
+    actual_configs = {config['id'] for config in _query_flat_endpoint(client, CONFIG_EP)}
+    sets_are_equal(
+        actual_configs, expected_configs, f'Configs at flat endpoint "{CONFIG_EP}/" are not the same as expected'
+    )
 
 
 @allure.step('Run action on all objects')
@@ -188,3 +193,9 @@ def _prepare_group_config(adcm_object: Cluster):
     group.config_set_diff(
         {'config': {'boolean': True}, 'attr': {'group_keys': {'boolean': True}, 'custom_group_keys': {'boolean': True}}}
     )
+
+
+def _get_history_of_group_config(client, group_config):
+    config_id = group_config.config(full=True)['url'].split('/')[-4]
+    result = _query_flat_endpoint(client, f'group-config/{group_config.id}/config/{config_id}/config-log/')
+    return result
