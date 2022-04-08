@@ -32,7 +32,14 @@
       param2:
           type: integer
           required: false
-
+  actions:
+    some_action:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+      masking:
+        multi_state:
+          available: any
 
 - type: service
   name: test_service_1
@@ -47,6 +54,14 @@
           required: false
           default: '123'
   config: *config
+  actions:
+    some_action:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+      masking:
+        multi_state:
+          available: any
 
 - type: service
   name: test_service_2
@@ -60,3 +75,11 @@
           required: false
           default: '123'
   config: *config
+  actions:
+    some_action:
+      type: job
+      script: dummy_action.yaml
+      script_type: ansible
+      masking:
+        multi_state:
+          available: any

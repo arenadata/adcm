@@ -46,8 +46,11 @@ from tests.ui_tests.app.page.admin.page import (
     AdminPolicyInfo,
 )
 from tests.ui_tests.app.page.cluster.page import ClusterConfigPage
+from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.component.page import ComponentConfigPage
 from tests.ui_tests.app.page.host.page import HostConfigPage
+from tests.ui_tests.app.page.job.page import JobPageStdout
+from tests.ui_tests.app.page.job_list.page import JobListPage
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.app.page.provider.page import ProviderConfigPage
 from tests.ui_tests.app.page.service.page import ServiceConfigPage
@@ -590,7 +593,10 @@ class TestAdminPolicyPage:
             )
         with allure.step("Create test policy"):
             sdk_client_fs.policy_create(
-                name="Test policy", role=test_role, user=[sdk_client_fs.user_list()[2]], objects=[cluster]
+                name="Test policy",
+                role=test_role,
+                user=[sdk_client_fs.user(username=another_user['username'])],
+                objects=[cluster],
             )
         with allure.step("Create second cluster"):
             second_cluster = sdk_client_fs.bundle().cluster_create(name=f"{CLUSTER_NAME}_2")
@@ -618,7 +624,10 @@ class TestAdminPolicyPage:
             )
         with allure.step("Create test policy"):
             sdk_client_fs.policy_create(
-                name="Test policy", role=test_role, user=[sdk_client_fs.user_list()[2]], objects=[service]
+                name="Test policy",
+                role=test_role,
+                user=[sdk_client_fs.user(username=another_user['username'])],
+                objects=[service],
             )
         with allure.step("Create second service"):
             second_service = cluster.service_add(name="test_service_2")
@@ -650,7 +659,10 @@ class TestAdminPolicyPage:
             )
         with allure.step("Create test policy"):
             sdk_client_fs.policy_create(
-                name="Test policy", role=test_role, user=[sdk_client_fs.user_list()[2]], objects=[service]
+                name="Test policy",
+                role=test_role,
+                user=[sdk_client_fs.user(username=another_user['username'])],
+                objects=[service],
             )
         with allure.step("Create second component"):
             second_service = cluster.service_add(name="test_service_2")
@@ -684,7 +696,10 @@ class TestAdminPolicyPage:
             )
         with allure.step("Create test policy"):
             sdk_client_fs.policy_create(
-                name="Test policy", role=test_role, user=[sdk_client_fs.user_list()[2]], objects=[provider]
+                name="Test policy",
+                role=test_role,
+                user=[sdk_client_fs.user(username=another_user['username'])],
+                objects=[provider],
             )
         with allure.step("Create second provider"):
             provider_bundle = sdk_client_fs.upload_from_fs(
@@ -715,7 +730,10 @@ class TestAdminPolicyPage:
             )
         with allure.step("Create test policy"):
             sdk_client_fs.policy_create(
-                name="Test policy", role=test_role, user=[sdk_client_fs.user_list()[2]], objects=[host]
+                name="Test policy",
+                role=test_role,
+                user=[sdk_client_fs.user(username=another_user['username'])],
+                objects=[host],
             )
         with allure.step("Create second host"):
             second_host = provider.host_create('test-host-2')
@@ -728,3 +746,68 @@ class TestAdminPolicyPage:
         with allure.step("Check that user can not view second host config"):
             second_host_config_page = HostConfigPage(app_fs.driver, app_fs.adcm.url, second_host.id).open()
             second_host_config_page.config.check_no_rows_or_groups_on_page()
+
+    def test_policy_permission_to_run_cluster_action_and_view_task(
+        self, sdk_client_fs, app_fs, create_cluster_with_component, another_user
+    ):
+        """Test for the permissions to task."""
+
+        cluster, service, host, provider = create_cluster_with_component
+        with allure.step("Create test role"):
+            test_role = sdk_client_fs.role_create(
+                name=self.custom_role_name,
+                display_name=self.custom_role_name,
+                child=[{"id": sdk_client_fs.role(name="Cluster Action: some_action").id}],
+            )
+        with allure.step("Create test policy"):
+            sdk_client_fs.policy_create(
+                name="Test policy",
+                role=test_role,
+                user=[sdk_client_fs.user(username=another_user['username'])],
+                objects=[cluster],
+            )
+        with allure.step("Create second cluster"):
+            second_cluster = sdk_client_fs.bundle().cluster_create(name=f"{CLUSTER_NAME}_2")
+
+        login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
+        login_page.login_user(**another_user)
+        AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
+        with allure.step("Check that user can view first cluster"):
+            cluster_list_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+            assert len(cluster_list_page.table.get_all_rows()) == 1, "There should be 1 row with cluster"
+        with allure.step("Create second policy"):
+            test_role_2 = sdk_client_fs.role_create(
+                name=f"{self.custom_role_name}_2",
+                display_name=f"{self.custom_role_name}_2",
+                child=[{"id": sdk_client_fs.role(name="View cluster configurations").id}],
+            )
+            sdk_client_fs.policy_create(
+                name="Test policy 2",
+                role=test_role_2,
+                user=[sdk_client_fs.user(username=another_user['username'])],
+                objects=[second_cluster],
+            )
+        with allure.step("Check that user can view second cluster"):
+            cluster_list_page.driver.refresh()
+            cluster_rows = cluster_list_page.table.get_all_rows()
+            assert len(cluster_rows) == 2, "There should be 2 row with cluster"
+        with allure.step("Check actions in clusters"):
+            assert cluster_list_page.get_all_actions_name_in_cluster(cluster_rows[0]) == [
+                'some_action'
+            ], "First cluster action should be visible"
+            assert (
+                cluster_list_page.get_all_actions_name_in_cluster(cluster_rows[1]) == []
+            ), "Second cluster action should not be visible"
+        with allure.step("Run action from first cluster"):
+            cluster_list_page.run_action_in_cluster_row(cluster_rows[0], 'some_action')
+        with allure.step("Check task"):
+            cluster_list_page.header.click_job_block_in_header()
+            assert len(cluster_list_page.header.get_job_rows_from_popup()) == 1, "Job amount should be 1"
+            job_list_page = JobListPage(app_fs.driver, app_fs.adcm.url).open()
+            job_rows = job_list_page.table.get_all_rows()
+            assert len(job_rows) == 1, "Should be only 1 task"
+            task_info = job_list_page.get_task_info_from_table(0)
+            assert task_info.action_name == 'some_action', "Wrong task name"
+            assert task_info.invoker_objects == cluster.name, "Wrong cluster name"
+            job_list_page.click_on_action_name_in_row(job_rows[0])
+            JobPageStdout(app_fs.driver, app_fs.adcm.url, 1).wait_page_is_opened()
