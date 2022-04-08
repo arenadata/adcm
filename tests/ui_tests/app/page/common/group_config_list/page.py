@@ -104,21 +104,3 @@ class GroupConfigList(BasePageObject):
         for i in range(group_amount):
             with self.wait_rows_change():
                 self.create_group(name=f"Test name_{i}", description='Test description')
-
-    def is_save_btn_disabled(self):
-        return self.find_element(GroupConfigListLocators.add_btn).get_attribute("disabled") == 'true'
-
-    @allure.step("Check save button status")
-    def check_save_btn_state_and_save_conf(self, expected_state: bool):
-        assert (
-            not (self.is_save_btn_disabled()) == expected_state
-        ), f'Save button should{" not " if expected_state is False else " "}be disabled'
-        if expected_state:
-            self.save_config()
-
-    @allure.step('Saving configuration')
-    def save_config(self, load_timeout: int = 5):
-        """Save current configuration"""
-
-        self.find_and_click(GroupConfigListLocators.add_btn)
-        self.wait_element_hide(CommonConfigMenu.loading_text, timeout=load_timeout)
