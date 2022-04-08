@@ -14,6 +14,7 @@
 
 import json
 import base64
+import getpass
 from datetime import datetime
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
@@ -382,7 +383,7 @@ def set_old_password(password):
 
 
 @atomic
-def load(file_path, password):
+def load(file_path):
     """
     Loading and creating objects from JSON file
 
@@ -390,6 +391,7 @@ def load(file_path, password):
     :type file_path: str
     """
     try:
+        password = getpass.getpass()
         with open(file_path, 'r', encoding='utf_8') as f:
             encrypted = f.read()
             decrypted = decrypt_file(password, encrypted)
@@ -455,11 +457,9 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         """Parsing command line arguments"""
-        parser.add_argument('-i', '--input', dest='file_path', required=True)
-        parser.add_argument('-p', '--password', dest='password', required=True)
+        parser.add_argument('file_path', nargs='?')
 
     def handle(self, *args, **options):
         """Handler method"""
         file_path = options.get('file_path')
-        password = options.get('password')
-        load(file_path, password)
+        load(file_path)

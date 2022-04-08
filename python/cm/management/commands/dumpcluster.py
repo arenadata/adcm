@@ -15,6 +15,7 @@
 import json
 import sys
 import base64
+import getpass
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -311,7 +312,7 @@ def encrypt_data(pass_from_user, result):
     return encrypted
 
 
-def dump(cluster_id, output, password):
+def dump(cluster_id, output):
     """
     Saving objects to file in JSON format
 
@@ -378,6 +379,7 @@ def dump(cluster_id, output, password):
         data['host_components'].append(host_component)
     data['adcm_password'] = ANSIBLE_SECRET
     result = json.dumps(data, indent=2).encode('utf-8')
+    password = getpass.getpass()
     encrypted = encrypt_data(password, result)
 
     if output is not None:
@@ -410,14 +412,10 @@ class Command(BaseCommand):
             type=int,
             help='Cluster ID',
         )
-        parser.add_argument(
-            '-p', '--password', dest='password', required=True, help='Password for file enryption'
-        )
         parser.add_argument('-o', '--output', help='Specifies file to which the output is written.')
 
     def handle(self, *args, **options):
         """Handler method"""
         cluster_id = options['cluster_id']
         output = options['output']
-        password = options['password']
-        dump(cluster_id, output, password)
+        dump(cluster_id, output)
