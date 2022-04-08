@@ -21,7 +21,7 @@
                   "state": "created",
                   "multi_state": [],
                   "before_upgrade": {
-                     "state": "created"
+                     "state": null
                   }
                },
                "services": {

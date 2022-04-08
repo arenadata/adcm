@@ -295,6 +295,7 @@ def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade, config: dict
     if not upgrade.action:
         bundle_switch(obj, upgrade)
         if upgrade.state_on_success:
+            obj.before_upgrade['state'] = obj.state
             obj.state = upgrade.state_on_success
             obj.save()
     else:
@@ -317,7 +318,6 @@ def bundle_switch(obj: Union[Cluster, HostProvider], upgrade: Upgrade):
 
     with transaction.atomic():
         obj.prototype = new_proto
-        obj.before_upgrade['state'] = obj.state
         obj.save()
         switch_config(obj, new_proto, old_proto)
 

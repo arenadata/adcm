@@ -240,10 +240,12 @@ class TestFailedUpgradeAction:
         """
         old_bundle = old_cluster.bundle()
         expected_state = old_cluster.state
+        expected_before_upgrade_state = expected_state
         expected_prototype_id = old_cluster.prototype_id
 
         self._upload_new_version(sdk_client_fs, 'before_switch')
         self._upgrade_and_expect_state(old_cluster, expected_state)
+        self._check_before_upgrade_state(old_cluster, expected_before_upgrade_state)
         check_prototype(old_cluster, expected_prototype_id)
         check_cluster_objects_configs_equal_bundle_default(old_cluster, old_bundle)
 
@@ -255,10 +257,12 @@ class TestFailedUpgradeAction:
         restore_action_name = 'restore'
         expected_state = 'something_is_wrong'
         expected_state_after_restore = 'upgraded'
+        expected_before_upgrade_state = old_cluster.state
 
         bundle = self._upload_new_version(sdk_client_fs, 'after_switch_with_on_fail')
         expected_prototype_id = bundle.cluster_prototype().id
         self._upgrade_and_expect_state(old_cluster, expected_state)
+        self._check_before_upgrade_state(old_cluster, expected_before_upgrade_state)
         check_prototype(old_cluster, expected_prototype_id)
         check_cluster_objects_configs_equal_bundle_default(old_cluster, bundle)
         self._check_action_list(old_cluster, {restore_action_name})
@@ -271,10 +275,12 @@ class TestFailedUpgradeAction:
         Failed job doesn't have "on_fail" directive.
         """
         expected_state = old_cluster.state
+        expected_before_upgrade_state = expected_state
 
         bundle = self._upload_new_version(sdk_client_fs, 'after_switch')
         expected_prototype_id = bundle.cluster_prototype().id
         self._upgrade_and_expect_state(old_cluster, expected_state)
+        self._check_before_upgrade_state(old_cluster, expected_before_upgrade_state)
         check_prototype(old_cluster, expected_prototype_id)
         check_cluster_objects_configs_equal_bundle_default(old_cluster, bundle)
         self._check_action_list(old_cluster, set())
@@ -306,6 +312,13 @@ class TestFailedUpgradeAction:
         task = cluster.upgrade(**kwargs).do()
         assert task.wait() == 'failed', 'Upgrade action should have failed'
         check_state(cluster, state)
+
+    @allure.step('Check that cluster have "before_upgrade" equal to {state}')
+    def _check_before_upgrade_state(self, cluster: Cluster, state: str):
+        cluster.reread()
+        assert (
+            actual_state := cluster.before_upgrade['state']
+        ) == state, f'"before_upgrade" should be {state}, not {actual_state}'
 
     @allure.step('Check list of available actions on cluster')
     def _check_action_list(self, cluster: Cluster, action_names: Set[str]):
