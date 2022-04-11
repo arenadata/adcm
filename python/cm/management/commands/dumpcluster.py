@@ -385,8 +385,9 @@ def dump(cluster_id, output):
     if output is not None:
         with open(output, 'wb') as f:
             f.write(encrypted)
+        sys.stdout.write(f'Dump successfully done to file {output}\n')
     else:
-        sys.stdout.write(encrypted)
+        sys.stdout.write(encrypted.decode('utf8'))
 
 
 class Command(BaseCommand):
