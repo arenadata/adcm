@@ -1406,7 +1406,7 @@ class TestClusterGroupConfigPage:
                 group_customization=group_customization,
             )
         )
-        cluster, *_ = prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        cluster, *_ = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_group_config = cluster.group_config_create(name="Test group")
         cluster_config_page = ClusterGroupConfigConfig(
             app_fs.driver, app_fs.adcm.url, cluster.id, cluster_group_config.id
