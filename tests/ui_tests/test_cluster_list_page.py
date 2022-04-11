@@ -213,19 +213,11 @@ def check_components_host_info(host_info: ComponentsHostRowInfo, name: str, comp
 # !===== Funcs =====!
 
 
-def cluster_with_service(sdk_client: ADCMClient, path) -> Cluster:
-    """
-    Prepared cluster for test: create cluster, couple services and couple components.
-    """
+@allure.step("Prepare cluster and open config page")
+def prepare_cluster_and_open_config_page(sdk_client: ADCMClient, path, app):
+    """Upload bundle, create cluster and open config page"""
     bundle = sdk_client.upload_from_fs(path)
     cluster = bundle.cluster_create(name=f"Test cluster {random_string()}")
-    return cluster
-
-
-@allure.step("Prepare cluster and get config")
-def prepare_cluster_and_config(sdk_client: ADCMClient, path, app):
-    """Upload bundle, create cluster and get config"""
-    cluster = cluster_with_service(sdk_client, path)
     config = ClusterConfigPage(app.driver, app.adcm.url, cluster.cluster_id).open()
     config.wait_page_is_opened()
     return cluster, config
@@ -985,7 +977,7 @@ class TestClusterConfigPage:
                 group_customization=group_customization,
             )
         )
-        _, cluster_config_page = prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.check_no_rows_or_groups_on_page()
         cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
         with allure.step('Check that save button is disabled'):
@@ -1035,7 +1027,7 @@ class TestClusterConfigPage:
                 group_customization=group_customization,
             )
         )
-        _, cluster_config_page = prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
 
         def check_expectations():
             with allure.step('Check that field visible'):
@@ -1065,7 +1057,7 @@ class TestClusterConfigPage:
         """Check that we have errors and save button is not active for number field with values out of range"""
         params = {"filed_name": "numbers_test"}
 
-        _, cluster_config_page = prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
 
         with allure.step('Check that save button is active'):
             assert not cluster_config_page.config.is_save_btn_disabled(), 'Save button should be active'
@@ -1106,7 +1098,7 @@ class TestClusterConfigPage:
         """Test save button is active for valid number values"""
 
         path = get_data_dir(__file__) + f"/bundles_for_numbers_tests/{number_type}-positive_and_negative"
-        _, cluster_config_page = prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.type_in_field_with_few_inputs(
             row=cluster_config_page.config.get_all_config_rows()[0], values=[str(value)], clear=True
         )
@@ -1118,7 +1110,7 @@ class TestClusterConfigPage:
 
         params = {"filed_name": "numbers_test"}
         path = get_data_dir(__file__) + "/bundles_for_numbers_tests/integer-positive_and_negative"
-        _, cluster_config_page = prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.type_in_field_with_few_inputs(
             row=cluster_config_page.config.get_all_config_rows()[0], values=["1.2"], clear=True
         )
@@ -1140,7 +1132,7 @@ class TestClusterConfigPage:
                 read_only=False,
             )
         )
-        _, cluster_config_page = prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.type_in_field_with_few_inputs(
             row=cluster_config_page.config.get_all_config_rows()[0], values=params["new_value"], clear=True
         )
@@ -1165,7 +1157,7 @@ class TestClusterConfigPage:
                 read_only=False,
             )
         )
-        _, cluster_config_page = prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.type_in_field_with_few_inputs(
             row=cluster_config_page.config.get_all_config_rows()[0],
             values=['test', 'test', 'test_2', 'test', 'test_3', 'test'],
@@ -1237,7 +1229,7 @@ class TestClusterConfigPage:
                 field_advanced=field_advanced,
             )
         )
-        _, cluster_config_page = prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.check_no_rows_or_groups_on_page()
         cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
         with allure.step('Check that save button is disabled'):
@@ -1289,7 +1281,7 @@ class TestClusterConfigPage:
                 field_advanced=field_advanced,
             )
         )
-        _, cluster_config_page = prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
 
         def check_expectations():
             with allure.step('Check that field visible'):
