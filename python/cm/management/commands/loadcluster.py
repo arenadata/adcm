@@ -15,6 +15,7 @@
 import json
 import base64
 import getpass
+import sys
 from datetime import datetime
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
@@ -443,6 +444,7 @@ def load(file_path):
         elif group_data['model_name'] == 'hostprovider':
             obj = ex_provider_ids[group_data['object_id']]
         create_group(group_data, ex_host_ids, obj)
+    sys.stdout.write(f'Load successfully ended, cluster {cluster.display_name} created\n')
 
 
 class Command(BaseCommand):
