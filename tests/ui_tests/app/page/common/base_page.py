@@ -115,7 +115,12 @@ class BasePageObject:
             if self.is_element_displayed(CommonPopupLocators.block_by_text("Connection established.")):
                 try:
                     self.find_and_click(CommonPopupLocators.hide_btn_by_text("Connection established."))
-                except (StaleElementReferenceException, NoSuchElementException, ElementClickInterceptedException):
+                except (
+                    StaleElementReferenceException,
+                    NoSuchElementException,
+                    ElementClickInterceptedException,
+                    TimeoutException,
+                ):
                     pass
                 self.wait_element_hide(CommonPopupLocators.block_by_text("Connection established."))
         else:

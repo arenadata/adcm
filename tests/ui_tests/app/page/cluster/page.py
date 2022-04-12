@@ -547,3 +547,45 @@ class ClusterStatusPage(ClusterPageMixin, StatusPage):
         ObjectPageLocators.subtitle,
         ObjectPageLocators.text,
     ]
+
+
+class ClusterGroupConfigPageMixin(BasePageObject):
+    """Helpers for working with cluster group config page"""
+
+    MENU_SUFFIX: str
+    MAIN_ELEMENTS: list
+    cluster_id: int
+    group_config_id: int
+    header: PageHeader
+    footer: PageFooter
+    config: CommonConfigMenuObj
+    toolbar: CommonToolbar
+    table: CommonTableObj
+
+    def __init__(self, driver, base_url, cluster_id: int, group_config_id: int):
+        if self.MENU_SUFFIX is None:
+            raise AttributeError('You should explicitly set MENU_SUFFIX in class definition')
+        super().__init__(
+            driver,
+            base_url,
+            "/cluster/{cluster_id}/group_config/{group_config_id}/" + self.MENU_SUFFIX,
+            cluster_id=cluster_id,
+            group_config_id=group_config_id,
+        )
+        self.header = PageHeader(self.driver, self.base_url)
+        self.footer = PageFooter(self.driver, self.base_url)
+        self.config = CommonConfigMenuObj(self.driver, self.base_url)
+        self.cluster_id = cluster_id
+        self.toolbar = CommonToolbar(self.driver, self.base_url)
+        self.table = CommonTableObj(self.driver, self.base_url)
+
+
+class ClusterGroupConfigConfig(ClusterGroupConfigPageMixin):
+    """Cluster page status menu"""
+
+    MENU_SUFFIX = 'config'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ObjectPageLocators.text,
+    ]
