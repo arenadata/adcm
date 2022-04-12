@@ -935,15 +935,17 @@ class TestClusterConfigPage:
     @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
     @pytest.mark.parametrize(
         "config_group_customization",
-        [True, False],
-        ids=("config_group_customization_true", "config_group_customization_false"),
-        marks=pytest.mark.regression,
+        [
+            pytest.param(True, id="config_group_customization_true", marks=pytest.mark.regression),
+            pytest.param(False, id="config_group_customization_false", marks=pytest.mark.regression),
+        ],
     )
     @pytest.mark.parametrize(
         "group_customization",
-        [True, False],
-        ids=("group_customization_true", "group_customization_false"),
-        marks=pytest.mark.regression,
+        [
+            pytest.param(True, id="group_customization_true", marks=pytest.mark.regression),
+            pytest.param(False, id="group_customization_false", marks=pytest.mark.regression),
+        ],
     )
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_configs_fields_invisible_true(
@@ -991,15 +993,17 @@ class TestClusterConfigPage:
     @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
     @pytest.mark.parametrize(
         "config_group_customization",
-        [True, False],
-        ids=("config_group_customization_true", "config_group_customization_false"),
-        marks=pytest.mark.regression,
+        [
+            pytest.param(True, id="config_group_customization_true", marks=pytest.mark.regression),
+            pytest.param(False, id="config_group_customization_false", marks=pytest.mark.regression),
+        ],
     )
     @pytest.mark.parametrize(
         "group_customization",
-        [True, False],
-        ids=("group_customization_true", "group_customization_false"),
-        marks=pytest.mark.regression,
+        [
+            pytest.param(True, id="group_customization_true", marks=pytest.mark.regression),
+            pytest.param(False, id="group_customization_false", marks=pytest.mark.regression),
+        ],
     )
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_configs_fields_invisible_false(
@@ -1174,7 +1178,7 @@ class TestClusterConfigPage:
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
     @pytest.mark.parametrize(
-        "active", [True, pytest.param(False, marks=pytest.mark.regression)], ids=("active", "inactive")
+        "active", [pytest.param(True, id="active"), pytest.param(False, id="inactive", marks=pytest.mark.regression)]
     )
     @pytest.mark.parametrize("group_advanced", [True, False], ids=("group_advanced", "group_non-advanced"))
     @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
@@ -1183,8 +1187,10 @@ class TestClusterConfigPage:
     @pytest.mark.parametrize("field_invisible", [True, False], ids=("invisible", "visible"))
     @pytest.mark.parametrize(
         "field_advanced",
-        [pytest.param(True, marks=pytest.mark.regression), False],
-        ids=("field_advanced", "field_non-advanced"),
+        [
+            pytest.param(True, id="field_advanced", marks=pytest.mark.regression),
+            pytest.param(False, id="field_non_advanced"),
+        ],
     )
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_group_configs_fields_invisible_true(
@@ -1239,7 +1245,7 @@ class TestClusterConfigPage:
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
     @pytest.mark.parametrize(
-        "active", [True, pytest.param(False, marks=pytest.mark.regression)], ids=("active", "inactive")
+        "active", [pytest.param(True, id="active"), pytest.param(False, id="inactive", marks=pytest.mark.regression)]
     )
     @pytest.mark.parametrize("group_advanced", [True, False], ids=("group_advanced", "group_non-advanced"))
     @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
@@ -1248,8 +1254,10 @@ class TestClusterConfigPage:
     @pytest.mark.parametrize("field_invisible", [True, False], ids=("invisible", "visible"))
     @pytest.mark.parametrize(
         "field_advanced",
-        [pytest.param(True, marks=pytest.mark.regression), False],
-        ids=("field_advanced", "field_non-advanced"),
+        [
+            pytest.param(True, id="field_advanced", marks=pytest.mark.regression),
+            pytest.param(False, id="field_non_advanced"),
+        ],
     )
     @pytest.mark.usefixtures("login_to_adcm_over_api")  # pylint: disable-next=too-many-locals
     def test_group_configs_fields_invisible_false(
