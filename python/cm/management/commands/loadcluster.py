@@ -17,7 +17,7 @@ import base64
 import getpass
 import sys
 from datetime import datetime
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -399,6 +399,8 @@ def load(file_path):
             data = json.loads(decrypted.decode('utf-8'))
     except FileNotFoundError as err:
         raise AdcmEx('DUMP_LOAD_CLUSTER_ERROR', msg='Loaded file not found') from err
+    except InvalidToken as err:
+        raise AdcmEx('WRONG_PASSWORD') from err
 
     check(data)
     set_old_password(data['adcm_password'])
