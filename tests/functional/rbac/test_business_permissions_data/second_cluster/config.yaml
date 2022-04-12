@@ -14,6 +14,7 @@
   name: test_cluster
   version: 1.6
   edition: community
+  config_group_customization: true
   upgrade:
     - versions:
         min: 0.4
@@ -52,6 +53,7 @@
 - type: service
   name: test_service
   version: 101
+  config_group_customization: true
 
   config: *common_config
 
@@ -59,6 +61,7 @@
 
   components:
     test_component:
+      config_group_customization: true
       config: *common_config
       actions: *common_actions
 
@@ -68,6 +71,7 @@
 - type: service
   name: new_service
   version: 101
+  config_group_customization: true
 
   config: *common_config
 
