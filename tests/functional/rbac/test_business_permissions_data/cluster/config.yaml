@@ -14,6 +14,7 @@
   name: test_cluster
   version: 1.5
   edition: community
+  config_group_customization: true
 
   config: &common_config
   - name: boolean
@@ -50,6 +51,7 @@
 - type: service
   name: test_service
   version: 101
+  config_group_customization: true
 
   config: *common_config
 
@@ -57,9 +59,11 @@
 
   components: &common_components
     test_component:
+      config_group_customization: true
       config: *common_config
       actions: *common_actions
     new_component:
+      config_group_customization: true
       config: *common_config
       actions: *common_actions
 
@@ -68,6 +72,7 @@
 - type: service
   name: new_service
   version: 101
+  config_group_customization: true
 
   config: *common_config
 
