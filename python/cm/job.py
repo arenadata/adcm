@@ -18,13 +18,12 @@ import shutil
 import subprocess
 from configparser import ConfigParser
 from datetime import timedelta, datetime
-from typing import List, Tuple, Optional, Hashable, Any
+from typing import List, Tuple, Optional, Hashable, Any, Union
 
 from background_task import background
 from django.db import transaction
 from django.utils import timezone
 
-from rbac.roles import re_apply_policy_for_jobs
 from cm import api, inventory, adcm_config, variant, config
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx
@@ -53,6 +52,7 @@ from cm.models import (
     get_object_cluster,
 )
 from cm.status_api import post_event
+from rbac.roles import re_apply_policy_for_jobs
 
 
 def start_task(
@@ -654,12 +654,21 @@ def restore_hc(task: TaskLog, action: Action, status: str):
     api.save_hc(cluster, host_comp_list)
 
 
+def set_before_upgrade_state(action: Action, obj: Union[Cluster, HostProvider]) -> None:
+    """Save before state after upgrade"""
+    if action.upgrade is not None:
+        obj.before_upgrade['state'] = obj.state
+        obj.save()
+
+
 def finish_task(task: TaskLog, job: JobLog, status: str):
     action = task.action
     obj = task.task_object
     state, multi_state_set, multi_state_unset = get_state(action, job, status)
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
+        if hasattr(action, 'upgrade'):
+            set_before_upgrade_state(action, obj)
         set_action_state(action, task, obj, state, multi_state_set, multi_state_unset)
         restore_hc(task, action, status)
         task.unlock_affected()

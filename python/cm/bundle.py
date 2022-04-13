@@ -444,6 +444,9 @@ def copy_stage_upgrade(stage_upgrades, bundle):
         )
         upg.bundle = bundle
         upgrades.append(upg)
+        if su.action:
+            prototype = Prototype.objects.get(name=su.action.prototype.name, bundle=bundle)
+            upg.action = Action.objects.get(prototype=prototype, name=su.action.name)
     Upgrade.objects.bulk_create(upgrades)
 
 
@@ -456,7 +459,7 @@ def prepare_bulk(origin_objects, Target, prototype, fields):
     return target_objects
 
 
-def copy_stage_actons(stage_actions, prototype):
+def copy_stage_actions(stage_actions, prototype):
     actions = prepare_bulk(
         stage_actions,
         Action,
@@ -559,7 +562,7 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
     Prototype.objects.bulk_create(componets)
     for sp in StagePrototype.objects.filter(type='component', parent=stage_proto):
         p = Prototype.objects.get(name=sp.name, type='component', parent=prototype, bundle=bundle)
-        copy_stage_actons(StageAction.objects.filter(prototype=sp), p)
+        copy_stage_actions(StageAction.objects.filter(prototype=sp), p)
         copy_stage_config(StagePrototypeConfig.objects.filter(prototype=sp), p)
 
 
@@ -639,7 +642,7 @@ def copy_stage(bundle_hash, bundle_proto):
 
     for sp in stage_prototypes:
         p = Prototype.objects.get(name=sp.name, type=sp.type, bundle=bundle)
-        copy_stage_actons(StageAction.objects.filter(prototype=sp), p)
+        copy_stage_actions(StageAction.objects.filter(prototype=sp), p)
         copy_stage_config(StagePrototypeConfig.objects.filter(prototype=sp), p)
         copy_stage_component(
             StagePrototype.objects.filter(parent=sp, type='component'), sp, p, bundle
