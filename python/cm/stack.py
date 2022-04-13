@@ -160,7 +160,7 @@ def save_prototype(path, conf, def_type, bundle_hash):
         proto.license_hash = license_hash
     proto.save()
     save_actions(proto, conf, bundle_hash)
-    save_upgrade(proto, conf)
+    save_upgrade(proto, conf, bundle_hash)
     save_components(proto, conf, bundle_hash)
     save_prototype_config(proto, conf, bundle_hash)
     save_export(proto, conf)
@@ -210,7 +210,27 @@ def save_components(proto, conf, bundle_hash):
 
 
 def check_upgrade(proto, conf):
-    check_versions(proto, conf, f"upgrade \"{conf['name']}\"")
+    label = f"upgrade \"{conf['name']}\""
+    check_versions(proto, conf, label)
+    check_scripts(proto, conf, label)
+
+
+def check_scripts(proto, conf, label):
+    ref = proto_ref(proto)
+    count = 0
+    if 'scripts' in conf:
+        for action in conf['scripts']:
+            if action['script_type'] == 'internal':
+                count += 1
+                if count > 1:
+                    msg = 'Script with script_type \'internal\' must be unique in {} of {}'
+                    err('INVALID_UPGRADE_DEFINITION', msg.format(label, ref))
+                if action['script'] != 'bundle_switch':
+                    msg = 'Script with script_type \'internal\' should be marked as \'bundle_switch\' in {} of {}'
+                    err('INVALID_UPGRADE_DEFINITION', msg.format(label, ref))
+        if count == 0:
+            msg = 'Scripts block in {} of {} must contain exact one block with script \'bundle_switch\''
+            err('INVALID_UPGRADE_DEFINITION', msg.format(label, ref))
 
 
 def check_versions(proto, conf, label):
@@ -258,14 +278,16 @@ def set_version(obj, conf):
         obj.max_strict = True
 
 
-def save_upgrade(proto, conf):
+def save_upgrade(proto, conf, bundle_hash):
     if not in_dict(conf, 'upgrade'):
         return
     for item in conf['upgrade']:
-        check_versions(proto, item, f"upgrade \"{conf['name']}\"")
+        check_upgrade(proto, item)
         upg = StageUpgrade(name=item['name'])
         set_version(upg, item)
         dict_to_obj(item, 'description', upg)
+        if 'scripts' in item:
+            upg.action = save_actions(proto, item, bundle_hash)
         if 'states' in item:
             dict_to_obj(item['states'], 'available', upg)
             if 'available' in item['states']:
@@ -345,7 +367,7 @@ def check_action_hc(proto, conf, name):
                 conf['hc_acl'][idx]['service'] = proto.name
 
 
-def save_sub_actions(proto, conf, action):
+def save_sub_actions(conf, action):
     if action.type != 'task':
         return
     for sub in conf['scripts']:
@@ -384,81 +406,89 @@ UNSET = 'unset'
 
 
 def save_actions(proto, conf, bundle_hash):
+    if in_dict(conf, 'versions'):
+        conf['type'] = 'task'
+        upg_name = conf['name']
+        conf['display_name'] = f'Upgrade: {upg_name}'
+        name = re.sub(r'\s+', '_', upg_name).strip().lower()
+        action_name = f"{proto.name}_{proto.version}_{proto.edition}_upgrade_{name}"
+        upgrade_action = save_action(proto, conf, bundle_hash, action_name)
+        return upgrade_action
     if not in_dict(conf, 'actions'):
-        return
+        return None
     for action_name in sorted(conf['actions']):
         ac = conf['actions'][action_name]
-        check_action(proto, action_name, ac)
-        action = StageAction(prototype=proto, name=action_name)
-        action.type = ac['type']
-        if ac['type'] == 'job':
-            action.script = ac['script']
-            action.script_type = ac['script_type']
-        dict_to_obj(ac, 'button', action)
-        dict_to_obj(ac, 'display_name', action)
-        dict_to_obj(ac, 'description', action)
-        dict_to_obj(ac, 'allow_to_terminate', action)
-        dict_to_obj(ac, 'partial_execution', action)
-        dict_to_obj(ac, 'host_action', action)
-        dict_to_obj(ac, 'ui_options', action)
-        dict_to_obj(ac, 'params', action)
-        dict_to_obj(ac, 'log_files', action)
-        dict_to_obj(ac, 'venv', action)
-        fix_display_name(ac, action)
-        check_action_hc(proto, ac, action_name)
-        dict_to_obj(ac, 'hc_acl', action, 'hostcomponentmap')
-        if MASKING in ac:
-            if STATES in ac:
-                err(
-                    'INVALID_OBJECT_DEFINITION',
-                    f'Action {action_name} uses both mutual excluding states "states" and "masking"',
-                )
+        save_action(proto, ac, bundle_hash, action_name)
+    return None
 
-            action.state_available = _deep_get(ac, MASKING, STATE, AVAILABLE, default=ANY)
-            action.state_unavailable = _deep_get(ac, MASKING, STATE, UNAVAILABLE, default=[])
-            action.state_on_success = _deep_get(ac, ON_SUCCESS, STATE, default='')
-            action.state_on_fail = _deep_get(ac, ON_FAIL, STATE, default='')
 
-            action.multi_state_available = _deep_get(
-                ac, MASKING, MULTI_STATE, AVAILABLE, default=ANY
+def save_action(proto, ac, bundle_hash, action_name):
+    check_action(proto, action_name)
+    action = StageAction(prototype=proto, name=action_name)
+    action.type = ac['type']
+    if ac['type'] == 'job':
+        action.script = ac['script']
+        action.script_type = ac['script_type']
+    dict_to_obj(ac, 'button', action)
+    dict_to_obj(ac, 'display_name', action)
+    dict_to_obj(ac, 'description', action)
+    dict_to_obj(ac, 'allow_to_terminate', action)
+    dict_to_obj(ac, 'partial_execution', action)
+    dict_to_obj(ac, 'host_action', action)
+    dict_to_obj(ac, 'ui_options', action)
+    dict_to_obj(ac, 'params', action)
+    dict_to_obj(ac, 'log_files', action)
+    dict_to_obj(ac, 'venv', action)
+    fix_display_name(ac, action)
+    check_action_hc(proto, ac, action_name)
+    dict_to_obj(ac, 'hc_acl', action, 'hostcomponentmap')
+    if MASKING in ac:
+        if STATES in ac:
+            err(
+                'INVALID_OBJECT_DEFINITION',
+                f'Action {action_name} uses both mutual excluding states "states" and "masking"',
             )
-            action.multi_state_unavailable = _deep_get(
-                ac, MASKING, MULTI_STATE, UNAVAILABLE, default=[]
-            )
-            action.multi_state_on_success_set = _deep_get(
-                ac, ON_SUCCESS, MULTI_STATE, SET, default=[]
-            )
-            action.multi_state_on_success_unset = _deep_get(
-                ac, ON_SUCCESS, MULTI_STATE, UNSET, default=[]
-            )
-            action.multi_state_on_fail_set = _deep_get(ac, ON_FAIL, MULTI_STATE, SET, default=[])
-            action.multi_state_on_fail_unset = _deep_get(
-                ac, ON_FAIL, MULTI_STATE, UNSET, default=[]
-            )
-        else:
-            if ON_SUCCESS in ac or ON_FAIL in ac:
-                err(
-                    'INVALID_OBJECT_DEFINITION',
-                    f'Action {action_name} uses "on_success/on_fail" states without "masking"',
-                )
 
-            action.state_available = _deep_get(ac, STATES, AVAILABLE, default=[])
-            action.state_unavailable = []
-            action.state_on_success = _deep_get(ac, STATES, ON_SUCCESS, default='')
-            action.state_on_fail = _deep_get(ac, STATES, ON_FAIL, default='')
+        action.state_available = _deep_get(ac, MASKING, STATE, AVAILABLE, default=ANY)
+        action.state_unavailable = _deep_get(ac, MASKING, STATE, UNAVAILABLE, default=[])
+        action.state_on_success = _deep_get(ac, ON_SUCCESS, STATE, default='')
+        action.state_on_fail = _deep_get(ac, ON_FAIL, STATE, default='')
 
-            action.multi_state_available = ANY
-            action.multi_state_unavailable = []
-            action.multi_state_on_success_set = []
-            action.multi_state_on_success_unset = []
-            action.multi_state_on_fail_set = []
-            action.multi_state_on_fail_unset = []
-        action.save()
-        save_sub_actions(proto, ac, action)
-        save_prototype_config(proto, ac, bundle_hash, action)
+        action.multi_state_available = _deep_get(ac, MASKING, MULTI_STATE, AVAILABLE, default=ANY)
+        action.multi_state_unavailable = _deep_get(
+            ac, MASKING, MULTI_STATE, UNAVAILABLE, default=[]
+        )
+        action.multi_state_on_success_set = _deep_get(ac, ON_SUCCESS, MULTI_STATE, SET, default=[])
+        action.multi_state_on_success_unset = _deep_get(
+            ac, ON_SUCCESS, MULTI_STATE, UNSET, default=[]
+        )
+        action.multi_state_on_fail_set = _deep_get(ac, ON_FAIL, MULTI_STATE, SET, default=[])
+        action.multi_state_on_fail_unset = _deep_get(ac, ON_FAIL, MULTI_STATE, UNSET, default=[])
+    else:
+        if ON_SUCCESS in ac or ON_FAIL in ac:
+            err(
+                'INVALID_OBJECT_DEFINITION',
+                f'Action {action_name} uses "on_success/on_fail" states without "masking"',
+            )
+
+        action.state_available = _deep_get(ac, STATES, AVAILABLE, default=[])
+        action.state_unavailable = []
+        action.state_on_success = _deep_get(ac, STATES, ON_SUCCESS, default='')
+        action.state_on_fail = _deep_get(ac, STATES, ON_FAIL, default='')
+
+        action.multi_state_available = ANY
+        action.multi_state_unavailable = []
+        action.multi_state_on_success_set = []
+        action.multi_state_on_success_unset = []
+        action.multi_state_on_fail_set = []
+        action.multi_state_on_fail_unset = []
+    action.save()
+    save_sub_actions(ac, action)
+    save_prototype_config(proto, ac, bundle_hash, action)
+    return action
 
 
-def check_action(proto, action, act_config):
+def check_action(proto, action):
     err_msg = f'Action name "{action}" of {proto.type} "{proto.name}" {proto.version}'
     validate_name(action, err_msg)
 
