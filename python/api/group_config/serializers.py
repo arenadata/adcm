@@ -262,7 +262,9 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
             """
             for k, v in gk.items():
                 if isinstance(v, Mapping):
-                    check_value_unselected_field(cc[k], nc[k], gk[k], spec[k]['fields'], obj)
+                    check_value_unselected_field(
+                        cc[k], nc[k], gk[k]['fields'], spec[k]['fields'], obj
+                    )
                 else:
                     if spec[k]['type'] in ['list', 'map']:
                         if config_is_ro(obj, k, spec[k]['limits']) or (
