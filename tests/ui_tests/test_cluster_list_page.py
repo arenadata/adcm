@@ -1441,7 +1441,7 @@ class TestClusterGroupConfigPage:
                             config_item
                         )
                         assert (
-                            customization_chbx_checked if group_customization else not customization_chbx_checked
+                            (not customization_chbx_checked) if group_customization else customization_chbx_checked
                         ), f"Config field {field_type} should {'' if customization_chbx_checked else 'not'} be checked"
             if expected['alerts'] and not is_read_only:
                 cluster_config_page.config.check_invalid_value_message(field_type)
