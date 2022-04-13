@@ -1374,7 +1374,6 @@ class TestClusterGroupConfigPage:
         group_conf_page.group_config.create_few_groups(11)
         group_conf_page.table.check_pagination(second_page_item_amount=1)
 
-    @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
     @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
@@ -1422,7 +1421,7 @@ class TestClusterGroupConfigPage:
 
         def check_expectations():
             with allure.step('Check that field visible'):
-                for config_item in cluster_config_page.config.get_all_config_rows():
+                for config_item in cluster_config_page.group_config.get_all_group_config_rows():
                     assert config_item.is_displayed(), f"Config field {field_type} should be visible"
                     if is_default:
                         check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
@@ -1430,6 +1429,20 @@ class TestClusterGroupConfigPage:
                         assert cluster_config_page.config.is_element_read_only(
                             config_item
                         ), f"Config field {field_type} should be read only"
+                    if not config_group_customization:
+                        assert cluster_config_page.group_config.is_customization_chbx_disabled(
+                            config_item
+                        ), f"Config field {field_type} should be disabled"
+                        cluster_config_page.config.check_inputs_disabled(
+                            config_item, is_password=bool(field_type == "password")
+                        )
+                    if config_group_customization:
+                        customization_chbx_checked = cluster_config_page.group_config.is_customization_chbx_checked(
+                            config_item
+                        )
+                        assert (
+                            customization_chbx_checked if group_customization else not customization_chbx_checked
+                        ), f"Config field {field_type} should {'' if customization_chbx_checked else 'not'} be checked"
             if expected['alerts'] and not is_read_only:
                 cluster_config_page.config.check_invalid_value_message(field_type)
 

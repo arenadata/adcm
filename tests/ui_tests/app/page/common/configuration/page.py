@@ -152,6 +152,14 @@ class CommonConfigMenuObj(BasePageObject):
         locator = row_locators.value if not is_password else row_locators.password
         return self.find_child(row, locator).get_property("value")
 
+    def check_inputs_disabled(self, row: WebElement, is_password: bool = False):
+        """Check that inputs in row are disabled"""
+
+        row_locators = CommonConfigMenu.ConfigRow
+        locator = row_locators.value if not is_password else row_locators.password
+        for row_input in self.find_children(row, locator):
+            assert row_input.get_attribute("disabled") == 'true', "Input should be disabled"
+
     @allure.step('Check bool field')
     def assert_checkbox_state(self, row: WebElement, expected_value: bool):
         current_bool_state = "checked" in self.find_child(row, CommonConfigMenu.ConfigRow.checkbox).get_attribute(

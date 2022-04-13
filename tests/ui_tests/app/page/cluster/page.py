@@ -30,6 +30,7 @@ from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators, O
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs_locators import ActionDialog, DeleteDialog
+from tests.ui_tests.app.page.common.group_config.page import CommonGroupConfigMenu
 from tests.ui_tests.app.page.common.group_config_list.locators import GroupConfigListLocators
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigList
 from tests.ui_tests.app.page.common.import_page.locators import ImportLocators
@@ -559,6 +560,7 @@ class ClusterGroupConfigPageMixin(BasePageObject):
     header: PageHeader
     footer: PageFooter
     config: CommonConfigMenuObj
+    group_config: CommonGroupConfigMenu
     toolbar: CommonToolbar
     table: CommonTableObj
 
@@ -575,6 +577,7 @@ class ClusterGroupConfigPageMixin(BasePageObject):
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
+        self.group_config = CommonGroupConfigMenu(self.driver, self.base_url)
         self.cluster_id = cluster_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url)
