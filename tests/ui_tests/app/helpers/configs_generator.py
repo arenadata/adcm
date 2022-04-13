@@ -83,6 +83,8 @@ def generate_configs(
     default: bool = True,
     required: bool = True,
     read_only: bool = True,
+    config_group_customization: bool = True,
+    group_customization: bool = True,
 ) -> tuple:
     """Generate ADCM config dictionaries for fields"""
 
@@ -92,8 +94,14 @@ def generate_configs(
             "required": required,
             "read_only": read_only,
             "ui_options": {"invisible": invisible, 'advanced': advanced},
+            "group_customization": group_customization,
         }
-    config_dict = {"type": "cluster", "version": "1", "config": []}
+    config_dict = {
+        "type": "cluster",
+        "version": "1",
+        "config": [],
+        "config_group_customization": config_group_customization,
+    }
     field_config = {'name': field_type, 'type': field_type, 'required': data['required']}
     if data['default']:
         field_config['default'] = DEFAULT_VALUE[field_type]

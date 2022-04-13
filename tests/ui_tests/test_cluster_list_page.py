@@ -50,6 +50,7 @@ from tests.ui_tests.app.page.cluster.page import (
     ClusterComponentsPage,
     ComponentsHostRowInfo,
     ClusterStatusPage,
+    ClusterGroupConfigConfig,
 )
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
@@ -207,6 +208,44 @@ def check_components_host_info(host_info: ComponentsHostRowInfo, name: str, comp
     """Check all values in host info"""
     check_host_value('name', host_info.name, name)
     check_host_value('components', host_info.components, components)
+
+
+# !===== Funcs =====!
+
+
+@allure.step("Prepare cluster and open config page")
+def prepare_cluster_and_open_config_page(sdk_client: ADCMClient, path, app):
+    """Upload bundle, create cluster and open config page"""
+    bundle = sdk_client.upload_from_fs(path)
+    cluster = bundle.cluster_create(name=f"Test cluster {random_string()}")
+    config = ClusterConfigPage(app.driver, app.adcm.url, cluster.cluster_id).open()
+    config.wait_page_is_opened()
+    return cluster, config
+
+
+def check_default_field_values_in_configs(
+    cluster_config_page: ClusterConfigPage, config_item: WebElement, field_type: str, config
+):
+    """Check that input value in config is equal to the default one"""
+    main_config = config['config'][0]['subs'][0] if "subs" in config['config'][0] else config['config'][0]
+    if field_type == 'boolean':
+        cluster_config_page.config.assert_checkbox_state(config_item, expected_value=main_config['default'])
+    elif field_type in ("password", "secrettext"):
+        is_password_value = bool(field_type == "password")
+        cluster_config_page.config.assert_input_value_is(
+            expected_value='********', display_name=field_type, is_password=is_password_value
+        )
+    elif field_type == "list":
+        cluster_config_page.config.assert_list_value_is(expected_value=main_config['default'], display_name=field_type)
+    elif field_type == "map":
+        cluster_config_page.config.assert_map_value_is(expected_value=main_config['default'], display_name=field_type)
+    elif field_type == "file":
+        cluster_config_page.config.assert_input_value_is(expected_value="test", display_name=field_type)
+    else:
+        expected_value = (
+            str(main_config['default']) if field_type in ("integer", "float", "json") else main_config['default']
+        )
+        cluster_config_page.config.assert_input_value_is(expected_value=expected_value, display_name=field_type)
 
 
 # !===== Tests =====!
@@ -772,50 +811,6 @@ class TestClusterComponentsPage:
 class TestClusterConfigPage:
     """Tests for the /cluster/{}/config page"""
 
-    def cluster_with_service(self, sdk_client: ADCMClient, path) -> Cluster:
-        """
-        Prepared cluster for test: create cluster, couple services and couple components.
-        """
-        bundle = sdk_client.upload_from_fs(path)
-        cluster = bundle.cluster_create(name=f"Test cluster {random_string()}")
-        return cluster
-
-    @allure.step("Prepare cluster and get config")
-    def prepare_cluster_and_config(self, sdk_client: ADCMClient, path, app):
-        """Upload bundle, create cluster and get config"""
-        cluster = self.cluster_with_service(sdk_client, path)
-        config = ClusterConfigPage(app.driver, app.adcm.url, cluster.cluster_id).open()
-        config.wait_page_is_opened()
-        return cluster, config
-
-    def check_default_field_values_in_configs(
-        self, cluster_config_page: ClusterConfigPage, config_item: WebElement, field_type: str, config
-    ):
-        """Check that input value in config is equal to the default one"""
-        main_config = config['config'][0]['subs'][0] if "subs" in config['config'][0] else config['config'][0]
-        if field_type == 'boolean':
-            cluster_config_page.config.assert_checkbox_state(config_item, expected_value=main_config['default'])
-        elif field_type in ("password", "secrettext"):
-            is_password_value = bool(field_type == "password")
-            cluster_config_page.config.assert_input_value_is(
-                expected_value='********', display_name=field_type, is_password=is_password_value
-            )
-        elif field_type == "list":
-            cluster_config_page.config.assert_list_value_is(
-                expected_value=main_config['default'], display_name=field_type
-            )
-        elif field_type == "map":
-            cluster_config_page.config.assert_map_value_is(
-                expected_value=main_config['default'], display_name=field_type
-            )
-        elif field_type == "file":
-            cluster_config_page.config.assert_input_value_is(expected_value="test", display_name=field_type)
-        else:
-            expected_value = (
-                str(main_config['default']) if field_type in ("integer", "float", "json") else main_config['default']
-            )
-            cluster_config_page.config.assert_input_value_is(expected_value=expected_value, display_name=field_type)
-
     def test_cluster_config_page_open_by_tab(self, app_fs, create_community_cluster):
         """Test open /cluster/{}/config from left menu"""
         cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
@@ -938,9 +933,32 @@ class TestClusterConfigPage:
     @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
     @pytest.mark.parametrize("is_required", [True, False], ids=("required", "not_required"))
     @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
+    @pytest.mark.parametrize(
+        "config_group_customization",
+        [
+            pytest.param(True, id="config_group_customization_true", marks=pytest.mark.regression),
+            pytest.param(False, id="config_group_customization_false", marks=pytest.mark.regression),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "group_customization",
+        [
+            pytest.param(True, id="group_customization_true", marks=pytest.mark.regression),
+            pytest.param(False, id="group_customization_false", marks=pytest.mark.regression),
+        ],
+    )
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_configs_fields_invisible_true(
-        self, sdk_client_fs: ADCMClient, app_fs, field_type, is_advanced, is_default, is_required, is_read_only
+        self,
+        sdk_client_fs: ADCMClient,
+        app_fs,
+        field_type,
+        is_advanced,
+        is_default,
+        is_required,
+        is_read_only,
+        config_group_customization,
+        group_customization,
     ):
         """Check RO field with invisible true
         Scenario:
@@ -957,9 +975,11 @@ class TestClusterConfigPage:
                 default=is_default,
                 required=is_required,
                 read_only=is_read_only,
+                config_group_customization=config_group_customization,
+                group_customization=group_customization,
             )
         )
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.check_no_rows_or_groups_on_page()
         cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
         with allure.step('Check that save button is disabled'):
@@ -971,9 +991,32 @@ class TestClusterConfigPage:
     @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
     @pytest.mark.parametrize("is_required", [True, False], ids=("required", "not_required"))
     @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
+    @pytest.mark.parametrize(
+        "config_group_customization",
+        [
+            pytest.param(True, id="config_group_customization_true", marks=pytest.mark.regression),
+            pytest.param(False, id="config_group_customization_false", marks=pytest.mark.regression),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "group_customization",
+        [
+            pytest.param(True, id="group_customization_true", marks=pytest.mark.regression),
+            pytest.param(False, id="group_customization_false", marks=pytest.mark.regression),
+        ],
+    )
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_configs_fields_invisible_false(
-        self, sdk_client_fs: ADCMClient, app_fs, field_type, is_advanced, is_default, is_required, is_read_only
+        self,
+        sdk_client_fs: ADCMClient,
+        app_fs,
+        field_type,
+        is_advanced,
+        is_default,
+        is_required,
+        is_read_only,
+        config_group_customization,
+        group_customization,
     ):
         """Test config fields that aren't invisible"""
         config, expected, path = prepare_config(
@@ -984,16 +1027,18 @@ class TestClusterConfigPage:
                 default=is_default,
                 required=is_required,
                 read_only=is_read_only,
+                config_group_customization=config_group_customization,
+                group_customization=group_customization,
             )
         )
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
 
         def check_expectations():
             with allure.step('Check that field visible'):
                 for config_item in cluster_config_page.config.get_all_config_rows():
                     assert config_item.is_displayed(), f"Config field {field_type} should be visible"
                     if is_default:
-                        self.check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
+                        check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
                     if is_read_only:
                         assert cluster_config_page.config.is_element_read_only(
                             config_item
@@ -1016,7 +1061,7 @@ class TestClusterConfigPage:
         """Check that we have errors and save button is not active for number field with values out of range"""
         params = {"filed_name": "numbers_test"}
 
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
 
         with allure.step('Check that save button is active'):
             assert not cluster_config_page.config.is_save_btn_disabled(), 'Save button should be active'
@@ -1057,7 +1102,7 @@ class TestClusterConfigPage:
         """Test save button is active for valid number values"""
 
         path = get_data_dir(__file__) + f"/bundles_for_numbers_tests/{number_type}-positive_and_negative"
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.type_in_field_with_few_inputs(
             row=cluster_config_page.config.get_all_config_rows()[0], values=[str(value)], clear=True
         )
@@ -1069,7 +1114,7 @@ class TestClusterConfigPage:
 
         params = {"filed_name": "numbers_test"}
         path = get_data_dir(__file__) + "/bundles_for_numbers_tests/integer-positive_and_negative"
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.type_in_field_with_few_inputs(
             row=cluster_config_page.config.get_all_config_rows()[0], values=["1.2"], clear=True
         )
@@ -1091,7 +1136,7 @@ class TestClusterConfigPage:
                 read_only=False,
             )
         )
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.type_in_field_with_few_inputs(
             row=cluster_config_page.config.get_all_config_rows()[0], values=params["new_value"], clear=True
         )
@@ -1116,7 +1161,7 @@ class TestClusterConfigPage:
                 read_only=False,
             )
         )
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.type_in_field_with_few_inputs(
             row=cluster_config_page.config.get_all_config_rows()[0],
             values=['test', 'test', 'test_2', 'test', 'test_3', 'test'],
@@ -1133,7 +1178,7 @@ class TestClusterConfigPage:
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
     @pytest.mark.parametrize(
-        "active", [True, pytest.param(False, marks=pytest.mark.regression)], ids=("active", "inactive")
+        "active", [pytest.param(True, id="active"), pytest.param(False, id="inactive", marks=pytest.mark.regression)]
     )
     @pytest.mark.parametrize("group_advanced", [True, False], ids=("group_advanced", "group_non-advanced"))
     @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
@@ -1142,8 +1187,10 @@ class TestClusterConfigPage:
     @pytest.mark.parametrize("field_invisible", [True, False], ids=("invisible", "visible"))
     @pytest.mark.parametrize(
         "field_advanced",
-        [pytest.param(True, marks=pytest.mark.regression), False],
-        ids=("field_advanced", "field_non-advanced"),
+        [
+            pytest.param(True, id="field_advanced", marks=pytest.mark.regression),
+            pytest.param(False, id="field_non_advanced"),
+        ],
     )
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_group_configs_fields_invisible_true(
@@ -1188,7 +1235,7 @@ class TestClusterConfigPage:
                 field_advanced=field_advanced,
             )
         )
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_config_page.config.check_no_rows_or_groups_on_page()
         cluster_config_page.config.check_no_rows_or_groups_on_page_with_advanced()
         with allure.step('Check that save button is disabled'):
@@ -1198,7 +1245,7 @@ class TestClusterConfigPage:
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
     @pytest.mark.parametrize(
-        "active", [True, pytest.param(False, marks=pytest.mark.regression)], ids=("active", "inactive")
+        "active", [pytest.param(True, id="active"), pytest.param(False, id="inactive", marks=pytest.mark.regression)]
     )
     @pytest.mark.parametrize("group_advanced", [True, False], ids=("group_advanced", "group_non-advanced"))
     @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
@@ -1207,8 +1254,10 @@ class TestClusterConfigPage:
     @pytest.mark.parametrize("field_invisible", [True, False], ids=("invisible", "visible"))
     @pytest.mark.parametrize(
         "field_advanced",
-        [pytest.param(True, marks=pytest.mark.regression), False],
-        ids=("field_advanced", "field_non-advanced"),
+        [
+            pytest.param(True, id="field_advanced", marks=pytest.mark.regression),
+            pytest.param(False, id="field_non_advanced"),
+        ],
     )
     @pytest.mark.usefixtures("login_to_adcm_over_api")  # pylint: disable-next=too-many-locals
     def test_group_configs_fields_invisible_false(
@@ -1240,7 +1289,7 @@ class TestClusterConfigPage:
                 field_advanced=field_advanced,
             )
         )
-        _, cluster_config_page = self.prepare_cluster_and_config(sdk_client_fs, path, app_fs)
+        _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
 
         def check_expectations():
             with allure.step('Check that field visible'):
@@ -1257,9 +1306,7 @@ class TestClusterConfigPage:
                         cluster_config_page.config.expand_or_close_group(group_name, expand=True)
                         assert len(cluster_config_page.config.get_all_config_rows()) >= 2, "Field should be visible"
                         if is_default:
-                            self.check_default_field_values_in_configs(
-                                cluster_config_page, config_item, field_type, config
-                            )
+                            check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
                         if is_read_only and config_item.tag_name == 'app-field':
                             assert cluster_config_page.config.is_element_read_only(
                                 config_item
@@ -1326,6 +1373,74 @@ class TestClusterGroupConfigPage:
         group_conf_page = ClusterGroupConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         group_conf_page.group_config.create_few_groups(11)
         group_conf_page.table.check_pagination(second_page_item_amount=1)
+
+    @pytest.mark.full()
+    @pytest.mark.parametrize("field_type", TYPES)
+    @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
+    @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
+    @pytest.mark.parametrize("is_required", [True, False], ids=("required", "not_required"))
+    @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
+    @pytest.mark.parametrize(
+        "config_group_customization",
+        [True, False],
+        ids=("config_group_customization_true", "config_group_customization_false"),
+    )
+    @pytest.mark.parametrize(
+        "group_customization", [True, False], ids=("group_customization_true", "group_customization_false")
+    )
+    @pytest.mark.usefixtures("login_to_adcm_over_api")
+    def test_group_config_fields_invisible_false(
+        self,
+        sdk_client_fs: ADCMClient,
+        app_fs,
+        field_type,
+        is_advanced,
+        is_default,
+        is_required,
+        is_read_only,
+        config_group_customization,
+        group_customization,
+    ):
+        """Test group config fields that aren't invisible"""
+        config, expected, path = prepare_config(
+            generate_configs(
+                field_type=field_type,
+                invisible=False,
+                advanced=is_advanced,
+                default=is_default,
+                required=is_required,
+                read_only=is_read_only,
+                config_group_customization=config_group_customization,
+                group_customization=group_customization,
+            )
+        )
+        cluster, *_ = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
+        cluster_group_config = cluster.group_config_create(name="Test group")
+        cluster_config_page = ClusterGroupConfigConfig(
+            app_fs.driver, app_fs.adcm.url, cluster.id, cluster_group_config.id
+        ).open()
+
+        def check_expectations():
+            with allure.step('Check that field visible'):
+                for config_item in cluster_config_page.config.get_all_config_rows():
+                    assert config_item.is_displayed(), f"Config field {field_type} should be visible"
+                    if is_default:
+                        check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
+                    if is_read_only:
+                        assert cluster_config_page.config.is_element_read_only(
+                            config_item
+                        ), f"Config field {field_type} should be read only"
+            if expected['alerts'] and not is_read_only:
+                cluster_config_page.config.check_invalid_value_message(field_type)
+
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        if is_advanced:
+            cluster_config_page.config.check_no_rows_or_groups_on_page()
+        else:
+            check_expectations()
+        cluster_config_page.config.click_on_advanced()
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        check_expectations()
 
 
 class TestClusterStatusPage:

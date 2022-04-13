@@ -21,7 +21,7 @@ class GroupConfigListLocators:
     """Group Configuration list locators"""
 
     add_btn = Locator(By.CSS_SELECTOR, "button[adcm_test='create-btn']", "Add config group button")
-    header_item = Locator(By.CSS_SELECTOR, "mat-table mat-header-cell", "Add config group button")
+    header_item = Locator(By.CSS_SELECTOR, "mat-table mat-header-cell", "Header item")
     group_config_row = Locator(By.CSS_SELECTOR, "mat-table mat-row", "Group Configuration row")
 
     class GroupConfigRow:
