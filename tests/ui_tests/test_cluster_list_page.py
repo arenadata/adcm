@@ -1441,8 +1441,8 @@ class TestClusterGroupConfigPage:
                             config_item
                         )
                         assert (
-                            (not customization_chbx_checked) if group_customization else customization_chbx_checked
-                        ), f"Config field {field_type} should {'' if customization_chbx_checked else 'not'} be checked"
+                            customization_chbx_checked if group_customization else not customization_chbx_checked
+                        ), f"Config field {field_type} should {'not' if customization_chbx_checked else ''} be checked"
             if expected['alerts'] and not is_read_only:
                 cluster_config_page.config.check_invalid_value_message(field_type)
 
@@ -1452,7 +1452,8 @@ class TestClusterGroupConfigPage:
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
+        # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
 
 
