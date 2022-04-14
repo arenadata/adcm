@@ -186,7 +186,7 @@ def _write_json_file(f_name, j_data):
 def login_over_api(app_fs, credentials):
     """Perform login with given credentials"""
     login_endpoint = f'{app_fs.adcm.url.rstrip("/")}/api/v1/token/'
-    LoginPage(app_fs.driver, app_fs.adcm.url).open()
+    LoginPage(app_fs.driver, app_fs.adcm.url).open(close_popup=False)
     token = requests.post(login_endpoint, json=credentials).json()['token']
     with allure.step("Set token to localStorage"):
         auth = {'login': credentials['username'], 'token': token}

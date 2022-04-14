@@ -53,7 +53,7 @@ def get_obj(**kwargs):
 
 
 class ActionList(PermissionListMixin, GenericUIView):
-    queryset = Action.objects.all()
+    queryset = Action.objects.filter(upgrade__isnull=True)
     serializer_class = serializers.ActionSerializer
     serializer_class_ui = serializers.ActionUISerializer
     filterset_class = ActionFilter
@@ -123,7 +123,7 @@ class ActionList(PermissionListMixin, GenericUIView):
 
 
 class ActionDetail(PermissionListMixin, GenericUIView):
-    queryset = Action.objects.all()
+    queryset = Action.objects.filter(upgrade__isnull=True)
     serializer_class = serializers.ActionDetailSerializer
     serializer_class_ui = serializers.ActionUISerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
@@ -140,7 +140,12 @@ class ActionDetail(PermissionListMixin, GenericUIView):
             request.user, f'{ct.app_label}.view_{ct.model}', model, id=object_id
         )
         # TODO: we can access not only the actions of this object
-        action = get_object_for_user(request.user, 'cm.view_action', Action, id=action_id)
+        action = get_object_for_user(
+            request.user,
+            'cm.view_action',
+            self.get_queryset(),
+            id=action_id,
+        )
         if isinstance(obj, Host) and action.host_action:
             objects = {'host': obj}
         else:
