@@ -390,7 +390,7 @@ class CommonConfigMenuObj(BasePageObject):
     def check_save_btn_state_and_save_conf(self, expected_state: bool):
         assert (
             not (self.is_save_btn_disabled()) == expected_state
-        ), f'Save button should{" not " if expected_state is False else " "}be disabled'
+        ), f'Save button should{" not " if expected_state is True else " "}be disabled'
         if expected_state:
             self.save_config()
 
