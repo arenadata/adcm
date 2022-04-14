@@ -49,6 +49,8 @@ ANSIBLE_SECRET = ''
 
 ANSIBLE_VAULT_HEADER = '$ANSIBLE_VAULT;1.1;AES256'
 
+DEFAULT_SALT = b'"j\xebi\xc0\xea\x82\xe0\xa8\xba\x9e\x12E>\x11D'
+
 if os.path.exists(SECRETS_FILE):
     with open(SECRETS_FILE, encoding='utf_8') as f:
         data = json.load(f)

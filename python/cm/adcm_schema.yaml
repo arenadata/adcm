@@ -173,9 +173,39 @@ upgrade_obj:
     versions: version_dict
     states: states_dict
     from_edition: any_or_list
+    scripts: upgrade_task_list
+    hc_acl: action_hc_acl_list
+    venv: string
+    ui_options: json
+    config: config_obj
+
   required_items:
     - name
     - versions
+
+upgrade_task_list:
+  match: list
+  item: upgrade_task_action
+
+upgrade_task_action:
+  match: dict
+  items:
+    name: string
+    script: string
+    script_type: upgrade_script_type
+    display_name: string
+    params: json
+    on_fail: post_action_or_string
+  required_items:
+    - name
+    - script
+    - script_type
+
+upgrade_script_type:
+  match: set
+  variants:
+    - internal
+    - ansible
 
 version_dict:
   match: dict
