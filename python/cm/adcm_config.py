@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
 import copy
 import json
 import os
+from collections import OrderedDict
+from collections.abc import Mapping
 from typing import Any, Tuple, Optional
 
 import yspec.checker
@@ -87,7 +88,7 @@ def group_keys_to_flat(origin: dict, spec: dict):
     """
     result = {}
     for k, v in origin.items():
-        if isinstance(v, collections.Mapping):
+        if isinstance(v, Mapping):
             key = f'{k}/'
             if key in spec and spec[key].type != 'group':
                 result[key] = v
@@ -204,7 +205,7 @@ def load_social_auth():
 
 def get_prototype_config(proto: Prototype, action: Action = None) -> Tuple[dict, dict, dict, dict]:
     spec = {}
-    flat_spec = collections.OrderedDict()
+    flat_spec = OrderedDict()
     conf = {}
     attr = {}
     flist = ('default', 'required', 'type', 'limits')
