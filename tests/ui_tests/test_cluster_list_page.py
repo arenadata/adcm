@@ -1436,7 +1436,7 @@ class TestClusterGroupConfigPage:
                         cluster_config_page.config.check_inputs_disabled(
                             config_item, is_password=bool(field_type == "password")
                         )
-                    if config_group_customization:
+                    if config_group_customization and not is_read_only:
                         customization_chbx_checked = cluster_config_page.group_config.is_customization_chbx_checked(
                             config_item
                         )
