@@ -65,6 +65,7 @@ class TestProviderListPage:
     """Tests for provider list page"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.parametrize(
         "bundle_archive", [pytest.param(utils.get_data_dir(__file__, "provider"), id="provider")], indirect=True
     )
@@ -90,6 +91,7 @@ class TestProviderListPage:
             ), f"Provider state should be {provider_params['state']} and not {uploaded_provider.state}"
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.parametrize(
         "bundle_archive", [pytest.param(utils.get_data_dir(__file__, "provider"), id="provider")], indirect=True
     )
@@ -126,6 +128,7 @@ class TestProviderListPage:
         provider_page.table.check_pagination(second_page_item_amount=1)
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.usefixtures("upload_and_create_test_provider")
     def test_run_action_on_provider_list_page(self, app_fs):
         """Tests run action from provider list page"""
@@ -144,6 +147,7 @@ class TestProviderListPage:
             ), "There should be 1 success provider job in header"
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_open_config_from_provider_list_page(self, app_fs, upload_and_create_test_provider):
         """Tests open provider config from provider list page"""
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -152,6 +156,7 @@ class TestProviderListPage:
         ProviderConfigPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).wait_page_is_opened()
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_open_main_from_provider_list_page(self, app_fs, upload_and_create_test_provider):
         """Tests open provider main page from provider list page"""
         provider_page = ProviderListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -160,6 +165,7 @@ class TestProviderListPage:
         ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).wait_page_is_opened()
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.usefixtures("upload_and_create_test_provider")
     def test_delete_provider_from_provider_list_page(self, app_fs):
         """Tests delete provider from provider list page"""
@@ -171,6 +177,7 @@ class TestProviderListPage:
             assert len(provider_page.table.get_all_rows()) == 0, "Provider table should be empty"
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_get_error_from_delete_provider_from_provider_list_page(self, app_fs, upload_and_create_test_provider):
         """Tests delete provider error from provider list page"""
         params = {
@@ -196,6 +203,7 @@ class TestProviderMainPage:
     """Tests for provider main page"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_open_by_tab_provider_main_page(self, app_fs, upload_and_create_test_provider):
         """Test provider main page from left menu"""
         provider_config_page = ProviderConfigPage(
@@ -206,6 +214,7 @@ class TestProviderMainPage:
         provider_main_page.check_all_elements()
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_run_upgrade_on_provider_page_by_toolbar(self, app_fs, sdk_client_fs, upload_and_create_test_provider):
         """Test provider upgrade from toolbar"""
         params = {"state": "upgradated"}
@@ -228,6 +237,7 @@ class TestProviderConfigPage:
     """Tests for provider config page"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_open_by_tab_provider_config_page(self, app_fs, upload_and_create_test_provider):
         """Test provider config page from left menu"""
         provider_main_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).open()
@@ -236,6 +246,7 @@ class TestProviderConfigPage:
         provider_config_page.check_all_elements()
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_filter_config_on_provider_config_page(self, app_fs, upload_and_create_test_provider):
         """Test config filter on provider config page"""
         params = {"search_param": "str_param", "group_name": "core-site"}
@@ -258,6 +269,7 @@ class TestProviderConfigPage:
             provider_config_page.config.click_on_group(params["group_name"])
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.parametrize("bundle", ["provider_with_all_config_params"], indirect=True)
     @pytest.mark.skip(
         "Config filling method has flaky problem with filling password values, fix it and remove this skip"
