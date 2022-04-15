@@ -1452,13 +1452,15 @@ class TestClusterGroupConfigPage:
             if expected['alerts'] and not is_read_only:
                 cluster_config_page.config.check_invalid_value_message(field_type)
 
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
+        # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if is_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
+        # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
 
     # pylint: enable=too-many-locals
