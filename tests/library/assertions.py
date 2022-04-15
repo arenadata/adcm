@@ -107,3 +107,18 @@ def sets_are_equal(actual: set, expected: set, message: Union[str, Callable] = '
     allure.attach(pprint.pformat(expected), name='"Expected" collection')
     message = message if not callable(message) else message(**kwargs)
     raise AssertionError(message)
+
+
+def dicts_are_equal(actual: dict, expected: dict, message: Union[str, Callable] = '', **kwargs) -> None:
+    """
+    Check that two dicts are equal (direct comparison with `==`)
+    """
+    if actual == expected:
+        return
+
+    allure.attach(pprint.pformat(actual), name='Actual dictionary')
+    allure.attach(pprint.pformat(expected), name='Expected dictionary')
+    message = message if not callable(message) else message(**kwargs)
+    if not message:
+        message = "Two dictionaries aren't equal as was expected.\nCheck step attachments for more details."
+    raise AssertionError(message)
