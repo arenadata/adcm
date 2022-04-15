@@ -12,11 +12,12 @@
 # pylint: disable=redefined-outer-name, unused-argument, duplicate-code, no-self-use, dangerous-default-value
 
 """Tests for config groups"""
-
+import json
 from collections import OrderedDict
 from typing import (
     Union,
     Tuple,
+    Type,
 )
 
 import allure
@@ -40,6 +41,7 @@ from adcm_pytest_plugin.steps.actions import (
 )
 from adcm_pytest_plugin.utils import get_data_dir
 from coreapi.exceptions import ErrorMessage
+from docker.models.containers import Container
 
 from tests.library.errorcodes import (
     GROUP_CONFIG_HOST_ERROR,
@@ -901,3 +903,74 @@ class TestChangeGroupsConfig:
             )
             run_cluster_action_and_assert_result(cluster, action=ACTION_NAME, timeout=30)
             run_cluster_action_and_assert_result(cluster, action=ACTION_MULTIJOB_NAME, timeout=30)
+
+
+class TestActivatableGroupInGroupConfig:
+    """Test cases with activatable group manipulations in group config"""
+
+    @pytest.mark.parametrize(
+        'cluster_bundle', [get_data_dir(__file__, 'cluster_with_activatable_group')], indirect=True
+    )
+    def test_activatable_group(self, adcm_fs, cluster_with_two_hosts_on_it):
+        """Test activatable group in config groups"""
+        NoneType = type(None)
+        first_host, _, cluster = cluster_with_two_hosts_on_it
+
+        with allure.step('Activate group in cluster config'):
+            self._change_attrs(cluster, True)
+        with allure.step('Create config group for the cluster with one host'):
+            group = _create_group_and_add_host(cluster, first_host)
+
+        with allure.step('Do not include anything in config group and expect "main_group" to be dict'):
+            self.check_new_inventory(dict, cluster, adcm_fs.container)
+
+        with allure.step('Deactivate "main_group", include it in config group, expect "null" in inventory'):
+            self._change_attrs(group, False, True, False)
+            self.check_new_inventory(NoneType, cluster, adcm_fs.container)
+
+        with allure.step(
+            'Deactivate "main_group", exclude from config group, include one of its children, expect dict in inventory'
+        ):
+            self._change_attrs(group, False, False, True)
+            self.check_new_inventory(dict, cluster, adcm_fs.container)
+
+        with allure.step('Deactivate "main_group", exclude it from config group, expect dict in inventory'):
+            self._change_attrs(group, False, False, False)
+            self.check_new_inventory(dict, cluster, adcm_fs.container)
+
+        with allure.step('Deactivate "main_group" in cluster config and expect None in inventory'):
+            self._change_attrs(cluster, False)
+            self.check_new_inventory(NoneType, cluster, adcm_fs.container)
+
+    @allure.step('Generate new inventory and expect "main_group" to be of type {expected_group_type}')
+    def check_new_inventory(self, expected_group_type: Type, cluster: Cluster, container: Container):
+        """Run action and check inventory"""
+        task = cluster.action().run()
+        task.wait()
+        inventory = self._get_task_inventory(task.id, container)
+        main_group = inventory['all']['children']['CLUSTER']['hosts'][FIRST_HOST]['cluster']['config']['main_group']
+        assert isinstance(main_group, expected_group_type), (
+            f'"main_group" should be of type "{expected_group_type}" in the inventory.\n'
+            f'Actual type is "{type(main_group)}"'
+        )
+
+    def _get_task_inventory(self, task_id: int, container: Container):
+        return json.loads(container.exec_run(['cat', f'/adcm/data/run/{task_id}/inventory.json']).output)
+
+    def _change_attrs(self, obj, group_is_on, group_is_included=None, group_element_is_included=None):
+        config = {
+            'config': {},
+            'attr': {
+                'main_group': {
+                    'active': group_is_on,
+                },
+            },
+        }
+        if group_is_included is not None and group_element_is_included is not None:
+            config['attr']['group_keys'] = {
+                'main_group': {
+                    'value': group_is_included,
+                    'fields': {'simple_value': group_element_is_included},
+                }
+            }
+        obj.config_set_diff(config)
