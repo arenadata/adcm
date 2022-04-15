@@ -1438,14 +1438,14 @@ class TestClusterGroupConfigPage:
                     if not config_group_customization:
                         assert cluster_config_page.group_config.is_customization_chbx_disabled(
                             config_item
-                        ), f"Config field {field_type} should be disabled"
+                        ), f"Checkbox for field {field_type} should be disabled"
                     if config_group_customization and not is_read_only:
                         if not cluster_config_page.group_config.is_customization_chbx_checked(config_item):
                             cluster_config_page.group_config.click_on_customization_chbx(config_item)
                         assert cluster_config_page.group_config.is_customization_chbx_checked(
                             config_item
                         ), f"Config field {field_type} should be checked"
-            if expected['alerts'] and not is_read_only:
+            if expected['alerts'] and (not is_read_only) and config_group_customization:
                 cluster_config_page.config.check_invalid_value_message(field_type)
 
         # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
