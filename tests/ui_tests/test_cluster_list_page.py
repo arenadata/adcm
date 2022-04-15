@@ -1393,6 +1393,7 @@ class TestClusterGroupConfigPage:
         group_conf_page.table.check_pagination(second_page_item_amount=1)
 
     # pylint: disable=too-many-locals
+    @pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2741")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
