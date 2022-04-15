@@ -98,7 +98,7 @@ def generate_configs(
                 "ui_options": {"invisible": invisible, 'advanced': advanced},
                 "group_customization": group_customization,
             }
-            if group_customization != None
+            if group_customization is not None
             else {
                 'default': default,
                 "required": required,
@@ -113,7 +113,7 @@ def generate_configs(
             "config": [],
             "config_group_customization": config_group_customization,
         }
-        if config_group_customization != None
+        if config_group_customization is not None
         else {
             "type": "cluster",
             "version": "1",
