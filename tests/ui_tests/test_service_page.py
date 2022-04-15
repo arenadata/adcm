@@ -13,6 +13,7 @@
 """UI tests for /service page"""
 import os
 from typing import Tuple
+from collections import OrderedDict
 
 import allure
 import pytest
@@ -28,7 +29,6 @@ from adcm_client.objects import (
 )
 from adcm_pytest_plugin import params
 from adcm_pytest_plugin import utils
-from collections import OrderedDict
 from tests.library.status import ADCMObjectStatusChanger
 from tests.ui_tests.app.app import ADCMTest
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
@@ -118,6 +118,7 @@ class TestServiceMainPage:
     """Tests for the /cluster/{}/service/{}/main page"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_open_service_main_page_by_tab(self, app_fs, create_cluster_with_service):
         """Test open /cluster/{}/service/{}/main page from left menu"""
 
@@ -165,6 +166,7 @@ class TestServiceComponentPage:
     """Tests for the /cluster/{}/service/{}/component page"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_open_service_component_page_by_tab(self, app_fs, create_cluster_with_service):
         """Test open /cluster/{}/service/{}/component page from left menu"""
 
@@ -176,6 +178,7 @@ class TestServiceComponentPage:
 
     @params.including_https
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_run_action_from_service_component_page(self, app_fs, create_cluster_with_service):
         """Test run action from the row on /cluster/{}/service/{}/component page"""
 

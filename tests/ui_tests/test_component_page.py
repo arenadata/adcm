@@ -97,6 +97,7 @@ class TestComponentMainPage:
     """Tests for the /cluster/{}/service/{}/component/{}/ page"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_open_by_tab_main_component_page(self, app_fs, create_cluster_with_service):
         """Test open /cluster/{}/service/{}/component/{}/main page from left menu"""
 
