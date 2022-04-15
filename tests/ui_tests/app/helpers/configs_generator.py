@@ -15,6 +15,7 @@
 
 import os
 import tempfile
+from typing import Optional
 
 import allure
 import pytest
@@ -83,25 +84,42 @@ def generate_configs(
     default: bool = True,
     required: bool = True,
     read_only: bool = True,
-    config_group_customization: bool = True,
-    group_customization: bool = True,
+    config_group_customization: Optional[bool] = True,
+    group_customization: Optional[bool] = True,
 ) -> tuple:
     """Generate ADCM config dictionaries for fields"""
 
     with allure.step('Generate data set for configs without groups'):
-        data = {
-            'default': default,
-            "required": required,
-            "read_only": read_only,
-            "ui_options": {"invisible": invisible, 'advanced': advanced},
-            "group_customization": group_customization,
+        data = (
+            {
+                'default': default,
+                "required": required,
+                "read_only": read_only,
+                "ui_options": {"invisible": invisible, 'advanced': advanced},
+                "group_customization": group_customization,
+            }
+            if group_customization != None
+            else {
+                'default': default,
+                "required": required,
+                "read_only": read_only,
+                "ui_options": {"invisible": invisible, 'advanced': advanced},
+            }
+        )
+    config_dict = (
+        {
+            "type": "cluster",
+            "version": "1",
+            "config": [],
+            "config_group_customization": config_group_customization,
         }
-    config_dict = {
-        "type": "cluster",
-        "version": "1",
-        "config": [],
-        "config_group_customization": config_group_customization,
-    }
+        if config_group_customization != None
+        else {
+            "type": "cluster",
+            "version": "1",
+            "config": [],
+        }
+    )
     field_config = {'name': field_type, 'type': field_type, 'required': data['required']}
     if data['default']:
         field_config['default'] = DEFAULT_VALUE[field_type]

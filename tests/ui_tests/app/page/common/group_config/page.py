@@ -16,6 +16,8 @@ from typing import (
     List,
 )
 
+import allure
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webdriver import WebElement
 
@@ -36,6 +38,16 @@ class CommonGroupConfigMenu(BasePageObject):
         return 'mat-checkbox-disabled' in str(
             self.find_child(row, self.locators.customization_chbx).get_attribute("class")
         )
+
+    @allure.step("Click on customization checkbox")
+    def click_on_customization_chbx(self, row: WebElement):
+        state_before = self.is_customization_chbx_checked(row)
+        self.find_child(row, self.locators.customization_chbx).click()
+
+        def wait_state_change():
+            return state_before != self.is_customization_chbx_checked(row)
+
+        wait_until_step_succeeds(wait_state_change, period=1, timeout=5)
 
     def is_customization_chbx_checked(self, row: WebElement) -> bool:
         """Check if customization checkbox is checked"""
