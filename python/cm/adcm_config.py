@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
 import copy
 import json
 import os
+from collections import OrderedDict
+from collections.abc import Mapping
 from typing import Any, Tuple, Optional
 
 import yspec.checker
@@ -78,6 +79,25 @@ def to_flat_dict(conf, spec):
         else:
             flat[f'{c1}/{""}'] = conf[c1]
     return flat
+
+
+def group_keys_to_flat(origin: dict, spec: dict):
+    """
+    Convert `group_keys` and `custom_group_keys` to flat structure as `<field>/`
+     and `<group>/<field>`
+    """
+    result = {}
+    for k, v in origin.items():
+        if isinstance(v, Mapping):
+            key = f'{k}/'
+            if key in spec and spec[key].type != 'group':
+                result[key] = v
+            else:
+                for _k, _v in origin[k]['fields'].items():
+                    result[f'{k}/{_k}'] = _v
+        else:
+            result[f'{k}/'] = v
+    return result
 
 
 def get_default(c, proto=None):  # pylint: disable=too-many-branches
@@ -185,7 +205,7 @@ def load_social_auth():
 
 def get_prototype_config(proto: Prototype, action: Action = None) -> Tuple[dict, dict, dict, dict]:
     spec = {}
-    flat_spec = collections.OrderedDict()
+    flat_spec = OrderedDict()
     conf = {}
     attr = {}
     flist = ('default', 'required', 'type', 'limits')
@@ -435,13 +455,14 @@ def group_is_activatable(spec):
     return False
 
 
-def ui_config(obj, cl):
+def ui_config(obj, cl):  # pylint: disable=too-many-locals
     conf = []
     _, spec, _, _ = get_prototype_config(obj.prototype)
     obj_conf = cl.config
     obj_attr = cl.attr
     flat_conf = to_flat_dict(obj_conf, spec)
-    flat_group_keys = to_flat_dict(obj_attr.get('group_keys', {}), spec)
+    group_keys = obj_attr.get('group_keys', {})
+    custom_group_keys = obj_attr.get('custom_group_keys', {})
     slist = ('name', 'subname', 'type', 'description', 'display_name', 'required')
     for key in spec:
         item = obj_to_dict(spec[key], slist)
@@ -460,11 +481,19 @@ def ui_config(obj, cl):
             item['value'] = flat_conf[key]
         else:
             item['value'] = get_default(spec[key], obj.prototype)
-        if flat_group_keys:
+        if group_keys:
             if spec[key].type == 'group':
-                item['group'] = any((v for k, v in flat_group_keys.items() if k.startswith(key)))
+                k = key.split('/')[0]
+                item['group'] = group_keys[k]['value']
+                item['custom_group'] = custom_group_keys[k]['value']
             else:
-                item['group'] = flat_group_keys[key]
+                k1, k2 = key.split('/')
+                if k2:
+                    item['group'] = group_keys[k1]['fields'][k2]
+                    item['custom_group'] = custom_group_keys[k1]['fields'][k2]
+                else:
+                    item['group'] = group_keys[k1]
+                    item['custom_group'] = custom_group_keys[k1]
         conf.append(item)
     return conf
 
@@ -563,7 +592,7 @@ def check_json_config(proto, obj, new_conf, old_conf=None, attr=None):
 
 def check_structure_for_group_attr(group_attr, spec, key_name):
     """Check structure for `group_keys` and `custom_group_keys` field in attr"""
-    flat_group_attr = to_flat_dict(group_attr, spec)
+    flat_group_attr = group_keys_to_flat(group_attr, spec)
     for key, value in flat_group_attr.items():
         if key not in spec:
             msg = 'invalid field in `{}`'
@@ -595,8 +624,8 @@ def check_custom_group_keys_attr(proto, custom_group_keys, spec):
 
 def check_agreement_group_attr(group_keys, custom_group_keys, spec):
     """Check agreement group_keys and custom_group_keys"""
-    flat_group_keys = to_flat_dict(group_keys, spec)
-    flat_custom_group_keys = to_flat_dict(custom_group_keys, spec)
+    flat_group_keys = group_keys_to_flat(group_keys, spec)
+    flat_custom_group_keys = group_keys_to_flat(custom_group_keys, spec)
     for key, value in flat_custom_group_keys.items():
         if not value and flat_group_keys[key]:
             msg = f'the `{key}` parameter cannot be included in the group'
