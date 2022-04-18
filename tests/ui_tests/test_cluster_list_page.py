@@ -255,6 +255,7 @@ class TestClusterListPage:
     """Tests for the /cluster page"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.parametrize(
         "bundle_archive",
         [
@@ -302,6 +303,7 @@ class TestClusterListPage:
         cluster_page.table.check_pagination(second_page_item_amount=1)
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.usefixtures("create_community_cluster")
     def test_check_cluster_list_page_action_run(self, app_fs):
         """Test action run from the button in the cluster row on /cluster page"""
@@ -322,6 +324,7 @@ class TestClusterListPage:
             ), "There should be 1 success cluster job in header"
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_check_cluster_list_page_import_run(self, create_import_cluster_with_service, app_fs):
         """Test import run from the button in the cluster row on /cluster page"""
         cluster, _, _, _ = create_import_cluster_with_service
@@ -334,6 +337,7 @@ class TestClusterListPage:
             assert len(import_page.get_import_items()) == 1, "Cluster import page should contain 1 import"
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_check_cluster_list_page_open_cluster_config(self, app_fs, create_community_cluster):
         """Test cluster config open from the button in the cluster row on /cluster page"""
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -342,6 +346,7 @@ class TestClusterListPage:
         ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).wait_page_is_opened()
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_check_cluster_list_page_open_cluster_main(self, app_fs, create_community_cluster):
         """Test cluster page open from the button in the cluster row on /cluster page"""
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -350,6 +355,7 @@ class TestClusterListPage:
         ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).wait_page_is_opened()
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.usefixtures("create_community_cluster")
     def test_check_cluster_list_page_delete_cluster(self, app_fs):
         """Test delete cluster from the button in the cluster row on /cluster page"""
@@ -365,6 +371,7 @@ class TestClusterMainPage:
     """Tests for the /cluster/{}/main page"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_open_by_tab_cluster_main_page(self, app_fs, create_community_cluster):
         """Test open /cluter/{}/main page from left menu"""
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
@@ -426,6 +433,7 @@ class TestClusterServicePage:
     """Tests for the /cluster/{}/service page"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_check_cluster_service_page_open_by_tab(self, app_fs, create_community_cluster):
         """Test open /cluter/{}/service page from left menu"""
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
@@ -434,6 +442,7 @@ class TestClusterServicePage:
         cluster_service_page.check_cluster_toolbar(CLUSTER_NAME)
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_check_create_and_open_service_page_from_cluster_page(self, app_fs, create_community_cluster):
         """Test add service and open service page from cluster/{}/service page"""
         params = {"service_name": "test_service - 1.2"}
@@ -471,6 +480,7 @@ class TestClusterServicePage:
 
     @params.including_https
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_check_actions_from_service_list_page(self, app_fs, create_community_cluster_with_service):
         """Test run action from the row on cluster/{}/service page"""
         params = {"action_name": "test_action", "expected_state": "installed"}
@@ -524,6 +534,7 @@ class TestClusterHostPage:
     """Tests for the /cluster/{}/host page"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_required_fields_from_cluster_host_page(self, app_fs, create_community_cluster_with_service):
         """Test fields on cluster/{}/host page"""
         cluster, _ = create_community_cluster_with_service
@@ -535,6 +546,7 @@ class TestClusterHostPage:
         cluster_host_page.check_cluster_toolbar(CLUSTER_NAME)
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.parametrize("bundle_archive", [utils.get_data_dir(__file__, "provider")], indirect=True)
     def test_create_host_and_hostprovider_from_cluster_host_page(
         self, app_fs, bundle_archive, create_community_cluster_with_service
@@ -558,6 +570,7 @@ class TestClusterHostPage:
         )
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.usefixtures("upload_and_create_provider")
     def test_create_host_from_cluster_host_page(self, app_fs, create_community_cluster_with_service):
         """Test create host from cluster/{}/host page"""
@@ -676,6 +689,7 @@ class TestClusterComponentsPage:
     """Tests for the /cluster/{}/component page"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_check_cluster_components_page_open_by_tab(self, app_fs, create_community_cluster):
         """Test open /cluter/{}/component page from left menu"""
         cluster_config_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
@@ -715,6 +729,7 @@ class TestClusterComponentsPage:
         check_components_host_info(cluster_components_page.get_row_info(host_row), HOST_NAME, "0")
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_check_cluster_components_page_create_components(
         self, app_fs, create_community_cluster_with_host_and_service
     ):
@@ -985,6 +1000,7 @@ class TestClusterConfigPage:
         with allure.step('Check that save button is disabled'):
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
+    # pylint: disable=too-many-locals
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
@@ -1054,6 +1070,8 @@ class TestClusterConfigPage:
         cluster_config_page.config.click_on_advanced()
         cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
+
+    # pylint: enable=too-many-locals
 
     @pytest.mark.full()
     @parametrize_by_data_subdirs(__file__, 'bundles_for_numbers_tests')
@@ -1374,6 +1392,9 @@ class TestClusterGroupConfigPage:
         group_conf_page.group_config.create_few_groups(11)
         group_conf_page.table.check_pagination(second_page_item_amount=1)
 
+    # pylint: disable=too-many-locals
+    @pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2741")
+    @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
     @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
@@ -1423,29 +1444,15 @@ class TestClusterGroupConfigPage:
 
         def check_expectations():
             with allure.step('Check that field visible'):
-                for config_item in cluster_config_page.group_config.get_all_group_config_rows():
+                for config_item in cluster_config_page.config.get_all_config_rows():
                     assert config_item.is_displayed(), f"Config field {field_type} should be visible"
                     if is_default:
                         check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
-                        if not config_group_customization:
-                            cluster_config_page.config.check_inputs_disabled(
-                                config_item, is_password=bool(field_type == "password")
-                            )
                     if is_read_only:
                         assert cluster_config_page.config.is_element_read_only(
                             config_item
                         ), f"Config field {field_type} should be read only"
-                    if not config_group_customization:
-                        assert cluster_config_page.group_config.is_customization_chbx_disabled(
-                            config_item
-                        ), f"Checkbox for field {field_type} should be disabled"
-                    if config_group_customization and not is_read_only:
-                        if not cluster_config_page.group_config.is_customization_chbx_checked(config_item):
-                            cluster_config_page.group_config.click_on_customization_chbx(config_item)
-                        assert cluster_config_page.group_config.is_customization_chbx_checked(
-                            config_item
-                        ), f"Config field {field_type} should be checked"
-            if expected['alerts'] and (not is_read_only) and config_group_customization:
+            if expected['alerts'] and not is_read_only:
                 cluster_config_page.config.check_invalid_value_message(field_type)
 
         # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
@@ -1458,6 +1465,8 @@ class TestClusterGroupConfigPage:
         # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
         # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
+
+    # pylint: enable=too-many-locals
 
 
 class TestClusterStatusPage:

@@ -111,6 +111,7 @@ def _create_cluster(upload_bundles: List[Bundle]):
 
 
 @pytest.mark.smoke()
+@pytest.mark.include_firefox()
 def test_ce_bundle_upload(create_bundle_archives: List[str], page: BundleListPage):
     """Upload community bundle"""
     bundle_params = BundleInfo(
@@ -122,6 +123,7 @@ def test_ce_bundle_upload(create_bundle_archives: List[str], page: BundleListPag
 
 
 @pytest.mark.smoke()
+@pytest.mark.include_firefox()
 @pytest.mark.parametrize("create_bundle_archives", [([CLUSTER_EE_CONFIG], LICENSE_FP)], indirect=True)
 def test_ee_bundle_upload(create_bundle_archives: List[str], page: BundleListPage):
     """Upload enterprise bundle and accept licence"""
@@ -138,6 +140,7 @@ def test_ee_bundle_upload(create_bundle_archives: List[str], page: BundleListPag
 
 
 @pytest.mark.smoke()
+@pytest.mark.include_firefox()
 def test_delete_bundle(create_bundle_archives: List[str], page: BundleListPage):
     """Upload bundle and delete it"""
     with allure.step('Upload bundle'):
@@ -177,6 +180,7 @@ def test_accept_license_with_two_bundles_upload_at_once(create_bundle_archives: 
 
 @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2385")
 @pytest.mark.smoke()
+@pytest.mark.include_firefox()
 def test_open_bundle_from_table(page: BundleListPage, upload_bundles: List[Bundle]):
     """Test open bundle object page from list of bundles"""
     with allure.step('Open bundle object page from bundle list'):
@@ -189,6 +193,7 @@ def test_open_bundle_from_table(page: BundleListPage, upload_bundles: List[Bundl
 
 @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2385")
 @pytest.mark.smoke()
+@pytest.mark.include_firefox()
 def test_open_main_menu_on_bundle_page(page: BundleListPage, upload_bundles: List[Bundle]):
     """Open main menu on bundle detailed page"""
     with allure.step('Open bundle object page'):
@@ -216,6 +221,7 @@ def test_delete_bundle_with_created_cluster(page: BundleListPage):
 
 
 @pytest.mark.smoke()
+@pytest.mark.include_firefox()
 @pytest.mark.parametrize(
     "create_bundle_archives",
     [[PROVIDER_CONFIG]],
@@ -237,6 +243,7 @@ def test_upload_provider_bundle_from_another_page(
 
 
 @pytest.mark.smoke()
+@pytest.mark.include_firefox()
 @pytest.mark.parametrize(
     "create_bundle_archives",
     [[CLUSTER_CE_CONFIG]],

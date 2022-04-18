@@ -20,6 +20,7 @@ from tests.ui_tests.app.page.login.page import LoginPage
 
 
 @pytest.mark.smoke()
+@pytest.mark.include_firefox()
 def test_check_login_to_adcm(app_fs, adcm_credentials):
     """Test basic success UI login"""
     login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
@@ -42,6 +43,7 @@ def test_check_login_button_unavailable(app_fs, name, password):
 
 
 @pytest.mark.smoke()
+@pytest.mark.include_firefox()
 @pytest.mark.parametrize(
     ("name", "password"),
     [("admin1", "admin"), ("admin", "admin1")],
@@ -56,6 +58,7 @@ def test_check_error_in_login(app_fs, name, password):
 
 
 @pytest.mark.smoke()
+@pytest.mark.include_firefox()
 def test_check_header_links_in_login_page_unauthorised(app_fs):
     """Test header for unauthorised user"""
     params = {"error_text": "User is not authorized!"}
