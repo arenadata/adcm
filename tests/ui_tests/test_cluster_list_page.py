@@ -1393,7 +1393,6 @@ class TestClusterGroupConfigPage:
         group_conf_page.table.check_pagination(second_page_item_amount=1)
 
     # pylint: disable=too-many-locals
-    @pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2741")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
@@ -1444,15 +1443,30 @@ class TestClusterGroupConfigPage:
 
         def check_expectations():
             with allure.step('Check that field visible'):
-                for config_item in cluster_config_page.config.get_all_config_rows():
+
+                for config_item in cluster_config_page.group_config.get_all_group_config_rows():
                     assert config_item.is_displayed(), f"Config field {field_type} should be visible"
                     if is_default:
                         check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
+                        if not config_group_customization:
+                            cluster_config_page.config.check_inputs_disabled(
+                                config_item, is_password=bool(field_type == "password")
+                            )
                     if is_read_only:
                         assert cluster_config_page.config.is_element_read_only(
                             config_item
                         ), f"Config field {field_type} should be read only"
-            if expected['alerts'] and not is_read_only:
+                    if not config_group_customization:
+                        assert cluster_config_page.group_config.is_customization_chbx_disabled(
+                            config_item
+                        ), f"Checkbox for field {field_type} should be disabled"
+                    if config_group_customization and not is_read_only:
+                        if not cluster_config_page.group_config.is_customization_chbx_checked(config_item):
+                            cluster_config_page.group_config.click_on_customization_chbx(config_item)
+                        assert cluster_config_page.group_config.is_customization_chbx_checked(
+                            config_item
+                        ), f"Config field {field_type} should be checked"
+            if expected['alerts'] and (not is_read_only) and config_group_customization:
                 cluster_config_page.config.check_invalid_value_message(field_type)
 
         # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
@@ -1466,7 +1480,136 @@ class TestClusterGroupConfigPage:
         # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
 
-    # pylint: enable=too-many-locals
+    @pytest.mark.full()
+    @pytest.mark.parametrize("field_type", TYPES)
+    @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
+    @pytest.mark.parametrize(
+        "active", [pytest.param(True, id="active"), pytest.param(False, id="inactive", marks=pytest.mark.regression)]
+    )
+    @pytest.mark.parametrize("group_advanced", [True, False], ids=("group_advanced", "group_non-advanced"))
+    @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
+    @pytest.mark.parametrize("is_required", [True, False], ids=("required", "not_required"))
+    @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
+    @pytest.mark.parametrize("field_invisible", [True, False], ids=("invisible", "visible"))
+    @pytest.mark.parametrize(
+        "field_advanced",
+        [
+            pytest.param(True, id="field_advanced", marks=pytest.mark.regression),
+            pytest.param(False, id="field_non_advanced"),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "config_group_customization",
+        [True, False, None],
+        ids=("config_group_customization_true", "config_group_customization_false", "no_config_group_customization"),
+    )
+    @pytest.mark.parametrize(
+        "group_customization",
+        [True, False, None],
+        ids=("group_customization_true", "group_customization_false", "no_group_customization"),
+    )
+    @pytest.mark.parametrize(
+        "field_customization",
+        [True, False, None],
+        ids=("field_customization_true", "field_customization_false", "no_field_customization"),
+    )
+    @pytest.mark.usefixtures("login_to_adcm_over_api")  # pylint: disable-next=too-many-locals
+    def test_group_configs_fields_in_group_invisible_false(
+        self,
+        sdk_client_fs: ADCMClient,
+        app_fs,
+        field_type,
+        activatable,
+        active,
+        group_advanced,
+        is_default,
+        is_required,
+        is_read_only,
+        field_invisible,
+        field_advanced,
+        config_group_customization,
+        group_customization,
+        field_customization,
+    ):
+        """Test group configs with not-invisible fields"""
+        config, expected, path = prepare_group_config(
+            generate_group_configs(
+                field_type=field_type,
+                activatable=activatable,
+                active=active,
+                group_invisible=False,
+                group_advanced=group_advanced,
+                default=is_default,
+                required=is_required,
+                read_only=is_read_only,
+                field_invisible=field_invisible,
+                field_advanced=field_advanced,
+                config_group_customization=config_group_customization,
+                group_customization=group_customization,
+                field_customization=field_customization,
+            )
+        )
+        cluster, *_ = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
+        cluster_group_config = cluster.group_config_create(name="Test group")
+        cluster_config_page = ClusterGroupConfigConfig(
+            app_fs.driver, app_fs.adcm.url, cluster.id, cluster_group_config.id
+        ).open()
+
+        def check_expectations():
+            with allure.step('Check that field visible'):
+                for config_item in cluster_config_page.group_config.get_all_group_config_rows():
+                    group_name = cluster_config_page.config.get_group_names()[0].text
+                    assert group_name == 'group', "Should be group 'group' visible"
+                    if not activatable:
+                        continue
+                    if not cluster_config_page.config.advanced:
+                        cluster_config_page.config.check_group_is_active(group_name, config['config'][0]['active'])
+                    if not field_invisible and (
+                        (cluster_config_page.config.advanced and field_advanced) or not field_advanced
+                    ):
+                        cluster_config_page.config.expand_or_close_group(group_name, expand=True)
+                        assert len(cluster_config_page.config.get_all_config_rows()) >= 2, "Field should be visible"
+                        if is_default:
+                            check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
+                            if not config_group_customization:
+                                cluster_config_page.config.check_inputs_disabled(
+                                    config_item, is_password=bool(field_type == "password")
+                                )
+                        if is_read_only and config_item.tag_name == 'app-field':
+                            assert cluster_config_page.config.is_element_read_only(
+                                config_item
+                            ), f"Config field {field_type} should be read only"
+                        if not config_group_customization:
+                            assert cluster_config_page.group_config.is_customization_chbx_disabled(
+                                config_item
+                            ), f"Checkbox for field {field_type} should be disabled"
+                        if config_group_customization and not is_read_only:
+                            if not cluster_config_page.group_config.is_customization_chbx_checked(config_item):
+                                cluster_config_page.group_config.click_on_customization_chbx(config_item)
+                            assert cluster_config_page.group_config.is_customization_chbx_checked(
+                                config_item
+                            ), f"Config field {field_type} should be checked"
+                        if expected['alerts'] and not is_read_only:
+                            if field_type == "map":
+                                is_advanced = cluster_config_page.config.advanced
+                                cluster_config_page.driver.refresh()
+                                if is_advanced:
+                                    cluster_config_page.config.click_on_advanced()
+                                cluster_config_page.config.expand_or_close_group(group_name, expand=True)
+                            else:
+                                cluster_config_page.config.click_on_advanced()
+                                cluster_config_page.config.click_on_advanced()
+                            cluster_config_page.config.check_invalid_value_message(field_type)
+                    else:
+                        assert len(cluster_config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
+
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        if group_advanced:
+            cluster_config_page.config.check_no_rows_or_groups_on_page()
+        else:
+            check_expectations()
+        cluster_config_page.config.click_on_advanced()
+        check_expectations()
 
 
 class TestClusterStatusPage:

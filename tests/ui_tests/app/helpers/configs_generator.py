@@ -207,6 +207,9 @@ def generate_group_configs(
     read_only: bool = True,
     field_invisible: bool = True,
     field_advanced: bool = True,
+    config_group_customization: Optional[bool] = True,
+    group_customization: Optional[bool] = True,
+    field_customization: Optional[bool] = True,
 ) -> tuple:
     """Generate ADCM config dictionaries for groups"""
 
@@ -222,7 +225,11 @@ def generate_group_configs(
             'advanced': field_advanced,
         },
     }
+    if group_customization is not None:
+        data["group_customization"] = group_customization
     config_dict = {"type": "cluster", "version": "1", "config": []}
+    if config_group_customization is not None:
+        config_dict["config_group_customization"] = config_group_customization
     cluster_config = {
         "name": "group",
         "type": "group",
@@ -232,6 +239,8 @@ def generate_group_configs(
         },
     }
     sub_config = {'name': field_type, 'type': field_type, 'required': data['required']}
+    if field_customization is not None:
+        sub_config["group_customization"] = field_customization
     if data['default']:
         sub_config['default'] = DEFAULT_VALUE[field_type]
     if data['read_only']:
