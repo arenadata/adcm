@@ -19,6 +19,7 @@ from rest_framework.response import Response
 from api.base_view import GenericUIView, PaginatedView, DetailView
 from api.utils import (
     create,
+    update,
     get_object_for_user,
     check_custom_perm,
 )
@@ -229,6 +230,21 @@ class HostDetail(PermissionListMixin, DetailView):
             check_custom_perm(request.user, 'remove', 'host', host)
             delete_host(host)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def put(self, request, *args, **kwargs):
+        return update(
+            self.serializer_class(
+                self.get_object(),
+                data=request.data,
+                context={
+                    'request': request,
+                    'prototype_id': kwargs.get('prototype_id', None),
+                    'cluster_id': kwargs.get('cluster_id', None),
+                    'provider_id': kwargs.get('provider_id', None),
+                },
+                partial=True,
+            )
+        )
 
 
 class StatusList(GenericUIView):

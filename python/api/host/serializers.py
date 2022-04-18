@@ -20,7 +20,7 @@ from api.utils import hlink, check_obj, filter_actions, CommonAPIURL, ObjectURL
 from cm.adcm_config import get_main_info
 from cm.api import add_host
 from cm.errors import AdcmEx
-from cm.models import HostProvider, Prototype, Action
+from cm.models import HostProvider, Prototype, Action, MaintenanceModeType
 from cm.stack import validate_name
 from cm.status_api import get_host_status
 
@@ -34,6 +34,8 @@ class HostSerializer(serializers.Serializer):
     description = serializers.CharField(required=False)
     state = serializers.CharField(read_only=True)
     url = ObjectURL(read_only=True, view_name='host-details')
+    maintenance_mode = serializers.ChoiceField(choices=MaintenanceModeType.choices)
+    previous_state = serializers.CharField(required=False, allow_blank=True, read_only=True)
 
     def validate_prototype_id(self, prototype_id):
         return check_obj(Prototype, {'id': prototype_id, 'type': 'host'})
@@ -68,6 +70,20 @@ class HostDetailSerializer(HostSerializer):
 
     def get_status(self, obj):
         return get_host_status(obj)
+
+    def update(self, instance, validated_data):
+        maintenance_mode_val = 'in maintenance mode'
+        new_maintenance_mode = validated_data.get('maintenance_mode', instance.maintenance_mode)
+        if new_maintenance_mode == MaintenanceModeType.On.value:
+            if instance.state != maintenance_mode_val:
+                instance.previous_state = instance.state
+                instance.state = maintenance_mode_val
+        elif instance.state == maintenance_mode_val:
+            instance.state = instance.previous_state
+            instance.previous_state = maintenance_mode_val
+        instance.maintenance_mode = new_maintenance_mode
+        instance.save()
+        return instance
 
 
 class ClusterHostSerializer(HostSerializer):
