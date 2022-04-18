@@ -116,17 +116,20 @@ class TestTaskPage:
     """Tests for Task page"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_cluster_action_job(self, cluster: Cluster, page: JobListPage):
         """Run action on cluster and validate job in table and popup"""
         _test_run_action(page, cluster, cluster.name)
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_service_action_job(self, cluster: Cluster, page: JobListPage):
         """Run action on service and validate job in table and popup"""
         service = cluster.service_list()[0]
         _test_run_action(page, service, f'{cluster.name}/{service.name}')
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_component_action_job(self, cluster: Cluster, page: JobListPage):
         """Run action on component and validate job in table and popup"""
         service = cluster.service_list()[0]
@@ -134,17 +137,20 @@ class TestTaskPage:
         _test_run_action(page, component, f'{cluster.name}/{service.name}/{component.name}')
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_provider_action_job(self, provider: Provider, page: JobListPage):
         """Run action on host provider and validate job in table and popup"""
         _test_run_action(page, provider, provider.name)
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_host_action_job(self, provider: Provider, page: JobListPage):
         """Run action on host and validate job in table and popup"""
         host = provider.host_create('some-fqdn')
         _test_run_action(page, host, f'{provider.name}/{host.fqdn}')
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.parametrize(
         'job_info',
         [
@@ -174,6 +180,7 @@ class TestTaskPage:
         _check_job_info_in_popup(page, expected_info_in_popup)
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_run_multijob(self, cluster: Cluster, page: JobListPage):
         """Run action with many jobs"""
         with allure.step('Run action with multiple job'):
@@ -216,6 +223,7 @@ class TestTaskPage:
             page.table.check_pagination(params['second_page'])
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_open_task_by_click_on_name(self, cluster: Cluster, page: JobListPage):
         """Click on task name and task page should be opened"""
         with allure.step('Run "Long" action'), page.table.wait_rows_change():
@@ -228,6 +236,7 @@ class TestTaskPage:
             job_page.check_jobs_toolbar(LONG_ACTION_DISPLAY_NAME.upper())
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.parametrize('log_type', ['stdout', 'stderr'], ids=['stdout_menu', 'stderr_menu'])
     @pytest.mark.usefixtures('login_to_adcm_over_api')
     def test_open_log_menu(self, log_type: str, cluster: Cluster, app_fs: ADCMTest):
@@ -267,7 +276,6 @@ class TestTaskPage:
                 downloaded_file_template.format(job_id=job_id, log_type='stderr'), app_fs, dirname=downloads_directory
             )
 
-    @pytest.mark.xfail(reason="https://arenadata.atlassian.net/browse/ADCM-2729")
     def test_invoker_object_url(self, cluster: Cluster, provider: Provider, page: JobListPage):
         """Check link to object that invoked action is correct"""
         host_fqdn = 'run-on-me'
@@ -295,6 +303,7 @@ class TestTaskHeaderPopup:
     """Tests for Task page header popup"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.parametrize(
         ('job_link', 'job_filter'),
         [
@@ -318,6 +327,7 @@ class TestTaskHeaderPopup:
         assert job_page.get_selected_filter() == job_filter, f"Jobs should be filtered by {job_filter}"
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_acknowledge_jobs_in_header_popup(self, cluster: Cluster, page: JobListPage):
         """Run action and click acknowledge in header popup"""
         with allure.step('Run action in cluster'):
@@ -333,6 +343,7 @@ class TestTaskHeaderPopup:
         page.header.check_acknowledge_btn_not_displayed()
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.parametrize(
         'job_info',
         [
@@ -465,12 +476,13 @@ class TestTaskHeaderPopup:
         assert cluster_page.header.get_failed_job_amount_from_header() == "0", "Failed job amount should be 0"
 
     @pytest.mark.skip(reason="Test is only for https://arenadata.atlassian.net/browse/ADCM-2660")
-    def test_lots_of_tasks_on_jobs_page(self, cluster_bundle, app_fs, adcm_credentials, provider):
+    @pytest.mark.usefixtures("cluster_bundle")
+    def test_lots_of_tasks_on_jobs_page(self, app_fs, adcm_credentials, provider):
         """Check query execution time and amount of jobs when the page starts to lag."""
 
         page_timeout = 30
         with allure.step("Create objects and run actions"):
-            [provider.host_create(f"host_{i}").action(name=SUCCESS_ACTION_NAME).run() for i in range(5000)]
+            _ = [provider.host_create(f"host_{i}").action(name=SUCCESS_ACTION_NAME).run() for i in range(5000)]
         login = LoginPage(app_fs.driver, app_fs.adcm.url).open()
         login.login_user(**adcm_credentials)
         with catch_failed(TimeoutError, f"Page did not load for {page_timeout} seconds"):

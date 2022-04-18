@@ -1,0 +1,62 @@
+{
+   "all": {
+      "children": {
+         "CLUSTER": {
+            "hosts": {},
+            "vars": {
+               "cluster": {
+                  "config": {
+                     "somestring": null,
+                     "someint": 12,
+                     "somethingelse": null,
+                     "moar": [
+                        "high",
+                        "noon"
+                     ]
+                  },
+                  "name": "Test Cluster for Upgrade",
+                  "id": 1,
+                  "version": "2.0",
+                  "edition": "community",
+                  "state": "created",
+                  "multi_state": [],
+                  "before_upgrade": {
+                     "state": null
+                  }
+               },
+               "services": {
+                  "test_service": {
+                     "id": 1,
+                     "version": "2.3",
+                     "state": "created",
+                     "multi_state": [],
+                     "config": {
+                        "somestring": null,
+                        "someint": 12,
+                        "somethingelse": null,
+                        "moar": [
+                           "high",
+                           "noon"
+                        ]
+                     },
+                     "test_component": {
+                        "component_id": 1,
+                        "config": {
+                           "somestring": null,
+                           "someint": 12,
+                           "somethingelse": null,
+                           "moar": [
+                              "high",
+                              "noon"
+                           ]
+                        },
+                        "state": "created",
+                        "multi_state": []
+                     }
+                  }
+               }
+            }
+         }
+      }
+   }
+}

@@ -22,6 +22,7 @@ from typing import (
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from selenium.common.exceptions import ElementClickInterceptedException
 from selenium.common.exceptions import (
     NoSuchElementException,
     StaleElementReferenceException,
@@ -90,7 +91,7 @@ class BasePageObject:
         self.default_loc_timeout = default_loc_timeout
         allure.dynamic.label("page_url", path_template)
 
-    def open(self, timeout: int = None):
+    def open(self, timeout: int = None, *, close_popup: bool = True):
         """Open page by its url and path."""
 
         url = self.base_url + self.path
@@ -104,19 +105,25 @@ class BasePageObject:
                     )
 
         wait_until_step_succeeds(_open_page, period=0.5, timeout=timeout or self.default_page_timeout)
-        self.close_info_popup(by_text="Connection established.")
+        if close_popup:
+            self.close_info_popup(by_text="Connection established.")
         return self
 
     @allure.step("Close popup at the bottom of the page")
     def close_info_popup(self, by_text: str = None):
         """Close popup at the bottom of the page"""
         if by_text:
-            if self.is_element_displayed(CommonPopupLocators.block_by_text("Connection established.")):
+            if self.is_element_displayed(CommonPopupLocators.block_by_text("Connection established."), timeout=5):
                 try:
-                    self.find_and_click(CommonPopupLocators.hide_btn_by_text("Connection established."))
-                except (StaleElementReferenceException, NoSuchElementException):
+                    self.find_and_click(CommonPopupLocators.hide_btn_by_text("Connection established."), timeout=2)
+                except (
+                    StaleElementReferenceException,
+                    NoSuchElementException,
+                    ElementClickInterceptedException,
+                    TimeoutException,
+                ):
                     pass
-                self.wait_element_hide(CommonPopupLocators.block_by_text("Connection established."))
+                self.wait_element_hide(CommonPopupLocators.block_by_text("Connection established."), timeout=5)
         else:
             if self.is_element_displayed(CommonPopupLocators.block, timeout=5):
                 self.find_and_click(CommonPopupLocators.hide_btn)
@@ -344,9 +351,10 @@ class BasePageObject:
                 self.clear_by_keys(element)
             input_element = self.find_element(element, timeout) if isinstance(element, Locator) else element
             input_element.send_keys(text)
-            assert (
-                actual_value := input_element.get_property('value')
-            ) == text, f'Value of input {element.name if isinstance(element, Locator) else element.text} expected to be "{text}", but "{actual_value}" was found'
+            assert (actual_value := input_element.get_property('value')) == text, (
+                f'Value of input {element.name if isinstance(element, Locator) else element.text} '
+                f'expected to be "{text}", but "{actual_value}" was found'
+            )
 
         wait_until_step_succeeds(_send_keys_and_check, period=0.5, timeout=1.5)
 
