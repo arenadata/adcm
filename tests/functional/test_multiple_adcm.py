@@ -31,8 +31,8 @@ from tests.library.assertions import sets_are_equal, dicts_are_equal
 from tests.functional.tools import AnyADCMObject, get_object_represent
 
 
-CLUSTER_NAME = 'test_cluster'
-PROVIDER_NAME = 'test_provider'
+CLUSTER_NAME = 'test_cluster_to_export'
+PROVIDER_NAME = 'test_provider_to_export'
 DEFAULT_CONFIG_SERVICE = 'service_with_defaults'
 CHANGED_CONFIG_SERVICE = 'service_with_changed_config'
 
@@ -93,7 +93,7 @@ def test_export_cluster_from_another_adcm(adcm_fs, extra_adcm_fs, sdk_client_fs,
     Test basic scenario export of a cluster from one ADCM to another
     """
 
-    provider = sdk_client_fs.provider()
+    provider = sdk_client_fs.provider(name=PROVIDER_NAME)
     cluster_to_export = sdk_client_fs.cluster(name=CLUSTER_NAME)
 
     hc_map = set_hc_map(cluster_to_export, provider)
