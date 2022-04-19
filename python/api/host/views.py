@@ -33,6 +33,7 @@ from cm.models import (
     ClusterObject,
     ServiceComponent,
     HostComponent,
+    MaintenanceModeType,
 )
 from cm.status_api import make_ui_host_status
 from rbac.viewsets import DjangoOnlyObjectPermissions
@@ -231,20 +232,45 @@ class HostDetail(PermissionListMixin, DetailView):
             delete_host(host)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    def patch(self, request, *args, **kwargs):
+        return self.__update_host_object(request, *args, **kwargs)
+
     def put(self, request, *args, **kwargs):
-        return update(
-            self.serializer_class(
-                self.get_object(),
-                data=request.data,
-                context={
-                    'request': request,
-                    'prototype_id': kwargs.get('prototype_id', None),
-                    'cluster_id': kwargs.get('cluster_id', None),
-                    'provider_id': kwargs.get('provider_id', None),
-                },
-                partial=True,
-            )
+        return self.__update_host_object(request, *args, **kwargs)
+
+    def __update_host_object(
+        self,
+        request,
+        success_status=status.HTTP_204_NO_CONTENT,
+        onerror_status=status.HTTP_400_BAD_REQUEST,
+        *args,
+        **kwargs,
+    ):
+        host = self.get_object()
+        serializer = self.serializer_class(
+            host,
+            data=request.data,
+            context={
+                'request': request,
+                'prototype_id': kwargs.get('prototype_id', None),
+                'cluster_id': kwargs.get('cluster_id', None),
+                'provider_id': kwargs.get('provider_id', None),
+            },
+            partial=True,
         )
+        if serializer.is_valid(raise_exception=True):
+            self.__check_maintenance_mode_constraint(
+                host.maintenance_mode, serializer.validated_data['maintenance_mode']
+            )
+            serializer.save(**kwargs)
+            return Response(self.get_serializer(self.get_object()).data, status=success_status)
+        return Response(serializer.errors, status=onerror_status)
+
+    @staticmethod
+    def __check_maintenance_mode_constraint(old_mode, new_mode):
+        valid_switch_values = (MaintenanceModeType.On.value, MaintenanceModeType.Off.value)
+        if not (new_mode in valid_switch_values and old_mode in valid_switch_values):
+            raise AdcmEx('WRONG_MAINTENANCE_MODE_TARGET_VALUE')
 
 
 class StatusList(GenericUIView):

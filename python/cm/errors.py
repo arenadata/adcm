@@ -157,6 +157,11 @@ ERRORS = {
         rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),
+    'WRONG_MAINTENANCE_MODE_TARGET_VALUE': (
+        'it is prohibited to switch modes between `on/off` and `disabled`',
+        rfs.HTTP_409_CONFLICT,
+        ERR,
+    ),
 }
 
 
