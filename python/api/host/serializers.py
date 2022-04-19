@@ -31,11 +31,10 @@ class HostSerializer(serializers.Serializer):
     prototype_id = serializers.IntegerField(help_text='id of host type')
     provider_id = serializers.IntegerField()
     fqdn = serializers.CharField(help_text='fully qualified domain name')
-    description = serializers.CharField(required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
     state = serializers.CharField(read_only=True)
     url = ObjectURL(read_only=True, view_name='host-details')
-    maintenance_mode = serializers.ChoiceField(choices=MaintenanceModeType.choices)
-    previous_state = serializers.CharField(required=False, allow_blank=True, read_only=True)
+    maintenance_mode = serializers.ChoiceField(choices=MaintenanceModeType.choices, required=True)
 
     def validate_prototype_id(self, prototype_id):
         return check_obj(Prototype, {'id': prototype_id, 'type': 'host'})
@@ -72,15 +71,11 @@ class HostDetailSerializer(HostSerializer):
         return get_host_status(obj)
 
     def update(self, instance, validated_data):
-        maintenance_mode_val = 'in maintenance mode'
         new_maintenance_mode = validated_data.get('maintenance_mode', instance.maintenance_mode)
         if new_maintenance_mode == MaintenanceModeType.On.value:
-            if instance.state != maintenance_mode_val:
-                instance.previous_state = instance.state
-                instance.state = maintenance_mode_val
-        elif instance.state == maintenance_mode_val:
-            instance.state = instance.previous_state
-            instance.previous_state = maintenance_mode_val
+            instance.state = 'in maintenance mode'
+        else:
+            instance.state = ''
         instance.maintenance_mode = new_maintenance_mode
         instance.save()
         return instance
