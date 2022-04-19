@@ -71,12 +71,9 @@ class HostDetailSerializer(HostSerializer):
         return get_host_status(obj)
 
     def update(self, instance, validated_data):
-        new_maintenance_mode = validated_data.get('maintenance_mode', instance.maintenance_mode)
-        if new_maintenance_mode == MaintenanceModeType.On.value:
-            instance.state = 'in maintenance mode'
-        else:
-            instance.state = ''
-        instance.maintenance_mode = new_maintenance_mode
+        instance.maintenance_mode = validated_data.get(
+            'maintenance_mode', instance.maintenance_mode
+        )
         instance.save()
         return instance
 

@@ -258,18 +258,15 @@ class HostDetail(PermissionListMixin, DetailView):
             partial=True,
         )
         if serializer.is_valid(raise_exception=True):
-            self.__check_maintenance_mode_constraint(
-                host.maintenance_mode, serializer.validated_data['maintenance_mode']
-            )
+            self.__check_maintenance_mode_constraint(serializer.validated_data['maintenance_mode'])
             serializer.save(**kwargs)
             return Response(self.get_serializer(self.get_object()).data, status=success_status)
         return Response(serializer.errors, status=onerror_status)
 
     @staticmethod
-    def __check_maintenance_mode_constraint(old_mode, new_mode):
-        valid_switch_values = (MaintenanceModeType.On.value, MaintenanceModeType.Off.value)
-        if not (new_mode in valid_switch_values and old_mode in valid_switch_values):
-            raise AdcmEx('WRONG_MAINTENANCE_MODE_TARGET_VALUE')
+    def __check_maintenance_mode_constraint(new_mode):
+        if new_mode not in (MaintenanceModeType.On.value, MaintenanceModeType.Off.value):
+            raise AdcmEx('MAINTENANCE_MODE_NOT_AVAILABLE')
 
 
 class StatusList(GenericUIView):
