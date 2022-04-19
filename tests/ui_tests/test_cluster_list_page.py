@@ -1482,14 +1482,8 @@ class TestClusterGroupConfigPage:
 
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
-    @pytest.mark.parametrize(
-        "active", [pytest.param(True, id="active"), pytest.param(False, id="inactive", marks=pytest.mark.regression)]
-    )
     @pytest.mark.parametrize("group_advanced", [True, False], ids=("group_advanced", "group_non-advanced"))
-    @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
-    @pytest.mark.parametrize("is_required", [True, False], ids=("required", "not_required"))
     @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
-    @pytest.mark.parametrize("field_invisible", [True, False], ids=("invisible", "visible"))
     @pytest.mark.parametrize(
         "field_advanced",
         [
@@ -1519,12 +1513,8 @@ class TestClusterGroupConfigPage:
         app_fs,
         field_type,
         activatable,
-        active,
         group_advanced,
-        is_default,
-        is_required,
         is_read_only,
-        field_invisible,
         field_advanced,
         config_group_customization,
         group_customization,
@@ -1535,13 +1525,13 @@ class TestClusterGroupConfigPage:
             generate_group_configs(
                 field_type=field_type,
                 activatable=activatable,
-                active=active,
+                active=True,
                 group_invisible=False,
                 group_advanced=group_advanced,
-                default=is_default,
-                required=is_required,
+                default=True,
+                required=False,
                 read_only=is_read_only,
-                field_invisible=field_invisible,
+                field_invisible=False,
                 field_advanced=field_advanced,
                 config_group_customization=config_group_customization,
                 group_customization=group_customization,
@@ -1563,17 +1553,14 @@ class TestClusterGroupConfigPage:
                         continue
                     if not cluster_config_page.config.advanced:
                         cluster_config_page.config.check_group_is_active(group_name, config['config'][0]['active'])
-                    if not field_invisible and (
-                        (cluster_config_page.config.advanced and field_advanced) or not field_advanced
-                    ):
+                    if (cluster_config_page.config.advanced and field_advanced) or not field_advanced:
                         cluster_config_page.config.expand_or_close_group(group_name, expand=True)
                         assert len(cluster_config_page.config.get_all_config_rows()) >= 2, "Field should be visible"
-                        if is_default:
-                            check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
-                            if not config_group_customization:
-                                cluster_config_page.config.check_inputs_disabled(
-                                    config_item, is_password=bool(field_type == "password")
-                                )
+                        check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
+                        if not config_group_customization:
+                            cluster_config_page.config.check_inputs_disabled(
+                                config_item, is_password=bool(field_type == "password")
+                            )
                         if is_read_only and config_item.tag_name == 'app-field':
                             assert cluster_config_page.config.is_element_read_only(
                                 config_item
@@ -1602,9 +1589,11 @@ class TestClusterGroupConfigPage:
                     else:
                         assert len(cluster_config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
 
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
+        # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if group_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
+            cluster_config_page.group_config.check_no_rows_or_groups_on_page()
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()

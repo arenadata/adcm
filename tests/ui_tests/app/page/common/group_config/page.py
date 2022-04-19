@@ -65,3 +65,7 @@ class CommonGroupConfigMenu(BasePageObject):
             return self.find_elements(self.locators.config_row, timeout=timeout)
         except TimeoutException:
             return []
+
+    @allure.step('Check that there are no rows on group config page')
+    def check_no_rows(self):
+        assert len(self.get_all_group_config_rows(timeout=1)) == 0, "There should not be any rows"
