@@ -605,7 +605,6 @@ class Host(ADCMEntity):
         choices=MaintenanceModeType.choices,
         default=MaintenanceModeType.Disabled.value,
     )
-    previous_state = models.CharField(max_length=64, blank=True)
 
     __error_code__ = 'HOST_NOT_FOUND'
 
