@@ -1593,7 +1593,7 @@ class TestClusterGroupConfigPage:
         # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if group_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
-            cluster_config_page.group_config.check_no_rows_or_groups_on_page()
+            cluster_config_page.group_config.check_no_rows()
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
