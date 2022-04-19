@@ -235,11 +235,12 @@ class HostDetail(PermissionListMixin, DetailView):
         return self.__update_host_object(request, *args, **kwargs)
 
     def put(self, request, *args, **kwargs):
-        return self.__update_host_object(request, *args, **kwargs)
+        return self.__update_host_object(request, partial=False, *args, **kwargs)
 
     def __update_host_object(
         self,
         request,
+        partial=True,
         success_status=status.HTTP_204_NO_CONTENT,
         onerror_status=status.HTTP_400_BAD_REQUEST,
         *args,
@@ -255,17 +256,22 @@ class HostDetail(PermissionListMixin, DetailView):
                 'cluster_id': kwargs.get('cluster_id', None),
                 'provider_id': kwargs.get('provider_id', None),
             },
-            partial=True,
+            partial=partial,
         )
         if serializer.is_valid(raise_exception=True):
-            self.__check_maintenance_mode_constraint(serializer.validated_data['maintenance_mode'])
+            self.__check_maintenance_mode_constraint(
+                host.maintenance_mode, serializer.validated_data['maintenance_mode']
+            )
             serializer.save(**kwargs)
             return Response(self.get_serializer(self.get_object()).data, status=success_status)
         return Response(serializer.errors, status=onerror_status)
 
     @staticmethod
-    def __check_maintenance_mode_constraint(new_mode):
-        if new_mode not in (MaintenanceModeType.On.value, MaintenanceModeType.Off.value):
+    def __check_maintenance_mode_constraint(old_mode, new_mode):
+        if old_mode == MaintenanceModeType.Disabled.value or new_mode not in (
+            MaintenanceModeType.On.value,
+            MaintenanceModeType.Off.value,
+        ):
             raise AdcmEx('MAINTENANCE_MODE_NOT_AVAILABLE')
 
 
