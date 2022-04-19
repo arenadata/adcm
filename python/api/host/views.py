@@ -19,7 +19,6 @@ from rest_framework.response import Response
 from api.base_view import GenericUIView, PaginatedView, DetailView
 from api.utils import (
     create,
-    update,
     get_object_for_user,
     check_custom_perm,
 )
