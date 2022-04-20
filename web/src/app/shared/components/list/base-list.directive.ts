@@ -166,11 +166,11 @@ export class BaseListDirective {
     const checkUpgradable = () => {
       const events = ['create', 'delete'];
       const pairs = {
-        bundle: 'cluster',
-        service: 'service2cluster'
+        bundle: ['cluster'],
+        service: ['service2cluster']
       };
 
-      return events.includes(m.event) && pairs[m.object.type] === this.typeName;
+      return events.includes(m.event) && pairs[m.object.type]?.includes(this.typeName);
     }
 
     if (checkUpgradable() || changeList(TemporaryEntityNameConverter(this.typeName)) || createHostPro() || jobComplete()) {
