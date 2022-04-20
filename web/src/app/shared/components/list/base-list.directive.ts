@@ -159,7 +159,7 @@ export class BaseListDirective {
   socketListener(m: EventMessage): void {
     const stype = (x: string) => `${m.object.type}${m.object.details.type ? `2${m.object.details.type}` : ''}` === x;
 
-    const checkUpgradable = () => (m.event === 'create' || m.event === 'delete') || (m.object.type === 'bundle' && this.typeName === 'cluster') || (m.object.type === 'service' && this.typeName === 'service2cluster');
+    const checkUpgradable = () => (m.event === 'create' || m.event === 'delete') && ((m.object.type === 'bundle' && this.typeName === 'cluster') || (m.object.type === 'service' && this.typeName === 'service2cluster'));
     const changeList = (name?: string) => stype(name ?? this.typeName) && (m.event === 'create' || m.event === 'delete' || m.event === 'add' || m.event === 'remove');
     const createHostPro = () => stype('host2provider') && m.event === 'create';
     const jobComplete = () => (m.event === 'change_job_status') && m.object.type === 'task' && m.object.details.value === 'success';
