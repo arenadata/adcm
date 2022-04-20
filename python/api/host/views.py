@@ -261,9 +261,7 @@ class HostDetail(PermissionListMixin, DetailView):
                 host.maintenance_mode, serializer.validated_data['maintenance_mode']
             )
             serializer.save(**kwargs)
-            return Response(
-                self.get_serializer(self.get_object()).data, status=status.HTTP_204_NO_CONTENT
-            )
+            return Response(self.get_serializer(self.get_object()).data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @staticmethod
