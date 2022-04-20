@@ -17,31 +17,42 @@ Test hosts maintenance mode behaviour
 from typing import Iterable, Tuple, Set
 
 import allure
+import pytest
 from adcm_client.objects import Host, Cluster, Component
 
 from tests.functional.conftest import only_clean_adcm
-from tests.library.utils import get_hosts_fqdn_representation
 from tests.library.assertions import sets_are_equal, is_empty, expect_api_error, expect_no_api_error
 from tests.library.errorcodes import MAINTENANCE_MODE_ERROR
 from tests.functional.tools import AnyADCMObject, get_object_represent, build_hc_for_hc_acl_action
 from tests.functional.maintenance_mode.conftest import (
     DEFAULT_SERVICE_NAME,
     ANOTHER_SERVICE_NAME,
-    MM_IS_DISABLED,
-    MM_IS_OFF,
-    turn_mm_on,
     MM_IS_ON,
+    MM_IS_OFF,
+    MM_IS_DISABLED,
+    turn_mm_on,
     turn_mm_off,
-    MaintenanceModeOnHostValue,
+    add_hosts_to_cluster,
+    remove_hosts_from_cluster,
+    check_hosts_mm_is,
+    get_disabled_actions_names,
+    get_enabled_actions_names,
+    DISABLING_CAUSE,
 )
 
 ACTION_ALLOWED_IN_MM = 'allowed_in_mm'
 ACTION_NOT_ALLOWED_IN_MM = 'not_allowed_in_mm'
 ENABLED_ACTIONS = {ACTION_ALLOWED_IN_MM}
 DISABLED_ACTIONS = {'default_action', ACTION_NOT_ALLOWED_IN_MM}
-DISABLING_CAUSE = 'maintenance_mode'
 
 
+@only_clean_adcm
+@pytest.mark.parametrize(
+    'cluster_without_mm',
+    ['cluster_mm_disallowed', 'cluster_mm_missing'],
+    ids=lambda x: x.strip('cluster_'),
+    indirect=True,
+)
 def test_adding_host_to_cluster(cluster_with_mm, cluster_without_mm, hosts):
     """
     Test that adding/removing host to/from cluster affects "maintenance_mode" flag on host
@@ -188,8 +199,7 @@ def test_running_disabled_actions_is_forbidden(cluster_with_mm, hosts):
         service.action(name=ACTION_NOT_ALLOWED_IN_MM).run,
         err_=MAINTENANCE_MODE_ERROR,
     )
-
-    expect_no_api_error('run allowed in MM action on service', service.action(name=ACTION_ALLOWED_IN_MM).run).wait()
+    expect_no_api_error('run allowed in MM action on service', service.action(name=ACTION_ALLOWED_IN_MM).run)
 
     expect_api_error('run action on host in MM', host_action_from_itself.run, err_=MAINTENANCE_MODE_ERROR)
     expect_api_error(
@@ -311,46 +321,17 @@ def test_state_after_mm_switch(cluster_with_mm, hosts):
     check_state(host, expected_state)
 
 
-def add_hosts_to_cluster(cluster: Cluster, hosts: Iterable[Host]):
-    """Add hosts to cluster"""
-    with allure.step(f'Add hosts to the cluster "{cluster.name}": {get_hosts_fqdn_representation(hosts)}'):
-        for host in hosts:
-            cluster.host_add(host)
-
-
-def remove_hosts_from_cluster(cluster: Cluster, hosts: Iterable[Host]):
-    """Remove hosts from cluster"""
-    with allure.step(f'Add hosts to the cluster "{cluster.name}": {get_hosts_fqdn_representation(hosts)}'):
-        for host in hosts:
-            cluster.host_delete(host)
-
-
-def check_hosts_mm_is(maintenance_mode: MaintenanceModeOnHostValue, *hosts: Host):
-    """Check that MM of hosts is equal to the expected one"""
-    with allure.step(
-        f'Check that "maintenance_mode" is equal to "{maintenance_mode}" '
-        f'on hosts: {get_hosts_fqdn_representation(hosts)}'
-    ):
-        hosts_in_wrong_mode = tuple(host for host in hosts if host.maintenance_mode != maintenance_mode)
-        if len(hosts_in_wrong_mode) == 0:
-            return
-        raise AssertionError(
-            'Some hosts have incorrect value of "maintenance_mode" flag.\n'
-            f'Hosts: {get_hosts_fqdn_representation(hosts_in_wrong_mode)}'
-        )
-
-
 def check_actions_are_disabled_on(*objects) -> None:
     """Check that correct actions are disabled on given objects"""
     for adcm_object in objects:
         object_representation = get_object_represent(adcm_object)
-        enabled_actions_on_object = _get_enabled_actions_names(adcm_object)
+        enabled_actions_on_object = get_enabled_actions_names(adcm_object)
         sets_are_equal(
             enabled_actions_on_object,
             ENABLED_ACTIONS,
             f'Actions should be enabled on {object_representation}.\nCheck attachment.',
         )
-        disabled_actions_on_object = _get_disabled_actions_names(adcm_object)
+        disabled_actions_on_object = get_disabled_actions_names(adcm_object)
         sets_are_equal(
             disabled_actions_on_object,
             DISABLED_ACTIONS,
@@ -361,7 +342,7 @@ def check_actions_are_disabled_on(*objects) -> None:
 def check_all_actions_are_enabled(*objects) -> None:
     """Check that all actions are enabled on given objects"""
     for adcm_object in objects:
-        disabled_actions_on_object = _get_disabled_actions_names(adcm_object)
+        disabled_actions_on_object = get_disabled_actions_names(adcm_object)
         is_empty(
             disabled_actions_on_object, f'None of actions should be disabled on {get_object_represent(adcm_object)}'
         )
