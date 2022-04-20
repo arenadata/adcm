@@ -1,6 +1,6 @@
 ---
 
-version: 2
+version: 3
 
 roles:
     - name: Add host
@@ -1463,6 +1463,7 @@ roles:
         - Create host
         - Upload bundle
         - Remove bundle
+        - Manage Maintenance mode
 
     - name: Provider Administrator
       type: role
@@ -1484,3 +1485,17 @@ roles:
         - Upload bundle
         - Remove bundle
 
+    - name: Manage Maintenance mode
+      description: the ability to enable / disable the "MM" on the host
+      type: business
+      parametrized_by:
+        - host
+      module_name: rbac.roles
+      class_name: ModelRole
+      apps:
+        - label: cm
+          models:
+            - name: host
+              codenames:
+                - view
+                - change
