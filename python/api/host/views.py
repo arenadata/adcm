@@ -240,10 +240,8 @@ class HostDetail(PermissionListMixin, DetailView):
     def __update_host_object(
         self,
         request,
-        partial=True,
-        success_status=status.HTTP_204_NO_CONTENT,
-        onerror_status=status.HTTP_400_BAD_REQUEST,
         *args,
+        partial=True,
         **kwargs,
     ):
         host = self.get_object()
@@ -263,8 +261,10 @@ class HostDetail(PermissionListMixin, DetailView):
                 host.maintenance_mode, serializer.validated_data['maintenance_mode']
             )
             serializer.save(**kwargs)
-            return Response(self.get_serializer(self.get_object()).data, status=success_status)
-        return Response(serializer.errors, status=onerror_status)
+            return Response(
+                self.get_serializer(self.get_object()).data, status=status.HTTP_204_NO_CONTENT
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @staticmethod
     def __check_maintenance_mode_constraint(old_mode, new_mode):
