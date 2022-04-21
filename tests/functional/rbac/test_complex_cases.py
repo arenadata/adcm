@@ -14,16 +14,104 @@
 
 # pylint: disable=no-self-use, too-many-arguments
 
-from typing import Iterable
+from typing import Iterable, Union
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient
+from adcm_client.objects import ADCMClient, Host
 
-from tests.functional.rbac.conftest import create_policy, BusinessRoles as BR, as_user_objects, is_allowed, is_denied
+from tests.functional.rbac.checkers import Deny
+from tests.functional.rbac.conftest import (
+    create_policy,
+    BusinessRoles as BR,
+    as_user_objects,
+    is_allowed,
+    is_denied,
+    BusinessRole,
+)
 from tests.functional.tools import AnyADCMObject
 
 pytestmark = [pytest.mark.extra_rbac()]
+
+
+class TestMaintenanceMode:
+    """Test maintenance mode flag on host objects"""
+
+    @pytest.fixture()
+    def host_in_cluster_with_mm_allowed(self, prepare_objects) -> Host:
+        """Add one host to cluster"""
+        cluster, *_, host = prepare_objects
+        return cluster.host_add(host)
+
+    @pytest.fixture()
+    def second_host_in_cluster_with_mm_allowed(self, second_objects) -> Host:
+        """Add another host to another cluster"""
+        cluster, *_, host = second_objects
+        return cluster.host_add(host)
+
+    @pytest.mark.parametrize(
+        'business_role',
+        [
+            BR.ManageMaintenanceMode,
+            BusinessRole(
+                BR.ManageMaintenanceMode.value.role_name,
+                BR.ManageMaintenanceMode.value.method_call,
+                Deny.PartialChange(Host),
+            ),
+        ],
+        ids=['by_put', 'by_patch'],
+    )
+    @pytest.mark.usefixtures('host_in_cluster_with_mm_allowed', 'second_host_in_cluster_with_mm_allowed')
+    def test_manage_maintenance_mode(self, business_role, clients, user, prepare_objects, second_objects):
+        """
+        Test that manage maintenance mode role is working correctly
+        """
+        *_, host = prepare_objects
+        *_, second_host = second_objects
+
+        with allure.step("Check that user can't change maintenance mode without permission"):
+            self.check_mm_change_is_denied(host, business_role, clients.user)
+            self.check_mm_change_is_denied(second_host, business_role, clients.user)
+
+        policy = create_policy(clients.admin, BR.EditServiceConfigurations, [host], [user], [])
+
+        with allure.step('Check that user can change maintenance mode after permission is granted'):
+            user_host, *_ = as_user_objects(clients.user, host)
+            self.check_mm_change_is_allowed(user_host, business_role)
+            self.check_mm_change_is_denied(second_host, business_role, clients.user)
+
+        policy.delete()
+
+        with allure.step("Check that user can't change maintenance mode when permission is withdrawn"):
+            self.check_mm_change_is_denied(host, business_role, clients.user)
+            self.check_mm_change_is_denied(second_host, business_role, clients.user)
+
+    def check_mm_change_is_denied(
+        self,
+        host: Host,
+        denial_method: Union[BR, BusinessRole],
+        user_client: ADCMClient,
+        new_mm_value: str = 'on',
+        old_mm_value: str = 'off',
+    ):
+        """
+        Check that change maintenance mode is disallowed to the user
+        and the value is the same
+        """
+        is_denied(host, denial_method, client=user_client, data={'maintenance_mode': new_mm_value})
+        host.reread()
+        assert (
+            host.maintenance_mode == old_mm_value
+        ), f'Host maintenance mode should be intact and be equal to "{old_mm_value}"'
+
+    def check_mm_change_is_allowed(self, host: Host, allow_method: Union[BR, BusinessRole], new_mm_value: str = 'on'):
+        """
+        Check that change maintenance mode is allowed to the user
+        and the value changed
+        """
+        is_allowed(host, allow_method, new_mm_value)
+        host.reread()
+        assert host.maintenance_mode == new_mm_value, f'Host maintenance mode should be "{new_mm_value}"'
 
 
 class TestTwoUsers:

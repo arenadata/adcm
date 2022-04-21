@@ -191,6 +191,12 @@ class BusinessRoles(Enum):
     EditHostConfigurations = BusinessRole(
         "Edit host configurations", methodcaller("config_set_diff", {}), Deny.ChangeConfigOf(Host)
     )
+    ManageMaintenanceMode = BusinessRole(
+        # to change specific values, pass kwargs to call to denial checker
+        "Manage Maintenance mode",
+        lambda host, mm_flag: setattr(host, 'maintenance_mode', mm_flag),
+        Deny.Change(Host),
+    )
 
     ViewImports = BusinessRole("View imports", methodcaller("imports"), Deny.ViewImportsOf((Cluster, Service)))
     ManageImports = BusinessRole(
@@ -500,7 +506,7 @@ def is_denied(
                 else:
                     raise AssertionError(f"{role.role_name} on {object_represent} should not be allowed")
         else:
-            role.check_denied(client, base_object)
+            role.check_denied(client, base_object, **kwargs)
 
 
 def extract_role_short_info(role: Role) -> RoleShortInfo:
