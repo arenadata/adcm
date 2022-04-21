@@ -51,8 +51,8 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
     Bundle,
+    MaintenanceModeType,
 )
-
 from rbac.models import re_apply_object_policy
 
 
@@ -219,6 +219,9 @@ def add_host_to_cluster(cluster, host):
         else:
             err('HOST_CONFLICT')
     with transaction.atomic():
+        DummyData.objects.filter(id=1).update(date=timezone.now())
+        if cluster.prototype.allow_maintenance_mode:
+            host.maintenance_mode = MaintenanceModeType.Off.value
         host.cluster = cluster
         host.save()
         host.add_to_concerns(ctx.lock)
@@ -367,6 +370,7 @@ def remove_host_from_cluster(host):
     if hc:
         return err('HOST_CONFLICT', f'Host #{host.id} has component(s)')
     with transaction.atomic():
+        host.maintenance_mode = MaintenanceModeType.Disabled.value
         host.cluster = None
         host.save()
         for group in cluster.group_config.all():

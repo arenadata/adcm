@@ -60,10 +60,10 @@ class GenericUIView(GenericAPIView):
             if self.request.method == 'POST':
                 if self.serializer_class_post:
                     return self.serializer_class_post
-            if self.request.method == 'PUT':
+            elif self.request.method == 'PUT':
                 if self.serializer_class_put:
                     return self.serializer_class_put
-            if self.request.method == 'PATCH':
+            elif self.request.method == 'PATCH':
                 if self.serializer_class_patch:
                     return self.serializer_class_patch
             elif self._is_for_ui():
