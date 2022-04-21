@@ -165,10 +165,8 @@ export class TakeService {
           case 'depend':
             return depend();
           case 'odd':
-            return countRelations % 2 && countRelations >= a1
+            return (a1 === 0 || countRelations % 2) && countRelations >= a1
               ? null
-              : a1 === 0
-              ? 'Total amount should be odd.'
               : `Must be installed at least ${a1} components. Total amount should be odd.`;
           case '+':
           default:
