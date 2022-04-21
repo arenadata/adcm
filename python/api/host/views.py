@@ -201,6 +201,8 @@ class HostDetail(PermissionListMixin, DetailView):
     queryset = Host.objects.all()
     serializer_class = serializers.HostDetailSerializer
     serializer_class_ui = serializers.HostUISerializer
+    serializer_class_put = serializers.HostUpdateSerializer
+    serializer_class_patch = serializers.HostUpdateSerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_host']
     lookup_field = 'id'
@@ -245,7 +247,7 @@ class HostDetail(PermissionListMixin, DetailView):
         **kwargs,
     ):
         host = self.get_object()
-        serializer = self.serializer_class(
+        serializer = self.get_serializer(
             host,
             data=request.data,
             context={

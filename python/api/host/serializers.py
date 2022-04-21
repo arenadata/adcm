@@ -34,7 +34,7 @@ class HostSerializer(serializers.Serializer):
     description = serializers.CharField(required=False, allow_blank=True)
     state = serializers.CharField(read_only=True)
     url = ObjectURL(read_only=True, view_name='host-details')
-    maintenance_mode = serializers.ChoiceField(choices=MaintenanceModeType.choices)
+    maintenance_mode = serializers.ChoiceField(choices=MaintenanceModeType.choices, read_only=True)
 
     def validate_prototype_id(self, prototype_id):
         return check_obj(Prototype, {'id': prototype_id, 'type': 'host'})
@@ -69,6 +69,10 @@ class HostDetailSerializer(HostSerializer):
 
     def get_status(self, obj):
         return get_host_status(obj)
+
+
+class HostUpdateSerializer(HostDetailSerializer):
+    maintenance_mode = serializers.ChoiceField(choices=MaintenanceModeType.choices)
 
     def update(self, instance, validated_data):
         instance.maintenance_mode = validated_data.get(
