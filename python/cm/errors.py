@@ -157,6 +157,11 @@ ERRORS = {
         rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),
+    'MAINTENANCE_MODE_NOT_AVAILABLE': (
+        'you can\'t manage host maintenance mode',
+        rfs.HTTP_409_CONFLICT,
+        ERR,
+    ),
 }
 
 
