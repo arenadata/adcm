@@ -51,6 +51,7 @@ from tests.ui_tests.app.page.cluster.page import (
     ComponentsHostRowInfo,
     ClusterStatusPage,
     ClusterGroupConfigConfig,
+    ClusterGroupConfigHosts,
 )
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
@@ -1355,13 +1356,37 @@ class TestClusterConfigPage:
 class TestClusterGroupConfigPage:
     """Tests for the cluster/{}/group_config page"""
 
-    def test_open_by_tab_group_config_cluster_page(self, app_fs, create_community_cluster):
+    def test_open_by_tab_group_config_list_cluster_page(self, app_fs, create_community_cluster):
         """Test open cluster/{}/group_config from left menu"""
 
         cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         cluster_groupconf_page = cluster_main_page.open_group_config_tab()
         cluster_groupconf_page.check_all_elements()
         cluster_groupconf_page.check_cluster_toolbar(CLUSTER_NAME)
+
+    def test_open_by_tab_group_config_host_cluster_page(self, app_fs, create_community_cluster):
+        """Test open cluster/{}/group_config from left menu"""
+
+        params = {'group_name': 'Test group'}
+        cluster_group_config = create_community_cluster.group_config_create(name=params['group_name'])
+        cluster_config_page = ClusterGroupConfigConfig(
+            app_fs.driver, app_fs.adcm.url, create_community_cluster.id, cluster_group_config.id
+        ).open()
+        cluster_groupconf_page = cluster_config_page.open_hosts_tab()
+        cluster_groupconf_page.check_all_elements()
+        cluster_groupconf_page.check_cluster_group_conf_toolbar(CLUSTER_NAME, params['group_name'])
+
+    def test_open_by_tab_group_config_cluster_page(self, app_fs, create_community_cluster):
+        """Test open cluster/{}/group_config from left menu"""
+
+        params = {'group_name': 'Test group'}
+        cluster_group_config = create_community_cluster.group_config_create(name=params['group_name'])
+        cluster_host_config_page = ClusterGroupConfigHosts(
+            app_fs.driver, app_fs.adcm.url, create_community_cluster.id, cluster_group_config.id
+        ).open()
+        cluster_groupconf_page = cluster_host_config_page.open_config_tab()
+        cluster_groupconf_page.check_all_elements()
+        cluster_groupconf_page.check_cluster_group_conf_toolbar(CLUSTER_NAME, params['group_name'])
 
     def test_create_group_config_cluster(self, app_fs, create_community_cluster):
         """Test create group config on cluster/{}/group_config"""
