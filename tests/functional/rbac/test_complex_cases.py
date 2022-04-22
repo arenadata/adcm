@@ -73,7 +73,7 @@ class TestMaintenanceMode:
             self.check_mm_change_is_denied(host, business_role, clients.user)
             self.check_mm_change_is_denied(second_host, business_role, clients.user)
 
-        policy = create_policy(clients.admin, BR.EditServiceConfigurations, [host], [user], [])
+        policy = create_policy(clients.admin, BR.ManageMaintenanceMode, [host], [user], [])
 
         with allure.step('Check that user see only host which they can edit'):
             user_hosts = [host.fqdn for host in clients.user.host_list()]
