@@ -75,6 +75,13 @@ class TestMaintenanceMode:
 
         policy = create_policy(clients.admin, BR.EditServiceConfigurations, [host], [user], [])
 
+        with allure.step('Check that user see only host which they can edit'):
+            user_hosts = [host.fqdn for host in clients.user.host_list()]
+            assert len(user_hosts) == 1, 'User should see only 1 host'
+            assert (
+                actual_fqdn := user_hosts[0]
+            ) == host.fqdn, f'User should see only host {host.fqdn}, not {actual_fqdn}'
+
         with allure.step('Check that user can change maintenance mode after permission is granted'):
             user_host, *_ = as_user_objects(clients.user, host)
             self.check_mm_change_is_allowed(user_host, business_role)
