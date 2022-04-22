@@ -188,6 +188,7 @@ def test_running_disabled_actions_is_forbidden(cluster_with_mm, hosts):
         service.action(name=ACTION_NOT_ALLOWED_IN_MM).run,
         err_=MAINTENANCE_MODE_ERROR,
     )
+
     expect_no_api_error('run allowed in MM action on service', service.action(name=ACTION_ALLOWED_IN_MM).run).wait()
 
     expect_api_error('run action on host in MM', host_action_from_itself.run, err_=MAINTENANCE_MODE_ERROR)
