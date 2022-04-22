@@ -12,7 +12,7 @@
 """
 Common functions and helpers for testing ADCM
 """
-from typing import List, Tuple, Callable, Union, Iterable
+from typing import List, Tuple, Callable, Union, Iterable, Dict, Collection
 
 import allure
 import pytest
@@ -125,3 +125,23 @@ def create_config_group_and_add_host(
         for host in hosts:
             group.host_add(host)
         return group
+
+
+# !===== HC ACL builder =====!
+
+
+def build_hc_for_hc_acl_action(
+    cluster: Cluster, add: Collection[Tuple[Component, Host]] = (), remove: Collection[Tuple[Component, Host]] = ()
+) -> List[Dict[str, int]]:
+    """
+    Build a `hc` argument for a `hc_acl` action run based on cluster's hostcomponent and add/remove "directives".
+    Result contains only unique entries (because of the HC nature).
+    """
+    hostcomponent = {(hc['service_id'], hc['component_id'], hc['host_id']) for hc in cluster.hostcomponent()}
+    to_remove = {(component.service_id, component.id, from_host.id) for component, from_host in remove}
+    hostcomponent.difference_update(to_remove)
+    to_add = {(component.service_id, component.id, to_host.id) for component, to_host in add}
+    return [
+        {'service_id': service_id, 'component_id': component_id, 'host_id': host_id}
+        for service_id, component_id, host_id in (hostcomponent | to_add)
+    ]

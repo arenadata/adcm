@@ -14,7 +14,7 @@
 Test hosts maintenance mode behaviour
 """
 
-from typing import Iterable, Tuple, Set, List, Dict
+from typing import Iterable, Tuple, Set
 
 import allure
 from adcm_client.objects import Host, Cluster, Component
@@ -23,7 +23,7 @@ from tests.functional.conftest import only_clean_adcm
 from tests.library.utils import get_hosts_fqdn_representation
 from tests.library.assertions import sets_are_equal, is_empty, expect_api_error, expect_no_api_error
 from tests.library.errorcodes import MAINTENANCE_MODE_ERROR
-from tests.functional.tools import AnyADCMObject, get_object_represent
+from tests.functional.tools import AnyADCMObject, get_object_represent, build_hc_for_hc_acl_action
 from tests.functional.maintenance_mode.conftest import (
     DEFAULT_SERVICE_NAME,
     ANOTHER_SERVICE_NAME,
@@ -175,11 +175,12 @@ def test_running_disabled_actions_is_forbidden(cluster_with_mm, hosts):
     first_component, second_component = service.component_list()
     first_host, second_host, *_ = hosts
 
+    add_hosts_to_cluster(cluster, (first_host, second_host))
+    cluster.hostcomponent_set((first_host, first_component), (second_host, second_component))
+
     host_action_from_itself = first_host.action(name='default_action')
     host_action_from_component = first_host.action(name='see_me_on_host')
 
-    add_hosts_to_cluster(cluster, (first_host, second_host))
-    cluster.hostcomponent_set((first_host, first_component), (second_host, second_component))
     turn_mm_on(first_host)
 
     expect_api_error(
@@ -187,7 +188,7 @@ def test_running_disabled_actions_is_forbidden(cluster_with_mm, hosts):
         service.action(name=ACTION_NOT_ALLOWED_IN_MM).run,
         err_=MAINTENANCE_MODE_ERROR,
     )
-    expect_no_api_error('run allowed in MM action on service', service.action(name=ACTION_ALLOWED_IN_MM).run)
+    expect_no_api_error('run allowed in MM action on service', service.action(name=ACTION_ALLOWED_IN_MM).run).wait()
 
     expect_api_error('run action on host in MM', host_action_from_itself.run, err_=MAINTENANCE_MODE_ERROR)
     expect_api_error(
@@ -226,7 +227,7 @@ def test_hc_acl_action_with_mm(cluster_with_mm, hosts):
     - removing component from host in MM should be allowed
     """
     mm_host_1, mm_host_2, regular_host_1, regular_host_2, *_ = hosts
-    service = cluster_with_mm.service(name='hc_acl_service')
+    service = cluster_with_mm.service_add(name='hc_acl_service')
     first_component = service.component(name='first_component')
     second_component = service.component(name='second_component')
 
@@ -239,21 +240,23 @@ def test_hc_acl_action_with_mm(cluster_with_mm, hosts):
         expect_api_error(
             'add component to a host in MM with hc_acl action',
             service.action(name='expand').run,
-            hc=_make_hc_argument((second_component, mm_host_1)),
+            hc=build_hc_for_hc_acl_action(cluster_with_mm, add=[(second_component, mm_host_1)]),
         )
 
     with allure.step('Check "removing" component from a host in MM is allowed'):
         expect_no_api_error(
             'remove component from a MM host with hc_acl action',
             service.action(name='shrink').run,
-            hc=_make_hc_argument((second_component, mm_host_2)),
+            hc=build_hc_for_hc_acl_action(cluster_with_mm, remove=[(second_component, mm_host_2)]),
         )
 
     with allure.step('Check "moving" component from host in MM to a regular host in one action is allowed'):
         expect_no_api_error(
             'move component from MM host to regular one',
             service.action(name='change').run,
-            hc=_make_hc_argument((first_component, mm_host_1), (first_component, regular_host_1)),
+            hc=build_hc_for_hc_acl_action(
+                cluster_with_mm, [(first_component, mm_host_1)], [(first_component, regular_host_1)]
+            ),
         )
 
 
@@ -263,7 +266,7 @@ def test_hosts_in_not_blocking_regular_hc_acl(cluster_with_mm, hosts):
     Test that hosts in MM doesn't block operations on "regular" hosts
     (for components with both type of hosts)
     """
-    service = cluster_with_mm.service(name='hc_acl_service')
+    service = cluster_with_mm.service_add(name='hc_acl_service')
     first_component = service.component(name='first_component')
     second_component = service.component(name='second_component')
     mm_host_1, mm_host_2, regular_host_1, regular_host_2, *_ = hosts
@@ -279,13 +282,13 @@ def test_hosts_in_not_blocking_regular_hc_acl(cluster_with_mm, hosts):
     expect_no_api_error(
         'add component on host not in MM with hc_acl action',
         service.action(name='expand').run,
-        hc=_make_hc_argument((second_component, regular_host_2)),
-    )
+        hc=build_hc_for_hc_acl_action(cluster_with_mm, add=[(second_component, regular_host_2)]),
+    ).wait()
 
     expect_no_api_error(
         'remove component from host not in MM with hc_acl_action',
         service.action(name='shrink').run,
-        hc=_make_hc_argument((second_component, regular_host_2)),
+        hc=build_hc_for_hc_acl_action(cluster_with_mm, remove=[(second_component, regular_host_2)]),
     )
 
 
@@ -409,10 +412,3 @@ def _get_enabled_actions_names(adcm_object: AnyADCMObject) -> Set[str]:
 def _get_disabled_actions_names(adcm_object: AnyADCMObject) -> Set[str]:
     """Get actions disabled because of maintenance mode"""
     return {action.name for action in adcm_object.action_list() if action.disabling_cause == DISABLING_CAUSE}
-
-
-def _make_hc_argument(*component_host: Tuple[Component, Host]) -> List[Dict[str, int]]:
-    return [
-        {'service_id': component.service_id, 'component_id': component.id, 'host_id': host.id}
-        for component, host in component_host
-    ]
