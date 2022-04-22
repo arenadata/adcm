@@ -1491,7 +1491,7 @@ roles:
       parametrized_by:
         - host
       module_name: rbac.roles
-      class_name: ModelRole
+      class_name: ObjectRole
       apps:
         - label: cm
           models:
