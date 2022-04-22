@@ -43,7 +43,7 @@ export class Much2ManyComponent implements AfterViewChecked {
       const sc = this.model as CompTile;
       const control = this.form.controls[`${sc.service_id}/${sc.id}`];
 
-      if (!control || !control.errors?.error) return true;
+      if (!control || !control?.errors?.error) return true;
 
       sc.notification = control.errors.error || null;
       return !control.invalid;
