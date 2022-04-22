@@ -48,6 +48,14 @@ DUMMY_CLUSTER_BUNDLE = [
         'edition': 'community',
     }
 ]
+DUMMY_ACTION = {
+    'dummy_action': {
+        'type': 'job',
+        'script': './actions.yaml',
+        'script_type': 'ansible',
+        'states': {'available': 'any'},
+    }
+}
 
 CLEAN_ADCM_PARAM = pytest.param({}, id="clean_adcm")
 DUMMY_DATA_PARAM = pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data")
