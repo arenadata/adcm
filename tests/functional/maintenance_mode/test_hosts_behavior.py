@@ -20,10 +20,10 @@ import allure
 import pytest
 from adcm_client.objects import Host, Cluster, Component
 
-from tests.functional.conftest import only_clean_adcm
 from tests.library.assertions import sets_are_equal, is_empty, expect_api_error, expect_no_api_error
 from tests.library.errorcodes import MAINTENANCE_MODE_ERROR
 from tests.functional.tools import AnyADCMObject, get_object_represent, build_hc_for_hc_acl_action
+from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     DEFAULT_SERVICE_NAME,
     ANOTHER_SERVICE_NAME,
@@ -319,6 +319,18 @@ def test_state_after_mm_switch(cluster_with_mm, hosts):
     check_state(host, expected_state)
     remove_hosts_from_cluster(cluster_with_mm, [host])
     check_state(host, expected_state)
+
+
+@only_clean_adcm
+def test_set_value_not_in_enum_in_mm(cluster_with_mm, hosts):
+    """
+    Test that value out of 'on', 'off', 'disabled' can't be sent in MM field of the host
+    """
+    mm_value = 'diisabled'
+    host, *_ = hosts
+
+    add_hosts_to_cluster(cluster_with_mm, [host])
+    expect_api_error(f'Set value "{mm_value}" to MM', lambda x: setattr(host, 'maintenance_mode', mm_value))
 
 
 def check_actions_are_disabled_on(*objects) -> None:
