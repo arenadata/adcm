@@ -42,10 +42,10 @@ class CommonTableObj(BasePageObject):
         """Get amount of rows on page"""
         return len(self.get_all_rows())
 
-    def get_all_rows(self) -> list:
+    def get_all_rows(self, timeout=5) -> list:
         """Get all rows from the table"""
         try:
-            return self.find_elements(self.locators.visible_row, timeout=5)
+            return self.find_elements(self.locators.visible_row, timeout=timeout)
         except TimeoutException:
             return []
 
