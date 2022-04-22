@@ -45,7 +45,7 @@ export class Much2ManyComponent implements AfterViewChecked {
 
       if (!control || !control.errors?.error) return true;
 
-      sc.notification = control.errors?.error || null;
+      sc.notification = control.errors.error || null;
       return !control.invalid;
     }
     return true;
