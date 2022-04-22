@@ -21,7 +21,7 @@ import pytest
 from adcm_client.objects import Host, Cluster, Component
 
 from tests.library.assertions import sets_are_equal, is_empty, expect_api_error, expect_no_api_error
-from tests.library.errorcodes import MAINTENANCE_MODE_ERROR
+from tests.library.errorcodes import MAINTENANCE_MODE_NOT_AVAILABLE
 from tests.functional.tools import AnyADCMObject, get_object_represent, build_hc_for_hc_acl_action
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
@@ -75,9 +75,13 @@ def test_adding_host_to_cluster(cluster_with_mm, cluster_without_mm, hosts):
     check_hosts_mm_is(MM_IS_OFF, second_host)
     check_hosts_mm_is(MM_IS_DISABLED, *hosts_to_cluster_without_mm, *free_hosts)
 
-    expect_api_error(f'turn MM "on" host {third_host.fqdn}', turn_mm_on, third_host, err_=MAINTENANCE_MODE_ERROR)
+    expect_api_error(
+        f'turn MM "on" host {third_host.fqdn}', turn_mm_on, third_host, err_=MAINTENANCE_MODE_NOT_AVAILABLE
+    )
     check_hosts_mm_is(MM_IS_DISABLED, *hosts_to_cluster_without_mm)
-    expect_api_error(f'turn MM "off" host {third_host.fqdn}', turn_mm_off, third_host, err_=MAINTENANCE_MODE_ERROR)
+    expect_api_error(
+        f'turn MM "off" host {third_host.fqdn}', turn_mm_off, third_host, err_=MAINTENANCE_MODE_NOT_AVAILABLE
+    )
     check_hosts_mm_is(MM_IS_DISABLED, *hosts_to_cluster_without_mm)
 
     remove_hosts_from_cluster(cluster_with_mm, hosts_to_cluster_with_mm)
@@ -197,13 +201,15 @@ def test_running_disabled_actions_is_forbidden(cluster_with_mm, hosts):
     expect_api_error(
         'run not allowed in MM action on service',
         service.action(name=ACTION_NOT_ALLOWED_IN_MM).run,
-        err_=MAINTENANCE_MODE_ERROR,
+        err_=MAINTENANCE_MODE_NOT_AVAILABLE,
     )
     expect_no_api_error('run allowed in MM action on service', service.action(name=ACTION_ALLOWED_IN_MM).run)
 
-    expect_api_error('run action on host in MM', host_action_from_itself.run, err_=MAINTENANCE_MODE_ERROR)
+    expect_api_error('run action on host in MM', host_action_from_itself.run, err_=MAINTENANCE_MODE_NOT_AVAILABLE)
     expect_api_error(
-        'run action `host_action: true` on host in MM', host_action_from_component.run, err_=MAINTENANCE_MODE_ERROR
+        'run action `host_action: true` on host in MM',
+        host_action_from_component.run,
+        err_=MAINTENANCE_MODE_NOT_AVAILABLE,
     )
 
 
@@ -389,7 +395,7 @@ def _expect_hc_set_to_fail(cluster: Cluster, hostcomponent: Iterable[Tuple[Host,
         cluster.hostcomponent_set,
         *hostcomponent,
         # TODO change to correct error
-        err_=MAINTENANCE_MODE_ERROR,
+        err_=MAINTENANCE_MODE_NOT_AVAILABLE,
     )
 
 

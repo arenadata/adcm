@@ -49,7 +49,7 @@ def _make_dummy_provider_bundle(provider_extra: dict = None, host_extra: dict = 
         'provider_mm_false',
         'host_mm_false',
     ],
-    indirect=True
+    indirect=True,
 )
 def test_bundle_validation_upload(sdk_client_fs, create_bundle_archives):
     """
