@@ -218,6 +218,13 @@ class ClusterServicesPage(ClusterPageMixin):
         """Click on Action button from the row"""
         self.find_child(row, ClusterServicesLocators.ServiceTableRow.actions).click()
 
+    def click_delete_btn_in_row(self, row: WebElement):
+        """Click on delete button from the row"""
+        self.find_child(row, ClusterServicesLocators.ServiceTableRow.delete_btn).click()
+        self.wait_element_visible(DeleteDialog.body)
+        self.find_and_click(DeleteDialog.yes)
+        self.wait_element_hide(DeleteDialog.body)
+
     def click_import_btn_in_row(self, row: WebElement):
         """Click on Import button from the row"""
         self.find_child(row, ClusterServicesLocators.ServiceTableRow.service_import).click()

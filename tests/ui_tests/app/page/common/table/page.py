@@ -42,10 +42,10 @@ class CommonTableObj(BasePageObject):
         """Get amount of rows on page"""
         return len(self.get_all_rows())
 
-    def get_all_rows(self) -> list:
+    def get_all_rows(self, timeout=5) -> list:
         """Get all rows from the table"""
         try:
-            return self.find_elements(self.locators.visible_row, timeout=5)
+            return self.find_elements(self.locators.visible_row, timeout=timeout)
         except TimeoutException:
             return []
 
@@ -97,7 +97,7 @@ class CommonTableObj(BasePageObject):
     def check_pagination(self, second_page_item_amount: int):
         """Check pagination"""
         params = {"fist_page_cluster_amount": 10}
-        self.wait_element_hide(CommonToolbarLocators.progress_bar, timeout=30)
+        self.wait_element_hide(CommonToolbarLocators.progress_bar, timeout=60)
         with self.wait_rows_change():
             self.click_page_by_number(2)
         assert self.row_count == second_page_item_amount, f"Second page should contains {second_page_item_amount} items"
