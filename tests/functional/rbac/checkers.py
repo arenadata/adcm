@@ -108,6 +108,8 @@ class ForbiddenCallChecker:  # pylint: disable=too-few-public-methods
         2. Requesting this URL with one of HTTP methods with authorization from `client` argument
         3. Raise an AssertionError if response was 500
         4. Raise an AssertionError if response wasn't 403 (because it's Forbidden checker)
+
+        P.S. kwargs are passed to API call method
         """
         resource_path = self._build_resource_path(adcm_object)
         path_without_base_url = f'{self._API_ROOT}{resource_path}'.replace('//', '/')
@@ -120,6 +122,7 @@ class ForbiddenCallChecker:  # pylint: disable=too-few-public-methods
                     'Authorization': f'Token {client.api_token()}',
                     'Content-Type': 'application/json',
                 },
+                **kwargs,
             )
         if (status_code := response.status_code) >= 500:
             raise AssertionError(f'Unhandled exception on {self.method.name} call to {url} check logs')
@@ -206,3 +209,4 @@ class Deny:  # pylint: disable=too-few-public-methods
     UpgradeProvider = ForbiddenCallChecker(Provider, '', HTTPMethod.POST, special_case='upgrade')
     UpgradeCluster = ForbiddenCallChecker(Cluster, '', HTTPMethod.POST, special_case='upgrade')
     Change = _deny_endpoint_call('', HTTPMethod.PUT)  # change user, role, etc
+    PartialChange = _deny_endpoint_call('', HTTPMethod.PATCH)  # change host (for example)
