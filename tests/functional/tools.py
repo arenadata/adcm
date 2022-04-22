@@ -12,12 +12,14 @@
 """
 Common functions and helpers for testing ADCM
 """
+import json
 from typing import List, Tuple, Callable, Union, Iterable, Dict, Collection
 
 import allure
 import pytest
 
 from _pytest.outcomes import Failed
+from adcm_pytest_plugin.docker_utils import get_file_from_container, ADCM
 from coreapi.exceptions import ErrorMessage
 from adcm_client.base import ObjectNotFound, PagingEnds
 from adcm_client.objects import (
@@ -125,6 +127,13 @@ def create_config_group_and_add_host(
         for host in hosts:
             group.host_add(host)
         return group
+
+
+def get_inventory_file(adcm_fs: ADCM, task_id: int) -> dict:
+    """Get inventory.json file from ADCM as dict"""
+    file = get_file_from_container(adcm_fs, f'/adcm/data/run/{task_id}/', 'inventory.json')
+    content = file.read().decode('utf8')
+    return json.loads(content)
 
 
 # !===== HC ACL builder =====!

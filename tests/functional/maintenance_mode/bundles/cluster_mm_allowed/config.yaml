@@ -32,12 +32,20 @@
       <<: *job
       allow_in_maintenance_mode: false
 
+  config: &config
+    - name: some_param
+      type: integer
+      default: 12
+      group_customization: true
+
 
 - type: service
   name: test_service
   version: 4.3
 
   actions: *actions
+
+  config: *config
 
   components: &components
     first_component:
@@ -49,8 +57,12 @@
           host_action: true
           allow_in_maintenance_mode: true
 
+      config: *config
+
     second_component:
       actions: *actions
+
+      config: *config
 
 - type: service
   name: another_service
