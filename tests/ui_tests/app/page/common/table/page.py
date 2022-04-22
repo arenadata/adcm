@@ -97,7 +97,7 @@ class CommonTableObj(BasePageObject):
     def check_pagination(self, second_page_item_amount: int):
         """Check pagination"""
         params = {"fist_page_cluster_amount": 10}
-        self.wait_element_hide(CommonToolbarLocators.progress_bar, timeout=30)
+        self.wait_element_hide(CommonToolbarLocators.progress_bar, timeout=60)
         with self.wait_rows_change():
             self.click_page_by_number(2)
         assert self.row_count == second_page_item_amount, f"Second page should contains {second_page_item_amount} items"
