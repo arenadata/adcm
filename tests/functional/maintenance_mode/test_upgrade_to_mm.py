@@ -90,18 +90,20 @@ def test_allow_mm_after_upgrade(sdk_client_fs, create_bundle_archives, hosts):
     hosts_in_cluster = hosts[:3]
     free_hosts = hosts[3:]
     old_bundle, *_ = [sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives]
-    old_cluster = old_bundle.create_cluster('Cluster to Upgrade')
+    old_cluster = old_bundle.cluster_create('Cluster to Upgrade')
     service = old_cluster.service_add(name='just_service')
     component = service.component()
 
     add_hosts_to_cluster(old_cluster, hosts_in_cluster)
     old_cluster.hostcomponent_set(*[(host, component) for host in hosts_in_cluster])
-    check_hosts_mm_is(MM_IS_DISABLED, hosts)
+    check_hosts_mm_is(MM_IS_DISABLED, *hosts)
 
-    old_cluster.upgrade().do().wait()
+    upgrade_task = old_cluster.upgrade().do()
+    if upgrade_task:
+        upgrade_task.wait()
 
-    check_hosts_mm_is(MM_IS_OFF, hosts_in_cluster)
-    check_hosts_mm_is(MM_IS_DISABLED, free_hosts)
+    check_hosts_mm_is(MM_IS_OFF, *hosts_in_cluster)
+    check_hosts_mm_is(MM_IS_DISABLED, *free_hosts)
 
     check_actions_are_disabled_correctly(set(DUMMY_ACTIONS_WITH_ALLOWED.keys()), set(), old_cluster, service, component)
     turn_mm_on(hosts_in_cluster[0])
@@ -113,21 +115,24 @@ def test_allow_mm_after_upgrade(sdk_client_fs, create_bundle_archives, hosts):
 @pytest.mark.parametrize(
     'create_bundle_archives',
     [[OLD_BUNDLE, [{**NEW_BUNDLE[0], 'allow_maintenance_mode': False}, {**NEW_BUNDLE[1]}]]],
+    indirect=True,
 )
 def test_upgrade_to_mm_false(sdk_client_fs, create_bundle_archives, hosts):
     """
     Test upgrade from version without `allow_maintenance_mode` to `allow_maintenance_mode: false`
     """
     old_bundle, *_ = [sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives]
-    old_cluster = old_bundle.create_cluster('Cluster to Upgrade')
+    old_cluster = old_bundle.cluster_create('Cluster to Upgrade')
     service = old_cluster.service_add(name='just_service')
     component = service.component()
 
-    check_hosts_mm_is(MM_IS_DISABLED, hosts)
+    check_hosts_mm_is(MM_IS_DISABLED, *hosts)
 
-    old_cluster.upgrade().do().wait()
+    upgrade_task = old_cluster.upgrade().do()
+    if upgrade_task:
+        upgrade_task.wait()
 
-    check_hosts_mm_is(MM_IS_DISABLED, hosts)
+    check_hosts_mm_is(MM_IS_DISABLED, *hosts)
     check_actions_are_disabled_correctly(set(TWO_DUMMY_ACTIONS.keys()), set(), old_cluster, service, component)
 
 
@@ -159,13 +164,14 @@ def test_upgrade_to_mm_false(sdk_client_fs, create_bundle_archives, hosts):
             ],
         ]
     ],
+    indirect=True,
 )
 def test_allowed_actions_changed(sdk_client_fs, create_bundle_archives, hosts):
     """
     Test upgrade when allowed/disallowed in MM actions changed
     """
     old_bundle, *_ = [sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives]
-    old_cluster = old_bundle.create_cluster('Cluster with allowed actions changed')
+    old_cluster = old_bundle.cluster_create('Cluster with allowed actions changed')
 
     add_hosts_to_cluster(old_cluster, hosts)
     old_cluster.hostcomponent_set((hosts[0], old_cluster.service_add(name='just_service').component()))

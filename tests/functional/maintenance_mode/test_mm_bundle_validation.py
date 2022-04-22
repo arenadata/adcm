@@ -14,6 +14,7 @@
 
 import allure
 import pytest
+from coreapi.exceptions import ErrorMessage
 
 from tests.conftest import DUMMY_CLUSTER_BUNDLE, DUMMY_ACTION
 from tests.library.errorcodes import INVALID_OBJECT_DEFINITION
@@ -37,10 +38,10 @@ def _make_dummy_provider_bundle(provider_extra: dict = None, host_extra: dict = 
 @pytest.mark.parametrize(
     'create_bundle_archives',
     [
-        _make_dummy_cluster_bundle(ALLOW_IN_MM_ACTION),
-        _make_dummy_cluster_bundle({**ALLOW_IN_MM_ACTION, 'allow_maintenance_mode': False}),
-        _make_dummy_provider_bundle({'allow_maintenance_mode': False}),
-        _make_dummy_provider_bundle({}, {'allow_maintenance_mode': False}),
+        [_make_dummy_cluster_bundle(ALLOW_IN_MM_ACTION)],
+        [_make_dummy_cluster_bundle({**ALLOW_IN_MM_ACTION, 'allow_maintenance_mode': False})],
+        [_make_dummy_provider_bundle({'allow_maintenance_mode': False})],
+        [_make_dummy_provider_bundle({}, {'allow_maintenance_mode': False})],
     ],
     ids=[
         'cluster_mm_absent_action_mm_false',
@@ -48,6 +49,7 @@ def _make_dummy_provider_bundle(provider_extra: dict = None, host_extra: dict = 
         'provider_mm_false',
         'host_mm_false',
     ],
+    indirect=True
 )
 def test_bundle_validation_upload(sdk_client_fs, create_bundle_archives):
     """
@@ -55,5 +57,6 @@ def test_bundle_validation_upload(sdk_client_fs, create_bundle_archives):
     """
     with allure.step('Upload bundle and expect upload to fail'):
         bundle_path, *_ = create_bundle_archives
-        with pytest.raises(INVALID_OBJECT_DEFINITION):
+        with pytest.raises(ErrorMessage) as e:
             sdk_client_fs.upload_from_fs(bundle_path)
+        INVALID_OBJECT_DEFINITION.equal(e)

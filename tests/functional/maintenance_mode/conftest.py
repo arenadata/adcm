@@ -85,12 +85,14 @@ def turn_mm_on(host: Host):
     """Turn maintenance mode "on" on host"""
     with allure.step(f'Turn MM "on" on host {host.fqdn}'):
         host.maintenance_mode = MM_IS_ON
+        host.reread()
 
 
 def turn_mm_off(host: Host):
     """Turn maintenance mode "off" on host"""
     with allure.step(f'Turn MM "off" on host {host.fqdn}'):
         host.maintenance_mode = MM_IS_OFF
+        host.reread()
 
 
 def add_hosts_to_cluster(cluster: Cluster, hosts: Iterable[Host]):
@@ -113,7 +115,9 @@ def check_hosts_mm_is(maintenance_mode: MaintenanceModeOnHostValue, *hosts: Host
         f'Check that "maintenance_mode" is equal to "{maintenance_mode}" '
         f'on hosts: {get_hosts_fqdn_representation(hosts)}'
     ):
-        hosts_in_wrong_mode = tuple(host for host in hosts if host.maintenance_mode != maintenance_mode)
+        hosts_in_wrong_mode = tuple(
+            host for host in hosts if host.reread() and (host.maintenance_mode != maintenance_mode)
+        )
         if len(hosts_in_wrong_mode) == 0:
             return
         raise AssertionError(
