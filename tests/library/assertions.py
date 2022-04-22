@@ -149,4 +149,4 @@ def expect_no_api_error(operation_name: str, operation: Callable, *args, **kwarg
     """
     with allure.step(f'Execute "{operation_name}" and expect it to succeed without API errors'):
         with catch_failed(ErrorMessage, f'Operation should be allowed: {operation_name}'):
-            operation(*args, **kwargs)
+            return operation(*args, **kwargs)
