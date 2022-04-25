@@ -18,10 +18,21 @@ import requests
 
 from cm.config import STATUS_SECRET_KEY
 from cm.logger import log
-from cm.models import ADCMEntity, ServiceComponent, HostComponent, ClusterObject, Cluster, Host
+from cm.models import (
+    ADCMEntity,
+    ServiceComponent,
+    HostComponent,
+    ClusterObject,
+    Cluster,
+    Host,
+    MaintenanceModeType,
+)
 
 API_URL = "http://localhost:8020/api/v1"
 TIMEOUT = 0.01
+
+# in maintenance mode
+IN_MM_STATUS_VALUE = 0
 
 
 class Event:
@@ -168,6 +179,8 @@ def get_service_status(service):
 
 
 def get_host_status(host):
+    if host.maintenance_mode == MaintenanceModeType.On.value:
+        return IN_MM_STATUS_VALUE
     return get_status(host, f'/host/{host.id}/')
 
 
@@ -194,26 +207,31 @@ def get_object_map(obj: ADCMEntity, url_type: str):
 
 
 def make_ui_single_host_status(host: Host) -> dict:
-    return {
-        'id': host.id,
-        'name': host.fqdn,
-        'status': get_host_status(host),
-    }
+    ret_val = {'id': host.id, 'name': host.fqdn, 'status': get_host_status(host)}
+    if host.maintenance_mode == MaintenanceModeType.On.value:
+        ret_val.update({'status': IN_MM_STATUS_VALUE})
+    return ret_val
 
 
 def make_ui_component_status(
     component: ServiceComponent, host_components: Iterable[HostComponent]
 ) -> dict:
     """Make UI representation of component's status per host"""
+
+    def mm_on(hc):
+        return hc.host.maintenance_mode == MaintenanceModeType.On.value
+
     host_list = []
     for hc in host_components:
-        host_list.append(
-            {
-                'id': hc.host.id,
-                'name': hc.host.fqdn,
-                'status': get_host_comp_status(hc.host, hc.component),
-            }
-        )
+        append_value = {
+            'id': hc.host.id,
+            'name': hc.host.fqdn,
+        }
+        if mm_on(hc):
+            append_value.update({'status': IN_MM_STATUS_VALUE})
+        else:
+            append_value.update({'status': get_host_comp_status(hc.host, hc.component)})
+        host_list.append(append_value)
     return {
         'id': component.id,
         'name': component.display_name,
@@ -270,16 +288,22 @@ def make_ui_cluster_status(cluster: Cluster, host_components: Iterable[HostCompo
 
 def make_ui_host_status(host: Host, host_components: Iterable[HostComponent]) -> dict:
     """Make UI representation of host and its children statuses"""
+
+    def mm_on(hc):
+        return hc.host.maintenance_mode == MaintenanceModeType.On.value
+
     comp_list = []
     for hc in host_components:
-        comp_list.append(
-            {
-                'id': hc.component.id,
-                'name': hc.component.display_name,
-                'status': get_component_status(hc.component),
-                'service_id': hc.service.id,
-            }
-        )
+        append_value = {
+            'id': hc.component.id,
+            'name': hc.component.display_name,
+            'service_id': hc.service.id,
+        }
+        if mm_on(hc):
+            append_value.update({'status': IN_MM_STATUS_VALUE})
+        else:
+            append_value.update({'status': get_component_status(hc.component)})
+        comp_list.append(append_value)
 
     host_map = get_object_map(host, 'host')
     return {
