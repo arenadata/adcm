@@ -118,7 +118,7 @@ def test_hosts_filtered_when_added_to_group_config_after_entering_mm(adcm_fs, cl
     """Test filtering of hosts in inventory file when host entered MM and then added to config group"""
     component: Component = cluster_with_hc_set.service().component(name=FIRST_COMPONENT)
     host = cluster_with_hc_set.host(
-        fqdn=next(filter(lambda hc: hc['component_id'] == component.id, cluster_with_hc_set.hostcomponent))['host']
+        fqdn=next(filter(lambda hc: hc['component_id'] == component.id, cluster_with_hc_set.hostcomponent()))['host']
     )
     action_on_component = component.action(name=DEFAULT_ACTION_NAME)
 
