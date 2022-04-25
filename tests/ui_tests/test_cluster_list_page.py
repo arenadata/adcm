@@ -1582,29 +1582,28 @@ class TestClusterGroupConfigPage:
                         cluster_config_page.config.expand_or_close_group(group_name, expand=True)
                         assert len(cluster_config_page.config.get_all_config_rows()) >= 2, "Field should be visible"
                         check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
-                        if not config_group_customization:
-                            if (not is_read_only) and (
-                                (field_customization is False) or (group_customization is False)
-                            ):
-                                cluster_config_page.config.check_inputs_disabled(
-                                    config_item, is_password=bool(field_type == "password")
-                                )
-                                assert cluster_config_page.group_config.is_customization_chbx_disabled(
+                        if is_read_only:
+                            if config_item.tag_name == 'app-field':
+                                assert cluster_config_page.config.is_element_read_only(
                                     config_item
-                                ), f"Checkbox for field {field_type} should be disabled"
-                            else:
-                                cluster_config_page.config.check_inputs_enabled(
-                                    config_item, is_password=bool(field_type == "password")
-                                )
-                                assert not cluster_config_page.group_config.is_customization_chbx_disabled(
-                                    config_item
-                                ), f"Checkbox for field {field_type} should not be disabled"
-                        if is_read_only and config_item.tag_name == 'app-field':
-                            assert cluster_config_page.config.is_element_read_only(
-                                config_item
-                            ), f"Config field {field_type} should be read only"
-                        if not is_read_only:
-                            if config_group_customization:
+                                ), f"Config field {field_type} should be read only"
+                        else:
+                            if config_group_customization is False:
+                                if (field_customization is False) or (group_customization is False):
+                                    cluster_config_page.config.check_inputs_disabled(
+                                        config_item, is_password=bool(field_type == "password")
+                                    )
+                                    assert cluster_config_page.group_config.is_customization_chbx_disabled(
+                                        config_item
+                                    ), f"Checkbox for field {field_type} should be disabled"
+                                else:
+                                    cluster_config_page.config.check_inputs_enabled(
+                                        config_item, is_password=bool(field_type == "password")
+                                    )
+                                    assert not cluster_config_page.group_config.is_customization_chbx_disabled(
+                                        config_item
+                                    ), f"Checkbox for field {field_type} should not be disabled"
+                            if config_group_customization is not False:
                                 if not cluster_config_page.group_config.is_customization_chbx_checked(config_item):
                                     cluster_config_page.group_config.click_on_customization_chbx(config_item)
                                 assert cluster_config_page.group_config.is_customization_chbx_checked(
