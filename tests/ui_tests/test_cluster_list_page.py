@@ -1583,7 +1583,9 @@ class TestClusterGroupConfigPage:
                         assert len(cluster_config_page.config.get_all_config_rows()) >= 2, "Field should be visible"
                         check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
                         if not config_group_customization:
-                            if (group_customization is False) or (field_customization is False):
+                            if (not is_read_only) and (
+                                (field_customization is False) or (group_customization is False)
+                            ):
                                 cluster_config_page.config.check_inputs_disabled(
                                     config_item, is_password=bool(field_type == "password")
                                 )
@@ -1601,23 +1603,24 @@ class TestClusterGroupConfigPage:
                             assert cluster_config_page.config.is_element_read_only(
                                 config_item
                             ), f"Config field {field_type} should be read only"
-                        if config_group_customization and not is_read_only:
-                            if not cluster_config_page.group_config.is_customization_chbx_checked(config_item):
-                                cluster_config_page.group_config.click_on_customization_chbx(config_item)
-                            assert cluster_config_page.group_config.is_customization_chbx_checked(
-                                config_item
-                            ), f"Config field {field_type} should be checked"
-                        if expected['alerts'] and not is_read_only:
-                            if field_type == "map":
-                                is_advanced = cluster_config_page.config.advanced
-                                cluster_config_page.driver.refresh()
-                                if is_advanced:
+                        if not is_read_only:
+                            if config_group_customization:
+                                if not cluster_config_page.group_config.is_customization_chbx_checked(config_item):
+                                    cluster_config_page.group_config.click_on_customization_chbx(config_item)
+                                assert cluster_config_page.group_config.is_customization_chbx_checked(
+                                    config_item
+                                ), f"Config field {field_type} should be checked"
+                            if expected['alerts']:
+                                if field_type == "map":
+                                    is_advanced = cluster_config_page.config.advanced
+                                    cluster_config_page.driver.refresh()
+                                    if is_advanced:
+                                        cluster_config_page.config.click_on_advanced()
+                                    cluster_config_page.config.expand_or_close_group(group_name, expand=True)
+                                else:
                                     cluster_config_page.config.click_on_advanced()
-                                cluster_config_page.config.expand_or_close_group(group_name, expand=True)
-                            else:
-                                cluster_config_page.config.click_on_advanced()
-                                cluster_config_page.config.click_on_advanced()
-                            cluster_config_page.config.check_invalid_value_message(field_type)
+                                    cluster_config_page.config.click_on_advanced()
+                                cluster_config_page.config.check_invalid_value_message(field_type)
                     else:
                         assert len(cluster_config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
 
