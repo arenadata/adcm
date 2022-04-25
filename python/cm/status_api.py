@@ -12,25 +12,13 @@
 
 import json
 from collections import defaultdict
-from operator import ne
 from typing import Iterable
 
 import requests
 
 from cm.config import STATUS_SECRET_KEY
 from cm.logger import log
-from cm.models import (
-    ADCMEntity,
-    ServiceComponent,
-    HostComponent,
-    ClusterObject,
-    Cluster,
-    Host,
-    MaintenanceModeType,
-)
-
-from .utils import filter_by_attribute
-
+from cm.models import ADCMEntity, ServiceComponent, HostComponent, ClusterObject, Cluster, Host
 
 API_URL = "http://localhost:8020/api/v1"
 TIMEOUT = 0.01
@@ -206,14 +194,11 @@ def get_object_map(obj: ADCMEntity, url_type: str):
 
 
 def make_ui_single_host_status(host: Host) -> dict:
-    if host.maintenance_mode != MaintenanceModeType.On.value:
-        return {
-            'id': host.id,
-            'name': host.fqdn,
-            'status': get_host_status(host),
-        }
-    else:
-        return {}
+    return {
+        'id': host.id,
+        'name': host.fqdn,
+        'status': get_host_status(host),
+    }
 
 
 def make_ui_component_status(
@@ -221,9 +206,7 @@ def make_ui_component_status(
 ) -> dict:
     """Make UI representation of component's status per host"""
     host_list = []
-    for hc in filter_by_attribute(
-        host_components, 'host.maintenance_mode', MaintenanceModeType.On.value, ne
-    ):
+    for hc in host_components:
         host_list.append(
             {
                 'id': hc.host.id,
@@ -244,9 +227,7 @@ def make_ui_service_status(
 ) -> dict:
     """Make UI representation of service and its children statuses"""
     component_hc_map = defaultdict(list)
-    for hc in filter_by_attribute(
-        host_components, 'host.maintenance_mode', MaintenanceModeType.On.value, ne
-    ):
+    for hc in host_components:
         component_hc_map[hc.component].append(hc)
 
     comp_list = []
@@ -265,9 +246,7 @@ def make_ui_service_status(
 def make_ui_cluster_status(cluster: Cluster, host_components: Iterable[HostComponent]) -> dict:
     """Make UI representation of cluster and its children statuses"""
     service_hc_map = defaultdict(list)
-    for hc in filter_by_attribute(
-        host_components, 'host.maintenance_mode', MaintenanceModeType.On.value, ne
-    ):
+    for hc in host_components:
         service_hc_map[hc.service].append(hc)
 
     service_list = []
@@ -275,9 +254,7 @@ def make_ui_cluster_status(cluster: Cluster, host_components: Iterable[HostCompo
         service_list.append(make_ui_service_status(service, hc_list))
 
     host_list = []
-    for host in filter_by_attribute(
-        Host.obj.filter(cluster=cluster), 'maintenance_mode', MaintenanceModeType.On.value, ne
-    ):
+    for host in Host.obj.filter(cluster=cluster):
         host_list.append(make_ui_single_host_status(host))
 
     cluster_map = get_object_map(cluster, 'cluster')
@@ -294,10 +271,7 @@ def make_ui_cluster_status(cluster: Cluster, host_components: Iterable[HostCompo
 def make_ui_host_status(host: Host, host_components: Iterable[HostComponent]) -> dict:
     """Make UI representation of host and its children statuses"""
     comp_list = []
-
-    for hc in filter_by_attribute(
-        host_components, 'host.maintenance_mode', MaintenanceModeType.On.value, ne
-    ):
+    for hc in host_components:
         comp_list.append(
             {
                 'id': hc.component.id,
