@@ -1588,38 +1588,40 @@ class TestClusterGroupConfigPage:
                                     config_item
                                 ), f"Config field {field_type} should be read only"
                         else:
-                            if config_group_customization is False:
-                                if field_customization is False:
-                                    cluster_config_page.config.check_inputs_disabled(
-                                        config_item, is_password=bool(field_type == "password")
-                                    )
-                                    assert cluster_config_page.group_config.is_customization_chbx_disabled(
-                                        config_item
-                                    ), f"Checkbox for field {field_type} should be disabled"
-                                else:
-                                    cluster_config_page.config.check_inputs_enabled(
-                                        config_item, is_password=bool(field_type == "password")
-                                    )
-                                    assert not cluster_config_page.group_config.is_customization_chbx_disabled(
-                                        config_item
-                                    ), f"Checkbox for field {field_type} should not be disabled"
-                            if config_group_customization is not False:
+                            if (
+                                ((config_group_customization is False) and (field_customization is False))
+                                or ((config_group_customization is False) and (field_customization is not False))
+                                or ((config_group_customization is not False) and (field_customization is False))
+                            ):
+                                cluster_config_page.config.check_inputs_disabled(
+                                    config_item, is_password=bool(field_type == "password")
+                                )
+                                assert cluster_config_page.group_config.is_customization_chbx_disabled(
+                                    config_item
+                                ), f"Checkbox for field {field_type} should be disabled"
+                            else:
+                                cluster_config_page.config.check_inputs_enabled(
+                                    config_item, is_password=bool(field_type == "password")
+                                )
+                                assert not cluster_config_page.group_config.is_customization_chbx_disabled(
+                                    config_item
+                                ), f"Checkbox for field {field_type} should not be disabled"
                                 if not cluster_config_page.group_config.is_customization_chbx_checked(config_item):
                                     cluster_config_page.group_config.click_on_customization_chbx(config_item)
                                 assert cluster_config_page.group_config.is_customization_chbx_checked(
                                     config_item
                                 ), f"Config field {field_type} should be checked"
-                            if expected['alerts']:
-                                if field_type == "map":
-                                    is_advanced = cluster_config_page.config.advanced
-                                    cluster_config_page.driver.refresh()
-                                    if is_advanced:
+                                if expected['alerts']:
+                                    if field_type == "map":
+                                        is_advanced = cluster_config_page.config.advanced
+                                        cluster_config_page.driver.refresh()
+                                        if is_advanced:
+                                            cluster_config_page.config.click_on_advanced()
+                                        cluster_config_page.config.expand_or_close_group(group_name, expand=True)
+                                    else:
                                         cluster_config_page.config.click_on_advanced()
-                                    cluster_config_page.config.expand_or_close_group(group_name, expand=True)
-                                else:
-                                    cluster_config_page.config.click_on_advanced()
-                                    cluster_config_page.config.click_on_advanced()
-                                cluster_config_page.config.check_invalid_value_message(field_type)
+                                        cluster_config_page.config.click_on_advanced()
+                                    cluster_config_page.config.check_invalid_value_message(field_type)
                     else:
                         assert len(cluster_config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
 
