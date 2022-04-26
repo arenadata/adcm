@@ -25,7 +25,15 @@ from rest_framework.reverse import reverse
 
 import cm.upgrade
 from cm.errors import AdcmEx
-from cm.models import Action, ADCMEntity, PrototypeConfig, ConcernType
+from cm.models import (
+    Action,
+    ADCMEntity,
+    PrototypeConfig,
+    ConcernType,
+    HostComponent,
+    MaintenanceModeType,
+    Host,
+)
 
 
 def get_object_for_user(user, perms, klass, **kwargs):
@@ -90,6 +98,29 @@ def update(serializer, **kwargs):
     return save(serializer, status.HTTP_200_OK, **kwargs)
 
 
+def set_disabling_cause(obj: ADCMEntity, action: Action) -> None:
+    action.disabling_cause = None
+    if obj.prototype.type == 'cluster':
+        mm = Host.objects.filter(cluster=obj, maintenance_mode=MaintenanceModeType.On).exists()
+        if not action.allow_in_maintenance_mode and mm:
+            action.disabling_cause = 'maintenance_mode'
+    elif obj.prototype.type == 'service':
+        mm = HostComponent.objects.filter(
+            service=obj, cluster=obj.cluster, host__maintenance_mode=MaintenanceModeType.On
+        ).exists()
+        if not action.allow_in_maintenance_mode and mm:
+            action.disabling_cause = 'maintenance_mode'
+    elif obj.prototype.type == 'component':
+        mm = HostComponent.objects.filter(
+            component=obj,
+            cluster=obj.cluster,
+            service=obj.service,
+            host__maintenance_mode=MaintenanceModeType.On,
+        ).exists()
+        if not action.allow_in_maintenance_mode and mm:
+            action.disabling_cause = 'maintenance_mode'
+
+
 def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
     """Filter out actions that are not allowed to run on object at that moment"""
     if obj.concerns.filter(type=ConcernType.Lock).exists():
@@ -102,6 +133,7 @@ def filter_actions(obj: ADCMEntity, actions_set: List[Action]):
             action.config = PrototypeConfig.objects.filter(
                 prototype=action.prototype, action=action
             ).order_by('id')
+            set_disabling_cause(obj, action)
     return allowed
 
 

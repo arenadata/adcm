@@ -269,9 +269,9 @@ class HostDetail(PermissionListMixin, DetailView):
 
     @staticmethod
     def __check_maintenance_mode_constraint(old_mode, new_mode):
-        if old_mode == MaintenanceModeType.Disabled.value or new_mode not in (
-            MaintenanceModeType.On.value,
-            MaintenanceModeType.Off.value,
+        if old_mode == MaintenanceModeType.Disabled or new_mode not in (
+            MaintenanceModeType.On,
+            MaintenanceModeType.Off,
         ):
             raise AdcmEx('MAINTENANCE_MODE_NOT_AVAILABLE')
 

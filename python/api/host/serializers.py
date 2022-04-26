@@ -33,8 +33,8 @@ class HostSerializer(serializers.Serializer):
     fqdn = serializers.CharField(help_text='fully qualified domain name')
     description = serializers.CharField(required=False, allow_blank=True)
     state = serializers.CharField(read_only=True)
-    url = ObjectURL(read_only=True, view_name='host-details')
     maintenance_mode = serializers.ChoiceField(choices=MaintenanceModeType.choices, read_only=True)
+    url = ObjectURL(read_only=True, view_name='host-details')
 
     def validate_prototype_id(self, prototype_id):
         return check_obj(Prototype, {'id': prototype_id, 'type': 'host'})
