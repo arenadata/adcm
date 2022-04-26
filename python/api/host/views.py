@@ -247,6 +247,7 @@ class HostDetail(PermissionListMixin, DetailView):
         **kwargs,
     ):
         host = self.get_object()
+        check_custom_perm(request.user, 'change', 'host', host)
         serializer = self.get_serializer(
             host,
             data=request.data,
