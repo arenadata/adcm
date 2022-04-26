@@ -157,6 +157,7 @@ class ActionDetail(PermissionListMixin, GenericUIView):
             self.get_queryset(),
             id=action_id,
         )
+        set_disabling_cause(obj, action)
         if isinstance(obj, Host) and action.host_action:
             objects = {'host': obj}
         else:
