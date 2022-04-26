@@ -90,7 +90,7 @@ class TestMaintenanceMode:
         policy.delete()
 
         with allure.step("Check that user can't change maintenance mode when permission is withdrawn"):
-            self.check_mm_change_is_denied(host, business_role, clients.user)
+            self.check_mm_change_is_denied(host, business_role, clients.user, new_mm_value='off', old_mm_value='on')
             self.check_mm_change_is_denied(second_host, business_role, clients.user)
 
     def check_mm_change_is_denied(
