@@ -17,6 +17,7 @@ import pytest
 from coreapi.exceptions import ErrorMessage
 
 from tests.conftest import DUMMY_CLUSTER_BUNDLE, DUMMY_ACTION
+from tests.functional.conftest import only_clean_adcm
 from tests.library.errorcodes import INVALID_OBJECT_DEFINITION
 
 ALLOW_IN_MM_ACTION = {'actions': {'some_action': {**DUMMY_ACTION, 'allow_in_maintenance_mode': True}}}
@@ -35,6 +36,7 @@ def _make_dummy_provider_bundle(provider_extra: dict = None, host_extra: dict = 
     ]
 
 
+@only_clean_adcm
 @pytest.mark.parametrize(
     'create_bundle_archives',
     [

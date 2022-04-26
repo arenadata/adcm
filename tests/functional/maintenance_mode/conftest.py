@@ -42,6 +42,8 @@ CLUSTER_WITH_MM_NAME = 'Test Cluster WITH Maintenance Mode'
 CLUSTER_WITHOUT_MM_NAME = 'Test Cluster WITHOUT Maintenance Mode'
 DEFAULT_SERVICE_NAME = 'test_service'
 ANOTHER_SERVICE_NAME = 'another_service'
+FIRST_COMPONENT = 'first_component'
+SECOND_COMPONENT = 'second_component'
 
 
 @pytest.fixture()
@@ -84,15 +86,19 @@ def cluster_without_mm(request, sdk_client_fs: ADCMClient):
 def turn_mm_on(host: Host):
     """Turn maintenance mode "on" on host"""
     with allure.step(f'Turn MM "on" on host {host.fqdn}'):
-        host.maintenance_mode = MM_IS_ON
-        host.reread()
+        host.set_maintenance_mode(MM_IS_ON)
+        assert (
+            actual_mm := host.maintenance_mode
+        ) == MM_IS_ON, f'Maintenance mode of host {host.fqdn} should be {MM_IS_ON}, not {actual_mm}'
 
 
 def turn_mm_off(host: Host):
     """Turn maintenance mode "off" on host"""
     with allure.step(f'Turn MM "off" on host {host.fqdn}'):
-        host.maintenance_mode = MM_IS_OFF
-        host.reread()
+        host.set_maintenance_mode(MM_IS_OFF)
+        assert (
+            actual_mm := host.maintenance_mode
+        ) == MM_IS_OFF, f'Maintenance mode of host {host.fqdn} should be {MM_IS_OFF}, not {actual_mm}'
 
 
 def add_hosts_to_cluster(cluster: Cluster, hosts: Iterable[Host]):
@@ -115,9 +121,9 @@ def check_hosts_mm_is(maintenance_mode: MaintenanceModeOnHostValue, *hosts: Host
         f'Check that "maintenance_mode" is equal to "{maintenance_mode}" '
         f'on hosts: {get_hosts_fqdn_representation(hosts)}'
     ):
-        hosts_in_wrong_mode = tuple(
-            host for host in hosts if host.reread() and (host.maintenance_mode != maintenance_mode)
-        )
+        for host in hosts:
+            host.reread()
+        hosts_in_wrong_mode = tuple(host for host in hosts if host.maintenance_mode != maintenance_mode)
         if len(hosts_in_wrong_mode) == 0:
             return
         raise AssertionError(

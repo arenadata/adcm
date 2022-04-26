@@ -330,13 +330,15 @@ def test_state_after_mm_switch(cluster_with_mm, hosts):
 @only_clean_adcm
 def test_set_value_not_in_enum_in_mm(cluster_with_mm, hosts):
     """
-    Test that value out of 'on', 'off', 'disabled' can't be sent in MM field of the host
+    Test that value 'disabled' can't be set to a host in 'on/off' mode
+    and another value than 'on', 'off', 'disabled' can't be sent in MM field of the host
     """
     mm_value = 'diisabled'
     host, *_ = hosts
 
     add_hosts_to_cluster(cluster_with_mm, [host])
-    expect_api_error(f'Set value "{mm_value}" to MM', lambda x: setattr(host, 'maintenance_mode', mm_value))
+    expect_api_error('Set value "disabled" to MM', lambda: host.set_maintenance_mode('disabled'))
+    expect_api_error(f'Set value "{mm_value}" to MM', lambda: host.set_maintenance_mode(mm_value))
 
 
 def check_actions_are_disabled_on(*objects) -> None:
@@ -394,7 +396,6 @@ def _expect_hc_set_to_fail(cluster: Cluster, hostcomponent: Iterable[Tuple[Host,
         'set hostcomponent with one of hosts in MM mode',
         cluster.hostcomponent_set,
         *hostcomponent,
-        # TODO change to correct error
         err_=MAINTENANCE_MODE_NOT_AVAILABLE,
     )
 
