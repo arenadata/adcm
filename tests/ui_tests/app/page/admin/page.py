@@ -566,10 +566,9 @@ class AdminPoliciesPage(GeneralAdminPage):
     def fill_select_in_policy_popup(self, items, available_items_locator):
         for item in items.split(", "):
             self.wait_element_visible(available_items_locator)
-            for count, available_item in enumerate(self.find_elements(available_items_locator)):
-                if available_item.text == item:
-                    self.scroll_to(available_item)
-                    available_item.click()
+            for count, _ in enumerate(self.find_elements(available_items_locator)):
+                if self.find_elements(available_items_locator)[count].text == item:
+                    self.find_elements(available_items_locator)[count].click()
                     break
             else:
                 raise AssertionError(f"There are no item {item} in select popup")
