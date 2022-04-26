@@ -194,7 +194,7 @@ class BusinessRoles(Enum):
     ManageMaintenanceMode = BusinessRole(
         # to change specific values, pass kwargs to call to denial checker
         "Manage Maintenance mode",
-        lambda host, mm_flag: host.set_maintenance_mode(mm_flag),
+        lambda host, mm_flag: host.maintenance_mode_set(mm_flag),
         Deny.Change(Host),
     )
 

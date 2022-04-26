@@ -86,7 +86,7 @@ def cluster_without_mm(request, sdk_client_fs: ADCMClient):
 def turn_mm_on(host: Host):
     """Turn maintenance mode "on" on host"""
     with allure.step(f'Turn MM "on" on host {host.fqdn}'):
-        host.set_maintenance_mode(MM_IS_ON)
+        host.maintenance_mode_set(MM_IS_ON)
         assert (
             actual_mm := host.maintenance_mode
         ) == MM_IS_ON, f'Maintenance mode of host {host.fqdn} should be {MM_IS_ON}, not {actual_mm}'
@@ -95,7 +95,7 @@ def turn_mm_on(host: Host):
 def turn_mm_off(host: Host):
     """Turn maintenance mode "off" on host"""
     with allure.step(f'Turn MM "off" on host {host.fqdn}'):
-        host.set_maintenance_mode(MM_IS_OFF)
+        host.maintenance_mode_set(MM_IS_OFF)
         assert (
             actual_mm := host.maintenance_mode
         ) == MM_IS_OFF, f'Maintenance mode of host {host.fqdn} should be {MM_IS_OFF}, not {actual_mm}'

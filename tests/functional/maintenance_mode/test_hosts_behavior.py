@@ -337,8 +337,8 @@ def test_set_value_not_in_enum_in_mm(cluster_with_mm, hosts):
     host, *_ = hosts
 
     add_hosts_to_cluster(cluster_with_mm, [host])
-    expect_api_error('Set value "disabled" to MM', lambda: host.set_maintenance_mode('disabled'))
-    expect_api_error(f'Set value "{mm_value}" to MM', lambda: host.set_maintenance_mode(mm_value))
+    expect_api_error('Set value "disabled" to MM', lambda: host.maintenance_mode_set('disabled'))
+    expect_api_error(f'Set value "{mm_value}" to MM', lambda: host.maintenance_mode_set(mm_value))
 
 
 def check_actions_are_disabled_on(*objects) -> None:
