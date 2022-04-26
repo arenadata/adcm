@@ -15,12 +15,11 @@
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-import cm.job
 import cm.adcm_config
-from cm.models import PrototypeConfig, SubAction
-
-from api.utils import get_api_url_kwargs
+import cm.job
 from api.config.serializers import ConfigSerializerUI
+from api.utils import get_api_url_kwargs
+from cm.models import PrototypeConfig, SubAction
 
 
 class ActionDetailURL(serializers.HyperlinkedIdentityField):
@@ -58,6 +57,7 @@ class StackActionSerializer(serializers.Serializer):
     allow_to_terminate = serializers.BooleanField(read_only=True)
     partial_execution = serializers.BooleanField(read_only=True)
     host_action = serializers.BooleanField(read_only=True)
+    disabling_cause = serializers.CharField(read_only=True)
 
 
 class ActionSerializer(StackActionSerializer):
@@ -99,6 +99,7 @@ class StackActionDetailSerializer(StackActionSerializer):
     log_files = serializers.JSONField(required=False)
     config = serializers.SerializerMethodField()
     subs = serializers.SerializerMethodField()
+    disabling_cause = serializers.CharField(read_only=True)
 
     def get_config(self, obj):
         aconf = PrototypeConfig.objects.filter(prototype=obj.prototype, action=obj).order_by('id')
