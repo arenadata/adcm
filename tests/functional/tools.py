@@ -19,6 +19,7 @@ import allure
 import pytest
 
 from _pytest.outcomes import Failed
+from adcm_pytest_plugin.utils import catch_failed
 from adcm_pytest_plugin.docker_utils import get_file_from_container, ADCM
 from coreapi.exceptions import ErrorMessage
 from adcm_client.base import ObjectNotFound, PagingEnds
@@ -37,7 +38,6 @@ from adcm_client.objects import (
     Group,
     User,
 )
-from adcm_pytest_plugin.utils import catch_failed
 
 
 BEFORE_UPGRADE_DEFAULT_STATE = None
