@@ -11,7 +11,7 @@
 # limitations under the License.
 
 """Various "rich" checks for common assertions"""
-
+import json
 import pprint
 from typing import Callable, Union, Collection, TypeVar, Optional
 
@@ -122,8 +122,10 @@ def dicts_are_equal(actual: dict, expected: dict, message: Union[str, Callable] 
     if actual == expected:
         return
 
-    allure.attach(pprint.pformat(actual), name='Actual dictionary')
-    allure.attach(pprint.pformat(expected), name='Expected dictionary')
+    allure.attach(json.dumps(actual, indent=2), name='Actual dictionary', attachment_type=allure.attachment_type.JSON)
+    allure.attach(
+        json.dumps(expected, indent=2), name='Expected dictionary', attachment_type=allure.attachment_type.JSON
+    )
     message = message if not callable(message) else message(**kwargs)
     if not message:
         message = "Two dictionaries aren't equal as was expected.\nCheck step attachments for more details."
