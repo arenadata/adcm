@@ -1589,7 +1589,7 @@ class TestClusterGroupConfigPage:
                                 ), f"Config field {field_type} should be read only"
                         else:
                             if config_group_customization is False:
-                                if (field_customization is False) or (group_customization is False):
+                                if field_customization is False:
                                     cluster_config_page.config.check_inputs_disabled(
                                         config_item, is_password=bool(field_type == "password")
                                     )
