@@ -39,6 +39,7 @@ export class ClusterHostComponent extends ConcernListDirective<IHost> {
     ListFactory.statusColumn(this),
     ListFactory.actionsButton(this),
     ListFactory.configColumn(this),
+    ListFactory.maintenanceModeColumn(this),
     {
       type: 'buttons',
       className: 'list-control',

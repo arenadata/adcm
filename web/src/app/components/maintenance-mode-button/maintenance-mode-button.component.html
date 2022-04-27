@@ -1,0 +1,9 @@
+<button
+  mat-icon-button
+  color="{{status?.color}}"
+  [matTooltip]="status?.tooltip"
+  [disabled]="!status?.isModeActive"
+  (click)="clickCell($event)"
+>
+<mat-icon>medical_services</mat-icon>
+</button>
