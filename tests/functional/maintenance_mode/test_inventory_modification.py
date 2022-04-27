@@ -22,6 +22,7 @@ import pytest
 from adcm_client.objects import Cluster, GroupConfig, Action, Component, Host
 from adcm_pytest_plugin.docker_utils import ADCM
 
+from tests.functional.maintenance_mode.test_hosts_behavior import ACTION_ALLOWED_IN_MM
 from tests.functional.tools import create_config_group_and_add_host, get_inventory_file
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
@@ -87,7 +88,7 @@ def test_hosts_in_mm_removed_from_inventory(adcm_fs, cluster_with_hc_set):
     """Test filtering of hosts in inventory file when hosts are in MM"""
     host, *_ = cluster_with_hc_set.host_list()
     service = cluster_with_hc_set.service()
-    action_on_service = service.action(name=DEFAULT_ACTION_NAME)
+    action_on_service = service.action(name=ACTION_ALLOWED_IN_MM)
 
     inventory = run_action_and_get_inventory(action_on_service, adcm_fs)
     check_all_hosts_are_present(inventory, cluster_with_hc_set)
@@ -102,7 +103,7 @@ def test_hosts_in_mm_removed_from_group_config(adcm_fs, cluster_with_hc_set, con
     """Test filtering of hosts in inventory file when hosts are in MM and in config group"""
     *_, component_group = config_groups
     component: Component = cluster_with_hc_set.service().component(name=FIRST_COMPONENT)
-    action_on_component = component.action(name=DEFAULT_ACTION_NAME)
+    action_on_component = component.action(name=ACTION_ALLOWED_IN_MM)
 
     inventory = run_action_and_get_inventory(action_on_component, adcm_fs)
     check_all_hosts_are_present(inventory, cluster_with_hc_set)
@@ -120,7 +121,7 @@ def test_hosts_filtered_when_added_to_group_config_after_entering_mm(adcm_fs, cl
     host = cluster_with_hc_set.host(
         fqdn=next(filter(lambda hc: hc['component_id'] == component.id, cluster_with_hc_set.hostcomponent()))['host']
     )
-    action_on_component = component.action(name=DEFAULT_ACTION_NAME)
+    action_on_component = component.action(name=ACTION_ALLOWED_IN_MM)
 
     turn_mm_on(host)
 

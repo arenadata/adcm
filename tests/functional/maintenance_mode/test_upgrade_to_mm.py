@@ -175,10 +175,13 @@ def test_allowed_actions_changed(sdk_client_fs, create_bundle_archives, hosts):
 
     add_hosts_to_cluster(old_cluster, hosts)
     old_cluster.hostcomponent_set((hosts[0], old_cluster.service_add(name='just_service').component()))
+    turn_mm_on(hosts[0])
 
     check_actions_are_disabled_correctly({'enabled_at_first'}, {'disabled_at_first'}, old_cluster)
 
-    old_cluster.upgrade().do().wait()
+    task = old_cluster.upgrade().do()
+    if task:
+        task.wait()
 
     check_actions_are_disabled_correctly({'disabled_at_first'}, {'enabled_at_first'}, old_cluster)
 

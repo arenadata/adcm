@@ -21,7 +21,7 @@ import pytest
 from adcm_client.objects import Host, Cluster, Component
 
 from tests.library.assertions import sets_are_equal, is_empty, expect_api_error, expect_no_api_error
-from tests.library.errorcodes import MAINTENANCE_MODE_NOT_AVAILABLE
+from tests.library.errorcodes import MAINTENANCE_MODE_NOT_AVAILABLE, ACTION_ERROR
 from tests.functional.tools import AnyADCMObject, get_object_represent, build_hc_for_hc_acl_action
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
@@ -201,15 +201,15 @@ def test_running_disabled_actions_is_forbidden(cluster_with_mm, hosts):
     expect_api_error(
         'run not allowed in MM action on service',
         service.action(name=ACTION_NOT_ALLOWED_IN_MM).run,
-        err_=MAINTENANCE_MODE_NOT_AVAILABLE,
+        err_=ACTION_ERROR,
     )
     expect_no_api_error('run allowed in MM action on service', service.action(name=ACTION_ALLOWED_IN_MM).run)
 
-    expect_api_error('run action on host in MM', host_action_from_itself.run, err_=MAINTENANCE_MODE_NOT_AVAILABLE)
+    expect_api_error('run action on host in MM', host_action_from_itself.run, err_=ACTION_ERROR)
     expect_api_error(
         'run action `host_action: true` on host in MM',
         host_action_from_component.run,
-        err_=MAINTENANCE_MODE_NOT_AVAILABLE,
+        err_=ACTION_ERROR,
     )
 
 
@@ -230,9 +230,11 @@ def test_host_actions_with_mm(cluster_with_mm, hosts):
     turn_mm_on(host_in_mm)
 
     check_visible_actions(host_in_mm, set())
-    check_visible_actions(regular_host, {allowed_action, not_allowed_action})
+    check_visible_actions(regular_host, {allowed_action, not_allowed_action, 'default_action'})
 
-    expect_api_error('run not allowed in MM action', regular_host.action(name=not_allowed_action).run)
+    expect_api_error(
+        'run not allowed in MM action', regular_host.action(name=not_allowed_action).run, err_=ACTION_ERROR
+    )
     expect_no_api_error('run allowed in MM action', regular_host.action(name=allowed_action).run)
 
 
