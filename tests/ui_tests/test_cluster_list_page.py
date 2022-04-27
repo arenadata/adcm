@@ -1590,7 +1590,7 @@ class TestClusterGroupConfigPage:
                         else:
                             if (
                                 ((config_group_customization is False) and (field_customization is False))
-                                or ((config_group_customization is False) and (field_customization is not False))
+                                or ((config_group_customization is False) and (field_customization is None))
                                 or ((config_group_customization is not False) and (field_customization is False))
                             ):
                                 cluster_config_page.config.check_inputs_disabled(
