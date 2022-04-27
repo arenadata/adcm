@@ -335,7 +335,7 @@ def delete_service_by_name(service_name, cluster_id):
         delete_service(service, cancel_tasks=False)
 
 
-def delete_service(service, cancel_tasks=True):
+def delete_service(service: ClusterObject, cancel_tasks=True) -> None:
     if HostComponent.objects.filter(cluster=service.cluster, service=service).exists():
         err('SERVICE_CONFLICT', f'Service #{service.id} has component(s) on host(s)')
     if ClusterBind.objects.filter(source_service=service).exists():
@@ -344,6 +344,7 @@ def delete_service(service, cancel_tasks=True):
         _cancel_locking_tasks(service)
     service_id = service.id
     cluster = service.cluster
+    service.concerns.all().delete()
     service.delete()
     cm.issue.update_hierarchy_issues(cluster)
     re_apply_object_policy(cluster)
