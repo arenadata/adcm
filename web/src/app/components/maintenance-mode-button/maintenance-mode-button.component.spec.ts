@@ -3,8 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MaintenanceModeButtonComponent } from './maintenance-mode-button.component';
 
 describe('MaintenanceModeButtonComponent', () => {
-  let component: MaintenanceModeButtonComponent;
-  let fixture: ComponentFixture<MaintenanceModeButtonComponent>;
+  let component: MaintenanceModeButtonComponent<any>;
+  let fixture: ComponentFixture<MaintenanceModeButtonComponent<any>>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
