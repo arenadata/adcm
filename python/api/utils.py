@@ -31,6 +31,7 @@ from cm.models import (
     PrototypeConfig,
     ConcernType,
     HostComponent,
+    ServiceComponent,
     MaintenanceModeType,
     Host,
 )
@@ -115,6 +116,13 @@ def set_disabling_cause(obj: ADCMEntity, action: Action) -> None:
             component=obj,
             cluster=obj.cluster,
             service=obj.service,
+            host__maintenance_mode=MaintenanceModeType.On,
+        ).exists()
+        if not action.allow_in_maintenance_mode and mm:
+            action.disabling_cause = 'maintenance_mode'
+    elif obj.prototype.type == 'host':
+        mm = HostComponent.objects.filter(
+            component_id__in=HostComponent.objects.filter(host=obj).values_list('component_id'),
             host__maintenance_mode=MaintenanceModeType.On,
         ).exists()
         if not action.allow_in_maintenance_mode and mm:
