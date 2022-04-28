@@ -174,7 +174,7 @@ export class ListFactory {
       instanceTaken: (componentRef: ComponentRef<MaintenanceModeButtonComponent<T>>) => {
         componentRef.instance.onClick
         .pipe(listDirective.takeUntil())
-        .subscribe(({event, row}) => listDirective.maintenanceModeToggle(event, row));
+        .subscribe(({event, value}) => listDirective.maintenanceModeToggle(event, value));
       }
     };
   }
