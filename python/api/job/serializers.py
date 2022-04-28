@@ -22,7 +22,14 @@ import cm.status_api
 from cm import config
 from cm.ansible_plugin import get_check_log
 from cm.errors import AdcmEx
-from cm.models import JobLog, Host, ClusterObject, ServiceComponent, get_object_cluster, MaintenanceModeType
+from cm.models import (
+    JobLog,
+    Host,
+    ClusterObject,
+    ServiceComponent,
+    get_object_cluster,
+    MaintenanceModeType,
+)
 from api.utils import hlink
 from api.concern.serializers import ConcernItemSerializer
 
