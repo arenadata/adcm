@@ -21,7 +21,7 @@ export interface Status {
 })
 export class MaintenanceModeButtonComponent<T> implements AdwpCellComponent<T> {
   status: Status;
-  row: T;
+  maintenanceMode: string;
 
   statuses: { [key in StatusType]: Status; } = {
     [StatusType.On]: {
@@ -44,7 +44,7 @@ export class MaintenanceModeButtonComponent<T> implements AdwpCellComponent<T> {
     }
   }
 
-  @Input() maintenanceMode: string;
+  @Input() row: T;
   @Output() onClick = new EventEmitter();
 
   ngOnInit(): void {
@@ -52,7 +52,7 @@ export class MaintenanceModeButtonComponent<T> implements AdwpCellComponent<T> {
     this.status = this.statuses[this.maintenanceMode];
   }
 
-  clickCell(event): void {
+  clickCell(event: MouseEvent, row: T): void {
     if (this.maintenanceMode !== StatusType.Disabled && this.maintenanceMode === StatusType.On) {
       this.maintenanceMode = StatusType.Off;
       this.status = this.statuses[StatusType.Off];
@@ -61,7 +61,7 @@ export class MaintenanceModeButtonComponent<T> implements AdwpCellComponent<T> {
       this.status = this.statuses[StatusType.On];
     }
 
-    event.stopPropagation();
+    this.onClick.emit({ event, row });
   }
 
 }

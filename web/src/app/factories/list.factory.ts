@@ -171,7 +171,11 @@ export class ListFactory {
       className: 'list-control',
       headerClassName: 'list-control',
       component: MaintenanceModeButtonComponent,
-      instanceTaken: (componentRef: ComponentRef<MaintenanceModeButtonComponent<T>>) => {}
+      instanceTaken: (componentRef: ComponentRef<MaintenanceModeButtonComponent<T>>) => {
+        componentRef.instance.onClick
+        .pipe(listDirective.takeUntil())
+        .subscribe(({event, row}) => listDirective.maintenanceModeToggle(event, row));
+      }
     };
   }
 

@@ -118,4 +118,8 @@ export class ListService implements IListService<Entities> {
   getLicenseInfo(url: string) {
     return this.api.get<{ text: string }>(url);
   }
+
+  setMaintenanceMode(row: Entities) {
+    return this.api.patch(`/api/v1/host/${row.id}/`, { maintenance_mode: row['maintenance_mode'] });
+  }
 }
