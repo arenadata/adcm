@@ -404,7 +404,7 @@ class AdminRolesPage(GeneralAdminPage):
                 description='',
                 permissions='Create host, Upload bundle, Edit cluster configurations, Edit host configurations, '
                 'Add service, Remove service, Remove hosts, Map hosts, Unmap hosts, Edit host-components, '
-                'Upgrade cluster bundle, Remove bundle, Service Administrator',
+                'Upgrade cluster bundle, Remove bundle, Service Administrator, Manage Maintenance mode',
             ),
             AdminRoleInfo(
                 name='Provider Administrator',
