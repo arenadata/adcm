@@ -25,11 +25,13 @@ from tests.library.errorcodes import MAINTENANCE_MODE_NOT_AVAILABLE, ACTION_ERRO
 from tests.functional.tools import AnyADCMObject, get_object_represent, build_hc_for_hc_acl_action
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
-    DEFAULT_SERVICE_NAME,
-    ANOTHER_SERVICE_NAME,
     MM_IS_ON,
     MM_IS_OFF,
     MM_IS_DISABLED,
+    BUNDLES_DIR,
+    DISABLING_CAUSE,
+    DEFAULT_SERVICE_NAME,
+    ANOTHER_SERVICE_NAME,
     turn_mm_on,
     turn_mm_off,
     add_hosts_to_cluster,
@@ -37,13 +39,23 @@ from tests.functional.maintenance_mode.conftest import (
     check_hosts_mm_is,
     get_disabled_actions_names,
     get_enabled_actions_names,
-    DISABLING_CAUSE,
 )
+
+# pylint: disable=redefined-outer-name
 
 ACTION_ALLOWED_IN_MM = 'allowed_in_mm'
 ACTION_NOT_ALLOWED_IN_MM = 'not_allowed_in_mm'
 ENABLED_ACTIONS = {ACTION_ALLOWED_IN_MM}
 DISABLED_ACTIONS = {'default_action', ACTION_NOT_ALLOWED_IN_MM}
+
+
+@pytest.fixture()
+def host_actions_cluster(sdk_client_fs) -> Cluster:
+    """Upload and create cluster with host actions from cluster, service and component"""
+    bundle = sdk_client_fs.upload_from_fs(BUNDLES_DIR / 'cluster_host_actions')
+    cluster = bundle.cluster_create('Cluster with host actions')
+    cluster.service_add(name=DEFAULT_SERVICE_NAME)
+    return cluster
 
 
 @only_clean_adcm
@@ -178,6 +190,32 @@ def test_provider_and_host_actions_affected_by_mm(cluster_with_mm, provider, hos
 
     turn_mm_off(first_host)
     _available_actions_are(actions_on_host, actions_on_host, actions_on_provider)
+
+
+def test_host_actions_on_another_component_host(host_actions_cluster, hosts):
+    """
+    Test host_actions from cluster, service and component are working correctly
+    with regular host with component that is also mapped to an MM host
+    """
+    expected_enabled = {f'{obj_type}_host_action_allowed' for obj_type in ('cluster', 'service', 'component')}
+    expected_disabled = {'default_action'} | {
+        f'{obj_type}_host_action_disallowed' for obj_type in ('cluster', 'service', 'component')
+    }
+
+    host_in_mm, regular_host, *_ = hosts
+    cluster = host_actions_cluster
+    component = cluster.service().component()
+
+    add_hosts_to_cluster(cluster, (host_in_mm, regular_host))
+    cluster.hostcomponent_set((host_in_mm, component), (regular_host, component))
+
+    turn_mm_on(host_in_mm)
+
+    enabled_actions = get_enabled_actions_names(regular_host)
+    disabled_actions = get_disabled_actions_names(regular_host)
+
+    sets_are_equal(enabled_actions, expected_enabled, f'Incorrect actions are enabled on host {regular_host.fqdn}')
+    sets_are_equal(disabled_actions, expected_disabled, f'Incorrect actions are disabled on host {regular_host.fqdn}')
 
 
 def test_running_disabled_actions_is_forbidden(cluster_with_mm, hosts):
