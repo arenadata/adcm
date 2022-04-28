@@ -21,9 +21,10 @@ import allure
 import pytest
 from adcm_client.objects import Cluster, GroupConfig, Action, Component, Host
 from adcm_pytest_plugin.docker_utils import ADCM
+from adcm_pytest_plugin.utils import get_or_add_service
 
 from tests.functional.maintenance_mode.test_hosts_behavior import ACTION_ALLOWED_IN_MM
-from tests.functional.tools import create_config_group_and_add_host, get_inventory_file
+from tests.functional.tools import create_config_group_and_add_host, get_inventory_file, build_hc_for_hc_acl_action
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
     DEFAULT_SERVICE_NAME,
@@ -31,6 +32,7 @@ from tests.functional.maintenance_mode.conftest import (
     SECOND_COMPONENT,
     MM_IS_ON,
     turn_mm_on,
+    add_hosts_to_cluster,
 )
 from tests.library.assertions import sets_are_equal
 
@@ -39,17 +41,19 @@ from tests.library.assertions import sets_are_equal
 pytestmark = [only_clean_adcm]
 
 DEFAULT_ACTION_NAME = 'default_action'
+HC_ACL_SERVICE_NAME = 'hc_acl_service'
 
 
-@pytest.fixture()
-def cluster_with_hc_set(cluster_with_mm, hosts) -> Cluster:
+@pytest.fixture(params=[pytest.param(DEFAULT_SERVICE_NAME, id='default_service')])
+def cluster_with_hc_set(request, cluster_with_mm, hosts) -> Cluster:
     """
     Add 4 hosts to cluster
     first_component is placed on 4 hosts
     second_component on 2 hosts
     """
+    service_name = request.param
     hosts_in_cluster = hosts[:4]
-    service = cluster_with_mm.service(name=DEFAULT_SERVICE_NAME)
+    service = get_or_add_service(cluster_with_mm, service_name)
     first_component = service.component(name=FIRST_COMPONENT)
     second_component = service.component(name=SECOND_COMPONENT)
     for host in hosts_in_cluster:
@@ -130,10 +134,31 @@ def test_hosts_filtered_when_added_to_group_config_after_entering_mm(adcm_fs, cl
     check_hosts_in_mm_are_absent(inventory, cluster_with_hc_set)
 
 
-def run_action_and_get_inventory(action: Action, adcm: ADCM) -> dict:
+@pytest.mark.parametrize('cluster_with_hc_set', [HC_ACL_SERVICE_NAME], indirect=True)
+def test_host_filtering_with_hc_acl(adcm_fs, cluster_with_hc_set: Cluster, hosts):
+    """Test filtering of hosts in MM in inventory groups when action have `hc_acl` directive"""
+    cluster = cluster_with_hc_set
+    service = cluster.service(name=HC_ACL_SERVICE_NAME)
+    first_component = service.component(name=FIRST_COMPONENT)
+    host, *_ = cluster.host_list()
+    *_, free_host = hosts
+
+    add_hosts_to_cluster(cluster, [free_host])
+
+    turn_mm_on(host)
+
+    inventory = run_action_and_get_inventory(
+        service.action(name='change'),
+        adcm_fs,
+        hc=build_hc_for_hc_acl_action(cluster, add=[(first_component, free_host)], remove=[(first_component, host)]),
+    )
+    check_hosts_in_mm_are_absent(inventory, cluster)
+
+
+def run_action_and_get_inventory(action: Action, adcm: ADCM, **run_kwargs) -> dict:
     """Run action and get inventory file contents from container"""
     with allure.step(f'Run action {action.name}'):
-        task = action.run()
+        task = action.run(**run_kwargs)
         task.wait()
     with allure.step(f'Get inventory of task {task.id}'):
         return get_inventory_file(adcm, task.id)
@@ -160,12 +185,14 @@ def check_hosts_in_mm_are_absent(inventory: dict, cluster: Cluster) -> None:
 
 def _check_expected(inventory, expected_hosts: set, expected_on_second_component: set):
     children = inventory['all']['children']
-    for object_to_check in ('CLUSTER', DEFAULT_SERVICE_NAME, f'{DEFAULT_SERVICE_NAME}.{FIRST_COMPONENT}'):
-        hosts_on_object = set(children[object_to_check]['hosts'].keys())
-        sets_are_equal(
-            hosts_on_object, expected_hosts, f'Wrong hosts are presented in inventory of "{object_to_check}"'
-        )
     second_component_key = f'{DEFAULT_SERVICE_NAME}.{SECOND_COMPONENT}'
+
+    for group_to_check in (k for k in children.keys() if not k.startswith(second_component_key)):
+        hosts_on_object = set(children[group_to_check]['hosts'].keys())
+        sets_are_equal(
+            hosts_on_object, expected_hosts, f'Wrong hosts are presented in inventory of group "{group_to_check}"'
+        )
+
     second_component_hosts = set(children[second_component_key]['hosts'].keys())
     sets_are_equal(
         second_component_hosts,
