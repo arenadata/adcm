@@ -31,7 +31,6 @@ from cm.models import (
     PrototypeConfig,
     ConcernType,
     HostComponent,
-    ServiceComponent,
     MaintenanceModeType,
     Host,
 )
