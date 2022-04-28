@@ -20,6 +20,7 @@ from typing import (
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 
@@ -566,10 +567,14 @@ class AdminPoliciesPage(GeneralAdminPage):
     def fill_select_in_policy_popup(self, items, available_items_locator):
         for item in items.split(", "):
             self.wait_element_visible(available_items_locator)
-            for count, _ in enumerate(self.find_elements(available_items_locator)):
-                if self.find_elements(available_items_locator)[count].text == item:
-                    self.find_elements(available_items_locator)[count].click()
-                    break
+            for count, available_item in enumerate(self.find_elements(available_items_locator)):
+                if available_item.text == item:
+                    try:
+                        self.scroll_to(available_item)
+                        available_item.click()
+                        break
+                    except StaleElementReferenceException:
+                        self.find_elements(available_items_locator)[count].click()
             else:
                 raise AssertionError(f"There are no item {item} in select popup")
 
