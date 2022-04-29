@@ -53,7 +53,7 @@ export class Much2ManyComponent implements AfterViewChecked {
 
   isMandatory() {
     if (this.model?.limit) {
-      return ['+', 1].includes(this.model?.limit[0]) && this.model?.relations.length === 0;
+      return ['+', 'odd', 1].includes(this.model?.limit[0]) && this.model?.relations.length === 0;
     }
 
     return false;
