@@ -527,6 +527,7 @@ class TestClusterServicePage:
         cluster = bundle.cluster_create(name=CLUSTER_NAME)
         cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_service_page.add_service_by_name(service_name="All")
+        cluster_service_page.wait_page_is_opened()
         cluster_service_page.table.check_pagination(second_page_item_amount=2)
 
 
