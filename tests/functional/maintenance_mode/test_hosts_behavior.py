@@ -197,10 +197,10 @@ def test_host_actions_on_another_component_host(host_actions_cluster, hosts):
     Test host_actions from cluster, service and component are working correctly
     with regular host with component that is also mapped to an MM host
     """
-    expected_enabled = {f'{obj_type}_host_action_allowed' for obj_type in ('cluster', 'service', 'component')}
-    expected_disabled = {'default_action'} | {
-        f'{obj_type}_host_action_disallowed' for obj_type in ('cluster', 'service', 'component')
+    expected_enabled = {'default_action'} | {
+        f'{obj_type}_host_action_allowed' for obj_type in ('cluster', 'service', 'component')
     }
+    expected_disabled = {f'{obj_type}_host_action_disallowed' for obj_type in ('cluster', 'service', 'component')}
 
     host_in_mm, regular_host, *_ = hosts
     cluster = host_actions_cluster
