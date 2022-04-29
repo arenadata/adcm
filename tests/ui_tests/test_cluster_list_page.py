@@ -1420,6 +1420,7 @@ class TestClusterGroupConfigPage:
 
     # pylint: disable=too-many-locals
 
+    @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
     @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
