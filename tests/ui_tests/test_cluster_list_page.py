@@ -756,9 +756,7 @@ class TestClusterComponentsPage:
         with allure.step("Check that required component has * in name"):
             component_name = cluster_components_page.get_components_rows()[0].text
             assert (
-                "*" not in component_name
-                if is_not_required
-                else f"* {COMPONENT_NAME}" in component_name
+                "*" not in component_name if is_not_required else f"* {COMPONENT_NAME}" in component_name
             ), f'There are {"" if is_not_required else "no"} * in component name "{component_name}"'
 
         host_row = cluster_components_page.find_host_row_by_name(HOST_NAME)
