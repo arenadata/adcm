@@ -33,7 +33,14 @@ from api.host.serializers import HostSerializer
 from api.serializers import StringListSerializer
 from cm.adcm_config import get_main_info
 from cm.errors import AdcmEx
-from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
+from cm.models import (
+    Action,
+    Cluster,
+    Host,
+    Prototype,
+    ServiceComponent,
+    MaintenanceModeType,
+)
 
 
 def get_cluster_id(obj):
@@ -207,6 +214,8 @@ class HostComponentSaveSerializer(serializers.Serializer):
                 if key not in item:
                     msg = '"{}" sub-field is required'
                     raise AdcmEx('INVALID_INPUT', msg.format(key))
+            if Host.obj.get(pk=item['host_id']).maintenance_mode == MaintenanceModeType.On.value:
+                raise AdcmEx("INVALID_INPUT", "host <id> in maintenance mode", 409)
         return hc
 
     def create(self, validated_data):
