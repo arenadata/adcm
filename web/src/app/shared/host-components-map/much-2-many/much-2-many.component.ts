@@ -9,10 +9,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { AfterViewChecked, ChangeDetectorRef, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { isNumber } from '@app/core/types';
-
 import { CompTile, Tile } from '../types';
 
 @Component({
@@ -20,13 +19,19 @@ import { CompTile, Tile } from '../types';
   templateUrl: './much-2-many.component.html',
   styleUrls: ['./much-2-many.component.scss'],
 })
-export class Much2ManyComponent {
+export class Much2ManyComponent implements AfterViewChecked {
   isShow = false;
 
   @Output() clickToTitleEvt: EventEmitter<any> = new EventEmitter();
   @Output() clearRelationEvt: EventEmitter<{ relation: Tile; model: Tile }> = new EventEmitter();
   @Input() model: Tile;
   @Input() form: FormGroup;
+
+  constructor(private cdRef : ChangeDetectorRef) {}
+
+  ngAfterViewChecked() {
+    this.cdRef.detectChanges();
+  }
 
   isDisabled() {
     if (this.model.actions) return !this.model.actions.length;
@@ -37,10 +42,21 @@ export class Much2ManyComponent {
     if ('service_id' in this.model && Object.keys(this.form.controls).length) {
       const sc = this.model as CompTile;
       const control = this.form.controls[`${sc.service_id}/${sc.id}`];
-      if (!control) return false;
-      sc.notification = control.errors?.error;
-      return control.invalid;
-    } else return false;
+
+      if (!control || !control?.errors?.error) return true;
+
+      sc.notification = control.errors.error || null;
+      return !control.invalid;
+    }
+    return true;
+  }
+
+  isMandatory() {
+    if (this.model?.limit) {
+      return ['+', 1].includes(this.model?.limit[0]) && this.model?.relations.length === 0;
+    }
+
+    return false;
   }
 
   clearDisabled(rel: Tile) {
@@ -62,7 +78,7 @@ export class Much2ManyComponent {
   }
 
   setNotify() {
-    const [a, b, c] = this.model.limit,
+    const [a, b] = this.model.limit,
       lim = isNumber(b) ? b : a === 'odd' ? 1 : a === 'depend' ? 0 : a;
     return `${this.model.relations.length}${lim !== 0 ? ` / ${lim}` : ''}`;
   }
