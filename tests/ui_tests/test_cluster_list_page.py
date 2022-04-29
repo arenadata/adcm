@@ -732,13 +732,34 @@ class TestClusterComponentsPage:
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
-    def test_check_cluster_components_page_create_components(
-        self, app_fs, create_community_cluster_with_host_and_service
-    ):
-        """Test distribution of components on hosts"""
+    @pytest.mark.parametrize(
+        "bundle_name",
+        [
+            "cluster_with_not_required_component",
+            "cluster_with_required_component",
+            "cluster_with_required_component_short",
+        ],
+    )
+    def test_check_cluster_components_page_create_components(self, app_fs, sdk_client_fs, create_host, bundle_name):
+        """Test adding components on hosts"""
+
         params = {"message": "Successfully saved."}
-        cluster, *_ = create_community_cluster_with_host_and_service
+        is_not_required = "_not_required" in bundle_name
+
+        with allure.step("Add cluster with service and host"):
+            bundle = cluster_bundle(sdk_client_fs, bundle_name)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            cluster.service_add(name=SERVICE_NAME)
+            cluster.host_add(create_host)
+
         cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+
+        with allure.step("Check that required component has * in name"):
+            component_name = cluster_components_page.get_components_rows()[0].text
+            assert (
+                "*" not in component_name if is_not_required else f"* {COMPONENT_NAME}" in component_name
+            ), f'There are {"" if is_not_required else "no"} * in component name "{component_name}"'
+
         host_row = cluster_components_page.find_host_row_by_name(HOST_NAME)
         component_row = cluster_components_page.find_component_row_by_name(COMPONENT_NAME)
         cluster_components_page.click_host(host_row)
@@ -751,7 +772,9 @@ class TestClusterComponentsPage:
             host_row = cluster_components_page.get_host_rows()[0]
             check_components_host_info(cluster_components_page.get_row_info(host_row), HOST_NAME, "1")
             component_row = cluster_components_page.get_components_rows()[0]
-            check_components_host_info(cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "1")
+            check_components_host_info(
+                cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "1" if is_not_required else "1 / 1"
+            )
 
     def test_check_cluster_components_page_restore_components(
         self, app_fs, create_community_cluster_with_host_and_service
