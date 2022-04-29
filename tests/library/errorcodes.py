@@ -244,3 +244,13 @@ BIND_ERROR = ADCMError(
     '409 Conflict',
     'BIND_ERROR',
 )
+
+MAINTENANCE_MODE_NOT_AVAILABLE = ADCMError(
+    '409 Conflict',
+    'MAINTENANCE_MODE_NOT_AVAILABLE',
+)
+
+ACTION_ERROR = ADCMError(
+    '409 Conflict',
+    'ACTION_ERROR',
+)
