@@ -22,7 +22,7 @@ import cm.status_api
 from cm import config
 from cm.ansible_plugin import get_check_log
 from cm.errors import AdcmEx
-from cm.models import JobLog, Host, ClusterObject, ServiceComponent, get_object_cluster, MaintenanceModeType
+from cm.models import JobLog, Host, ClusterObject, ServiceComponent, get_object_cluster
 from api.utils import hlink
 from api.concern.serializers import ConcernItemSerializer
 
@@ -213,21 +213,12 @@ class RunTaskSerializer(TaskSerializer):
             validated_data.get('task_object'),
             validated_data.get('config', {}),
             validated_data.get('attr', {}),
-            self.__filter_out_hosts_in_mm(validated_data.get('hc', [])),
+            validated_data.get('hc', []),
             validated_data.get('hosts', []),
             validated_data.get('verbose', False),
         )
         obj.jobs = JobLog.objects.filter(task_id=obj.id)
         return obj
-
-    @staticmethod
-    def __filter_out_hosts_in_mm(hc):
-        res = []
-        for hc_item in hc:
-            if Host.obj.get(pk=hc_item['host_id']).maintenance_mode == MaintenanceModeType.On.value:
-                continue
-            res.append(hc_item)
-        return res
 
 
 class JobListSerializer(serializers.Serializer):
