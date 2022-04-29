@@ -90,6 +90,7 @@ export interface Host extends BaseEntity {
   cluster: string;
   cluster_id?: number;
   cluster_name?: string;
+  maintenance_mode?: string;
 }
 
 export interface Service extends BaseEntity {

@@ -110,6 +110,11 @@ export abstract class ListDirective extends BaseDirective implements OnInit, OnD
       .subscribe(() => this.listItemEvt.emit({ cmd: 'delete', row }));
   }
 
+  maintenanceModeToggle($event: MouseEvent, row: any): void {
+    EventHelper.stopPropagation($event);
+    this.listItemEvt.emit({ cmd: 'maintenanceModeToggle', row} )
+  }
+
   getPageIndex(): number {
     return this.paginator.pageIndex;
   }
