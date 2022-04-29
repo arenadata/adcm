@@ -102,13 +102,13 @@ def set_disabling_cause(obj: ADCMEntity, action: Action) -> None:
     action.disabling_cause = None
     if obj.prototype.type == 'cluster':
         mm = Host.objects.filter(cluster=obj, maintenance_mode=MaintenanceModeType.On).exists()
-        if not action.allow_in_maintenance_mode and mm:
+        if not action.host_action and not action.allow_in_maintenance_mode and mm:
             action.disabling_cause = 'maintenance_mode'
     elif obj.prototype.type == 'service':
         mm = HostComponent.objects.filter(
             service=obj, cluster=obj.cluster, host__maintenance_mode=MaintenanceModeType.On
         ).exists()
-        if not action.allow_in_maintenance_mode and mm:
+        if not action.host_action and not action.allow_in_maintenance_mode and mm:
             action.disabling_cause = 'maintenance_mode'
     elif obj.prototype.type == 'component':
         mm = HostComponent.objects.filter(
@@ -117,7 +117,7 @@ def set_disabling_cause(obj: ADCMEntity, action: Action) -> None:
             service=obj.service,
             host__maintenance_mode=MaintenanceModeType.On,
         ).exists()
-        if not action.allow_in_maintenance_mode and mm:
+        if not action.host_action and not action.allow_in_maintenance_mode and mm:
             action.disabling_cause = 'maintenance_mode'
     elif obj.prototype.type == 'host':
         mm = HostComponent.objects.filter(
