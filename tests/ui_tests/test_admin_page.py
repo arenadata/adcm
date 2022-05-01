@@ -526,7 +526,6 @@ class TestAdminPolicyPage:
         policies_page.delete_all_policies()
 
     # pylint: disable=too-many-arguments
-    @pytest.mark.skip(reason="https://arenadata.atlassian.net/browse/ADCM-2761")
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     @pytest.mark.parametrize(
         ("clusters", "services", "providers", "hosts", "parents", "role_name"),
