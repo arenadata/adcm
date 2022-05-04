@@ -555,7 +555,7 @@ class Cluster(ADCMEntity):
         related_hosts = self.host_set.all()
         related_hosts.update(maintenance_mode=target_mm_value)
         log.debug(
-            f'deleting cluster `%s`. set `%s` maintenance_mode value for hosts `%s`',
+            'deleting cluster `%s`. set `%s` maintenance_mode value for hosts `%s`',
             self.pk,
             target_mm_value,
             [h.pk for h in related_hosts],
