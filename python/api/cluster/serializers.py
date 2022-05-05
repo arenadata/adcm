@@ -214,8 +214,7 @@ class HostComponentSaveSerializer(serializers.Serializer):
                 if key not in item:
                     msg = '"{}" sub-field is required'
                     raise AdcmEx('INVALID_INPUT', msg.format(key))
-            host = Host.obj.get(pk=item['host_id'])
-            if host.maintenance_mode == MaintenanceModeType.On.value:
+            if Host.obj.get(pk=item['host_id']).maintenance_mode == MaintenanceModeType.On.value:
                 raise AdcmEx("INVALID_HC_HOST_IN_MM")
         return hc
 
