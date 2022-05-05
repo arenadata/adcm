@@ -25,6 +25,7 @@ import { IFieldOptions, IPanelOptions } from '../types';
     '.title > mat-slide-toggle {margin-left: 20px;}',
     '.advanced {border: dotted 1px #00e676;}',
     'mat-panel-description {justify-content: flex-end;}',
+    'mat-checkbox {margin-right: 10px;}',
   ],
 })
 export class GroupFieldsComponent implements OnInit {

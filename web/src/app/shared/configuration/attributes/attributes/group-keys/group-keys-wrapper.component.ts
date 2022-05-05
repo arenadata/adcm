@@ -63,7 +63,7 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
   }
 
   private disableIfReadOnly() {
-    if (this.field.options.read_only) {
+    if (this.field?.options?.read_only) {
       this.groupControl.disable();
     }
   }
@@ -76,8 +76,8 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
 
     const path = fieldOptions.key?.split('/').reverse();
 
-    this.groupControl = attributeControl.get(path) as FormControl;
-    this.parameterControl = parameterControl.get(path) as FormControl;
+    this.groupControl = attributeControl.get(path[0]) as FormControl;
+    this.parameterControl = parameterControl.get(path[0]) as FormControl;
 
     path.forEach((part) => {
       disabled = disabled[part];
@@ -104,10 +104,10 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
   onChange(e: MatCheckboxChange) {
     if (e.checked) {
       this.parameterControl.enable();
-      this.field.disabled = false;
+      this.field['disabled'] = false;
     } else {
       this.parameterControl.disable();
-      this.field.disabled = true;
+      this.field['disabled'] = true;
     }
   }
 
