@@ -343,6 +343,19 @@ def test_set_value_not_in_enum_in_mm(cluster_with_mm, hosts):
     expect_api_error(f'Set value "{mm_value}" to MM', lambda: host.maintenance_mode_set(mm_value))
 
 
+def test_mm_after_host_deletion(cluster_with_mm, hosts):
+    """
+    Test that MM on hosts from deleted cluster is "disabled"
+    """
+    host_1, host_2, *_ = hosts
+    add_hosts_to_cluster(cluster_with_mm, [host_1, host_2])
+    turn_mm_on(host_2)
+    check_hosts_mm_is(MM_IS_OFF, host_1)
+    check_hosts_mm_is(MM_IS_ON, host_2)
+    cluster_with_mm.delete()
+    check_hosts_mm_is(MM_IS_DISABLED, host_1, host_2)
+
+
 def check_actions_are_disabled_on(*objects) -> None:
     """Check that correct actions are disabled on given objects"""
     for adcm_object in objects:
