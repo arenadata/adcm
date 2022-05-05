@@ -112,6 +112,7 @@
 
     change:
       <<: *job
+      allow_in_maintenance_mode: true
       hc_acl:
         - service: hc_acl_service
           component: first_component
