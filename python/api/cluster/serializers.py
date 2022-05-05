@@ -216,7 +216,7 @@ class HostComponentSaveSerializer(serializers.Serializer):
                     raise AdcmEx('INVALID_INPUT', msg.format(key))
             host = Host.obj.get(pk=item['host_id'])
             if host.maintenance_mode == MaintenanceModeType.On.value:
-                raise AdcmEx("INVALID_INPUT", f"host <{host.pk}> in maintenance mode", 409)
+                raise AdcmEx("INVALID_HC_HOST_IN_MM")
         return hc
 
     def create(self, validated_data):
