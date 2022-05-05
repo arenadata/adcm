@@ -82,7 +82,7 @@ class TestStatusAggregationWithMM:
         cluster = cluster_with_mm
         service = cluster.service(name=DEFAULT_SERVICE_NAME)
         component, *_ = deployed_component
-        _, host_2, host_3 = hosts
+        _, host_2, host_3, *_ = hosts
 
         service_name = service.name
         component_name = f'{service_name}.{component.name}'
@@ -120,7 +120,7 @@ class TestStatusAggregationWithMM:
         """
         Test status aggregation when components on hosts are turned "off" before MM turned "on" on host
         """
-        _, host_2, host_3 = hosts
+        _, host_2, host_3, *_ = hosts
         cluster = cluster_with_mm
         service = cluster.service(name=DEFAULT_SERVICE_NAME)
         component, *_ = deployed_component

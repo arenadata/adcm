@@ -21,7 +21,7 @@ import pytest
 from adcm_client.objects import Host, Cluster, Component
 
 from tests.library.assertions import sets_are_equal, is_empty, expect_api_error, expect_no_api_error
-from tests.library.errorcodes import MAINTENANCE_MODE_NOT_AVAILABLE, ACTION_ERROR
+from tests.library.errorcodes import MAINTENANCE_MODE_NOT_AVAILABLE, ACTION_ERROR, ADCMError, INVALID_HC_HOST_IN_MM
 from tests.functional.tools import AnyADCMObject, get_object_represent, build_hc_for_hc_acl_action
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
@@ -112,14 +112,18 @@ def test_mm_hosts_not_allowed_in_hc_map(cluster_with_mm, hosts):
     add_hosts_to_cluster(cluster, (host_in_mm, regular_host))
     turn_mm_on(host_in_mm)
     with allure.step('Try to set HC map with one of hosts in MM'):
-        _expect_hc_set_to_fail(cluster, [(host_in_mm, first_component)])
-        _expect_hc_set_to_fail(cluster, [(host_in_mm, first_component), (regular_host, first_component)])
+        _expect_hc_set_to_fail(cluster, [(host_in_mm, first_component)], err_=INVALID_HC_HOST_IN_MM)
+        _expect_hc_set_to_fail(
+            cluster, [(host_in_mm, first_component), (regular_host, first_component)], err_=INVALID_HC_HOST_IN_MM
+        )
 
     with allure.step('Place component on "working" host'):
         hc_with_regular_host = cluster.hostcomponent_set((regular_host, first_component))
 
     with allure.step("Try to set HC map with one of hosts in MM and check that hc-map hasn't changed"):
-        _expect_hc_set_to_fail(cluster, [(host_in_mm, first_component), (regular_host, first_component)])
+        _expect_hc_set_to_fail(
+            cluster, [(host_in_mm, first_component), (regular_host, first_component)], err_=INVALID_HC_HOST_IN_MM
+        )
         cluster.reread()
         _check_hostcomponents_are_equal(cluster.hostcomponent(), hc_with_regular_host)
 
@@ -444,12 +448,14 @@ def check_state(host: Host, expected_state: str) -> None:
     ) == expected_state, f'State of host {host.fqdn} should be {expected_state}, not {actual_state}'
 
 
-def _expect_hc_set_to_fail(cluster: Cluster, hostcomponent: Iterable[Tuple[Host, Component]]) -> None:
+def _expect_hc_set_to_fail(
+    cluster: Cluster, hostcomponent: Iterable[Tuple[Host, Component]], err_: ADCMError = MAINTENANCE_MODE_NOT_AVAILABLE
+) -> None:
     expect_api_error(
         'set hostcomponent with one of hosts in MM mode',
         cluster.hostcomponent_set,
         *hostcomponent,
-        err_=MAINTENANCE_MODE_NOT_AVAILABLE,
+        err_=err_,
     )
 
 
