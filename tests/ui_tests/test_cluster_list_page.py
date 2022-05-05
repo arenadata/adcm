@@ -522,6 +522,7 @@ class TestClusterServicePage:
         service_conf_page.wait_page_is_opened()
         service_conf_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
+    @pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2790")
     def test_check_pagination_on_service_list_page(self, sdk_client_fs: ADCMClient, app_fs):
         """Test pagination on cluster/{}/service page"""
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_SERVICES)
@@ -530,6 +531,16 @@ class TestClusterServicePage:
         cluster_service_page.add_service_by_name(service_name="All")
         cluster_service_page.wait_page_is_opened()
         cluster_service_page.table.check_pagination(second_page_item_amount=2)
+
+    def test_delete_service_on_service_list_page(self, app_fs, create_community_cluster_with_service):
+        """Test delete service from cluster/{}/service page"""
+
+        cluster, service = create_community_cluster_with_service
+        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+        row = cluster_service_page.table.get_all_rows()[0]
+        cluster_service_page.click_delete_btn_in_row(row)
+        with allure.step("Check that after deleting service row there are no rows"):
+            assert len(cluster_service_page.table.get_all_rows(timeout=2)) == 0, "There should not be any rows"
 
 
 class TestClusterHostPage:
