@@ -131,14 +131,14 @@ describe('HostComponentsMap :: TakeService', () => {
     });
   });
 
-  it('validateConstraints fn for Component { constrant: [0, odd], relations: [{}, {}]} =>  Total amount should be odd.', () => {
+  it('validateConstraints fn for Component { constrant: [0, odd], relations: [{}, {}]} => Must be installed at least 0 components. Total amount should be odd.', () => {
     const d = { ...ctData, constraint: [0, 'odd'] };
     const mCompTile = new CompTile(d);
     (mCompTile.relations = [
       { id: 0, name: 'test', relations: [], color: 'none', disabled: false },
       { id: 1, name: 'test', relations: [], color: 'none', disabled: false },
     ]),
-      expect(service.validateConstraints(mCompTile, 0)()).toEqual({ error: 'Total amount should be odd.' });
+      expect(service.validateConstraints(mCompTile, 0)()).toEqual({ error: 'Must be installed at least 0 components. Total amount should be odd.' });
   });
 
   it('validateConstraints fn for Component { constrant: [1, odd], relations: [{}]}] tobe null', () => {
