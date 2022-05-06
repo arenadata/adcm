@@ -178,6 +178,16 @@ def get_host_vars(host: Host, obj):
                     }
                 }
             )
+            for service in ClusterObject.objects.filter(cluster=group.object.cluster).exclude(
+                pk=group.object.id
+            ):
+                variables['services'][service.prototype.name] = get_service_variables(service)
+                for component in ServiceComponent.objects.filter(
+                    cluster=group.object.cluster, service=service
+                ):
+                    variables['services'][service.prototype.name][
+                        component.prototype.name
+                    ] = get_component_variables(component)
             for component in ServiceComponent.objects.filter(
                 cluster=group.object.cluster, service=group.object
             ):
