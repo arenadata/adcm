@@ -2,7 +2,7 @@
   <div class="title-container">
     <button mat-button [disabled]="isDisabled()" class="title" [appTooltip]="model.name"
       [appTooltipShowByCondition]="true" (click)="clickToTitle()">
-      <span *ngIf="isError()" class="warn">*</span>&nbsp;<span [matTooltip]="model.notification"
+      <span *ngIf="isMandatory()" class="warn">*</span>&nbsp;<span [matTooltip]="model?.notification" [matTooltipDisabled]="isError()"
         [style.color]="model.color">{{ model.name }}</span>
     </button>
     <button mat-raised-button color="primary"
