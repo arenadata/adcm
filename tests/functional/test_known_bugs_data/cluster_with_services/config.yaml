@@ -48,6 +48,8 @@
   version: 2.11
   name: second_service
 
+  config: *config
+
   actions: *actions
 
   components:
