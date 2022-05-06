@@ -22,14 +22,16 @@ import { MatMenu } from '@angular/material/menu';
     </div>
     <ng-template #list>
       <ng-container *ngFor="let a of items">
-        <button
-          mat-menu-item
-          *ngIf="!a.children; else branch"
-          [disabled]="a.disabling_cause === 'maintenance_mode'"
-          [appForTest]="'action_btn'"
-          [appActions]="{ cluster: cluster, actions: [a] }">
-          <span [matTooltip]="causeTooltip(a.disabling_cause)">{{ a.display_name }}</span>
-        </button>
+        <div [matTooltip]="actionListItemTooltip(a.disabling_cause)">
+          <button
+            mat-menu-item
+            *ngIf="!a.children; else branch"
+            [disabled]="a.disabling_cause === 'maintenance_mode'"
+            [appForTest]="'action_btn'"
+            [appActions]="{ cluster: cluster, actions: [a] }">
+            <span>{{ a.display_name }}</span>
+          </button>
+        </div>
         <ng-template #branch>
           <button mat-menu-item [matMenuTriggerFor]="inner.menu">
             <span>{{ a.display_name }}</span>
@@ -45,8 +47,10 @@ export class MenuItemComponent {
   @Input() cluster: { id: number; hostcomponent: string };
   @ViewChild('menu', { static: true }) menu: MatMenu;
 
-  causeTooltip(cause) {
-    if (cause) return 'The Action is not available. One or more hosts in “Maintenance mode”';
+  actionListItemTooltip(value: string | null): string | null {
+    if (value === 'maintenance_mode') {
+      return 'The Action is not available. One or more hosts in “Maintenance mode”';
+    }
     return null;
   }
 }
