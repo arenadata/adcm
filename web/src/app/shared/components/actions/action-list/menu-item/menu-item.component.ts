@@ -22,10 +22,9 @@ import { MatMenu } from '@angular/material/menu';
     </div>
     <ng-template #list>
       <ng-container *ngFor="let a of items">
-        <div [matTooltip]="actionListItemTooltip(a.disabling_cause)">
+        <div *ngIf="!a.children; else branch" [matTooltip]="actionListItemTooltip(a.disabling_cause)">
           <button
             mat-menu-item
-            *ngIf="!a.children; else branch"
             [disabled]="a.disabling_cause === 'maintenance_mode'"
             [appForTest]="'action_btn'"
             [appActions]="{ cluster: cluster, actions: [a] }">
