@@ -309,10 +309,16 @@ def recheck_issues(obj: ADCMEntity) -> None:
             remove_issue(obj, issue_cause)
 
 
-def update_hierarchy_issues(obj: ADCMEntity):
+def update_hierarchy_issues(obj: ADCMEntity, remove_obj=False):
     """Update issues on all directly connected objects"""
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(tree.built_from)
-    for node in affected_nodes:
-        obj = node.value
-        recheck_issues(obj)
+    if remove_obj:
+        for concern in obj.concerns.all():
+            if concern.owner == obj:
+                log.debug(f'deleting concern {concern}')
+                concern.delete()
+    else:
+        for node in affected_nodes:
+            obj = node.value
+            recheck_issues(obj)
