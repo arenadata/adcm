@@ -81,9 +81,9 @@ func (se *StatusEvent) write(key string, sh StatusHolder) {
 }
 
 func (se *StatusEvent) read(key string) StatusHolder {
-        se.mutex.Lock()
-        defer se.mutex.Unlock()
-        return se.db[key]
+	se.mutex.Lock()
+	defer se.mutex.Unlock()
+	return se.db[key]
 }
 
 func fill_hc_status(h Hub, hostId int, compId int, hc ClusterService) StatusHolder {
@@ -97,7 +97,7 @@ func fill_hc_status(h Hub, hostId int, compId int, hc ClusterService) StatusHold
 
 func fill_host_status(h Hub, hostId int, clusterId int) StatusHolder {
 	ClusterStatus := getClusterStatus(h, clusterId)
-	HostStatus, _ := h.HostStorage.get(ALL, hostId)
+	HostStatus, _ := h.HostStatusStorage.get(ALL, hostId)
 	return StatusHolder{
 		cluster: ClusterStatus,
 		host:    HostStatus,

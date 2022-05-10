@@ -69,7 +69,7 @@ func showAll(h Hub, w http.ResponseWriter, r *http.Request) {
 	hostOut := map[int]Status{}
 	hosts := h.ServiceMap.getAllHosts()
 	for _, hostId := range hosts {
-		val, _ := h.HostStorage.get(ALL, hostId)
+		val, _ := h.HostStatusStorage.get(ALL, hostId)
 		hostOut[hostId] = val
 	}
 	all := struct {
@@ -279,7 +279,7 @@ func setHost(h Hub, w http.ResponseWriter, r *http.Request) {
 	clear := func() {
 		h.StatusEvent.check_host(h, hostId, clusterId)
 	}
-	res := h.HostStorage.set(ALL, hostId, status, clear)
+	res := h.HostStatusStorage.set(ALL, hostId, status, clear)
 	h.StatusEvent.check_host(h, hostId, clusterId)
 	jsonOut3(w, r, "", res)
 }
@@ -295,8 +295,65 @@ func showHost(h Hub, w http.ResponseWriter, r *http.Request) {
 		ErrOut4(w, r, "HOST_NOT_FOUND", "unknown host")
 		return
 	}
-	val, _ := h.HostStorage.get(ALL, hostId)
+	val, _ := h.HostStatusStorage.get(ALL, hostId)
 	jsonOut(w, r, val)
+}
+
+func listHost(h Hub, w http.ResponseWriter, r *http.Request) {
+	allow(w, "GET, POST")
+	result, _ := h.ListHostStorage.list()
+	jsonOut(w, r, result)
+
+}
+
+func createHost(h Hub, w http.ResponseWriter, r *http.Request) {
+	allow(w, "GET, POST")
+	hosts := make([]Host, 0)
+	_, err := decodeBody(w, r, &hosts)
+	if err != nil {
+		ErrOut4(w, r, "JSON_ERROR", err.Error())
+		return
+	}
+	code := h.ListHostStorage.create(hosts)
+	logg.D.f("createHost: %+v", hosts)
+	jsonOut3(w, r, "", code)
+
+}
+
+func retrieveHost(h Hub, w http.ResponseWriter, r *http.Request) {
+	allow(w, "GET, PUT")
+	hostId, ok := getPathId(w, r, "hostid")
+	if !ok {
+		return
+	}
+	_, ok = h.ServiceMap.getHostCluster(hostId)
+	if !ok {
+		ErrOut4(w, r, "HOST_NOT_FOUND", "unknown host")
+		return
+	}
+	value, _ := h.HostStorage.retrieve(hostId)
+	jsonOut(w, r, value)
+}
+
+func updateHost(h Hub, w http.ResponseWriter, r *http.Request) {
+	allow(w, "GET, PUT")
+	hostId, ok := getPathId(w, r, "hostid")
+	if !ok {
+		return
+	}
+	host := Host{}
+	_, err := decodeBody(w, r, &host)
+	if err != nil {
+		return
+	}
+	_, ok = h.ServiceMap.getHostCluster(hostId)
+	if !ok {
+		ErrOut4(w, r, "HOST_NOT_FOUND", "unknown host")
+		return
+	}
+
+	code := h.HostStorage.update(hostId, host.MaintenanceMode)
+	jsonOut3(w, r, "", code)
 }
 
 func setHostComp(h Hub, w http.ResponseWriter, r *http.Request) {

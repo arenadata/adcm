@@ -85,6 +85,10 @@ func getServiceStatus(h Hub, cluster int, service int) (Status, []hostCompStatus
 		spl := strings.Split(key, ".")
 		hostId, _ := strconv.Atoi(spl[0])
 		compId, _ := strconv.Atoi(spl[1])
+		host, ok := h.HostStorage.retrieve(hostId)
+		if ok && host.MaintenanceMode {
+			continue
+		}
 		status, ok := h.HostComponentStorage.get(hostId, compId)
 		if !ok {
 			status.Status = 16
@@ -125,7 +129,11 @@ func getClusterHostStatus(h Hub, clusterId int) (int, map[int]Status) {
 	}
 	result := 0
 	for _, hostId := range hostList {
-		status, ok := h.HostStorage.get(ALL, hostId)
+		host, ok := h.HostStorage.retrieve(hostId)
+		if ok && host.MaintenanceMode {
+			continue
+		}
+		status, ok := h.HostStatusStorage.get(ALL, hostId)
 		if !ok {
 			logg.D.f("getClusterHostStatus: no status for host #%v ", hostId)
 			status = Status{Status: 16}

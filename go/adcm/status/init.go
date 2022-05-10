@@ -12,21 +12,24 @@
 package status
 
 import (
-	"github.com/bouk/httprouter"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/bouk/httprouter"
 )
 
 const httpPort = ":8020"
 const componentTimeout = 300 // seconds
 
 type Hub struct {
-	HostStorage          *Storage
+	HostStatusStorage    *Storage
 	HostComponentStorage *Storage
+	HostStorage          *HostStorage
+	ListHostStorage      *ListHostStorage
 	ServiceMap           *ServiceServer
 	EventWS              *wsHub
 	StatusEvent          *StatusEvent
@@ -43,9 +46,16 @@ func Start(secrets *SecretConfig, logFile string, logLevel string) {
 	go hub.HostComponentStorage.run()
 	hub.HostComponentStorage.setTimeOut(componentTimeout)
 
-	hub.HostStorage = newStorage(dbMap2{}, "ClusterHost")
+	hub.HostStatusStorage = newStorage(dbMap2{}, "ClusterHost")
+	go hub.HostStatusStorage.run()
+	hub.HostStatusStorage.setTimeOut(componentTimeout)
+
+	hostStorage := dbHost{}
+	hub.HostStorage = newHostStorage(hostStorage, "Host")
 	go hub.HostStorage.run()
-	hub.HostStorage.setTimeOut(componentTimeout)
+
+	hub.ListHostStorage = newListHostStorage(hostStorage, "ListHost")
+	go hub.ListHostStorage.run()
 
 	hub.ServiceMap = newServiceServer()
 	go hub.ServiceMap.run()
@@ -90,6 +100,11 @@ func startHTTP(httpPort string, hub Hub) {
 	router.GET("/api/v1/host/", authWrap(hub, hostList))
 	router.GET("/api/v1/host/:hostid/", authWrap(hub, showHost))
 	router.POST("/api/v1/host/:hostid/", authWrap(hub, setHost))
+
+	router.GET("/api/v1/object/host/", authWrap(hub, listHost))
+	router.POST("/api/v1/object/host/", authWrap(hub, createHost))
+	router.GET("/api/v1/object/host/:hostid/", authWrap(hub, retrieveHost))
+	router.PUT("/api/v1/object/host/:hostid/", authWrap(hub, updateHost))
 
 	router.GET("/api/v1/host/:hostid/component/:compid/", authWrap(hub, showHostComp))
 	router.POST("/api/v1/host/:hostid/component/:compid/", authWrap(hub, setHostComp))
