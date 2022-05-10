@@ -22,7 +22,7 @@ from api.utils import (
     get_object_for_user,
     check_custom_perm,
 )
-from cm.api import remove_host_from_cluster, delete_host, add_host_to_cluster
+from cm.api import remove_host_from_cluster, delete_host, add_host_to_cluster, load_service_map
 from cm.errors import AdcmEx
 from cm.models import (
     Cluster,
@@ -264,6 +264,7 @@ class HostDetail(PermissionListMixin, DetailView):
                 host.maintenance_mode, serializer.validated_data['maintenance_mode']
             )
             serializer.save(**kwargs)
+            load_service_map()
             return Response(self.get_serializer(self.get_object()).data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
