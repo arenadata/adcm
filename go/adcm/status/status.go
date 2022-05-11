@@ -109,6 +109,10 @@ func getComponentStatus(h Hub, compId int) (Status, map[int]Status) {
 	}
 	status := 0
 	for _, hostId := range hostList {
+		host, ok := h.HostStorage.retrieve(hostId)
+		if ok && host.MaintenanceMode {
+			continue
+		}
 		hostStatus, ok := h.HostComponentStorage.get(hostId, compId)
 		if !ok {
 			hostStatus = Status{Status: 16}
