@@ -2,12 +2,13 @@
   <mat-expansion-panel-header>
     <mat-panel-title class="title">
       <mat-checkbox
-        *ngIf="panel.type==='group'"
-        [ngModel]="panel.group_config.checkboxValue"
-        [disabled]="panel.group_config.disabled"
+        *ngIf="panel?.type==='group'"
+        [ngModel]="panel?.group_config?.checkboxValue"
+        [disabled]="panel?.group_config?.disabled"
+        [checked]="panel?.group_config?.groupCheckboxChecked"
         (click)="$event.stopPropagation();"></mat-checkbox>
       <span>{{ panel.display_name }}</span>
-      <mat-slide-toggle *ngIf="panel.activatable" [checked]="active" (change)="activeToggle($event)">
+      <mat-slide-toggle *ngIf="panel.activatable" [disabled]="panel?.group_config?.disabled" [checked]="active" (change)="activeToggle($event)">
       </mat-slide-toggle>
     </mat-panel-title>
     <mat-panel-description>

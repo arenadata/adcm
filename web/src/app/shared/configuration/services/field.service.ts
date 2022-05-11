@@ -174,9 +174,25 @@ export class FieldService {
    */
   public getAttrs(data: IConfig, groups: string[], dataOptions: TFormOptions[]): void {
     if (!data?.attr || !groups) return;
+    console.log('groups', groups);
     groups.forEach((group) => {
+      let disabled: boolean;
+      let groupCheckboxChecked: boolean;
       const i = dataOptions.findIndex(item => item.name === group);
-      dataOptions[i].group_config = { 'checkboxValue': data.attr?.group_keys[group].value, 'disabled': !data.attr.custom_group_keys[group].value }
+      const config = data.config.filter(c => c.name === group && c.type === 'group');
+      console.log('config', config[0]);
+      if (config[0]?.read_only || !data.attr?.custom_group_keys[group].value || (data.attr?.custom_group_keys[group].value && !data.attr?.group_keys[group].value)) {
+        disabled = true;
+        groupCheckboxChecked = false;
+      } else if (data.attr?.custom_group_keys[group].value && data.attr?.group_keys[group].value) {
+        disabled = false;
+        groupCheckboxChecked = true;
+      }
+
+      dataOptions[i].group_config = {
+        'checkboxValue': groupCheckboxChecked,
+        'disabled': disabled
+      }
     })
   }
 

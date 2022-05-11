@@ -76,8 +76,8 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
 
     const path = fieldOptions.key?.split('/').reverse();
 
-    this.groupControl = attributeControl.get(path[0]) as FormControl;
-    this.parameterControl = parameterControl.get(path[0]) as FormControl;
+    this.groupControl = attributeControl.get(path) as FormControl;
+    this.parameterControl = parameterControl.get(path) as FormControl;
 
     path.forEach((part) => {
       disabled = disabled[part];
@@ -90,11 +90,7 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
       this.tooltipText = text;
     } else {
       attributeControl.enable();
-      if (attributeControl.value) {
-        parameterControl.enable();
-      } else {
-        parameterControl.disable();
-      }
+      parameterControl.disable();
 
       this.tooltipText = this.wrapperOptions.tooltipText;
       this._disabled = !attributeControl.value;
