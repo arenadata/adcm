@@ -254,3 +254,9 @@ ACTION_ERROR = ADCMError(
     '409 Conflict',
     'ACTION_ERROR',
 )
+
+
+INVALID_HC_HOST_IN_MM = ADCMError(
+    '409 Conflict',
+    'INVALID_HC_HOST_IN_MM',
+)

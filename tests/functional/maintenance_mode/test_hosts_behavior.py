@@ -21,15 +21,17 @@ import pytest
 from adcm_client.objects import Host, Cluster, Component
 
 from tests.library.assertions import sets_are_equal, is_empty, expect_api_error, expect_no_api_error
-from tests.library.errorcodes import MAINTENANCE_MODE_NOT_AVAILABLE, ACTION_ERROR
+from tests.library.errorcodes import MAINTENANCE_MODE_NOT_AVAILABLE, ACTION_ERROR, ADCMError, INVALID_HC_HOST_IN_MM
 from tests.functional.tools import AnyADCMObject, get_object_represent, build_hc_for_hc_acl_action
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.maintenance_mode.conftest import (
-    DEFAULT_SERVICE_NAME,
-    ANOTHER_SERVICE_NAME,
     MM_IS_ON,
     MM_IS_OFF,
     MM_IS_DISABLED,
+    BUNDLES_DIR,
+    DISABLING_CAUSE,
+    DEFAULT_SERVICE_NAME,
+    ANOTHER_SERVICE_NAME,
     turn_mm_on,
     turn_mm_off,
     add_hosts_to_cluster,
@@ -37,13 +39,23 @@ from tests.functional.maintenance_mode.conftest import (
     check_hosts_mm_is,
     get_disabled_actions_names,
     get_enabled_actions_names,
-    DISABLING_CAUSE,
 )
+
+# pylint: disable=redefined-outer-name
 
 ACTION_ALLOWED_IN_MM = 'allowed_in_mm'
 ACTION_NOT_ALLOWED_IN_MM = 'not_allowed_in_mm'
 ENABLED_ACTIONS = {ACTION_ALLOWED_IN_MM}
 DISABLED_ACTIONS = {'default_action', ACTION_NOT_ALLOWED_IN_MM}
+
+
+@pytest.fixture()
+def host_actions_cluster(sdk_client_fs) -> Cluster:
+    """Upload and create cluster with host actions from cluster, service and component"""
+    bundle = sdk_client_fs.upload_from_fs(BUNDLES_DIR / 'cluster_host_actions')
+    cluster = bundle.cluster_create('Cluster with host actions')
+    cluster.service_add(name=DEFAULT_SERVICE_NAME)
+    return cluster
 
 
 @only_clean_adcm
@@ -100,14 +112,18 @@ def test_mm_hosts_not_allowed_in_hc_map(cluster_with_mm, hosts):
     add_hosts_to_cluster(cluster, (host_in_mm, regular_host))
     turn_mm_on(host_in_mm)
     with allure.step('Try to set HC map with one of hosts in MM'):
-        _expect_hc_set_to_fail(cluster, [(host_in_mm, first_component)])
-        _expect_hc_set_to_fail(cluster, [(host_in_mm, first_component), (regular_host, first_component)])
+        _expect_hc_set_to_fail(cluster, [(host_in_mm, first_component)], err_=INVALID_HC_HOST_IN_MM)
+        _expect_hc_set_to_fail(
+            cluster, [(host_in_mm, first_component), (regular_host, first_component)], err_=INVALID_HC_HOST_IN_MM
+        )
 
     with allure.step('Place component on "working" host'):
         hc_with_regular_host = cluster.hostcomponent_set((regular_host, first_component))
 
     with allure.step("Try to set HC map with one of hosts in MM and check that hc-map hasn't changed"):
-        _expect_hc_set_to_fail(cluster, [(host_in_mm, first_component), (regular_host, first_component)])
+        _expect_hc_set_to_fail(
+            cluster, [(host_in_mm, first_component), (regular_host, first_component)], err_=INVALID_HC_HOST_IN_MM
+        )
         cluster.reread()
         _check_hostcomponents_are_equal(cluster.hostcomponent(), hc_with_regular_host)
 
@@ -178,6 +194,35 @@ def test_provider_and_host_actions_affected_by_mm(cluster_with_mm, provider, hos
 
     turn_mm_off(first_host)
     _available_actions_are(actions_on_host, actions_on_host, actions_on_provider)
+
+
+def test_host_actions_on_another_component_host(host_actions_cluster, hosts):
+    """
+    Test host_actions from cluster, service and component are working correctly
+    with regular host with component that is also mapped to an MM host
+    """
+    expected_enabled = {'default_action'} | {
+        f'{obj_type}_host_action_allowed' for obj_type in ('cluster', 'service', 'component')
+    }
+    expected_disabled = {f'{obj_type}_host_action_disallowed' for obj_type in ('cluster', 'service', 'component')}
+
+    host_in_mm, regular_host, *_ = hosts
+    cluster = host_actions_cluster
+    component = cluster.service().component()
+
+    add_hosts_to_cluster(cluster, (host_in_mm, regular_host))
+    cluster.hostcomponent_set((host_in_mm, component), (regular_host, component))
+
+    turn_mm_on(host_in_mm)
+
+    enabled_actions = get_enabled_actions_names(regular_host)
+    disabled_actions = get_disabled_actions_names(regular_host)
+
+    with allure.step('Check that correct actions are enabled/disabled on the host'):
+        sets_are_equal(enabled_actions, expected_enabled, f'Incorrect actions are enabled on host {regular_host.fqdn}')
+        sets_are_equal(
+            disabled_actions, expected_disabled, f'Incorrect actions are disabled on host {regular_host.fqdn}'
+        )
 
 
 def test_running_disabled_actions_is_forbidden(cluster_with_mm, hosts):
@@ -254,6 +299,8 @@ def test_hc_acl_action_with_mm(cluster_with_mm, hosts):
     cluster_with_mm.hostcomponent_set(
         (mm_host_1, first_component), (regular_host_1, second_component), (mm_host_2, second_component)
     )
+    turn_mm_on(mm_host_1)
+    turn_mm_on(mm_host_2)
 
     with allure.step('Check "adding" component to a host in MM is forbidden'):
         expect_api_error(
@@ -343,6 +390,20 @@ def test_set_value_not_in_enum_in_mm(cluster_with_mm, hosts):
     expect_api_error(f'Set value "{mm_value}" to MM', lambda: host.maintenance_mode_set(mm_value))
 
 
+def test_mm_after_cluster_deletion(cluster_with_mm, hosts):
+    """
+    Test that MM on hosts from deleted cluster is "disabled"
+    """
+    host_1, host_2, *_ = hosts
+    add_hosts_to_cluster(cluster_with_mm, [host_1, host_2])
+    turn_mm_on(host_2)
+    check_hosts_mm_is(MM_IS_OFF, host_1)
+    check_hosts_mm_is(MM_IS_ON, host_2)
+    with allure.step('Delete cluster'):
+        cluster_with_mm.delete()
+    check_hosts_mm_is(MM_IS_DISABLED, host_1, host_2)
+
+
 def check_actions_are_disabled_on(*objects) -> None:
     """Check that correct actions are disabled on given objects"""
     for adcm_object in objects:
@@ -393,12 +454,14 @@ def check_state(host: Host, expected_state: str) -> None:
     ) == expected_state, f'State of host {host.fqdn} should be {expected_state}, not {actual_state}'
 
 
-def _expect_hc_set_to_fail(cluster: Cluster, hostcomponent: Iterable[Tuple[Host, Component]]) -> None:
+def _expect_hc_set_to_fail(
+    cluster: Cluster, hostcomponent: Iterable[Tuple[Host, Component]], err_: ADCMError = MAINTENANCE_MODE_NOT_AVAILABLE
+) -> None:
     expect_api_error(
         'set hostcomponent with one of hosts in MM mode',
         cluster.hostcomponent_set,
         *hostcomponent,
-        err_=MAINTENANCE_MODE_NOT_AVAILABLE,
+        err_=err_,
     )
 
 
