@@ -98,6 +98,7 @@
   actions:
     shrink:
       <<: *job
+      allow_in_maintenance_mode: true
       hc_acl:
         - service: hc_acl_service
           component: second_component
@@ -105,6 +106,7 @@
 
     expand:
       <<: *job
+      allow_in_maintenance_mode: true
       hc_acl:
         - service: hc_acl_service
           component: second_component

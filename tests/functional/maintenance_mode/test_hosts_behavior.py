@@ -218,8 +218,11 @@ def test_host_actions_on_another_component_host(host_actions_cluster, hosts):
     enabled_actions = get_enabled_actions_names(regular_host)
     disabled_actions = get_disabled_actions_names(regular_host)
 
-    sets_are_equal(enabled_actions, expected_enabled, f'Incorrect actions are enabled on host {regular_host.fqdn}')
-    sets_are_equal(disabled_actions, expected_disabled, f'Incorrect actions are disabled on host {regular_host.fqdn}')
+    with allure.step('Check that correct actions are enabled/disabled on the host'):
+        sets_are_equal(enabled_actions, expected_enabled, f'Incorrect actions are enabled on host {regular_host.fqdn}')
+        sets_are_equal(
+            disabled_actions, expected_disabled, f'Incorrect actions are disabled on host {regular_host.fqdn}'
+        )
 
 
 def test_running_disabled_actions_is_forbidden(cluster_with_mm, hosts):
@@ -296,6 +299,8 @@ def test_hc_acl_action_with_mm(cluster_with_mm, hosts):
     cluster_with_mm.hostcomponent_set(
         (mm_host_1, first_component), (regular_host_1, second_component), (mm_host_2, second_component)
     )
+    turn_mm_on(mm_host_1)
+    turn_mm_on(mm_host_2)
 
     with allure.step('Check "adding" component to a host in MM is forbidden'):
         expect_api_error(
@@ -385,7 +390,7 @@ def test_set_value_not_in_enum_in_mm(cluster_with_mm, hosts):
     expect_api_error(f'Set value "{mm_value}" to MM', lambda: host.maintenance_mode_set(mm_value))
 
 
-def test_mm_after_host_deletion(cluster_with_mm, hosts):
+def test_mm_after_cluster_deletion(cluster_with_mm, hosts):
     """
     Test that MM on hosts from deleted cluster is "disabled"
     """
@@ -394,7 +399,8 @@ def test_mm_after_host_deletion(cluster_with_mm, hosts):
     turn_mm_on(host_2)
     check_hosts_mm_is(MM_IS_OFF, host_1)
     check_hosts_mm_is(MM_IS_ON, host_2)
-    cluster_with_mm.delete()
+    with allure.step('Delete cluster'):
+        cluster_with_mm.delete()
     check_hosts_mm_is(MM_IS_DISABLED, host_1, host_2)
 
 
