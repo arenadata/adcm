@@ -16,9 +16,9 @@
 
 from __future__ import unicode_literals
 
+import os.path
 import signal
 import time
-import os.path
 from collections.abc import Mapping
 from copy import deepcopy
 from enum import Enum
@@ -549,18 +549,6 @@ class Cluster(ADCMEntity):
             'issue': self.issue,
         }
         return result if result['issue'] else {}
-
-    def delete(self, using=None, keep_parents=False):
-        target_mm_value = MaintenanceModeType.Disabled.value
-        related_hosts = self.host_set.all()
-        related_hosts.update(maintenance_mode=target_mm_value)
-        log.debug(
-            'deleting cluster `%s`. set `%s` maintenance_mode value for hosts `%s`',
-            self.pk,
-            target_mm_value,
-            [h.pk for h in related_hosts],
-        )
-        super().delete(using, keep_parents)
 
 
 class HostProvider(ADCMEntity):
