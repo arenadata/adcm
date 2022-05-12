@@ -360,7 +360,16 @@ def delete_cluster(cluster, cancel_tasks=True):
     if cancel_tasks:
         _cancel_locking_tasks(cluster)
     cluster_id = cluster.id
+    hosts = cluster.host_set.all()
+    host_ids = [str(host.id) for host in hosts]
+    hosts.update(maintenance_mode=MaintenanceModeType.Disabled)
     cluster.delete()
+    log.debug(
+        'Deleting cluster #%s. Set `%s` maintenance mode value for `%s` hosts.',
+        cluster_id,
+        MaintenanceModeType.Disabled,
+        ', '.join(host_ids),
+    )
     cm.status_api.post_event('delete', 'cluster', cluster_id)
     load_service_map()
 

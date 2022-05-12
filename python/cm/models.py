@@ -16,9 +16,9 @@
 
 from __future__ import unicode_literals
 
+import os.path
 import signal
 import time
-import os.path
 from collections.abc import Mapping
 from copy import deepcopy
 from enum import Enum
