@@ -63,7 +63,7 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
   }
 
   private disableIfReadOnly() {
-    if (this.field.options.read_only) {
+    if (this.field?.options?.read_only) {
       this.groupControl.disable();
     }
   }
@@ -71,7 +71,7 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
   private _resolveAndSetupControls(attributeForm: FormGroup, parametersForm: FormGroup, fieldOptions: IFieldOptions): void {
     let attributeControl: FormGroup = attributeForm;
     let parameterControl: FormGroup = parametersForm;
-    let disabled = this._attributeSrv.attributes.get(ConfigAttributeNames.CUSTOM_GROUP_KEYS).value;
+    let enabled = this._attributeSrv.attributes.get(ConfigAttributeNames.CUSTOM_GROUP_KEYS).value;
     let text = this._attributeSrv.attributes.get(ConfigAttributeNames.CUSTOM_GROUP_KEYS).options.tooltipText;
 
     const path = fieldOptions.key?.split('/').reverse();
@@ -80,20 +80,20 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
     this.parameterControl = parameterControl.get(path) as FormControl;
 
     path.forEach((part) => {
-      disabled = disabled[part];
+      enabled = enabled[part];
     });
 
-    if (!disabled) {
-      attributeControl.disable();
-      parameterControl.disable();
+    if (!enabled) {
+      this.groupControl.disable();
+      this.parameterControl.disable();
 
       this.tooltipText = text;
     } else {
-      attributeControl.enable();
-      if (attributeControl.value) {
-        parameterControl.enable();
+      this.groupControl.enable();
+      if (this.groupControl.value) {
+        this.parameterControl.enable();
       } else {
-        parameterControl.disable();
+        this.parameterControl.disable();
       }
 
       this.tooltipText = this.wrapperOptions.tooltipText;
@@ -104,10 +104,10 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
   onChange(e: MatCheckboxChange) {
     if (e.checked) {
       this.parameterControl.enable();
-      this.field.disabled = false;
+      this.field['disabled'] = false;
     } else {
       this.parameterControl.disable();
-      this.field.disabled = true;
+      this.field['disabled'] = true;
     }
   }
 
