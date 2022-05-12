@@ -314,7 +314,7 @@ def test_hc_acl_action_with_mm(cluster_with_mm, hosts):
             'remove component from a MM host with hc_acl action',
             service.action(name='shrink').run,
             hc=build_hc_for_hc_acl_action(cluster_with_mm, remove=[(second_component, mm_host_2)]),
-        )
+        ).wait()
 
     with allure.step('Check "moving" component from host in MM to a regular host in one action is allowed'):
         expect_no_api_error(
