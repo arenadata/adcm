@@ -544,8 +544,6 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
         host = Host.obj.get(id=item['host_id'])
         service = ClusterObject.obj.get(id=item['service_id'], cluster=cluster)
         comp = ServiceComponent.obj.get(id=item['component_id'], cluster=cluster, service=service)
-        if Host.obj.get(pk=item['host_id']).maintenance_mode == MaintenanceModeType.On.value:
-            raise AdcmEx("INVALID_HC_HOST_IN_MM")
         if not host.cluster:
             msg = f'host #{host.id} {host.fqdn} does not belong to any cluster'
             raise AdcmEx("FOREIGN_HOST", msg)
@@ -559,7 +557,17 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
 
     cm.issue.check_component_requires(host_comp_list)
     cm.issue.check_bound_components(host_comp_list)
+    check_maintanence_mode(cluster, host_comp_list)
     return host_comp_list
+
+
+def check_maintanence_mode(cluster, host_comp_list):
+    for (service, host, comp) in host_comp_list:
+        try:
+            HostComponent.objects.get(cluster=cluster, service=service, host=host, component=comp)
+        except HostComponent.DoesNotExist:
+            if host.maintenance_mode == MaintenanceModeType.On.value:
+                raise AdcmEx("INVALID_HC_HOST_IN_MM")  # pylint: disable=raise-missing-from
 
 
 def still_existed_hc(cluster, host_comp_list):
