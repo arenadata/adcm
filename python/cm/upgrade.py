@@ -34,6 +34,7 @@ from cm.models import (
     PrototypeImport,
     ServiceComponent,
     Upgrade,
+    MaintenanceModeType,
 )
 
 
@@ -323,6 +324,8 @@ def bundle_switch(obj: Union[Cluster, HostProvider], upgrade: Upgrade):
 
         if obj.prototype.type == 'cluster':
             switch_services(upgrade, obj)
+            if obj.prototype.allow_maintenance_mode:
+                Host.objects.filter(cluster=obj).update(maintenance_mode=MaintenanceModeType.Off)
         elif obj.prototype.type == 'provider':
             switch_hosts(upgrade, obj)
         cm.issue.update_hierarchy_issues(obj)

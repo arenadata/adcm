@@ -32,6 +32,7 @@ from cm.models import (
     ClusterObject,
     ServiceComponent,
     HostComponent,
+    MaintenanceModeType,
 )
 from cm.status_api import make_ui_host_status
 from rbac.viewsets import DjangoOnlyObjectPermissions
@@ -200,6 +201,8 @@ class HostDetail(PermissionListMixin, DetailView):
     queryset = Host.objects.all()
     serializer_class = serializers.HostDetailSerializer
     serializer_class_ui = serializers.HostUISerializer
+    serializer_class_put = serializers.HostUpdateSerializer
+    serializer_class_patch = serializers.HostUpdateSerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_host']
     lookup_field = 'id'
@@ -229,6 +232,48 @@ class HostDetail(PermissionListMixin, DetailView):
             check_custom_perm(request.user, 'remove', 'host', host)
             delete_host(host)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def patch(self, request, *args, **kwargs):
+        return self.__update_host_object(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        return self.__update_host_object(request, partial=False, *args, **kwargs)
+
+    def __update_host_object(
+        self,
+        request,
+        *args,
+        partial=True,
+        **kwargs,
+    ):
+        host = self.get_object()
+        check_custom_perm(request.user, 'change', 'host', host)
+        serializer = self.get_serializer(
+            host,
+            data=request.data,
+            context={
+                'request': request,
+                'prototype_id': kwargs.get('prototype_id', None),
+                'cluster_id': kwargs.get('cluster_id', None),
+                'provider_id': kwargs.get('provider_id', None),
+            },
+            partial=partial,
+        )
+        if serializer.is_valid(raise_exception=True):
+            self.__check_maintenance_mode_constraint(
+                host.maintenance_mode, serializer.validated_data['maintenance_mode']
+            )
+            serializer.save(**kwargs)
+            return Response(self.get_serializer(self.get_object()).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @staticmethod
+    def __check_maintenance_mode_constraint(old_mode, new_mode):
+        if old_mode == MaintenanceModeType.Disabled or new_mode not in (
+            MaintenanceModeType.On,
+            MaintenanceModeType.Off,
+        ):
+            raise AdcmEx('MAINTENANCE_MODE_NOT_AVAILABLE')
 
 
 class StatusList(GenericUIView):
