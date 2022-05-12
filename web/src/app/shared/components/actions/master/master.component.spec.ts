@@ -119,7 +119,8 @@ describe('MasterComponent', () => {
                 required: false,
                 description: '',
                 read_only: false,
-                activatable: false
+                activatable: false,
+                group_config: null,
               }
             ]
           },
@@ -171,7 +172,8 @@ describe('MasterComponent', () => {
                 required: false,
                 description: '',
                 read_only: false,
-                activatable: false
+                activatable: false,
+                group_config: null,
               }
             ]
           },
