@@ -104,10 +104,10 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
   onChange(e: MatCheckboxChange) {
     if (e.checked) {
       this.parameterControl.enable();
-      this.field['disabled'] = false;
+      this.field.disabled = false;
     } else {
       this.parameterControl.disable();
-      this.field['disabled'] = true;
+      this.field.disabled = true;
     }
   }
 
