@@ -68,6 +68,16 @@ func (hs *HostStorage) update(id int, maintenance_mode bool) int {
 	return response.code
 }
 
+// list - return list Host entities
+func (db dbHost) list() ([]Host, bool) {
+	result := make([]Host, 0)
+	for _, host := range db {
+		result = append(result, host)
+	}
+	return result, true
+}
+
+// retrieve - return Host entity, if this exists in db, else return default entity
 func (db dbHost) retrieve(id int) (Host, bool) {
 	value, ok := db[id]
 	if ok {
@@ -76,6 +86,7 @@ func (db dbHost) retrieve(id int) (Host, bool) {
 	return Host{Id: id, MaintenanceMode: false}, false
 }
 
+// update - updated or created Host entity, implements the PUT method
 func (db dbHost) update(id int, maintenance_mode bool) int {
 	code := 200
 	host, ok := db[id]
@@ -89,6 +100,7 @@ func (db dbHost) update(id int, maintenance_mode bool) int {
 	return code
 }
 
+// create - clear db and created Host entities
 func (db dbHost) create(hosts []Host) int {
 	db.clear()
 	for _, host := range hosts {
@@ -97,6 +109,7 @@ func (db dbHost) create(hosts []Host) int {
 	return 201
 }
 
+// clear - clear db with Hosts
 func (db dbHost) clear() {
 	for key := range db {
 		delete(db, key)
@@ -158,12 +171,4 @@ func (lhs *ListHostStorage) create(hosts []Host) int {
 	lhs.in <- request
 	response := <-lhs.out
 	return response.code
-}
-
-func (db dbHost) list() ([]Host, bool) {
-	result := make([]Host, 0)
-	for _, host := range db {
-		result = append(result, host)
-	}
-	return result, true
 }

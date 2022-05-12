@@ -299,13 +299,15 @@ func showHost(h Hub, w http.ResponseWriter, r *http.Request) {
 	jsonOut(w, r, val)
 }
 
+// listHost - GET method for show list Host entities
 func listHost(h Hub, w http.ResponseWriter, r *http.Request) {
 	allow(w, "GET, POST")
 	result, _ := h.ListHostStorage.list()
 	jsonOut(w, r, result)
-
 }
 
+// createHost - POST method for create Host entities
+// Foramt example: [{"id": 1, "maintenance_mode": false}, ...]
 func createHost(h Hub, w http.ResponseWriter, r *http.Request) {
 	allow(w, "GET, POST")
 	hosts := make([]Host, 0)
@@ -317,9 +319,9 @@ func createHost(h Hub, w http.ResponseWriter, r *http.Request) {
 	code := h.ListHostStorage.create(hosts)
 	logg.D.f("createHost: %+v", hosts)
 	jsonOut3(w, r, "", code)
-
 }
 
+// retrieveHost - GET method for show Host entity
 func retrieveHost(h Hub, w http.ResponseWriter, r *http.Request) {
 	allow(w, "GET, PUT")
 	hostId, ok := getPathId(w, r, "hostid")
@@ -335,6 +337,7 @@ func retrieveHost(h Hub, w http.ResponseWriter, r *http.Request) {
 	jsonOut(w, r, value)
 }
 
+// updateHost - PUT method for update Host entity
 func updateHost(h Hub, w http.ResponseWriter, r *http.Request) {
 	allow(w, "GET, PUT")
 	hostId, ok := getPathId(w, r, "hostid")
