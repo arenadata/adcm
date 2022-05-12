@@ -11,12 +11,14 @@ type hostRequest struct {
 	command          string
 	id               int
 	maintenance_mode bool
+	hosts            []Host
 }
 
 type hostResponse struct {
-	code int
-	ok   bool
-	host Host
+	code  int
+	ok    bool
+	host  Host
+	hosts []Host
 }
 
 type HostStorage struct {
@@ -42,16 +44,36 @@ func (hs *HostStorage) run() {
 		logg.I.f("Storage %s command: %+v", hs.label, request.command)
 		switch request.command {
 		case "retrieve":
-			value, ok := hs.db.retrieve(request.id)
-			hs.out <- hostResponse{host: value, ok: ok}
+			host, ok := hs.db.retrieve(request.id)
+			hs.out <- hostResponse{host: host, ok: ok}
 		case "update":
-			value := hs.db.update(request.id, request.maintenance_mode)
-			hs.out <- hostResponse{code: value}
+			code := hs.db.update(request.id, request.maintenance_mode)
+			hs.out <- hostResponse{code: code}
+		case "list":
+			hosts, ok := hs.db.list()
+			hs.out <- hostResponse{hosts: hosts, ok: ok}
+		case "create":
+			code := hs.db.create(request.hosts)
+			hs.out <- hostResponse{code: code}
 		default:
 			logg.E.f("Storage %s unknown command: %+v", hs.label, request)
 
 		}
 	}
+}
+
+func (hs *HostStorage) list() ([]Host, bool) {
+	request := hostRequest{command: "list"}
+	hs.in <- request
+	response := <-hs.out
+	return response.hosts, response.ok
+}
+
+func (hs *HostStorage) create(hosts []Host) int {
+	request := hostRequest{command: "create", hosts: hosts}
+	hs.in <- request
+	response := <-hs.out
+	return response.code
 }
 
 func (hs *HostStorage) retrieve(id int) (Host, bool) {
@@ -114,61 +136,4 @@ func (db dbHost) clear() {
 	for key := range db {
 		delete(db, key)
 	}
-}
-
-type listHostRequest struct {
-	command string
-	hosts   []Host
-}
-
-type listHostResponse struct {
-	code  int
-	ok    bool
-	hosts []Host
-}
-
-type ListHostStorage struct {
-	in    chan listHostRequest
-	out   chan listHostResponse
-	db    dbHost
-	label string
-}
-
-func newListHostStorage(db dbHost, label string) *ListHostStorage {
-	return &ListHostStorage{
-		in:    make(chan listHostRequest),
-		out:   make(chan listHostResponse),
-		db:    db,
-		label: label,
-	}
-}
-
-func (lhs *ListHostStorage) run() {
-	logg.I.f("start storage %s server", lhs.label)
-	for {
-		request := <-lhs.in
-		logg.I.f("Storage %s command: %+v", lhs.label, request.command)
-		switch request.command {
-		case "list":
-			value, ok := lhs.db.list()
-			lhs.out <- listHostResponse{hosts: value, ok: ok}
-		case "create":
-			code := lhs.db.create(request.hosts)
-			lhs.out <- listHostResponse{code: code}
-		}
-	}
-}
-
-func (lhs *ListHostStorage) list() ([]Host, bool) {
-	request := listHostRequest{command: "list"}
-	lhs.in <- request
-	response := <-lhs.out
-	return response.hosts, response.ok
-}
-
-func (lhs *ListHostStorage) create(hosts []Host) int {
-	request := listHostRequest{command: "create", hosts: hosts}
-	lhs.in <- request
-	response := <-lhs.out
-	return response.code
 }

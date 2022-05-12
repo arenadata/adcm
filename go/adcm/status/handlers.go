@@ -302,7 +302,7 @@ func showHost(h Hub, w http.ResponseWriter, r *http.Request) {
 // listHost - GET method for show list Host entities
 func listHost(h Hub, w http.ResponseWriter, r *http.Request) {
 	allow(w, "GET, POST")
-	result, _ := h.ListHostStorage.list()
+	result, _ := h.HostStorage.list()
 	jsonOut(w, r, result)
 }
 
@@ -316,7 +316,7 @@ func createHost(h Hub, w http.ResponseWriter, r *http.Request) {
 		ErrOut4(w, r, "JSON_ERROR", err.Error())
 		return
 	}
-	code := h.ListHostStorage.create(hosts)
+	code := h.HostStorage.create(hosts)
 	logg.D.f("createHost: %+v", hosts)
 	jsonOut3(w, r, "", code)
 }

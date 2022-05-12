@@ -29,7 +29,6 @@ type Hub struct {
 	HostStatusStorage    *Storage
 	HostComponentStorage *Storage
 	HostStorage          *HostStorage
-	ListHostStorage      *ListHostStorage
 	ServiceMap           *ServiceServer
 	EventWS              *wsHub
 	StatusEvent          *StatusEvent
@@ -50,12 +49,8 @@ func Start(secrets *SecretConfig, logFile string, logLevel string) {
 	go hub.HostStatusStorage.run()
 	hub.HostStatusStorage.setTimeOut(componentTimeout)
 
-	hostStorage := dbHost{}
-	hub.HostStorage = newHostStorage(hostStorage, "Host")
+	hub.HostStorage = newHostStorage(dbHost{}, "Host")
 	go hub.HostStorage.run()
-
-	hub.ListHostStorage = newListHostStorage(hostStorage, "ListHost")
-	go hub.ListHostStorage.run()
 
 	hub.ServiceMap = newServiceServer()
 	go hub.ServiceMap.run()
