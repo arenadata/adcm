@@ -324,8 +324,12 @@ def bundle_switch(obj: Union[Cluster, HostProvider], upgrade: Upgrade):
 
         if obj.prototype.type == 'cluster':
             switch_services(upgrade, obj)
-            if obj.prototype.allow_maintenance_mode:
+            if not old_proto.allow_maintenance_mode and new_proto.allow_maintenance_mode:
                 Host.objects.filter(cluster=obj).update(maintenance_mode=MaintenanceModeType.Off)
+            elif old_proto.allow_maintenance_mode and not new_proto.allow_maintenance_mode:
+                Host.objects.filter(cluster=obj).update(
+                    maintenance_mode=MaintenanceModeType.Disabled
+                )
         elif obj.prototype.type == 'provider':
             switch_hosts(upgrade, obj)
         cm.issue.update_hierarchy_issues(obj)

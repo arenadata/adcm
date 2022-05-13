@@ -290,17 +290,22 @@ def test_hc_acl_action_with_mm(cluster_with_mm, hosts):
     - adding component on host in MM should be forbidden
     - removing component from host in MM should be allowed
     """
-    mm_host_1, mm_host_2, regular_host_1, regular_host_2, *_ = hosts
+    mm_host_1, mm_host_2, mm_host_3, regular_host_1, regular_host_2, *_ = hosts
     service = cluster_with_mm.service_add(name='hc_acl_service')
     first_component = service.component(name='first_component')
     second_component = service.component(name='second_component')
 
-    add_hosts_to_cluster(cluster_with_mm, (mm_host_1, mm_host_2, regular_host_1, regular_host_2))
+    add_hosts_to_cluster(cluster_with_mm, (mm_host_1, mm_host_2, mm_host_3, regular_host_1, regular_host_2))
     cluster_with_mm.hostcomponent_set(
-        (mm_host_1, first_component), (regular_host_1, second_component), (mm_host_2, second_component)
+        (mm_host_1, first_component),
+        (regular_host_1, second_component),
+        (mm_host_2, second_component),
+        (mm_host_3, first_component),
+        (mm_host_3, second_component),
     )
     turn_mm_on(mm_host_1)
     turn_mm_on(mm_host_2)
+    turn_mm_on(mm_host_3)
 
     with allure.step('Check "adding" component to a host in MM is forbidden'):
         expect_api_error(
