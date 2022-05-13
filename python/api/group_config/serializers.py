@@ -266,13 +266,13 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
                 else:
                     if spec[k]['type'] in ['list', 'map', 'string']:
                         if config_is_ro(obj, k, spec[k]['limits']) or (
-                            bool(cc[k]) is False and nc[k] is None
+                            k in cc and k in nc and bool(cc[k]) is False and nc[k] is None
                         ):
                             continue
 
                     if not v and k in cc and k in nc and cc[k] != nc[k]:
                         msg = (
-                            f"Value of {k} is different in current and new config."
+                            f"Value of {k} field is different in current and new config."
                             f" Current: ({cc[k]}),new: ({nc[k]})"
                         )
                         raise AdcmEx('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD', msg)
