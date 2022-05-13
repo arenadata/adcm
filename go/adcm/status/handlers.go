@@ -308,7 +308,7 @@ func listHost(h Hub, w http.ResponseWriter, r *http.Request) {
 }
 
 // createHost - POST method for create Host entities
-// Request foramt: [{"id": 1, "maintenance_mode": false}, ...]
+// Request format: [{"id": 1, "maintenance_mode": false}, ...]
 func createHost(h Hub, w http.ResponseWriter, r *http.Request) {
 	allow(w, "GET, POST")
 	hosts := make([]Host, 0)

@@ -107,7 +107,7 @@ func (db dbHost) retrieve(id int) (Host, bool) {
 	return Host{}, false
 }
 
-// update - update or create Host entity
+// update - update Host entity
 func (db dbHost) update(id int, maintenance_mode bool) bool {
 	host, ok := db[id]
 	if !ok {
