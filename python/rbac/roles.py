@@ -208,11 +208,14 @@ def re_apply_policy_for_jobs(action_object, task):
                     gop = GroupObjectPermission.objects.get(
                         group=group, permission__codename='view_action', object_pk=task.action.pk
                     )
-                except UserObjectPermission.DoesNotExist:
+                    model_view_gop = GroupObjectPermission.objects.get(
+                        group=group,
+                        permission__codename=f'view_{object_model}',
+                        object_pk=action_object.pk,
+                    )
+                except GroupObjectPermission.DoesNotExist:
                     continue
-                if gop in policy.group_object_perm.all() and group.has_perm(
-                    f'view_{object_model}', action_object
-                ):
+                if gop in policy.group_object_perm.all() and model_view_gop:
                     policy.role.child.add(task_role)
                     apply_jobs(task, policy, None, group)
 
