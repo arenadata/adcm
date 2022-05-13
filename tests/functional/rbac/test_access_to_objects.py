@@ -18,12 +18,12 @@ Test that granting any permission on object allows user to:
 
 import os.path
 from contextlib import contextmanager
-from typing import Callable, Set, List, Iterable
+from typing import Callable, Set, List, Iterable, Union, Dict
 
 import allure
 import pytest
 from adcm_client.base import ObjectNotFound
-from adcm_client.objects import ADCMClient, Task, Cluster, Service, Component, Provider, User
+from adcm_client.objects import ADCMClient, Task, Cluster, Service, Component, Provider, User, Group
 from adcm_pytest_plugin.utils import catch_failed
 
 from tests.library.utils import lower_class_name
@@ -285,8 +285,19 @@ class TestAccessForJobsAndLogs:
             task.wait()
         return tasks
 
+    @pytest.fixture(params=['user', 'group'], ids=['with_user', 'with_group'])
+    def user_or_group(self, request, user, clients) -> Dict[str, Union[User, Group]]:
+        """Return user or group"""
+
+        if request.param == 'user':
+            return {'user': user}
+        if request.param == 'group':
+            return {'group': clients.admin.group_create(name='somegroup', user=[{'id': user.id}])}
+        raise ValueError('param should be either "user" or "group"')
+
+    # pylint: disable-next=too-many-locals
     def test_access_to_tasks(
-        self, clients, user, cluster, provider, finished_tasks
+        self, user_or_group: dict, clients, cluster, provider, finished_tasks
     ):  # pylint: disable=too-many-arguments
         """
         Test that user:
@@ -308,7 +319,7 @@ class TestAccessForJobsAndLogs:
                     clients.admin,
                     adcm_object,
                     action_business_role(adcm_object, self.MULTIJOB_ACTION, no_deny_checker=True),
-                    user=user,
+                    **user_or_group,
                 )
                 user_object = get_as_client_object(user_api, adcm_object)
                 user_task = user_object.action(display_name=self.MULTIJOB_ACTION).run()
@@ -324,7 +335,9 @@ class TestAccessForJobsAndLogs:
                 self.check_no_access_granted_for_tasks(clients.user, new_tasks + finished_tasks)
 
     @pytest.mark.extra_rbac()
-    def test_access_to_tasks_on_service_add_remove(self, cluster_wo_service: Cluster, clients: SDKClients, user: User):
+    def test_access_to_tasks_on_service_add_remove(
+        self, user_or_group: dict, cluster_wo_service: Cluster, clients: SDKClients
+    ):
         """
         Test that service add/remove doesn't break permission to view task objects:
         1. Add service
@@ -340,7 +353,7 @@ class TestAccessForJobsAndLogs:
             clients.admin,
             service,
             action_business_role(service, self.REGULAR_ACTION, no_deny_checker=True),
-            user=user,
+            **user_or_group,
         )
         with allure.step('Run action and check access to task objects'):
             task = _run_and_wait(service, self.REGULAR_ACTION)
@@ -356,9 +369,9 @@ class TestAccessForJobsAndLogs:
             self.check_access_granted_for_tasks(clients.user, [task])
             self.check_no_access_granted_for_tasks(clients.user, [second_task])
 
-    @pytest.mark.extra_rbac()
+    @pytest.mark.extra_rbac()  # pylint: disable-next=too-many-arguments
     def test_access_to_tasks_on_cluster_host_add_remove(
-        self, cluster: Cluster, provider: Provider, clients: SDKClients, user: User
+        self, user_or_group: Callable, cluster: Cluster, provider: Provider, clients: SDKClients
     ):
         """
         Test that access to task objects is correct after host add/remove from cluster
@@ -368,7 +381,7 @@ class TestAccessForJobsAndLogs:
             clients.admin,
             host,
             action_business_role(host, self.REGULAR_ACTION, no_deny_checker=True),
-            user=user,
+            **user_or_group,
         )
         with allure.step('Run action and check that access is granted'):
             task = _run_and_wait(host, self.REGULAR_ACTION)
@@ -381,8 +394,8 @@ class TestAccessForJobsAndLogs:
             cluster.host_delete(host)
             self.check_access_granted_for_tasks(clients.user, [task, second_task])
 
-    @pytest.mark.extra_rbac()
-    def test_access_to_tasks_on_hc_map_change(self, cluster, provider, clients, user):
+    @pytest.mark.extra_rbac()  # pylint: disable-next=too-many-arguments
+    def test_access_to_tasks_on_hc_map_change(self, user_or_group: dict, cluster, provider, clients):
         """
         Test that access for task objects is correct after HC map is changed
         """
@@ -394,7 +407,7 @@ class TestAccessForJobsAndLogs:
                     clients.admin,
                     adcm_object,
                     action_business_role(adcm_object, self.REGULAR_ACTION, no_deny_checker=True),
-                    user=user,
+                    **user_or_group,
                 )
         with allure.step('Run actions and check access to them'):
             host_task = _run_and_wait(host, self.REGULAR_ACTION)
