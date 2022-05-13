@@ -316,7 +316,7 @@ def update_hierarchy_issues(obj: ADCMEntity, remove_obj=False):
     if remove_obj:
         for concern in obj.concerns.all():
             if concern.owner == obj:
-                log.debug('deleting concern %s', concern)
+                log.debug('deleting concern `%s` of owner `%s`', concern, obj)
                 concern.delete()
     else:
         for node in affected_nodes:
