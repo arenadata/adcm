@@ -125,14 +125,48 @@ def test_upgrade_to_mm_false(sdk_client_fs, create_bundle_archives, hosts):
     old_cluster = old_bundle.cluster_create('Cluster to Upgrade')
     service = old_cluster.service_add(name='just_service')
     component = service.component()
+    cluster_hosts = [old_cluster.host_add(host) for host in hosts]
+    old_cluster.hostcomponent_set(*[(h, component) for h in cluster_hosts])
 
-    check_hosts_mm_is(MM_IS_DISABLED, *hosts)
+    check_hosts_mm_is(MM_IS_DISABLED, *cluster_hosts)
 
     upgrade_task = old_cluster.upgrade().do()
     if upgrade_task:
         upgrade_task.wait()
 
-    check_hosts_mm_is(MM_IS_DISABLED, *hosts)
+    check_hosts_mm_is(MM_IS_DISABLED, *cluster_hosts)
+    check_actions_are_disabled_correctly(set(TWO_DUMMY_ACTIONS.keys()), set(), old_cluster, service, component)
+
+
+@pytest.mark.parametrize(
+    'create_bundle_archives',
+    [
+        [
+            [{**OLD_BUNDLE[0], 'allow_maintenance_mode': True}, {**OLD_BUNDLE[1]}],
+            [{**NEW_BUNDLE[0], 'allow_maintenance_mode': False}, {**NEW_BUNDLE[1]}],
+        ]
+    ],
+    indirect=True,
+)
+def test_upgrade_from_true_to_false_mm(sdk_client_fs, create_bundle_archives, hosts):
+    """
+    Test upgrade from version with `allow_maintenance_mode: true` to `allow_maintenance_mode: false`
+    """
+    old_bundle, *_ = [sdk_client_fs.upload_from_fs(bundle) for bundle in create_bundle_archives]
+    old_cluster = old_bundle.cluster_create('Cluster to Upgrade')
+    cluster_hosts = [old_cluster.host_add(host) for host in hosts]
+    service = old_cluster.service_add(name='just_service')
+    component = service.component()
+    old_cluster.hostcomponent_set(*[(h, component) for h in cluster_hosts])
+
+    check_hosts_mm_is(MM_IS_OFF, *cluster_hosts)
+    turn_mm_on(cluster_hosts[0])
+
+    upgrade_task = old_cluster.upgrade().do()
+    if upgrade_task:
+        upgrade_task.wait()
+
+    check_hosts_mm_is(MM_IS_DISABLED, *cluster_hosts)
     check_actions_are_disabled_correctly(set(TWO_DUMMY_ACTIONS.keys()), set(), old_cluster, service, component)
 
 
