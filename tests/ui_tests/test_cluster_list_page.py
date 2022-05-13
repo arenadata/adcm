@@ -522,6 +522,7 @@ class TestClusterServicePage:
         service_conf_page.wait_page_is_opened()
         service_conf_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
+    @pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2790")
     def test_check_pagination_on_service_list_page(self, sdk_client_fs: ADCMClient, app_fs):
         """Test pagination on cluster/{}/service page"""
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_SERVICES)
@@ -530,6 +531,16 @@ class TestClusterServicePage:
         cluster_service_page.add_service_by_name(service_name="All")
         cluster_service_page.wait_page_is_opened()
         cluster_service_page.table.check_pagination(second_page_item_amount=2)
+
+    def test_delete_service_on_service_list_page(self, app_fs, create_community_cluster_with_service):
+        """Test delete service from cluster/{}/service page"""
+
+        cluster, service = create_community_cluster_with_service
+        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+        row = cluster_service_page.table.get_all_rows()[0]
+        cluster_service_page.click_delete_btn_in_row(row)
+        with allure.step("Check that after deleting service row there are no rows"):
+            assert len(cluster_service_page.table.get_all_rows(timeout=2)) == 0, "There should not be any rows"
 
 
 class TestClusterHostPage:
@@ -732,13 +743,34 @@ class TestClusterComponentsPage:
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
-    def test_check_cluster_components_page_create_components(
-        self, app_fs, create_community_cluster_with_host_and_service
-    ):
-        """Test distribution of components on hosts"""
+    @pytest.mark.parametrize(
+        "bundle_name",
+        [
+            "cluster_with_not_required_component",
+            "cluster_with_required_component",
+            "cluster_with_required_component_short",
+        ],
+    )
+    def test_check_cluster_components_page_create_components(self, app_fs, sdk_client_fs, create_host, bundle_name):
+        """Test adding components on hosts"""
+
         params = {"message": "Successfully saved."}
-        cluster, *_ = create_community_cluster_with_host_and_service
+        is_not_required = "_not_required" in bundle_name
+
+        with allure.step("Add cluster with service and host"):
+            bundle = cluster_bundle(sdk_client_fs, bundle_name)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            cluster.service_add(name=SERVICE_NAME)
+            cluster.host_add(create_host)
+
         cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+
+        with allure.step("Check that required component has * in name"):
+            component_name = cluster_components_page.get_components_rows()[0].text
+            assert (
+                "*" not in component_name if is_not_required else f"* {COMPONENT_NAME}" in component_name
+            ), f'There are {"" if is_not_required else "no"} * in component name "{component_name}"'
+
         host_row = cluster_components_page.find_host_row_by_name(HOST_NAME)
         component_row = cluster_components_page.find_component_row_by_name(COMPONENT_NAME)
         cluster_components_page.click_host(host_row)
@@ -751,7 +783,9 @@ class TestClusterComponentsPage:
             host_row = cluster_components_page.get_host_rows()[0]
             check_components_host_info(cluster_components_page.get_row_info(host_row), HOST_NAME, "1")
             component_row = cluster_components_page.get_components_rows()[0]
-            check_components_host_info(cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "1")
+            check_components_host_info(
+                cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "1" if is_not_required else "1 / 1"
+            )
 
     def test_check_cluster_components_page_restore_components(
         self, app_fs, create_community_cluster_with_host_and_service
