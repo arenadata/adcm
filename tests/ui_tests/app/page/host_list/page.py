@@ -12,8 +12,8 @@
 
 """Host List page PageObjects classes"""
 
-from typing import Optional, ClassVar
 from dataclasses import dataclass
+from typing import Optional, ClassVar
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -177,6 +177,32 @@ class HostListPage(BasePageObject):
 
         host_row = self.table.get_row(row_num)
         wait_until_step_succeeds(_check_host_state, timeout=10, period=0.5, page=self, row=host_row)
+
+    @allure.step('Click on maintenance mode button in row {row_num}')
+    def click_on_maintenance_mode_btn(self, row_num: int):
+        """Click maintenance mode in row"""
+
+        row = self.table.get_row(row_num)
+        self.find_child(row, HostListLocators.HostTable.HostRow.maintenance_mode_btn).click()
+
+    @allure.step('Assert maintenance mode state in row {row_num}')
+    def assert_maintenance_mode_state(self, row_num: int, allow_mm_state: bool = True):
+        """Assert maintenance mode state in row"""
+
+        def _check_mm_state(page: HostListPage, row: WebElement):
+            button_state = page.find_child(row, HostListLocators.HostTable.HostRow.maintenance_mode_btn).get_attribute(
+                "class"
+            )
+            tooltips_info = [
+                t.get_property("innerHTML") for t in page.find_elements(HostListLocators.HostTable.tooltip_text)
+            ]
+            if allow_mm_state:
+                assert "mat-primary" in button_state and "Turn maintenance mode ON" in tooltips_info
+            else:
+                assert "mat-on" in button_state and "Turn maintenance mode OFF" in tooltips_info
+
+        host_row = self.table.get_row(row_num)
+        wait_until_step_succeeds(_check_mm_state, timeout=4, period=0.5, page=self, row=host_row)
 
     @allure.step('Open host creation popup')
     def open_host_creation_popup(self):
