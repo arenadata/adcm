@@ -15,7 +15,6 @@ type hostRequest struct {
 }
 
 type hostResponse struct {
-	code  int
 	ok    bool
 	host  Host
 	hosts []Host
@@ -47,14 +46,14 @@ func (hs *HostStorage) run() {
 			host, ok := hs.db.retrieve(request.id)
 			hs.out <- hostResponse{host: host, ok: ok}
 		case "update":
-			code := hs.db.update(request.id, request.maintenance_mode)
-			hs.out <- hostResponse{code: code}
+			ok := hs.db.update(request.id, request.maintenance_mode)
+			hs.out <- hostResponse{ok: ok}
 		case "list":
-			hosts, ok := hs.db.list()
-			hs.out <- hostResponse{hosts: hosts, ok: ok}
+			hosts := hs.db.list()
+			hs.out <- hostResponse{hosts: hosts}
 		case "create":
-			code := hs.db.create(request.hosts)
-			hs.out <- hostResponse{code: code}
+			ok := hs.db.create(request.hosts)
+			hs.out <- hostResponse{ok: ok}
 		default:
 			logg.E.f("Storage %s unknown command: %+v", hs.label, request)
 
@@ -62,18 +61,18 @@ func (hs *HostStorage) run() {
 	}
 }
 
-func (hs *HostStorage) list() ([]Host, bool) {
+func (hs *HostStorage) list() []Host {
 	request := hostRequest{command: "list"}
 	hs.in <- request
 	response := <-hs.out
-	return response.hosts, response.ok
+	return response.hosts
 }
 
-func (hs *HostStorage) create(hosts []Host) int {
+func (hs *HostStorage) create(hosts []Host) bool {
 	request := hostRequest{command: "create", hosts: hosts}
 	hs.in <- request
 	response := <-hs.out
-	return response.code
+	return response.ok
 }
 
 func (hs *HostStorage) retrieve(id int) (Host, bool) {
@@ -83,20 +82,20 @@ func (hs *HostStorage) retrieve(id int) (Host, bool) {
 	return response.host, response.ok
 }
 
-func (hs *HostStorage) update(id int, maintenance_mode bool) int {
+func (hs *HostStorage) update(id int, maintenance_mode bool) bool {
 	request := hostRequest{command: "update", id: id, maintenance_mode: maintenance_mode}
 	hs.in <- request
 	response := <-hs.out
-	return response.code
+	return response.ok
 }
 
 // list - return list Host entities
-func (db dbHost) list() ([]Host, bool) {
+func (db dbHost) list() []Host {
 	result := make([]Host, 0)
 	for _, host := range db {
 		result = append(result, host)
 	}
-	return result, true
+	return result
 }
 
 // retrieve - return Host entity, if this exists in db, else return default entity
@@ -105,30 +104,27 @@ func (db dbHost) retrieve(id int) (Host, bool) {
 	if ok {
 		return value, true
 	}
-	return Host{Id: id, MaintenanceMode: false}, false
+	return Host{}, false
 }
 
-// update - updated or created Host entity, implements the PUT method
-func (db dbHost) update(id int, maintenance_mode bool) int {
-	code := 200
+// update - update or create Host entity
+func (db dbHost) update(id int, maintenance_mode bool) bool {
 	host, ok := db[id]
 	if !ok {
-		db[id] = Host{Id: id, MaintenanceMode: maintenance_mode}
-		code = 201
+		return ok
 	}
-	host.Id = id
 	host.MaintenanceMode = maintenance_mode
 	db[id] = host
-	return code
+	return ok
 }
 
 // create - clear db and created Host entities
-func (db dbHost) create(hosts []Host) int {
+func (db dbHost) create(hosts []Host) bool {
 	db.clear()
 	for _, host := range hosts {
 		db[host.Id] = host
 	}
-	return 201
+	return true
 }
 
 // clear - clear db with Hosts

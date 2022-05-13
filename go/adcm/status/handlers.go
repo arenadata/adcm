@@ -300,14 +300,15 @@ func showHost(h Hub, w http.ResponseWriter, r *http.Request) {
 }
 
 // listHost - GET method for show list Host entities
+// Response format: [{"id": 1, "maintenance_mode": false}, ...]
 func listHost(h Hub, w http.ResponseWriter, r *http.Request) {
 	allow(w, "GET, POST")
-	result, _ := h.HostStorage.list()
+	result := h.HostStorage.list()
 	jsonOut(w, r, result)
 }
 
 // createHost - POST method for create Host entities
-// Foramt example: [{"id": 1, "maintenance_mode": false}, ...]
+// Request foramt: [{"id": 1, "maintenance_mode": false}, ...]
 func createHost(h Hub, w http.ResponseWriter, r *http.Request) {
 	allow(w, "GET, POST")
 	hosts := make([]Host, 0)
@@ -316,7 +317,11 @@ func createHost(h Hub, w http.ResponseWriter, r *http.Request) {
 		ErrOut4(w, r, "JSON_ERROR", err.Error())
 		return
 	}
-	code := h.HostStorage.create(hosts)
+	ok := h.HostStorage.create(hosts)
+	code := http.StatusCreated
+	if !ok {
+		code = http.StatusBadRequest
+	}
 	logg.D.f("createHost: %+v", hosts)
 	jsonOut3(w, r, "", code)
 }
@@ -333,7 +338,11 @@ func retrieveHost(h Hub, w http.ResponseWriter, r *http.Request) {
 		ErrOut4(w, r, "HOST_NOT_FOUND", "unknown host")
 		return
 	}
-	value, _ := h.HostStorage.retrieve(hostId)
+	value, ok := h.HostStorage.retrieve(hostId)
+	if !ok {
+		ErrOut4(w, r, "HOST_NOT_FOUND", "unknown host")
+		return
+	}
 	jsonOut(w, r, value)
 }
 
@@ -344,18 +353,21 @@ func updateHost(h Hub, w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	host := Host{}
-	_, err := decodeBody(w, r, &host)
-	if err != nil {
-		return
-	}
 	_, ok = h.ServiceMap.getHostCluster(hostId)
 	if !ok {
 		ErrOut4(w, r, "HOST_NOT_FOUND", "unknown host")
 		return
 	}
-
-	code := h.HostStorage.update(hostId, host.MaintenanceMode)
+	host := Host{}
+	_, err := decodeBody(w, r, &host)
+	if err != nil {
+		return
+	}
+	ok = h.HostStorage.update(hostId, host.MaintenanceMode)
+	code := http.StatusOK
+	if !ok {
+		code = http.StatusBadRequest
+	}
 	jsonOut3(w, r, "", code)
 }
 
