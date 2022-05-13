@@ -38,7 +38,6 @@ from cm.models import (
     Host,
     Prototype,
     ServiceComponent,
-    MaintenanceModeType,
 )
 from cm.status_api import get_cluster_status, get_hc_status
 
@@ -214,8 +213,6 @@ class HostComponentSaveSerializer(serializers.Serializer):
                 if key not in item:
                     msg = '"{}" sub-field is required'
                     raise AdcmEx('INVALID_INPUT', msg.format(key))
-            if Host.obj.get(pk=item['host_id']).maintenance_mode == MaintenanceModeType.On.value:
-                raise AdcmEx("INVALID_HC_HOST_IN_MM")
         return hc
 
     def create(self, validated_data):
