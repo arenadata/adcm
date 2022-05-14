@@ -311,9 +311,9 @@ def recheck_issues(obj: ADCMEntity) -> None:
             remove_issue(obj, issue_cause)
 
 
-def update_hierarchy_issues(
+def update_hierarchy_issues(  # pylint: disable=inconsistent-return-statements
     obj: ADCMEntity, remove_obj=False
-):  # pylint: inconsistent-return-statements
+):
     """
     Update issues on all directly connected objects
     If remove_obj is True, returns func that must be called after actual object deletion
