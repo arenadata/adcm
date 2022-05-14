@@ -357,8 +357,9 @@ def delete_cluster(cluster, cancel_tasks=True):
     if cancel_tasks:
         _cancel_locking_tasks(cluster)
     cluster_id = cluster.id
-    cm.issue.update_hierarchy_issues(obj=cluster, remove_obj=True)
+    del_concerns_func = cm.issue.update_hierarchy_issues(obj=cluster, remove_obj=True)
     cluster.delete()
+    del_concerns_func()
     cm.status_api.post_event('delete', 'cluster', cluster_id)
     load_service_map()
 

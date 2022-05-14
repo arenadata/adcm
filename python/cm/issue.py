@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from functools import partial
+
 from cm.adcm_config import proto_ref, obj_ref, get_prototype_config
 from cm.errors import AdcmEx, raise_AdcmEx as err
 from cm.hierarchy import Tree
@@ -310,14 +312,26 @@ def recheck_issues(obj: ADCMEntity) -> None:
 
 
 def update_hierarchy_issues(obj: ADCMEntity, remove_obj=False):
-    """Update issues on all directly connected objects"""
+    """
+    Update issues on all directly connected objects
+    If remove_obj is True, returns func that must be called after actual object deletion
+    due to avoid requests to non-existent object
+    """
+
+    def del_obj(model_objects):
+        for model_obj in model_objects:
+            obj_str = str(model_obj)
+            model_obj.delete()
+            log.debug('Deleted %s', obj_str)
+
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(tree.built_from)
     if remove_obj:
+        delete_func_args = list()
         for concern in obj.concerns.all():
             if concern.owner == obj:
-                log.debug('deleting concern `%s` of owner `%s`', concern, obj)
-                concern.delete()
+                delete_func_args.append(concern)
+        return partial(del_obj, delete_func_args)
     else:
         for node in affected_nodes:
             obj = node.value
