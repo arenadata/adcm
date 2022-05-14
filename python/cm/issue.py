@@ -311,7 +311,9 @@ def recheck_issues(obj: ADCMEntity) -> None:
             remove_issue(obj, issue_cause)
 
 
-def update_hierarchy_issues(obj: ADCMEntity, remove_obj=False):
+def update_hierarchy_issues(
+    obj: ADCMEntity, remove_obj=False
+):  # pylint: inconsistent-return-statements
     """
     Update issues on all directly connected objects
     If remove_obj is True, returns func that must be called after actual object deletion
@@ -327,7 +329,7 @@ def update_hierarchy_issues(obj: ADCMEntity, remove_obj=False):
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(tree.built_from)
     if remove_obj:
-        delete_func_args = list()
+        delete_func_args = []
         for concern in obj.concerns.all():
             if concern.owner == obj:
                 delete_func_args.append(concern)
