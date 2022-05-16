@@ -28,6 +28,7 @@ from api.serializers import (
 from cm.adcm_config import config_is_ro
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
+from cm.logger import log
 from cm.models import GroupConfig, Host, ObjectConfig, ConfigLog
 
 
@@ -275,6 +276,7 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
                             f"Value of {k} field is different in current and new config."
                             f" Current: ({cc[k]}),new: ({nc[k]})"
                         )
+                        log.info(msg)
                         raise AdcmEx('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD', msg)
 
         obj_ref = self.context['obj_ref']
