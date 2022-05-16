@@ -1,8 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { MaintenanceModeButtonComponent } from './maintenance-mode-button.component';
-import {MatListModule} from "@angular/material/list";
-import {MatIconModule} from "@angular/material/icon";
+import { MatIconModule } from "@angular/material/icon";
 
 describe('MaintenanceModeButtonComponent', () => {
   let component: MaintenanceModeButtonComponent<any>;
