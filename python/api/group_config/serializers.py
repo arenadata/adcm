@@ -25,7 +25,7 @@ from api.serializers import (
     MultiHyperlinkedIdentityField,
     UIConfigField,
 )
-from cm.adcm_config import config_is_ro
+from cm.adcm_config import config_is_ro, ui_config
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
 from cm.logger import log
@@ -293,10 +293,13 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
     @atomic
     def create(self, validated_data):
         object_config = self.context.get('obj_ref')
+        ui = self.context.get('ui')
         config = validated_data.get('config')
         attr = validated_data.get('attr', {})
         description = validated_data.get('description', '')
         cl = update_obj_config(object_config, config, attr, description)
+        if ui:
+            cl.config = ui_config(object_config.object.object, cl)
         if hasattr(object_config, 'adcm'):
             logrotate.run()
         return cl
