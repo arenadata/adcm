@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { MaintenanceModeButtonComponent } from './maintenance-mode-button.component';
+import {MatListModule} from "@angular/material/list";
+import {MatIconModule} from "@angular/material/icon";
 
 describe('MaintenanceModeButtonComponent', () => {
   let component: MaintenanceModeButtonComponent<any>;
@@ -8,7 +10,10 @@ describe('MaintenanceModeButtonComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ MaintenanceModeButtonComponent ]
+      declarations: [ MaintenanceModeButtonComponent ],
+      imports: [
+        MatIconModule,
+      ],
     })
     .compileComponents();
   });
