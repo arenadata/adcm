@@ -197,9 +197,15 @@ class HostListPage(BasePageObject):
                 t.get_property("innerHTML") for t in page.find_elements(HostListLocators.HostTable.tooltip_text)
             ]
             if allow_mm_state:
-                assert "mat-primary" in button_state and "Turn maintenance mode ON" in tooltips_info
+                assert "mat-primary" in button_state, "Button shound be gray"
+                assert (
+                    "Turn maintenance mode ON" in tooltips_info
+                ), "There should be tooltip that user could turn on maintenance mode"
             else:
-                assert "mat-on" in button_state and "Turn maintenance mode OFF" in tooltips_info
+                assert "mat-on" in button_state, "Button shound be red"
+                assert (
+                    "Turn maintenance mode OFF" in tooltips_info
+                ), "There should be tooltip that user could turn off maintenance mode"
 
         host_row = self.table.get_row(row_num)
         wait_until_step_succeeds(_check_mm_state, timeout=4, period=0.5, page=self, row=host_row)
