@@ -55,6 +55,7 @@ from tests.ui_tests.app.page.job_list.page import JobListPage
 from tests.ui_tests.app.page.login.page import LoginPage
 from tests.ui_tests.app.page.provider.page import ProviderConfigPage
 from tests.ui_tests.app.page.service.page import ServiceConfigPage
+from tests.ui_tests.conftest import login_over_api
 from tests.ui_tests.utils import expect_rows_amount_change
 
 BUNDLE = "cluster_with_services"
@@ -843,9 +844,7 @@ class TestAdminPolicyPage:
                 user=[sdk_client_fs.user(username=another_user['username'])],
                 objects=[host],
             )
-        login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
-        login_page.login_user(**another_user)
-        AdminIntroPage(app_fs.driver, app_fs.adcm.url).wait_page_is_opened()
+        login_over_api(app_fs, another_user)
         with allure.step("Check that user can change maintenance mode state"):
             host_list_page = HostListPage(app_fs.driver, app_fs.adcm.url).open()
             host_list_page.assert_maintenance_mode_state(0)

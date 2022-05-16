@@ -186,7 +186,7 @@ class HostListPage(BasePageObject):
         self.find_child(row, HostListLocators.HostTable.HostRow.maintenance_mode_btn).click()
 
     @allure.step('Assert maintenance mode state in row {row_num}')
-    def assert_maintenance_mode_state(self, row_num: int, allow_mm_state: bool = True):
+    def assert_maintenance_mode_state(self, row_num: int, is_mm_state_on: bool = True):
         """Assert maintenance mode state in row"""
 
         def _check_mm_state(page: HostListPage, row: WebElement):
@@ -196,7 +196,7 @@ class HostListPage(BasePageObject):
             tooltips_info = [
                 t.get_property("innerHTML") for t in page.find_elements(HostListLocators.HostTable.tooltip_text)
             ]
-            if allow_mm_state:
+            if is_mm_state_on:
                 assert "mat-primary" in button_state, "Button should be gray"
                 assert (
                     "Turn maintenance mode ON" in tooltips_info
