@@ -312,7 +312,7 @@ def recheck_issues(obj: ADCMEntity) -> None:
 
 
 def update_hierarchy_issues(  # pylint: disable=inconsistent-return-statements
-    obj: ADCMEntity, remove_obj=False
+    obj: ADCMEntity, remove_obj: bool = False
 ):
     """
     Update issues on all directly connected objects
