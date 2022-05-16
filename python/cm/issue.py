@@ -317,7 +317,7 @@ def update_hierarchy_issues(  # pylint: disable=inconsistent-return-statements
     """
     Update issues on all directly connected objects
     If remove_obj is True, returns func that must be called after actual object deletion
-    due to avoid requests to non-existent object
+    to avoid requests to non-existent object
     """
 
     def del_obj(model_objects):
