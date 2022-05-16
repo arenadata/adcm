@@ -79,25 +79,27 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
     this.groupControl = attributeControl.get(path) as FormControl;
     this.parameterControl = parameterControl.get(path) as FormControl;
 
-    path.forEach((part) => {
-      enabled = enabled[part];
-    });
+    if (this.groupControl && this.parameterControl) {
+      path.forEach((part) => {
+        enabled = enabled[part];
+      });
 
-    if (!enabled) {
-      this.groupControl.disable();
-      this.parameterControl.disable();
-
-      this.tooltipText = text;
-    } else {
-      this.groupControl.enable();
-      if (this.groupControl.value) {
-        this.parameterControl.enable();
-      } else {
+      if (!enabled) {
+        this.groupControl.disable();
         this.parameterControl.disable();
-      }
 
-      this.tooltipText = this.wrapperOptions.tooltipText;
-      this._disabled = !attributeControl.value;
+        this.tooltipText = text;
+      } else {
+        this.groupControl.enable();
+        if (this.groupControl.value) {
+          this.parameterControl.enable();
+        } else {
+          this.parameterControl.disable();
+        }
+
+        this.tooltipText = this.wrapperOptions.tooltipText;
+        this._disabled = !attributeControl.value;
+      }
     }
   }
 

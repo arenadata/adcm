@@ -165,7 +165,6 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
       this.service.send(url, send).pipe(
         tap((c) => {
           this.saveFlag = false;
-          this.rawConfig.next(c);
           this.cd.detectChanges();
           this.event.emit({ name: 'send', data: this.fields });
         }),
