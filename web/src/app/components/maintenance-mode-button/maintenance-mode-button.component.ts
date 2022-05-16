@@ -64,4 +64,10 @@ export class MaintenanceModeButtonComponent<T> implements AdwpCellComponent<T> {
     this.onClick.emit({ event, value: { id: this.row['id'], maintenance_mode: this.maintenanceMode } });
   }
 
+  preventIfDisabled(event) {
+    if (!this.status?.isModeActive) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+  }
 }
