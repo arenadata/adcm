@@ -326,8 +326,6 @@ def update_hierarchy_issues(  # pylint: disable=inconsistent-return-statements
             model_obj.delete()
             log.debug('Deleted %s', obj_str)
 
-    tree = Tree(obj)
-    affected_nodes = tree.get_directly_affected(tree.built_from)
     if remove_obj:
         delete_func_args = []
         for concern in obj.concerns.all():
@@ -335,6 +333,8 @@ def update_hierarchy_issues(  # pylint: disable=inconsistent-return-statements
                 delete_func_args.append(concern)
         return partial(del_obj, delete_func_args)
     else:
+        tree = Tree(obj)
+        affected_nodes = tree.get_directly_affected(tree.built_from)
         for node in affected_nodes:
             obj = node.value
             recheck_issues(obj)

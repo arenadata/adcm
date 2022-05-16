@@ -344,8 +344,9 @@ def delete_service(service: ClusterObject, cancel_tasks=True) -> None:
         _cancel_locking_tasks(service)
     service_id = service.id
     cluster = service.cluster
-    service.concerns.filter(type__in=[ConcernType.Issue, ConcernType.Flag]).delete()
+    del_concerns_func = cm.issue.update_hierarchy_issues(obj=service, remove_obj=True)
     service.delete()
+    del_concerns_func()
     cm.issue.update_hierarchy_issues(cluster)
     re_apply_object_policy(cluster)
     cm.status_api.post_event('delete', 'service', service_id)
