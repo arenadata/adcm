@@ -38,7 +38,6 @@ from cm.models import (
     ActionType,
     Cluster,
     ClusterObject,
-    ConcernType,
     ConfigLog,
     DummyData,
     Host,
