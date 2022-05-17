@@ -173,7 +173,7 @@ export class FieldService {
    * Parse and prepare attrs data for group config from backend
    */
   public getAttrs(data: IConfig, groups: string[], dataOptions: TFormOptions[]): void {
-    if (!data?.attr || !Array.isArray(data?.attr) || !groups) return;
+    if (!Array.isArray(data?.attr) || !groups) return;
 
     groups.forEach((group) => {
       let disabled: boolean;
