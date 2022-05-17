@@ -9,12 +9,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { ApiBase } from './api';
+import { BaseEntity } from './api';
 import { Entity } from '@adwp-ui/widgets';
 
 export type JobStatus = 'created' | 'running' | 'failed' | 'success' | 'aborted';
 
-export type JobType = 'component' | 'service' | 'cluster';
+export type JobType = 'component' | 'service' | 'cluster' | 'host' | 'provider';
 
 export interface JobObject {
   id: number;
@@ -49,8 +49,8 @@ export interface TaskRaw extends TaskBase {
   jobs: Job[];
 }
 
-export type Job = JobRaw & ApiBase;
-export type Task = TaskRaw & ApiBase;
+export type Job = JobRaw & BaseEntity;
+export type Task = TaskRaw & BaseEntity;
 
 export interface LogFile {
   id: number;

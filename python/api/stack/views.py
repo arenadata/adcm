@@ -10,21 +10,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rest_framework import decorators
 from rest_framework import status
-from rest_framework.reverse import reverse
-from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser
 from rest_framework.authentication import TokenAuthentication, SessionAuthentication
+from rest_framework.mixins import CreateModelMixin
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
 
 import cm.api
 import cm.bundle
+from api.action.serializers import StackActionSerializer
+from api.base_view import (
+    GenericUIView,
+    DetailView,
+    PaginatedView,
+    GenericUIViewSet,
+    ModelPermOrReadOnlyForAuth,
+)
+from api.utils import check_obj
 from cm.models import Bundle, Prototype, Action
 from cm.models import PrototypeConfig, Upgrade, PrototypeExport
 from cm.models import PrototypeImport
-from cm.logger import log  # pylint: disable=unused-import
-
-from api.api_views import ListView, DetailViewRO, PageView, GenericAPIPermView, check_obj
-from api.action.serializers import StackActionSerializer
 from . import serializers
 
 
@@ -33,43 +41,35 @@ class CsrfOffSessionAuthentication(SessionAuthentication):
         return
 
 
-class Stack(GenericAPIPermView):
-    queryset = Prototype.objects.all()
-    serializer_class = serializers.Stack
-
-    def get(self, request):
-        """
-        Operations with stack of services
-        """
-        obj = Bundle()
-        serializer = self.serializer_class(obj, context={'request': request})
-        return Response(serializer.data)
-
-
-class UploadBundle(GenericAPIPermView):
+class UploadBundle(GenericUIView):
     queryset = Bundle.objects.all()
     serializer_class = serializers.UploadBundle
     authentication_classes = (CsrfOffSessionAuthentication, TokenAuthentication)
     parser_classes = (MultiPartParser,)
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class LoadBundle(GenericAPIPermView):
+class LoadBundle(CreateModelMixin, GenericUIViewSet):
     queryset = Prototype.objects.all()
     serializer_class = serializers.LoadBundle
 
-    def post(self, request):
+    @decorators.action(methods=['put'], detail=False)
+    def servicemap(self, request):
+        cm.api.load_service_map()
+        return Response(status=status.HTTP_200_OK)
+
+    def create(self, request, *args, **kwargs):
         """
         post:
         Load bundle
         """
-        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             bundle = cm.bundle.load_bundle(serializer.validated_data.get('bundle_file'))
             srl = serializers.BundleSerializer(bundle, context={'request': request})
@@ -78,7 +78,7 @@ class LoadBundle(GenericAPIPermView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class BundleList(PageView):
+class BundleList(PaginatedView):
     """
     get:
     List all bundles
@@ -86,11 +86,12 @@ class BundleList(PageView):
 
     queryset = Bundle.objects.exclude(hash='adcm')
     serializer_class = serializers.BundleSerializer
+    permission_classes = (IsAuthenticated,)
     filterset_fields = ('name', 'version')
     ordering_fields = ('name', 'version_order')
 
 
-class BundleDetail(DetailViewRO):
+class BundleDetail(DetailView):
     """
     get:
     Show bundle
@@ -101,17 +102,18 @@ class BundleDetail(DetailViewRO):
 
     queryset = Bundle.objects.all()
     serializer_class = serializers.BundleSerializer
+    permission_classes = (ModelPermOrReadOnlyForAuth,)
     lookup_field = 'id'
     lookup_url_kwarg = 'bundle_id'
     error_code = 'BUNDLE_NOT_FOUND'
 
-    def delete(self, request, bundle_id):
-        bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
+    def delete(self, request, *args, **kwargs):
+        bundle = self.get_object()
         cm.bundle.delete_bundle(bundle)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class BundleUpdate(GenericAPIPermView):
+class BundleUpdate(GenericUIView):
     queryset = Bundle.objects.all()
     serializer_class = serializers.BundleSerializer
 
@@ -121,14 +123,15 @@ class BundleUpdate(GenericAPIPermView):
         """
         bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
         cm.bundle.update_bundle(bundle)
-        serializer = self.serializer_class(bundle, context={'request': request})
+        serializer = self.get_serializer(bundle)
         return Response(serializer.data)
 
 
-class BundleLicense(GenericAPIPermView):
+class BundleLicense(GenericUIView):
     action = 'retrieve'
     queryset = Bundle.objects.all()
     serializer_class = serializers.LicenseSerializer
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, bundle_id):
         bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
@@ -137,7 +140,7 @@ class BundleLicense(GenericAPIPermView):
         return Response({'license': bundle.license, 'accept': url, 'text': body})
 
 
-class AcceptLicense(GenericAPIPermView):
+class AcceptLicense(GenericUIView):
     queryset = Bundle.objects.all()
     serializer_class = serializers.LicenseSerializer
 
@@ -147,7 +150,7 @@ class AcceptLicense(GenericAPIPermView):
         return Response(status=status.HTTP_200_OK)
 
 
-class PrototypeList(PageView):
+class PrototypeList(PaginatedView):
     """
     get:
     List all stack prototypes
@@ -159,7 +162,7 @@ class PrototypeList(PageView):
     ordering_fields = ('display_name', 'version_order')
 
 
-class ServiceList(PageView):
+class ServiceList(PaginatedView):
     """
     get:
     List all stack services
@@ -171,7 +174,7 @@ class ServiceList(PageView):
     ordering_fields = ('display_name', 'version_order')
 
 
-class ServiceDetail(DetailViewRO):
+class ServiceDetail(DetailView):
     """
     get:
     Show stack service
@@ -195,7 +198,7 @@ class ServiceDetail(DetailViewRO):
         return service
 
 
-class ProtoActionDetail(GenericAPIPermView):
+class ProtoActionDetail(GenericUIView):
     queryset = Action.objects.all()
     serializer_class = StackActionSerializer
 
@@ -204,11 +207,11 @@ class ProtoActionDetail(GenericAPIPermView):
         Show action
         """
         obj = check_obj(Action, action_id, 'ACTION_NOT_FOUND')
-        serializer = self.serializer_class(obj, context={'request': request})
+        serializer = self.get_serializer(obj)
         return Response(serializer.data)
 
 
-class ServiceProtoActionList(GenericAPIPermView):
+class ServiceProtoActionList(GenericUIView):
     queryset = Action.objects.filter(prototype__type='service')
     serializer_class = StackActionSerializer
 
@@ -217,11 +220,11 @@ class ServiceProtoActionList(GenericAPIPermView):
         List all actions of a specified service
         """
         obj = self.get_queryset().filter(prototype_id=prototype_id)
-        serializer = self.serializer_class(obj, many=True, context={'request': request})
+        serializer = self.get_serializer(obj, many=True)
         return Response(serializer.data)
 
 
-class ComponentList(PageView):
+class ComponentList(PaginatedView):
     """
     get:
     List all stack components
@@ -233,7 +236,7 @@ class ComponentList(PageView):
     ordering_fields = ('display_name', 'version_order')
 
 
-class HostTypeList(PageView):
+class HostTypeList(PaginatedView):
     """
     get:
     List all host types
@@ -245,7 +248,7 @@ class HostTypeList(PageView):
     ordering_fields = ('display_name', 'version_order')
 
 
-class ProviderTypeList(PageView):
+class ProviderTypeList(PaginatedView):
     """
     get:
     List all host providers types
@@ -255,9 +258,10 @@ class ProviderTypeList(PageView):
     serializer_class = serializers.ProviderTypeSerializer
     filterset_fields = ('name', 'bundle_id', 'display_name')
     ordering_fields = ('display_name', 'version_order')
+    permission_classes = (IsAuthenticated,)
 
 
-class ClusterTypeList(PageView):
+class ClusterTypeList(PaginatedView):
     """
     get:
     List all cluster types
@@ -269,7 +273,7 @@ class ClusterTypeList(PageView):
     ordering_fields = ('display_name', 'version_order')
 
 
-class AdcmTypeList(ListView):
+class AdcmTypeList(GenericUIView):
     """
     get:
     List adcm root object prototypes
@@ -279,15 +283,15 @@ class AdcmTypeList(ListView):
     serializer_class = serializers.AdcmTypeSerializer
     filterset_fields = ('bundle_id',)
 
+    def get(self, request, *args, **kwargs):
+        obj = self.get_queryset()
+        serializer = self.get_serializer(obj, many=True)
+        return Response(serializer.data)
 
-class PrototypeDetail(DetailViewRO):
-    """
-    get:
-    Show prototype
-    """
 
-    queryset = Prototype.objects.all()
-    serializer_class = serializers.PrototypeDetailSerializer
+class AbstractPrototypeDetail(DetailView):
+    """Common base class for *PrototypeDetail"""
+
     lookup_field = 'id'
     lookup_url_kwarg = 'prototype_id'
     error_code = 'PROTOTYPE_NOT_FOUND'
@@ -306,7 +310,17 @@ class PrototypeDetail(DetailViewRO):
         return obj_type
 
 
-class AdcmTypeDetail(PrototypeDetail):
+class PrototypeDetail(AbstractPrototypeDetail):
+    """
+    get:
+    Show prototype
+    """
+
+    queryset = Prototype.objects.all()
+    serializer_class = serializers.PrototypeDetailSerializer
+
+
+class AdcmTypeDetail(AbstractPrototypeDetail):
     """
     get:
     Show adcm prototype
@@ -316,7 +330,7 @@ class AdcmTypeDetail(PrototypeDetail):
     serializer_class = serializers.AdcmTypeDetailSerializer
 
 
-class ClusterTypeDetail(PrototypeDetail):
+class ClusterTypeDetail(AbstractPrototypeDetail):
     """
     get:
     Show cluster prototype
@@ -326,7 +340,7 @@ class ClusterTypeDetail(PrototypeDetail):
     serializer_class = serializers.ClusterTypeDetailSerializer
 
 
-class ComponentTypeDetail(PrototypeDetail):
+class ComponentTypeDetail(AbstractPrototypeDetail):
     """
     get:
     Show component prototype
@@ -336,7 +350,7 @@ class ComponentTypeDetail(PrototypeDetail):
     serializer_class = serializers.ComponentTypeDetailSerializer
 
 
-class HostTypeDetail(PrototypeDetail):
+class HostTypeDetail(AbstractPrototypeDetail):
     """
     get:
     Show host prototype
@@ -346,7 +360,7 @@ class HostTypeDetail(PrototypeDetail):
     serializer_class = serializers.HostTypeDetailSerializer
 
 
-class ProviderTypeDetail(PrototypeDetail):
+class ProviderTypeDetail(AbstractPrototypeDetail):
     """
     get:
     Show host provider prototype
@@ -354,12 +368,3 @@ class ProviderTypeDetail(PrototypeDetail):
 
     queryset = Prototype.objects.filter(type='provider')
     serializer_class = serializers.ProviderTypeDetailSerializer
-
-
-class LoadServiceMap(GenericAPIPermView):
-    queryset = Prototype.objects.all()
-    serializer_class = serializers.Stack
-
-    def put(self, request):
-        cm.status_api.load_service_map()
-        return Response(status=status.HTTP_200_OK)

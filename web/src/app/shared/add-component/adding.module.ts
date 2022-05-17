@@ -19,27 +19,41 @@ import { StuffModule } from '@app/shared/stuff.module';
 import { AddButtonComponent } from './add-button.component';
 import { AddFormComponent } from './add-form.component';
 import { BaseFormDirective } from './base-form.directive';
-import { ClusterComponent } from './cluster.component';
+import { AddClusterComponent } from './add-cluster.component';
 import { HostComponent } from './host.component';
 import { Host2clusterComponent } from './host2cluster.component';
 import { ProviderComponent } from './provider.component';
 import { ServiceComponent } from './service.component';
 import { ControlsComponent } from './controls.component';
+import { DynamicModule } from '@app/shared/directives/dynamic/dynamic.module';
+import { RbacFormDirective } from '@app/shared/add-component/rbac-form.directive';
 
 @NgModule({
   declarations: [
     AddButtonComponent,
     AddFormComponent,
-    ClusterComponent,
+    AddClusterComponent,
     HostComponent,
     Host2clusterComponent,
     ProviderComponent,
     ServiceComponent,
     BaseFormDirective,
-    ControlsComponent
+    RbacFormDirective,
+    ControlsComponent,
   ],
-  imports: [CommonModule, MaterialModule, StuffModule, FormsModule, ReactiveFormsModule, FormElementsModule],
-  exports: [AddButtonComponent, ProviderComponent, ClusterComponent, HostComponent, ServiceComponent, Host2clusterComponent, BaseFormDirective],
+  imports: [CommonModule, MaterialModule, StuffModule, FormsModule, ReactiveFormsModule, FormElementsModule, DynamicModule],
+  exports: [
+    AddButtonComponent,
+    ProviderComponent,
+    AddClusterComponent,
+    HostComponent,
+    ServiceComponent,
+    Host2clusterComponent,
+    BaseFormDirective,
+    RbacFormDirective,
+    ControlsComponent,
+  ],
   entryComponents: [AddFormComponent]
 })
-export class AddingModule {}
+export class AddingModule {
+}

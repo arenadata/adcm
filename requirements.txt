@@ -1,1 +1,2 @@
--r assemble/base/requirements-base.txt
+--extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
+adwp-events==0.1.8

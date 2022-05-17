@@ -1,5 +1,8 @@
 [MASTER]
 
+# ignore tests dirs because they contain their pylint settings and run separately
+ignore-paths=^tests/.*$
+
 # A comma-separated list of package or module names from where C extensions may
 # be loaded. Extensions are loading into the active Python interpreter and may
 # run arbitrary code

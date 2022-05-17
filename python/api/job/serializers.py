@@ -13,52 +13,93 @@
 import json
 import os
 
-from django.core.exceptions import ObjectDoesNotExist
-
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
 import cm.job
 import cm.stack
 import cm.status_api
-import cm.config as config
+from cm import config
+from cm.ansible_plugin import get_check_log
 from cm.errors import AdcmEx
-from cm.models import JobLog, HostProvider, Host, Cluster, ClusterObject, ServiceComponent
-from api.api_views import hlink
+from cm.models import JobLog, Host, ClusterObject, ServiceComponent, get_object_cluster
+from api.utils import hlink
+from api.concern.serializers import ConcernItemSerializer
 
 
-def get_job_objects(obj):
-    resp = []
-    selector = obj.selector
-    for obj_type in selector:
-        try:
-            if obj_type == 'cluster':
-                cluster = Cluster.objects.get(id=selector[obj_type])
-                name = cluster.name
-            elif obj_type == 'service':
-                service = ClusterObject.objects.get(id=selector[obj_type])
-                name = service.prototype.display_name
-            elif obj_type == 'component':
-                comp = ServiceComponent.objects.get(id=selector[obj_type])
-                name = comp.prototype.display_name
-            elif obj_type == 'provider':
-                provider = HostProvider.objects.get(id=selector[obj_type])
-                name = provider.name
-            elif obj_type == 'host':
-                host = Host.objects.get(id=selector[obj_type])
-                name = host.fqdn
+def get_object_name(obj):
+    if hasattr(obj, 'name'):
+        return obj.name
+    elif hasattr(obj, 'fqdn'):
+        return obj.fqdn
+    else:
+        return obj.prototype.display_name
+
+
+def get_job_objects(task):
+    if not task.task_object:
+        return None
+
+    def cook_obj(obj_type, obj_id, name):
+        return {'type': obj_type, 'id': obj_id, 'name': name}
+
+    obj = task.task_object
+    obj_type = obj.prototype.type
+    resp = [cook_obj(obj_type, obj.id, get_object_name(obj))]
+    if obj_type == 'service':
+        resp.append(cook_obj('cluster', obj.cluster.id, get_object_name(obj.cluster)))
+    elif obj_type == 'component':
+        resp.append(cook_obj('cluster', obj.cluster.id, get_object_name(obj.cluster)))
+        resp.append(cook_obj('service', obj.service.id, get_object_name(obj.service)))
+    elif obj_type == 'host':
+        if task.action:
+            if task.action.host_action:
+                cluster = get_object_cluster(obj)
+                if cluster:
+                    resp.append(cook_obj('cluster', cluster.id, get_object_name(cluster)))
+                    if task.action.prototype.type == 'service':
+                        service = ClusterObject.obj.get(
+                            cluster=cluster, prototype=task.action.prototype
+                        )
+                        resp.append(cook_obj('service', service.id, get_object_name(service)))
+                    elif task.action.prototype.type == 'component':
+                        service = ClusterObject.obj.get(
+                            cluster=cluster, prototype=task.action.prototype.parent
+                        )
+                        component = ServiceComponent.obj.get(
+                            cluster=cluster, service=service, prototype=task.action.prototype
+                        )
+                        resp.append(cook_obj('service', service.id, get_object_name(service)))
+                        resp.append(cook_obj('component', component.id, get_object_name(component)))
             else:
-                name = ''
-        except ObjectDoesNotExist:
-            name = 'does not exist'
-        resp.append(
-            {
-                'type': obj_type,
-                'id': selector[obj_type],
-                'name': name,
-            }
-        )
+                resp.append(cook_obj('provider', obj.provider.id, get_object_name(obj.provider)))
     return resp
+
+
+def get_task_selector(obj, action):
+    if not obj:
+        return None
+    selector = {obj.prototype.type: obj.id}
+    if obj.prototype.type == 'service':
+        selector['cluster'] = obj.cluster.id
+    if obj.prototype.type == 'component':
+        selector['cluster'] = obj.cluster.id
+        selector['service'] = obj.service.id
+    if action and isinstance(obj, Host) and action.host_action:
+        cluster = get_object_cluster(obj)
+        if cluster:
+            selector['cluster'] = cluster.id
+            if action.prototype.type == 'component':
+                service = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype.parent)
+                component = ServiceComponent.obj.get(
+                    cluster=cluster, service=service, prototype=action.prototype
+                )
+                selector['service'] = service.id
+                selector['component'] = component.id
+            elif action.prototype.type == 'service':
+                service = ClusterObject.obj.get(cluster=cluster, prototype=action.prototype)
+                selector['service'] = service.id
+    return selector
 
 
 def get_job_display_name(self, obj):
@@ -116,7 +157,7 @@ class TaskListSerializer(serializers.Serializer):
 
 
 class TaskSerializer(TaskListSerializer):
-    selector = serializers.JSONField(read_only=True)
+    selector = serializers.SerializerMethodField()
     config = serializers.JSONField(required=False)
     attr = serializers.JSONField(required=False)
     hc = serializers.JSONField(required=False)
@@ -130,8 +171,12 @@ class TaskSerializer(TaskListSerializer):
     terminatable = serializers.SerializerMethodField()
     cancel = hlink('task-cancel', 'id', 'task_id')
     object_type = serializers.SerializerMethodField()
+    lock = ConcernItemSerializer(read_only=True)
 
     get_action_url = get_action_url
+
+    def get_selector(self, obj):
+        return get_task_selector(obj.task_object, obj.action)
 
     def get_terminatable(self, obj):
         if obj.action:
@@ -164,8 +209,8 @@ class TaskSerializer(TaskListSerializer):
 class RunTaskSerializer(TaskSerializer):
     def create(self, validated_data):
         obj = cm.job.start_task(
-            validated_data.get('action_id'),
-            validated_data.get('selector'),
+            validated_data.get('action'),
+            validated_data.get('task_object'),
             validated_data.get('config', {}),
             validated_data.get('attr', {}),
             validated_data.get('hc', []),
@@ -174,16 +219,6 @@ class RunTaskSerializer(TaskSerializer):
         )
         obj.jobs = JobLog.objects.filter(task_id=obj.id)
         return obj
-
-
-class TaskPostSerializer(RunTaskSerializer):
-    action_id = serializers.IntegerField()
-    selector = serializers.JSONField()
-
-    def validate_selector(self, selector):
-        if not isinstance(selector, dict):
-            raise AdcmEx('JSON_ERROR', 'selector should be a map')
-        return selector
 
 
 class JobListSerializer(serializers.Serializer):
@@ -202,7 +237,7 @@ class JobSerializer(JobListSerializer):
     action = serializers.SerializerMethodField()
     display_name = serializers.SerializerMethodField()
     objects = serializers.SerializerMethodField()
-    selector = serializers.JSONField(required=False)
+    selector = serializers.SerializerMethodField()
     log_dir = serializers.CharField(read_only=True)
     log_files = DataField(read_only=True)
     action_url = serializers.SerializerMethodField()
@@ -211,11 +246,14 @@ class JobSerializer(JobListSerializer):
     get_display_name = get_job_display_name
     get_action_url = get_action_url
 
+    def get_selector(self, obj):
+        return get_task_selector(obj.task.task_object, obj.action)
+
     def get_action(self, obj):
         return JobAction(obj.action, context=self.context).data
 
     def get_objects(self, obj):
-        return get_job_objects(obj)
+        return get_job_objects(obj.task)
 
 
 class LogStorageSerializer(serializers.Serializer):
@@ -230,7 +268,7 @@ class LogStorageSerializer(serializers.Serializer):
             config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}'
         )
         try:
-            with open(path_file, 'r') as f:
+            with open(path_file, 'r', encoding='utf_8') as f:
                 content = f.read()
         except FileNotFoundError:
             msg = f'File "{obj.name}-{obj.type}.{obj.format}" not found'
@@ -245,7 +283,7 @@ class LogStorageSerializer(serializers.Serializer):
                 content = self._get_ansible_content(obj)
         elif obj.type == 'check':
             if content is None:
-                content = cm.job.get_check_log(obj.job_id)
+                content = get_check_log(obj.job_id)
             if isinstance(content, str):
                 content = json.loads(content)
         elif obj.type == 'custom':
@@ -300,11 +338,11 @@ class LogSerializer(serializers.Serializer):
                 path_file = os.path.join(
                     config.RUN_DIR, f'{obj.job.id}', f'{obj.name}-{obj.type}.{obj.format}'
                 )
-                with open(path_file, 'r') as f:
+                with open(path_file, 'r', encoding='utf_8') as f:
                     content = f.read()
         elif obj.type == 'check':
             if content is None:
-                content = cm.job.get_check_log(obj.job_id)
+                content = get_check_log(obj.job_id)
             if isinstance(content, str):
                 content = json.loads(content)
         return content

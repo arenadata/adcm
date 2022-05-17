@@ -9,13 +9,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 import { Component } from '@angular/core';
 import { IColumns } from '@adwp-ui/widgets';
 
 import { ICluster } from '@app/models/cluster';
 import { TypeName } from '@app/core/types';
-import { AdwpListDirective } from '@app/abstract-directives/adwp-list.directive';
-import { ListFactory } from '@app/factories/list-factory';
+import { ListFactory } from '../../factories/list.factory';
+import { ConcernListDirective } from '../../abstract-directives/concern-list.directive';
+import { ConcernEventType } from '../../models/concern/concern-reason';
 
 @Component({
   template: `
@@ -44,9 +46,10 @@ import { ListFactory } from '@app/factories/list-factory';
     }
   `],
 })
-export class ClusterListComponent extends AdwpListDirective<ICluster> {
+export class ClusterListComponent extends ConcernListDirective<ICluster> {
 
   type: TypeName = 'cluster';
+  eventTypes = [ConcernEventType.Cluster];
 
   listColumns = [
     ListFactory.nameColumn(),
@@ -54,7 +57,7 @@ export class ClusterListComponent extends AdwpListDirective<ICluster> {
     ListFactory.descriptionColumn(),
     ListFactory.stateColumn(),
     ListFactory.statusColumn(this),
-    ListFactory.actionsButton('cluster'),
+    ListFactory.actionsButton(this),
     ListFactory.importColumn(this),
     ListFactory.updateColumn(),
     ListFactory.configColumn(this),
@@ -62,4 +65,3 @@ export class ClusterListComponent extends AdwpListDirective<ICluster> {
   ] as IColumns<ICluster>;
 
 }
-

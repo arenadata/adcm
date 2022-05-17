@@ -24,7 +24,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
 import adcm.init_django  # DO NOT DELETE !!!
-import cm.config as config
+from cm import config
 import cm.job
 from cm.logger import log
 from cm.models import TaskLog, JobLog, LogStorage
@@ -66,11 +66,16 @@ signal.signal(signal.SIGTERM, terminate_task)
 
 
 def run_job(task_id, job_id, err_file):
-    log.debug("run job #%s of task #%s", job_id, task_id)
+    log.debug("task run job #%s of task #%s", job_id, task_id)
+    cmd = [
+        '/adcm/python/job_venv_wrapper.sh',
+        TaskLog.objects.get(id=task_id).action.venv,
+        os.path.join(config.CODE_DIR, 'job_runner.py'),
+        str(job_id),
+    ]
+    log.info("task run job cmd: %s", ' '.join(cmd))
     try:
-        proc = subprocess.Popen(
-            [os.path.join(config.CODE_DIR, 'job_runner.py'), str(job_id)], stderr=err_file
-        )
+        proc = subprocess.Popen(cmd, stderr=err_file)
         res = proc.wait()
         return res
     except:
@@ -82,7 +87,7 @@ def set_body_ansible(job):
     log_storage = LogStorage.objects.filter(job=job, name='ansible', type__in=['stdout', 'stderr'])
     for ls in log_storage:
         file_path = os.path.join(config.RUN_DIR, f'{ls.job.id}', f'ansible-{ls.type}.{ls.format}')
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding='utf_8') as f:
             body = f.read()
         LogStorage.objects.filter(job=job, name=ls.name, type=ls.type).update(body=body)
 
@@ -101,7 +106,7 @@ def run_task(task_id, args=None):
         cm.job.finish_task(task, None, config.Job.FAILED)
         return
 
-    err_file = open(os.path.join(config.LOG_DIR, 'job_runner.err'), 'a+')
+    err_file = open(os.path.join(config.LOG_DIR, 'job_runner.err'), 'a+', encoding='utf_8')
 
     log.info("run task #%s", task_id)
 
@@ -116,7 +121,17 @@ def run_task(task_id, args=None):
         job.start_date = timezone.now()
         job.save()
         res = run_job(task.id, job.id, err_file)
-        set_body_ansible(job)
+        if job.action.script_type == 'ansible' or (
+            job.sub_action and job.sub_action.script_type == 'ansible'
+        ):
+            set_body_ansible(job)
+        # For multi jobs task object state and/or config can be changed by adcm plugins
+        if task.task_object is not None:
+            try:
+                task.task_object.refresh_from_db()
+            except ObjectDoesNotExist:
+                task.object_id = 0
+                task.object_type = None
         count += 1
         if res != 0:
             break
@@ -134,7 +149,7 @@ def run_task(task_id, args=None):
 def do():
     global TASK_ID
     if len(sys.argv) < 2:
-        print("\nUsage:\n{} task_id [restart]\n".format(os.path.basename(sys.argv[0])))
+        print(f"\nUsage:\n{os.path.basename(sys.argv[0])} task_id [restart]\n")
         sys.exit(4)
     elif len(sys.argv) > 2:
         TASK_ID = sys.argv[1]

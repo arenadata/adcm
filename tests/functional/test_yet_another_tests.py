@@ -9,11 +9,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Uncategorized tests"""
+
 import allure
 import coreapi
 import pytest
 
-# pylint: disable=W0611, W0621
 from adcm_pytest_plugin import utils
 from adcm_client.packer.bundle_build import build
 
@@ -24,6 +26,7 @@ testcases = ["cluster", "host"]
 
 @pytest.mark.parametrize('testcase', testcases)
 def test_handle_unknown_words_in_bundle(sdk_client_fs, testcase):
+    """Test bundle with unspecified words should not be uploaded"""
     with allure.step('Try to upload bundle with unknown words'):
         dir_name = 'unknown_words_in_' + testcase
         bundledir = utils.get_data_dir(__file__, dir_name)
@@ -34,6 +37,7 @@ def test_handle_unknown_words_in_bundle(sdk_client_fs, testcase):
 
 
 def test_shouldnt_load_same_bundle_twice(sdk_client_fs):
+    """Test bundle should not be uploaded twice"""
     with allure.step('Build bundle'):
         bundledir = utils.get_data_dir(__file__, 'bundle_directory_exist')
         for path, steram in build(repopath=bundledir).items():
@@ -45,4 +49,4 @@ def test_shouldnt_load_same_bundle_twice(sdk_client_fs):
         with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
             sdk_client_fs.upload_from_fs(bundle_tar_path)
     with allure.step('Check error: bundle directory already exists'):
-        BUNDLE_ERROR.equal(e, 'bundle directory', 'already exists')
+        BUNDLE_ERROR.equal(e, 'already exists')

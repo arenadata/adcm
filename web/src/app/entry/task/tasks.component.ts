@@ -14,17 +14,17 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { filter, tap } from 'rxjs/operators';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { BaseDirective, IColumns, IListResult, InstanceTakenFunc, Paging } from '@adwp-ui/widgets';
-import { DateHelper } from '@app/helpers/date-helper';
+import { MatButtonToggleChange } from '@angular/material/button-toggle';
 
+import { DateHelper } from '@app/helpers/date-helper';
 import { EventMessage } from '@app/core/store';
 import { JobStatus, Task, Job } from '@app/core/types';
 import { TaskObjectsComponent } from '@app/components/columns/task-objects/task-objects.component';
 import { TaskStatusColumnComponent } from '@app/components/columns/task-status-column/task-status-column.component';
-import { JobsComponent } from '@app/components/task/jobs/jobs.component';
+import { JobsComponent } from '@app/components/job/jobs/jobs.component';
 import { TaskNameComponent } from '@app/components/columns/task-name/task-name.component';
 import { TaskService } from '@app/services/task.service';
 import { JobService } from '@app/services/job.service';
-import { MatButtonToggleChange } from '@angular/material/button-toggle';
 
 type TaskStatus = '' | 'running' | 'success' | 'failed';
 
@@ -41,6 +41,7 @@ export class TasksComponent extends BaseDirective implements OnInit {
   data$: BehaviorSubject<IListResult<Task>> = new BehaviorSubject(null);
   paging: BehaviorSubject<Paging> = new BehaviorSubject<Paging>(null);
   status: TaskStatus = '';
+  isFirstPaging = true;
 
   listColumns = [
     {
@@ -168,7 +169,7 @@ export class TasksComponent extends BaseDirective implements OnInit {
   }
 
   startListen() {
-    this.taskService.events(['change_job_status'])
+    this.taskService.events({ events: ['change_job_status'] })
       .pipe(
         this.takeUntil(),
       )
@@ -209,7 +210,7 @@ export class TasksComponent extends BaseDirective implements OnInit {
         }
       });
 
-    this.jobService.events(['change_job_status'])
+    this.jobService.events({ events: ['change_job_status'] })
       .pipe(this.takeUntil())
       .subscribe(event => this.jobChanged(event));
   }
@@ -232,7 +233,9 @@ export class TasksComponent extends BaseDirective implements OnInit {
         status,
       },
       queryParamsHandling: 'merge',
+      replaceUrl: this.isFirstPaging,
     });
+    this.isFirstPaging = false;
 
     return this.taskService.list(params).pipe(tap(resp => this.data$.next(resp)));
   }

@@ -19,22 +19,24 @@ import subprocess
 import sys
 
 import adcm.init_django  # DO NOT DELETE !!!
-import cm.config as config
+from cm import config
+from cm.ansible_plugin import finish_check
 import cm.job
-import cm.lock
 from cm.logger import log
-from cm.models import LogStorage
+from cm.models import LogStorage, JobLog
 from cm.status_api import Event
+from cm.upgrade import bundle_switch
+from cm.errors import AdcmEx
 
 
 def open_file(root, tag, job_id):
-    fname = '{}/{}/{}.txt'.format(root, job_id, tag)
-    f = open(fname, 'w')
+    fname = f'{root}/{job_id}/{tag}.txt'
+    f = open(fname, 'w', encoding='utf_8')
     return f
 
 
 def read_config(job_id):
-    fd = open('{}/{}/config.json'.format(config.RUN_DIR, job_id))
+    fd = open(f'{config.RUN_DIR}/{job_id}/config.json', encoding='utf_8')
     conf = json.load(fd)
     fd.close()
     return conf
@@ -95,6 +97,10 @@ def post_log(job_id, log_type, log_name):
         )
 
 
+def get_venv(job_id: int) -> str:
+    return JobLog.objects.get(id=job_id).action.venv
+
+
 def run_ansible(job_id):
     log.debug("job_runner.py called as: %s", sys.argv)
     conf = read_config(job_id)
@@ -107,6 +113,8 @@ def run_ansible(job_id):
 
     os.chdir(conf['env']['stack_dir'])
     cmd = [
+        '/adcm/python/job_venv_wrapper.sh',
+        get_venv(int(job_id)),
         'ansible-playbook',
         '--vault-password-file',
         f'{config.CODE_DIR}/ansible_secret.py',
@@ -122,13 +130,13 @@ def run_ansible(job_id):
     if 'verbose' in conf['job'] and conf['job']['verbose']:
         cmd.append('-vvvv')
 
+    log.info("job run cmd: %s", ' '.join(cmd))
     proc = subprocess.Popen(cmd, env=env_configuration(conf), stdout=out_file, stderr=err_file)
-    log.info("job #%s run cmd: %s", job_id, ' '.join(cmd))
     cm.job.set_job_status(job_id, config.Job.RUNNING, event, proc.pid)
     event.send_state()
     log.info("run ansible job #%s, pid %s, playbook %s", job_id, proc.pid, playbook)
     ret = proc.wait()
-    cm.job.finish_check(job_id)
+    finish_check(job_id)
     ret = set_job_status(job_id, ret, proc.pid, event)
     event.send_state()
 
@@ -139,12 +147,29 @@ def run_ansible(job_id):
     sys.exit(ret)
 
 
+def main(job_id):
+    job = JobLog.objects.get(id=job_id)
+    if job.sub_action and job.sub_action.script_type == 'internal':
+        event = Event()
+        cm.job.set_job_status(job_id, config.Job.RUNNING, event)
+        try:
+            bundle_switch(job.task.task_object, job.action.upgrade)
+        except AdcmEx:
+            cm.job.set_job_status(job_id, config.Job.FAILED, event)
+            sys.exit(1)
+        cm.job.set_job_status(job_id, config.Job.SUCCESS, event)
+        event.send_state()
+        sys.exit(0)
+    else:
+        run_ansible(job_id)
+
+
 def do():
     if len(sys.argv) < 2:
-        print("\nUsage:\n{} job_id\n".format(os.path.basename(sys.argv[0])))
+        print(f"\nUsage:\n{os.path.basename(sys.argv[0])} job_id\n")
         sys.exit(4)
     else:
-        run_ansible(sys.argv[1])
+        main(sys.argv[1])
 
 
 if __name__ == '__main__':

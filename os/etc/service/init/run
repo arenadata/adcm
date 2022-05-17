@@ -11,13 +11,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set +x
+
 source /etc/adcmenv
 
 echo "Application initialisation ..."
 
 mkdir -p "${adcmlog}"
-exec 1>"${adcmlog}/init.out"
-exec 2>"${adcmlog}/init.err"
+exec 1>>"${adcmlog}/init.out"
+exec 2>>"${adcmlog}/init.err"
 mkdir -p "${adcmrun}"
 mkdir -p "${adcmbundle}"
 mkdir -p "${adcmdownload}"
@@ -29,8 +31,12 @@ chmod 777 "${adcmtmp}"
 chmod a+t "${adcmtmp}"
 mkdir -p "${adcmuserconf}"
 mkdir -p "${adcmlog}/nginx"
-ln -s "${adcmlog}/nginx" /var/log/nginx
+[ ! -L  "/var/log/nginx" ] && ln -s "${adcmlog}/nginx" /var/log/
 
+## We got an issue on existing installation with folded log/nginx/nginx/nginx....
+[ -L "${adcmlog}/nginx/nginx" ] && rm -f "${adcmlog}/nginx/nginx"
+
+source "${adcmroot}/venv/default/bin/activate"
 
 echo "Root keys generation"
 key=/root/.ssh/id_rsa
@@ -41,9 +47,17 @@ if [ ! -f "${adcmvar}"/cluster.db ]; then
     "${adcmroot}"/python/manage.py generate_secret_key "${adcmsecretfile}"
 fi
 
+if [ ! \( -f "${adcmuserconf}/ssl/cert.pem" -a -f "${adcmuserconf}/ssl/key.pem" \) ]; then
+    mkdir -p "${adcmuserconf}/ssl"
+    cd "${adcmuserconf}/ssl"
+    openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 3650 -subj "/C=RU/ST=Moscow/L=Moscow/O=Arenadata Software LLC/OU=Release/CN=ADCM" -nodes
+
+fi
+
+"${adcmroot}"/python/backupdb.py
 "${adcmroot}"/python/manage.py migrate
 "${adcmroot}"/python/init_db.py
-"${adcmroot}"/python/backupdb.py
+"${adcmroot}"/python/manage.py upgraderole
 touch "${initreadyfile}"
 
 # That is sleep forever case because I have no idea how to force

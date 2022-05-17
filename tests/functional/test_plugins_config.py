@@ -9,303 +9,239 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621
-import copy
+
+"""Tests for adcm_config plugin"""
+
+from typing import Tuple, Callable
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient, Bundle
-from adcm_pytest_plugin.utils import get_data_dir
-from delayed_assert import assert_expectations, expect
+from adcm_client.objects import ADCMClient, Cluster, Provider, Host, Component, Service
+from adcm_pytest_plugin.steps.actions import (
+    run_provider_action_and_assert_result,
+    run_cluster_action_and_assert_result,
+    run_service_action_and_assert_result,
+    run_host_action_and_assert_result,
+)
+
+from tests.functional.tools import AnyADCMObject, get_config
+from tests.functional.plugin_utils import (
+    build_objects_checker,
+    generate_cluster_success_params,
+    compose_name,
+    run_successful_task,
+    get_cluster_related_object,
+    generate_provider_success_params,
+    get_provider_related_object,
+    create_two_clusters,
+    create_two_providers,
+    TestImmediateChange,
+)
+
+# pylint:disable=redefined-outer-name, duplicate-code
 
 INITIAL_CONFIG = {
     "int": 1,
     "float": 1.0,
-    "text": """xxx
-xxx
-""",
-    "file": """yyyy
-yyyy
-""",
+    "text": "xxx\nxxx\n",
+    "file": "yyyy\nyyyy\n",
     "string": "zzz",
     "json": [{"x": "y"}, {"y": "z"}],
+    'dummy': 'donthurtme',
     "map": {"one": "two", "two": "three"},
     "list": ["one", "two", "three"],
 }
-
-KEYS = list(INITIAL_CONFIG.keys())
-
-NEW_VALUES = {
+CHANGED_CONFIG = {
     "int": 2,
     "float": 4.0,
-    "text": """new new
-xxx
-""",
-    "file": """new new new
-yyyy
-""",
+    "text": "new new\nxxx\n",
+    "file": "new new new\nyyyy\n",
     "string": "double new",
     "json": [{"x": "new"}, {"y": "z"}],
+    'dummy': 'donthurtme',
     "map": {"one": "two", "two": "new"},
     "list": ["one", "new", "three"],
 }
-
-INITIAL_CLUSTERS_CONFIG = {
-    'first': {
-        'config': copy.deepcopy(INITIAL_CONFIG),
-        'services': {
-            'First': copy.deepcopy(INITIAL_CONFIG),
-            'Second': copy.deepcopy(INITIAL_CONFIG),
-        },
-    },
-    'second': {
-        'config': copy.deepcopy(INITIAL_CONFIG),
-        'services': {
-            'First': copy.deepcopy(INITIAL_CONFIG),
-            'Second': copy.deepcopy(INITIAL_CONFIG),
-        },
-    },
-    'third': {
-        'config': copy.deepcopy(INITIAL_CONFIG),
-        'services': {
-            'First': copy.deepcopy(INITIAL_CONFIG),
-            'Second': copy.deepcopy(INITIAL_CONFIG),
-        },
-    },
-}
+CONFIG_KEYS = set(CHANGED_CONFIG.keys())
 
 
-CLUSTER_KEYS = list(INITIAL_CLUSTERS_CONFIG.keys())
-
-SERVICE_NAMES = ['First', 'Second']
-
-
-@allure.step('Check cluster config')
-def assert_cluster_config(bundle: Bundle, statemap: dict):
-    for cname, clv in statemap.items():
-        actual_cnf = bundle.cluster(name=cname).config()
-        expected_cnf = clv['config']
-        for k, v in expected_cnf.items():
-            expect(
-                v == actual_cnf[k],
-                'Cluster {} config "{}" is "{}" while expected "{}"'.format(
-                    cname, k, str(actual_cnf[k]), str(v)
-                ),
-            )
-        for sname, service_expected_cnf in clv['services'].items():
-            service_actual_cnf = bundle.cluster(name=cname).service(name=sname).config()
-            for k, v in service_expected_cnf.items():
-                expect(
-                    v == service_actual_cnf[k],
-                    'Cluster {} service {} config {} is {} while expected {}'.format(
-                        cname, sname, k, str(service_actual_cnf[k]), str(v)
-                    ),
-                )
-    assert_expectations()
+check_config_changed = build_objects_checker(
+    field_name='Config',
+    changed=CHANGED_CONFIG,
+    extractor=get_config,
+)
 
 
 @pytest.fixture()
-def cluster_bundle(sdk_client_fs: ADCMClient):
-    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster"))
-    for name in INITIAL_CLUSTERS_CONFIG:
-        cluster = bundle.cluster_create(name)
-        cluster.service_add(name='First')
-        cluster.service_add(name='Second')
-    return bundle
-
-
-@pytest.fixture(scope="module")
-def keys_clusters():
-    result = []
-    for i, key in enumerate(KEYS):
-        result.append((key, CLUSTER_KEYS[i % 3]))
-    return result
-
-
-@pytest.fixture(scope="module")
-def keys_clusters_services():
-    result = []
-    for i, key in enumerate(KEYS):
-        result.append((key, CLUSTER_KEYS[i % 3], SERVICE_NAMES[i % 2]))
-    return result
-
-
-def test_cluster_config(cluster_bundle: Bundle, keys_clusters):
-    expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
-    assert_cluster_config(cluster_bundle, expected_state)
-    with allure.step('Check cluster keys'):
-        for key, cname in keys_clusters:
-            cluster = cluster_bundle.cluster(name=cname)
-            cluster.action(name='cluster_' + key).run().try_wait()
-            expected_state[cname]["config"][key] = NEW_VALUES[key]
-            assert_cluster_config(cluster_bundle, expected_state)
-
-
-def test_cluster_config_from_service(cluster_bundle: Bundle, keys_clusters_services):
-    expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
-    assert_cluster_config(cluster_bundle, expected_state)
-    with allure.step('Check services keys'):
-        for key, cname, sname in keys_clusters_services:
-            cluster = cluster_bundle.cluster(name=cname)
-            service = cluster.service(name=sname)
-            service.action(name='cluster_' + key).run().try_wait()
-            expected_state[cname]["config"][key] = NEW_VALUES[key]
-            assert_cluster_config(cluster_bundle, expected_state)
-
-
-def test_service_config_from_cluster_by_name(cluster_bundle: Bundle, keys_clusters_services):
-    expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
-    assert_cluster_config(cluster_bundle, expected_state)
-    with allure.step('Check service config from cluster by name'):
-        for key, cname, sname in keys_clusters_services:
-            cluster = cluster_bundle.cluster(name=cname)
-            cluster.action(name='service_name_' + sname + '_' + key).run().try_wait()
-            expected_state[cname]["services"][sname][key] = NEW_VALUES[key]
-            assert_cluster_config(cluster_bundle, expected_state)
-
-
-def test_service_config_from_service_by_name(cluster_bundle: Bundle, keys_clusters_services):
-    expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
-    assert_cluster_config(cluster_bundle, expected_state)
-    with allure.step('Check service config from service by name'):
-        for key, cname, sname in keys_clusters_services:
-            service = cluster_bundle.cluster(name=cname).service(name=sname)
-            service.action(name='service_name_' + sname + '_' + key).run().try_wait()
-            expected_state[cname]["services"][sname][key] = NEW_VALUES[key]
-            assert_cluster_config(cluster_bundle, expected_state)
-
-
-def test_another_service_from_service_by_name(cluster_bundle: Bundle, keys_clusters_services):
-    expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
-    assert_cluster_config(cluster_bundle, expected_state)
-    with allure.step('Check another service from service by name'):
-        for key, cname, sname in keys_clusters_services:
-            if sname == "Second":
-                continue
-            second = cluster_bundle.cluster(name=cname).service(name='Second')
-            result = second.action(name='service_name_' + sname + '_' + key).run().wait()
-            assert result == "failed", "Job expected to be failed"
-            assert_cluster_config(cluster_bundle, expected_state)
-
-
-def test_service_config(cluster_bundle: Bundle, keys_clusters_services):
-    expected_state = copy.deepcopy(INITIAL_CLUSTERS_CONFIG)
-    assert_cluster_config(cluster_bundle, expected_state)
-    with allure.step('Check service keys'):
-        for key, cname, sname in keys_clusters_services:
-            cluster = cluster_bundle.cluster(name=cname)
-            service = cluster.service(name=sname)
-            service.action(name='service_' + key).run().try_wait()
-            expected_state[cname]["services"][sname][key] = NEW_VALUES[key]
-            assert_cluster_config(cluster_bundle, expected_state)
-
-
-INITIAL_PROVIDERS_CONFIG = {
-    'first': {
-        'config': copy.deepcopy(INITIAL_CONFIG),
-        'hosts': {
-            'first_First': copy.deepcopy(INITIAL_CONFIG),
-            'first_Second': copy.deepcopy(INITIAL_CONFIG),
-        },
-    },
-    'second': {
-        'config': copy.deepcopy(INITIAL_CONFIG),
-        'hosts': {
-            'second_First': copy.deepcopy(INITIAL_CONFIG),
-            'second_Second': copy.deepcopy(INITIAL_CONFIG),
-        },
-    },
-    'third': {
-        'config': copy.deepcopy(INITIAL_CONFIG),
-        'hosts': {
-            'third_First': copy.deepcopy(INITIAL_CONFIG),
-            'third_Second': copy.deepcopy(INITIAL_CONFIG),
-        },
-    },
-}
-
-PROVIDERS = list(INITIAL_PROVIDERS_CONFIG.keys())
-
-
-def sparse_matrix(*vectors):
-    lengs = []
-    for a in vectors:
-        lengs.append(len(a))
-
-    max_lengs_vector_idx = lengs.index(max(lengs))
-    for i, _ in enumerate(vectors[max_lengs_vector_idx]):
-        tmp = []
-        for j, a in enumerate(vectors):
-            tmp.append(a[i % lengs[j]])
-        yield tuple(tmp)
-
-
-@allure.step('Check provider config')
-def assert_provider_config(bundle: Bundle, statemap: dict):
-    for pname, plv in statemap.items():
-        actual_cnf = bundle.provider(name=pname).config()
-        expected_cnf = plv['config']
-        for k, v in expected_cnf.items():
-            expect(
-                v == actual_cnf[k],
-                'Provider {} config "{}" is "{}" while expected "{}"'.format(
-                    pname, k, str(actual_cnf[k]), str(v)
-                ),
-            )
-        for hname, host_expected_cnf in plv['hosts'].items():
-            host_actual_cnf = bundle.provider(name=pname).host(fqdn=hname).config()
-            for k, v in host_expected_cnf.items():
-                expect(
-                    v == host_actual_cnf[k],
-                    'Provider {} host {} config {} is {} while expected {}'.format(
-                        pname, hname, k, str(host_actual_cnf[k]), str(v)
-                    ),
-                )
-    assert_expectations()
+def two_clusters(request, sdk_client_fs: ADCMClient) -> Tuple[Cluster, Cluster]:
+    """Get two clusters with both services"""
+    bundle_dir = "cluster" if not hasattr(request, 'param') else request.param
+    return create_two_clusters(sdk_client_fs, __file__, bundle_dir)
 
 
 @pytest.fixture()
-def provider_bundle(sdk_client_fs: ADCMClient):
-    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, "provider"))
-    for name in INITIAL_PROVIDERS_CONFIG:
-        provider = bundle.provider_create(name)
-        for fqdn in INITIAL_PROVIDERS_CONFIG[name]['hosts']:
-            provider.host_create(fqdn=fqdn)
-    return bundle
+def two_providers(sdk_client_fs: ADCMClient) -> Tuple[Provider, Provider]:
+    """Get two providers with two hosts"""
+    return create_two_providers(sdk_client_fs, __file__, "provider")
 
 
-def test_provider_config(provider_bundle: Bundle):
-    expected_state = copy.deepcopy(INITIAL_PROVIDERS_CONFIG)
-    assert_provider_config(provider_bundle, expected_state)
-    with allure.step('Check provider config'):
-        for key, pname in sparse_matrix(KEYS, PROVIDERS):
-            provider = provider_bundle.provider(name=pname)
-            provider.action(name='provider_' + key).run().try_wait()
-            expected_state[pname]["config"][key] = NEW_VALUES[key]
+@pytest.mark.parametrize(
+    ('change_action_name', 'object_to_be_changed', 'action_owner'),
+    generate_cluster_success_params(action_prefix='change', id_template='change_{}_config'),
+)
+@pytest.mark.usefixtures("two_clusters")
+def test_cluster_related_objects(
+    change_action_name: str,
+    object_to_be_changed: Tuple[str, ...],
+    action_owner: Tuple[str, ...],
+    sdk_client_fs: ADCMClient,
+):
+    """
+    Check that correct adcm_config calls can run successfully
+        with Cluster, Service, Component
+        and change only the objects that must be changed
+    """
+    _test_successful_config_change(
+        change_action_name,
+        object_to_be_changed,
+        action_owner,
+        sdk_client_fs,
+        get_cluster_related_object,
+    )
 
-    assert_provider_config(provider_bundle, expected_state)
+
+@pytest.mark.parametrize(
+    ('change_action_name', 'object_to_be_changed', 'action_owner'),
+    generate_provider_success_params(action_prefix='change', id_template='change_{}_config'),
+)
+@pytest.mark.usefixtures("two_providers")
+def test_provider_related_objects(
+    change_action_name: str,
+    object_to_be_changed: Tuple[str, ...],
+    action_owner: Tuple[str, ...],
+    sdk_client_fs: ADCMClient,
+):
+    """
+    Check that correct adcm_config calls can run successfully
+        with Provider and Host
+        and change only the objects that must be changed
+    """
+    _test_successful_config_change(
+        change_action_name,
+        object_to_be_changed,
+        action_owner,
+        sdk_client_fs,
+        get_provider_related_object,
+    )
 
 
-def test_host_config(provider_bundle: Bundle):
-    expected_state = copy.deepcopy(INITIAL_PROVIDERS_CONFIG)
-    assert_provider_config(provider_bundle, expected_state)
-    with allure.step('Check host config'):
-        for key, pname, host_idx in sparse_matrix(KEYS, PROVIDERS, [0, 1]):
-            provider = provider_bundle.provider(name=pname)
-            fqdn = list(INITIAL_PROVIDERS_CONFIG[pname]['hosts'].keys())[host_idx]
-            host = provider.host(fqdn=fqdn)
-            host.action(name='host_' + key).run().try_wait()
-            expected_state[pname]["hosts"][fqdn][key] = NEW_VALUES[key]
-            assert_provider_config(provider_bundle, expected_state)
+def test_host_from_provider(two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient):
+    """Change host config from provider"""
+    provider = two_providers[0]
+    host = provider.host()
+    provider_name = compose_name(provider)
+    host_name = compose_name(host)
+    with check_config_changed(sdk_client_fs, {host}), allure.step(
+        f'Set config of {host_name} with action from {provider_name}'
+    ):
+        run_provider_action_and_assert_result(provider, 'change_host_from_provider', config={'host_id': host.id})
 
 
-def test_host_config_from_provider(provider_bundle: Bundle):
-    expected_state = copy.deepcopy(INITIAL_PROVIDERS_CONFIG)
-    assert_provider_config(provider_bundle, expected_state)
-    with allure.step('Check host config from provider'):
-        for key, pname, host_idx in sparse_matrix(KEYS, PROVIDERS, [0, 1]):
-            provider = provider_bundle.provider(name=pname)
-            fqdn = list(INITIAL_PROVIDERS_CONFIG[pname]['hosts'].keys())[host_idx]
-            provider.action(name='host_' + key).run(config={"fqdn": fqdn}).try_wait()
-            expected_state[pname]["hosts"][fqdn][key] = NEW_VALUES[key]
-            assert_provider_config(provider_bundle, expected_state)
+def test_multijob(
+    two_clusters: Tuple[Cluster, Cluster], two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient
+):
+    """Check that multijob actions change config or object itself"""
+    component = (service := (cluster := two_clusters[0]).service()).component()
+    host = (provider := two_providers[0]).host()
+    affected_objects = set()
+    for obj in (cluster, service, component, provider, host):
+        classname = obj.__class__.__name__.lower()
+        affected_objects.add(obj)
+        object_name = compose_name(obj)
+        with check_config_changed(sdk_client_fs, affected_objects), allure.step(
+            f'Change {object_name} state with multijob action'
+        ):
+            run_successful_task(obj.action(name=f'change_{classname}_multijob'), object_name)
+
+
+@pytest.mark.usefixtures('two_clusters', 'two_providers')
+def test_forbidden_actions(sdk_client_fs: ADCMClient):
+    """
+    Check that forbidden caller-context combinations fail as actions
+        and don't affect any ADCM objects
+    """
+    name = "first"
+    with allure.step(f'Check forbidden from cluster "{name}" context actions'):
+        cluster = sdk_client_fs.cluster(name=name)
+        for forbidden_action in ('change_service', 'change_component'):
+            with check_config_changed(sdk_client_fs):
+                run_cluster_action_and_assert_result(cluster, forbidden_action, status='failed')
+    with allure.step(f'Check forbidden from service "{name}" context actions'):
+        service = cluster.service(name=name)
+        with check_config_changed(sdk_client_fs):
+            run_service_action_and_assert_result(service, 'change_component', status='failed')
+    with allure.step(f'Check forbidden from provider "{name}" context actions'):
+        provider = sdk_client_fs.provider(name=name)
+        with check_config_changed(sdk_client_fs):
+            run_provider_action_and_assert_result(provider, 'change_host', status='failed')
+        first_host, second_host, *_ = provider.host_list()
+        with check_config_changed(sdk_client_fs):
+            run_host_action_and_assert_result(
+                first_host, 'change_host_from_provider', status='failed', config={'host_id': second_host.id}
+            )
+
+
+def test_from_host_actions(
+    two_clusters: Tuple[Cluster, Cluster], two_providers: Tuple[Provider, Provider], sdk_client_fs: ADCMClient
+):
+    """Test that host actions actually change config"""
+    name = "first"
+    affected_objects = set()
+    check_config_changed_local = build_objects_checker(
+        extractor=get_config, changed={**INITIAL_CONFIG, 'int': CHANGED_CONFIG['int']}, field_name='Config'
+    )
+    with allure.step('Bind component to host'):
+        component = (service := (cluster := two_clusters[0]).service(name=name)).component(name=name)
+        host = two_providers[0].host_list()[0]
+        cluster.host_add(host)
+        cluster.hostcomponent_set((host, component))
+    for obj in (cluster, service, component):
+        affected_objects.add(obj)
+        classname = obj.__class__.__name__.lower()
+        with check_config_changed_local(sdk_client_fs, affected_objects), allure.step(
+            f'Check change {compose_name(obj)} config from host action'
+        ):
+            run_host_action_and_assert_result(host, f'change_{classname}_host')
+
+
+class TestImmediateConfigChange(TestImmediateChange):
+    """Test that config changed immediately"""
+
+    _file = __file__
+
+    @allure.issue(url='https://arenadata.atlassian.net/browse/ADCM-2116')
+    def test_immediate_config_change(
+        self,
+        provider_host: Tuple[Provider, Host],
+        cluster_service_component: Tuple[Cluster, Service, Component],
+    ):
+        """Test that config is changed right after adcm_config step in multijob action"""
+        self.run_immediate_change_test(provider_host, cluster_service_component)
+
+
+def _test_successful_config_change(
+    action_name: str,
+    object_to_be_changed: Tuple[str, ...],
+    action_owner: Tuple[str, ...],
+    sdk_client_fs: ADCMClient,
+    get_object_func: Callable[..., AnyADCMObject],
+):
+    """Test successful change of config of one object"""
+    object_to_be_changed = get_object_func(sdk_client_fs, *object_to_be_changed)
+    changed_object_name = compose_name(object_to_be_changed)
+    action_owner_object = get_object_func(sdk_client_fs, *action_owner)
+    action_owner_name = compose_name(action_owner_object)
+    with check_config_changed(sdk_client_fs, {object_to_be_changed}), allure.step(
+        f'Change config of {changed_object_name} with action from {action_owner_name}'
+    ):
+        run_successful_task(action_owner_object.action(name=action_name), action_owner_name)

@@ -1,16 +1,20 @@
 import os
 
-SERVICE_VERSIONS = (("service-less-equal", "2.2", "3.0"),
-                    ("service-greater-equal", "1.5", "2.2"),
-                    ("service-equal", "2.2", '2.2'),
-                    ('service-less', '2.3', '2.4'),
-                    ("service-greater", '1', '2'))
+SERVICE_VERSIONS = (
+    ("service-less-equal", "2.2", "3.0"),
+    ("service-greater-equal", "1.5", "2.2"),
+    ("service-equal", "2.2", '2.2'),
+    ('service-less', '2.3', '2.4'),
+    ("service-greater", '1', '2'),
+)
 
-CLUSTER_VERSIONS = (("cluster-less-equal", "1.6", "2.0"),
-                    ("cluster-greater-equal", "1.0", "1.6"),
-                    ("cluster-equal", "1.6", '1.6'),
-                    ('cluster-less', '1.7', '2.4'),
-                    ("cluster-greater", '0.5', '0.9'))
+CLUSTER_VERSIONS = (
+    ("cluster-less-equal", "1.6", "2.0"),
+    ("cluster-greater-equal", "1.0", "1.6"),
+    ("cluster-equal", "1.6", '1.6'),
+    ('cluster-less', '1.7', '2.4'),
+    ("cluster-greater", '0.5', '0.9'),
+)
 TEMPLATE_SERVICE = """
 -
     type: cluster
@@ -110,13 +114,13 @@ TEMPLATE_CLUSTER = """
 """
 
 for t in SERVICE_VERSIONS:
-    d_name = "upgradable_cluster_with_strict_incorrect_version/{}".format(t[0])
+    d_name = f"upgradable_cluster_with_strict_incorrect_version/{t[0]}"
     os.makedirs(d_name)
-    with open("{}/config.yaml".format(d_name), "w+") as f:
+    with open(f"{d_name}/config.yaml", "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_SERVICE.format(t[1], t[2]))
 
 for t in CLUSTER_VERSIONS:
-    d_name = "upgradable_cluster_with_strict_incorrect_version/{}".format(t[0])
+    d_name = f"upgradable_cluster_with_strict_incorrect_version/{t[0]}"
     os.makedirs(d_name)
-    with open("{}/config.yaml".format(d_name), "w+") as f:
+    with open(f"{d_name}/config.yaml", "w+", encoding='utf_8') as f:
         f.write(TEMPLATE_CLUSTER.format(t[1], t[2]))

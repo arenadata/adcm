@@ -13,7 +13,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ParamMap } from '@angular/router';
 import { IRoot, TypeName } from '@app/core/types/api';
-import { ListResult } from '@app/shared/components/list/list.component';
+import { ListResult } from '@app/models/list-result';
 import { select, Store } from '@ngrx/store';
 import { EMPTY, Observable } from 'rxjs';
 import { catchError, filter, switchMap } from 'rxjs/operators';
@@ -41,16 +41,16 @@ export class ApiService {
     return this.http.get<T>(url, { params });
   }
 
-  getList<T>(url: string, p: ParamMap): Observable<ListResult<T>> {
-    const params = p.keys.reduce((pr, c) => ({ ...pr, [c]: p.get(c) }), {});
-    if (p) {
-      const limit = p.get('limit') ? +p.get('limit') : +localStorage.getItem('limit'),
-        offset = (p.get('page') ? +p.get('page') : 0) * limit;
+  getList<T>(url: string, paramMap: ParamMap, outsideParams?: { [item: string]: string }): Observable<ListResult<T>> {
+    const params = paramMap?.keys.reduce((pr, c) => ({ ...pr, [c]: paramMap.get(c) }), {});
+    if (paramMap) {
+      const limit = paramMap.get('limit') ? +paramMap.get('limit') : +localStorage.getItem('limit'),
+        offset = (paramMap.get('page') ? +paramMap.get('page') : 0) * limit;
       params['limit'] = limit.toString();
       params['offset'] = offset.toString();
-      params['status'] = p.get('filter') || '';
+      params['status'] = paramMap.get('filter') || '';
     }
-    return this.get<ListResult<T>>(url, params);
+    return this.get<ListResult<T>>(url, { ...params, ...outsideParams });
   }
 
   list<T>(url: string, params: { limit: string; offset: string; ordering?: string } | null) {

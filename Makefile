@@ -2,8 +2,8 @@
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 ADCMBASE_IMAGE ?= hub.arenadata.io/adcm/base
-ADCMBASE_TAG ?= 20210317134752
-
+ADCMTEST_IMAGE ?= hub.arenadata.io/adcm/test
+ADCMBASE_TAG ?= 20220415154808
 APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
 
@@ -28,17 +28,13 @@ describe: ## Create .version file with output of describe
 	./gues_version.sh
 
 buildss: ## Build status server
-	@docker run -i --rm -v $(CURDIR)/go:/code -w /code  golang:1.15-alpine sh -c "apk --update add make git && make && rm -f /code/adcm/go.sum"
+	@docker run -i --rm -v $(CURDIR)/go:/code -w /code  golang:1.15-alpine3.13 sh -c "apk --update add make git && make && rm -f /code/adcm/go.sum"
 
 buildjs: ## Build client side js/html/css in directory wwwroot
 	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./build.sh
 
-buildbase: ## Build base image for ADCM's container. That is alpine with all packages.
-	cd assemble/base && docker build --pull=true --no-cache=true \
-	-t $(ADCMBASE_IMAGE):$$(date '+%Y%m%d%H%M%S') -t $(ADCMBASE_IMAGE):latest \
-	.
-
 build: describe buildss buildjs ## Build final docker image and all depended targets except baseimage.
+	@docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
 	@docker build --no-cache=true \
 	-f assemble/app/Dockerfile \
 	-t $(APP_IMAGE):$(APP_TAG) \
@@ -52,37 +48,54 @@ build: describe buildss buildjs ## Build final docker image and all depended tar
 testpyreqs: ## Install test prereqs into user's pip target dir
 	pip install --user -r requirements-test.txt
 
-unittests: ## Run unittests
+test_image:
 	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/tests/base $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/sh -e ./run_test.sh
+
+basetests: test_image ## Run tests/base
+	docker run -i --rm -v $(CURDIR)/:/source -w /source/tests/base $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /venv.sh run default ./run_test.sh
+
+unittests: basetests test_image ## Run unittests
+	docker run -i --rm -v $(CURDIR)/:/source -w /source/ $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) /venv.sh reqs_and_run default /source/requirements.txt /source/python/run_unit.sh
 
 pytest: ## Run functional tests
-	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
+	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster-x64
 	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
 	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
-	ci.arenadata.io/functest:3.8.6.slim.buster-x64 /bin/sh -e \
-	./pytest.sh --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
+	hub.adsw.io/library/functest:3.8.6.slim.buster-x64 /bin/sh -e \
+	./pytest.sh -m "not full and not extra_rbac" --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
 
 pytest_release: ## Run functional tests on release
-	docker pull ci.arenadata.io/functest:3.8.6.slim.buster.firefox-x64
+	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster.firefox-x64
 	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
 	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
-	ci.arenadata.io/functest:3.8.6.slim.buster.firefox-x64 /bin/sh -e \
-	./pytest.sh --firefox --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
+	hub.adsw.io/library/functest:3.8.6.slim.buster.firefox-x64 /bin/sh -e \
+	./pytest.sh --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
 
 ng_tests: ## Run Angular tests
-	docker pull ci.arenadata.io/functest:3.8.6.slim.buster-x64
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web ci.arenadata.io/functest:3.8.6.slim.buster-x64 ./ng_test.sh
+	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster-x64
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster-x64 ./ng_test.sh
 
-linters : ## Run linters
-	docker pull ci.arenadata.io/pr-builder:3-x64
-	docker run -i --rm -v $(CURDIR)/:/source -w /source ci.arenadata.io/pr-builder:3-x64 /linters.sh shellcheck pylint pep8
+linters: test_image ## Run linters
+	docker run -i --rm -e PYTHONPATH="/source/tests" -v $(CURDIR)/:/source -w /source $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) \
+        /bin/sh -eol pipefail -c "/linters.sh shellcheck && \
+			/venv.sh run default pip install -r requirements.txt -r requirements-test.txt && \
+			cd python && /venv.sh run default pylint_runner --rcfile ../pylintrc &&  cd .. \
+			/linters.sh -b ./tests -f ../tests pylint && \
+			/linters.sh -f ./tests black && \
+			/linters.sh -f ./tests/functional flake8_pytest_style && \
+			/linters.sh -f ./tests/ui_tests flake8_pytest_style"
 
 npm_check: ## Run npm-check
 	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./npm_check.sh
 
-django_tests : ## Run django tests.
-	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) python python/manage.py test cm
+django_tests: test_image ## Run django tests.
+	docker run -e DJANGO_SETTINGS_MODULE=adcm.test -i --rm -v $(CURDIR)/python:/adcm/python -v $(CURDIR)/data:/adcm/data -v $(CURDIR)/requirements.txt:/adcm/requirements.txt -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /venv.sh reqs_and_run default /adcm/requirements.txt python python/manage.py test cm
+
+##################################################
+#                 U T I L S
+##################################################
+
+base_shell: ## Just mount a dir to base image and run bash on it over docker run
+	docker run -e DJANGO_SETTINGS_MODULE=adcm.test -it --rm -v $(CURDIR)/python:/adcm/python -v $(CURDIR)/data:/adcm/data -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/bash -l

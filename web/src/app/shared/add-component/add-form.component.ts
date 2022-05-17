@@ -9,18 +9,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, ViewChild } from '@angular/core';
-import { ChannelService, keyChannelStrim } from '@app/core';
-import { DynamicComponent } from '@app/shared/directives';
+import { AfterViewInit, Component, ComponentFactoryResolver, ViewChild, ViewContainerRef } from '@angular/core';
 
-import { FormModel } from './add.service';
+import { ChannelService, keyChannelStrim } from '@app/core/services';
+import { DynamicComponent, DynamicDirective } from '@app/shared/directives';
 import { BaseFormDirective } from './base-form.directive';
+import { FormModel } from '@app/shared/add-component/add-service-model';
+import { RbacFormDirective } from '@app/shared/add-component/rbac-form.directive';
 
 @Component({
   selector: 'app-add-form',
   template: `
     <div [style.minWidth.px]="450">
-      <ng-container [ngSwitch]="model.name">
+      <ng-container appDynamic [ngSwitch]="model.name">
         <ng-container *ngSwitchCase="'provider'">
           <app-add-provider #cc></app-add-provider>
         </ng-container>
@@ -40,17 +41,43 @@ import { BaseFormDirective } from './base-form.directive';
     </div>
   `,
 })
-export class AddFormComponent implements DynamicComponent {
+export class AddFormComponent implements DynamicComponent, AfterViewInit {
   model: FormModel;
-  constructor(private channel: ChannelService) {}
+
+  instance: BaseFormDirective;
+
+  constructor(
+    private channel: ChannelService,
+    public viewContainer: ViewContainerRef,
+    private componentFactoryResolver: ComponentFactoryResolver
+  ) {}
 
   @ViewChild('cc') container: BaseFormDirective;
 
-  onEnterKey() {
-    if (this.container.form.valid) this.container.save();
+  @ViewChild(DynamicDirective, { static: true }) dynamic: DynamicDirective;
+
+  onEnterKey(): void {
+    if (this.container) {
+      if (this.container.form.valid) this.container.save();
+    }
   }
 
-  message(m: string) {
+  message(m: string): void {
     this.channel.next(keyChannelStrim.notifying, m);
   }
+
+  ngAfterViewInit(): void {
+    if (this.model.component) {
+      const componentFactory = this.componentFactoryResolver.resolveComponentFactory(this.model.component);
+      const viewContainerRef = this.dynamic.viewContainerRef;
+      viewContainerRef.clear();
+
+      const componentRef = viewContainerRef.createComponent(componentFactory);
+      this.instance = componentRef.instance;
+      if (this.instance instanceof RbacFormDirective) {
+        this.instance.value = this.model.value;
+      }
+    }
+  }
+
 }

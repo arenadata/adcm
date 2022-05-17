@@ -13,22 +13,26 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Routes, RouterModule } from '@angular/router';
 
-import { AuthGuard } from '@app/core';
-import { StackComponent, MainComponent } from './stack.component';
-import { DetailComponent } from '@app/shared/details/detail.component';
+import { AuthGuard } from '../../core/auth/auth.guard';
+import { BundleListComponent, MainComponent, LicenseComponent } from './bundle-list.component';
 import { SharedModule } from '@app/shared/shared.module';
+import { BundleDetailsComponent } from '../../components/bundle/bundle-details/bundle-details.component';
 
 const routes: Routes = [
   {
     path: '',
     canActivate: [AuthGuard],
-    component: StackComponent,
+    component: BundleListComponent,
   },
   {
     path: ':bundle',
     canActivate: [AuthGuard],
-    component: DetailComponent,
-    children: [{ path: '', redirectTo: 'main', pathMatch: 'full' }, { path: 'main', component: MainComponent }],
+    component: BundleDetailsComponent,
+    children: [
+      { path: '', redirectTo: 'main', pathMatch: 'full' },
+      { path: 'main', component: MainComponent },
+      { path: 'license', component: LicenseComponent },
+    ],
   },
 ];
 
@@ -39,7 +43,7 @@ const routes: Routes = [
 export class BundleRoutingModule {}
 
 @NgModule({
-  declarations: [StackComponent, MainComponent],
+  declarations: [BundleListComponent, MainComponent, LicenseComponent],
   imports: [CommonModule, SharedModule, BundleRoutingModule, RouterModule, BundleRoutingModule],
 })
 export class BundleModule {}

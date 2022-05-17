@@ -11,15 +11,15 @@
 // limitations under the License.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Store } from '@ngrx/store';
 import { Subject } from 'rxjs';
+import { filter, switchMap } from 'rxjs/operators';
+import { BaseDirective } from '@adwp-ui/widgets';
 
 import { ClusterService } from '@app/core/services/cluster.service';
-import { EventMessage, SocketState } from '@app/core/store';
 import { Job, JobStatus, LogFile } from '@app/core/types';
-import { SocketListenerDirective } from '@app/shared/directives';
-
 import { TextComponent } from './text.component';
+import { JobService } from '@app/services/job.service';
+import { EventMessage } from '@app/core/store';
 
 export interface ITimeInfo {
   start: string;
@@ -50,54 +50,67 @@ export interface ITimeInfo {
     `,
   ],
   template: `
-    <app-job-info [timeInfo]="timeInfo" [status]="job.status"></app-job-info>
-    <div class="wrap" *ngIf="currentLog$ | async as log">
-      <app-log-text *ngIf="log.type !== 'check'" [content]="log.content" [status]="job.status" (refresh)="refresh()"></app-log-text>
-      <mat-accordion *ngIf="log.type === 'check'" class="accordion">
-        <app-log-check [content]="log.content"></app-log-check>
-      </mat-accordion>
-    </div>
+    <ng-container *ngIf="job">
+      <app-job-info [timeInfo]="timeInfo" [status]="job.status"></app-job-info>
+      <div class="wrap" *ngIf="currentLog$ | async as log">
+        <app-log-text *ngIf="log.type !== 'check'" [content]="log.content" [status]="job.status" (refresh)="refresh()"></app-log-text>
+        <mat-accordion *ngIf="log.type === 'check'" class="accordion">
+          <app-log-check [content]="log.content"></app-log-check>
+        </mat-accordion>
+      </div>
+    </ng-container>
   `,
 })
-export class LogComponent extends SocketListenerDirective implements OnInit {
+export class LogComponent extends BaseDirective implements OnInit {
   currentLog$ = new Subject<LogFile>();
   timeInfo: ITimeInfo;
   logUrl: string;
 
+  job: Job;
+
   @ViewChild(TextComponent, { static: true }) textComp: TextComponent;
 
-  constructor(private service: ClusterService, private route: ActivatedRoute, public store: Store<SocketState>) {
-    super(store);
+  constructor(
+    private service: ClusterService,
+    private route: ActivatedRoute,
+    private jobService: JobService,
+  ) {
+    super();
   }
 
-  get job(): Job {
-    return this.service.Current as Job;
+  socketListener(event: EventMessage) {
+    if (event.event === 'change_job_status') {
+      this.job.status = event.object.details.value as JobStatus;
+      this.job.finish_date = new Date().toISOString();
+      this.timeInfo = this.service.getOperationTimeData(this.job);
+      if (this.textComp) this.textComp.update(this.job.status);
+    }
+    this.refresh();
+  }
+
+  startListenSocket() {
+    this.jobService.events().pipe(
+      this.takeUntil(),
+      filter(event => event?.object?.id === this.job.id),
+    ).subscribe((event) => this.socketListener(event));
   }
 
   ngOnInit() {
-    this.timeInfo = this.service.getOperationTimeData(this.job);
-    this.route.paramMap.pipe(this.takeUntil()).subscribe((p) => {
-      this.logUrl = this.job.log_files.find((a) => a.id === +p.get('log')).url;
+    this.route.paramMap.pipe(
+      this.takeUntil(),
+      switchMap(() => this.jobService.get(+this.route.parent.snapshot.paramMap.get('job'))),
+    ).subscribe((job) => {
+      this.job = job;
+      this.timeInfo = this.service.getOperationTimeData(this.job);
+      this.logUrl = this.job.log_files.find((a) => a.id === +this.route.snapshot.paramMap.get('log')).url;
       this.refresh();
     });
     this.startListenSocket();
-  }
-
-  socketListener(m: EventMessage) {
-    if (m?.object?.type === 'job' && m?.object?.id === this.job.id) {
-      if (m.event === 'change_job_status') {
-        const job = this.job;
-        job.status = m.object.details.value as JobStatus;
-        job.finish_date = new Date().toISOString();
-        this.timeInfo = this.service.getOperationTimeData(job);
-        if (this.textComp) this.textComp.update(job.status);
-      }
-      this.refresh();
-    }
   }
 
   refresh() {
     if (!this.logUrl) return;
     this.service.getLog(this.logUrl).subscribe((a) => this.currentLog$.next(a));
   }
+
 }

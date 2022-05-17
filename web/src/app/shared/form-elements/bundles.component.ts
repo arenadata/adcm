@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Prototype, StackBase } from '@app/core/types';
 import { of } from 'rxjs';
@@ -62,6 +62,8 @@ export class BundlesComponent extends InputComponent implements OnInit {
   limit = 50;
   disabledVersion = true;
 
+  @Output() prototypeChanged = new EventEmitter();
+
   constructor(private service: AddService) {
     super();
   }
@@ -92,7 +94,9 @@ export class BundlesComponent extends InputComponent implements OnInit {
         filter((a) => a)
       )
       .subscribe((a) => {
-        this.service.currentPrototype = this.versions.find((b) => b.bundle_id === +a);
+        const prototype = this.versions.find((b) => b.bundle_id === +a);
+        this.service.currentPrototype = prototype;
+        this.prototypeChanged.emit(prototype);
         this.form.get('prototype_id').setValue(this.service.currentPrototype.id);
       });
   }

@@ -15,7 +15,8 @@ import { MatCheckboxChange } from '@angular/material/checkbox';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
-import { ChannelService, keyChannelStrim } from '@app/core';
+import { ChannelService } from '@app/core/services';
+import { keyChannelStrim } from '@app/core/services';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { IExport, IImport } from '@app/core/types';
 

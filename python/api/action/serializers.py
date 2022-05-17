@@ -19,7 +19,7 @@ import cm.job
 import cm.adcm_config
 from cm.models import PrototypeConfig, SubAction
 
-from api.api_views import get_api_url_kwargs
+from api.utils import get_api_url_kwargs
 from api.config.serializers import ConfigSerializerUI
 
 
@@ -33,7 +33,7 @@ class ActionDetailURL(serializers.HyperlinkedIdentityField):
 class HostActionDetailURL(serializers.HyperlinkedIdentityField):
     def get_url(self, obj, view_name, request, format):
         objects = self.context.get('objects')
-        if obj.host_action:
+        if obj.host_action and 'host' in objects:
             kwargs = get_api_url_kwargs(objects['host'], request)
         else:
             kwargs = get_api_url_kwargs(objects[obj.prototype.type], request)
@@ -92,6 +92,9 @@ class SubActionSerializer(serializers.Serializer):
 
 class StackActionDetailSerializer(StackActionSerializer):
     state_available = serializers.JSONField()
+    state_unavailable = serializers.JSONField()
+    multi_state_available = serializers.JSONField()
+    multi_state_unavailable = serializers.JSONField()
     params = serializers.JSONField(required=False)
     log_files = serializers.JSONField(required=False)
     config = serializers.SerializerMethodField()

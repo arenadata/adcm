@@ -11,27 +11,22 @@
 # limitations under the License.
 
 from django.urls import path, include, register_converter
-
-from rest_framework_swagger.views import get_swagger_view
 from rest_framework.schemas import get_schema_view
+from rest_framework_swagger.views import get_swagger_view
 
 from api import views, docs
-
+from rbac.endpoints import token
 
 register_converter(views.NameConverter, 'name')
 swagger_view = get_swagger_view(title='ArenaData Chapel API')
-schema_view = get_schema_view(title='ArenaData Chapel API')
-
+schema_view = get_schema_view(
+    title='ArenaData Chapel API', patterns=[path('api/v1/', include('api.urls'))]
+)
 
 urlpatterns = [
+    path('', views.APIRoot.as_view()),
     path('info/', views.ADCMInfo.as_view(), name='adcm-info'),
     path('stats/', include('api.stats.urls')),
-    path('token/', views.GetAuthToken.as_view(), name='token'),
-    path('logout/', views.LogOut.as_view(), name='logout'),
-    path('user/', include('api.user.urls')),
-    path('group/', include('api.user.group_urls')),
-    path('role/', include('api.user.role_urls')),
-    path('profile/', include('api.user.profile_urls')),
     path('stack/', include('api.stack.urls')),
     path('cluster/', include('api.cluster.urls')),
     path('service/', include('api.service.urls')),
@@ -39,13 +34,17 @@ urlpatterns = [
     path('provider/', include('api.provider.urls')),
     path('host/', include('api.host.urls')),
     path('adcm/', include('api.adcm.urls')),
+    path('group-config/', include('api.group_config.urls')),
+    path('config/', include('api.object_config.urls')),
+    path('config-log/', include('api.config_log.urls')),
     path('task/', include('api.job.task_urls')),
     path('job/', include('api.job.urls')),
-    # path('docs/', include_docs_urls(title='ArenaData Chapel API')),
+    path('concern/', include('api.concern.urls')),
     path('swagger/', swagger_view),
     path('schema/', schema_view),
     path('auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('docs/md/', docs.docs_md),
     path('docs/', docs.docs_html),
-    path('', views.APIRoot.as_view()),
+    path('rbac/', include(('rbac.urls', 'rbac'))),
+    path('token/', token.GetAuthToken.as_view(), name='token'),
 ]

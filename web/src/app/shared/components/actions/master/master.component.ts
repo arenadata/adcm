@@ -11,9 +11,9 @@
 // limitations under the License.
 import { Component, ElementRef, EventEmitter, OnInit, ViewChild } from '@angular/core';
 import { IAction } from '@app/core/types';
-import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic.directive';
+import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic/dynamic.directive';
 
-import { BaseDirective } from '../../../directives/base.directive';
+import { BaseDirective } from '@app/shared/directives';
 import { ActionParameters } from '../actions.directive';
 
 import { IMasterData, IValue, MasterService, whatShow } from './master.service';

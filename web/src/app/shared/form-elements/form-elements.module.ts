@@ -29,6 +29,7 @@ import { PasswordComponent } from './password/password.component';
 import { TextBoxComponent } from './text-box.component';
 import { TextareaComponent } from './textarea.component';
 import { VariantComponent } from './variant.component';
+import { SecretTextComponent } from './secret-text/secret-text.component';
 
 @NgModule({
   declarations: [
@@ -48,6 +49,7 @@ import { VariantComponent } from './variant.component';
     FieldDirective,
     ErrorInfoComponent,
     VariantComponent,
+    SecretTextComponent
   ],
   imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, StuffModule],
   exports: [
@@ -63,6 +65,8 @@ import { VariantComponent } from './variant.component';
     InputComponent,
     ButtonUploaderComponent,
     VariantComponent,
+    ConfirmEqualValidatorDirective,
+    SecretTextComponent
   ],
 })
 export class FormElementsModule {}

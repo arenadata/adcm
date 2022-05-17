@@ -13,7 +13,8 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { AdwpListModule } from '@adwp-ui/widgets';
+import { TranslateModule } from '@ngx-translate/core';
+import { MatTreeModule } from '@angular/material/tree';
 
 import { AddingModule } from './add-component/adding.module';
 import {
@@ -24,18 +25,14 @@ import {
   ImportComponent,
   IssueInfoComponent,
   MainInfoComponent,
-  StatusComponent,
   StatusInfoComponent,
   UpgradeComponent,
 } from './components';
-import { ActionCardComponent } from './components/actions/action-card/action-card.component';
 import { ActionMasterConfigComponent } from './components/actions/master/action-master-config.component';
-import { ListComponent } from './components/list/list.component';
 import { MultiSortDirective } from './components/list/multi-sort.directive';
-import { SimpleTextComponent } from './components/tooltip';
 import { ConfigurationModule } from './configuration/configuration.module';
 import { DetailsModule } from './details/details.module';
-import { DynamicDirective, HoverDirective } from './directives';
+import { HoverDirective } from './directives';
 import { FormElementsModule } from './form-elements/form-elements.module';
 import { HostComponentsMapModule } from './host-components-map/host-components-map.module';
 import { MaterialModule } from './material.module';
@@ -45,9 +42,25 @@ import { StatusColumnComponent } from '@app/components/columns/status-column/sta
 import { StateColumnComponent } from '@app/components/columns/state-column/state-column.component';
 import { EditionColumnComponent } from '@app/components/columns/edition-column/edition-column.component';
 import { ClusterColumnComponent } from '@app/components/columns/cluster-column/cluster-column.component';
-import { ServiceComponentsComponent } from '@app/components/service-components.component';
+import { ServiceComponentsComponent } from '@app/components/service-component/service-components.component';
 import { JobService } from '@app/services/job.service';
 import { TaskService } from '@app/services/task.service';
+import { ToDataSourcePipe } from '@app/pipes/to-data-source.pipe';
+import { PickKeysPipe } from '@app/pipes/pick-keys.pipe';
+import { TranslateKeysPipe } from '@app/pipes/translate-object-keys.pipe';
+import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
+import { StatusTreeComponent } from '@app/components/status-tree/status-tree.component';
+import { HostStatusComponent } from '@app/components/host/host-status/host-status.component';
+import { EntityStatusToStatusTreePipe } from '@app/pipes/entity-status-to-status-tree.pipe';
+import { ServiceStatusComponent } from '@app/components/service/service-status/service-status.component';
+import { ServiceComponentStatusComponent } from '@app/components/service-component/service-component-status/service-component-status.component';
+import { StatusTreeLinkPipe } from '@app/pipes/status-tree-link.pipe';
+import { RbacUserService } from '@app/services/rbac-user.service';
+import { RbacGroupService } from '@app/services/rbac-group.service';
+import { RbacRoleService } from '@app/services/rbac-role.service';
+import { RbacPolicyService } from '@app/services/rbac-policy.service';
+import { DynamicModule } from '@app/shared/directives/dynamic/dynamic.module';
+import { RbacObjectCandidateService } from '@app/services/rbac-object-candidate.service';
 
 @NgModule({
   imports: [
@@ -62,21 +75,20 @@ import { TaskService } from '@app/services/task.service';
     AddingModule,
     HostComponentsMapModule,
     DetailsModule,
-    AdwpListModule.forRoot({
-      itemsPerPage: [10, 25, 50, 100],
-    }),
+    TranslateModule,
+    TooltipModule,
+    MatTreeModule,
+    DynamicModule,
   ],
   declarations: [
     DialogComponent,
-    ListComponent,
     BreakRowPipe,
     HoverDirective,
-    DynamicDirective,
     ButtonSpinnerComponent,
     TagEscPipe,
     IssueInfoComponent,
-    SimpleTextComponent,
-    StatusComponent,
+    HostStatusComponent,
+    ServiceStatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
     MultiSortDirective,
@@ -84,12 +96,18 @@ import { TaskService } from '@app/services/task.service';
     ExportComponent,
     ActionMasterComponent,
     ActionMasterConfigComponent,
-    ActionCardComponent,
     StatusColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,
     ClusterColumnComponent,
     ServiceComponentsComponent,
+    ServiceComponentStatusComponent,
+    ToDataSourcePipe,
+    PickKeysPipe,
+    TranslateKeysPipe,
+    StatusTreeComponent,
+    EntityStatusToStatusTreePipe,
+    StatusTreeLinkPipe,
   ],
   exports: [
     FormsModule,
@@ -102,29 +120,40 @@ import { TaskService } from '@app/services/task.service';
     HostComponentsMapModule,
     DetailsModule,
     DialogComponent,
-    ListComponent,
     BreakRowPipe,
     HoverDirective,
-    DynamicDirective,
     ButtonSpinnerComponent,
     UpgradeComponent,
     TagEscPipe,
-    StatusComponent,
+    HostStatusComponent,
+    ServiceStatusComponent,
     StatusInfoComponent,
     MainInfoComponent,
     ImportComponent,
     ExportComponent,
-    ActionCardComponent,
     StatusColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,
     ClusterColumnComponent,
     ServiceComponentsComponent,
-    AdwpListModule,
+    ServiceComponentStatusComponent,
+    ToDataSourcePipe,
+    PickKeysPipe,
+    TranslateKeysPipe,
+    TooltipModule,
+    StatusTreeComponent,
+    EntityStatusToStatusTreePipe,
+    StatusTreeLinkPipe,
   ],
   providers: [
     JobService,
     TaskService,
+    RbacUserService,
+    RbacGroupService,
+    RbacRoleService,
+    RbacPolicyService,
+    RbacObjectCandidateService
   ],
 })
-export class SharedModule {}
+export class SharedModule {
+}

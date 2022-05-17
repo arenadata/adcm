@@ -18,10 +18,10 @@ table.main {
 }
 
 :host ::ng-deep .first-child {
-  width: 20px;
+  width: 35px;
   padding-right: 10px;
   flex-grow: 0;
-  flex-basis: 20px;
+  flex-basis: 35px;
 }
 
 :host ::ng-deep .action_date {

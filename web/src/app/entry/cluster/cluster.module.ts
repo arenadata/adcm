@@ -13,19 +13,31 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { DetailComponent } from '@app/shared/details/detail.component';
-import { ConfigComponent } from '@app/shared/configuration/main/main.component';
-import { MainInfoComponent, StatusComponent, ImportComponent } from '@app/shared/components';
+
+import { ConfigComponent } from '../../shared/configuration/main/config.component';
+import { ImportComponent, MainInfoComponent } from '@app/shared/components';
 import { SharedModule } from '@app/shared/shared.module';
 
 import { ClusterListComponent } from './cluster.component';
 import { HcmapComponent } from '@app/components/cluster/hcmap/hcmap.component';
-import { HostComponent } from '@app/components/cluster/host/host.component';
+import { ClusterHostComponent } from '../../components/cluster/host/cluster-host.component';
 import { ServicesComponent } from '@app/components/cluster/services/services.component';
-import { AuthGuard } from '@app/core';
-import { ActionCardComponent } from '@app/shared/components/actions/action-card/action-card.component';
-import { ServiceComponentsComponent } from '@app/components/service-components.component';
-
+import { AuthGuard } from '../../core/auth/auth.guard';
+import { ServiceComponentsComponent } from '../../components/service-component/service-components.component';
+import {
+  ConfigGroupHostListComponent,
+  ConfigGroupListComponent,
+  ConfigGroupModule
+} from '../../config-groups';
+import { ClusterDetailsComponent } from '../../components/cluster/cluster-details/cluster-details.component';
+import { GroupConfigDetailsComponent } from '../../components/hostprovider/group-config-details/group-config-details.component';
+import { ServiceDetailsComponent } from '../../components/service/service-details/service-details.component';
+import { ServiceComponentDetailsComponent } from '../../components/service-component/service-component-details/service-component-details.component';
+import { HostDetailsComponent } from '../../components/host/host-details/host-details.component';
+import { ClusterStatusComponent } from '../../components/cluster/cluster-status/cluster-status.component';
+import { ServiceStatusComponent } from '../../components/service/service-status/service-status.component';
+import { ServiceComponentStatusComponent } from '../../components/service-component/service-component-status/service-component-status.component';
+import { HostStatusComponent } from '../../components/host/host-status/host-status.component';
 
 const clusterRoutes: Routes = [
   {
@@ -35,60 +47,92 @@ const clusterRoutes: Routes = [
   },
   {
     path: ':cluster',
-    component: DetailComponent,
+    component: ClusterDetailsComponent,
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
     children: [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
       { path: 'service', component: ServicesComponent },
-      { path: 'host', component: HostComponent },
+      { path: 'host', component: ClusterHostComponent },
       { path: 'host_component', component: HcmapComponent },
       { path: 'config', component: ConfigComponent },
-      { path: 'status', component: StatusComponent },
+      { path: 'group_config', component: ConfigGroupListComponent },
+      { path: 'status', component: ClusterStatusComponent },
       { path: 'import', component: ImportComponent },
-      { path: 'action', component: ActionCardComponent },
+    ],
+  },
+  {
+    path: ':cluster/group_config/:group_config',
+    canActivate: [AuthGuard],
+    canActivateChild: [AuthGuard],
+    component: GroupConfigDetailsComponent,
+    children: [
+      { path: '', redirectTo: 'host', pathMatch: 'full' },
+      { path: 'host', component: ConfigGroupHostListComponent },
+      { path: 'config', component: ConfigComponent, data: { isGroupConfig: true } },
     ],
   },
   {
     path: ':cluster/service/:service',
-    component: DetailComponent,
+    component: ServiceDetailsComponent,
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
     children: [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
-      { path: 'status', component: StatusComponent },
+      { path: 'group_config', component: ConfigGroupListComponent },
+      { path: 'status', component: ServiceStatusComponent },
       { path: 'import', component: ImportComponent },
-      { path: 'action', component: ActionCardComponent },
       { path: 'component', component: ServiceComponentsComponent },
     ],
   },
   {
+    path: ':cluster/service/:service/group_config/:group_config',
+    canActivate: [AuthGuard],
+    canActivateChild: [AuthGuard],
+    component: GroupConfigDetailsComponent,
+    children: [
+      { path: '', redirectTo: 'host', pathMatch: 'full' },
+      { path: 'host', component: ConfigGroupHostListComponent },
+      { path: 'config', component: ConfigComponent, data: { isGroupConfig: true } },
+    ],
+  },
+  {
     path: ':cluster/service/:service/component/:servicecomponent',
-    component: DetailComponent,
+    component: ServiceComponentDetailsComponent,
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
     children: [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
-      { path: 'status', component: StatusComponent },
-      { path: 'action', component: ActionCardComponent },
+      { path: 'group_config', component: ConfigGroupListComponent },
+      { path: 'status', component: ServiceComponentStatusComponent },
+    ],
+  },
+  {
+    path: ':cluster/service/:service/component/:component/group_config/:group_config',
+    canActivate: [AuthGuard],
+    canActivateChild: [AuthGuard],
+    component: GroupConfigDetailsComponent,
+    children: [
+      { path: '', redirectTo: 'host', pathMatch: 'full' },
+      { path: 'host', component: ConfigGroupHostListComponent },
+      { path: 'config', component: ConfigComponent, data: { isGroupConfig: true } },
     ],
   },
   {
     path: ':cluster/host/:host',
-    component: DetailComponent,
+    component: HostDetailsComponent,
     canActivate: [AuthGuard],
     canActivateChild: [AuthGuard],
     children: [
       { path: '', redirectTo: 'main', pathMatch: 'full' },
       { path: 'main', component: MainInfoComponent },
       { path: 'config', component: ConfigComponent },
-      { path: 'status', component: StatusComponent },
-      { path: 'action', component: ActionCardComponent },
+      { path: 'status', component: HostStatusComponent },
     ],
   },
 ];
@@ -99,10 +143,23 @@ const clusterRoutes: Routes = [
   ],
   exports: [RouterModule],
 })
-export class ClusterRoutingModule {}
+export class ClusterRoutingModule {
+}
 
 @NgModule({
-  imports: [CommonModule, SharedModule, RouterModule, ClusterRoutingModule],
-  declarations: [ClusterListComponent, ServicesComponent, HostComponent, HcmapComponent],
+  imports: [
+    CommonModule,
+    SharedModule,
+    RouterModule,
+    ConfigGroupModule,
+    ClusterRoutingModule,
+  ],
+  declarations: [
+    ClusterListComponent,
+    ServicesComponent,
+    ClusterHostComponent,
+    HcmapComponent,
+    ClusterStatusComponent,
+  ],
 })
 export class ClusterModule {}

@@ -9,27 +9,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { EventEmitter, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { convertToParamMap, Params } from '@angular/router';
 import { environment } from '@env/environment';
-import { Observable, of, throwError, forkJoin } from 'rxjs';
-import { concatAll, filter, map, switchMap, catchError } from 'rxjs/operators';
+import { forkJoin, Observable, of, throwError } from 'rxjs';
+import { catchError, concatAll, filter, map, switchMap } from 'rxjs/operators';
 
-import { StackInfo, StackService } from '@app/core';
+import { StackInfo, StackService } from '@app/core/services';
 import { ClusterService } from '@app/core/services/cluster.service';
 import { ApiService } from '@app/core/api';
 import { Host, Prototype, ServicePrototype, StackBase, TypeName } from '@app/core/types';
 import { DialogComponent } from '@app/shared/components/dialog.component';
 import { GenName } from './naming';
+import { MainService } from '@app/shared/configuration/main/main.service';
+import { FormModel, IAddService } from '@app/shared/add-component/add-service-model';
 
-export interface FormModel {
-  name: string;
-  title?: string;
-  form?: FormGroup;
-  success?: EventEmitter<{ flag: boolean; obj: any }>;
-}
 
 const fromBundle = () =>
   new FormGroup({
@@ -68,16 +64,22 @@ const MODELS: { [key: string]: FormModel } = {
 @Injectable({
   providedIn: 'root',
 })
-export class AddService {
+export class AddService implements IAddService {
   private _currentPrototype: StackBase;
   set currentPrototype(a: StackBase) {
     this._currentPrototype = a;
   }
+
   get currentPrototype(): StackBase {
     return this._currentPrototype;
   }
 
-  constructor(private api: ApiService, private stack: StackService, private cluster: ClusterService, public dialog: MatDialog) {}
+  constructor(private api: ApiService,
+              private stack: StackService,
+              private cluster: ClusterService,
+              public dialog: MatDialog,
+              private main: MainService,
+  ) {}
 
   model(name: string) {
     return MODELS[name];
@@ -85,6 +87,10 @@ export class AddService {
 
   get Cluster() {
     return this.cluster.Cluster;
+  }
+
+  get Current() {
+    return this.main.Current;
   }
 
   genName(form: FormGroup) {
@@ -97,11 +103,12 @@ export class AddService {
       });
   }
 
-  add<T>(data: Partial<T>, name: TypeName) {
-    if (this.currentPrototype && this.currentPrototype.license === 'unaccepted') {
+  add<T>(data: Partial<T>, name: TypeName, prototype?: StackBase) {
+    const currentPrototype = prototype || this.currentPrototype;
+    if (currentPrototype?.license === 'unaccepted') {
       return this.api.root.pipe(
         switchMap((root) =>
-          this.api.get<{ text: string }>(`${root.stack}bundle/${this.currentPrototype.bundle_id}/license/`).pipe(
+          this.api.get<{ text: string }>(`${root.stack}bundle/${currentPrototype.bundle_id}/license/`).pipe(
             switchMap((info) =>
               this.dialog
                 .open(DialogComponent, {
@@ -115,7 +122,7 @@ export class AddService {
                 .pipe(
                   filter((yes) => yes),
                   switchMap(() =>
-                    this.api.put(`${root.stack}bundle/${this.currentPrototype.bundle_id}/license/accept/`, {}).pipe(switchMap(() => this.api.post<T>(root[name], data)))
+                    this.api.put(`${root.stack}bundle/${currentPrototype.bundle_id}/license/accept/`, {}).pipe(switchMap(() => this.api.post<T>(root[name], data)))
                   )
                 )
             )
@@ -170,4 +177,17 @@ export class AddService {
   upload(data: FormData[]) {
     return this.stack.upload(data).pipe(catchError((e) => throwError(e)));
   }
+
+  getHostListForCurrentCluster() {
+    return this.api.get<Host[]>(this.cluster.Cluster.host).pipe(
+      map((hosts) =>
+        hosts
+          .map((host) => ({
+            ...host,
+            name: host.fqdn,
+          }))
+      )
+    );
+  }
+
 }

@@ -9,94 +9,78 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnInit } from '@angular/core';
-import { FormControl, FormGroup, NgModel, Validators } from '@angular/forms';
-import { map } from 'rxjs/operators';
-import { Router } from '@angular/router';
+import { Component, OnInit, Type, ViewChild } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
+import { IColumns } from '@adwp-ui/widgets';
+import { Store } from '@ngrx/store';
+import { RbacUserModel } from '@app/models/rbac/rbac-user.model';
+import { ListService } from '@app/shared/components/list/list.service';
+import { SocketState } from '@app/core/store';
+import { TypeName } from '@app/core/types';
+import { RbacEntityListDirective } from '@app/abstract-directives/rbac-entity-list.directive';
+import { ADD_SERVICE_PROVIDER } from '../../shared/add-component/add-service-model';
+import { AddButtonComponent, BaseFormDirective } from '../../shared/add-component';
+import { RbacUserService } from '../../services/rbac-user.service';
+import { RbacUserFormComponent } from '../../components/rbac/user-form/rbac-user-form.component';
 
-import { AuthService } from '@app/core';
-import { DialogComponent } from '@app/shared/components';
-import { User, UsersService } from './users.service';
+const groupNameMapper = (user: RbacUserModel) => {
+  return user.group.map((group) => group.name).join(', ');
+};
 
 @Component({
   selector: 'app-users',
   templateUrl: './users.component.html',
-  styles: ['.add-button {position: absolute; right: 40px;top: 10px;}', ':host {flex:1}'],
-  providers: [UsersService],
+  styleUrls: ['users.component.scss'],
+  providers: [
+    { provide: ADD_SERVICE_PROVIDER, useExisting: RbacUserService }
+  ],
 })
-export class UsersComponent implements OnInit {
-  users: User[];
-  hideLeft = true;
-  showChangePassword = false;
-  currentUserName: string;
+export class UsersComponent extends RbacEntityListDirective<RbacUserModel> implements OnInit {
+  @ViewChild(AddButtonComponent) addButton: AddButtonComponent;
 
-  chPassword = new FormGroup({
-    password: new FormControl('', [Validators.required]),
-    cpassword: new FormControl('', [Validators.required]),
-  });
+  listColumns = [
+    {
+      type: 'choice',
+      modelKey: 'checked',
+      className: 'choice-column',
+      headerClassName: 'choice-column',
+      disabled: (row) => row.built_in,
+    },
+    {
+      label: 'Username',
+      sort: 'username',
+      value: (row) => row.username,
+    },
+    {
+      label: 'Email',
+      sort: 'email',
+      value: (row) => row.email,
+    },
+    {
+      label: 'Groups',
+      className: 'one-line-string',
+      value: groupNameMapper,
+    }
+  ] as IColumns<RbacUserModel>;
 
-  addForm = new FormGroup({
-    username: new FormControl('', [Validators.required, Validators.pattern('[a-zA-Z0-9]*')]),
-    xxx: this.chPassword,
-  });
+  type: TypeName = 'user';
 
-  constructor(private us: UsersService, private auth: AuthService, private router: Router, private dialog: MatDialog) {}
+  component: Type<BaseFormDirective> = RbacUserFormComponent;
 
-  get username() {
-    return this.addForm.get('username');
+  constructor(
+    protected service: ListService,
+    protected store: Store<SocketState>,
+    public route: ActivatedRoute,
+    public router: Router,
+    public dialog: MatDialog,
+    protected entityService: RbacUserService
+  ) {
+    super(service, store, route, router, dialog, entityService);
   }
 
-  get password() {
-    return this.addForm.get('xxx').get('password');
+  getTitle(row: RbacUserModel): string {
+    return row.username;
   }
 
-  get cpassword() {
-    return this.addForm.get('xxx').get('cpassword');
-  }
-
-  ngOnInit() {
-    this.currentUserName = this.auth.auth.login;
-    this.us
-      .getUsers()
-      .pipe(map((u) => u.filter((a) => a.username !== 'status')))
-      .subscribe((users) => (this.users = users));
-  }
-
-  addUser() {
-    if (this.addForm.valid)
-      this.us.addUser(this.addForm.get('username').value, this.addForm.get('xxx').get('password').value).subscribe((user) => {
-        this.users = this.users.concat(user);
-        this.addForm.reset();
-        this.hideLeft = true;
-      });
-  }
-
-  clearUser(user: User) {
-    const dialogRef = this.dialog.open(DialogComponent, {
-      width: '250px',
-      data: {
-        text: `Delete [ ${user.username} ]? Are you sure?`,
-        controls: ['Yes', 'No'],
-      },
-    });
-
-    dialogRef.beforeClosed().subscribe((yes) => {
-      if (yes) {
-        this.us.clearUser(user).subscribe((_) => (this.users = this.users.filter((u) => u !== user)));
-      }
-    });
-  }
-
-  validRow(pass: NgModel, cpass: NgModel): boolean {
-    return pass.valid && cpass.valid && pass.value === cpass.value;
-  }
-
-  changePassword(user: User) {
-    this.us.changePassword(user.password, user.change_password).subscribe((_) => {
-      user.password = '';
-      user.confirm = '';
-      if (user.username === this.currentUserName) this.router.navigate(['/login']);
-    });
-  }
 }

@@ -11,10 +11,10 @@
 // limitations under the License.
 
 import { Component, ElementRef, OnInit } from '@angular/core';
-import { AppService, ChannelService, DomService, keyChannelStrim } from '@app/core';
+import { AppService, ChannelService, DomService, keyChannelStrim } from '@app/core/services';
 import { filter } from 'rxjs/operators';
 
-import { TooltipComponent } from './shared/components/tooltip/tooltip.component';
+import { TooltipComponent } from '@app/shared/components/tooltip';
 
 /** Magic strings for marking loading stages and other, for ci tests */
 const enum flagForConsole {
@@ -26,23 +26,28 @@ const enum flagForConsole {
 @Component({
   selector: 'app-root',
   template: `
-    <app-top></app-top>
-    <main>
-      <app-progress></app-progress>
-      <router-outlet></router-outlet>
-    </main>
-    <footer>
-      <div>
+    <adwp-portal-host>
+      <div class="content">
+        <app-top></app-top>
+        <main>
+          <app-progress></app-progress>
+          <router-outlet></router-outlet>
+        </main>
+        <footer>
+          <div>
         <span class="left">
           <span>VERSION: </span>
-          <a target="_blank" rel="noopener" href="https://docs.arenadata.io/adcm/notes.html#{{ versionData.version }}"
-            >{{ versionData.version }}-{{ versionData.commit_id }}</a
+          <a target="_blank" rel="noopener"
+             href="https://docs.arenadata.io/adcm/notes.html#ver-{{ versionData.version }}"
+          >{{ versionData.version }}-{{ versionData.commit_id }}</a
           >
         </span>
-        <span>ARENADATA &copy; {{ currentYear }}</span>
+            <span>ARENADATA &copy; {{ currentYear }}</span>
+          </div>
+        </footer>
+        <div class="console hidden"></div>
       </div>
-    </footer>
-    <div class="console hidden"></div>
+    </adwp-portal-host>
   `,
   providers: [AppService],
 })

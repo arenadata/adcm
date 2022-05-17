@@ -3,6 +3,8 @@
 ignore =
     I801,
     E501,
+    W503,
+    PT004,
 
 exclude =
     .pytest_cache,

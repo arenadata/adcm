@@ -13,20 +13,15 @@
 # pylint: disable=redefined-builtin
 
 from rest_framework import serializers
-from rest_framework.reverse import reverse
 
-from api.api_views import hlink, filter_actions, get_api_url_kwargs, CommonAPIURL
 from api.action.serializers import ActionShort
-
-from cm import issue
+from api.utils import hlink, filter_actions, CommonAPIURL, ObjectURL
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.serializers import StringListSerializer
 from cm import status_api
+from cm.adcm_config import get_main_info
 from cm.models import Action
-
-
-class ComponentObjectUrlField(serializers.HyperlinkedIdentityField):
-    def get_url(self, obj, view_name, request, format):
-        kwargs = get_api_url_kwargs(obj, request, True)
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
 class ComponentSerializer(serializers.Serializer):
@@ -38,7 +33,7 @@ class ComponentSerializer(serializers.Serializer):
     description = serializers.CharField(read_only=True)
     state = serializers.CharField(read_only=True)
     prototype_id = serializers.IntegerField(required=True, help_text='id of component prototype')
-    url = ComponentObjectUrlField(read_only=True, view_name='component-details')
+    url = ObjectURL(read_only=True, view_name='component-details')
 
 
 class ComponentDetailSerializer(ComponentSerializer):
@@ -48,21 +43,32 @@ class ComponentDetailSerializer(ComponentSerializer):
     bundle_id = serializers.IntegerField(read_only=True)
     monitoring = serializers.CharField(read_only=True)
     status = serializers.SerializerMethodField()
-    issue = serializers.SerializerMethodField()
     action = CommonAPIURL(read_only=True, view_name='object-action')
     config = CommonAPIURL(read_only=True, view_name='object-config')
     prototype = hlink('component-type-details', 'prototype_id', 'prototype_id')
-
-    def get_issue(self, obj):
-        return issue.aggregate_issues(obj)
+    multi_state = StringListSerializer(read_only=True)
+    concerns = ConcernItemSerializer(many=True, read_only=True)
+    locked = serializers.BooleanField(read_only=True)
+    group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
     def get_status(self, obj):
-        return status_api.get_component_status(obj.id)
+        return status_api.get_component_status(obj)
+
+
+class StatusSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    status = serializers.SerializerMethodField()
+
+    def get_status(self, obj):
+        return status_api.get_component_status(obj)
 
 
 class ComponentUISerializer(ComponentDetailSerializer):
     actions = serializers.SerializerMethodField()
     version = serializers.SerializerMethodField()
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
+    main_info = serializers.SerializerMethodField()
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
@@ -74,3 +80,6 @@ class ComponentUISerializer(ComponentDetailSerializer):
 
     def get_version(self, obj):
         return obj.prototype.version
+
+    def get_main_info(self, obj):
+        return get_main_info(obj)

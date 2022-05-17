@@ -19,7 +19,7 @@ import logrotate
 import cm.adcm_config
 from cm.adcm_config import ui_config, restore_cluster_config
 from cm.api import update_obj_config
-from api.api_views import get_api_url_kwargs, CommonAPIURL
+from api.utils import get_api_url_kwargs, CommonAPIURL
 
 
 class ConfigVersionURL(serializers.HyperlinkedIdentityField):
@@ -81,10 +81,10 @@ class ConfigSerializer(serializers.Serializer):
     ui_options = serializers.JSONField(required=False)
     required = serializers.BooleanField()
 
-    def get_default(self, obj):  # pylint: disable=arguments-differ
+    def get_default(self, obj):  # pylint: disable=arguments-renamed, arguments-differ
         return cm.adcm_config.get_default(obj)
 
-    def get_value(self, obj):  # pylint: disable=arguments-differ
+    def get_value(self, obj):  # pylint: disable=arguments-renamed
         proto = self.context.get('prototype', None)
         return cm.adcm_config.get_default(obj, proto)
 

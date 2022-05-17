@@ -11,78 +11,84 @@
 # limitations under the License.
 
 import functools
+from typing import Union, Tuple, List
 
 from django.db import transaction
 from version_utils import rpm
 
-import cm.config as config
 import cm.issue
+import cm.job
 import cm.status_api
-from cm.adcm_config import proto_ref, obj_ref, switch_config
+from cm.adcm_config import proto_ref, obj_ref, switch_config, make_object_config
+from cm.api import check_license, version_in
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
-    Prototype,
-    Host,
-    HostComponent,
-    ServiceComponent,
-    PrototypeImport,
+    Cluster,
     ClusterBind,
     ClusterObject,
+    Host,
+    HostComponent,
+    HostProvider,
+    Prototype,
+    PrototypeImport,
+    ServiceComponent,
     Upgrade,
 )
 
 
-def check_license(bundle):
-    if bundle.license == 'unaccepted':
-        msg = 'License for bundle "{}" {} {} is not accepted'
-        err('LICENSE_ERROR', msg.format(bundle.name, bundle.version, bundle.edition))
+def switch_object(obj: Union[Host, ClusterObject], new_prototype: Prototype) -> None:
+    """Upgrade object"""
+    log.info('upgrade switch from %s to %s', proto_ref(obj.prototype), proto_ref(new_prototype))
+    old_prototype = obj.prototype
+    obj.prototype = new_prototype
+    obj.save()
+    switch_config(obj, new_prototype, old_prototype)
 
 
-def version_in(version, ver):
-    # log.debug('version_in: %s < %s > %s', ver.min_version, version, ver.max_version)
-    if ver.min_strict:
-        if rpm.compare_versions(version, ver.min_version) <= 0:
-            return False
-    else:
-        if rpm.compare_versions(version, ver.min_version) < 0:
-            return False
-    if ver.max_strict:
-        if rpm.compare_versions(version, ver.max_version) >= 0:
-            return False
-    else:
-        if rpm.compare_versions(version, ver.max_version) > 0:
-            return False
-    return True
+def switch_services(upgrade: Upgrade, cluster: Cluster) -> None:
+    """Upgrade services and component"""
+
+    for prototype in Prototype.objects.filter(bundle=upgrade.bundle, type='service'):
+        try:
+            co = ClusterObject.objects.get(cluster=cluster, prototype__name=prototype.name)
+            switch_object(co, prototype)
+            switch_components(cluster, co, prototype)
+        except ClusterObject.DoesNotExist:
+            # co.delete() ?!
+            pass
+    switch_hc(cluster, upgrade)
 
 
-def switch_service(co, new_proto):
-    log.info('upgrade switch from %s to %s', proto_ref(co.prototype), proto_ref(new_proto))
-    switch_config(co, new_proto, co.prototype)
-    co.prototype = new_proto
-    co.save()
-
-
-def switch_components(cluster, co, new_co_proto):
+def switch_components(cluster: Cluster, co: ClusterObject, new_co_proto: Prototype) -> None:
+    """Upgrade components"""
     for sc in ServiceComponent.objects.filter(cluster=cluster, service=co):
         try:
-            comp = Prototype.objects.get(
+            new_sc_prototype = Prototype.objects.get(
                 parent=new_co_proto, type='component', name=sc.prototype.name
             )
-            sc.prototype = comp
+            old_sc_prototype = sc.prototype
+            sc.prototype = new_sc_prototype
             sc.save()
+            switch_config(sc, new_sc_prototype, old_sc_prototype)
         except Prototype.DoesNotExist:
             # sc.delete() ?!
             pass
-    for comp in Prototype.objects.filter(parent=new_co_proto, type='component'):
-        try:
-            ServiceComponent.objects.get(cluster=cluster, service=co, prototype=comp)
-        except ServiceComponent.DoesNotExist:
-            sc = ServiceComponent(cluster=cluster, service=co, prototype=comp)
-            sc.save()
+    for sc_proto in Prototype.objects.filter(parent=new_co_proto, type='component'):
+        kwargs = dict(cluster=cluster, service=co, prototype=sc_proto)
+        if not ServiceComponent.objects.filter(**kwargs).exists():
+            sc = ServiceComponent.objects.create(**kwargs)
+            make_object_config(sc, sc_proto)
 
 
-def check_upgrade_version(obj, upgrade):
+def switch_hosts(upgrade: Upgrade, provider: HostProvider) -> None:
+    """Upgrade hosts"""
+    for prototype in Prototype.objects.filter(bundle=upgrade.bundle, type='host'):
+        for host in Host.objects.filter(provider=provider, prototype__name=prototype.name):
+            switch_object(host, prototype)
+
+
+def check_upgrade_version(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[bool, str]:
     proto = obj.prototype
     # log.debug('check %s < %s > %s', upgrade.min_version, proto.version, upgrade.max_version)
     if upgrade.min_strict:
@@ -104,7 +110,7 @@ def check_upgrade_version(obj, upgrade):
     return True, ''
 
 
-def check_upgrade_edition(obj, upgrade):
+def check_upgrade_edition(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[bool, str]:
     if not upgrade.from_edition:
         return True, ''
     from_edition = upgrade.from_edition
@@ -114,8 +120,8 @@ def check_upgrade_edition(obj, upgrade):
     return True, ''
 
 
-def check_upgrade_state(obj, upgrade):
-    if obj.state == config.Job.LOCKED:
+def check_upgrade_state(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[bool, str]:
+    if obj.locked:
         return False, 'object is locked'
     if upgrade.state_available:
         available = upgrade.state_available
@@ -130,7 +136,9 @@ def check_upgrade_state(obj, upgrade):
         return False, 'no available states'
 
 
-def check_upgrade_import(obj, upgrade):  # pylint: disable=too-many-branches
+def check_upgrade_import(
+    obj: Union[Cluster, HostProvider], upgrade: Upgrade
+) -> Tuple[bool, str]:  # pylint: disable=too-many-branches
     def get_export(cbind):
         if cbind.source_service:
             return cbind.source_service
@@ -197,10 +205,10 @@ def check_upgrade_import(obj, upgrade):  # pylint: disable=too-many-branches
     return True, ''
 
 
-def check_upgrade(obj, upgrade):
-    issue = cm.issue.aggregate_issues(obj)
-    if not cm.issue.issue_to_bool(issue):
-        return False, '{} has issue: {}'.format(obj_ref(obj), issue)
+def check_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[bool, str]:
+    if obj.locked:
+        concerns = [i.name or 'Action lock' for i in obj.concerns.all()]
+        return False, f'{obj} has blocking concerns to address: {concerns}'
 
     check_list = [
         check_upgrade_version,
@@ -215,7 +223,7 @@ def check_upgrade(obj, upgrade):
     return True, ''
 
 
-def switch_hc(obj, upgrade):
+def switch_hc(obj: Cluster, upgrade: Upgrade) -> None:
     def find_service(service, bundle):
         try:
             return Prototype.objects.get(bundle=bundle, type='service', name=service.prototype.name)
@@ -230,8 +238,9 @@ def switch_hc(obj, upgrade):
         except Prototype.DoesNotExist:
             return None
 
-    if obj.prototype.type == 'host':
+    if obj.prototype.type != 'cluster':
         return
+
     for hc in HostComponent.objects.filter(cluster=obj):
         service_proto = find_service(hc.service, upgrade.bundle)
         if not service_proto:
@@ -242,7 +251,7 @@ def switch_hc(obj, upgrade):
             continue
 
 
-def get_upgrade(obj, order=None):
+def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
     def rpm_cmp(obj1, obj2):
         return rpm.compare_versions(obj1.name, obj2.name)
 
@@ -273,7 +282,7 @@ def get_upgrade(obj, order=None):
         return res
 
 
-def do_upgrade(obj, upgrade):
+def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade, config: dict) -> dict:
     old_proto = obj.prototype
     check_license(obj.prototype.bundle)
     check_license(upgrade.bundle)
@@ -282,38 +291,43 @@ def do_upgrade(obj, upgrade):
         return err('UPGRADE_ERROR', msg)
     log.info('upgrade %s version %s (upgrade #%s)', obj_ref(obj), old_proto.version, upgrade.id)
 
-    if obj.prototype.type == 'cluster':
+    task_id = None
+    if not upgrade.action:
+        bundle_switch(obj, upgrade)
+        if upgrade.state_on_success:
+            obj.before_upgrade['state'] = obj.state
+            obj.state = upgrade.state_on_success
+            obj.save()
+    else:
+        task = cm.job.start_task(upgrade.action, obj, config, {}, [], [], False)
+        task_id = task.id
+
+    obj.refresh_from_db()
+
+    return {'id': obj.id, 'upgradable': bool(get_upgrade(obj)), 'task_id': task_id}
+
+
+def bundle_switch(obj: Union[Cluster, HostProvider], upgrade: Upgrade):
+    old_proto = obj.prototype
+    if old_proto.type == 'cluster':
         new_proto = Prototype.objects.get(bundle=upgrade.bundle, type='cluster')
-    elif obj.prototype.type == 'provider':
+    elif old_proto.type == 'provider':
         new_proto = Prototype.objects.get(bundle=upgrade.bundle, type='provider')
     else:
-        return err('UPGRADE_ERROR', 'can upgrade only cluster or host provider')
+        err('UPGRADE_ERROR', 'can upgrade only cluster or host provider')
 
     with transaction.atomic():
         obj.prototype = new_proto
-        if upgrade.state_on_success:
-            obj.state = upgrade.state_on_success
         obj.save()
         switch_config(obj, new_proto, old_proto)
 
         if obj.prototype.type == 'cluster':
-            for p in Prototype.objects.filter(bundle=upgrade.bundle, type='service'):
-                try:
-                    co = ClusterObject.objects.get(cluster=obj, prototype__name=p.name)
-                    switch_service(co, p)
-                    switch_components(obj, co, p)
-                except ClusterObject.DoesNotExist:
-                    # co.delete() ?!
-                    pass
-            switch_hc(obj, upgrade)
+            switch_services(upgrade, obj)
         elif obj.prototype.type == 'provider':
-            for p in Prototype.objects.filter(bundle=upgrade.bundle, type='host'):
-                for host in Host.objects.filter(provider=obj, prototype__name=p.name):
-                    switch_service(host, p)
+            switch_hosts(upgrade, obj)
         cm.issue.update_hierarchy_issues(obj)
 
     log.info('upgrade %s OK to version %s', obj_ref(obj), obj.prototype.version)
     cm.status_api.post_event(
         'upgrade', obj.prototype.type, obj.id, 'version', str(obj.prototype.version)
     )
-    return {'id': obj.id, 'upgradable': bool(get_upgrade(obj))}

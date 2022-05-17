@@ -27,7 +27,6 @@ from os.path import dirname
 
 from django.core.management.utils import get_random_secret_key
 
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = dirname(dirname(dirname(os.path.abspath(__file__))))
 CONF_DIR = BASE_DIR + '/data/conf/'
@@ -39,7 +38,7 @@ CONFIG_FILE = BASE_DIR + '/config.json'
 
 # Load secret key from filesystem
 if os.path.exists(SECRET_KEY_FILE):
-    with open(SECRET_KEY_FILE) as f:
+    with open(SECRET_KEY_FILE, encoding='utf_8') as f:
         SECRET_KEY = f.read().strip()
 else:
     # If we have no SECRET_KEY_FILE than we are running in some tricky fashion.
@@ -47,23 +46,21 @@ else:
     # manage.py calls during image build
     SECRET_KEY = get_random_secret_key()
 
-
 if os.path.exists(CONFIG_FILE):
-    with open(CONFIG_FILE) as f:
+    with open(CONFIG_FILE, encoding='utf_8') as f:
         ADCM_VERSION = json.load(f)['version']
 else:
     ADCM_VERSION = '2019.02.07.00'
-
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
-
 # Application definition
 
 INSTALLED_APPS = [
+    'rbac',  # keep it above 'django.contrib.auth' in order to keep 'createsuperuser' working
     'django_generate_secret_key',
     'django_filters',
     'django.contrib.auth',
@@ -78,6 +75,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework.authtoken',
     'social_django',
+    'guardian',
+    'adwp_events',
     'cm.apps.CmConfig',
 ]
 
@@ -111,7 +110,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'adcm.wsgi.application'
-LOGIN_URL = '/admin/login/'
+LOGIN_URL = '/api/v1/auth/login/'
 
 REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
@@ -128,6 +127,12 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 50,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.OrderingFilter',
+        'rest_framework.filters.SearchFilter',
+    ],
+    'EXCEPTION_HANDLER': 'cm.errors.custom_drf_exception_handler',
 }
 
 # Database
@@ -142,12 +147,16 @@ DATABASES = {
         # 'HOST': 'localhost',
         # 'USER': 'adcm',
         # 'PASSWORD': 'adcm',
+        # 'TEST': {
+        #     'NAME': os.path.join(BASE_DIR, 'data/var/test.db'),
+        # },
         'OPTIONS': {
             'timeout': 20,
         },
-    }
+    },
 }
-
+# does not work for multi-table inherited model, but works fine as-is without user model swapping
+# AUTH_USER_MODEL = 'rbac.User'
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -165,6 +174,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
+    'guardian.backends.ObjectPermissionBackend',
     'social_core.backends.google.GoogleOAuth2',
 )
 
@@ -180,7 +190,6 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.user.user_details',
     'cm.views.get_token',
 )
-
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/'
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_WHITELISTED_DOMAINS = []
@@ -209,6 +218,13 @@ STATICFILES_DIRS = (
     # Don't forget to use absolute paths, not relative paths.
 )
 
+ADWP_EVENT_SERVER = {
+    # path to json file with Event Server secret token
+    'SECRETS_FILE': os.path.join(BASE_DIR, 'data/var/secrets.json'),
+    # URL of Event Server REST API
+    'API_URL': 'http://localhost:8020/api/v1',
+}
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -217,12 +233,25 @@ LOGGING = {
             '()': 'django.utils.log.RequireDebugFalse',
         },
     },
+    'formatters': {
+        'adwp': {
+            'format': '{asctime} {levelname} {module} {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
         'file': {
             'level': 'DEBUG',
             'filters': ['require_debug_false'],
+            'formatter': 'adwp',
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'data/log/adcm_debug.log'),
+        },
+        'adwp_file': {
+            'level': 'DEBUG',
+            'formatter': 'adwp',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'data/log/adwp.log'),
         },
     },
     'loggers': {
@@ -231,5 +260,18 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'django.template': {
+            'level': 'ERROR',
+        },
+        'django.utils.autoreload': {
+            'level': 'INFO',
+        },
+        'adwp': {
+            'handlers': ['adwp_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'

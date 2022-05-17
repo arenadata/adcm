@@ -10,30 +10,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+import hashlib
 import os
 import os.path
-import hashlib
-import tarfile
 import shutil
-import functools
+import tarfile
 
+from django.db import transaction, IntegrityError
 from version_utils import rpm
-from django.db import transaction
-from django.db import IntegrityError
 
-from adcm.settings import ADCM_VERSION
-from cm.logger import log
-import cm.config as config
 import cm.stack
 import cm.status_api
-from cm.adcm_config import proto_ref, get_prototype_config, init_object_config, switch_config
+from adcm.settings import ADCM_VERSION
+from cm import config
+from cm.adcm_config import proto_ref, init_object_config, switch_config
 from cm.errors import raise_AdcmEx as err
-from cm.models import Cluster, Host, Upgrade, StageUpgrade, ADCM
-from cm.models import Bundle, Prototype, Action, SubAction, PrototypeConfig
-from cm.models import StagePrototype, StageAction
-from cm.models import StageSubAction, StagePrototypeConfig
-from cm.models import PrototypeExport, PrototypeImport, StagePrototypeExport, StagePrototypeImport
-
+from cm.logger import log
+from cm.models import (
+    ADCM,
+    Action,
+    Bundle,
+    Cluster,
+    Host,
+    ProductCategory,
+    Prototype,
+    PrototypeConfig,
+    PrototypeExport,
+    PrototypeImport,
+    StageAction,
+    StagePrototype,
+    StagePrototypeConfig,
+    StagePrototypeExport,
+    StagePrototypeImport,
+    StageSubAction,
+    StageUpgrade,
+    SubAction,
+    Upgrade,
+)
+from rbac.models import Role
+from rbac.upgrade.role import prepare_action_roles
 
 STAGE = (
     StagePrototype,
@@ -63,6 +79,9 @@ def load_bundle(bundle_file):
         bundle = copy_stage(bundle_hash, bundle_proto)
         order_versions()
         clear_stage()
+        ProductCategory.re_collect()
+        bundle.refresh_from_db()
+        prepare_action_roles(bundle)
         cm.status_api.post_event('create', 'bundle', bundle.id)
         return bundle
     except:
@@ -121,14 +140,24 @@ def untar_safe(bundle_hash, path):
     try:
         dir_path = untar(bundle_hash, path)
     except tarfile.ReadError:
-        err('BUNDLE_ERROR', "Can\'t open bundle tar file: {}".format(path))
+        err('BUNDLE_ERROR', f"Can\'t open bundle tar file: {path}")
     return dir_path
 
 
 def untar(bundle_hash, bundle):
     path = os.path.join(config.BUNDLE_DIR, bundle_hash)
     if os.path.isdir(path):
-        err('BUNDLE_ERROR', 'bundle directory "{}" already exists'.format(path))
+        try:
+            existed = Bundle.objects.get(hash=bundle_hash)
+            msg = 'Bundle already exists. Name: {}, version: {}, edition: {}'
+            err('BUNDLE_ERROR', msg.format(existed.name, existed.version, existed.edition))
+        except Bundle.DoesNotExist:
+            log.warning(
+                (
+                    f"There is no bundle with hash {bundle_hash} in DB, ",
+                    "but there is a dir on disk with this hash. Dir will be rewrited.",
+                )
+            )
     tar = tarfile.open(bundle)
     tar.extractall(path=path)
     tar.close()
@@ -139,9 +168,9 @@ def get_hash_safe(path):
     try:
         bundle_hash = get_hash(path)
     except FileNotFoundError:
-        err('BUNDLE_ERROR', "Can\'t find bundle file: {}".format(path))
+        err('BUNDLE_ERROR', f"Can\'t find bundle file: {path}")
     except PermissionError:
-        err('BUNDLE_ERROR', "Can\'t open bundle file: {}".format(path))
+        err('BUNDLE_ERROR', f"Can\'t open bundle file: {path}")
     return bundle_hash
 
 
@@ -190,10 +219,10 @@ def process_adcm():
 
 def init_adcm(bundle):
     proto = Prototype.objects.get(type='adcm', bundle=bundle)
-    spec, _, conf, attr = get_prototype_config(proto)
     with transaction.atomic():
-        obj_conf = init_object_config(spec, conf, attr)
-        adcm = ADCM(prototype=proto, name='ADCM', config=obj_conf)
+        adcm = ADCM.objects.create(prototype=proto, name='ADCM')
+        obj_conf = init_object_config(proto, adcm)
+        adcm.config = obj_conf
         adcm.save()
     log.info('init adcm object version %s OK', proto.version)
     return adcm
@@ -224,7 +253,7 @@ def process_bundle(path, bundle_hash):
 def check_stage():
     def count(model):
         if model.objects.all().count():
-            err('BUNDLE_ERROR', 'Stage is not empty {}'.format(model))
+            err('BUNDLE_ERROR', f'Stage is not empty {model}')
 
     for model in STAGE:
         count(model)
@@ -247,7 +276,7 @@ def re_check_actions():
         if not act.hostcomponentmap:
             continue
         hc = act.hostcomponentmap
-        ref = 'in hc_acl of action "{}" of {}'.format(act.name, proto_ref(act.prototype))
+        ref = f'in hc_acl of action "{act.name}" of {proto_ref(act.prototype)}'
         for item in hc:
             sp = StagePrototype.objects.filter(type='service', name=item['service'])
             if not sp:
@@ -263,7 +292,7 @@ def re_check_actions():
 def check_component_requires(comp):
     if not comp.requires:
         return
-    ref = 'in requires of component "{}" of {}'.format(comp.name, proto_ref(comp.parent))
+    ref = f'in requires of component "{comp.name}" of {proto_ref(comp.parent)}'
     req_list = comp.requires
     for i, item in enumerate(req_list):
         if 'service' in item:
@@ -282,7 +311,7 @@ def check_component_requires(comp):
 def check_bound_component(comp):
     if not comp.bound_to:
         return
-    ref = 'in "bound_to" of component "{}" of {}'.format(comp.name, proto_ref(comp.parent))
+    ref = f'in "bound_to" of component "{comp.name}" of {proto_ref(comp.parent)}'
     bind = comp.bound_to
     service = StagePrototype.obj.get(name=bind['service'], type='service')
     bind_comp = StagePrototype.obj.get(name=bind['component'], type='component', parent=service)
@@ -386,6 +415,8 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 'display_name',
                 'description',
                 'adcm_min_version',
+                'venv',
+                'config_group_customization',
             ),
         )
         p.bundle = bundle
@@ -413,6 +444,9 @@ def copy_stage_upgrade(stage_upgrades, bundle):
         )
         upg.bundle = bundle
         upgrades.append(upg)
+        if su.action:
+            prototype = Prototype.objects.get(name=su.action.prototype.name, bundle=bundle)
+            upg.action = Action.objects.get(prototype=prototype, name=su.action.name)
     Upgrade.objects.bulk_create(upgrades)
 
 
@@ -425,7 +459,7 @@ def prepare_bulk(origin_objects, Target, prototype, fields):
     return target_objects
 
 
-def copy_stage_actons(stage_actions, prototype):
+def copy_stage_actions(stage_actions, prototype):
     actions = prepare_bulk(
         stage_actions,
         Action,
@@ -435,9 +469,16 @@ def copy_stage_actons(stage_actions, prototype):
             'type',
             'script',
             'script_type',
+            'state_available',
+            'state_unavailable',
             'state_on_success',
             'state_on_fail',
-            'state_available',
+            'multi_state_available',
+            'multi_state_unavailable',
+            'multi_state_on_success_set',
+            'multi_state_on_success_unset',
+            'multi_state_on_fail_set',
+            'multi_state_on_fail_unset',
             'params',
             'log_files',
             'hostcomponentmap',
@@ -448,6 +489,7 @@ def copy_stage_actons(stage_actions, prototype):
             'allow_to_terminate',
             'partial_execution',
             'host_action',
+            'venv',
         ),
     )
     Action.objects.bulk_create(actions)
@@ -456,17 +498,35 @@ def copy_stage_actons(stage_actions, prototype):
 def copy_stage_sub_actons(bundle):
     sub_actions = []
     for ssubaction in StageSubAction.objects.all():
+        if ssubaction.action.prototype.type == 'component':
+            parent = Prototype.objects.get(
+                bundle=bundle,
+                type='service',
+                name=ssubaction.action.prototype.parent.name,
+            )
+        else:
+            parent = None
         action = Action.objects.get(
             prototype__bundle=bundle,
             prototype__type=ssubaction.action.prototype.type,
             prototype__name=ssubaction.action.prototype.name,
+            prototype__parent=parent,
             prototype__version=ssubaction.action.prototype.version,
             name=ssubaction.action.name,
         )
         sub = copy_obj(
             ssubaction,
             SubAction,
-            ('name', 'display_name', 'script', 'script_type', 'state_on_fail', 'params'),
+            (
+                'name',
+                'display_name',
+                'script',
+                'script_type',
+                'state_on_fail',
+                'multi_state_on_fail_set',
+                'multi_state_on_fail_unset',
+                'params',
+            ),
         )
         sub.action = action
         sub_actions.append(sub)
@@ -492,6 +552,8 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
                 'display_name',
                 'description',
                 'adcm_min_version',
+                'config_group_customization',
+                'venv',
             ),
         )
         comp.bundle = bundle
@@ -500,7 +562,7 @@ def copy_stage_component(stage_components, stage_proto, prototype, bundle):
     Prototype.objects.bulk_create(componets)
     for sp in StagePrototype.objects.filter(type='component', parent=stage_proto):
         p = Prototype.objects.get(name=sp.name, type='component', parent=prototype, bundle=bundle)
-        copy_stage_actons(StageAction.objects.filter(prototype=sp), p)
+        copy_stage_actions(StageAction.objects.filter(prototype=sp), p)
         copy_stage_config(StagePrototypeConfig.objects.filter(prototype=sp), p)
 
 
@@ -539,6 +601,7 @@ def copy_stage_config(stage_config, prototype):
                 'limits',
                 'required',
                 'ui_options',
+                'group_customization',
             ),
         )
         if sc.action:
@@ -570,6 +633,7 @@ def copy_stage(bundle_hash, bundle_proto):
     try:
         bundle.save()
     except IntegrityError:
+        shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
         msg = 'Bundle "{}" {} already installed'
         err('BUNDLE_ERROR', msg.format(bundle_proto.name, bundle_proto.version))
 
@@ -578,7 +642,7 @@ def copy_stage(bundle_hash, bundle_proto):
 
     for sp in stage_prototypes:
         p = Prototype.objects.get(name=sp.name, type=sp.type, bundle=bundle)
-        copy_stage_actons(StageAction.objects.filter(prototype=sp), p)
+        copy_stage_actions(StageAction.objects.filter(prototype=sp), p)
         copy_stage_config(StagePrototypeConfig.objects.filter(prototype=sp), p)
         copy_stage_component(
             StagePrototype.objects.filter(parent=sp, type='component'), sp, p, bundle
@@ -607,6 +671,8 @@ def update_bundle_from_stage(
             p.shared = sp.shared
             p.monitoring = sp.monitoring
             p.adcm_min_version = sp.adcm_min_version
+            p.venv = sp.venv
+            p.config_group_customization = sp.config_group_customization
         except Prototype.DoesNotExist:
             p = copy_obj(
                 sp,
@@ -625,6 +691,8 @@ def update_bundle_from_stage(
                     'display_name',
                     'description',
                     'adcm_min_version',
+                    'venv',
+                    'config_group_customization',
                 ),
             )
             p.bundle = bundle
@@ -639,9 +707,14 @@ def update_bundle_from_stage(
                         'type',
                         'script',
                         'script_type',
+                        'state_available',
                         'state_on_success',
                         'state_on_fail',
-                        'state_available',
+                        'multi_state_available',
+                        'multi_state_on_success_set',
+                        'multi_state_on_success_unset',
+                        'multi_state_on_fail_set',
+                        'multi_state_on_fail_unset',
                         'params',
                         'log_files',
                         'hostcomponentmap',
@@ -652,6 +725,7 @@ def update_bundle_from_stage(
                         'allow_to_terminate',
                         'partial_execution',
                         'host_action',
+                        'venv',
                     ),
                 )
             except Action.DoesNotExist:
@@ -663,9 +737,14 @@ def update_bundle_from_stage(
                         'type',
                         'script',
                         'script_type',
+                        'state_available',
                         'state_on_success',
                         'state_on_fail',
-                        'state_available',
+                        'multi_state_available',
+                        'multi_state_on_success_set',
+                        'multi_state_on_success_unset',
+                        'multi_state_on_fail_set',
+                        'multi_state_on_fail_unset',
                         'params',
                         'log_files',
                         'hostcomponentmap',
@@ -676,6 +755,7 @@ def update_bundle_from_stage(
                         'allow_to_terminate',
                         'partial_execution',
                         'host_action',
+                        'venv',
                     ),
                 )
                 action.prototype = p
@@ -683,7 +763,16 @@ def update_bundle_from_stage(
             SubAction.objects.filter(action=action).delete()
             for ssubaction in StageSubAction.objects.filter(action=saction):
                 sub = copy_obj(
-                    ssubaction, SubAction, ('script', 'script_type', 'state_on_fail', 'params')
+                    ssubaction,
+                    SubAction,
+                    (
+                        'script',
+                        'script_type',
+                        'state_on_fail',
+                        'multi_state_on_fail_set',
+                        'multi_state_on_fail_unset',
+                        'params',
+                    ),
                 )
                 sub.action = action
                 sub.save()
@@ -696,6 +785,7 @@ def update_bundle_from_stage(
                 'limits',
                 'required',
                 'ui_options',
+                'group_customization',
             )
             act = None
             if sc.action:
@@ -779,6 +869,10 @@ def delete_bundle(bundle):
         shutil.rmtree(os.path.join(config.BUNDLE_DIR, bundle.hash))
     bundle_id = bundle.id
     bundle.delete()
+    for role in Role.objects.filter(class_name='ParentRole'):
+        if not role.child.all():
+            role.delete()
+    ProductCategory.re_collect()
     cm.status_api.post_event('delete', 'bundle', bundle_id)
 
 

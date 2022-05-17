@@ -16,7 +16,7 @@ import { Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
 
-import { AuthService } from '@app/core';
+import { AuthService } from '@app/core/auth/auth.service';
 import { authLogin, authLogout, AuthState, getAuthState } from '@app/core/auth/auth.store';
 import { clearProfile } from '@app/core/store';
 import { BaseDirective } from '@app/shared/directives';
@@ -45,8 +45,7 @@ export class LoginComponent extends BaseDirective implements OnInit, OnDestroy {
       .subscribe(state => {
         if (state.isValid) {
           a$.unsubscribe();
-          const redirectUrl = this.auth.redirectUrl;
-          this.router.navigateByUrl(redirectUrl && redirectUrl !== 'login' && redirectUrl !== '/504' ? redirectUrl : '/admin');
+          this.router.navigateByUrl('/admin');
         } else {
           this.store.dispatch(clearProfile());
           this.message = state.message;

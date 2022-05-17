@@ -11,8 +11,11 @@
 # limitations under the License.
 
 from rest_framework import serializers
-from api.api_views import hlink
-from api.api_views import CommonAPIURL
+
+from api.utils import hlink, CommonAPIURL
+from api.concern.serializers import ConcernItemSerializer
+from api.serializers import StringListSerializer
+from cm.adcm_config import get_main_info
 
 
 class AdcmSerializer(serializers.Serializer):
@@ -28,6 +31,16 @@ class AdcmDetailSerializer(AdcmSerializer):
     bundle_id = serializers.IntegerField(read_only=True)
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
+    multi_state = StringListSerializer(read_only=True)
+    concerns = ConcernItemSerializer(many=True, read_only=True)
+    locked = serializers.BooleanField(read_only=True)
 
     def get_prototype_version(self, obj):
         return obj.prototype.version
+
+
+class AdcmDetailUISerializer(AdcmDetailSerializer):
+    main_info = serializers.SerializerMethodField()
+
+    def get_main_info(self, obj):
+        return get_main_info(obj)

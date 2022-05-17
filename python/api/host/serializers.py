@@ -13,11 +13,16 @@
 from django.db import IntegrityError
 from rest_framework import serializers
 
-import cm
-from cm.errors import AdcmEx
-from cm.models import Cluster, Host, HostProvider, Prototype, Action
-from api.api_views import hlink, check_obj, filter_actions, CommonAPIURL, ObjectURL
 from api.action.serializers import ActionShort
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.serializers import StringListSerializer
+from api.utils import hlink, check_obj, filter_actions, CommonAPIURL, ObjectURL
+from cm.adcm_config import get_main_info
+from cm.api import add_host
+from cm.errors import AdcmEx
+from cm.models import HostProvider, Prototype, Action
+from cm.stack import validate_name
+from cm.status_api import get_host_status
 
 
 class HostSerializer(serializers.Serializer):
@@ -30,9 +35,6 @@ class HostSerializer(serializers.Serializer):
     state = serializers.CharField(read_only=True)
     url = ObjectURL(read_only=True, view_name='host-details')
 
-    def get_issue(self, obj):
-        return cm.issue.aggregate_issues(obj)
-
     def validate_prototype_id(self, prototype_id):
         return check_obj(Prototype, {'id': prototype_id, 'type': 'host'})
 
@@ -40,34 +42,32 @@ class HostSerializer(serializers.Serializer):
         return check_obj(HostProvider, provider_id)
 
     def validate_fqdn(self, name):
-        return cm.stack.validate_name(name, 'Host name')
+        return validate_name(name, 'Host name')
 
     def create(self, validated_data):
         try:
-            return cm.api.add_host(
+            return add_host(
                 validated_data.get('prototype_id'),
                 validated_data.get('provider_id'),
                 validated_data.get('fqdn'),
-                validated_data.get('description', '')
+                validated_data.get('description', ''),
             )
         except IntegrityError:
             raise AdcmEx("HOST_CONFLICT", "duplicate host") from None
 
 
 class HostDetailSerializer(HostSerializer):
-    # stack = serializers.JSONField(read_only=True)
-    issue = serializers.SerializerMethodField()
     bundle_id = serializers.IntegerField(read_only=True)
     status = serializers.SerializerMethodField()
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
     prototype = hlink('host-type-details', 'prototype_id', 'prototype_id')
-
-    def get_issue(self, obj):
-        return cm.issue.aggregate_issues(obj)
+    multi_state = StringListSerializer(read_only=True)
+    concerns = ConcernItemSerializer(many=True, read_only=True)
+    locked = serializers.BooleanField(read_only=True)
 
     def get_status(self, obj):
-        return cm.status_api.get_host_status(obj.id)
+        return get_host_status(obj)
 
 
 class ClusterHostSerializer(HostSerializer):
@@ -75,12 +75,6 @@ class ClusterHostSerializer(HostSerializer):
     prototype_id = serializers.IntegerField(read_only=True)
     provider_id = serializers.IntegerField(read_only=True)
     fqdn = serializers.CharField(read_only=True)
-
-    def create(self, validated_data):
-        cluster = check_obj(Cluster, self.context.get('cluster_id'))
-        host = check_obj(Host, validated_data.get('id'))
-        cm.api.add_host_to_cluster(cluster, host)
-        return host
 
 
 class ProvideHostSerializer(HostSerializer):
@@ -91,14 +85,20 @@ class ProvideHostSerializer(HostSerializer):
         provider = check_obj(HostProvider, self.context.get('provider_id'))
         proto = Prototype.obj.get(bundle=provider.prototype.bundle, type='host')
         try:
-            return cm.api.add_host(
-                proto,
-                provider,
-                validated_data.get('fqdn'),
-                validated_data.get('description', '')
+            return add_host(
+                proto, provider, validated_data.get('fqdn'), validated_data.get('description', '')
             )
         except IntegrityError:
             raise AdcmEx("HOST_CONFLICT", "duplicate host") from None
+
+
+class StatusSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    fqdn = serializers.CharField(read_only=True)
+    status = serializers.SerializerMethodField()
+
+    def get_status(self, obj):
+        return get_host_status(obj)
 
 
 class HostUISerializer(HostDetailSerializer):
@@ -108,6 +108,8 @@ class HostUISerializer(HostDetailSerializer):
     prototype_name = serializers.SerializerMethodField()
     prototype_display_name = serializers.SerializerMethodField()
     provider_name = serializers.SerializerMethodField()
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
+    main_info = serializers.SerializerMethodField()
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
@@ -134,3 +136,6 @@ class HostUISerializer(HostDetailSerializer):
         if obj.provider:
             return obj.provider.name
         return None
+
+    def get_main_info(self, obj):
+        return get_main_info(obj)

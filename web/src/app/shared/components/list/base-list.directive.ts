@@ -9,24 +9,34 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 import { MatDialog } from '@angular/material/dialog';
 import { ParamMap } from '@angular/router';
-import { clearMessages, EventMessage, getMessage, SocketState } from '@app/core/store';
-import { Bundle, Cluster, EmmitRow, Entities, Host as AdcmHost, TypeName } from '@app/core/types';
 import { select, Store } from '@ngrx/store';
-import { filter, mergeMap, switchMap, tap } from 'rxjs/operators';
+import { filter, mergeMap, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { IListResult } from '@adwp-ui/widgets';
-import { takeUntil } from 'rxjs/operators';
 import { Sort } from '@angular/material/sort';
 import { Observable, Subject } from 'rxjs';
 
+import { clearMessages, EventMessage, getMessage, SocketState } from '@app/core/store';
+import { Bundle, EmmitRow, Entities, Host as AdcmHost, TypeName } from '@app/core/types';
 import { DialogComponent } from '@app/shared/components';
-import { ListResult } from '@app/shared/components/list/list.component';
+import { ListResult } from '@app/models/list-result';
 import { ListService } from './list.service';
 import { ListDirective } from '@app/abstract-directives/list.directive';
+import { ICluster } from '@app/models/cluster';
+
+
+const TemporaryEntityNameConverter = (currentName: Partial<TypeName>): string => {
+
+  if (currentName === 'group_config') return 'group-config';
+  if (currentName === 'group_config_hosts') return 'group-config-hosts';
+
+  return currentName;
+};
 
 interface IRowHost extends AdcmHost {
-  clusters: Partial<Cluster>[];
+  clusters: Partial<ICluster>[];
   page: number;
 }
 
@@ -57,7 +67,8 @@ export class BaseListDirective {
   }
 
   initSocket() {
-    this.socket$ = this.store.pipe(this.takeUntil(), select(getMessage), filter(m => !!m && !!m.object));
+    this.socket$ = this.store.pipe(
+      this.takeUntil(), select(getMessage), filter(m => !!m && !!m.object));
   }
 
   initColumns() {
@@ -83,6 +94,7 @@ export class BaseListDirective {
   }
 
   routeListener(limit: number, page: number, ordering: string, params: ParamMap) {
+
     this.parent.paginator.pageSize = limit;
     if (page === 0) {
       this.parent.paginator.firstPage();
@@ -130,7 +142,10 @@ export class BaseListDirective {
     if (!p.keys.length && listParamStr) {
       const json = JSON.parse(listParamStr);
       if (json[this.typeName]) {
-        this.parent.router.navigate(['./', json[this.typeName]], { relativeTo: this.parent.route });
+        this.parent.router.navigate(['./', json[this.typeName]], {
+          relativeTo: this.parent.route,
+          replaceUrl: true,
+        });
         return false;
       }
     }
@@ -143,18 +158,25 @@ export class BaseListDirective {
 
   socketListener(m: EventMessage): void {
     const stype = (x: string) => `${m.object.type}${m.object.details.type ? `2${m.object.details.type}` : ''}` === x;
-
-    const checkUpgradable = () => (m.event === 'create' || m.event === 'delete') && m.object.type === 'bundle' && this.typeName === 'cluster';
-    const changeList = () => stype(this.typeName) && (m.event === 'create' || m.event === 'delete' || m.event === 'add' || m.event === 'remove');
+    const changeList = (name?: string) => stype(name ?? this.typeName) && (m.event === 'create' || m.event === 'delete' || m.event === 'add' || m.event === 'remove');
     const createHostPro = () => stype('host2provider') && m.event === 'create';
-
+    const jobComplete = () => (m.event === 'change_job_status') && m.object.type === 'task' && m.object.details.value === 'success';
     const rewriteRow = (row: Entities) => this.service.checkItem(row).subscribe((item) => Object.keys(row).map((a) => (row[a] = item[a])));
 
-    if (checkUpgradable() || changeList() || createHostPro()) {
+    const checkUpgradable = () => {
+      const events = ['create', 'delete'];
+      const pairs = {
+        bundle: ['cluster'],
+        service: ['service2cluster']
+      };
+
+      return events.includes(m.event) && pairs[m.object.type]?.includes(this.typeName);
+    }
+
+    if (checkUpgradable() || changeList(TemporaryEntityNameConverter(this.typeName)) || createHostPro() || jobComplete()) {
       this.refresh(m.object.id);
       return;
     }
-
     // events for the row of list
     if (this.parent.data.data.length) {
       const row = this.parent.data.data.find((a) => a.id === m.object.id);
@@ -167,6 +189,7 @@ export class BaseListDirective {
         if (m.event === 'change_status') row.status = +m.object.details.value;
         if (m.event === 'change_job_status') row.status = m.object.details.value;
         if (m.event === 'upgrade') rewriteRow(row);
+        if (m.event === 'update') this.refresh();
       }
     }
   }
@@ -186,7 +209,7 @@ export class BaseListDirective {
     const nav = (a: string[]) => this.parent.router.navigateByUrl(createUrl(a));
 
     this.row = event.row;
-    const { cmd, item } = event;
+    const { cmd, row, item } = event;
 
     if (['title', 'status', 'config', 'import'].includes(cmd)) {
       nav(cmd === 'title' ? [] : [cmd]);
@@ -194,21 +217,11 @@ export class BaseListDirective {
       const url = this.parent.router.serializeUrl(createUrl([]));
       window.open(url, '_blank');
     } else {
-      this[cmd](item);
+      this[cmd](row || item);
     }
   }
 
   onLoad() {}
-
-  // getActions() {
-  //   this.row.typeName = this.typeName;
-  //   this.service.getActions(this.row);
-  //   // this.parent.dialog.open(DialogComponent, { data: { title: 'Choose action', model: this.row, component: ActionCardComponent } });
-  // }
-
-  addCluster(id: number) {
-    if (id) this.service.addClusterToHost(id, this.row as AdcmHost);
-  }
 
   license() {
     const row = this.row as Bundle;
@@ -233,9 +246,9 @@ export class BaseListDirective {
     this.service.getLicenseInfo(row.license_url).pipe(this.takeUntil(), mergeMap(showDialog)).subscribe();
   }
 
-  delete() {
+  delete(item?: Entities) {
     this.service
-      .delete(this.row)
+      .delete(item ?? this.row)
       .pipe(this.takeUntil())
       .subscribe(() => (this.parent.current = null));
   }

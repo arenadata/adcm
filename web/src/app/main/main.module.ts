@@ -11,10 +11,9 @@
 // limitations under the License.
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
 import { SharedModule } from '@app/shared/shared.module';
-import { MainRoutingModule } from '@app/main/routing.module';
-
 import { LoginComponent } from './login/login.component';
 import { ProfileComponent } from './profile/profile.component';
 import { SupportComponent } from './support/support.component';
@@ -23,9 +22,14 @@ import { ProgressComponent } from './progress.component';
 import { PageNotFoundComponent, FatalErrorComponent, GatewayTimeoutComponent } from './server-status.component';
 import { BellComponent } from '@app/components/bell/bell.component';
 import { NotificationsComponent } from '@app/components/notifications/notifications.component';
+import { BellTaskLinkPipe } from '@app/pipes/bell-task-link.pipe';
 
 @NgModule({
-  imports: [CommonModule, MainRoutingModule, SharedModule],
+  imports: [
+    CommonModule,
+    SharedModule,
+    RouterModule,
+  ],
   declarations: [
     LoginComponent,
     ProfileComponent,
@@ -37,6 +41,7 @@ import { NotificationsComponent } from '@app/components/notifications/notificati
     ProgressComponent,
     BellComponent,
     NotificationsComponent,
+    BellTaskLinkPipe,
   ],
   exports: [
     TopComponent,

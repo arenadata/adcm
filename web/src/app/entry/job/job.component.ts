@@ -9,46 +9,34 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import { BaseDirective } from '@adwp-ui/widgets';
 
 import { ClusterService } from '@app/core/services/cluster.service';
-import { Job } from '@app/core/types';
-import { BaseDirective } from '@app/shared/directives';
-import { ListComponent } from '@app/shared/components/list/list.component';
-
-@Component({
-  selector: 'app-job',
-  template: `
-    <mat-toolbar class="toolbar"><app-crumbs [navigation]="[{ path: '/task', name: 'jobs' }]"></app-crumbs></mat-toolbar>
-    <div class="container-entry">
-      <app-list #list class="main" [type]="'job'"></app-list>
-    </div>
-  `,
-})
-export class JobComponent extends BaseDirective implements OnInit, OnDestroy {
-  @ViewChild('list', { static: true }) list: ListComponent;
-  ngOnInit(): void {
-    this.list.listItemEvt
-      .pipe(
-        this.takeUntil(),
-        filter((data) => data.cmd === 'onLoad' && data.row)
-      )
-      .subscribe((data) => localStorage.setItem('lastJob', data.row.id));
-  }
-}
 
 @Component({
   selector: 'app-main',
   template: '<app-job-info></app-job-info>',
 })
-export class MainComponent implements OnInit {
-  constructor(private details: ClusterService, private router: Router, private route: ActivatedRoute) {}
+export class MainComponent extends BaseDirective implements OnInit {
+
+  constructor(
+    private clusterService: ClusterService,
+    private router: Router,
+    private route: ActivatedRoute,
+  ) {
+    super();
+  }
 
   ngOnInit() {
-    const logs = (this.details.Current as Job).log_files;
-    const log = logs.find((a) => a.type === 'check') || logs[0];
-    if (log) this.router.navigate([`../${log.id}`], { relativeTo: this.route });
+    this.route.parent.params.pipe(this.takeUntil()).subscribe(params => {
+      this.clusterService.one_job(params?.job).subscribe(job => {
+        const logs = job.log_files;
+        const log = logs.find((a) => a.type === 'check') || logs[0];
+        if (log) this.router.navigate([`../${log.id}`], { relativeTo: this.route, replaceUrl: true });
+      });
+    });
   }
+
 }

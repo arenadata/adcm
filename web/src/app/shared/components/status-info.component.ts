@@ -10,17 +10,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, OnInit } from '@angular/core';
-import { ApiBase, Cluster } from '@app/core/types/api';
+import { BaseEntity } from '@app/core/types/api';
 import { Observable, of } from 'rxjs';
 import { switchMap, tap, map } from 'rxjs/operators';
 
 import { StatusService } from './status/status.service';
 import { ComponentData } from './tooltip/tooltip.service';
+import { ICluster } from '@app/models/cluster';
 
 @Component({
   selector: 'app-status-info',
   template: `
-    <div *ngIf="statusInfo$ | async as components">
+    <div *ngIf="statusInfo$ | async as components" (click)="onClick()">
       <ng-container *ngIf="!components.length">Nothing to display</ng-container>
       <a [routerLink]="['/cluster', cluster.id, 'service', c.service_id, 'status']" *ngFor="let c of components" class="component">
         {{ (c.display_name || c.name || c.component_display_name || c.component).toUpperCase() }}&nbsp;<ng-container
@@ -37,8 +38,8 @@ import { ComponentData } from './tooltip/tooltip.service';
 })
 export class StatusInfoComponent implements OnInit {
   path: string;
-  cluster: Cluster;
-  current: ApiBase;
+  cluster: ICluster;
+  current: BaseEntity;
   statusInfo$: Observable<any>;
 
   constructor(private service: StatusService, private componentData: ComponentData) {}
@@ -53,7 +54,7 @@ export class StatusInfoComponent implements OnInit {
 
     switch (name) {
       case 'cluster':
-        this.cluster = this.current as Cluster;
+        this.cluster = this.current as ICluster;
         req$ = this.service.getServiceComponentsByCluster(this.cluster);
         break;
       case 'service':
@@ -72,5 +73,9 @@ export class StatusInfoComponent implements OnInit {
     }
 
     this.statusInfo$ = req$.pipe(tap(() => this.componentData.emitter.emit('onLoad')));
+  }
+
+  onClick(): void {
+    this.componentData.emitter.emit('onClose');
   }
 }

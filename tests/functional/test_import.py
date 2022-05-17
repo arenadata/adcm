@@ -9,14 +9,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=W0611, W0621
+
+"""Tests for imports"""
+
 import allure
 import coreapi
 import pytest
 from adcm_client.objects import ADCMClient
-from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
+from adcm_pytest_plugin.utils import parametrize_by_data_subdirs, get_data_dir
 
 from tests.library import errorcodes as err
+from tests.library.errorcodes import INVALID_VERSION_DEFINITION
+from tests.functional.conftest import only_clean_adcm
+
+pytestmark = [only_clean_adcm]
 
 
 @parametrize_by_data_subdirs(__file__, "service_import_check_negative")
@@ -35,11 +41,11 @@ def test_service_import_negative(sdk_client_fs: ADCMClient, path):
     with allure.step('Create cluster with def import'):
         bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
         cluster_import = bundle_import.cluster_create("cluster_import")
-    with allure.step('Bind service from cluster with export to cluster with import'):
+    with allure.step('Bind cluster from cluster with export to cluster with import'):
         cluster_import.bind(cluster)
-    with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        cluster_import.bind(service)
-    with allure.step('Expect backend error because incorrect version for import'):
+    with allure.step('Import service and expect backend error because incorrect version for import'):
+        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+            cluster_import.bind(service)
         err.BIND_ERROR.equal(e)
 
 
@@ -59,11 +65,11 @@ def test_cluster_import_negative(sdk_client_fs: ADCMClient, path):
     with allure.step('Create default cluster with import'):
         bundle_import = sdk_client_fs.upload_from_fs(path + '/import')
         cluster_import = bundle_import.cluster_create("cluster_import")
-    with allure.step('Bind cluster from cluster with export to cluster with import'):
+    with allure.step('Bind service from cluster with export to cluster with import'):
         cluster_import.bind(service)
-    with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
-        cluster_import.bind(cluster)
-    with allure.step('Check error because incorrect version for import'):
+    with allure.step('Bind cluster and check error because incorrect version for import'):
+        with pytest.raises(coreapi.exceptions.ErrorMessage) as e:
+            cluster_import.bind(cluster)
         err.BIND_ERROR.equal(e)
 
 
@@ -92,3 +98,13 @@ def test_cluster_import(sdk_client_fs: ADCMClient, path):
         cluster_import = bundle_import.cluster_create("cluster_import")
     with allure.step('Bind cluster from cluster with export to cluster with import'):
         cluster_import.bind(cluster)
+
+
+def test_import_with_zero_range(sdk_client_fs: ADCMClient):
+    """Import cluster with range where min is greater than max"""
+    with allure.step('Try to upload bundle with zero range import'), pytest.raises(
+        coreapi.exceptions.ErrorMessage
+    ) as e:
+        sdk_client_fs.upload_from_fs(get_data_dir(__file__, "cluster_empty_range", "import"))
+    with allure.step('Check that error is correct'):
+        INVALID_VERSION_DEFINITION.equal(e)

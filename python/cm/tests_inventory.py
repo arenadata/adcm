@@ -63,7 +63,7 @@ class TestInventory(TestCase):
         object_config = models.ObjectConfig.objects.create(current=1, previous=1)
         cluster = models.Cluster.objects.create(prototype=prototype, config=object_config)
 
-        res = cm.inventory.get_cluster_config(cluster.id)
+        res = cm.inventory.get_cluster_config(cluster)
         test_res = {
             'cluster': {
                 'config': {},
@@ -72,6 +72,8 @@ class TestInventory(TestCase):
                 'id': 1,
                 'version': '2.2',
                 'state': 'created',
+                'multi_state': [],
+                'before_upgrade': {'state': None},
             },
             'services': {},
         }
@@ -98,6 +100,8 @@ class TestInventory(TestCase):
                 'id': 1,
                 'host_prototype_id': 1,
                 'state': 'created',
+                'multi_state': [],
+                'before_upgrade': {'state': None},
             }
         }
         self.assertDictEqual(config, test_config)
@@ -112,7 +116,7 @@ class TestInventory(TestCase):
         object_config = models.ObjectConfig.objects.create(current=1, previous=1)
         cluster = models.Cluster.objects.create(prototype=prototype, config=object_config)
 
-        groups = cm.inventory.get_host_groups(cluster.id, {})
+        groups = cm.inventory.get_host_groups(cluster, {})
 
         self.assertDictEqual(groups, {})
         mock_get_obj_config.assert_not_called()
@@ -129,11 +133,11 @@ class TestInventory(TestCase):
 
         test_cluster_hosts = {'CLUSTER': {'hosts': [], 'vars': []}}
 
-        cluster_hosts = cm.inventory.get_cluster_hosts(cluster.id)
+        cluster_hosts = cm.inventory.get_cluster_hosts(cluster)
 
         self.assertDictEqual(cluster_hosts, test_cluster_hosts)
         mock_get_hosts.assert_called_once()
-        mock_get_cluster_config.assert_called_once_with(cluster.id)
+        mock_get_cluster_config.assert_called_once_with(cluster)
 
     @patch('cm.inventory.get_hosts')
     def test_get_provider_hosts(self, mock_get_hosts):
@@ -144,7 +148,7 @@ class TestInventory(TestCase):
         provider = models.HostProvider.objects.create(prototype=prototype)
         models.Host.objects.create(prototype=prototype, provider=provider)
 
-        provider_hosts = cm.inventory.get_provider_hosts(provider.id)
+        provider_hosts = cm.inventory.get_provider_hosts(provider)
 
         test_provider_hosts = {'PROVIDER': {'hosts': []}}
 
@@ -173,27 +177,31 @@ class TestInventory(TestCase):
                         'id': 1,
                         'host_prototype_id': 1,
                         'state': 'created',
+                        'multi_state': [],
+                        'before_upgrade': {'state': None},
                     }
                 },
             }
         }
         self.assertDictEqual(groups, test_groups)
-        mock_get_hosts.assert_called_once_with([host])
+        mock_get_hosts.assert_called_once_with([host], host)
 
     @patch('json.dump')
     @patch('cm.inventory.open')
     def test_prepare_job_inventory(self, mock_open, mock_dump):
-        bundle = models.Bundle.objects.create()
-        prototype = models.Prototype.objects.create(bundle=bundle, version="2.2")
-        cluster = models.Cluster.objects.create(prototype=prototype)
-        host_provider = models.HostProvider.objects.create(prototype=prototype)
-        host = models.Host.objects.create(
-            prototype=prototype, cluster=cluster, provider=host_provider
+        bundle = models.Bundle.objects.create(edition='community')
+        proto1 = models.Prototype.objects.create(bundle=bundle, version='2.2', type='cluster')
+        cluster = models.Cluster.objects.create(prototype=proto1)
+        proto2 = models.Prototype.objects.create(bundle=bundle, type='provider')
+        host_provider = models.HostProvider.objects.create(prototype=proto2)
+        proto3 = models.Prototype.objects.create(bundle=bundle, type='host')
+        host = models.Host.objects.create(prototype=proto3, provider=host_provider)
+        host2 = models.Host.objects.create(
+            prototype=proto3, fqdn='h2', cluster=cluster, provider=host_provider
         )
-
-        action = models.Action.objects.create(prototype=prototype)
+        action = models.Action.objects.create(prototype=proto1)
         job = models.JobLog.objects.create(
-            action_id=action.id, start_date=timezone.now(), finish_date=timezone.now()
+            action=action, start_date=timezone.now(), finish_date=timezone.now()
         )
 
         fd = Mock()
@@ -202,15 +210,19 @@ class TestInventory(TestCase):
             'all': {
                 'children': {
                     'CLUSTER': {
-                        'hosts': {'': {'adcm_hostid': 1, 'state': 'created'}},
+                        'hosts': {
+                            host2.fqdn: {'adcm_hostid': 2, 'state': 'created', 'multi_state': []}
+                        },
                         'vars': {
                             'cluster': {
                                 'config': {},
-                                'edition': 'community',
                                 'name': '',
                                 'id': 1,
                                 'version': '2.2',
+                                'edition': 'community',
                                 'state': 'created',
+                                'multi_state': [],
+                                'before_upgrade': {'state': None},
                             },
                             'services': {},
                         },
@@ -222,14 +234,16 @@ class TestInventory(TestCase):
             'all': {
                 'children': {
                     'HOST': {
-                        'hosts': {'': {'adcm_hostid': 1, 'state': 'created'}},
+                        'hosts': {'': {'adcm_hostid': 1, 'state': 'created', 'multi_state': []}},
                         'vars': {
                             'provider': {
                                 'config': {},
                                 'name': '',
                                 'id': 1,
-                                'host_prototype_id': 1,
+                                'host_prototype_id': proto3.id,
                                 'state': 'created',
+                                'multi_state': [],
+                                'before_upgrade': {'state': None},
                             }
                         },
                     }
@@ -238,30 +252,36 @@ class TestInventory(TestCase):
         }
         provider_inv = {
             'all': {
-                'children': {'PROVIDER': {'hosts': {'': {'adcm_hostid': 1, 'state': 'created'}}}},
+                'children': {
+                    'PROVIDER': {
+                        'hosts': {
+                            '': {'adcm_hostid': 1, 'state': 'created', 'multi_state': []},
+                            'h2': {'adcm_hostid': 2, 'state': 'created', 'multi_state': []},
+                        }
+                    }
+                },
                 'vars': {
                     'provider': {
                         'config': {},
                         'name': '',
                         'id': 1,
-                        'host_prototype_id': 1,
+                        'host_prototype_id': proto3.id,
                         'state': 'created',
+                        'multi_state': [],
+                        'before_upgrade': {'state': None},
                     }
                 },
             }
         }
 
         data = [
-            ({'cluster': cluster.id}, 'cluster', cluster_inv),
-            ({'host': host.id}, 'host', host_inv),
-            ({'provider': host_provider.id}, 'host', provider_inv),
+            (host, host_inv),
+            (host_provider, provider_inv),
+            (cluster, cluster_inv),
         ]
 
-        for selector, prototype_type, inv in data:
-            with self.subTest(selector=selector, prototype_type=prototype_type, inv=inv):
-                prototype.type = prototype_type
-                prototype.save()
-
-                cm.inventory.prepare_job_inventory(selector, job.id, action, [])
+        for obj, inv in data:
+            with self.subTest(obj=obj, inv=inv):
+                cm.inventory.prepare_job_inventory(obj, job.id, action, [])
                 mock_dump.assert_called_once_with(inv, fd, indent=3)
                 mock_dump.reset_mock()

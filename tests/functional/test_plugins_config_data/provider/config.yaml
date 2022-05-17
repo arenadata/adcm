@@ -1,100 +1,19 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 ---
 
 - type: provider
-  name: Plugins testing
+  name: Provider plugins testing
   version: 1
-
-  actions: &provider_actions
-    provider_int: &provider_action
-      type: job
-      script_type: ansible
-      script: provider.yaml
-      states:
-        available: any
-      params:
-        ansible_tags: int
-
-    provider_float:
-      <<: *provider_action
-      params:
-        ansible_tags: float
-
-    provider_text:
-      <<: *provider_action
-      params:
-        ansible_tags: text
-
-    provider_file:
-      <<: *provider_action
-      params:
-        ansible_tags: file
-
-    provider_string:
-      <<: *provider_action
-      params:
-        ansible_tags: string
-
-    provider_json:
-      <<: *provider_action
-      params:
-        ansible_tags: json
-
-    provider_map:
-      <<: *provider_action
-      params:
-        ansible_tags: map
-
-    provider_list:
-      <<: *provider_action
-      params:
-        ansible_tags: list
-
-    host_int: &host_from_provider_action
-      type: job
-      script_type: ansible
-      script: host_from_provider.yaml
-      states:
-        available: any
-      params:
-        ansible_tags: int
-      config:
-        - name: fqdn
-          type: string
-
-    host_float:
-      <<: *host_from_provider_action
-      params:
-        ansible_tags: float
-
-    host_text:
-      <<: *host_from_provider_action
-      params:
-        ansible_tags: text
-
-    host_file:
-      <<: *host_from_provider_action
-      params:
-        ansible_tags: file
-
-    host_string:
-      <<: *host_from_provider_action
-      params:
-        ansible_tags: string
-
-    host_json:
-      <<: *host_from_provider_action
-      params:
-        ansible_tags: json
-
-    host_map:
-      <<: *host_from_provider_action
-      params:
-        ansible_tags: map
-
-    host_list:
-      <<: *host_from_provider_action
-      params:
-        ansible_tags: list
 
   config: &config
     int:
@@ -106,7 +25,7 @@
       type: float
       default: 1.0
       required: no
-    
+
     text:
       type: text
       default: |
@@ -116,12 +35,17 @@
 
     file:
       type: file
-      default: "file.txt"
+      default: "./file.txt"
       required: no
 
     string:
       type: string
       default: "zzz"
+      required: no
+
+    dummy:
+      type: string
+      default: "donthurtme"
       required: no
 
     json:
@@ -146,93 +70,124 @@
         - "three"
       required: no
 
-- type: host
-  name: First
-  version: 1
+  actions: &actions
 
-  actions: &host_actions
-    provider_int:
-      <<: *provider_action
-
-    provider_float:
-      <<: *provider_action
-      params:
-        ansible_tags: float
-
-    provider_text:
-      <<: *provider_action
-      params:
-        ansible_tags: text
-
-    provider_file:
-      <<: *provider_action
-      params:
-        ansible_tags: file
-
-    provider_string:
-      <<: *provider_action
-      params:
-        ansible_tags: string
-
-    provider_json:
-      <<: *provider_action
-      params:
-        ansible_tags: json
-
-    provider_map:
-      <<: *provider_action
-      params:
-        ansible_tags: map
-
-    provider_list:
-      <<: *provider_action
-      params:
-        ansible_tags: list
-
-    host_int: &host_action
-      type: job
-      script_type: ansible
-      script: host.yaml
+    change_provider_multijob:
+      type: task
       states:
         available: any
-      params:
-        ansible_tags: int
+      scripts:
+        - &provider_multi_script
+          name: pint
+          script_type: ansible
+          script: ./provider.yaml
+          params:
+            ansible_tags: int
+        - <<: *provider_multi_script
+          name: pfloat
+          params:
+            ansible_tags: float
+        - <<: *provider_multi_script
+          name: plist
+          params:
+            ansible_tags: list
+        - <<: *provider_multi_script
+          name: ptext
+          params:
+            ansible_tags: text
+        - <<: *provider_multi_script
+          name: pfile
+          params:
+            ansible_tags: file
+        - <<: *provider_multi_script
+          name: pjson
+          params:
+            ansible_tags: json
+        - <<: *provider_multi_script
+          name: pstring
+          params:
+            ansible_tags: string
 
-    host_float:
-      <<: *host_action
-      params:
-        ansible_tags: float
+        - <<: *provider_multi_script
+          name: hstring
+          params:
+            ansible_tags: string
 
-    host_text:
-      <<: *host_action
-      params:
-        ansible_tags: text
+        - <<: *provider_multi_script
+          name: hmap
+          params:
+            ansible_tags: map
 
-    host_file:
-      <<: *host_action
-      params:
-        ansible_tags: file
+    change_provider:
+      type: job
+      script_type: ansible
+      script: ./provider.yaml
+      states:
+        available: any
 
-    host_string:
-      <<: *host_action
-      params:
-        ansible_tags: string
+    change_host:
+      type: job
+      script_type: ansible
+      script: ./host.yaml
+      states:
+        available: any
 
-    host_json:
-      <<: *host_action
-      params:
-        ansible_tags: json
+    change_host_multijob:
+      type: task
+      states:
+        available: any
+      scripts:
+        - &host_m_action
+          name: hint
+          script_type: ansible
+          script: ./host.yaml
+          params:
+            ansible_tags: int
+        - <<: *host_m_action
+          name: hfloat
+          params:
+            ansible_tags: float
+        - <<: *host_m_action
+          name: hlist
+          params:
+            ansible_tags: list
+        - <<: *host_m_action
+          name: htext
+          params:
+            ansible_tags: text
+        - <<: *host_m_action
+          name: hfile
+          params:
+            ansible_tags: file
+        - <<: *host_m_action
+          name: hjson
+          params:
+            ansible_tags: json
+        - <<: *host_m_action
+          name: hstring
+          params:
+            ansible_tags: string
 
-    host_map:
-      <<: *host_action
-      params:
-        ansible_tags: map
+        - <<: *host_m_action
+          name: hmap
+          params:
+            ansible_tags: map
 
-    host_list:
-      <<: *host_action
-      params:
-        ansible_tags: list
+    change_host_from_provider:
+      type: job
+      script_type: ansible
+      script: ./host_from_provider.yaml
+      states:
+        available: any
+      config:
+        - name: host_id
+          type: integer
 
 
+- type: host
+  name: first
+  version: 1
+
+  actions: *actions
 
   config: *config

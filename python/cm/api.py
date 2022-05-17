@@ -9,50 +9,74 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint:disable=logging-fstring-interpolation
 
 import json
 
-from django.db import transaction
 from django.core.exceptions import MultipleObjectsReturned
+from django.db import transaction
 from django.utils import timezone
+from version_utils import rpm
 
-import cm.errors
 import cm.issue
-import cm.config as config
 import cm.status_api
-import cm.lock
-from cm.logger import log
-from cm.upgrade import check_license, version_in
 from cm.adcm_config import (
-    proto_ref,
+    check_json_config,
+    init_object_config,
     obj_ref,
     prepare_social_auth,
-    process_file_type,
+    proto_ref,
     read_bundle_file,
-    get_prototype_config,
-    init_object_config,
     save_obj_config,
-    check_json_config,
 )
-from cm.errors import AdcmEx
-from cm.errors import raise_AdcmEx as err
-from cm.status_api import Event
+from cm.api_context import ctx
+from cm.errors import AdcmEx, raise_AdcmEx as err
+from cm.logger import log
 from cm.models import (
+    ADCM,
+    ADCMEntity,
     Cluster,
-    Prototype,
+    ClusterBind,
+    ClusterObject,
+    ConcernType,
+    ConfigLog,
+    DummyData,
+    GroupConfig,
     Host,
     HostComponent,
-    ADCM,
-    ClusterObject,
-    ServiceComponent,
-    ConfigLog,
     HostProvider,
-    PrototypeImport,
+    Prototype,
     PrototypeExport,
-    ClusterBind,
-    DummyData,
-    Role,
+    PrototypeImport,
+    ServiceComponent,
+    TaskLog,
+    Bundle,
 )
+
+from rbac.models import re_apply_object_policy
+
+
+def check_license(bundle: Bundle) -> None:
+    if bundle.license == 'unaccepted':
+        msg = 'License for bundle "{}" {} {} is not accepted'
+        err('LICENSE_ERROR', msg.format(bundle.name, bundle.version, bundle.edition))
+
+
+def version_in(version: str, ver: PrototypeImport) -> bool:
+    # log.debug('version_in: %s < %s > %s', ver.min_version, version, ver.max_version)
+    if ver.min_strict:
+        if rpm.compare_versions(version, ver.min_version) <= 0:
+            return False
+    elif ver.min_version:
+        if rpm.compare_versions(version, ver.min_version) < 0:
+            return False
+    if ver.max_strict:
+        if rpm.compare_versions(version, ver.max_version) >= 0:
+            return False
+    elif ver.max_version:
+        if rpm.compare_versions(version, ver.max_version) > 0:
+            return False
+    return True
 
 
 def check_proto_type(proto, check_type):
@@ -61,43 +85,82 @@ def check_proto_type(proto, check_type):
         err('OBJ_TYPE_ERROR', msg.format(check_type, proto.type))
 
 
+def load_service_map():
+    comps = {}
+    hosts = {}
+    hc_map = {}
+    services = {}
+    passive = {}
+    for c in ServiceComponent.objects.filter(prototype__monitoring='passive'):
+        passive[c.id] = True
+
+    for hc in HostComponent.objects.all():
+        if hc.component.id in passive:
+            continue
+        key = f'{hc.host.id}.{hc.component.id}'
+        hc_map[key] = {'cluster': hc.cluster.id, 'service': hc.service.id}
+        if str(hc.cluster.id) not in comps:
+            comps[str(hc.cluster.id)] = {}
+        if str(hc.service.id) not in comps[str(hc.cluster.id)]:
+            comps[str(hc.cluster.id)][str(hc.service.id)] = []
+        comps[str(hc.cluster.id)][str(hc.service.id)].append(key)
+
+    for host in Host.objects.filter(prototype__monitoring='active'):
+        if host.cluster:
+            cluster_id = host.cluster.id
+        else:
+            cluster_id = 0
+        if cluster_id not in hosts:
+            hosts[cluster_id] = []
+        hosts[cluster_id].append(host.id)
+
+    for co in ClusterObject.objects.filter(prototype__monitoring='active'):
+        if co.cluster.id not in services:
+            services[co.cluster.id] = []
+        services[co.cluster.id].append(co.id)
+
+    m = {
+        'hostservice': hc_map,
+        'component': comps,
+        'service': services,
+        'host': hosts,
+    }
+    return cm.status_api.api_post('/servicemap/', m)
+
+
 def add_cluster(proto, name, desc=''):
     check_proto_type(proto, 'cluster')
     check_license(proto.bundle)
-    spec, _, conf, attr = get_prototype_config(proto)
     with transaction.atomic():
-        obj_conf = init_object_config(spec, conf, attr)
-        cluster = Cluster(prototype=proto, name=name, config=obj_conf, description=desc)
+        cluster = Cluster.objects.create(prototype=proto, name=name, description=desc)
+        obj_conf = init_object_config(proto, cluster)
+        cluster.config = obj_conf
         cluster.save()
-        process_file_type(cluster, spec, conf)
         cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.post_event('create', 'cluster', cluster.id)
-    cm.status_api.load_service_map()
+    load_service_map()
+    log.info(f'cluster #{cluster.id} {cluster.name} is added')
     return cluster
 
 
-def add_host(proto, provider, fqdn, desc='', lock=False):
+def add_host(proto, provider, fqdn, desc=''):
     check_proto_type(proto, 'host')
     check_license(proto.bundle)
     if proto.bundle != provider.prototype.bundle:
         msg = 'Host prototype bundle #{} does not match with host provider bundle #{}'
         err('FOREIGN_HOST', msg.format(proto.bundle.id, provider.prototype.bundle.id))
-    spec, _, conf, attr = get_prototype_config(proto)
-    event = Event()
     with transaction.atomic():
-        obj_conf = init_object_config(spec, conf, attr)
-        host = Host(
-            prototype=proto, provider=provider, fqdn=fqdn, config=obj_conf, description=desc
-        )
+        host = Host.objects.create(prototype=proto, provider=provider, fqdn=fqdn, description=desc)
+        obj_conf = init_object_config(proto, host)
+        host.config = obj_conf
         host.save()
-        if lock:
-            host.stack = ['created']
-            host.set_state(config.Job.LOCKED, event)
-        process_file_type(host, spec, conf)
+        host.add_to_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(host)
-    event.send_state()
+        re_apply_object_policy(provider)
+    ctx.event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
-    cm.status_api.load_service_map()
+    load_service_map()
+    log.info(f'host #{host.id} {host.fqdn} is added')
     return host
 
 
@@ -109,46 +172,60 @@ def add_provider_host(provider_id, fqdn, desc=''):
     """
     provider = HostProvider.obj.get(id=provider_id)
     proto = Prototype.objects.get(bundle=provider.prototype.bundle, type='host')
-    return add_host(proto, provider, fqdn, desc, lock=True)
+    return add_host(proto, provider, fqdn, desc)
 
 
 def add_host_provider(proto, name, desc=''):
     check_proto_type(proto, 'provider')
     check_license(proto.bundle)
-    spec, _, conf, attr = get_prototype_config(proto)
     with transaction.atomic():
-        obj_conf = init_object_config(spec, conf, attr)
-        provider = HostProvider(prototype=proto, name=name, config=obj_conf, description=desc)
+        provider = HostProvider.objects.create(prototype=proto, name=name, description=desc)
+        obj_conf = init_object_config(proto, provider)
+        provider.config = obj_conf
         provider.save()
-        process_file_type(provider, spec, conf)
+        provider.add_to_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(provider)
+    ctx.event.send_state()
     cm.status_api.post_event('create', 'provider', provider.id)
+    log.info(f'host provider #{provider.id} {provider.name} is added')
     return provider
 
 
-def delete_host_provider(provider):
+def _cancel_locking_tasks(obj: ADCMEntity):
+    """Cancel all tasks that have locks on object"""
+    for lock in obj.concerns.filter(type=ConcernType.Lock):
+        for task in TaskLog.objects.filter(lock=lock):
+            task.cancel()
+
+
+def delete_host_provider(provider, cancel_tasks=True):
     hosts = Host.objects.filter(provider=provider)
     if hosts:
         msg = 'There is host #{} "{}" of host {}'
         err('PROVIDER_CONFLICT', msg.format(hosts[0].id, hosts[0].fqdn, obj_ref(provider)))
+    if cancel_tasks:
+        _cancel_locking_tasks(provider)
     provider_id = provider.id
     provider.delete()
     cm.status_api.post_event('delete', 'provider', provider_id)
+    log.info(f'host provider #{provider_id} is deleted')
 
 
 def add_host_to_cluster(cluster, host):
     if host.cluster:
         if host.cluster.id != cluster.id:
-            msg = 'Host #{} belong to cluster #{}'.format(host.id, host.cluster.id)
+            msg = f'Host #{host.id} belong to cluster #{host.cluster.id}'
             err('FOREIGN_HOST', msg)
         else:
             err('HOST_CONFLICT')
     with transaction.atomic():
         host.cluster = cluster
         host.save()
+        host.add_to_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(host)
+        re_apply_object_policy(cluster)
     cm.status_api.post_event('add', 'host', host.id, 'cluster', str(cluster.id))
-    cm.status_api.load_service_map()
+    load_service_map()
     log.info('host #%s %s is added to cluster #%s %s', host.id, host.fqdn, cluster.id, cluster.name)
     return host
 
@@ -163,7 +240,7 @@ def get_cluster_and_host(cluster_id, fqdn, host_id):
         host = Host.obj.get(id=host_id)
     else:
         err('HOST_NOT_FOUND', 'fqdn or host_id is mandatory args')
-    return (cluster, host)
+    return cluster, host
 
 
 def add_host_to_cluster_by_id(cluster_id, fqdn, host_id):
@@ -188,15 +265,18 @@ def remove_host_from_cluster_by_id(cluster_id, fqdn, host_id):
     remove_host_from_cluster(host)
 
 
-def delete_host(host):
+def delete_host(host, cancel_tasks=True):
     cluster = host.cluster
     if cluster:
         msg = 'Host #{} "{}" belong to {}'
         err('HOST_CONFLICT', msg.format(host.id, host.fqdn, obj_ref(cluster)))
+    if cancel_tasks:
+        _cancel_locking_tasks(host)
     host_id = host.id
     host.delete()
     cm.status_api.post_event('delete', 'host', host_id)
-    cm.status_api.load_service_map()
+    load_service_map()
+    log.info(f'host #{host_id} is deleted')
 
 
 def delete_host_by_id(host_id):
@@ -206,7 +286,7 @@ def delete_host_by_id(host_id):
     This is intended for use in adcm_delete_host ansible plugin only
     """
     host = Host.obj.get(id=host_id)
-    delete_host(host)
+    delete_host(host, cancel_tasks=False)
 
 
 def _clean_up_related_hc(service: ClusterObject) -> None:
@@ -238,7 +318,7 @@ def delete_service_by_id(service_id):
         service = ClusterObject.obj.get(id=service_id)
         _clean_up_related_hc(service)
         _clean_up_related_bind(service)
-        delete_service(service)
+        delete_service(service, cancel_tasks=False)
 
 
 def delete_service_by_name(service_name, cluster_id):
@@ -252,38 +332,53 @@ def delete_service_by_name(service_name, cluster_id):
         service = ClusterObject.obj.get(cluster__id=cluster_id, prototype__name=service_name)
         _clean_up_related_hc(service)
         _clean_up_related_bind(service)
-        delete_service(service)
+        delete_service(service, cancel_tasks=False)
 
 
-def delete_service(service):
+def delete_service(service: ClusterObject, cancel_tasks=True) -> None:
     if HostComponent.objects.filter(cluster=service.cluster, service=service).exists():
-        err('SERVICE_CONFLICT', 'Service #{} has component(s) on host(s)'.format(service.id))
+        err('SERVICE_CONFLICT', f'Service #{service.id} has component(s) on host(s)')
     if ClusterBind.objects.filter(source_service=service).exists():
-        err('SERVICE_CONFLICT', 'Service #{} has exports(s)'.format(service.id))
+        err('SERVICE_CONFLICT', f'Service #{service.id} has exports(s)')
+    if cancel_tasks:
+        _cancel_locking_tasks(service)
     service_id = service.id
+    cluster = service.cluster
+    service.concerns.filter(type__in=[ConcernType.Issue, ConcernType.Flag]).delete()
     service.delete()
+    cm.issue.update_hierarchy_issues(cluster)
+    re_apply_object_policy(cluster)
     cm.status_api.post_event('delete', 'service', service_id)
-    cm.status_api.load_service_map()
+    load_service_map()
+    log.info(f'service #{service_id} is deleted')
 
 
-def delete_cluster(cluster):
+def delete_cluster(cluster, cancel_tasks=True):
+    if cancel_tasks:
+        _cancel_locking_tasks(cluster)
     cluster_id = cluster.id
     cluster.delete()
     cm.status_api.post_event('delete', 'cluster', cluster_id)
-    cm.status_api.load_service_map()
+    load_service_map()
 
 
 def remove_host_from_cluster(host):
     cluster = host.cluster
     hc = HostComponent.objects.filter(cluster=cluster, host=host)
     if hc:
-        return err('HOST_CONFLICT', 'Host #{} has component(s)'.format(host.id))
+        return err('HOST_CONFLICT', f'Host #{host.id} has component(s)')
     with transaction.atomic():
         host.cluster = None
         host.save()
+        for group in cluster.group_config.all():
+            group.hosts.remove(host)
+            cm.issue.update_hierarchy_issues(host)
+        host.remove_from_concerns(ctx.lock)
         cm.issue.update_hierarchy_issues(cluster)
+        re_apply_object_policy(cluster)
+    ctx.event.send_state()
     cm.status_api.post_event('remove', 'host', host.id, 'cluster', str(cluster.id))
-    cm.status_api.load_service_map()
+    load_service_map()
     return host
 
 
@@ -312,90 +407,29 @@ def add_service_to_cluster(cluster, proto):
                     proto_ref(proto), cluster.prototype.bundle.name, cluster.prototype.version
                 ),
             )
-    spec, _, conf, attr = get_prototype_config(proto)
     with transaction.atomic():
-        obj_conf = init_object_config(spec, conf, attr)
-        cs = ClusterObject(cluster=cluster, prototype=proto, config=obj_conf)
+        cs = ClusterObject.objects.create(cluster=cluster, prototype=proto)
+        obj_conf = init_object_config(proto, cs)
+        cs.config = obj_conf
         cs.save()
         add_components_to_service(cluster, cs)
-        process_file_type(cs, spec, conf)
         cm.issue.update_hierarchy_issues(cs)
+        re_apply_object_policy(cluster)
     cm.status_api.post_event('add', 'service', cs.id, 'cluster', str(cluster.id))
-    cm.status_api.load_service_map()
+    load_service_map()
+    log.info(
+        f'service #{cs.id} {cs.prototype.name} is added to cluster #{cluster.id} {cluster.name}'
+    )
     return cs
 
 
 def add_components_to_service(cluster, service):
     for comp in Prototype.objects.filter(type='component', parent=service.prototype):
-        spec, _, conf, attr = get_prototype_config(comp)
-        obj_conf = init_object_config(spec, conf, attr)
-        sc = ServiceComponent(cluster=cluster, service=service, prototype=comp, config=obj_conf)
+        sc = ServiceComponent.objects.create(cluster=cluster, service=service, prototype=comp)
+        obj_conf = init_object_config(comp, sc)
+        sc.config = obj_conf
         sc.save()
         cm.issue.update_hierarchy_issues(sc)
-
-
-def add_user_role(user, role):
-    if Role.objects.filter(id=role.id, user=user):
-        err('ROLE_ERROR', f'User "{user.username}" already has role "{role.name}"')
-    with transaction.atomic():
-        role.user.add(user)
-        role.save()
-        for perm in role.permissions.all():
-            user.user_permissions.add(perm)
-    log.info('Add role "%s" to user "%s"', role.name, user.username)
-    role.role_id = role.id
-    return role
-
-
-def add_group_role(group, role):
-    if Role.objects.filter(id=role.id, group=group):
-        err('ROLE_ERROR', f'Group "{group.name}" already has role "{role.name}"')
-    with transaction.atomic():
-        role.group.add(group)
-        role.save()
-        for perm in role.permissions.all():
-            group.permissions.add(perm)
-    log.info('Add role "%s" to group "%s"', role.name, group.name)
-    role.role_id = role.id
-    return role
-
-
-def cook_perm_list(role, role_list):
-    perm_list = {}
-    for r in role_list:
-        if r == role:
-            continue
-        for perm in r.permissions.all():
-            perm_list[perm.codename] = True
-    return perm_list
-
-
-def remove_user_role(user, role):
-    user_roles = Role.objects.filter(user=user)
-    if role not in user_roles:
-        err('ROLE_ERROR', f'User "{user.username}" does not has role "{role.name}"')
-    perm_list = cook_perm_list(role, user_roles)
-    with transaction.atomic():
-        role.user.remove(user)
-        role.save()
-        for perm in role.permissions.all():
-            if perm.codename not in perm_list:
-                user.user_permissions.remove(perm)
-    log.info('Remove role "%s" from user "%s"', role.name, user.username)
-
-
-def remove_group_role(group, role):
-    group_roles = Role.objects.filter(group=group)
-    if role not in group_roles:
-        err('ROLE_ERROR', f'Group "{group.name}" does not has role "{role.name}"')
-    perm_list = cook_perm_list(role, group_roles)
-    with transaction.atomic():
-        role.group.remove(group)
-        role.save()
-        for perm in role.permissions.all():
-            if perm.codename not in perm_list:
-                group.permissions.remove(perm)
-    log.info('Remove role "%s" from group "%s"', role.name, group.name)
 
 
 def get_bundle_proto(bundle):
@@ -406,7 +440,7 @@ def get_bundle_proto(bundle):
 def get_license(bundle):
     if not bundle.license_path:
         return None
-    ref = 'bundle "{}" {}'.format(bundle.name, bundle.version)
+    ref = f'bundle "{bundle.name}" {bundle.version}'
     proto = get_bundle_proto(bundle)
     return read_bundle_file(proto, bundle.license_path, bundle.hash, 'license file', ref)
 
@@ -423,37 +457,31 @@ def accept_license(bundle):
 def update_obj_config(obj_conf, conf, attr, desc=''):
     if not isinstance(attr, dict):
         err('INVALID_CONFIG_UPDATE', 'attr should be a map')
-    if hasattr(obj_conf, 'adcm'):
-        obj = obj_conf.adcm
-        proto = obj_conf.adcm.prototype
-    elif hasattr(obj_conf, 'clusterobject'):
-        obj = obj_conf.clusterobject
-        proto = obj_conf.clusterobject.prototype
-    elif hasattr(obj_conf, 'servicecomponent'):
-        obj = obj_conf.servicecomponent
-        proto = obj_conf.servicecomponent.prototype
-    elif hasattr(obj_conf, 'cluster'):
-        obj = obj_conf.cluster
-        proto = obj_conf.cluster.prototype
-    elif hasattr(obj_conf, 'host'):
-        obj = obj_conf.host
-        proto = obj_conf.host.prototype
-    elif hasattr(obj_conf, 'hostprovider'):
-        obj = obj_conf.hostprovider
-        proto = obj_conf.hostprovider.prototype
+    obj = obj_conf.object
+    if obj is None:
+        err('INVALID_CONFIG_UPDATE', f'unknown object type "{obj_conf}"')
+    group = None
+    if isinstance(obj, GroupConfig):
+        group = obj
+        obj = group.object
+        proto = obj.prototype
     else:
-        err('INVALID_CONFIG_UPDATE', 'unknown object type "{}"'.format(obj_conf))
+        proto = obj.prototype
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
     if not attr:
         if old_conf.attr:
             attr = old_conf.attr
-    new_conf = check_json_config(proto, obj, conf, old_conf.config, attr)
+    new_conf = check_json_config(proto, group or obj, conf, old_conf.config, attr)
     with transaction.atomic():
         cl = save_obj_config(obj_conf, new_conf, attr, desc)
         cm.issue.update_hierarchy_issues(obj)
+        re_apply_object_policy(obj)
     if hasattr(obj_conf, 'adcm'):
         prepare_social_auth(new_conf)
-    cm.status_api.post_event('change_config', proto.type, obj.id, 'version', str(cl.id))
+    if group is not None:
+        cm.status_api.post_event('change_config', 'group-config', group.id, 'version', str(cl.id))
+    else:
+        cm.status_api.post_event('change_config', proto.type, obj.id, 'version', str(cl.id))
     return cl
 
 
@@ -513,7 +541,7 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
         service = ClusterObject.obj.get(id=item['service_id'], cluster=cluster)
         comp = ServiceComponent.obj.get(id=item['component_id'], cluster=cluster, service=service)
         if not host.cluster:
-            msg = 'host #{} {} does not belong to any cluster'.format(host.id, host.fqdn)
+            msg = f'host #{host.id} {host.fqdn} does not belong to any cluster'
             raise AdcmEx("FOREIGN_HOST", msg)
         if host.cluster.id != cluster.id:
             msg = 'host {} (cluster #{}) does not belong to cluster #{}'
@@ -528,20 +556,41 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
     return host_comp_list
 
 
-def save_hc(cluster, host_comp_list):
-    event = Event()
-    hc_queryset = HostComponent.objects.filter(cluster=cluster)
+def still_existed_hc(cluster, host_comp_list):
+    result = []
+    for (service, host, comp) in host_comp_list:
+        try:
+            existed_hc = HostComponent.objects.get(
+                cluster=cluster, service=service, host=host, component=comp
+            )
+            result.append(existed_hc)
+        except HostComponent.DoesNotExist:
+            continue
+    return result
 
-    # TODO: double purpose code need to be refactored
-    # HC mapping could be edited with OR without hierarchy locking
+
+def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
+    hc_queryset = HostComponent.objects.filter(cluster=cluster)
+    service_map = {hc.service for hc in hc_queryset}
     old_hosts = {i.host for i in hc_queryset.select_related('host').all()}
     new_hosts = {i[1] for i in host_comp_list}
     for removed_host in old_hosts.difference(new_hosts):
-        if removed_host.state == config.Job.LOCKED:
-            cm.lock._unlock_obj(removed_host, event)  # pylint: disable=protected-access
+        removed_host.remove_from_concerns(ctx.lock)
     for added_host in new_hosts.difference(old_hosts):
-        if added_host.cluster.state == config.Job.LOCKED:
-            cm.lock._lock_obj(added_host, event)  # pylint: disable=protected-access
+        added_host.add_to_concerns(ctx.lock)
+
+    still_hc = still_existed_hc(cluster, host_comp_list)
+    host_service_of_still_hc = {(hc.host, hc.service) for hc in still_hc}
+    for removed_hc in set(hc_queryset) - set(still_hc):
+        groupconfigs = GroupConfig.objects.filter(
+            object_type__model__in=['clusterobject', 'servicecomponent'], hosts=removed_hc.host
+        )
+        for gc in groupconfigs:
+            if (gc.object_type.model == 'clusterobject') and (
+                (removed_hc.host, removed_hc.service) in host_service_of_still_hc
+            ):
+                continue
+            gc.hosts.remove(removed_hc.host)
 
     hc_queryset.delete()
     result = []
@@ -554,10 +603,14 @@ def save_hc(cluster, host_comp_list):
         )
         hc.save()
         result.append(hc)
-    event.send_state()
+    ctx.event.send_state()
     cm.status_api.post_event('change_hostcomponentmap', 'cluster', cluster.id)
     cm.issue.update_hierarchy_issues(cluster)
-    cm.status_api.load_service_map()
+    load_service_map()
+    for service in service_map:
+        re_apply_object_policy(service)
+    for hc in result:
+        re_apply_object_policy(hc.service)
     return result
 
 
@@ -619,7 +672,7 @@ def get_import(cluster, service=None):
                         }
                     )
             else:
-                err('BIND_ERROR', 'unexpected export type: {}'.format(pe.prototype.type))
+                err('BIND_ERROR', f'unexpected export type: {pe.prototype.type}')
         return exports
 
     imports = []
@@ -746,21 +799,21 @@ def multi_bind(cluster, service, bind_list):  # pylint: disable=too-many-locals,
         new_bind[cook_key(export_cluster, export_co)] = (pi, cbind, export_obj)
 
     with transaction.atomic():
-        for key in new_bind:
-            if key in old_bind:
-                continue
-            (pi, cb, export_obj) = new_bind[key]
-            check_multi_bind(pi, cluster, service, cb.source_cluster, cb.source_service, cb_list)
-            cb.save()
-            log.info('bind %s to %s', obj_ref(export_obj), obj_ref(import_obj))
-
-        for key in old_bind:
+        for key, value in old_bind.items():
             if key in new_bind:
                 continue
-            export_obj = get_bind_obj(old_bind[key].source_cluster, old_bind[key].source_service)
+            export_obj = get_bind_obj(value.source_cluster, value.source_service)
             check_import_default(import_obj, export_obj)
-            old_bind[key].delete()
+            value.delete()
             log.info('unbind %s from %s', obj_ref(export_obj), obj_ref(import_obj))
+
+        for key, value in new_bind.items():
+            if key in old_bind:
+                continue
+            (pi, cb, export_obj) = value
+            check_multi_bind(pi, cluster, service, cb.source_cluster, cb.source_service)
+            cb.save()
+            log.info('bind %s to %s', obj_ref(export_obj), obj_ref(import_obj))
 
         cm.issue.update_hierarchy_issues(cluster)
 
@@ -777,11 +830,11 @@ def bind(cluster, service, export_cluster, export_service_id):  # pylint: disabl
     if export_service_id:
         export_service = ClusterObject.obj.get(cluster=export_cluster, id=export_service_id)
         if not PrototypeExport.objects.filter(prototype=export_service.prototype):
-            err('BIND_ERROR', '{} do not have exports'.format(obj_ref(export_service)))
+            err('BIND_ERROR', f'{obj_ref(export_service)} do not have exports')
         name = export_service.prototype.name
     else:
         if not PrototypeExport.objects.filter(prototype=export_cluster.prototype):
-            err('BIND_ERROR', '{} does not have exports'.format(obj_ref(export_cluster)))
+            err('BIND_ERROR', f'{obj_ref(export_cluster)} does not have exports')
         name = export_cluster.prototype.name
 
     import_obj = cluster
@@ -833,14 +886,3 @@ def check_multi_bind(actual_import, cluster, service, export_cluster, export_ser
             if source_proto == export_cluster.prototype:
                 msg = 'can not multi bind {} to {}'
                 err('BIND_ERROR', msg.format(proto_ref(source_proto), obj_ref(cluster)))
-
-
-def push_obj(obj, state):
-    stack = obj.stack
-    if not stack:
-        stack = [state]
-    else:
-        stack[0] = state
-    obj.stack = stack
-    obj.save()
-    return obj

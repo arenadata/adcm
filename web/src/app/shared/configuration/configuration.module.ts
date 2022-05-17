@@ -27,11 +27,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { FormElementsModule } from '../form-elements/form-elements.module';
 import { StuffModule } from '../stuff.module';
-import { FieldService } from './field.service';
+import { FieldService } from './services/field.service';
 import { FieldComponent } from './field/field.component';
 import { ConfigFieldsComponent } from './fields/fields.component';
 import { GroupFieldsComponent } from './group-fields/group-fields.component';
-import { ConfigComponent } from './main/main.component';
+import { ConfigComponent } from './main/config.component';
 import { ItemComponent } from './scheme/item.component';
 import { RootComponent } from './scheme/root.component';
 import { SchemeComponent } from './scheme/scheme.component';
@@ -41,6 +41,13 @@ import { HistoryComponent } from './tools/history.component';
 import { SearchComponent } from './tools/search.component';
 import { ToolsComponent } from './tools/tools.component';
 import { YspecService } from './yspec/yspec.service';
+import { AdwpListModule } from '@adwp-ui/widgets';
+import { AddingModule } from '@app/shared/add-component/adding.module';
+import { ConfigService } from '@app/shared/configuration/services/config.service';
+import { ConfigGroupModule } from '@app/config-groups';
+import { AttributesModule } from '@app/shared/configuration/attributes/attributes.module';
+import { ConfigAttributeNames } from '@app/shared/configuration/attributes/attribute.service';
+import { GroupKeysWrapperComponent } from '@app/shared/configuration/attributes/attributes/group-keys/group-keys-wrapper.component';
 
 const material = [
   MatIconModule,
@@ -71,8 +78,34 @@ const material = [
     RootComponent,
     ItemComponent,
   ],
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, StuffModule, FormElementsModule, ...material],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    StuffModule,
+    FormElementsModule,
+    ...material,
+    AdwpListModule,
+    AddingModule,
+    ConfigGroupModule,
+    AttributesModule.forRoot({
+      group_keys: {
+        name: ConfigAttributeNames.GROUP_KEYS,
+        wrapper: GroupKeysWrapperComponent,
+        options: {
+          tooltipText: 'Group parameter'
+        }
+      },
+      custom_group_keys: {
+        name: ConfigAttributeNames.CUSTOM_GROUP_KEYS,
+        options: {
+          tooltipText: 'This parameter can not be added to config group'
+        }
+      }
+    })
+  ],
   exports: [ConfigComponent, ConfigFieldsComponent],
-  providers: [FieldService, YspecService, SchemeService],
+  providers: [FieldService, YspecService, SchemeService, ConfigService],
 })
-export class ConfigurationModule {}
+export class ConfigurationModule {
+}

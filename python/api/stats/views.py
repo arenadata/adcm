@@ -10,37 +10,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from guardian.mixins import PermissionListMixin
+from rest_framework import permissions
 from rest_framework.response import Response
 
-import cm.config as config
+from api.base_view import GenericUIView
+from cm import config
 from cm.models import JobLog, TaskLog
-from api.serializers import EmptySerializer
-from api.api_views import GenericAPIPermView
-from . import serializers
 
 
-class Stats(GenericAPIPermView):
+class JobStats(PermissionListMixin, GenericUIView):
     queryset = JobLog.objects.all()
-    serializer_class = serializers.StatsSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    permission_required = ['cm.view_joblog']
 
-    def get(self, request):
-        """
-        Statistics
-        """
-        obj = JobLog(id=1)
-        serializer = self.serializer_class(obj, context={'request': request})
-        return Response(serializer.data)
-
-
-class JobStats(GenericAPIPermView):
-    queryset = JobLog.objects.all()
-    serializer_class = EmptySerializer
-
-    def get(self, request, job_id):
+    def get(self, request, pk):
         """
         Show jobs stats
         """
-        jobs = self.get_queryset().filter(id__gt=job_id)
+        jobs = self.get_queryset().filter(id__gt=pk)
         data = {
             config.Job.FAILED: jobs.filter(status=config.Job.FAILED).count(),
             config.Job.SUCCESS: jobs.filter(status=config.Job.SUCCESS).count(),
@@ -49,15 +37,16 @@ class JobStats(GenericAPIPermView):
         return Response(data)
 
 
-class TaskStats(GenericAPIPermView):
+class TaskStats(PermissionListMixin, GenericUIView):
     queryset = TaskLog.objects.all()
-    serializer_class = EmptySerializer
+    permission_classes = (permissions.IsAuthenticated,)
+    permission_required = ['cm.view_tasklog']
 
-    def get(self, request, task_id):
+    def get(self, request, pk):
         """
         Show tasks stats
         """
-        tasks = self.get_queryset().filter(id__gt=task_id)
+        tasks = self.get_queryset().filter(id__gt=pk)
         data = {
             config.Job.FAILED: tasks.filter(status=config.Job.FAILED).count(),
             config.Job.SUCCESS: tasks.filter(status=config.Job.SUCCESS).count(),

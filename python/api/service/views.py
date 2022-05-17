@@ -10,27 +10,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import status
+from guardian.mixins import PermissionListMixin
+from rest_framework import status, permissions
 from rest_framework.response import Response
 
-from api.api_views import PageView, create, check_obj, DetailViewRO, ListView, DetailViewDelete
-from api.stack.serializers import ImportSerializer
+import cm.status_api
+from api.base_view import GenericUIView, PaginatedView, DetailView
 from api.cluster.serializers import BindSerializer
-
+from api.stack.serializers import ImportSerializer
+from api.utils import (
+    create,
+    check_obj,
+    check_custom_perm,
+    get_object_for_user,
+)
 from cm.api import delete_service, get_import, unbind
-from cm.models import Cluster, ClusterObject, Prototype, ClusterBind
+from cm.models import Cluster, ClusterObject, Prototype, ClusterBind, HostComponent
+from rbac.viewsets import DjangoOnlyObjectPermissions
 from . import serializers
 
 
-def check_service(kwargs):
-    service = check_obj(ClusterObject, kwargs['service_id'])
+def check_service(user, kwargs):
+    service = get_object_for_user(
+        user, 'cm.view_clusterobject', ClusterObject, id=kwargs['service_id']
+    )
     if 'cluster_id' in kwargs:
-        check_obj(Cluster, kwargs['cluster_id'])
+        get_object_for_user(user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id'])
     return service
 
 
-class ServiceListView(PageView):
+class ServiceListView(PermissionListMixin, PaginatedView):
     queryset = ClusterObject.objects.all()
+    permission_required = ['cm.view_clusterobject']
     serializer_class = serializers.ServiceSerializer
     serializer_class_ui = serializers.ServiceUISerializer
     serializer_class_cluster = serializers.ClusterServiceSerializer
@@ -43,8 +54,10 @@ class ServiceListView(PageView):
         """
         queryset = self.get_queryset()
         if 'cluster_id' in kwargs:
-            cluster = check_obj(Cluster, kwargs['cluster_id'])
-            queryset = self.get_queryset().filter(cluster=cluster)
+            cluster = get_object_for_user(
+                request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
+            )
+            queryset = queryset.filter(cluster=cluster)
         return self.get_page(self.filter_queryset(queryset), request)
 
     def post(self, request, *args, **kwargs):
@@ -54,6 +67,14 @@ class ServiceListView(PageView):
         serializer_class = self.serializer_class
         if 'cluster_id' in kwargs:
             serializer_class = self.serializer_class_cluster
+            cluster = get_object_for_user(
+                request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
+            )
+        else:
+            cluster = get_object_for_user(
+                request.user, 'cm.view_cluster', Cluster, id=request.data['cluster_id']
+            )
+        check_custom_perm(request.user, 'add_service_to', 'cluster', cluster)
         serializer = serializer_class(
             data=request.data,
             context={'request': request, 'cluster_id': kwargs.get('cluster_id', None)},
@@ -61,46 +82,55 @@ class ServiceListView(PageView):
         return create(serializer)
 
 
-class ServiceDetailView(DetailViewRO):
+class ServiceDetailView(PermissionListMixin, DetailView):
     queryset = ClusterObject.objects.all()
     serializer_class = serializers.ServiceDetailSerializer
     serializer_class_ui = serializers.ServiceUISerializer
+    permission_classes = (DjangoOnlyObjectPermissions,)
+    lookup_url_kwarg = 'service_id'
+    permission_required = ['cm.view_clusterobject']
+    error_code = ClusterObject.__error_code__
 
-    def get(self, request, *args, **kwargs):
-        """
-        Show service
-        """
-        service = check_service(kwargs)
-        serial_class = self.select_serializer(request)
-        serializer = serial_class(service, context={'request': request})
-        return Response(serializer.data)
+    def get_queryset(self, *args, **kwargs):
+        queryset = super().get_queryset(*args, **kwargs)
+        if 'cluster_id' in self.kwargs:
+            cluster = get_object_for_user(
+                self.request.user, 'cm.view_cluster', Cluster, id=self.kwargs['cluster_id']
+            )
+            queryset = queryset.filter(cluster=cluster)
+        return queryset
 
     def delete(self, request, *args, **kwargs):
         """
         Remove service from cluster
         """
-        service = check_service(kwargs)
-        delete_service(service)
+        instance = self.get_object()
+        delete_service(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ServiceImportView(ListView):
+class ServiceImportView(GenericUIView):
     queryset = Prototype.objects.all()
     serializer_class = ImportSerializer
-    post_serializer_class = serializers.ImportPostSerializer
+    serializer_class_post = serializers.ImportPostSerializer
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         """
         List all imports available for specified service
         """
-        service = check_service(kwargs)
+        service = check_service(request.user, kwargs)
+        check_custom_perm(
+            request.user, 'view_import_of', 'clusterobject', service, 'view_clusterbind'
+        )
         cluster = service.cluster
         return Response(get_import(cluster, service))
 
     def post(self, request, **kwargs):
-        service = check_service(kwargs)
+        service = check_service(request.user, kwargs)
+        check_custom_perm(request.user, 'change_import_of', 'clusterobject', service)
         cluster = service.cluster
-        serializer = self.post_serializer_class(
+        serializer = self.get_serializer(
             data=request.data, context={'request': request, 'cluster': cluster, 'service': service}
         )
         if serializer.is_valid():
@@ -108,56 +138,79 @@ class ServiceImportView(ListView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ServiceBindView(ListView):
+class ServiceBindView(GenericUIView):
     queryset = ClusterBind.objects.all()
     serializer_class = serializers.ServiceBindSerializer
-
-    def get_serializer_class(self):
-        if self.request and self.request.method == 'POST':
-            return serializers.ServiceBindPostSerializer
-        else:
-            return serializers.ServiceBindSerializer
+    serializer_class_post = serializers.ServiceBindPostSerializer
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         """
         List all binds of service
         """
-        service = check_service(kwargs)
+        service = check_service(request.user, kwargs)
+        check_custom_perm(
+            request.user, 'view_import_of', 'clusterobject', service, 'view_clusterbind'
+        )
         binds = self.get_queryset().filter(service=service)
-        serializer = self.get_serializer_class()(binds, many=True, context={'request': request})
+        serializer = self.get_serializer(binds, many=True)
         return Response(serializer.data)
 
     def post(self, request, **kwargs):
         """
         Bind two services
         """
-        service = check_service(kwargs)
+        service = check_service(request.user, kwargs)
+        check_custom_perm(request.user, 'change_import_of', 'clusterobject', service)
         cluster = service.cluster
-        serializer = self.get_serializer_class()(data=request.data, context={'request': request})
+        serializer = self.get_serializer(data=request.data)
         return create(serializer, cluster=cluster, service=service)
 
 
-class ServiceBindDetailView(DetailViewDelete):
+class ServiceBindDetailView(GenericUIView):
     queryset = ClusterBind.objects.all()
     serializer_class = BindSerializer
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_obj(self, kwargs, bind_id):
-        service = check_service(kwargs)
+        service = check_service(self.request.user, kwargs)
         cluster = service.cluster
-        return check_obj(ClusterBind, {'cluster': cluster, 'id': bind_id})
+        return service, check_obj(ClusterBind, {'cluster': cluster, 'id': bind_id})
 
     def get(self, request, *args, **kwargs):
         """
         Show specified bind of service
         """
-        bind = self.get_obj(kwargs, kwargs['bind_id'])
-        serializer = self.serializer_class(bind, context={'request': request})
+        service, bind = self.get_obj(kwargs, kwargs['bind_id'])
+        check_custom_perm(
+            request.user, 'view_import_of', 'clusterobject', service, 'view_clusterbind'
+        )
+        serializer = self.get_serializer(bind)
         return Response(serializer.data)
 
     def delete(self, request, *args, **kwargs):
         """
         Unbind specified bind of service
         """
-        bind = self.get_obj(kwargs, kwargs['bind_id'])
+        service, bind = self.get_obj(kwargs, kwargs['bind_id'])
+        check_custom_perm(request.user, 'change_import_of', 'clusterobject', service)
         unbind(bind)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class StatusList(GenericUIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    queryset = HostComponent.objects.all()
+    serializer_class = serializers.StatusSerializer
+
+    def get(self, request, *args, **kwargs):
+        """
+        Show all hosts and components in a specified cluster
+        """
+        service = check_service(request.user, kwargs)
+        if self._is_for_ui():
+            host_components = self.get_queryset().filter(service=service)
+            return Response(cm.status_api.make_ui_service_status(service, host_components))
+        else:
+            serializer = self.get_serializer(service)
+            return Response(serializer.data)

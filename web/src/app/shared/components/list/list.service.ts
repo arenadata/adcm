@@ -10,14 +10,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Injectable } from '@angular/core';
-import { ParamMap, Params, convertToParamMap } from '@angular/router';
-import { switchMap, tap, map } from 'rxjs/operators';
+import { convertToParamMap, ParamMap, Params } from '@angular/router';
+import { map, switchMap, tap } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 
 import { environment } from '@env/environment';
 import { ApiService } from '@app/core/api';
 import { ClusterService } from '@app/core/services/cluster.service';
-import { Bundle, Cluster, Entities, Host, IAction, Service, TypeName } from '@app/core/types';
+import { BaseEntity, Bundle, Entities, IAction, Service, TypeName } from '@app/core/types';
+import { IListService, ListInstance } from '@app/shared/components/list/list-service-token';
+import { ListResult } from '@app/models/list-result';
+import { ICluster } from '@app/models/cluster';
 
 const COLUMNS_SET = {
   cluster: ['name', 'prototype_version', 'description', 'state', 'status', 'actions', 'import', 'upgrade', 'config', 'controls'],
@@ -30,16 +33,10 @@ const COLUMNS_SET = {
   bundle: ['name', 'version', 'edition', 'description', 'controls'],
 };
 
-
-export interface ListInstance {
-  typeName: TypeName;
-  columns: string[];
-}
-
 @Injectable({
   providedIn: 'root',
 })
-export class ListService {
+export class ListService implements IListService<Entities> {
   current: ListInstance;
 
   constructor(private api: ApiService, private detail: ClusterService) {}
@@ -49,7 +46,7 @@ export class ListService {
     return this.current;
   }
 
-  getList(p: ParamMap, typeName: string) {
+  getList(p: ParamMap, typeName: TypeName): Observable<ListResult<Entities>> {
     const listParamStr = localStorage.getItem('list:param');
     if (p?.keys.length) {
       const param = p.keys.reduce((a, c) => ({ ...a, [c]: p.get(c) }), {});
@@ -60,6 +57,8 @@ export class ListService {
       } else localStorage.setItem('list:param', JSON.stringify({ [typeName]: param }));
     }
 
+    let params = { ...(p || {}) };
+
     switch (typeName) {
       case 'host2cluster':
         return this.detail.getHosts(p);
@@ -69,6 +68,18 @@ export class ListService {
         return this.api.getList<Bundle>(`${environment.apiRoot}stack/bundle/`, p);
       case 'servicecomponent':
         return this.api.getList(`${environment.apiRoot}cluster/${(this.detail.Current as Service).cluster_id}/service/${this.detail.Current.id}/component`, p);
+      case 'user':
+        params = { ...params['params'], 'expand': 'group' };
+        return this.api.getList(`${environment.apiRoot}rbac/user/`, convertToParamMap(params));
+      case 'group':
+        params = { ...params['params'], 'expand': 'user' };
+        return this.api.getList(`${environment.apiRoot}rbac/group/`, convertToParamMap(params));
+      case 'role':
+        params = { ...params['params'], 'expand': 'child' };
+        return this.api.getList(`${environment.apiRoot}rbac/role/`, convertToParamMap(params), { type: 'role' });
+      case 'policy':
+        params = { ...params['params'], 'expand': 'child,role,user,group,object', 'built_in': 'false' };
+        return this.api.getList(`${environment.apiRoot}rbac/policy/`, convertToParamMap(params));
       default:
         return this.api.root.pipe(switchMap((root) => this.api.getList<Entities>(root[this.current.typeName], p)));
     }
@@ -92,20 +103,11 @@ export class ListService {
   // host
   getClustersForHost(param: Params): Observable<{ id: number; title: string }[]> {
     return this.api.root
-      .pipe(switchMap((root) => this.api.getList<Cluster>(root.cluster, convertToParamMap(param))))
+      .pipe(switchMap((root) => this.api.getList<ICluster>(root.cluster, convertToParamMap(param))))
       .pipe(map((res) => res.results.map((a) => ({ id: a.id, title: a.name }))));
   }
 
-  addClusterToHost(cluster_id: number, row: Host): Observable<Host> {
-    return this.api
-      .post<Host>(`${environment.apiRoot}cluster/${cluster_id}/host/`, { host_id: row.id })
-      .pipe(tap((host) => {
-        row.cluster_id = host.cluster_id;
-        row.cluster_name = host.cluster;
-      }));
-  }
-
-  checkItem<T>(item: Entities) {
+  checkItem<T>(item: BaseEntity) {
     return this.api.get<T>(item.url);
   }
 
