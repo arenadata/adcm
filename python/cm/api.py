@@ -52,7 +52,6 @@ from cm.models import (
     TaskLog,
     Bundle,
 )
-
 from rbac.models import re_apply_object_policy
 
 
@@ -471,7 +470,7 @@ def update_obj_config(obj_conf, conf, attr, desc=''):
     if not attr:
         if old_conf.attr:
             attr = old_conf.attr
-    new_conf = check_json_config(proto, group or obj, conf, old_conf.config, attr)
+    new_conf = check_json_config(proto, group or obj, conf, old_conf.config, attr, old_conf.attr)
     with transaction.atomic():
         cl = save_obj_config(obj_conf, new_conf, attr, desc)
         cm.issue.update_hierarchy_issues(obj)

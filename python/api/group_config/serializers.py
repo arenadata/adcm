@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Mapping
-
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db.transaction import atomic
@@ -25,10 +23,8 @@ from api.serializers import (
     MultiHyperlinkedIdentityField,
     UIConfigField,
 )
-from cm.adcm_config import config_is_ro
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
-from cm.logger import log
 from cm.models import GroupConfig, Host, ObjectConfig, ConfigLog
 
 
@@ -249,48 +245,6 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
         model = ConfigLog
         fields = ('id', 'date', 'description', 'config', 'attr', 'url')
         extra_kwargs = {'config': {'required': True}}
-
-    def validate(self, attrs):
-        def check_value_unselected_field(cc, nc, gk, spec, obj):
-            """
-            Check value unselected field
-
-            :param cc: Current config
-            :param nc: New config
-            :param gk: group_keys from attr
-            :param spec: Config specification
-            :param obj: Parent object (Cluster, Service, Component Provider or Host)
-            """
-            for k, v in gk.items():
-                if isinstance(v, Mapping):
-                    check_value_unselected_field(
-                        cc[k], nc[k], gk[k]['fields'], spec[k]['fields'], obj
-                    )
-                else:
-                    if spec[k]['type'] in ['list', 'map', 'string']:
-                        if config_is_ro(obj, k, spec[k]['limits']) or (
-                            k in cc and k in nc and bool(cc[k]) is False and nc[k] is None
-                        ):
-                            continue
-
-                    if not v and k in cc and k in nc and cc[k] != nc[k]:
-                        msg = (
-                            f"Value of {k} field is different in current and new config."
-                            f" Current: ({cc[k]}),new: ({nc[k]})"
-                        )
-                        log.info(msg)
-                        raise AdcmEx('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD', msg)
-
-        obj_ref = self.context['obj_ref']
-        config_spec = obj_ref.object.get_config_spec()
-        parent_obj = obj_ref.object.object
-        current_config = ConfigLog.objects.get(id=obj_ref.current).config
-        new_config = attrs.get('config')
-        group_keys = attrs.get('attr', {}).get('group_keys', {})
-        check_value_unselected_field(
-            current_config, new_config, group_keys, config_spec, parent_obj
-        )
-        return super().validate(attrs)
 
     @atomic
     def create(self, validated_data):
