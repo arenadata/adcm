@@ -33,8 +33,6 @@ from adcm_pytest_plugin.steps.asserts import assert_state
 from adcm_pytest_plugin.utils import random_string, catch_failed
 from coreapi.exceptions import ErrorMessage
 
-from tests.functional.tools import AnyADCMObject
-
 LOCK_ACTION_NAMES = ["lock", "lock_multijob"]
 
 
@@ -394,11 +392,15 @@ def test_host_should_be_unlocked_after_shrink_action(
 
 
 @pytest.mark.parametrize("adcm_object", ["Cluster", "Service", "Component"])
-@pytest.mark.parametrize("expand_action", ["expand_success", "expand_failed", ])
+@pytest.mark.parametrize(
+    "expand_action",
+    [
+        "expand_success",
+        "expand_failed",
+    ],
+)
 def test_expand_on_clean_locked_host(
-    sdk_client_fs: ADCMClient,
     cluster_with_two_hosts: Tuple[Cluster, List[Host]],
-    host_provider: Provider,
     adcm_object: str,
     expand_action: str,
 ):
@@ -424,12 +426,10 @@ def test_expand_on_clean_locked_host(
     elif adcm_object == "Component":
         obj_for_action = dummy_component
 
-    with allure.step(
-        f"Run {obj_for_action.__class__.__name__} action: expand on clean locked host"
-    ):
+    with allure.step(f"Run {obj_for_action.__class__.__name__} action: expand on clean locked host"):
         with catch_failed(Failed, "Expand action should throw an API error as Host is locked"):
             with pytest.raises(ErrorMessage, match="locked host"):
-                obj_for_action.action(name=expand_action, ).run(
+                obj_for_action.action(name=expand_action,).run(
                     hc=[
                         {
                             "host_id": host1.host_id,
@@ -663,12 +663,14 @@ def _cluster_with_components(cluster: Cluster, hosts: List[Host]):
     return first_service_component, second_service_component
 
 
-def _lock_obj(obj: AnyADCMObject, lock_action: str = "lock") -> Task:
+def _lock_obj(
+    obj: Union[Cluster, Service, Component, Provider, Host], lock_action: str = "lock", duration: int = 5
+) -> Task:
     """
     Run action lock on object
     """
-    with allure.step(f"Lock {obj.__class__.__name__} with action '{lock_action}'"):
-        return obj.action(name=lock_action).run()
+    with allure.step(f"Lock {obj.__class__.__name__} with {duration} sec duration"):
+        return obj.action(name=lock_action).run(config={"duration": duration})
 
 
 def is_locked(obj: Union[Cluster, Service, Component, Provider, Host]):
