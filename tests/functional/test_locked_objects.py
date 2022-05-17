@@ -412,8 +412,8 @@ def test_expand_on_clean_locked_host(
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
 
-    dummy_service = cluster.service_add(name="second_service")
-    dummy_component = dummy_service.component(name="second_service_component_1")
+    dummy_service = cluster.service_add(name="first_service")
+    dummy_component = dummy_service.component(name="first_service_component_1")
     cluster.hostcomponent_set(
         (host1, dummy_component),
     )
