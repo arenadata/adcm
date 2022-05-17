@@ -152,6 +152,22 @@ class CommonConfigMenuObj(BasePageObject):
         locator = row_locators.value if not is_password else row_locators.password
         return self.find_child(row, locator).get_property("value")
 
+    def check_inputs_disabled(self, row: WebElement, is_password: bool = False):
+        """Check that inputs in row are disabled"""
+
+        row_locators = CommonConfigMenu.ConfigRow
+        locator = row_locators.value if not is_password else row_locators.password
+        for row_input in self.find_children(row, locator):
+            assert row_input.get_attribute("disabled") == 'true', "Input should be disabled"
+
+    def check_inputs_enabled(self, row: WebElement, is_password: bool = False):
+        """Check that inputs in row are enabled"""
+
+        row_locators = CommonConfigMenu.ConfigRow
+        locator = row_locators.value if not is_password else row_locators.password
+        for row_input in self.find_children(row, locator):
+            assert not row_input.get_attribute("disabled"), "Input should be enabled"
+
     @allure.step('Check bool field')
     def assert_checkbox_state(self, row: WebElement, expected_value: bool):
         current_bool_state = "checked" in self.find_child(row, CommonConfigMenu.ConfigRow.checkbox).get_attribute(
@@ -382,7 +398,7 @@ class CommonConfigMenuObj(BasePageObject):
     def check_save_btn_state_and_save_conf(self, expected_state: bool):
         assert (
             not (self.is_save_btn_disabled()) == expected_state
-        ), f'Save button should{" not " if expected_state is False else " "}be disabled'
+        ), f'Save button should{" not " if expected_state is True else " "}be disabled'
         if expected_state:
             self.save_config()
 

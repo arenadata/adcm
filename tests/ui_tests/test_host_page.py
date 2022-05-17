@@ -170,6 +170,7 @@ class TestHostListPage:
     """Tests for the /host page"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.parametrize(
         "bundle_archive",
         [utils.get_data_dir(__file__, "provider")],
@@ -194,6 +195,7 @@ class TestHostListPage:
         )
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.usefixtures("upload_and_create_provider", "upload_and_create_cluster")
     def test_create_bonded_to_cluster_host(self, page: HostListPage):
         """Create host bonded to cluster"""
@@ -222,6 +224,7 @@ class TestHostListPage:
         page.table.check_pagination(hosts_on_second_page)
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.usefixtures("upload_and_create_provider", "upload_and_create_cluster")
     def test_bind_host_to_cluster(self, page: HostListPage):
         """Create host and go to cluster from host list"""
@@ -245,7 +248,9 @@ class TestHostListPage:
     @pytest.mark.parametrize(
         ('row_child_name', 'menu_item_name'),
         [
-            pytest.param('fqdn', 'main_tab', id='open_host_tab', marks=pytest.mark.smoke),
+            pytest.param(
+                'fqdn', 'main_tab', id='open_host_tab', marks=[pytest.mark.smoke, pytest.mark.include_firefox()]
+            ),
             pytest.param('status', 'status_tab', id='open_status_tab'),
             pytest.param('config', 'config_tab', id='open_config_tab'),
         ],
@@ -264,6 +269,7 @@ class TestHostListPage:
             main_host_page.check_host_toolbar(HOST_FQDN)
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.usefixtures("create_host", "upload_and_create_provider")
     def test_delete_host(self, page: HostListPage):
         """Create host and delete it"""
@@ -279,6 +285,7 @@ class TestHostListPage:
         page.check_element_should_be_hidden(HostListLocators.HostTable.row)
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.usefixtures("_create_bonded_host")
     def test_delete_bonded_host(self, page: HostListPage):
         """Host shouldn't be deleted"""
@@ -290,6 +297,7 @@ class TestHostListPage:
         page.check_element_should_be_visible(HostListLocators.HostTable.row)
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.parametrize('menu', ['main', 'config', 'status'])
     @pytest.mark.usefixtures('create_host')
     def test_open_menu(self, upload_and_create_provider: Tuple[Bundle, Provider], page: HostListPage, menu: str):
@@ -298,6 +306,7 @@ class TestHostListPage:
         _check_menu(menu, upload_and_create_provider[0], page)
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.usefixtures('create_host')
     def test_run_action_on_new_host(self, page: HostListPage):
         """Create host and run action on it"""
@@ -312,6 +321,7 @@ class TestHostMainPage:
     """Tests for the /host/{}/config page"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_open_by_tab_host_main_page(self, app_fs, create_host):
         """Test open /host/{}/main page from left menu"""
 
@@ -395,6 +405,7 @@ class TestHostConfigPage:
             host_page.config.check_config_fields_visibility(set(), {ADVANCED_FIELD_NAME})
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     @pytest.mark.parametrize('provider_bundle', ["host_with_all_config_params"], indirect=True)
     @pytest.mark.usefixtures('create_host')
     def test_custom_name_config(self, page: HostListPage):

@@ -17,13 +17,13 @@ import os
 import sys
 import tarfile
 from pathlib import PosixPath
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Union
 
 import allure
 import pytest
 import yaml
 
-from _pytest.python import Function
+from _pytest.python import Function, FunctionDefinition, Module
 from adcm_client.objects import ADCMClient, User
 from allure_commons.model2 import TestResult, Parameter
 from allure_pytest.listener import AllureListener
@@ -53,7 +53,26 @@ CLEAN_ADCM_PARAM = pytest.param({}, id="clean_adcm")
 DUMMY_DATA_PARAM = pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data")
 DUMMY_DATA_FULL_PARAM = pytest.param({"fill_dummy_data": True}, id="adcm_with_dummy_data", marks=[pytest.mark.full])
 
+CHROME_PARAM = pytest.param("Chrome")
+FIREFOX_PARAM = pytest.param("Firefox", marks=[pytest.mark.full])
+ONLY_CHROME_PARAM = [CHROME_PARAM]
+CHROME_AND_FIREFOX_PARAM = [CHROME_PARAM, FIREFOX_PARAM]
+INCLUDE_FIREFOX_MARK = "include_firefox"
+
 TEST_USER_CREDENTIALS = "test_user", "password"
+
+
+def _marker_in_node(mark: str, node: Union[FunctionDefinition, Module]) -> bool:
+    """Check if mark is in own_markers of a node"""
+    return any(marker.name == mark for marker in node.own_markers)
+
+
+def marker_in_node_or_its_parent(mark: str, node) -> bool:
+    """Check if mark is in own_markers of a node or any of its parents"""
+    marker_at_this_node = _marker_in_node(mark, node)
+    if marker_at_this_node or node.parent is None:
+        return marker_at_this_node
+    return marker_in_node_or_its_parent(mark, node.parent)
 
 
 def pytest_generate_tests(metafunc):
@@ -61,7 +80,11 @@ def pytest_generate_tests(metafunc):
     Parametrize web_driver fixture of browser names based on run options
     """
     if 'browser' in metafunc.fixturenames:
-        browsers = [pytest.param("Chrome"), pytest.param("Firefox", marks=[pytest.mark.full])]
+        browsers = (
+            CHROME_AND_FIREFOX_PARAM
+            if marker_in_node_or_its_parent(INCLUDE_FIREFOX_MARK, metafunc.definition)
+            else ONLY_CHROME_PARAM
+        )
         metafunc.parametrize('browser', browsers, scope='session')
 
 

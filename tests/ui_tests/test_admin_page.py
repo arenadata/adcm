@@ -133,6 +133,7 @@ class TestAdminSettingsPage:
     """Tests for the /admin/roles"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_open_by_tab_admin_settings_page(self, app_fs):
         """Test open /admin/settings from left menu"""
 
@@ -233,6 +234,7 @@ class TestAdminUsersPage:
     """Tests for the /admin/users"""
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_open_by_tab_admin_users_page(self, app_fs):
         """Test open /admin/users from left menu"""
 
@@ -315,6 +317,7 @@ class TestAdminRolesPage:
     )
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_open_by_tab_admin_roles_page(self, app_fs):
         """Test open /admin/roles from left menu"""
 
@@ -403,6 +406,7 @@ class TestAdminGroupsPage:
     custom_group = AdminGroupInfo(name='Test_group', description='Test description', users='admin')
 
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_open_by_tab_admin_groups_page(self, app_fs):
         """Test open /admin/groups from left menu"""
 
@@ -470,6 +474,7 @@ class TestAdminPolicyPage:
 
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     @pytest.mark.smoke()
+    @pytest.mark.include_firefox()
     def test_open_by_tab_admin_policies_page(self, app_fs):
         """Test open /admin/policies from left menu"""
 
@@ -520,7 +525,7 @@ class TestAdminPolicyPage:
         )
         policies_page.delete_all_policies()
 
-    @pytest.mark.skip(reason="https://arenadata.atlassian.net/browse/ADCM-2761")
+    # pylint: disable=too-many-arguments
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     @pytest.mark.parametrize(
         ("clusters", "services", "providers", "hosts", "parents", "role_name"),
@@ -580,6 +585,8 @@ class TestAdminPolicyPage:
         )
         self.check_custom_policy(policies_page, policy=custom_policy)
 
+    # pylint: enable=too-many-locals
+
     def test_policy_permission_to_view_access_cluster(
         self, sdk_client_fs, app_fs, create_cluster_with_component, another_user
     ):
@@ -616,7 +623,7 @@ class TestAdminPolicyPage:
     ):
         """Test for the permissions to service."""
 
-        cluster, service, host, provider = create_cluster_with_component
+        cluster, service, *_ = create_cluster_with_component
         with allure.step("Create test role"):
             test_role = sdk_client_fs.role_create(
                 name=self.custom_role_name,
@@ -651,7 +658,7 @@ class TestAdminPolicyPage:
     ):
         """Test for the permissions to component."""
 
-        cluster, service, host, provider = create_cluster_with_component
+        cluster, service, host, _ = create_cluster_with_component
         with allure.step("Create test role"):
             test_role = sdk_client_fs.role_create(
                 name=self.custom_role_name,
@@ -748,12 +755,13 @@ class TestAdminPolicyPage:
             second_host_config_page = HostConfigPage(app_fs.driver, app_fs.adcm.url, second_host.id).open()
             second_host_config_page.config.check_no_rows_or_groups_on_page()
 
+    # pylint: disable=too-many-locals
     def test_policy_permission_to_run_cluster_action_and_view_task(
         self, sdk_client_fs, app_fs, create_cluster_with_component, another_user
     ):
         """Test for the permissions to task."""
 
-        cluster, service, host, provider = create_cluster_with_component
+        cluster, *_ = create_cluster_with_component
         with allure.step("Create test role"):
             test_role = sdk_client_fs.role_create(
                 name=self.custom_role_name,
@@ -812,3 +820,5 @@ class TestAdminPolicyPage:
             assert task_info.invoker_objects == cluster.name, "Wrong cluster name"
             job_list_page.click_on_action_name_in_row(job_rows[0])
             JobPageStdout(app_fs.driver, app_fs.adcm.url, 1).wait_page_is_opened()
+
+    # pylint: enable=too-many-locals
