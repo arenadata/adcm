@@ -328,7 +328,7 @@ def update_hierarchy_issues(  # pylint: disable=inconsistent-return-statements
 
     if remove_obj:
         delete_func_args = []
-        for concern in obj.concerns.all():
+        for concern in obj.concerns.exclude(type=ConcernType.Lock):
             if concern.owner == obj:
                 delete_func_args.append(concern)
         return partial(del_obj, delete_func_args)
