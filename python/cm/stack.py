@@ -514,6 +514,27 @@ def get_yspec(proto, ref, bundle_hash, conf, name, subname):
     return schema
 
 
+def check_unique_names_constraint(conf_dict):
+    names = []
+    if isinstance(conf_dict, dict):
+        for name, conf in conf_dict.items():
+            names.append(name)
+    elif isinstance(conf_dict, list):
+        for conf in conf_dict:
+            log.critical(f'{conf}')
+            names.append(conf['name'])
+            if is_group(conf):
+                for subconf in conf['subs']:
+                    names.append(subconf['name'])
+    else:
+        raise NotImplementedError
+
+    duplicated = [i for i in names if names.count(i) > 1]
+    if duplicated:
+        msg = f'Duplicated names: {", ".join(i for i in set(duplicated))}'
+        err('DUPLICATED_NAME_IN_CONFIG', msg)
+
+
 def save_prototype_config(
     proto, proto_conf, bundle_hash, action=None
 ):  # pylint: disable=too-many-statements,too-many-locals
@@ -597,6 +618,7 @@ def save_prototype_config(
             msg = 'Duplicate config on {} {}, action {}, with name {} and subname {}'
             err('INVALID_CONFIG_DEFINITION', msg.format(obj.type, obj, action, name, subname))
 
+    check_unique_names_constraint(conf_dict)
     if isinstance(conf_dict, dict):
         for (name, conf) in conf_dict.items():
             if 'type' in conf:

@@ -157,6 +157,7 @@ ERRORS = {
         rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),
+    'DUPLICATED_NAME_IN_CONFIG': ('duplicated name in config', rfs.HTTP_400_BAD_REQUEST, ERR),
 }
 
 
