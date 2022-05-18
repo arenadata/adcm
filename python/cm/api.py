@@ -467,9 +467,6 @@ def update_obj_config(obj_conf, conf, attr, desc=''):
     else:
         proto = obj.prototype
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
-    if not attr:
-        if old_conf.attr:
-            attr = old_conf.attr
     new_conf = check_json_config(proto, group or obj, conf, old_conf.config, attr, old_conf.attr)
     with transaction.atomic():
         cl = save_obj_config(obj_conf, new_conf, attr, desc)

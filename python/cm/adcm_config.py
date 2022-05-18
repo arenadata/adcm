@@ -716,28 +716,37 @@ def check_attr(proto, obj, attr, spec):  # pylint: disable=too-many-branches
     allowed_key = ('active',)
     if not isinstance(attr, dict):
         err('ATTRIBUTE_ERROR', '`attr` should be a map')
-    if is_group_config:
-        check_group_keys_attr(attr, spec, obj)
     for key, value in attr.items():
         if key in ['group_keys', 'custom_group_keys']:
             if not is_group_config:
                 err('ATTRIBUTE_ERROR', f'not allowed key `{key}` for object ({ref})')
             continue
         if key + '/' not in spec:
-            err('ATTRIBUTE_ERROR', f'there isn\'t group `{key}` in config ({ref})')
+            err('ATTRIBUTE_ERROR', f'there isn\'t `{key}` group in the config ({ref})')
         if spec[key + '/'].type != 'group':
             err('ATTRIBUTE_ERROR', f'config key `{key}` is not a group ({ref})')
-        if not isinstance(value, dict):
-            err('ATTRIBUTE_ERROR', f'value of attribute `{key}` should be a map ({ref})')
-        for attr_key in value:
-            if attr_key not in allowed_key:
-                err('ATTRIBUTE_ERROR', f'not allowed key `{attr_key}` of attribute `{key}` ({ref})')
-        if 'active' in value:
-            if not isinstance(value['active'], bool):
-                err(
-                    'ATTRIBUTE_ERROR',
-                    f'value of key `active` of attribute `{key}` should be boolean ({ref})',
-                )
+    for value in spec.values():
+        key = value.name
+        if value.type == 'group' and 'activatable' in value.limits:
+            if key not in attr:
+                err('ATTRIBUTE_ERROR', f'there isn\'t `{key}` group in the `attr`')
+            if not isinstance(attr[key], dict):
+                err('ATTRIBUTE_ERROR', f'value of attribute `{key}` should be a map ({ref})')
+            for attr_key in attr[key]:
+                if attr_key not in allowed_key:
+                    err(
+                        'ATTRIBUTE_ERROR',
+                        f'not allowed key `{attr_key}` of attribute `{key}` ({ref})',
+                    )
+                if not isinstance(attr[key]['active'], bool):
+                    err(
+                        'ATTRIBUTE_ERROR',
+                        f'value of key `active` of attribute `{key}` should be boolean ({ref})',
+                    )
+    if is_group_config:
+        if 'group_keys' not in attr:
+            err('ATTRIBUTE_ERROR', f'here isn\'t `group_keys` key in the `attr` ({ref})')
+        check_group_keys_attr(attr, spec, obj)
 
 
 def check_config_spec(
