@@ -13,6 +13,7 @@ import { AfterViewChecked, ChangeDetectorRef, Component, EventEmitter, Input, Ou
 import { FormGroup } from '@angular/forms';
 import { isNumber } from '@app/core/types';
 import { CompTile, Tile } from '../types';
+import { StatusType } from "@app/components/maintenance-mode-button/maintenance-mode-button.component";
 
 @Component({
   selector: 'app-much-2-many',
@@ -21,6 +22,7 @@ import { CompTile, Tile } from '../types';
 })
 export class Much2ManyComponent implements AfterViewChecked {
   isShow = false;
+  statusType = StatusType;
 
   @Output() clickToTitleEvt: EventEmitter<any> = new EventEmitter();
   @Output() clearRelationEvt: EventEmitter<{ relation: Tile; model: Tile }> = new EventEmitter();
@@ -81,5 +83,13 @@ export class Much2ManyComponent implements AfterViewChecked {
     const [a, b] = this.model.limit,
       lim = isNumber(b) ? b : a === 'odd' ? 1 : a === 'depend' ? 0 : a;
     return `${this.model.relations.length}${lim !== 0 ? ` / ${lim}` : ''}`;
+  }
+
+  tooltip() {
+    if (this.model?.mm === this.statusType.On) {
+      return 'Host is in “Maintenance mode';
+    }
+
+    return null;
   }
 }

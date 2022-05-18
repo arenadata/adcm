@@ -30,6 +30,11 @@ div.m2m {
   & .title-container {
     display: flex;
 
+    &.disabled {
+      pointer-events: none;
+      color: #FFFFFF4D;
+    }
+
     & .title {
       flex: 1;
       line-height: 40px;
@@ -54,6 +59,10 @@ div.m2m {
   & .relations-list {
     padding: 4px 40px;
     display: none;
+
+    &.disabled {
+      pointer-events: none;
+    }
 
     & div {
       display: flex;
