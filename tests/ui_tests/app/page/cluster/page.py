@@ -445,6 +445,38 @@ class ClusterHostPage(ClusterPageMixin):
     def check_cluster_hosts_toolbar(self, cluster_name: str, host_name: str):
         self.toolbar.check_toolbar_elements(["CLUSTERS", cluster_name, "HOSTS", host_name])
 
+    @allure.step('Click on maintenance mode button in row {row_num}')
+    def click_on_maintenance_mode_btn(self, row_num: int):
+        """Click maintenance mode in row"""
+
+        row = self.table.get_row(row_num)
+        self.find_child(row, ClusterHostLocators.HostTable.HostRow.maintenance_mode_btn).click()
+
+    @allure.step('Assert maintenance mode state in row {row_num}')
+    def assert_maintenance_mode_state(self, row_num: int, is_mm_state_on: bool = True):
+        """Assert maintenance mode state in row"""
+
+        def _check_mm_state(page: ClusterHostPage, row: WebElement):
+            button_state = page.find_child(
+                row, ClusterHostLocators.HostTable.HostRow.maintenance_mode_btn
+            ).get_attribute("class")
+            tooltips_info = [
+                t.get_property("innerHTML") for t in page.find_elements(ClusterHostLocators.HostTable.tooltip_text)
+            ]
+            if is_mm_state_on:
+                assert "mat-primary" in button_state, "Button should be gray"
+                assert (
+                    "Turn maintenance mode ON" in tooltips_info
+                ), "There should be tooltip that user could turn on maintenance mode"
+            else:
+                assert "mat-on" in button_state, "Button should be red"
+                assert (
+                    "Turn maintenance mode OFF" in tooltips_info
+                ), "There should be tooltip that user could turn off maintenance mode"
+
+        host_row = self.table.get_row(row_num)
+        wait_until_step_succeeds(_check_mm_state, timeout=4, period=0.5, page=self, row=host_row)
+
 
 class ClusterComponentsPage(ClusterPageMixin):
     """Cluster page components menu"""
