@@ -186,8 +186,15 @@ class HostListPage(BasePageObject):
         self.find_child(row, HostListLocators.HostTable.HostRow.maintenance_mode_btn).click()
 
     @allure.step('Assert maintenance mode state in row {row_num}')
-    def assert_maintenance_mode_state(self, row_num: int, is_mm_state_on: bool = True):
-        """Assert maintenance mode state in row"""
+    def assert_maintenance_mode_state(self, row_num: int, is_mm_state_on: Optional[bool] = True):
+        """
+        Assert maintenance mode state in row
+        :param row_num: number of the row with maintenance mode button
+        :param is_mm_state_on: state of maintenance mode button:
+            True for ON state
+            False for OFF state
+            None for not available state
+        """
 
         def _check_mm_state(page: HostListPage, row: WebElement):
             button_state = page.find_child(row, HostListLocators.HostTable.HostRow.maintenance_mode_btn).get_attribute(
@@ -201,11 +208,16 @@ class HostListPage(BasePageObject):
                 assert (
                     "Turn maintenance mode ON" in tooltips_info
                 ), "There should be tooltip that user could turn on maintenance mode"
-            else:
+            elif is_mm_state_on is False:
                 assert "mat-on" in button_state, "Button should be red"
                 assert (
                     "Turn maintenance mode OFF" in tooltips_info
                 ), "There should be tooltip that user could turn off maintenance mode"
+            else:
+                assert "mat-button-disabled" in button_state, "Button should be disabled"
+                assert (
+                    "Maintenance mode is not available" in tooltips_info
+                ), "There should be tooltip that maintenance mode is not available"
 
         host_row = self.table.get_row(row_num)
         wait_until_step_succeeds(_check_mm_state, timeout=4, period=0.5, page=self, row=host_row)
