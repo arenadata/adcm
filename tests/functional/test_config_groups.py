@@ -62,7 +62,7 @@ HOST_ERROR_MESSAGE = (
 )
 HOST_EXISTS_MESSAGE = "the host is already a member of this group"
 ATTRIBUTE_ERROR_MESSAGE = "field cannot be changed, read-only"
-GROUP_ERROR_MESSAGE = "parameter cannot be included in the group"
+GROUP_ERROR_MESSAGE = "field cannot be included in the group"
 GROUP_CONFIG_CHANGE_UNSELECTED_ERROR_MESSAGE = "field is different in current and new config"
 FIRST_COMPONENT_NAME = "first"
 SECOND_COMPONENT_NAME = "second"
@@ -559,10 +559,13 @@ class TestChangeGroupsConfig:
             config_before = self._get_config_from_group(cluster_group)
         with allure.step("Check that without cluster group keys values are not saved in cluster group"):
             config_expected_without_groups = self._add_values_to_group_config_template()
-            config_after = cluster_group.config_set(config_expected_without_groups)
+            with pytest.raises(ErrorMessage) as e:
+                cluster_group.config_set(config_expected_without_groups)
+            GROUP_CONFIG_CHANGE_UNSELECTED_FIELD.equal(e)
+            config_after = self._get_config_from_group(cluster_group)
             self._check_values_in_group(
-                actual_values=config_after['config'],
-                expected_values=config_expected_without_groups['config'],
+                actual_values=config_after,
+                expected_values=config_before,
             )
             config_previous = {"map": {test_host_1.fqdn: dict(config_before), test_host_2.fqdn: dict(config_before)}}
             for hosts in self.CLUSTER_HOSTS_VARIANTS:
@@ -857,8 +860,8 @@ class TestChangeGroupsConfig:
         with allure.step("Check changing sub with group_customization true"):
             config_expected = self._add_values_to_group_config_template(
                 config_attr={"group": OrderedDict([('port', 9200), ('transport_port', 9100)])},
-                group_keys={"group": {"port": False, "transport_port": True}},
-                custom_group_keys={"group": {"port": False, "transport_port": True}},
+                group_keys={"group": {"value": False, "fields": {"port": False, "transport_port": True}}},
+                custom_group_keys={"group": {"value": False, "fields": {"port": False, "transport_port": True}}},
             )
             cluster_group.config_set(config_expected)
             config_updated = {
