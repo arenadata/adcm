@@ -28,6 +28,7 @@ from api.serializers import (
 from cm.adcm_config import config_is_ro
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
+from cm.logger import log
 from cm.models import GroupConfig, Host, ObjectConfig, ConfigLog
 
 
@@ -270,14 +271,19 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
                 if isinstance(v, Mapping):
                     check_value_unselected_field(cc[k], nc[k], gk[k], spec[k]['fields'], obj)
                 else:
-                    if spec[k]['type'] in ['list', 'map']:
+                    if spec[k]['type'] in ['list', 'map', 'string']:
                         if config_is_ro(obj, k, spec[k]['limits']) or (
-                            bool(nc[k]) is False and cc[k] is None
+                            k in cc and k in nc and bool(cc[k]) is False and nc[k] is None
                         ):
                             continue
 
                     if not v and k in cc and k in nc and cc[k] != nc[k]:
-                        raise AdcmEx('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD')
+                        msg = (
+                            f"Value of {k} field is different in current and new config."
+                            f" Current: ({cc[k]}),new: ({nc[k]})"
+                        )
+                        log.info(msg)
+                        raise AdcmEx('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD', msg)
 
         obj_ref = self.context['obj_ref']
         config_spec = obj_ref.object.get_config_spec()

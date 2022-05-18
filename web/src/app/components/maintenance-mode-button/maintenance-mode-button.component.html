@@ -1,6 +1,7 @@
-<div [matTooltip]="status?.tooltip">
+<div [matTooltip]="status?.tooltip" (click)="preventIfDisabled($event)">
   <button
     mat-icon-button
+    class="mm-button"
     color="{{status?.color}}"
     [disabled]="!status?.isModeActive"
     (click)="clickCell($event, row)"
