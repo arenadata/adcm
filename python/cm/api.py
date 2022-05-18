@@ -550,9 +550,7 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
 
     for service in ClusterObject.objects.filter(cluster=cluster):
         cm.issue.check_component_constraint(service, [i for i in host_comp_list if i[0] == service])
-    for item in host_comp_list:
-        for obj in item:
-            cm.issue.check_object_concern(obj)
+
     cm.issue.check_component_requires(host_comp_list)
     cm.issue.check_bound_components(host_comp_list)
     return host_comp_list

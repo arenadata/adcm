@@ -278,6 +278,10 @@ def check_hostcomponentmap(
     if not cluster:
         err('TASK_ERROR', 'Only cluster objects can have action with hostcomponentmap')
 
+    for host_comp in hc:
+        host = Host.obj.get(id=host_comp.get('host_id', 0))
+        issue.check_object_concern(host)
+
     return api.check_hc(cluster, hc)
 
 
