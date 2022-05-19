@@ -358,8 +358,9 @@ def delete_service(service: ClusterObject, cancel_tasks=True) -> None:
         _cancel_locking_tasks(service)
     service_id = service.id
     cluster = service.cluster
-    service.concerns.filter(type__in=[ConcernType.Issue, ConcernType.Flag]).delete()
+    del_concerns_func = cm.issue.update_hierarchy_issues(obj=service, remove_obj=True)
     service.delete()
+    del_concerns_func()
     cm.issue.update_hierarchy_issues(cluster)
     re_apply_object_policy(cluster)
     cm.status_api.post_event('delete', 'service', service_id)
@@ -374,13 +375,15 @@ def delete_cluster(cluster, cancel_tasks=True):
     hosts = cluster.host_set.all()
     host_ids = [str(host.id) for host in hosts]
     hosts.update(maintenance_mode=MaintenanceModeType.Disabled)
-    cluster.delete()
     log.debug(
         'Deleting cluster #%s. Set `%s` maintenance mode value for `%s` hosts.',
         cluster_id,
         MaintenanceModeType.Disabled,
         ', '.join(host_ids),
     )
+    del_concerns_func = cm.issue.update_hierarchy_issues(obj=cluster, remove_obj=True)
+    cluster.delete()
+    del_concerns_func()
     cm.status_api.post_event('delete', 'cluster', cluster_id)
     load_service_map()
 
