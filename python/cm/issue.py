@@ -324,4 +324,4 @@ def update_issue_after_deleting():
         if concern.owner is None:
             concern_str = str(concern)
             concern.delete()
-            log.info(f"Concern deleted: {concern_str}")
+            log.info('Deleted %s', concern_str)
