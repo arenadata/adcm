@@ -334,7 +334,7 @@ class ConfigLog(ADCMModel):
     __error_code__ = 'CONFIG_NOT_FOUND'
 
     @transaction.atomic()
-    def save(self, *args, **kwargs):  # pylint: disable=too-many-locals
+    def save(self, *args, **kwargs):  # pylint: disable=too-many-locals,too-many-statements
         """Saving config and updating config groups"""
 
         def update_config(origin: dict, renovator: dict, group_keys: dict) -> None:
@@ -371,6 +371,20 @@ class ConfigLog(ADCMModel):
             for field in extra_fields:
                 attrs.pop(field)
 
+        def clean_group_keys(group_keys, spec):
+            """Clean group_keys after update cluster"""
+            correct_group_keys = {}
+            for field, info in spec.items():
+                if info['type'] == 'group':
+                    correct_group_keys[field] = {}
+                    correct_group_keys[field]['value'] = group_keys[field]['value']
+                    correct_group_keys[field]['fields'] = {}
+                    for key in info['fields'].keys():
+                        correct_group_keys[field]['fields'][key] = group_keys[field]['fields'][key]
+                else:
+                    correct_group_keys[field] = group_keys[field]
+            return correct_group_keys
+
         DummyData.objects.filter(id=1).update(date=timezone.now())
         obj = self.obj_ref.object
         if isinstance(obj, (Cluster, ClusterObject, ServiceComponent, HostProvider)):
@@ -390,10 +404,10 @@ class ConfigLog(ADCMModel):
                 spec = cg.get_config_spec()
                 group_keys, custom_group_keys = cg.create_group_keys(spec)
                 group_keys = deep_merge(group_keys, current_group_keys)
+                group_keys = clean_group_keys(group_keys, spec)
                 attr['group_keys'] = group_keys
                 attr['custom_group_keys'] = custom_group_keys
                 clean_attr(attr, spec)
-                clean_attr(attr['group_keys'], spec)
 
                 group_config.attr = attr
                 group_config.description = current_group_config.description

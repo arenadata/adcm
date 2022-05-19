@@ -588,17 +588,19 @@ def restore_read_only(obj, spec, conf, old_conf):  # # pylint: disable=too-many-
     return conf
 
 
-def check_json_config(proto, obj, new_conf, old_conf=None, attr=None, old_attr=None):
+def check_json_config(
+    proto, obj, new_config, current_config=None, new_attr=None, current_attr=None
+):
     spec, flat_spec, _, _ = get_prototype_config(proto)
-    check_attr(proto, obj, attr, flat_spec)
+    check_attr(proto, obj, new_attr, flat_spec)
     if isinstance(obj, GroupConfig):
         config_spec = obj.get_config_spec()
-        group_keys = attr.get('group_keys', {})
+        group_keys = new_attr.get('group_keys', {})
         check_value_unselected_field(
-            old_conf, new_conf, attr, old_attr, group_keys, config_spec, obj.object
+            current_config, new_config, current_attr, new_attr, group_keys, config_spec, obj.object
         )
-    cm.variant.process_variant(obj, spec, new_conf)
-    return check_config_spec(proto, obj, spec, flat_spec, new_conf, old_conf, attr)
+    cm.variant.process_variant(obj, spec, new_config)
+    return check_config_spec(proto, obj, spec, flat_spec, new_config, current_config, new_attr)
 
 
 def check_structure_for_group_attr(group_keys, spec, key_name):
@@ -705,9 +707,6 @@ def check_group_keys_attr(attr, spec, group_config):
 
 
 def check_attr(proto, obj, attr, spec):  # pylint: disable=too-many-branches
-    # TODO: refactor this func
-    if not attr:
-        return
     is_group_config = False
     if isinstance(obj, GroupConfig):
         is_group_config = True
@@ -744,8 +743,6 @@ def check_attr(proto, obj, attr, spec):  # pylint: disable=too-many-branches
                         f'value of key `active` of attribute `{key}` should be boolean ({ref})',
                     )
     if is_group_config:
-        if 'group_keys' not in attr:
-            err('ATTRIBUTE_ERROR', f'here isn\'t `group_keys` key in the `attr` ({ref})')
         check_group_keys_attr(attr, spec, obj)
 
 
