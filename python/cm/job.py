@@ -24,7 +24,7 @@ from background_task import background
 from django.db import transaction
 from django.utils import timezone
 
-from cm import api, inventory, adcm_config, variant, config
+from cm import api, inventory, adcm_config, variant, config, issue
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx
 from cm.errors import raise_AdcmEx as err
@@ -38,7 +38,6 @@ from cm.models import (
     ActionType,
     Cluster,
     ClusterObject,
-    ConcernType,
     ConfigLog,
     DummyData,
     Host,
@@ -169,11 +168,7 @@ def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster
     else:
         obj = task_object
 
-    if obj.concerns.filter(type=ConcernType.Lock).exists():
-        err('TASK_ERROR', 'object is locked')
-
-    if obj.concerns.filter(type=ConcernType.Issue).exists():
-        err('TASK_ERROR', 'object has issues')
+    issue.check_object_concern(obj)
 
     if action.allowed(obj):
         return
@@ -282,6 +277,10 @@ def check_hostcomponentmap(
 
     if not cluster:
         err('TASK_ERROR', 'Only cluster objects can have action with hostcomponentmap')
+
+    for host_comp in hc:
+        host = Host.obj.get(id=host_comp.get('host_id', 0))
+        issue.check_object_concern(host)
 
     return api.check_hc(cluster, hc)
 

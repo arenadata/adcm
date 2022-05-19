@@ -15,10 +15,10 @@
 import time
 import json
 import random
-from typing import Tuple
+from typing import Tuple, Iterable
 
 import requests
-
+from adcm_client.objects import Host
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 
 
@@ -189,3 +189,8 @@ def previous_adcm_version_tag() -> Tuple[str, str]:
 def lower_class_name(obj: object) -> str:
     """Return lower class name"""
     return obj.__class__.__name__.lower()
+
+
+def get_hosts_fqdn_representation(hosts: Iterable[Host]):
+    """Return string with host FQDNs separated by ','"""
+    return ", ".join(host.fqdn for host in hosts)
