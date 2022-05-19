@@ -412,8 +412,8 @@ def test_expand_on_clean_locked_host(
     cluster, hosts = cluster_with_two_hosts
     host1, host2 = hosts
 
-    dummy_service = cluster.service_add(name="second_service")
-    dummy_component = dummy_service.component(name="second_service_component_1")
+    dummy_service = cluster.service_add(name="first_service")
+    dummy_component = dummy_service.component(name="first_service_component_1")
     cluster.hostcomponent_set(
         (host1, dummy_component),
     )
@@ -428,7 +428,7 @@ def test_expand_on_clean_locked_host(
 
     with allure.step(f"Run {obj_for_action.__class__.__name__} action: expand on clean locked host"):
         with catch_failed(Failed, "Expand action should throw an API error as Host is locked"):
-            with pytest.raises(ErrorMessage, match="locked host"):
+            with pytest.raises(ErrorMessage, match="is locked"):
                 obj_for_action.action(name=expand_action,).run(
                     hc=[
                         {
