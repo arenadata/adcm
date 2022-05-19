@@ -77,7 +77,7 @@ def _update_config_and_attr_for_new_field_test(
         attr["custom_group_keys"]["new_text"] = True
         attr["custom_group_keys"]["group"]["fields"]["new_text"] = True
         del attr["custom_group_keys"]["group"]["fields"]["transport_port"]
-        attr["custom_group_keys"]["new_group"] = {"value": False, "fields": {"new_port": True}}
+        attr["custom_group_keys"]["new_group"] = {"value": True, "fields": {"new_port": True}}
         attr["custom_group_keys"]["new_structure"] = True
         attr["custom_group_keys"]["new_map"] = True
         attr["custom_group_keys"]["new_json"] = True
