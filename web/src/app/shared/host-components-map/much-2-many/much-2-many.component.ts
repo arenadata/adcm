@@ -11,7 +11,7 @@
 // limitations under the License.
 import { AfterViewChecked, ChangeDetectorRef, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { isNumber } from '@app/core/types';
+import { IActionParameter, isNumber } from '@app/core/types';
 import { CompTile, Tile } from '../types';
 import { StatusType } from "@app/components/maintenance-mode-button/maintenance-mode-button.component";
 
@@ -28,6 +28,7 @@ export class Much2ManyComponent implements AfterViewChecked {
   @Output() clearRelationEvt: EventEmitter<{ relation: Tile; model: Tile }> = new EventEmitter();
   @Input() model: Tile;
   @Input() form: FormGroup;
+  @Input() actionParameters: IActionParameter[];
 
   constructor(private cdRef : ChangeDetectorRef) {}
 
@@ -38,6 +39,15 @@ export class Much2ManyComponent implements AfterViewChecked {
   isDisabled() {
     if (this.model.actions) return !this.model.actions.length;
     return this.model.disabled;
+  }
+
+  isHostDisabled() {
+    if (this.model?.mm === this.statusType.On && this.model.relations.length > 0
+      && !this.actionParameters?.find(a => a.action === 'remove')) {
+      return true;
+    }
+
+    return false
   }
 
   isError() {
