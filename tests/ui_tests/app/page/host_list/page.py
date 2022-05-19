@@ -17,6 +17,9 @@ from typing import Optional, ClassVar
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from selenium.common.exceptions import (
+    TimeoutException,
+)
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
@@ -130,6 +133,18 @@ class HostListPage(BasePageObject):
         self.close_host_creation_popup()
         # because we don't pass provider name
         return provider_name
+
+    def get_all_available_actions(self, host_row_num: int):
+        "Return list with actions"
+
+        host_row = HostListLocators.HostTable.HostRow
+        self.click_on_row_child(host_row_num, host_row.actions)
+        self.wait_element_visible(host_row.dropdown_menu)
+        try:
+            actions = [action.text for action in self.find_elements(host_row.action_option_all, timeout=2)]
+            return actions
+        except TimeoutException:
+            return []
 
     @allure.step('Run action "{action_display_name}" on host in row {host_row_num}')
     def run_action(self, host_row_num: int, action_display_name: str):

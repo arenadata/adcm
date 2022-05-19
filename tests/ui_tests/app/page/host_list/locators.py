@@ -52,4 +52,6 @@ class HostListLocators:
             )
             delete_btn = Locator(By.XPATH, ".//button[.//mat-icon[text()='delete']]", "Host delete button in row")
             link_off_btn = Locator(By.XPATH, ".//button[.//mat-icon[text()='link_off']]", "Host link off button in row")
+            dropdown_menu = Locator(By.CSS_SELECTOR, "div[role='menu']", "Dropdown menu")
             action_option = TemplateLocator(By.XPATH, "//button/span[text()='{}']", "Action dropdown option")
+            action_option_all = Locator(By.CSS_SELECTOR, "button[adcm_test='action_btn']", "Action dropdown options")
