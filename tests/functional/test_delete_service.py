@@ -29,4 +29,5 @@ def test_delete_service(sdk_client_fs: ADCMClient):
     with allure.step('Delete service'):
         service.delete()
     with allure.step('Ensure that concern is gone from cluster after service removal'):
+        cluster.reread()
         assert len(cluster.concerns()) == 0, 'Concern on cluster should be removed alongside with the service'
