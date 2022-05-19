@@ -108,7 +108,7 @@ export const createFormForAttribute = (fb: FormBuilder, json: ConfigAttributesJS
           [key]: { value, disabled }
         };
       } else if (!isEmptyObject(value)) {
-        return { ...acc, [key]: buildFormGroup(value) };
+        return { ...acc, [key]: buildFormGroup(value['fields']) };
       }
 
     }, {});

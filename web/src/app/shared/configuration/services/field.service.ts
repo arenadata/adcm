@@ -173,25 +173,37 @@ export class FieldService {
    * Parse and prepare attrs data for group config from backend
    */
   public getAttrs(data: IConfig, groups: string[], dataOptions: TFormOptions[]): void {
-    if (!Array.isArray(data?.attr) || !groups) return;
+    if (!data?.attr || !groups) return;
 
     groups.forEach((group) => {
       let disabled: boolean;
-      let groupCheckboxChecked: boolean;
       const i = dataOptions.findIndex(item => item.name === group);
       const config = data.config.filter(c => c.name === group && c.type === 'group');
 
-      if (config[0]?.read_only || !data.attr?.custom_group_keys[group].value || (data.attr?.custom_group_keys[group].value && !data.attr?.group_keys[group].value)) {
-        disabled = true;
-        groupCheckboxChecked = false;
-      } else if (data.attr?.custom_group_keys[group].value && data.attr?.group_keys[group].value) {
-        disabled = false;
-        groupCheckboxChecked = true;
+      if (config.length === 0) return;
+
+      if (!data.attr?.custom_group_keys || !data.attr?.group_keys) {
+        dataOptions[i].group_config = {
+          'exist': false,
+        }
+
+        return;
       }
 
-      dataOptions[i].group_config = {
-        'checkboxValue': groupCheckboxChecked,
-        'disabled': disabled
+      if (config[0]?.read_only || !data.attr?.custom_group_keys[group].value) {
+        disabled = true;
+      } else if (data.attr?.custom_group_keys[group].value && data.attr?.group_keys[group].value) {
+        disabled = false;
+      }
+
+      dataOptions[i] = {
+        ...dataOptions[i],
+        active: true,
+        group_config: {
+          'exist': true,
+          'checkboxValue':  data.attr?.custom_group_keys[group].value && data.attr?.group_keys[group].value,
+          'disabled': disabled
+        }
       }
     })
   }
@@ -201,6 +213,7 @@ export class FieldService {
    * @param options
    */
   public toFormGroup(options: TFormOptions[] = []): FormGroup {
+    console.log(options);
     const check = (a: TFormOptions): boolean =>
       'options' in a
         ? a.activatable
