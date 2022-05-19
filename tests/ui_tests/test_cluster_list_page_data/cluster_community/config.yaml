@@ -14,11 +14,13 @@
   name: test_cluster
   version: 1.5
   edition: community
+  allow_maintenance_mode: true
   actions:
     long_action:
       type: job
       script: dummy_action.yaml
       script_type: ansible
+      allow_in_maintenance_mode: true
       states:
         available: any
       params:
@@ -27,6 +29,7 @@
       type: job
       script: dummy_action.yaml
       script_type: ansible
+      allow_in_maintenance_mode: true
       states:
         available:
           - created

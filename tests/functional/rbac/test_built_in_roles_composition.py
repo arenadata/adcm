@@ -71,6 +71,7 @@ CLUSTER_ADMIN_ROLES = SERVICE_ADMIN_ROLES.union(
             BusinessRoles.RemoveBundle,
             BusinessRoles.CreateHost,
             BusinessRoles.RemoveHosts,
+            BusinessRoles.ManageMaintenanceMode,
         )
     }
 )

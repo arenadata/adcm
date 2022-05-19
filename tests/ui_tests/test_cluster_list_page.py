@@ -697,6 +697,18 @@ class TestClusterHostPage:
         cluster_host_page.table.check_pagination(1)
         cluster_host_page.check_cluster_toolbar(CLUSTER_NAME)
 
+    @pytest.mark.smoke()
+    def test_maintenance_mode_from_cluster_host_page(self, app_fs, create_community_cluster_with_host):
+        """Test turn on and off maintenance mode on cluster/{}/host page"""
+
+        cluster, _ = create_community_cluster_with_host
+        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+
+        with allure.step("Check that user can change maintenance mode state"):
+            cluster_host_page.assert_maintenance_mode_state(0)
+            cluster_host_page.click_on_maintenance_mode_btn(0)
+            cluster_host_page.assert_maintenance_mode_state(0, False)
+
 
 class TestClusterComponentsPage:
     """Tests for the /cluster/{}/component page"""

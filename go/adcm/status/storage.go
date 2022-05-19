@@ -18,7 +18,7 @@ type Status struct {
 	counter int
 }
 
-type storageReq struct {
+type storageRequest struct {
 	command   string
 	key1      int
 	key2      int
@@ -27,7 +27,7 @@ type storageReq struct {
 	clearFunc func()
 }
 
-type storageResp struct {
+type storageResponse struct {
 	code   int
 	ok     bool
 	status Status
@@ -56,8 +56,8 @@ type dbStorage interface {
 }
 
 type Storage struct {
-	in      chan storageReq
-	out     chan storageResp
+	in      chan storageRequest
+	out     chan storageResponse
 	dbMap   dbStorage
 	timeout int
 	label   string
@@ -67,8 +67,8 @@ type Storage struct {
 
 func newStorage(db dbStorage, label string) *Storage {
 	return &Storage{
-		in:      make(chan storageReq),
-		out:     make(chan storageResp),
+		in:      make(chan storageRequest),
+		out:     make(chan storageResponse),
 		dbMap:   db,
 		timeout: statusTimeOut,
 		label:   label,
@@ -88,7 +88,7 @@ func (s *Storage) run() {
 		case cmdSet:
 			v := s.dbMap.set(c.key1, c.key2, c.val)
 			s.startTimer(s.dbMap, c)
-			s.out <- storageResp{code: v}
+			s.out <- storageResponse{code: v}
 		case cmdClear:
 			s.dbMap.clear(c.key1, c.key2, c.counter)
 			if c.clearFunc != nil {
@@ -96,13 +96,13 @@ func (s *Storage) run() {
 			}
 		case cmdPure:
 			s.dbMap = s.dbMap.create()
-			s.out <- storageResp{ok: true}
+			s.out <- storageResponse{ok: true}
 		case cmdGet:
 			v, ok := s.dbMap.get(c.key1, c.key2)
-			s.out <- storageResp{status: v, ok: ok}
+			s.out <- storageResponse{status: v, ok: ok}
 		case cmdGet1:
 			v, ok := s.dbMap.get1(c.key1)
-			s.out <- storageResp{map1: v, ok: ok}
+			s.out <- storageResponse{map1: v, ok: ok}
 		default:
 			logg.E.f("Storage %s unknown command: %+v", s.label, c)
 		}
@@ -112,27 +112,27 @@ func (s *Storage) run() {
 // Interface
 
 func (s *Storage) set(key1 int, key2 int, val int, clear func()) int {
-	req := storageReq{command: cmdSet, key1: key1, key2: key2, val: val, clearFunc: clear}
+	req := storageRequest{command: cmdSet, key1: key1, key2: key2, val: val, clearFunc: clear}
 	s.in <- req
 	resp := <-s.out
 	return resp.code
 }
 
 func (s *Storage) get(key1 int, key2 int) (Status, bool) {
-	req := storageReq{command: cmdGet, key1: key1, key2: key2}
+	req := storageRequest{command: cmdGet, key1: key1, key2: key2}
 	s.in <- req
 	resp := <-s.out
 	return resp.status, resp.ok
 }
 
 func (s *Storage) get1(key1 int) (map[int]Status, bool) { //nolint: unused
-	s.in <- storageReq{command: cmdGet1, key1: key1}
+	s.in <- storageRequest{command: cmdGet1, key1: key1}
 	resp := <-s.out
 	return resp.map1, resp.ok
 }
 
 func (s *Storage) pure() { //nolint: unused
-	s.in <- storageReq{command: cmdPure}
+	s.in <- storageRequest{command: cmdPure}
 	<-s.out
 }
 
@@ -188,14 +188,14 @@ func (db dbMap2) getCounter(key1 int, key2 int) int {
 	return val.counter
 }
 
-func (s *Storage) startTimer(db dbStorage, c storageReq) {
+func (s *Storage) startTimer(db dbStorage, c storageRequest) {
 	if s.timeout == 0 {
 		return
 	}
 	counter := db.getCounter(c.key1, c.key2)
 	c.counter = counter
 	c.command = cmdClear
-	go func(c storageReq) {
+	go func(c storageRequest) {
 		time.Sleep(time.Duration(s.timeout) * time.Second)
 		s.in <- c
 	}(c)

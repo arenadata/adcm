@@ -27,6 +27,7 @@ const TestParams: ActionParameters = {
       name: 'test',
       description: '',
       display_name: 'display_name_test',
+      disabling_cause: null,
       run: 'url',
       config: null,
       hostcomponentmap: null,

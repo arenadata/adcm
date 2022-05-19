@@ -157,6 +157,16 @@ ERRORS = {
         rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),
+    'MAINTENANCE_MODE_NOT_AVAILABLE': (
+        'you can\'t manage host maintenance mode',
+        rfs.HTTP_409_CONFLICT,
+        ERR,
+    ),
+    'INVALID_HC_HOST_IN_MM': (
+        'you can\'t save hc with hosts in maintenance mode',
+        rfs.HTTP_409_CONFLICT,
+        ERR,
+    ),
 }
 
 

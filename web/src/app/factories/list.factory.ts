@@ -8,6 +8,9 @@ import { UpgradeComponent } from '@app/shared/components';
 import { ActionsButtonComponent } from '@app/components/actions-button/actions-button.component';
 import { BaseEntity } from '@app/core/types';
 import { ConcernListDirective } from '@app/abstract-directives/concern-list.directive';
+import {
+  MaintenanceModeButtonComponent
+} from "@app/components/maintenance-mode-button/maintenance-mode-button.component";
 
 export class ListFactory {
 
@@ -159,6 +162,20 @@ export class ListFactory {
       className: 'width30pr',
       headerClassName: 'width30pr',
       value: (row) => row.value,
+    };
+  }
+
+  static maintenanceModeColumn<T>(listDirective: AdwpListDirective<T>): IComponentColumn<T> {
+    return {
+      type: 'component',
+      className: 'list-control',
+      headerClassName: 'list-control',
+      component: MaintenanceModeButtonComponent,
+      instanceTaken: (componentRef: ComponentRef<MaintenanceModeButtonComponent<T>>) => {
+        componentRef.instance.onClick
+        .pipe(listDirective.takeUntil())
+        .subscribe(({event, value}) => listDirective.maintenanceModeToggle(event, value));
+      }
     };
   }
 

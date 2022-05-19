@@ -12,11 +12,11 @@
 import { IConfig } from '@app/shared/configuration/types';
 
 /**
- * 
+ *
  *```
 {
-    action: 'add' | 'remove';  
-    component: string;    // name of servise to work with  
+    action: 'add' | 'remove';
+    component: string;    // name of servise to work with
     service: string;      // name of component to work with
 }
 ```
@@ -36,6 +36,7 @@ export interface IAction {
   name: string;
   description: string;
   display_name: string;
+  disabling_cause: string;
   run: string;
   config: IConfig;
   hostcomponentmap: IActionParameter[];
