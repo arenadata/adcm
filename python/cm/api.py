@@ -344,9 +344,8 @@ def delete_service(service: ClusterObject, cancel_tasks=True) -> None:
         _cancel_locking_tasks(service)
     service_id = service.id
     cluster = service.cluster
-    del_concerns_func = cm.issue.update_hierarchy_issues(obj=service, remove_obj=True)
     service.delete()
-    del_concerns_func()
+    cm.issue.update_issue_after_deleting()
     cm.issue.update_hierarchy_issues(cluster)
     re_apply_object_policy(cluster)
     cm.status_api.post_event('delete', 'service', service_id)
@@ -358,9 +357,8 @@ def delete_cluster(cluster, cancel_tasks=True):
     if cancel_tasks:
         _cancel_locking_tasks(cluster)
     cluster_id = cluster.id
-    del_concerns_func = cm.issue.update_hierarchy_issues(obj=cluster, remove_obj=True)
     cluster.delete()
-    del_concerns_func()
+    cm.issue.update_issue_after_deleting()
     cm.status_api.post_event('delete', 'cluster', cluster_id)
     load_service_map()
 
