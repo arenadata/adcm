@@ -100,7 +100,6 @@ describe('Configuration fields service', () => {
         compare: [],
         key: 'field_string_0',
         hidden: false,
-        group_config: null,
       },
       {
         type: 'json',
@@ -117,7 +116,6 @@ describe('Configuration fields service', () => {
         compare: [],
         key: 'field_json_1',
         hidden: false,
-        group_config: null,
       },
     ]);
   });
