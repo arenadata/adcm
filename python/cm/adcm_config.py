@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-lines
+
 import copy
 import json
 import os
@@ -93,6 +95,9 @@ def group_keys_to_flat(origin: dict, spec: dict):
             if key in spec and spec[key].type != 'group':
                 result[key] = v
             else:
+                if 'fields' not in v or 'value' not in origin[k]:
+                    err('ATTRIBUTE_ERROR', 'invalid format `group_keys` field')
+                result[key] = v['value']
                 for _k, _v in origin[k]['fields'].items():
                     result[f'{k}/{_k}'] = _v
         else:
@@ -583,43 +588,43 @@ def restore_read_only(obj, spec, conf, old_conf):  # # pylint: disable=too-many-
     return conf
 
 
-def check_json_config(proto, obj, new_conf, old_conf=None, attr=None):
+def check_json_config(
+    proto, obj, new_config, current_config=None, new_attr=None, current_attr=None
+):
     spec, flat_spec, _, _ = get_prototype_config(proto)
-    check_attr(proto, obj, attr, flat_spec)
-    cm.variant.process_variant(obj, spec, new_conf)
-    return check_config_spec(proto, obj, spec, flat_spec, new_conf, old_conf, attr)
+    check_attr(proto, obj, new_attr, flat_spec)
+    if isinstance(obj, GroupConfig):
+        config_spec = obj.get_config_spec()
+        group_keys = new_attr.get('group_keys', {})
+        check_value_unselected_field(
+            current_config, new_config, current_attr, new_attr, group_keys, config_spec, obj.object
+        )
+    cm.variant.process_variant(obj, spec, new_config)
+    return check_config_spec(proto, obj, spec, flat_spec, new_config, current_config, new_attr)
 
 
-def check_structure_for_group_attr(group_attr, spec, key_name):
+def check_structure_for_group_attr(group_keys, spec, key_name):
     """Check structure for `group_keys` and `custom_group_keys` field in attr"""
-    flat_group_attr = group_keys_to_flat(group_attr, spec)
+    flat_group_attr = group_keys_to_flat(group_keys, spec)
     for key, value in flat_group_attr.items():
         if key not in spec:
-            msg = 'invalid field in `{}`'
-            err('ATTRIBUTE_ERROR', msg.format(key_name))
-        if not isinstance(value, bool):
-            msg = 'invalid type `{}` field in `{}`'
-            err('ATTRIBUTE_ERROR', msg.format(key, key_name))
+            err('ATTRIBUTE_ERROR', f'invalid `{key}` field in `{key_name}`')
+        if spec[key].type == 'group':
+            if not (
+                isinstance(value, bool)
+                and 'activatable' in spec[key].limits
+                or value is None
+                and 'activatable' not in spec[key].limits
+            ):
+                err('ATTRIBUTE_ERROR', f'invalid type `value` field in `{key}`')
+        else:
+            if not isinstance(value, bool):
+                err('ATTRIBUTE_ERROR', f'invalid type `{key}` field in `{key_name}`')
     for key, value in spec.items():
         if value.type != 'group':
             if key not in flat_group_attr:
-                msg = f'there is no `{key}` field in `{key_name}`'
-                err('ATTRIBUTE_ERROR', msg)
+                err('ATTRIBUTE_ERROR', f'there is no `{key}` field in `{key_name}`')
     return flat_group_attr
-
-
-def check_custom_group_keys_attr(proto, custom_group_keys, spec):
-    """Check `custom_group_keys` field in attr"""
-    flat_custom_group_keys = check_structure_for_group_attr(
-        custom_group_keys, spec, 'custom_group_keys'
-    )
-    for key, value in flat_custom_group_keys.items():
-        group_customization = spec[key].group_customization
-        if group_customization is None:
-            group_customization = proto.config_group_customization
-        if value != group_customization:
-            msg = '`custom_group_keys` field cannot be changed, read-only'
-            err('ATTRIBUTE_ERROR', msg)
 
 
 def check_agreement_group_attr(group_keys, custom_group_keys, spec):
@@ -628,25 +633,80 @@ def check_agreement_group_attr(group_keys, custom_group_keys, spec):
     flat_custom_group_keys = group_keys_to_flat(custom_group_keys, spec)
     for key, value in flat_custom_group_keys.items():
         if not value and flat_group_keys[key]:
-            msg = f'the `{key}` parameter cannot be included in the group'
-            err('ATTRIBUTE_ERROR', msg)
+            err('ATTRIBUTE_ERROR', f'the `{key}` field cannot be included in the group')
 
 
-def check_group_keys_attr(attr, spec, proto):
+def check_value_unselected_field(
+    current_config, new_config, current_attr, new_attr, group_keys, spec, obj
+):
+    """
+    Check value unselected field
+
+    :param current_config: Current config
+    :param new_config: New config
+    :param current_attr: Current attr
+    :param new_attr: New attr
+    :param group_keys: group_keys from attr
+    :param spec: Config specification
+    :param obj: Parent object (Cluster, Service, Component Provider or Host)
+    """
+    for k, v in group_keys.items():
+        if isinstance(v, Mapping):
+            if (
+                'activatable' in spec[k]['limits']
+                and not v['value']
+                and current_attr[k]['active'] != new_attr[k]['active']
+            ):
+                msg = (
+                    f"Value of `{k}` activatable group is different in current and new attr."
+                    f" Current: ({current_attr[k]['active']}), New: ({new_attr[k]['active']})"
+                )
+                log.info(msg)
+                err('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD', msg)
+            check_value_unselected_field(
+                current_config[k],
+                new_config[k],
+                current_attr,
+                new_attr,
+                group_keys[k]['fields'],
+                spec[k]['fields'],
+                obj,
+            )
+        else:
+            if spec[k]['type'] in ['list', 'map', 'string']:
+                if config_is_ro(obj, k, spec[k]['limits']) or (
+                    k in current_config
+                    and k in new_config
+                    and bool(current_config[k]) is False
+                    and new_config[k] is None
+                ):
+                    continue
+
+            if (
+                not v
+                and k in current_config
+                and k in new_config
+                and current_config[k] != new_config[k]
+            ):
+                msg = (
+                    f"Value of `{k}` field is different in current and new config."
+                    f" Current: ({current_config[k]}), New: ({new_config[k]})"
+                )
+                log.info(msg)
+                err('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD', msg)
+
+
+def check_group_keys_attr(attr, spec, group_config):
     """Check attr for group config"""
-    if 'group_keys' not in attr or 'custom_group_keys' not in attr:
-        err('ATTRIBUTE_ERROR', "Attr must contain 'group_keys' and 'custom_group_keys' keys")
+    if 'group_keys' not in attr:
+        err('ATTRIBUTE_ERROR', "`attr` must contain 'group_keys' key")
     group_keys = attr.get('group_keys')
-    custom_group_keys = attr.get('custom_group_keys')
+    _, custom_group_keys = group_config.create_group_keys(group_config.get_config_spec())
     check_structure_for_group_attr(group_keys, spec, 'group_keys')
-    check_custom_group_keys_attr(proto, custom_group_keys, spec)
     check_agreement_group_attr(group_keys, custom_group_keys, spec)
 
 
 def check_attr(proto, obj, attr, spec):  # pylint: disable=too-many-branches
-    # TODO: refactor this func
-    if not attr:
-        return
     is_group_config = False
     if isinstance(obj, GroupConfig):
         is_group_config = True
@@ -654,32 +714,36 @@ def check_attr(proto, obj, attr, spec):  # pylint: disable=too-many-branches
     ref = proto_ref(proto)
     allowed_key = ('active',)
     if not isinstance(attr, dict):
-        err('ATTRIBUTE_ERROR', 'Attr should be a map')
-    if is_group_config:
-        check_group_keys_attr(attr, spec, proto)
+        err('ATTRIBUTE_ERROR', '`attr` should be a map')
     for key, value in attr.items():
         if key in ['group_keys', 'custom_group_keys']:
             if not is_group_config:
-                msg = 'Not allowed key "{}" for object ({})'
-                err('ATTRIBUTE_ERROR', msg.format(key, ref))
+                err('ATTRIBUTE_ERROR', f'not allowed key `{key}` for object ({ref})')
             continue
         if key + '/' not in spec:
-            msg = 'There isn\'t group "{}" in config ({})'
-            err('ATTRIBUTE_ERROR', msg.format(key, ref))
+            err('ATTRIBUTE_ERROR', f'there isn\'t `{key}` group in the config ({ref})')
         if spec[key + '/'].type != 'group':
-            msg = 'Config key "{}" is not a group ({})'
-            err('ATTRIBUTE_ERROR', msg.format(key, ref))
-        if not isinstance(value, dict):
-            msg = 'Value of attribute "{}" should be a map ({})'
-            err('ATTRIBUTE_ERROR', msg.format(key, ref))
-        for attr_key in value:
-            if attr_key not in allowed_key:
-                msg = 'Not allowed key "{}" of attribute "{}" ({})'
-                err('ATTRIBUTE_ERROR', msg.format(attr_key, key, ref))
-        if 'active' in value:
-            if not isinstance(value['active'], bool):
-                msg = 'Value of key "{}" of attribute "{}" should be boolean ({})'
-                err('ATTRIBUTE_ERROR', msg.format('active', key, ref))
+            err('ATTRIBUTE_ERROR', f'config key `{key}` is not a group ({ref})')
+    for value in spec.values():
+        key = value.name
+        if value.type == 'group' and 'activatable' in value.limits:
+            if key not in attr:
+                err('ATTRIBUTE_ERROR', f'there isn\'t `{key}` group in the `attr`')
+            if not isinstance(attr[key], dict):
+                err('ATTRIBUTE_ERROR', f'value of attribute `{key}` should be a map ({ref})')
+            for attr_key in attr[key]:
+                if attr_key not in allowed_key:
+                    err(
+                        'ATTRIBUTE_ERROR',
+                        f'not allowed key `{attr_key}` of attribute `{key}` ({ref})',
+                    )
+                if not isinstance(attr[key]['active'], bool):
+                    err(
+                        'ATTRIBUTE_ERROR',
+                        f'value of key `active` of attribute `{key}` should be boolean ({ref})',
+                    )
+    if is_group_config:
+        check_group_keys_attr(attr, spec, obj)
 
 
 def check_config_spec(
