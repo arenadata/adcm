@@ -10,21 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- type: cluster
-  name: cluster_with_issue
-  description: cluster has issues and should not run any action while issues didn't fix
-  version: &version 1.0
-
-  upgrade:
-    - name: Upgrade to v. *version
-      versions: { min: 0.9, max_strict: *version }
-      description: cluster bundle upgrade
-      states: { available: any }
-
-  config: &config
-    required_param:
-      type: integer
-      required: true
+- type: provider
+  name: sample hostprovider
+  version: 1.0
 
   actions:
     install:
@@ -36,21 +24,16 @@
         on_success: installed
         on_fail: created
 
+- type: host
+  name: host sample
+  version: 1.0
 
-- type: service
-  name: service_1
-  version: 3.4
-
-  config: *config
-
-  components: &components
-    test_component:
-      config: *config
-
-- type: service
-  name: service_2
-  version: 3.2
-
-  config: *config
-
-  components: *components
+  actions:
+    install:
+      type: job
+      script_type: ansible
+      script: install.yaml
+      states:
+        available: any
+        on_success: installed
+        on_fail: created
