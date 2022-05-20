@@ -320,7 +320,7 @@ def update_hierarchy_issues(obj: ADCMEntity):
 
 def update_issue_after_deleting():
     """Remove issues which have no owners after object deleting"""
-    for concern in ConcernItem.objects.all():
+    for concern in ConcernItem.objects.exclude(type=ConcernType.Lock):
         if concern.owner is None:
             concern_str = str(concern)
             concern.delete()
