@@ -309,9 +309,9 @@ class TestConfigGroupAttrFormatUpgrade:
                                     'valingroup': True,
                                     'readonlyval': True,
                                 },
-                            }
+                            },
                         },
-                        'config': {**group_config['config']}
+                        'config': {**group_config['config']},
                     }
                 )
 
