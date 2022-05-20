@@ -99,7 +99,7 @@ def _create_many_hosts(request, upload_and_create_provider):
 
 
 @pytest.fixture()
-def _create_bonded_host(
+def create_bonded_host(
     upload_and_create_cluster: Tuple[Bundle, Cluster],
     upload_and_create_provider: Tuple[Bundle, Provider],
 ):
@@ -108,6 +108,7 @@ def _create_bonded_host(
     host = provider.host_create(HOST_FQDN)
     cluster = upload_and_create_cluster[1]
     cluster.host_add(host)
+    return cluster, host
 
 
 @pytest.fixture()
@@ -286,8 +287,7 @@ class TestHostListPage:
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
-    @pytest.mark.usefixtures("_create_bonded_host")
-    def test_delete_bonded_host(self, page: HostListPage):
+    def test_delete_bonded_host(self, page: HostListPage, create_bonded_host):
         """Host shouldn't be deleted"""
 
         page.check_element_should_be_visible(HostListLocators.HostTable.row)
@@ -314,6 +314,42 @@ class TestHostListPage:
         page.assert_host_state(0, 'created')
         page.run_action(0, INIT_ACTION)
         page.assert_host_state(0, 'running')
+
+    @pytest.mark.smoke()
+    def test_maintenance_mode_on_host_page(self, page: HostListPage, create_bonded_host):
+        """Test maintenance mode on host page"""
+
+        cluster, host = create_bonded_host
+        page.driver.refresh()
+        with allure.step("Check that mm is not available after removing from cluster with ON state"):
+            page.assert_maintenance_mode_state(0)
+            cluster.host_delete(host)
+            page.driver.refresh()
+            page.assert_maintenance_mode_state(0, None)
+        with allure.step("Check that mm is not available after removing from cluster with OFF state"):
+            cluster.host_add(host)
+            page.driver.refresh()
+            page.click_on_maintenance_mode_btn(0)
+            cluster.host_delete(host)
+            page.driver.refresh()
+            page.assert_maintenance_mode_state(0, None)
+
+    @pytest.mark.smoke()
+    def test_action_with_maintenance_mode_on_host_page(self, page: HostListPage, create_bonded_host):
+        """Test maintenance mode on host page"""
+
+        with allure.step("Turn OFF maintenance mode"):
+            page.driver.refresh()
+            page.click_on_maintenance_mode_btn(0)
+        with allure.step("Check there are no actions"):
+            assert not page.get_all_available_actions(0), "Action list with MM OFF should be empty"
+            page.driver.refresh()
+        with allure.step("Turn ON maintenance mode"):
+            page.click_on_maintenance_mode_btn(0)
+        with allure.step("Check there are action"):
+            assert page.get_all_available_actions(0) == [
+                INIT_ACTION
+            ], f"Action list with MM ON should be with action {INIT_ACTION}"
 
 
 @pytest.mark.usefixtures('login_to_adcm_over_api')
