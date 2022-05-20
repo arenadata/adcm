@@ -30,7 +30,7 @@ import { catchError, finalize, tap } from 'rxjs/operators';
 import { ConfigFieldsComponent } from '../fields/fields.component';
 import { HistoryComponent } from '../tools/history.component';
 import { ToolsComponent } from '../tools/tools.component';
-import { IConfig } from '../types';
+import { IConfig, IConfigAttr } from '../types';
 import { historyAnime, ISearchParam, MainService } from './main.service';
 import { WorkerInstance } from '@app/core/services/cluster.service';
 import { ActivatedRoute } from '@angular/router';
@@ -151,7 +151,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
       const config = this.service.parseValue(this.fields.form.getRawValue(), this.rawConfig.value.config);
       const send = {
         config,
-        attr: deepmerge(deepmerge(this.rawConfig.getValue().attr, this.fields.attr), this.attributesSrv.rawAttributes()),
+        attr: deepmerge(this.mergeAttrsWithField(), this.fields.attr),
         description: this.tools.description.value,
         obj_ref: this.rawConfig.value.obj_ref
       };
@@ -197,6 +197,20 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     this.fields.form.reset();
     this.fields.dataOptions = [];
     this.historyComponent.reset();
+  }
+
+  mergeAttrsWithField(): IConfigAttr {
+    const attr = this.rawConfig.getValue().attr;
+    const attrSrv = this.attributesSrv.rawAttributes();
+    Object.keys(attr.group_keys).forEach((key) => {
+      if (attr.group_keys[key]?.fields) {
+        attr.group_keys[key].fields = attrSrv['group_keys'][key];
+      } else {
+        attr.group_keys[key] = attrSrv['group_keys'][key];
+      }
+    });
+
+    return attr;
   }
 
 
