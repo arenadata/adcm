@@ -18,7 +18,14 @@ import requests
 
 from cm.config import STATUS_SECRET_KEY
 from cm.logger import log
-from cm.models import ADCMEntity, ServiceComponent, HostComponent, ClusterObject, Cluster, Host
+from cm.models import (
+    ADCMEntity,
+    ServiceComponent,
+    HostComponent,
+    ClusterObject,
+    Cluster,
+    Host,
+)
 
 API_URL = "http://localhost:8020/api/v1"
 TIMEOUT = 0.01
@@ -52,48 +59,27 @@ class Event:
         self.events.append((set_task_status, (task_id, status)))
 
 
-def api_post(path, data):
-    url = API_URL + path
+def api_request(method, url, data=None):
+    url = API_URL + url
+    kwargs = {
+        'headers': {
+            'Content-Type': 'application/json',
+            'Authorization': 'Token ' + STATUS_SECRET_KEY,
+        },
+        'timeout': TIMEOUT,
+    }
+    if data is not None:
+        kwargs['data'] = json.dumps(data)
     try:
-        r = requests.post(
-            url,
-            data=json.dumps(data),
-            headers={
-                'Content-Type': 'application/json',
-                'Authorization': 'Token ' + STATUS_SECRET_KEY,
-            },
-            timeout=TIMEOUT,
-        )
-        if r.status_code not in (200, 201):
-            log.error("POST %s error %d: %s", url, r.status_code, r.text)
-        return r
+        request = requests.request(method, url, **kwargs)
+        if request.status_code not in (200, 201):
+            log.error("%s %s error %d: %s", method, url, request.status_code, request.text)
+        return request
     except requests.exceptions.Timeout:
-        log.error("POST request to %s timed out", url)
+        log.error("%s request to %s timed out", method, url)
         return None
     except requests.exceptions.ConnectionError:
-        log.error("POST request to %s connection failed", url)
-        return None
-
-
-def api_get(path):
-    url = API_URL + path
-    try:
-        r = requests.get(
-            url,
-            headers={
-                'Content-Type': 'application/json',
-                'Authorization': 'Token ' + STATUS_SECRET_KEY,
-            },
-            timeout=TIMEOUT,
-        )
-        if r.status_code not in (200, 201):
-            log.error("GET %s error %d: %s", url, r.status_code, r.text)
-        return r
-    except requests.exceptions.Timeout:
-        log.error("GET request to %s timed out", url)
-        return None
-    except requests.exceptions.ConnectionError:
-        log.error("GET request to %s connection failed", url)
+        log.error("%s request to %s connection failed", method, url)
         return None
 
 
@@ -110,7 +96,7 @@ def post_event(event, obj_type, obj_id, det_type=None, det_val=None):
         },
     }
     log.debug('post_event %s', data)
-    return api_post('/event/', data)
+    return api_request('post', '/event/', data)
 
 
 def set_job_status(job_id, status):
@@ -140,7 +126,7 @@ def change_obj_multi_state(obj_type, obj_id, multi_state):
 
 
 def get_raw_status(url):
-    r = api_get(url)
+    r = api_request('get', url)
     if r is None:
         return 32
     try:
@@ -185,9 +171,9 @@ def get_component_status(comp: ServiceComponent):
 
 def get_object_map(obj: ADCMEntity, url_type: str):
     if url_type == 'service':
-        r = api_get(f'/cluster/{obj.cluster.id}/service/{obj.id}/?view=interface')
+        r = api_request('get', f'/cluster/{obj.cluster.id}/service/{obj.id}/?view=interface')
     else:
-        r = api_get(f'/{url_type}/{obj.id}/?view=interface')
+        r = api_request('get', f'/{url_type}/{obj.id}/?view=interface')
     if r is None:
         return None
     return r.json()

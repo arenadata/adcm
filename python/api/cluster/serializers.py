@@ -15,8 +15,12 @@ from rest_framework import serializers
 
 import cm.api
 import cm.job
-import cm.status_api
 from api.action.serializers import ActionShort
+from api.component.serializers import ComponentDetailSerializer
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.host.serializers import HostSerializer
+from api.serializers import StringListSerializer
 from api.utils import (
     CommonAPIURL,
     ObjectURL,
@@ -26,14 +30,16 @@ from api.utils import (
     get_upgradable_func,
     hlink,
 )
-from api.component.serializers import ComponentDetailSerializer
-from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
-from api.host.serializers import HostSerializer
-from api.serializers import StringListSerializer
 from cm.adcm_config import get_main_info
 from cm.errors import AdcmEx
-from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
+from cm.models import (
+    Action,
+    Cluster,
+    Host,
+    Prototype,
+    ServiceComponent,
+)
+from cm.status_api import get_cluster_status, get_hc_status
 
 
 def get_cluster_id(obj):
@@ -98,7 +104,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
     def get_status(self, obj):
-        return cm.status_api.get_cluster_status(obj)
+        return get_cluster_status(obj)
 
 
 class ClusterUISerializer(ClusterDetailSerializer):
@@ -146,7 +152,7 @@ class StatusSerializer(serializers.Serializer):
         data['service_display_name'] = instance.service.prototype.display_name
         data['service_version'] = instance.service.prototype.version
         data['monitoring'] = instance.component.prototype.monitoring
-        status = cm.status_api.get_hc_status(instance)
+        status = get_hc_status(instance)
         data['status'] = status
         return data
 

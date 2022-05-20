@@ -56,6 +56,7 @@ class ListWithoutRepr(list):
 @allure.step('Generate expected result for config')
 def generate_config_expected_result(config) -> dict:
     """Generate expected result for config"""
+
     expected_result = {
         'visible': not config['ui_options']['invisible'],
         'editable': not config['read_only'],
@@ -97,6 +98,7 @@ def generate_configs(
                 "read_only": read_only,
                 "ui_options": {"invisible": invisible, 'advanced': advanced},
                 "group_customization": group_customization,
+                "description": "test description",
             }
             if group_customization is not None
             else {
@@ -136,18 +138,19 @@ def generate_configs(
 
 
 def prepare_config(config):
+    """Create config file and return config, expected result and path to config file"""
+
     config_info = config[0][0]['config'][0]
-    templ = "type_{}_required_{}_ro_{}_content_{}_invisible_{}_advanced_{}"
-    config_folder_name = templ.format(
-        config_info['type'],
-        config_info['required'],
-        bool('read_only' in config_info.keys()),
-        bool('default' in config_info.keys()),
-        config_info['ui_options']['invisible'],
-        config_info['ui_options']['advanced'],
-    )
     temdir = tempfile.mkdtemp()
-    d_name = f"{temdir}/configs/fields/{config_info['type']}/{config_folder_name}"
+    d_name = (
+        f"{temdir}/configs/fields/{config_info['type']}/"
+        f"type_{config_info['type']}_"
+        f"required_{config_info['required']}_"
+        f"ro_{bool('read_only' in config_info.keys())}_"
+        f"content_{bool('default' in config_info.keys())}_"
+        f"invisible_{config_info['ui_options']['invisible']}_"
+        f"advanced_{config_info['ui_options']['advanced']}"
+    )
 
     os.makedirs(d_name)
     config[0][0]["name"] = random_string()
@@ -219,6 +222,7 @@ def generate_group_configs(
         "activatable": activatable,
         'active': active,
         "read_only": read_only,
+        "description": "test description",
         "ui_options": {"invisible": group_invisible, 'advanced': group_advanced},
         "field_ui_options": {
             "invisible": field_invisible,
@@ -238,7 +242,12 @@ def generate_group_configs(
             'advanced': data['ui_options']['advanced'],
         },
     }
-    sub_config = {'name': field_type, 'type': field_type, 'required': data['required']}
+    sub_config = {
+        'name': field_type,
+        'type': field_type,
+        'required': data['required'],
+        "description": "test description",
+    }
     if field_customization is not None:
         sub_config["group_customization"] = field_customization
     if data['default']:
@@ -260,6 +269,8 @@ def generate_group_configs(
 
 
 def prepare_group_config(config):
+    """Create config file with group and return config, expected result and path to config file"""
+
     config_info = config[0][0]['config'][0]
     config_subs = config_info['subs'][0]
     if "activatable" in config_info.keys():

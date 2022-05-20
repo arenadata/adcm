@@ -13,20 +13,18 @@
 """Tests for actions inventory"""
 
 import json
-from typing import Optional
-
 from uuid import uuid4
+from typing import Optional
 
 import allure
 import pytest
-
 from _pytest.fixtures import SubRequest
 from adcm_client.objects import Provider, ADCMClient, Cluster, ADCM
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.docker_utils import get_file_from_container
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 
-from tests.functional.tools import create_config_group_and_add_host, BEFORE_UPGRADE_DEFAULT_STATE
+from tests.functional.tools import create_config_group_and_add_host, BEFORE_UPGRADE_DEFAULT_STATE, get_inventory_file
 from tests.functional.conftest import only_clean_adcm
 
 # pylint: disable=redefined-outer-name
@@ -115,16 +113,14 @@ class TestStateBeforeUpgrade:
         with allure.step('Check before_upgrade state before upgrade'):
             task = old_cluster.action(name="do_nothing").run()
             task.wait()
-            self.check_before_upgrade_state_equal_to(
-                BEFORE_UPGRADE_DEFAULT_STATE, _get_inventory_file(adcm_fs, task.id)
-            )
+            self.check_before_upgrade_state_equal_to(BEFORE_UPGRADE_DEFAULT_STATE, get_inventory_file(adcm_fs, task.id))
         with allure.step('Check before_upgrade state after upgrade'):
             state_before_upgrade = old_cluster.state
             old_cluster.upgrade().do()
             old_cluster.reread()
             task = old_cluster.action(name="do_nothing").run()
             task.wait()
-            self.check_before_upgrade_state_equal_to(state_before_upgrade, _get_inventory_file(adcm_fs, task.id))
+            self.check_before_upgrade_state_equal_to(state_before_upgrade, get_inventory_file(adcm_fs, task.id))
 
     # pylint: disable-next=no-self-use
     def check_before_upgrade_state_equal_to(self, expected_state: Optional[str], inventory: dict):
@@ -134,13 +130,6 @@ class TestStateBeforeUpgrade:
         assert (
             actual_state == expected_state
         ), f'Before upgrade state should be "{expected_state}", but actual state is "{actual_state}"'
-
-
-def _get_inventory_file(adcm_fs: ADCM, task_id: int) -> dict:
-    """Get inventory.json file from ADCM as dict"""
-    file = get_file_from_container(adcm_fs, f'/adcm/data/run/{task_id}/', 'inventory.json')
-    content = file.read().decode('utf8')
-    return json.loads(content)
 
 
 def _attach_inventory_file(request: SubRequest, inventory_content: str, name: str):
