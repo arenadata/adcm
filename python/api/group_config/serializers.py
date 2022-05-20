@@ -23,6 +23,7 @@ from api.serializers import (
     MultiHyperlinkedIdentityField,
     UIConfigField,
 )
+from cm.adcm_config import ui_config
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
 from cm.models import GroupConfig, Host, ObjectConfig, ConfigLog
