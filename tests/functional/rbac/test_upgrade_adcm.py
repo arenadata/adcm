@@ -18,7 +18,7 @@ from typing import Tuple
 import allure
 import pytest
 from adcm_client.objects import ADCMClient, Bundle
-from adcm_pytest_plugin.utils import random_string
+from adcm_pytest_plugin.utils import random_string, get_data_dir
 from adcm_pytest_plugin.docker_utils import ADCM
 
 from tests.functional.rbac.action_role_utils import (
@@ -63,9 +63,15 @@ def test_rbac_init_on_upgrade(
 @allure.step('Upload bundles')
 def upload_bundles(client: ADCMClient) -> Tuple[Bundle, Bundle, Bundle, Bundle]:
     """Upload sample bundles"""
+    cluster_bundles_dir = get_data_dir(__file__)
     return tuple(
-        client.upload_from_fs(os.path.join(DATA_DIR, bundle))
-        for bundle in ("cluster", "second_cluster", "provider", "second_provider")
+        client.upload_from_fs(os.path.join(directory, bundle))
+        for directory, bundle in (
+            (cluster_bundles_dir, "cluster"),
+            (cluster_bundles_dir, "second_cluster"),
+            (DATA_DIR, "provider"),
+            (DATA_DIR, "second_provider"),
+        )
     )
 
 
