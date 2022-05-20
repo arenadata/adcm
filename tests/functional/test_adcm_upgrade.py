@@ -13,15 +13,28 @@
 """Tests for ADCM upgrade"""
 
 # pylint:disable=redefined-outer-name, no-self-use, too-many-arguments
+
 import random
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Tuple, Union, List, Iterable, Any
+from typing import Tuple, Union, List, Iterable, Any, Collection
 
 import allure
 import pytest
 from adcm_client.base import ObjectNotFound
-from adcm_client.objects import ADCMClient, Cluster, Host, Service, Bundle, Component, Provider, Task, Job, Upgrade
+from adcm_client.objects import (
+    ADCMClient,
+    Cluster,
+    Host,
+    Service,
+    Bundle,
+    Component,
+    Provider,
+    Task,
+    Job,
+    Upgrade,
+    GroupConfig,
+)
 from adcm_pytest_plugin import params
 from adcm_pytest_plugin.docker_utils import ADCM
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
@@ -32,6 +45,8 @@ from adcm_pytest_plugin.steps.actions import (
     run_provider_action_and_assert_result,
 )
 from adcm_pytest_plugin.utils import catch_failed, get_data_dir, random_string
+
+from tests.library.assertions import dicts_are_not_equal, dicts_are_equal
 from tests.upgrade_utils import upgrade_adcm_version
 
 from tests.functional.conftest import only_clean_adcm
@@ -158,6 +173,147 @@ def test_actions_availability_after_upgrade(
     upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
 
     _assert_available_actions(cluster)
+
+
+class TestConfigGroupAttrFormatUpgrade:
+    """Test that "attr" of config groups are updated correctly in new ADCM versions"""
+
+    LAST_OLD_ATTR_ADCM_VERSION = ["hub.arenadata.io/adcm/adcm", "2022.04.18.13"]
+
+    @pytest.fixture()
+    def objects(self, sdk_client_fs):
+        """Create one of each object: cluster, service, component, provider"""
+        cluster_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'with_config_groups', 'cluster'))
+        provider_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'with_config_groups', 'provider'))
+        cluster = cluster_bundle.cluster_create('Test Awesome Cluster')
+        service = cluster.service_add(name='test_service')
+        provider = provider_bundle.provider_create('Test Awesome Provider')
+        return cluster, service, service.component(), provider
+
+    @pytest.fixture()
+    def config_groups(self, objects):
+        """Create config group for each object"""
+        return tuple(obj.group_config_create(f'{obj.__class__.__name__} group') for obj in objects)
+
+    @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
+    @pytest.mark.parametrize("image", [LAST_OLD_ATTR_ADCM_VERSION], ids=repr, indirect=True)
+    def test_upgrade_to_new_config_groups_attr_format_unchecked_config(
+        self,
+        adcm_fs: ADCM,
+        sdk_client_fs: ADCMClient,
+        adcm_api_credentials: dict,
+        upgrade_target: Tuple[str, str],
+        objects,
+        config_groups,
+    ):
+        """
+        Test that newly created config groups have new "attr" structure after ADCM upgrade
+        from version with old "attr" format to a new one
+        """
+        old_attrs = self._get_attrs(config_groups)
+        new_attrs = self._get_expected_new_attr_for_groups(config_groups)
+
+        self._check_config_groups_attr_are_different_before_upgrade(objects, old_attrs, new_attrs)
+
+        upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+
+        for obj in (*objects, *config_groups):
+            obj.reread()
+
+        self._check_config_groups_attr_are_correct_after_upgrade(objects, config_groups, new_attrs)
+
+    @pytest.mark.parametrize("adcm_is_upgradable", [True], indirect=True)
+    @pytest.mark.parametrize("image", [LAST_OLD_ATTR_ADCM_VERSION], ids=repr, indirect=True)
+    def test_upgrade_to_new_config_groups_attr_format_checked_config(
+        self,
+        adcm_fs: ADCM,
+        sdk_client_fs: ADCMClient,
+        adcm_api_credentials: dict,
+        upgrade_target: Tuple[str, str],
+        objects,
+        config_groups,
+    ):
+        """
+        Test that config groups with all elements added to them have new "attr" structure after ADCM upgrade
+        from version with old "attr" format to a new one
+        """
+        old_attrs = self._get_attrs(config_groups)
+
+        self._add_all_items_in_config_groups(config_groups)
+        new_attrs = self._get_expected_new_attr_for_groups(config_groups)
+
+        self._check_config_groups_attr_are_different_before_upgrade(objects, old_attrs, new_attrs)
+
+        upgrade_adcm_version(adcm_fs, sdk_client_fs, adcm_api_credentials, upgrade_target)
+
+        for obj in (*objects, *config_groups):
+            obj.reread()
+
+        self._check_config_groups_attr_are_correct_after_upgrade(objects, config_groups, new_attrs)
+
+    def _check_config_groups_attr_are_different_before_upgrade(self, objects, old_attrs, new_attrs):
+        for obj, old_attr, new_attr in zip(objects, old_attrs, new_attrs):
+            with allure.step(
+                'Check that "attr" before upgrade is different from expected in new version '
+                f'for group config of {obj.__class__.__name__}'
+            ):
+                dicts_are_not_equal(old_attr, new_attr)
+
+    def _check_config_groups_attr_are_correct_after_upgrade(self, objects, config_groups, expected_attrs):
+        for obj, group, expected_attr in zip(objects, config_groups, expected_attrs):
+            with allure.step(
+                'Check that "attr" after upgrade became the one that were expected '
+                f'for group config of {obj.__class__.__name__}'
+            ):
+                dicts_are_equal(group.config(full=True)['attr'], expected_attr)
+
+    def _get_attrs(self, groups: Collection[GroupConfig]):
+        return tuple(g.config(full=True)['attr'] for g in groups)
+
+    def _get_expected_new_attr_for_groups(self, groups: Collection[GroupConfig]):
+        new_configs_attr = []
+        for group in groups:
+            attr = group.config(full=True)['attr']
+            for key in attr['group_keys']:
+                if 'group' not in key:
+                    continue
+                attr['group_keys'][key] = {
+                    'value': False if 'activatable' in key else None,
+                    'fields': {**attr['group_keys'][key]},
+                }
+            for key in attr['custom_group_keys']:
+                if 'group' not in key:
+                    continue
+                attr['custom_group_keys'][key] = {
+                    'value': True,
+                    'fields': {**attr['custom_group_keys'][key]},
+                }
+            new_configs_attr.append(attr)
+        return tuple(new_configs_attr)
+
+    def _add_all_items_in_config_groups(self, groups: Collection[GroupConfig]):
+        for group in groups:
+            with allure.step(f'Add all config items to config group: {group.name}'):
+                group_config = group.config(full=True)
+                group.config_set_diff(
+                    {
+                        'attr': {
+                            **group_config['attr'],
+                            'group_keys': {
+                                'simple_value': True,
+                                'simple_group': {
+                                    'valingroup': True,
+                                    'readonlyval': True,
+                                },
+                                'activatable_group': {
+                                    'valingroup': True,
+                                    'readonlyval': True,
+                                },
+                            }
+                        },
+                        'config': {**group_config['config']}
+                    }
+                )
 
 
 # !===== Dirty ADCM upgrade =====!
