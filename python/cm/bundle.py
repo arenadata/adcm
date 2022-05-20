@@ -417,6 +417,7 @@ def copy_stage_prototype(stage_prototypes, bundle):
                 'adcm_min_version',
                 'venv',
                 'config_group_customization',
+                'allow_maintenance_mode',
             ),
         )
         p.bundle = bundle
@@ -490,6 +491,7 @@ def copy_stage_actions(stage_actions, prototype):
             'partial_execution',
             'host_action',
             'venv',
+            'allow_in_maintenance_mode',
         ),
     )
     Action.objects.bulk_create(actions)
@@ -673,6 +675,7 @@ def update_bundle_from_stage(
             p.adcm_min_version = sp.adcm_min_version
             p.venv = sp.venv
             p.config_group_customization = sp.config_group_customization
+            p.allow_maintenance_mode = sp.allow_maintenance_mode
         except Prototype.DoesNotExist:
             p = copy_obj(
                 sp,
@@ -693,6 +696,7 @@ def update_bundle_from_stage(
                     'adcm_min_version',
                     'venv',
                     'config_group_customization',
+                    'allow_maintenance_mode',
                 ),
             )
             p.bundle = bundle
@@ -726,6 +730,7 @@ def update_bundle_from_stage(
                         'partial_execution',
                         'host_action',
                         'venv',
+                        'allow_in_maintenance_mode',
                     ),
                 )
             except Action.DoesNotExist:
@@ -756,6 +761,7 @@ def update_bundle_from_stage(
                         'partial_execution',
                         'host_action',
                         'venv',
+                        'allow_in_maintenance_mode',
                     ),
                 )
                 action.prototype = p

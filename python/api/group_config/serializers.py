@@ -165,6 +165,9 @@ class GroupConfigHostSerializer(serializers.ModelSerializer):
             'fqdn',
             'description',
             'state',
+            'maintenance_mode',
+            'bundle_id',
+            'locked',
             'url',
         )
         read_only_fields = (
@@ -174,6 +177,9 @@ class GroupConfigHostSerializer(serializers.ModelSerializer):
             'prototype_id',
             'provider_id',
             'cluster_id',
+            'maintenance_mode',
+            'bundle_id',
+            'locked',
         )
 
     def create(self, validated_data):

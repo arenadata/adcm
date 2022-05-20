@@ -59,6 +59,7 @@ cluster_object:
     import: import_dict
     export: export
     config_group_customization: boolean
+    allow_maintenance_mode: boolean
 
 host_object:
   <<: *common_object
@@ -699,6 +700,7 @@ common_action: &common_action
     hc_acl: action_hc_acl_list
     config: config_obj
     venv: string
+    allow_in_maintenance_mode: boolean
 
 ## Task action
 action_task_dict:

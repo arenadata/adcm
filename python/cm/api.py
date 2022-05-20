@@ -51,8 +51,8 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
     Bundle,
+    MaintenanceModeType,
 )
-
 from rbac.models import re_apply_object_policy
 
 
@@ -83,6 +83,16 @@ def check_proto_type(proto, check_type):
     if proto.type != check_type:
         msg = 'Prototype type should be {}, not {}'
         err('OBJ_TYPE_ERROR', msg.format(check_type, proto.type))
+
+
+def load_host_map():
+    hosts = list(Host.objects.values('id', 'maintenance_mode'))
+    for host in hosts:
+        if host['maintenance_mode'] == MaintenanceModeType.On:
+            host['maintenance_mode'] = True
+        else:
+            host['maintenance_mode'] = False
+    return cm.status_api.api_request('post', '/object/host/', hosts)
 
 
 def load_service_map():
@@ -125,7 +135,8 @@ def load_service_map():
         'service': services,
         'host': hosts,
     }
-    return cm.status_api.api_post('/servicemap/', m)
+    cm.status_api.api_request('post', '/servicemap/', m)
+    load_host_map()
 
 
 def add_cluster(proto, name, desc=''):
@@ -219,6 +230,9 @@ def add_host_to_cluster(cluster, host):
         else:
             err('HOST_CONFLICT')
     with transaction.atomic():
+        DummyData.objects.filter(id=1).update(date=timezone.now())
+        if cluster.prototype.allow_maintenance_mode:
+            host.maintenance_mode = MaintenanceModeType.Off.value
         host.cluster = cluster
         host.save()
         host.add_to_concerns(ctx.lock)
@@ -357,6 +371,15 @@ def delete_cluster(cluster, cancel_tasks=True):
     if cancel_tasks:
         _cancel_locking_tasks(cluster)
     cluster_id = cluster.id
+    hosts = cluster.host_set.all()
+    host_ids = [str(host.id) for host in hosts]
+    hosts.update(maintenance_mode=MaintenanceModeType.Disabled)
+    log.debug(
+        'Deleting cluster #%s. Set `%s` maintenance mode value for `%s` hosts.',
+        cluster_id,
+        MaintenanceModeType.Disabled,
+        ', '.join(host_ids),
+    )
     cluster.delete()
     cm.issue.update_issue_after_deleting()
     cm.status_api.post_event('delete', 'cluster', cluster_id)
@@ -369,6 +392,7 @@ def remove_host_from_cluster(host):
     if hc:
         return err('HOST_CONFLICT', f'Host #{host.id} has component(s)')
     with transaction.atomic():
+        host.maintenance_mode = MaintenanceModeType.Disabled.value
         host.cluster = None
         host.save()
         for group in cluster.group_config.all():
@@ -554,7 +578,17 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
 
     cm.issue.check_component_requires(host_comp_list)
     cm.issue.check_bound_components(host_comp_list)
+    check_maintanence_mode(cluster, host_comp_list)
     return host_comp_list
+
+
+def check_maintanence_mode(cluster, host_comp_list):
+    for (service, host, comp) in host_comp_list:
+        try:
+            HostComponent.objects.get(cluster=cluster, service=service, host=host, component=comp)
+        except HostComponent.DoesNotExist:
+            if host.maintenance_mode == MaintenanceModeType.On.value:
+                raise AdcmEx("INVALID_HC_HOST_IN_MM")  # pylint: disable=raise-missing-from
 
 
 def still_existed_hc(cluster, host_comp_list):

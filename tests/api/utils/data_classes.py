@@ -241,11 +241,14 @@ class GroupConfigHostsFields(BaseClass):
         postable=True,
     )
     cluster_id = Field(name="cluster_id", f_type=PositiveInt(), default_value=AUTO_VALUE)
+    bundle_id = Field(name="bundle_id", f_type=PositiveInt(), default_value=AUTO_VALUE)
     prototype_id = Field(name="prototype_id", f_type=PositiveInt(), default_value=AUTO_VALUE)
+    maintenance_mode = Field(name="maintenance_mode", f_type=String(), default_value=AUTO_VALUE)
     provider_id = Field(name="provider_id", f_type=PositiveInt(), default_value=AUTO_VALUE)
     fqdn = Field(name="fqdn", f_type=String(), default_value=AUTO_VALUE)
     description = Field(name="description", f_type=Text(), default_value=AUTO_VALUE)
     state = Field(name="state", f_type=String(), default_value=AUTO_VALUE)
+    locked = Field(name="locked", f_type=Boolean(), default_value=AUTO_VALUE)
     url = Field(name="url", f_type=String(), default_value=AUTO_VALUE)
 
 
