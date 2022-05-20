@@ -1,16 +1,15 @@
-<!--panel?.group_config?.disabled - Если true, групповой чекбокс disabled-->
-<!--panel?.group_config?.groupCheckboxChecked - Если false, групповой чекбокс не checked, а свитчер disabled и наоборот-->
+<!--group_config?.disabled - Если true, групповой чекбокс disabled-->
+<!--group_config?.checkboxValue - Если false, групповой чекбокс не checked, а свитчер disabled и наоборот-->
 <mat-expansion-panel [expanded]="active" [disabled]="!active" [ngClass]="{ panel: true, advanced: isAdvanced }" #ep>
   <mat-expansion-panel-header>
     <mat-panel-title class="title">
       <mat-checkbox
-        *ngIf="panel?.type==='group' && panel?.group_config?.exist"
-        [ngModel]="panel?.group_config?.checkboxValue"
-        [disabled]="panel?.group_config?.disabled"
-        [checked]="panel?.group_config?.groupCheckboxChecked"
-        (click)="$event.stopPropagation();"></mat-checkbox>
+        *ngIf="groupCheckboxExist()"
+        [disabled]="group_config?.disabled"
+        [checked]="group_config?.checkboxValue"
+        (click)="clickGroupCheckbox($event)"></mat-checkbox>
       <span>{{ panel.display_name }}</span>
-      <mat-slide-toggle *ngIf="panel.activatable" [disabled]="!panel?.group_config?.groupCheckboxChecked" [checked]="active" (change)="activeToggle($event)">
+      <mat-slide-toggle *ngIf="panel.activatable" [disabled]="groupCheckboxExist() && !group_config?.checkboxValue" [checked]="active" (change)="activeToggle($event)">
       </mat-slide-toggle>
     </mat-panel-title>
     <mat-panel-description>

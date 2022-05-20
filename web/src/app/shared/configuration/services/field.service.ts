@@ -213,7 +213,6 @@ export class FieldService {
    * @param options
    */
   public toFormGroup(options: TFormOptions[] = []): FormGroup {
-    console.log(options);
     const check = (a: TFormOptions): boolean =>
       'options' in a
         ? a.activatable

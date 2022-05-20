@@ -30,6 +30,7 @@ import { IFieldOptions, IPanelOptions } from '../types';
 })
 export class GroupFieldsComponent implements OnInit {
   active = true;
+  group_config: { [key: string]: boolean };
   @Input() panel: IPanelOptions;
   @Input() form: FormGroup;
   @ViewChild('ep') expanel: MatExpansionPanel;
@@ -38,6 +39,7 @@ export class GroupFieldsComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.panel.activatable) this.activatable(this.panel.active);
+    this.group_config = this.panel?.group_config;
   }
 
   get isAdvanced() {
@@ -75,5 +77,16 @@ export class GroupFieldsComponent implements OnInit {
       formControl.markAsTouched();
       this.form.updateValueAndValidity();
     }
+  }
+
+  groupCheckboxExist() {
+    return this.panel?.type==='group' && this.panel.activatable && this.panel?.group_config?.exist;
+  }
+
+  clickGroupCheckbox(event) {
+    this.group_config.checkboxValue = !this.group_config.checkboxValue;
+
+    event.preventDefault();
+    event.stopPropagation();
   }
 }
