@@ -124,7 +124,7 @@ def fix_group_keys_structure(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cm', '0086_set_mitogen_to_false'),
+        ('cm', '0087_maintenance_mode'),
     ]
 
     operations = [migrations.RunPython(fix_group_keys_structure)]
