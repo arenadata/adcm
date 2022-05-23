@@ -322,6 +322,7 @@ def update_hierarchy_issues(obj: ADCMEntity):
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(tree.built_from)
     for node in affected_nodes:
+        log.debug(f"node value: {node.value} and obj {obj}")
         node_value = node.value
         recheck_issues(node_value)
 
@@ -329,7 +330,13 @@ def update_hierarchy_issues(obj: ADCMEntity):
 def update_issue_after_deleting():
     """Remove issues which have no owners after object deleting"""
     for concern in ConcernItem.objects.exclude(type=ConcernType.Lock):
+        tree = Tree(concern.owner)
+        affected = set([node.value for node in tree.get_directly_affected(tree.built_from)])
+        related = set(concern.related_objects)
         if concern.owner is None:
             concern_str = str(concern)
             concern.delete()
             log.info('Deleted %s', concern_str)
+        elif related != affected:
+            for object_moved_out_hierarchy in related.difference(affected):
+                object_moved_out_hierarchy.remove_from_concerns(concern)

@@ -140,7 +140,7 @@ class Tree:
             ]
 
         elif node.type == 'host':
-            children_values = [node.value.provider]
+            children_values = []
 
         elif node.type == 'provider':
             children_values = []
