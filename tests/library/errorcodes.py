@@ -244,3 +244,19 @@ BIND_ERROR = ADCMError(
     '409 Conflict',
     'BIND_ERROR',
 )
+
+MAINTENANCE_MODE_NOT_AVAILABLE = ADCMError(
+    '409 Conflict',
+    'MAINTENANCE_MODE_NOT_AVAILABLE',
+)
+
+ACTION_ERROR = ADCMError(
+    '409 Conflict',
+    'ACTION_ERROR',
+)
+
+
+INVALID_HC_HOST_IN_MM = ADCMError(
+    '409 Conflict',
+    'INVALID_HC_HOST_IN_MM',
+)

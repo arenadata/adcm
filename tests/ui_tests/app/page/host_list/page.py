@@ -12,11 +12,14 @@
 
 """Host List page PageObjects classes"""
 
-from typing import Optional, ClassVar
 from dataclasses import dataclass
+from typing import Optional, ClassVar
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from selenium.common.exceptions import (
+    TimeoutException,
+)
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait as WDW
@@ -131,6 +134,18 @@ class HostListPage(BasePageObject):
         # because we don't pass provider name
         return provider_name
 
+    def get_all_available_actions(self, host_row_num: int):
+        "Return list with actions"
+
+        host_row = HostListLocators.HostTable.HostRow
+        self.click_on_row_child(host_row_num, host_row.actions)
+        self.wait_element_visible(host_row.dropdown_menu)
+        try:
+            actions = [action.text for action in self.find_elements(host_row.action_option_all, timeout=2)]
+            return actions
+        except TimeoutException:
+            return []
+
     @allure.step('Run action "{action_display_name}" on host in row {host_row_num}')
     def run_action(self, host_row_num: int, action_display_name: str):
         """Run action from Host row"""
@@ -177,6 +192,50 @@ class HostListPage(BasePageObject):
 
         host_row = self.table.get_row(row_num)
         wait_until_step_succeeds(_check_host_state, timeout=10, period=0.5, page=self, row=host_row)
+
+    @allure.step('Click on maintenance mode button in row {row_num}')
+    def click_on_maintenance_mode_btn(self, row_num: int):
+        """Click maintenance mode in row"""
+
+        row = self.table.get_row(row_num)
+        self.find_child(row, HostListLocators.HostTable.HostRow.maintenance_mode_btn).click()
+
+    @allure.step('Assert maintenance mode state in row {row_num}')
+    def assert_maintenance_mode_state(self, row_num: int, is_mm_state_on: Optional[bool] = True):
+        """
+        Assert maintenance mode state in row
+        :param row_num: number of the row with maintenance mode button
+        :param is_mm_state_on: state of maintenance mode button:
+            True for ON state
+            False for OFF state
+            None for not available state
+        """
+
+        def _check_mm_state(page: HostListPage, row: WebElement):
+            button_state = page.find_child(row, HostListLocators.HostTable.HostRow.maintenance_mode_btn).get_attribute(
+                "class"
+            )
+            tooltips_info = [
+                t.get_property("innerHTML") for t in page.find_elements(HostListLocators.HostTable.tooltip_text)
+            ]
+            if is_mm_state_on:
+                assert "mat-primary" in button_state, "Button should be gray"
+                assert (
+                    "Turn maintenance mode ON" in tooltips_info
+                ), "There should be tooltip that user could turn on maintenance mode"
+            elif is_mm_state_on is False:
+                assert "mat-on" in button_state, "Button should be red"
+                assert (
+                    "Turn maintenance mode OFF" in tooltips_info
+                ), "There should be tooltip that user could turn off maintenance mode"
+            else:
+                assert "mat-button-disabled" in button_state, "Button should be disabled"
+                assert (
+                    "Maintenance mode is not available" in tooltips_info
+                ), "There should be tooltip that maintenance mode is not available"
+
+        host_row = self.table.get_row(row_num)
+        wait_until_step_succeeds(_check_mm_state, timeout=4, period=0.5, page=self, row=host_row)
 
     @allure.step('Open host creation popup')
     def open_host_creation_popup(self):

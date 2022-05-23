@@ -153,6 +153,7 @@ def save_prototype(path, conf, def_type, bundle_hash):
     dict_to_obj(conf, 'venv', proto)
     dict_to_obj(conf, 'edition', proto)
     dict_to_obj(conf, 'config_group_customization', proto)
+    dict_to_obj(conf, 'allow_maintenance_mode', proto)
     fix_display_name(conf, proto)
     license_hash = get_license_hash(proto, conf, bundle_hash)
     if license_hash:
@@ -439,6 +440,7 @@ def save_action(proto, ac, bundle_hash, action_name):
     dict_to_obj(ac, 'params', action)
     dict_to_obj(ac, 'log_files', action)
     dict_to_obj(ac, 'venv', action)
+    dict_to_obj(ac, 'allow_in_maintenance_mode', action)
     fix_display_name(ac, action)
     check_action_hc(proto, ac, action_name)
     dict_to_obj(ac, 'hc_acl', action, 'hostcomponentmap')

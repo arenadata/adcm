@@ -223,6 +223,12 @@ export class BaseListDirective {
 
   onLoad() {}
 
+  maintenanceModeToggle(row) {
+    this.service.setMaintenanceMode(row)
+    .pipe(this.takeUntil())
+    .subscribe(() => {});
+  }
+
   license() {
     const row = this.row as Bundle;
 
