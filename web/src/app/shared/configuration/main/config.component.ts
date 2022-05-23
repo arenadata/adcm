@@ -202,13 +202,17 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   mergeAttrsWithField(): IConfigAttr {
     const attr = this.rawConfig.getValue().attr;
     const attrSrv = this.attributesSrv.rawAttributes();
-    Object.keys(attr.group_keys).forEach((key) => {
-      if (attr.group_keys[key]?.fields) {
-        attr.group_keys[key].fields = attrSrv['group_keys'][key];
-      } else {
-        attr.group_keys[key] = attrSrv['group_keys'][key];
-      }
-    });
+    Object.keys(attr).forEach(a => {
+      Object.keys(attr[a]).forEach((key) => {
+        if (attrSrv[a] && attrSrv[a][key]) {
+          if (attr[a][key]?.fields) {
+            attr[a][key].fields = attrSrv[a][key];
+          } else {
+            attr[a][key] = attrSrv[a][key];
+          }
+        }
+      });
+    })
 
     return attr;
   }

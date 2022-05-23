@@ -198,7 +198,7 @@ export class FieldService {
 
       dataOptions[i] = {
         ...dataOptions[i],
-        active: true,
+        active: dataOptions[i]['active'],
         group_config: {
           'exist': true,
           'checkboxValue':  data.attr?.custom_group_keys[group].value && data.attr?.group_keys[group].value,

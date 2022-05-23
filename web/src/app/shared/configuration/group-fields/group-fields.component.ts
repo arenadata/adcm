@@ -14,8 +14,8 @@ import { AbstractControl, FormGroup } from '@angular/forms';
 import { MatExpansionPanel } from '@angular/material/expansion';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { FieldService } from '@app/shared/configuration/services/field.service';
-
 import { IFieldOptions, IPanelOptions } from '../types';
+import { AttributeService } from "@app/shared/configuration/attributes/attribute.service";
 
 @Component({
   selector: 'app-group-fields',
@@ -35,7 +35,7 @@ export class GroupFieldsComponent implements OnInit {
   @Input() form: FormGroup;
   @ViewChild('ep') expanel: MatExpansionPanel;
 
-  constructor(private service: FieldService) {}
+  constructor(private service: FieldService, private attributesSrv: AttributeService) {}
 
   ngOnInit(): void {
     if (this.panel.activatable) this.activatable(this.panel.active);
@@ -46,17 +46,17 @@ export class GroupFieldsComponent implements OnInit {
     return this.panel.ui_options && this.panel.ui_options.advanced;
   }
 
-  activeToggle(e: MatSlideToggleChange) {
+  activeToggle(e: MatSlideToggleChange): void {
     this.panel.active = e.checked;
     this.activatable(e.checked);
   }
 
-  activatable(flag: boolean) {
+  activatable(flag: boolean): void {
     this.active = flag;
     this.checkFields(this.active);
   }
 
-  checkFields(flag: boolean) {
+  checkFields(flag: boolean): void {
     this.panel.options
       .filter((a) => !('options' in a))
       .forEach((a: IFieldOptions) => {
@@ -69,7 +69,7 @@ export class GroupFieldsComponent implements OnInit {
       });
   }
 
-  updateValidator(formControl: AbstractControl, flag: boolean, a: IFieldOptions, currentFormControl?: AbstractControl) {
+  updateValidator(formControl: AbstractControl, flag: boolean, a: IFieldOptions, currentFormControl?: AbstractControl): void {
     if (formControl) {
       if (!flag) formControl.clearValidators();
       else formControl.setValidators(this.service.setValidator(a, currentFormControl));
@@ -83,9 +83,9 @@ export class GroupFieldsComponent implements OnInit {
     return this.panel?.type==='group' && this.panel.activatable && this.panel?.group_config?.exist;
   }
 
-  clickGroupCheckbox(event) {
-    this.group_config.checkboxValue = !this.group_config.checkboxValue;
-
+  clickGroupCheckbox(event): void {
+    this.attributesSrv.groupCheckboxToggle(this.panel.name, !this.group_config.checkboxValue);
+    this.panel.value = this.group_config.checkboxValue = !this.group_config.checkboxValue;
     event.preventDefault();
     event.stopPropagation();
   }
