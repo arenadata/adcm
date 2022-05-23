@@ -11,10 +11,16 @@
 # limitations under the License.
 
 """Various "rich" checks for common assertions"""
+import json
 import pprint
-from typing import Callable, Union, Collection, TypeVar
+from typing import Callable, Union, Collection, TypeVar, Optional
 
 import allure
+import pytest
+from adcm_pytest_plugin.utils import catch_failed
+from coreapi.exceptions import ErrorMessage
+
+from tests.library.errorcodes import ADCMError
 
 T = TypeVar('T')  # pylint: disable=invalid-name
 
@@ -116,9 +122,47 @@ def dicts_are_equal(actual: dict, expected: dict, message: Union[str, Callable] 
     if actual == expected:
         return
 
-    allure.attach(pprint.pformat(actual), name='Actual dictionary')
-    allure.attach(pprint.pformat(expected), name='Expected dictionary')
+    allure.attach(json.dumps(actual, indent=2), name='Actual dictionary', attachment_type=allure.attachment_type.JSON)
+    allure.attach(
+        json.dumps(expected, indent=2), name='Expected dictionary', attachment_type=allure.attachment_type.JSON
+    )
     message = message if not callable(message) else message(**kwargs)
     if not message:
         message = "Two dictionaries aren't equal as was expected.\nCheck step attachments for more details."
     raise AssertionError(message)
+
+
+def dicts_are_not_equal(first: dict, second: dict, message: Union[str, Callable] = '', **kwargs) -> None:
+    """
+    Check that two dicts aren't equal (direct comparison with `!=`)
+    """
+    if first != second:
+        return
+
+    allure.attach(pprint.pformat(first), name='First dictionary')
+    allure.attach(pprint.pformat(second), name='Second dictionary')
+    message = message if not callable(message) else message(**kwargs)
+    if not message:
+        message = "Two dictionaries are equal, which wasn't expected.\nCheck step attachments for more details."
+
+
+def expect_api_error(operation_name: str, operation: Callable, *args, err_: Optional[ADCMError] = None, **kwargs):
+    """
+    Perform "operation" and expect it to raise an API error.
+
+    If `err_` is provided, raised exception will be checked against it by calling `.equal`
+    """
+    with allure.step(f'Execute "{operation_name}" and expect it to raise API error "{err_}"'):
+        with pytest.raises(ErrorMessage) as e:
+            operation(*args, **kwargs)
+        if err_:
+            err_.equal(e)
+
+
+def expect_no_api_error(operation_name: str, operation: Callable, *args, **kwargs):
+    """
+    Perform "operation" and expect it to pass without raising an API error
+    """
+    with allure.step(f'Execute "{operation_name}" and expect it to succeed without API errors'):
+        with catch_failed(ErrorMessage, f'Operation should be allowed: {operation_name}'):
+            return operation(*args, **kwargs)

@@ -44,6 +44,9 @@ import { ClusterDetailsComponent } from '@app/components/cluster/cluster-details
 import { LogMenuItemComponent } from './left-menu-items/log-menu-item/log-menu-item.component';
 import { ConcernMenuItemComponent } from '@app/shared/details/left-menu-items/concern-menu-item/concern-menu-item.component';
 import { ConcernMenuItemPipe } from './left-menu-items/concern-menu-item/concern-menu-item.pipe';
+import {
+  MaintenanceModeButtonComponent
+} from "@app/components/maintenance-mode-button/maintenance-mode-button.component";
 
 @NgModule({
   imports: [
@@ -71,6 +74,7 @@ import { ConcernMenuItemPipe } from './left-menu-items/concern-menu-item/concern
     BundleDetailsComponent,
     JobDetailsComponent,
     ActionsButtonComponent,
+    MaintenanceModeButtonComponent,
     ObjectLinkColumnPipe,
     SortObjectsPipe,
     AdwpListModule,
@@ -88,7 +92,7 @@ import { ConcernMenuItemPipe } from './left-menu-items/concern-menu-item/concern
     SubtitleComponent,
     NavigationComponent,
     ActionsButtonComponent,
-
+    MaintenanceModeButtonComponent,
     NavItemPipe,
     ObjectLinkColumnPipe,
     SortObjectsPipe,

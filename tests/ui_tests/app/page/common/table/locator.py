@@ -27,6 +27,7 @@ class CommonTable:
     header = Locator(By.CSS_SELECTOR, "mat-header-cell>div", "Table header")
     row = Locator(By.CSS_SELECTOR, "mat-row[adwphover]", "Table row")
     backdrop = Locator(By.CSS_SELECTOR, ".cdk-overlay-backdrop", "backdrop")
+    tooltip_text = Locator(By.CSS_SELECTOR, "#cdk-describedby-message-container div", "Tooltip text")
 
     class ActionPopup:
         """Common popup for action in tables."""
