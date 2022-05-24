@@ -82,7 +82,7 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
     if (!this.groupControl || !this.parameterControl) return;
 
     path.forEach((part) => {
-      enabled = enabled[part];
+      enabled = enabled[part] || enabled.fields[part];
     });
 
     if (!enabled) {
