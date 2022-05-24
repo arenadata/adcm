@@ -24,11 +24,7 @@ class PrototypeListFilter(drf_filters.FilterSet):
         label='bundle_id', field_name='bundle__pk', lookup_expr='exact'
     )
     type = drf_filters.CharFilter(label='type', field_name='type', lookup_expr='exact')
-    # name = drf_filters.CharFilter(label='name', field_name='name', lookup_expr='exact')
-    # name_in = StringInFilter(label='name_in', field_name='name', lookup_expr='in')
     name = StringInFilter(label='name', field_name='name', lookup_expr='in')
-    # parent_name = drf_filters.CharFilter(label='parent_name', field_name='parent', lookup_expr='exact')
-    # parent_name_in = StringInFilter(label='parent_name_in', field_name='parent', lookup_expr='name__in')
     parent_name = StringInFilter(label='parent_name', field_name='parent', lookup_expr='name__in')
     ordering = drf_filters.OrderingFilter(
         fields=(
