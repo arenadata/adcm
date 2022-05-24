@@ -10,31 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- type: cluster
+- type: provider
+  version: 3.2
+  name: test_provider
+
+- type: host
   version: 1.2
-  name: test_cluster
-
-  config: &config
-    - name: somestring
-      type: string
-      required: false
-    - name: someint
-      type: integer
-      default: 12
-
-- type: service
-  version: 2.3
-  name: test_service
-
-  config: *config
-
-  components:
-    test_component:
-      config: *config
-
-- type: service
-  version: 1.2
-  name: will_be_removed
-
-  components:
-    willbegone:
+  name: test_host
