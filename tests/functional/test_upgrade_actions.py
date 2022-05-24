@@ -164,6 +164,7 @@ class TestUpgradeActionSectionValidation:
             ('bundle_switch_in_regular_actions', INVALID_OBJECT_DEFINITION),
             ('incorrect_internal_action', INVALID_UPGRADE_DEFINITION),
             ('no_bundle_switch', INVALID_UPGRADE_DEFINITION),
+            ('hc_acl_in_provider', INVALID_UPGRADE_DEFINITION),
         ],
     )
     def test_validation_failed_on_upload(self, bundle_dir_name, expected_error, sdk_client_fs):
@@ -328,6 +329,7 @@ class TestFailedUpgradeAction:
         sets_are_equal(presented_action_names, action_names, message='Incorrect action list')
 
 
+# pylint: disable-next=too-few-public-methods
 class TestUpgradeActionRelations:
     """Test cases when upgrade action"""
 
