@@ -26,7 +26,6 @@ from api.utils import (
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.serializers import StringListSerializer
-from api.serializers import UpgradeSerializer, UrlField
 from cm.adcm_config import get_main_info
 from cm.errors import AdcmEx
 from cm.models import Action, Prototype
@@ -101,12 +100,3 @@ class ProviderUISerializer(ProviderDetailSerializer):
 
     def get_main_info(self, obj):
         return get_main_info(obj)
-
-
-class UpgradeProviderSerializer(UpgradeSerializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {'provider_id': self.context['provider_id'], 'upgrade_id': obj.id}
-
-    url = MyUrlField(read_only=True, view_name='provider-upgrade-details')
-    do = MyUrlField(read_only=True, view_name='do-provider-upgrade')

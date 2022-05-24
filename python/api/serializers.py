@@ -69,25 +69,42 @@ class UpgradeSerializer(serializers.Serializer):
         return {'attr': attr, 'config': conf.data}
 
 
-class UpgradeLinkSerializer(UpgradeSerializer):
+class ClusterUpgradeSerializer(UpgradeSerializer):
     class MyUrlField(UrlField):
         def get_kwargs(self, obj):
             return {'cluster_id': self.context['cluster_id'], 'upgrade_id': obj.id}
 
+    hostcomponentmap = serializers.SerializerMethodField()
     url = MyUrlField(read_only=True, view_name='cluster-upgrade-details')
     do = MyUrlField(read_only=True, view_name='do-cluster-upgrade')
+
+    def get_hostcomponentmap(self, instance):
+        if instance.action:
+            return instance.action.hostcomponentmap
+        return {}
+
+
+class ProviderUpgradeSerializer(UpgradeSerializer):
+    class MyUrlField(UrlField):
+        def get_kwargs(self, obj):
+            return {'provider_id': self.context['provider_id'], 'upgrade_id': obj.id}
+
+    url = MyUrlField(read_only=True, view_name='provider-upgrade-details')
+    do = MyUrlField(read_only=True, view_name='do-provider-upgrade')
 
 
 class DoUpgradeSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     upgradable = serializers.BooleanField(read_only=True)
     config = serializers.JSONField(required=False, default=dict)
+    hc = serializers.JSONField(required=False, default=list)
     task_id = serializers.IntegerField(read_only=True)
 
     def create(self, validated_data):
         upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')
         config = validated_data.get('config')
-        return do_upgrade(validated_data.get('obj'), upgrade, config)
+        hc = validated_data.get('hc')
+        return do_upgrade(validated_data.get('obj'), upgrade, config, hc)
 
 
 class StringListSerializer(serializers.ListField):
