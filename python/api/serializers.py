@@ -97,14 +97,12 @@ class DoUpgradeSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     upgradable = serializers.BooleanField(read_only=True)
     config = serializers.JSONField(required=False, default=dict)
-    hc = serializers.JSONField(required=False, default=list)
     task_id = serializers.IntegerField(read_only=True)
 
     def create(self, validated_data):
         upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')
         config = validated_data.get('config')
-        hc = validated_data.get('hc')
-        return do_upgrade(validated_data.get('obj'), upgrade, config, hc)
+        return do_upgrade(validated_data.get('obj'), upgrade, config)
 
 
 class StringListSerializer(serializers.ListField):
