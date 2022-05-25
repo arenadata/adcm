@@ -11,6 +11,7 @@
 # limitations under the License.
 # pylint: disable = unexpected-keyword-arg
 
+from contextlib import suppress
 from datetime import timedelta
 from subprocess import Popen, PIPE
 
@@ -26,6 +27,7 @@ from cm.models import (
     ConfigLog,
     Host,
     HostProvider,
+    ObjectConfig,
     ServiceComponent,
 )
 
@@ -47,34 +49,44 @@ def run_logrotate(path):
     )
 
 
+def __has_related_records(obj_conf: ObjectConfig) -> bool:
+    if (
+        sum(
+            [
+                ADCM.objects.filter(config=obj_conf).count(),
+                Cluster.objects.filter(config=obj_conf).count(),
+                ClusterObject.objects.filter(config=obj_conf).count(),
+                Host.objects.filter(config=obj_conf).count(),
+                HostProvider.objects.filter(config=obj_conf).count(),
+                ServiceComponent.objects.filter(config=obj_conf).count(),
+            ]
+        )
+        > 0
+    ):
+        return True
+    return False
+
+
 @background(schedule=BACKGROUND_TASKS_DEFAULT_DELAY)
 def run_configlog_rotation(configlog_days_delta: int) -> None:
     try:
         threshold_date = timezone.now() - timedelta(days=configlog_days_delta)
         log.debug('ConfigLog rotation started. Threshold date: %s', threshold_date)
 
-        exclude_pks = []
+        exclude_pks = set()
         target_configlogs = ConfigLog.objects.filter(date__lte=threshold_date)
         for cl in target_configlogs:
-            if (
-                sum(
-                    [
-                        ADCM.objects.filter(config=cl.obj_ref).count(),
-                        Cluster.objects.filter(config=cl.obj_ref).count(),
-                        ClusterObject.objects.filter(config=cl.obj_ref).count(),
-                        Host.objects.filter(config=cl.obj_ref).count(),
-                        HostProvider.objects.filter(config=cl.obj_ref).count(),
-                        ServiceComponent.objects.filter(config=cl.obj_ref).count(),
-                    ]
-                )
-                > 0
-            ):
-                exclude_pks.append(cl.pk)
+            for cl_pk in (cl.obj_ref.current, cl.obj_ref.previous):
+                exclude_pks.add(cl_pk)
         target_configlogs = target_configlogs.exclude(pk__in=exclude_pks)
         count = target_configlogs.count()
 
         for cl in target_configlogs:
-            cl.obj_ref.delete()
+            if cl.obj_ref and not __has_related_records(cl.obj_ref):
+                cl.obj_ref.delete()
+            with suppress(Exception):
+                cl.delete()
+
         log.debug('Deleted %s ConfigLogs', count)
 
     except Exception as e:  # pylint: disable=broad-except
@@ -114,4 +126,4 @@ def run():
             verbose_name=CONFIGLOG_ROTATION['verbose_name'],
             repeat=CONFIGLOG_ROTATION['repeat'],
         )
-        log.debug('Rotation of ConfigLog initialized')
+        log.debug('Rotation of ConfigLog initialized [days=%s]', configlog_days_delta)
