@@ -283,7 +283,9 @@ def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
         return res
 
 
-def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade, config: dict, hc: List) -> dict:
+def do_upgrade(
+    obj: Union[Cluster, HostProvider], upgrade: Upgrade, config: dict, hc: List = None
+) -> dict:
     old_proto = obj.prototype
     check_license(obj.prototype.bundle)
     check_license(upgrade.bundle)
