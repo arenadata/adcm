@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 1.4
+  version: 1.5
 
   config:
     - name: "global"
@@ -90,3 +90,17 @@
             Rotation logs for nginx server
           type: boolean
           default: false
+    - name: "config_rotation"
+      display_name: "Configuration rotation"
+      description: |
+        You can enable Clusters/Services/Components configurations deleting mechanism.
+      type: "group"
+      subs:
+        - name: "config_rotation_in_db"
+          display_name: "Objects configurations rotation period"
+          type: integer
+          required: false
+          default: 365
+          min: 0
+          description: |
+            You can set the time (number of days) after which the Objects configuration will be deleted from the database.
