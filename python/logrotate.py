@@ -81,10 +81,9 @@ def run_configlog_rotation(configlog_days_delta: int) -> None:
         target_configlogs = target_configlogs.exclude(pk__in=exclude_pks)
         count = target_configlogs.count()
 
-        for obj_conf in ObjectConfig.objects.all():
-            if not __has_related_records(obj_conf):
-                obj_conf.delete()
         for cl in target_configlogs:
+            if cl.obj_ref and not __has_related_records(cl.obj_ref):
+                cl.obj_ref.delete()
             with suppress(
                 Exception
             ):  # may be already deleted because of `obj_conf.delete() CASCADE`
