@@ -19,12 +19,22 @@ from background_task.tasks import Task
 from django.utils import timezone
 
 from cm.logger import log
-from cm.models import ADCM, ConfigLog
+from cm.models import (
+    ADCM,
+    Cluster,
+    ClusterObject,
+    ConfigLog,
+    Host,
+    HostProvider,
+    ServiceComponent,
+)
 
+BACKGROUND_TASKS_DEFAULT_DELAY = 60  # seconds
 PERIODS = {'HOURLY': Task.HOURLY, 'DAILY': Task.DAILY, 'WEEKLY': Task.WEEKLY}
+CONFIGLOG_ROTATION = {'repeat': PERIODS['DAILY'], 'verbose_name': 'configlog_db_rotation'}
 
 
-@background(schedule=60)
+@background(schedule=BACKGROUND_TASKS_DEFAULT_DELAY)
 def run_logrotate(path):
     cmd = ['logrotate', '-f', path]
     proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
@@ -35,6 +45,41 @@ def run_logrotate(path):
         output.decode(errors='ignore'),
         error.decode(errors='ignore'),
     )
+
+
+@background(schedule=BACKGROUND_TASKS_DEFAULT_DELAY)
+def run_configlog_rotation(configlog_days_delta: int) -> None:
+    try:
+        threshold_date = timezone.now() - timedelta(days=configlog_days_delta)
+        log.debug('ConfigLog rotation started. Threshold date: %s', threshold_date)
+
+        exclude_pks = []
+        target_configlogs = ConfigLog.objects.filter(date__lte=threshold_date)
+        for cl in target_configlogs:
+            if (
+                sum(
+                    [
+                        ADCM.objects.filter(config=cl.obj_ref).count(),
+                        Cluster.objects.filter(config=cl.obj_ref).count(),
+                        ClusterObject.objects.filter(config=cl.obj_ref).count(),
+                        Host.objects.filter(config=cl.obj_ref).count(),
+                        HostProvider.objects.filter(config=cl.obj_ref).count(),
+                        ServiceComponent.objects.filter(config=cl.obj_ref).count(),
+                    ]
+                )
+                > 0
+            ):
+                exclude_pks.append(cl.pk)
+        target_configlogs = target_configlogs.exclude(pk__in=exclude_pks)
+        count = target_configlogs.count()
+
+        for cl in target_configlogs:
+            cl.obj_ref.delete()
+        log.debug('Deleted %s ConfigLogs', count)
+
+    except Exception as e:
+        log.warning('Error in ConfigLog rotation')
+        log.exception(e)
 
 
 def create_task(path, name, period, turn):
@@ -60,3 +105,13 @@ def run():
 
     use_rotation_nginx_server = adcm_conf['logrotate']['nginx_server']
     create_task('/etc/logrotate.d/nginx', 'nginx', period, use_rotation_nginx_server)
+
+    configlog_days_delta = adcm_conf['config_rotation']['config_rotation_in_db']
+    if configlog_days_delta > 0:
+        Task.objects.filter(verbose_name=CONFIGLOG_ROTATION['verbose_name']).delete()
+        run_configlog_rotation(
+            configlog_days_delta,
+            verbose_name=CONFIGLOG_ROTATION['verbose_name'],
+            repeat=CONFIGLOG_ROTATION['repeat'],
+        )
+        log.debug('Rotation of ConfigLog initialized')
