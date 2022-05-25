@@ -85,7 +85,9 @@ def run_configlog_rotation(configlog_days_delta: int) -> None:
             if not __has_related_records(obj_conf):
                 obj_conf.delete()
         for cl in target_configlogs:
-            with suppress(Exception):  # bay me already deleted because `obj_conf.delete() CASCADE`
+            with suppress(
+                Exception
+            ):  # may be already deleted because of `obj_conf.delete() CASCADE`
                 cl.delete()
 
         log.debug('Deleted %s ConfigLogs', count)
