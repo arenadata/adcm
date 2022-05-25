@@ -77,7 +77,7 @@ def run_configlog_rotation(configlog_days_delta: int) -> None:
             cl.obj_ref.delete()
         log.debug('Deleted %s ConfigLogs', count)
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         log.warning('Error in ConfigLog rotation')
         log.exception(e)
 
