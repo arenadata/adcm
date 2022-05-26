@@ -7,7 +7,7 @@
         *ngIf="groupCheckboxExist()"
         [disabled]="group_config?.disabled"
         [checked]="group_config?.checkboxValue"
-        (click)="clickGroupCheckbox($event)"></mat-checkbox>
+        (click)="!group_config?.disabled && clickGroupCheckbox($event)"></mat-checkbox>
       <span>{{ panel.display_name }}</span>
       <mat-slide-toggle
         *ngIf="panel.activatable"
