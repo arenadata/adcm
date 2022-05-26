@@ -445,7 +445,10 @@ class TestFailedUpgradeAction:
         actual_hc = _get_hc_names(old_cluster.hostcomponent())
         sets_are_equal(actual_hc, expected_hc, 'The hostcomponent from before the upgrade was expected')
 
-    def test_hc_acl_fail_after_switch(self, sdk_client_fs, old_cluster, two_hosts):
+    @pytest.mark.parametrize(
+        'upgrade_name', ['fail after switch', 'fail on first action after switch'], ids=lambda x: x.replace(' ', '_')
+    )
+    def test_hc_acl_fail_after_switch(self, upgrade_name: str, sdk_client_fs, old_cluster, two_hosts):
         """
         Test an upgrade with `hc_acl` failed after the bundle switch
         """
@@ -459,7 +462,7 @@ class TestFailedUpgradeAction:
         new_bundle = self._upload_new_version(sdk_client_fs, 'hc_acl')
         hc_argument = _set_hc_and_prepare_new_hc_for_upgrade_action(old_cluster, new_bundle, host_1, host_2)
 
-        self._upgrade_and_expect_state(old_cluster, 'created', name='fail after switch', hc=hc_argument)
+        self._upgrade_and_expect_state(old_cluster, 'created', name=upgrade_name, hc=hc_argument)
 
         _check_service_is_in_cluster(old_cluster, TEST_SERVICE_NAME)
         _check_service_is_in_cluster(old_cluster, NEW_SERVICE)

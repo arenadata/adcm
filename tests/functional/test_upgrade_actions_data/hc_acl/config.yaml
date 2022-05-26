@@ -71,11 +71,22 @@
         - <<: *action
           name: second action before switch
         - <<: *bundle_switch
-        - <<: *fail_action
+        - <<: *action
           name: first action after switch
         - <<: *fail_action
           name: second action after switch
-          script: ./fail.yaml
+
+    - <<: *upgrade
+      name: fail on first action after switch
+      scripts:
+        - *action
+        - <<: *action
+          name: second action before switch
+        - <<: *bundle_switch
+        - <<: *fail_action
+          name: first action after switch
+        - <<: *action
+          name: second action after switch
 
   config: &config
     - name: somestring
