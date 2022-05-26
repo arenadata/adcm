@@ -64,6 +64,11 @@ class LoadBundle(CreateModelMixin, GenericUIViewSet):
         cm.api.load_service_map()
         return Response(status=status.HTTP_200_OK)
 
+    @decorators.action(methods=['put'], detail=False)
+    def hostmap(self, request):
+        cm.api.load_host_map()
+        return Response(status=status.HTTP_200_OK)
+
     def create(self, request, *args, **kwargs):
         """
         post:

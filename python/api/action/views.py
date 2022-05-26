@@ -26,13 +26,16 @@ from api.utils import (
     filter_actions,
     permission_denied,
     get_object_for_user,
+    set_disabling_cause,
 )
+from cm.errors import AdcmEx
 from cm.models import (
     Host,
     Action,
     TaskLog,
     HostComponent,
     get_model_by_type,
+    MaintenanceModeType,
 )
 from rbac.viewsets import DjangoOnlyObjectPermissions
 from . import serializers
@@ -61,48 +64,55 @@ class ActionList(PermissionListMixin, GenericUIView):
     filter_backends = (AdcmFilterBackend,)
     permission_required = ['cm.view_action']
 
+    def _get_host_actions(self, host: Host) -> set:
+        actions = set(
+            filter_actions(
+                host, self.filter_queryset(self.get_queryset().filter(prototype=host.prototype))
+            )
+        )
+        hcs = HostComponent.objects.filter(host_id=host.id)
+        if hcs:
+            for hc in hcs:
+                cluster, _ = get_obj(object_type='cluster', cluster_id=hc.cluster_id)
+                service, _ = get_obj(object_type='service', service_id=hc.service_id)
+                component, _ = get_obj(object_type='component', component_id=hc.component_id)
+                for connect_obj in [cluster, service, component]:
+                    actions.update(
+                        filter_actions(
+                            connect_obj,
+                            self.filter_queryset(
+                                self.get_queryset().filter(
+                                    prototype=connect_obj.prototype, host_action=True
+                                )
+                            ),
+                        )
+                    )
+        else:
+            if host.cluster is not None:
+                actions.update(
+                    filter_actions(
+                        host.cluster,
+                        self.filter_queryset(
+                            self.get_queryset().filter(
+                                prototype=host.cluster.prototype, host_action=True
+                            )
+                        ),
+                    )
+                )
+        return actions
+
     def get(self, request, *args, **kwargs):  # pylint: disable=too-many-locals
         """
         List all actions of a specified object
         """
         if kwargs['object_type'] == 'host':
             host, _ = get_obj(object_type='host', host_id=kwargs['host_id'])
-            actions = set(
-                filter_actions(
-                    host, self.filter_queryset(self.get_queryset().filter(prototype=host.prototype))
-                )
-            )
+            if host.maintenance_mode == MaintenanceModeType.On:
+                actions = set()
+            else:
+                actions = self._get_host_actions(host)
             obj = host
             objects = {'host': host}
-            hcs = HostComponent.objects.filter(host_id=kwargs['host_id'])
-            if hcs:
-                for hc in hcs:
-                    cluster, _ = get_obj(object_type='cluster', cluster_id=hc.cluster_id)
-                    service, _ = get_obj(object_type='service', service_id=hc.service_id)
-                    component, _ = get_obj(object_type='component', component_id=hc.component_id)
-                    for connect_obj in [cluster, service, component]:
-                        actions.update(
-                            filter_actions(
-                                connect_obj,
-                                self.filter_queryset(
-                                    self.get_queryset().filter(
-                                        prototype=connect_obj.prototype, host_action=True
-                                    )
-                                ),
-                            )
-                        )
-            else:
-                if host.cluster is not None:
-                    actions.update(
-                        filter_actions(
-                            host.cluster,
-                            self.filter_queryset(
-                                self.get_queryset().filter(
-                                    prototype=host.cluster.prototype, host_action=True
-                                )
-                            ),
-                        )
-                    )
         else:
             obj, _ = get_obj(**kwargs)
             actions = filter_actions(
@@ -116,6 +126,7 @@ class ActionList(PermissionListMixin, GenericUIView):
         perms = [f'cm.run_action_{a.display_name}' for a in actions]
         mask = [request.user.has_perm(perm, obj) for perm in perms]
         actions = list(compress(actions, mask))
+
         serializer = self.get_serializer(
             actions, many=True, context={'request': request, 'objects': objects, 'obj': obj}
         )
@@ -146,6 +157,7 @@ class ActionDetail(PermissionListMixin, GenericUIView):
             self.get_queryset(),
             id=action_id,
         )
+        set_disabling_cause(obj, action)
         if isinstance(obj, Host) and action.host_action:
             objects = {'host': obj}
         else:
@@ -173,6 +185,20 @@ class RunTask(GenericUIView):
         if not self.has_action_perm(action, obj):
             permission_denied()
 
+    @staticmethod
+    def check_maintenance_mode(action, obj):
+        if isinstance(obj, Host) and obj.maintenance_mode == MaintenanceModeType.On:
+            raise AdcmEx(
+                'ACTION_ERROR',
+                msg='you cannot start an action on a host that is in maintenance mode',
+            )
+        set_disabling_cause(obj, action)
+        if action.disabling_cause == 'maintenance_mode':
+            raise AdcmEx(
+                'ACTION_ERROR',
+                msg='you cannot start the action because at least one host is in maintenance mode',
+            )
+
     def post(self, request, *args, **kwargs):
         """
         Ran specified action
@@ -185,5 +211,6 @@ class RunTask(GenericUIView):
         )
         action = get_object_for_user(request.user, 'cm.view_action', Action, id=action_id)
         self.check_action_perm(action, obj)
+        self.check_maintenance_mode(action, obj)
         serializer = self.get_serializer(data=request.data)
         return create(serializer, action=action, task_object=obj)

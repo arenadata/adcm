@@ -51,6 +51,7 @@ from tests.ui_tests.app.page.cluster.page import (
     ComponentsHostRowInfo,
     ClusterStatusPage,
     ClusterGroupConfigConfig,
+    ClusterGroupConfigHosts,
 )
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
@@ -521,13 +522,25 @@ class TestClusterServicePage:
         service_conf_page.wait_page_is_opened()
         service_conf_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
+    @pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2790")
     def test_check_pagination_on_service_list_page(self, sdk_client_fs: ADCMClient, app_fs):
         """Test pagination on cluster/{}/service page"""
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_SERVICES)
         cluster = bundle.cluster_create(name=CLUSTER_NAME)
         cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_service_page.add_service_by_name(service_name="All")
+        cluster_service_page.wait_page_is_opened()
         cluster_service_page.table.check_pagination(second_page_item_amount=2)
+
+    def test_delete_service_on_service_list_page(self, app_fs, create_community_cluster_with_service):
+        """Test delete service from cluster/{}/service page"""
+
+        cluster, service = create_community_cluster_with_service
+        cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+        row = cluster_service_page.table.get_all_rows()[0]
+        cluster_service_page.click_delete_btn_in_row(row)
+        with allure.step("Check that after deleting service row there are no rows"):
+            assert len(cluster_service_page.table.get_all_rows(timeout=2)) == 0, "There should not be any rows"
 
 
 class TestClusterHostPage:
@@ -684,6 +697,18 @@ class TestClusterHostPage:
         cluster_host_page.table.check_pagination(1)
         cluster_host_page.check_cluster_toolbar(CLUSTER_NAME)
 
+    @pytest.mark.smoke()
+    def test_maintenance_mode_from_cluster_host_page(self, app_fs, create_community_cluster_with_host):
+        """Test turn on and off maintenance mode on cluster/{}/host page"""
+
+        cluster, _ = create_community_cluster_with_host
+        cluster_host_page = ClusterHostPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+
+        with allure.step("Check that user can change maintenance mode state"):
+            cluster_host_page.assert_maintenance_mode_state(0)
+            cluster_host_page.click_on_maintenance_mode_btn(0)
+            cluster_host_page.assert_maintenance_mode_state(0, False)
+
 
 class TestClusterComponentsPage:
     """Tests for the /cluster/{}/component page"""
@@ -730,13 +755,34 @@ class TestClusterComponentsPage:
 
     @pytest.mark.smoke()
     @pytest.mark.include_firefox()
-    def test_check_cluster_components_page_create_components(
-        self, app_fs, create_community_cluster_with_host_and_service
-    ):
-        """Test distribution of components on hosts"""
+    @pytest.mark.parametrize(
+        "bundle_name",
+        [
+            "cluster_with_not_required_component",
+            "cluster_with_required_component",
+            "cluster_with_required_component_short",
+        ],
+    )
+    def test_check_cluster_components_page_create_components(self, app_fs, sdk_client_fs, create_host, bundle_name):
+        """Test adding components on hosts"""
+
         params = {"message": "Successfully saved."}
-        cluster, *_ = create_community_cluster_with_host_and_service
+        is_not_required = "_not_required" in bundle_name
+
+        with allure.step("Add cluster with service and host"):
+            bundle = cluster_bundle(sdk_client_fs, bundle_name)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            cluster.service_add(name=SERVICE_NAME)
+            cluster.host_add(create_host)
+
         cluster_components_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+
+        with allure.step("Check that required component has * in name"):
+            component_name = cluster_components_page.get_components_rows()[0].text
+            assert (
+                "*" not in component_name if is_not_required else f"* {COMPONENT_NAME}" in component_name
+            ), f'There are {"" if is_not_required else "no"} * in component name "{component_name}"'
+
         host_row = cluster_components_page.find_host_row_by_name(HOST_NAME)
         component_row = cluster_components_page.find_component_row_by_name(COMPONENT_NAME)
         cluster_components_page.click_host(host_row)
@@ -749,7 +795,9 @@ class TestClusterComponentsPage:
             host_row = cluster_components_page.get_host_rows()[0]
             check_components_host_info(cluster_components_page.get_row_info(host_row), HOST_NAME, "1")
             component_row = cluster_components_page.get_components_rows()[0]
-            check_components_host_info(cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "1")
+            check_components_host_info(
+                cluster_components_page.get_row_info(component_row), COMPONENT_NAME, "1" if is_not_required else "1 / 1"
+            )
 
     def test_check_cluster_components_page_restore_components(
         self, app_fs, create_community_cluster_with_host_and_service
@@ -1355,13 +1403,37 @@ class TestClusterConfigPage:
 class TestClusterGroupConfigPage:
     """Tests for the cluster/{}/group_config page"""
 
-    def test_open_by_tab_group_config_cluster_page(self, app_fs, create_community_cluster):
+    def test_open_by_tab_group_config_list_cluster_page(self, app_fs, create_community_cluster):
         """Test open cluster/{}/group_config from left menu"""
 
         cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, create_community_cluster.id).open()
         cluster_groupconf_page = cluster_main_page.open_group_config_tab()
         cluster_groupconf_page.check_all_elements()
         cluster_groupconf_page.check_cluster_toolbar(CLUSTER_NAME)
+
+    def test_open_by_tab_group_config_host_cluster_page(self, app_fs, create_community_cluster):
+        """Test open cluster/{}/group_config from left menu"""
+
+        params = {'group_name': 'Test group'}
+        cluster_group_config = create_community_cluster.group_config_create(name=params['group_name'])
+        cluster_config_page = ClusterGroupConfigConfig(
+            app_fs.driver, app_fs.adcm.url, create_community_cluster.id, cluster_group_config.id
+        ).open()
+        cluster_groupconf_page = cluster_config_page.open_hosts_tab()
+        cluster_groupconf_page.check_all_elements()
+        cluster_groupconf_page.check_cluster_group_conf_toolbar(CLUSTER_NAME, params['group_name'])
+
+    def test_open_by_tab_group_config_cluster_page(self, app_fs, create_community_cluster):
+        """Test open cluster/{}/group_config from left menu"""
+
+        params = {'group_name': 'Test group'}
+        cluster_group_config = create_community_cluster.group_config_create(name=params['group_name'])
+        cluster_host_config_page = ClusterGroupConfigHosts(
+            app_fs.driver, app_fs.adcm.url, create_community_cluster.id, cluster_group_config.id
+        ).open()
+        cluster_groupconf_page = cluster_host_config_page.open_config_tab()
+        cluster_groupconf_page.check_all_elements()
+        cluster_groupconf_page.check_cluster_group_conf_toolbar(CLUSTER_NAME, params['group_name'])
 
     def test_create_group_config_cluster(self, app_fs, create_community_cluster):
         """Test create group config on cluster/{}/group_config"""
@@ -1393,7 +1465,7 @@ class TestClusterGroupConfigPage:
         group_conf_page.table.check_pagination(second_page_item_amount=1)
 
     # pylint: disable=too-many-locals
-    @pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2741")
+
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
@@ -1402,11 +1474,13 @@ class TestClusterGroupConfigPage:
     @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
     @pytest.mark.parametrize(
         "config_group_customization",
-        [True, False],
-        ids=("config_group_customization_true", "config_group_customization_false"),
+        [True, False, None],
+        ids=("config_group_customization_true", "config_group_customization_false", "no_config_group_customization"),
     )
     @pytest.mark.parametrize(
-        "group_customization", [True, False], ids=("group_customization_true", "group_customization_false")
+        "group_customization",
+        [True, False, None],
+        ids=("group_customization_true", "group_customization_false", "no_group_customization"),
     )
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_group_config_fields_invisible_false(
@@ -1442,15 +1516,30 @@ class TestClusterGroupConfigPage:
 
         def check_expectations():
             with allure.step('Check that field visible'):
-                for config_item in cluster_config_page.config.get_all_config_rows():
+
+                for config_item in cluster_config_page.group_config.get_all_group_config_rows():
                     assert config_item.is_displayed(), f"Config field {field_type} should be visible"
                     if is_default:
                         check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
+                        if not config_group_customization:
+                            cluster_config_page.config.check_inputs_disabled(
+                                config_item, is_password=bool(field_type == "password")
+                            )
                     if is_read_only:
                         assert cluster_config_page.config.is_element_read_only(
                             config_item
                         ), f"Config field {field_type} should be read only"
-            if expected['alerts'] and not is_read_only:
+                    if not config_group_customization:
+                        assert cluster_config_page.group_config.is_customization_chbx_disabled(
+                            config_item
+                        ), f"Checkbox for field {field_type} should be disabled"
+                    if config_group_customization and not is_read_only:
+                        if not cluster_config_page.group_config.is_customization_chbx_checked(config_item):
+                            cluster_config_page.group_config.click_on_customization_chbx(config_item)
+                        assert cluster_config_page.group_config.is_customization_chbx_checked(
+                            config_item
+                        ), f"Config field {field_type} should be checked"
+            if expected['alerts'] and (not is_read_only) and config_group_customization:
                 cluster_config_page.config.check_invalid_value_message(field_type)
 
         # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
@@ -1464,7 +1553,137 @@ class TestClusterGroupConfigPage:
         # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
 
-    # pylint: enable=too-many-locals
+    @pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2802")
+    @pytest.mark.full()
+    @pytest.mark.parametrize("field_type", TYPES)
+    @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
+    @pytest.mark.parametrize("group_advanced", [True, False], ids=("group_advanced", "group_non-advanced"))
+    @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
+    @pytest.mark.parametrize(
+        "field_advanced",
+        [
+            pytest.param(True, id="field_advanced", marks=pytest.mark.regression),
+            pytest.param(False, id="field_non_advanced"),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "config_group_customization",
+        [True, False, None],
+        ids=("config_group_customization_true", "config_group_customization_false", "no_config_group_customization"),
+    )
+    @pytest.mark.parametrize(
+        "group_customization",
+        [True, False, None],
+        ids=("group_customization_true", "group_customization_false", "no_group_customization"),
+    )
+    @pytest.mark.parametrize(
+        "field_customization",
+        [True, False, None],
+        ids=("field_customization_true", "field_customization_false", "no_field_customization"),
+    )
+    @pytest.mark.usefixtures("login_to_adcm_over_api")  # pylint: disable-next=too-many-locals
+    def test_group_configs_fields_in_group_invisible_false(
+        self,
+        sdk_client_fs: ADCMClient,
+        app_fs,
+        field_type,
+        activatable,
+        group_advanced,
+        is_read_only,
+        field_advanced,
+        config_group_customization,
+        group_customization,
+        field_customization,
+    ):
+        """Test group configs with not-invisible fields"""
+        config, expected, path = prepare_group_config(
+            generate_group_configs(
+                field_type=field_type,
+                activatable=activatable,
+                active=True,
+                group_invisible=False,
+                group_advanced=group_advanced,
+                default=True,
+                required=False,
+                read_only=is_read_only,
+                field_invisible=False,
+                field_advanced=field_advanced,
+                config_group_customization=config_group_customization,
+                group_customization=group_customization,
+                field_customization=field_customization,
+            )
+        )
+        cluster, *_ = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
+        cluster_group_config = cluster.group_config_create(name="Test group")
+        cluster_config_page = ClusterGroupConfigConfig(
+            app_fs.driver, app_fs.adcm.url, cluster.id, cluster_group_config.id
+        ).open()
+
+        def check_expectations():
+            with allure.step('Check that field visible'):
+                for config_item in cluster_config_page.group_config.get_all_group_config_rows():
+                    group_name = cluster_config_page.config.get_group_names()[0].text
+                    assert group_name == 'group', "Should be group 'group' visible"
+                    if not activatable:
+                        continue
+                    if not cluster_config_page.config.advanced:
+                        cluster_config_page.config.check_group_is_active(group_name, config['config'][0]['active'])
+                    if (cluster_config_page.config.advanced and field_advanced) or not field_advanced:
+                        cluster_config_page.config.expand_or_close_group(group_name, expand=True)
+                        assert len(cluster_config_page.config.get_all_config_rows()) >= 2, "Field should be visible"
+                        check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
+                        if is_read_only:
+                            if config_item.tag_name == 'app-field':
+                                assert cluster_config_page.config.is_element_read_only(
+                                    config_item
+                                ), f"Config field {field_type} should be read only"
+                        else:
+                            if (
+                                ((config_group_customization is False) and (field_customization is False))
+                                or ((config_group_customization is False) and (field_customization is None))
+                                or ((config_group_customization is not False) and (field_customization is False))
+                            ):
+                                cluster_config_page.config.check_inputs_disabled(
+                                    config_item, is_password=bool(field_type == "password")
+                                )
+                                assert cluster_config_page.group_config.is_customization_chbx_disabled(
+                                    config_item
+                                ), f"Checkbox for field {field_type} should be disabled"
+                            else:
+                                cluster_config_page.config.check_inputs_enabled(
+                                    config_item, is_password=bool(field_type == "password")
+                                )
+                                assert not cluster_config_page.group_config.is_customization_chbx_disabled(
+                                    config_item
+                                ), f"Checkbox for field {field_type} should not be disabled"
+                                if not cluster_config_page.group_config.is_customization_chbx_checked(config_item):
+                                    cluster_config_page.group_config.click_on_customization_chbx(config_item)
+                                assert cluster_config_page.group_config.is_customization_chbx_checked(
+                                    config_item
+                                ), f"Config field {field_type} should be checked"
+                                if expected['alerts']:
+                                    if field_type == "map":
+                                        is_advanced = cluster_config_page.config.advanced
+                                        cluster_config_page.driver.refresh()
+                                        if is_advanced:
+                                            cluster_config_page.config.click_on_advanced()
+                                        cluster_config_page.config.expand_or_close_group(group_name, expand=True)
+                                    else:
+                                        cluster_config_page.config.click_on_advanced()
+                                        cluster_config_page.config.click_on_advanced()
+                                    cluster_config_page.config.check_invalid_value_message(field_type)
+                    else:
+                        assert len(cluster_config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
+
+        # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
+        # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        if group_advanced:
+            cluster_config_page.config.check_no_rows_or_groups_on_page()
+            cluster_config_page.group_config.check_no_rows()
+        else:
+            check_expectations()
+        cluster_config_page.config.click_on_advanced()
+        check_expectations()
 
 
 class TestClusterStatusPage:

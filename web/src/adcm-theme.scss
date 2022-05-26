@@ -22,7 +22,7 @@ a {
 .select-table-item {
   background-color: mat-color($mat-blue-grey, 500)!important;
 
-  & button.mat-icon-button.mat-primary {
+  & button:not(.mm-button).mat-icon-button.mat-primary {
     color: mat-color($mat-green, A400);
   }
 }

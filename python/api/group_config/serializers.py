@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Mapping
-
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db.transaction import atomic
@@ -25,7 +23,7 @@ from api.serializers import (
     MultiHyperlinkedIdentityField,
     UIConfigField,
 )
-from cm.adcm_config import config_is_ro
+from cm.adcm_config import ui_config
 from cm.api import update_obj_config
 from cm.errors import AdcmEx
 from cm.models import GroupConfig, Host, ObjectConfig, ConfigLog
@@ -164,6 +162,9 @@ class GroupConfigHostSerializer(serializers.ModelSerializer):
             'fqdn',
             'description',
             'state',
+            'maintenance_mode',
+            'bundle_id',
+            'locked',
             'url',
         )
         read_only_fields = (
@@ -173,6 +174,9 @@ class GroupConfigHostSerializer(serializers.ModelSerializer):
             'prototype_id',
             'provider_id',
             'cluster_id',
+            'maintenance_mode',
+            'bundle_id',
+            'locked',
         )
 
     def create(self, validated_data):
@@ -249,48 +253,16 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
         fields = ('id', 'date', 'description', 'config', 'attr', 'url')
         extra_kwargs = {'config': {'required': True}}
 
-    def validate(self, attrs):
-        def check_value_unselected_field(cc, nc, gk, spec, obj):
-            """
-            Check value unselected field
-
-            :param cc: Current config
-            :param nc: New config
-            :param gk: group_keys from attr
-            :param spec: Config specification
-            :param obj: Parent object (Cluster, Service, Component Provider or Host)
-            """
-            for k, v in gk.items():
-                if isinstance(v, Mapping):
-                    check_value_unselected_field(cc[k], nc[k], gk[k], spec[k]['fields'], obj)
-                else:
-                    if spec[k]['type'] in ['list', 'map']:
-                        if config_is_ro(obj, k, spec[k]['limits']) or (
-                            bool(nc[k]) is False and cc[k] is None
-                        ):
-                            continue
-
-                    if not v and k in cc and k in nc and cc[k] != nc[k]:
-                        raise AdcmEx('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD')
-
-        obj_ref = self.context['obj_ref']
-        config_spec = obj_ref.object.get_config_spec()
-        parent_obj = obj_ref.object.object
-        current_config = ConfigLog.objects.get(id=obj_ref.current).config
-        new_config = attrs.get('config')
-        group_keys = attrs.get('attr', {}).get('group_keys', {})
-        check_value_unselected_field(
-            current_config, new_config, group_keys, config_spec, parent_obj
-        )
-        return super().validate(attrs)
-
     @atomic
     def create(self, validated_data):
         object_config = self.context.get('obj_ref')
+        ui = self.context.get('ui')
         config = validated_data.get('config')
         attr = validated_data.get('attr', {})
         description = validated_data.get('description', '')
         cl = update_obj_config(object_config, config, attr, description)
+        if ui:
+            cl.config = ui_config(object_config.object.object, cl)
         if hasattr(object_config, 'adcm'):
             logrotate.run()
         return cl

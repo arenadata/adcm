@@ -33,6 +33,7 @@ from cm.models import (
     PrototypeImport,
     get_object_cluster,
     GroupConfig,
+    MaintenanceModeType,
 )
 
 
@@ -178,6 +179,16 @@ def get_host_vars(host: Host, obj):
                     }
                 }
             )
+            for service in ClusterObject.objects.filter(cluster=group.object.cluster).exclude(
+                pk=group.object.id
+            ):
+                variables['services'][service.prototype.name] = get_service_variables(service)
+                for component in ServiceComponent.objects.filter(
+                    cluster=group.object.cluster, service=service
+                ):
+                    variables['services'][service.prototype.name][
+                        component.prototype.name
+                    ] = get_component_variables(component)
             for component in ServiceComponent.objects.filter(
                 cluster=group.object.cluster, service=group.object
             ):
@@ -235,10 +246,13 @@ def get_provider_config(provider_id):
 
 
 def get_host_groups(cluster, delta, action_host=None):
+    def in_mm(hc: HostComponent) -> bool:
+        return hc.host.maintenance_mode == MaintenanceModeType.On.value
+
     groups = {}
     all_hosts = HostComponent.objects.filter(cluster=cluster)
     for hc in all_hosts:
-        if action_host and hc.host.id not in action_host:
+        if in_mm(hc) or (action_host and hc.host.id not in action_host):
             continue
 
         key1 = f'{hc.service.prototype.name}.{hc.component.prototype.name}'
@@ -261,7 +275,8 @@ def get_host_groups(cluster, delta, action_host=None):
             for fqdn in delta[htype][key]:
                 host = delta[htype][key][fqdn]
                 # TODO: What is `delta`? Need calculate delta for group_config?
-                groups[lkey]['hosts'][host.fqdn] = get_obj_config(host)
+                if not host.maintenance_mode == MaintenanceModeType.On.value:
+                    groups[lkey]['hosts'][host.fqdn] = get_obj_config(host)
 
     return groups
 
@@ -269,7 +284,9 @@ def get_host_groups(cluster, delta, action_host=None):
 def get_hosts(host_list, obj, action_host=None):
     group = {}
     for host in host_list:
-        if action_host and host.id not in action_host:
+        if host.maintenance_mode == MaintenanceModeType.On.value or (
+            action_host and host.id not in action_host
+        ):
             continue
         group[host.fqdn] = get_obj_config(host)
         group[host.fqdn]['adcm_hostid'] = host.id

@@ -15,6 +15,7 @@
 
 import os
 import tempfile
+from typing import Optional
 
 import allure
 import pytest
@@ -24,7 +25,7 @@ from adcm_pytest_plugin.utils import random_string
 pytestmark = [pytest.mark.full()]
 
 
-TYPES = ['string', 'password', 'integer', 'text', 'boolean', 'float', 'list', 'map', 'json', 'file', 'secrettext']
+TYPES = ['string', 'password', 'integer', 'text', 'boolean', 'float', 'list', 'map', 'json', 'file']
 
 CONFIG_FILE = 'config.yaml'
 DEFAULT_VALUE = {
@@ -55,6 +56,7 @@ class ListWithoutRepr(list):
 @allure.step('Generate expected result for config')
 def generate_config_expected_result(config) -> dict:
     """Generate expected result for config"""
+
     expected_result = {
         'visible': not config['ui_options']['invisible'],
         'editable': not config['read_only'],
@@ -83,25 +85,43 @@ def generate_configs(
     default: bool = True,
     required: bool = True,
     read_only: bool = True,
-    config_group_customization: bool = True,
-    group_customization: bool = True,
+    config_group_customization: Optional[bool] = True,
+    group_customization: Optional[bool] = True,
 ) -> tuple:
     """Generate ADCM config dictionaries for fields"""
 
     with allure.step('Generate data set for configs without groups'):
-        data = {
-            'default': default,
-            "required": required,
-            "read_only": read_only,
-            "ui_options": {"invisible": invisible, 'advanced': advanced},
-            "group_customization": group_customization,
+        data = (
+            {
+                'default': default,
+                "required": required,
+                "read_only": read_only,
+                "ui_options": {"invisible": invisible, 'advanced': advanced},
+                "group_customization": group_customization,
+                "description": "test description",
+            }
+            if group_customization is not None
+            else {
+                'default': default,
+                "required": required,
+                "read_only": read_only,
+                "ui_options": {"invisible": invisible, 'advanced': advanced},
+            }
+        )
+    config_dict = (
+        {
+            "type": "cluster",
+            "version": "1",
+            "config": [],
+            "config_group_customization": config_group_customization,
         }
-    config_dict = {
-        "type": "cluster",
-        "version": "1",
-        "config": [],
-        "config_group_customization": config_group_customization,
-    }
+        if config_group_customization is not None
+        else {
+            "type": "cluster",
+            "version": "1",
+            "config": [],
+        }
+    )
     field_config = {'name': field_type, 'type': field_type, 'required': data['required']}
     if data['default']:
         field_config['default'] = DEFAULT_VALUE[field_type]
@@ -118,18 +138,19 @@ def generate_configs(
 
 
 def prepare_config(config):
+    """Create config file and return config, expected result and path to config file"""
+
     config_info = config[0][0]['config'][0]
-    templ = "type_{}_required_{}_ro_{}_content_{}_invisible_{}_advanced_{}"
-    config_folder_name = templ.format(
-        config_info['type'],
-        config_info['required'],
-        bool('read_only' in config_info.keys()),
-        bool('default' in config_info.keys()),
-        config_info['ui_options']['invisible'],
-        config_info['ui_options']['advanced'],
-    )
     temdir = tempfile.mkdtemp()
-    d_name = f"{temdir}/configs/fields/{config_info['type']}/{config_folder_name}"
+    d_name = (
+        f"{temdir}/configs/fields/{config_info['type']}/"
+        f"type_{config_info['type']}_"
+        f"required_{config_info['required']}_"
+        f"ro_{bool('read_only' in config_info.keys())}_"
+        f"content_{bool('default' in config_info.keys())}_"
+        f"invisible_{config_info['ui_options']['invisible']}_"
+        f"advanced_{config_info['ui_options']['advanced']}"
+    )
 
     os.makedirs(d_name)
     config[0][0]["name"] = random_string()
@@ -189,6 +210,9 @@ def generate_group_configs(
     read_only: bool = True,
     field_invisible: bool = True,
     field_advanced: bool = True,
+    config_group_customization: Optional[bool] = True,
+    group_customization: Optional[bool] = True,
+    field_customization: Optional[bool] = True,
 ) -> tuple:
     """Generate ADCM config dictionaries for groups"""
 
@@ -198,13 +222,18 @@ def generate_group_configs(
         "activatable": activatable,
         'active': active,
         "read_only": read_only,
+        "description": "test description",
         "ui_options": {"invisible": group_invisible, 'advanced': group_advanced},
         "field_ui_options": {
             "invisible": field_invisible,
             'advanced': field_advanced,
         },
     }
+    if group_customization is not None:
+        data["group_customization"] = group_customization
     config_dict = {"type": "cluster", "version": "1", "config": []}
+    if config_group_customization is not None:
+        config_dict["config_group_customization"] = config_group_customization
     cluster_config = {
         "name": "group",
         "type": "group",
@@ -213,7 +242,14 @@ def generate_group_configs(
             'advanced': data['ui_options']['advanced'],
         },
     }
-    sub_config = {'name': field_type, 'type': field_type, 'required': data['required']}
+    sub_config = {
+        'name': field_type,
+        'type': field_type,
+        'required': data['required'],
+        "description": "test description",
+    }
+    if field_customization is not None:
+        sub_config["group_customization"] = field_customization
     if data['default']:
         sub_config['default'] = DEFAULT_VALUE[field_type]
     if data['read_only']:
@@ -233,6 +269,8 @@ def generate_group_configs(
 
 
 def prepare_group_config(config):
+    """Create config file with group and return config, expected result and path to config file"""
+
     config_info = config[0][0]['config'][0]
     config_subs = config_info['subs'][0]
     if "activatable" in config_info.keys():

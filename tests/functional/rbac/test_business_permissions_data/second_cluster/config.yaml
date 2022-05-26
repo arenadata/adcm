@@ -15,6 +15,7 @@
   version: 1.6
   edition: community
   config_group_customization: true
+  allow_maintenance_mode: true
   upgrade:
     - versions:
         min: 0.4

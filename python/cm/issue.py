@@ -62,6 +62,14 @@ def check_config(obj):  # pylint: disable=too-many-branches
     return True
 
 
+def check_object_concern(obj):
+    if obj.concerns.filter(type=ConcernType.Lock).exists():
+        err('LOCK_ERROR', f'object {obj} is locked')
+
+    if obj.concerns.filter(type=ConcernType.Issue).exists():
+        err('ISSUE_INTEGRITY_ERROR', f'object {obj} has issues')
+
+
 def check_required_services(cluster):
     bundle = cluster.prototype.bundle
     for proto in Prototype.objects.filter(bundle=bundle, type='service', required=True):
@@ -314,5 +322,14 @@ def update_hierarchy_issues(obj: ADCMEntity):
     tree = Tree(obj)
     affected_nodes = tree.get_directly_affected(tree.built_from)
     for node in affected_nodes:
-        obj = node.value
-        recheck_issues(obj)
+        node_value = node.value
+        recheck_issues(node_value)
+
+
+def update_issue_after_deleting():
+    """Remove issues which have no owners after object deleting"""
+    for concern in ConcernItem.objects.exclude(type=ConcernType.Lock):
+        if concern.owner is None:
+            concern_str = str(concern)
+            concern.delete()
+            log.info('Deleted %s', concern_str)

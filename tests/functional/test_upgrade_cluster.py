@@ -151,16 +151,22 @@ def test_upgrade_cluster_with_config_groups(sdk_client_fs):
     with allure.step('Assert that configs save success after upgrade'):
         cluster.config_set(
             {
-                **cluster.config(),
-                "activatable_group_with_ro": {"readonly-key": "value"},
-                "activatable_group": {"required": 10, "writable-key": "value"},
+                "attr": {"activatable_group_with_ro": {"active": True}, "activatable_group": {"active": True}},
+                "config": {
+                    **cluster.config(),
+                    "activatable_group_with_ro": {"readonly-key": "value"},
+                    "activatable_group": {"required": 10, "writable-key": "value"},
+                },
             }
         )
         service.config_set(
             {
-                **cluster.config(),
-                "activatable_group_with_ro": {"readonly-key": "value"},
-                "activatable_group": {"required": 10, "writable-key": "value"},
+                "attr": {"activatable_group_with_ro": {"active": True}, "activatable_group": {"active": True}},
+                "config": {
+                    **service.config(),
+                    "activatable_group_with_ro": {"readonly-key": "value"},
+                    "activatable_group": {"required": 10, "writable-key": "value"},
+                },
             }
         )
 

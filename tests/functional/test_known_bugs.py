@@ -15,11 +15,13 @@
 import allure
 import pytest
 from adcm_client.objects import Cluster, Provider, Bundle
+from adcm_pytest_plugin.steps.actions import run_service_action_and_assert_result
 from adcm_pytest_plugin.utils import get_data_dir
 
 from tests.functional.conftest import only_clean_adcm
 
 # pylint: disable=redefined-outer-name
+from tests.functional.tools import create_config_group_and_add_host
 
 pytestmark = [only_clean_adcm, pytest.mark.regression]
 
@@ -46,6 +48,16 @@ def provider(sdk_client_fs) -> Provider:
     return _provider_bundle(sdk_client_fs).provider_create(name='Test Dummy Provider')
 
 
+@pytest.fixture()
+def cluster_with_services(sdk_client_fs) -> Cluster:
+    """Create cluster and add two services"""
+    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'cluster_with_services'))
+    cluster = bundle.cluster_create(name='Test Cluster')
+    cluster.service_add(name='first_service')
+    cluster.service_add(name='second_service')
+    return cluster
+
+
 @allure.issue(url='https://arenadata.atlassian.net/browse/ADCM-2659')
 def test_database_is_locked_during_upload(sdk_client_fs, provider):
     """
@@ -56,3 +68,22 @@ def test_database_is_locked_during_upload(sdk_client_fs, provider):
             provider.host_create(f'host-{i}').action(name='dummy').run()
     with allure.step('Try to upload cluster bundle'):
         sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'simple_cluster_from_dirty_upgrade'))
+
+
+@allure.issue(url='https://arenadata.atlassian.net/browse/ADCM-2800')
+def test_missing_service_outside_config_group(cluster_with_services, provider):
+    """
+    Test that all services' configs are available in inventory file when one of services has a config group
+    """
+    action_name = 'check'
+    cluster = cluster_with_services
+    first_service, second_service = cluster.service(name='first_service'), cluster.service(name='second_service')
+    component_1, component_2 = first_service.component(), second_service.component()
+    host_1, host_2 = [cluster.host_add(provider.host_create(f'test-host-{i}')) for i in range(2)]
+
+    cluster.hostcomponent_set((host_1, component_1), (host_1, component_2), (host_2, component_1))
+    create_config_group_and_add_host('config-group', first_service, host_1)
+
+    with allure.step('Run actions on services and check config dicts are available'):
+        run_service_action_and_assert_result(first_service, action_name)
+        run_service_action_and_assert_result(second_service, action_name)

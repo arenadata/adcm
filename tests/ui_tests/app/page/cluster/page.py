@@ -14,7 +14,10 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import List
+from typing import (
+    List,
+    Optional,
+)
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
@@ -30,6 +33,7 @@ from tests.ui_tests.app.page.common.common_locators import ObjectPageLocators, O
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs_locators import ActionDialog, DeleteDialog
+from tests.ui_tests.app.page.common.group_config.page import CommonGroupConfigMenu
 from tests.ui_tests.app.page.common.group_config_list.locators import GroupConfigListLocators
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigList
 from tests.ui_tests.app.page.common.import_page.locators import ImportLocators
@@ -217,6 +221,13 @@ class ClusterServicesPage(ClusterPageMixin):
     def click_action_btn_in_row(self, row: WebElement):
         """Click on Action button from the row"""
         self.find_child(row, ClusterServicesLocators.ServiceTableRow.actions).click()
+
+    def click_delete_btn_in_row(self, row: WebElement):
+        """Click on delete button from the row"""
+        self.find_child(row, ClusterServicesLocators.ServiceTableRow.delete_btn).click()
+        self.wait_element_visible(DeleteDialog.body)
+        self.find_and_click(DeleteDialog.yes)
+        self.wait_element_hide(DeleteDialog.body)
 
     def click_import_btn_in_row(self, row: WebElement):
         """Click on Import button from the row"""
@@ -437,6 +448,50 @@ class ClusterHostPage(ClusterPageMixin):
     def check_cluster_hosts_toolbar(self, cluster_name: str, host_name: str):
         self.toolbar.check_toolbar_elements(["CLUSTERS", cluster_name, "HOSTS", host_name])
 
+    @allure.step('Click on maintenance mode button in row {row_num}')
+    def click_on_maintenance_mode_btn(self, row_num: int):
+        """Click maintenance mode in row"""
+
+        row = self.table.get_row(row_num)
+        self.find_child(row, ClusterHostLocators.HostTable.HostRow.maintenance_mode_btn).click()
+
+    @allure.step('Assert maintenance mode state in row {row_num}')
+    def assert_maintenance_mode_state(self, row_num: int, is_mm_state_on: Optional[bool] = True):
+        """
+        Assert maintenance mode state in row
+        :param row_num: number of the row with maintenance mode button
+        :param is_mm_state_on: state of maintenance mode button:
+            True for ON state
+            False for OFF state
+            None for not available state
+        """
+
+        def _check_mm_state(page: ClusterHostPage, row: WebElement):
+            button_state = page.find_child(
+                row, ClusterHostLocators.HostTable.HostRow.maintenance_mode_btn
+            ).get_attribute("class")
+            tooltips_info = [
+                t.get_property("innerHTML") for t in page.find_elements(ClusterHostLocators.HostTable.tooltip_text)
+            ]
+            if is_mm_state_on:
+                assert "mat-primary" in button_state, "Button should be gray"
+                assert (
+                    "Turn maintenance mode ON" in tooltips_info
+                ), "There should be tooltip that user could turn on maintenance mode"
+            elif is_mm_state_on is False:
+                assert "mat-on" in button_state, "Button should be red"
+                assert (
+                    "Turn maintenance mode OFF" in tooltips_info
+                ), "There should be tooltip that user could turn off maintenance mode"
+            else:
+                assert "mat-button-disabled" in button_state, "Button should be disabled"
+                assert (
+                    "Maintenance mode is not available" in tooltips_info
+                ), "There should be tooltip that maintenance mode is not available"
+
+        host_row = self.table.get_row(row_num)
+        wait_until_step_succeeds(_check_mm_state, timeout=4, period=0.5, page=self, row=host_row)
+
 
 class ClusterComponentsPage(ClusterPageMixin):
     """Cluster page components menu"""
@@ -559,6 +614,7 @@ class ClusterGroupConfigPageMixin(BasePageObject):
     header: PageHeader
     footer: PageFooter
     config: CommonConfigMenuObj
+    group_config: CommonGroupConfigMenu
     toolbar: CommonToolbar
     table: CommonTableObj
 
@@ -575,9 +631,46 @@ class ClusterGroupConfigPageMixin(BasePageObject):
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
+        self.group_config = CommonGroupConfigMenu(self.driver, self.base_url)
         self.cluster_id = cluster_id
+        self.group_config_id = group_config_id
         self.toolbar = CommonToolbar(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url)
+
+    @allure.step("Assert that all main elements on the page are presented")
+    def check_all_elements(self):
+        """Assert all main elements presence"""
+        self.assert_displayed_elements(self.MAIN_ELEMENTS)
+
+    def open_hosts_tab(self):
+        """Open Hosts tab by menu click"""
+
+        self.find_and_click(ObjectPageMenuLocators.hosts_tab)
+        page = ClusterGroupConfigHosts(self.driver, self.base_url, self.cluster_id, self.group_config_id)
+        page.wait_page_is_opened()
+        return page
+
+    def open_config_tab(self):
+        """Open Hosts tab by menu click"""
+
+        self.find_and_click(ObjectPageMenuLocators.config_tab)
+        page = ClusterGroupConfigConfig(self.driver, self.base_url, self.cluster_id, self.group_config_id)
+        page.wait_page_is_opened()
+        return page
+
+    def check_cluster_group_conf_toolbar(self, cluster_name: str, group_name: str):
+        self.toolbar.check_toolbar_elements(["CLUSTERS", cluster_name, "GROUPCONFIGS", group_name])
+
+
+class ClusterGroupConfigHosts(ClusterGroupConfigPageMixin):
+    """Cluster page status menu"""
+
+    MENU_SUFFIX = 'host'
+    MAIN_ELEMENTS = [
+        ObjectPageLocators.title,
+        ObjectPageLocators.subtitle,
+        ObjectPageLocators.text,
+    ]
 
 
 class ClusterGroupConfigConfig(ClusterGroupConfigPageMixin):

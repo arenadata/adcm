@@ -24,9 +24,9 @@ import { ICluster } from '@app/models/cluster';
 
 const COLUMNS_SET = {
   cluster: ['name', 'prototype_version', 'description', 'state', 'status', 'actions', 'import', 'upgrade', 'config', 'controls'],
-  host2cluster: ['fqdn', 'provider_name', 'state', 'status', 'actions', 'config', 'remove'],
+  host2cluster: ['fqdn', 'provider_name', 'state', 'status', 'actions', 'config', 'maintenance_mode', 'remove'],
   service2cluster: ['display_name', 'version_no_sort', 'state', 'status', 'actions', 'import', 'config'],
-  host: ['fqdn', 'provider_name', 'host2cluster', 'state', 'status', 'actions', 'config', 'controls'],
+  host: ['fqdn', 'provider_name', 'host2cluster', 'state', 'status', 'actions', 'config', 'maintenance_mode', 'controls'],
   provider: ['name', 'prototype_version', 'state', 'actions', 'upgrade', 'config', 'controls'],
   job: ['action', 'objects', 'start_date', 'finish_date', 'status'],
   task: ['id', 'start_date', 'finish_date', 'status'],
@@ -117,5 +117,9 @@ export class ListService implements IListService<Entities> {
 
   getLicenseInfo(url: string) {
     return this.api.get<{ text: string }>(url);
+  }
+
+  setMaintenanceMode(row: Entities) {
+    return this.api.patch(`/api/v1/host/${row.id}/`, { maintenance_mode: row['maintenance_mode'] });
   }
 }

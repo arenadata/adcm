@@ -169,7 +169,7 @@ def _test_config_change(
                 is_denied(
                     action_owner_object,
                     business_role,
-                    config={ACTION_CONFIG_ARGUMENT: "This you seen't"},
+                    data={'config': {ACTION_CONFIG_ARGUMENT: "This you seen't"}},
                     client=user_client,
                 )
                 config_val_after = admin_object.config()[CONFIG_FIELD_TO_CHANGE]
