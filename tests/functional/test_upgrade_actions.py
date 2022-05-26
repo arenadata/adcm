@@ -28,7 +28,7 @@ from coreapi.exceptions import ErrorMessage
 
 from tests.functional.conftest import only_clean_adcm
 from tests.library.assertions import sets_are_equal
-from tests.library.errorcodes import INVALID_UPGRADE_DEFINITION, INVALID_OBJECT_DEFINITION
+from tests.library.errorcodes import INVALID_UPGRADE_DEFINITION, INVALID_OBJECT_DEFINITION, INVALID_ACTION_DEFINITION
 
 # pylint: disable=redefined-outer-name, no-self-use
 
@@ -165,6 +165,8 @@ class TestUpgradeActionSectionValidation:
             ('incorrect_internal_action', INVALID_UPGRADE_DEFINITION),
             ('no_bundle_switch', INVALID_UPGRADE_DEFINITION),
             ('hc_acl_in_provider', INVALID_UPGRADE_DEFINITION),
+            ('non_existent_service_in_regular_action', INVALID_ACTION_DEFINITION),
+            ('non_existent_component_in_regular_action', INVALID_ACTION_DEFINITION),
         ],
     )
     def test_validation_failed_on_upload(self, bundle_dir_name, expected_error, sdk_client_fs):
