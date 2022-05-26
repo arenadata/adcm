@@ -329,16 +329,22 @@ class TestSuccessfulUpgrade:
         with allure.step('Check inventory of the job after the bundle switch'):
             after_switch_inventory = get_inventory_file(adcm, 3)
             groups = after_switch_inventory['all']['children']
-            assert before_add_group not in groups, f'Group {before_add_group} should not be in {groups.keys()}'
-            assert before_remove_group not in groups, f'Group {before_remove_group} should not be in {groups.keys()}'
-            assert after_add_group_1 in groups, f'Group {after_add_group_1} should be in {groups.keys()}'
-            assert after_add_group_2 in groups, f'Group {after_add_group_2} should be in {groups.keys()}'
+            assert before_add_group in groups, f'Group {before_add_group} should be in {groups.keys()}'
+            assert before_remove_group in groups, f'Group {before_remove_group} should be in {groups.keys()}'
+            assert after_add_group_1 not in groups, f'Group {after_add_group_1} should not be in {groups.keys()}'
+            assert after_add_group_2 not in groups, f'Group {after_add_group_2} should not be in {groups.keys()}'
             assert host_1.fqdn in (
                 hosts := groups[after_add_group_1]['hosts']
             ), f'Host {host_1.fqdn} should be in group {after_add_group_1}, but not found in: {hosts}'
             assert host_1.fqdn in (
                 hosts := groups[after_add_group_2]['hosts']
             ), f'Host {host_1.fqdn} should be in group {after_add_group_2}, but not found in {hosts}'
+            assert host_2.fqdn not in (
+                hosts := groups[before_add_group]['hosts']
+            ), f'Host {host_2.fqdn} should not be in group {before_add_group}, but not found in: {hosts}'
+            assert host_1.fqdn not in (
+                hosts := groups[before_remove_group]['hosts']
+            ), f'Host {host_1.fqdn} should not be in group {before_remove_group}, but not found in {hosts}'
 
     # pylint: disable=too-many-arguments
     def _upgrade_to_newly_uploaded_version(
