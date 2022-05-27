@@ -10,15 +10,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-- type: service
-  name: zookeeper
-  version: 3.4.10
-
-  config:
-    - name: some_param
-      type: integer
-
-- type: cluster
-  name: Nothing
-  description: Arenadata Nothing
+- type: provider
+  name: sample hostprovider
   version: 1.0
+
+  actions:
+    install:
+      type: job
+      script_type: ansible
+      script: install.yaml
+      states:
+        available: any
+        on_success: installed
+        on_fail: created
+
+- type: host
+  name: host sample
+  version: 1.0
+
+  actions:
+    install:
+      type: job
+      script_type: ansible
+      script: install.yaml
+      states:
+        available: any
+        on_success: installed
+        on_fail: created

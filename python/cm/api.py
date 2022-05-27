@@ -358,9 +358,8 @@ def delete_service(service: ClusterObject, cancel_tasks=True) -> None:
         _cancel_locking_tasks(service)
     service_id = service.id
     cluster = service.cluster
-    del_concerns_func = cm.issue.update_hierarchy_issues(obj=service, remove_obj=True)
     service.delete()
-    del_concerns_func()
+    cm.issue.update_issue_after_deleting()
     cm.issue.update_hierarchy_issues(cluster)
     re_apply_object_policy(cluster)
     cm.status_api.post_event('delete', 'service', service_id)
@@ -381,9 +380,8 @@ def delete_cluster(cluster, cancel_tasks=True):
         MaintenanceModeType.Disabled,
         ', '.join(host_ids),
     )
-    del_concerns_func = cm.issue.update_hierarchy_issues(obj=cluster, remove_obj=True)
     cluster.delete()
-    del_concerns_func()
+    cm.issue.update_issue_after_deleting()
     cm.status_api.post_event('delete', 'cluster', cluster_id)
     load_service_map()
 
@@ -495,10 +493,7 @@ def update_obj_config(obj_conf, conf, attr, desc=''):
     else:
         proto = obj.prototype
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
-    if not attr:
-        if old_conf.attr:
-            attr = old_conf.attr
-    new_conf = check_json_config(proto, group or obj, conf, old_conf.config, attr)
+    new_conf = check_json_config(proto, group or obj, conf, old_conf.config, attr, old_conf.attr)
     with transaction.atomic():
         cl = save_obj_config(obj_conf, new_conf, attr, desc)
         cm.issue.update_hierarchy_issues(obj)

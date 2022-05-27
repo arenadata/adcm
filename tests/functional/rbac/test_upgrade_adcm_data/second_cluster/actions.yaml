@@ -9,16 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 ---
-- type: service
-  name: zookeeper
-  version: 3.4.10
-
-  config:
-    - name: some_param
-      type: integer
-
-- type: cluster
-  name: Nothing
-  description: Arenadata Nothing
-  version: 1.0
+- name: "SeeMeInAction"
+  hosts: localhost
+  tasks:
+    - name: "Hehe"
+      assert:
+        that:
+          - 1 == {{job.config.some_param}}
+        msg: "Never gonna give you up"
+      tags:
+        - compare
