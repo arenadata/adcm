@@ -163,8 +163,8 @@ class PrototypeList(PaginatedView):
 
     queryset = Prototype.objects.all()
     serializer_class = serializers.PrototypeSerializer
-    filter_backends = (filters.drf_filters.DjangoFilterBackend,)
     filterset_class = filters.PrototypeListFilter
+    ordering_fields = ('display_name', 'version_order')
 
 
 class ServiceList(PaginatedView):
