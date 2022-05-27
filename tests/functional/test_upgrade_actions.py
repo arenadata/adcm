@@ -459,11 +459,7 @@ class TestFailedUpgradeAction:
         Test an upgrade with `hc_acl` failed after the bundle switch
         """
         host_1, host_2 = two_hosts
-        expected_hc = {
-            (host_1.fqdn, TEST_SERVICE_NAME, 'second_component'),
-            (host_1.fqdn, NEW_SERVICE, 'some_component'),
-            (host_2.fqdn, TEST_SERVICE_NAME, 'test_component'),
-        }
+        expected_hc = {(host_2.fqdn, TEST_SERVICE_NAME, 'test_component')}
 
         new_bundle = self._upload_new_version(sdk_client_fs, 'hc_acl')
         hc_argument = _set_hc_and_prepare_new_hc_for_upgrade_action(old_cluster, new_bundle, host_1, host_2)
