@@ -33,7 +33,7 @@ from api.utils import check_obj
 from cm.models import Bundle, Prototype, Action
 from cm.models import PrototypeConfig, Upgrade, PrototypeExport
 from cm.models import PrototypeImport
-from . import serializers
+from . import serializers, filters
 
 
 class CsrfOffSessionAuthentication(SessionAuthentication):
@@ -163,7 +163,7 @@ class PrototypeList(PaginatedView):
 
     queryset = Prototype.objects.all()
     serializer_class = serializers.PrototypeSerializer
-    filterset_fields = ('name', 'bundle_id', 'type')
+    filterset_class = filters.PrototypeListFilter
     ordering_fields = ('display_name', 'version_order')
 
 
