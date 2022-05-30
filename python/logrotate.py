@@ -31,6 +31,7 @@ from cm.models import (
     Cluster,
     ClusterObject,
     ConfigLog,
+    DummyData,
     Host,
     HostProvider,
     JobLog,
@@ -90,13 +91,15 @@ def run_configlog_rotation(configlog_days_delta: int) -> None:
         target_configlogs = target_configlogs.exclude(pk__in=exclude_pks)
         count = target_configlogs.count()
 
-        for cl in target_configlogs:
-            if cl.obj_ref and not __has_related_records(cl.obj_ref):
-                cl.obj_ref.delete()
-            with suppress(
-                Exception
-            ):  # may be already deleted because of `obj_conf.delete() CASCADE`
-                cl.delete()
+        with transaction.atomic():
+            DummyData.objects.first.update(date=timezone.now())
+            for cl in target_configlogs:
+                if cl.obj_ref and not __has_related_records(cl.obj_ref):
+                    cl.obj_ref.delete()
+                with suppress(
+                    Exception
+                ):  # may be already deleted because of `obj_conf.delete() CASCADE`
+                    cl.delete()
 
         log.info('Deleted %s ConfigLogs', count)
 
