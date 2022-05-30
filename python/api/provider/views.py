@@ -79,7 +79,7 @@ class ProviderDetail(PermissionListMixin, DetailView):
 
 class ProviderUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = serializers.UpgradeProviderSerializer
+    serializer_class = api.serializers.ProviderUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
     filter_backends = (AdcmFilterBackend, AdcmOrderingFilter)
 
@@ -104,7 +104,7 @@ class ProviderUpgrade(GenericUIView):
 
 class ProviderUpgradeDetail(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = serializers.UpgradeProviderSerializer
+    serializer_class = api.serializers.ProviderUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
