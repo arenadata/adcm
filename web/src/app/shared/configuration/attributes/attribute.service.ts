@@ -69,6 +69,10 @@ export class AttributeService {
     return this._attributes.has(name) ? this._attributes.get(name) : undefined;
   }
 
+  groupCheckboxToggle(groupName, value): void {
+    this.attributes.get(ConfigAttributeNames.GROUP_KEYS).value[groupName].value = value
+  }
+
   private _createAttributes(_activeAttributes: Partial<ConfigAttributeNames>[], json: ConfigAttributesJSON, configs: AttributesOptions): Attributes {
     const isEmptyAttrs = !Object.keys(json || {}).length;
     const isActiveAttrsPresent = !!Object.keys(json || {}).filter((x: ConfigAttributeNames) => this._activeAttributes.includes(x)).length;
@@ -108,7 +112,7 @@ export const createFormForAttribute = (fb: FormBuilder, json: ConfigAttributesJS
           [key]: { value, disabled }
         };
       } else if (!isEmptyObject(value)) {
-        return { ...acc, [key]: buildFormGroup(value) };
+        return { ...acc, [key]: buildFormGroup(value['fields']) };
       }
 
     }, {});

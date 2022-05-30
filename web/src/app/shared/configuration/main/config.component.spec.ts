@@ -45,6 +45,7 @@ const rawConfig: IConfig = {
       value: 'some string',
       description: '',
       required: false,
+      group_config: null,
     },
     {
       name: 'group',
@@ -57,6 +58,7 @@ const rawConfig: IConfig = {
       value: null,
       description: '',
       required: false,
+      group_config: null,
     },
     {
       name: 'group',
@@ -69,6 +71,7 @@ const rawConfig: IConfig = {
       value: 10,
       description: '',
       required: true,
+      group_config: null,
     },
   ],
 };

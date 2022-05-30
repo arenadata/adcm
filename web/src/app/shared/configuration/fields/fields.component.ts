@@ -51,6 +51,7 @@ export class ConfigFieldsComponent extends BaseDirective {
     if (!data) return;
     this.rawConfig = data;
     this.dataOptions = this.service.getPanels(data);
+    this.service.getAttrs(data, this.dataOptions.map(a => a.name), this.dataOptions);
     this.form = this.service.toFormGroup(this.dataOptions);
     this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
     this.shapshot = { ...this.form.value };
