@@ -1,4 +1,4 @@
-/adcm/data/log/nginx/error.log /adcm/data/log/nginx/access.log {
+/adcm/data/log/nginx/*.log {
         su root root
         size 50M
         missingok
