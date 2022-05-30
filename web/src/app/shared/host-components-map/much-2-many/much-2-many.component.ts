@@ -42,8 +42,7 @@ export class Much2ManyComponent implements AfterViewChecked {
   }
 
   isHostDisabled() {
-    if (this.model?.mm === this.statusType.On && this.model.relations.length > 0
-      && !this.actionParameters?.find(a => a.action === 'remove')) {
+    if (this.model?.mm === this.statusType.On) {
       return true;
     }
 
