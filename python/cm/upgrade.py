@@ -18,6 +18,7 @@ from version_utils import rpm
 
 import cm.issue
 import cm.job
+import cm.api
 import cm.status_api
 from cm.adcm_config import proto_ref, obj_ref, switch_config, make_object_config
 from cm.api import check_license, version_in
@@ -283,6 +284,20 @@ def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
         return res
 
 
+def update_components_after_bundle_switch(cluster, upgrade):
+    if upgrade.action and upgrade.action.hostcomponentmap:
+        for hc_acl in upgrade.action.hostcomponentmap:
+            proto_service = Prototype.obj.get(
+                type='service', bundle=upgrade.bundle, name=hc_acl['service']
+            )
+            try:
+                service = ClusterObject.objects.get(cluster=cluster, prototype=proto_service)
+                if not ServiceComponent.objects.filter(cluster=cluster, service=service).exists():
+                    cm.api.add_components_to_service(cluster, service)
+            except ClusterObject.DoesNotExist:
+                cm.api.add_service_to_cluster(cluster, proto_service)
+
+
 def do_upgrade(
     obj: Union[Cluster, HostProvider], upgrade: Upgrade, config: dict, hc: List = None
 ) -> dict:
@@ -335,7 +350,8 @@ def bundle_switch(obj: Union[Cluster, HostProvider], upgrade: Upgrade):
         elif obj.prototype.type == 'provider':
             switch_hosts(upgrade, obj)
         cm.issue.update_hierarchy_issues(obj)
-
+        if isinstance(obj, Cluster):
+            update_components_after_bundle_switch(obj, upgrade)
     log.info('upgrade %s OK to version %s', obj_ref(obj), obj.prototype.version)
     cm.status_api.post_event(
         'upgrade', obj.prototype.type, obj.id, 'version', str(obj.prototype.version)

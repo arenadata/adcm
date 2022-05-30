@@ -16,6 +16,7 @@ import json
 import os
 import shutil
 import subprocess
+import copy
 from configparser import ConfigParser
 from datetime import timedelta, datetime
 from typing import List, Tuple, Optional, Hashable, Any, Union
@@ -48,6 +49,7 @@ from cm.models import (
     ServiceComponent,
     SubAction,
     TaskLog,
+    Prototype,
     get_object_cluster,
 )
 from cm.status_api import post_event
@@ -110,9 +112,9 @@ def prepare_task(
     _, spec = check_action_config(action, obj, conf, attr)
     if conf and not spec:
         err("CONFIG_VALUE_ERROR", "Absent config in action prototype")
-    host_map = check_hostcomponentmap(cluster, action, hc)
     check_action_hosts(action, obj, cluster, hosts)
     old_hc = api.get_hc(cluster)
+    host_map, post_upgrade_hc = check_hostcomponentmap(cluster, action, hc, old_hc)
 
     if not attr:
         attr = {}
@@ -120,7 +122,7 @@ def prepare_task(
     with transaction.atomic():  # pylint: disable=too-many-locals
         DummyData.objects.filter(id=1).update(date=timezone.now())
 
-        task = create_task(action, obj, conf, attr, old_hc, hosts, verbose)
+        task = create_task(action, obj, conf, attr, old_hc, hosts, verbose, post_upgrade_hc)
 
         if host_map:
             api.save_hc(cluster, host_map)
@@ -267,22 +269,52 @@ def cook_delta(  # pylint: disable=too-many-branches
 
 
 def check_hostcomponentmap(
-    cluster: Cluster, action: Action, hc: List[dict]
-) -> List[Tuple[ClusterObject, Host, ServiceComponent]]:
-    if not action.hostcomponentmap:
-        return []
+    cluster: Cluster, action: Action, new_hc: List[dict], old_hc: List[dict]
+):
 
-    if not hc:
+    if not action.hostcomponentmap:
+        return [], None
+
+    if not new_hc:
         err('TASK_ERROR', 'hc is required')
 
     if not cluster:
         err('TASK_ERROR', 'Only cluster objects can have action with hostcomponentmap')
 
-    for host_comp in hc:
+    post_upgrade_hc = []
+    new_clear_hc = copy.deepcopy(new_hc)
+    buff = 0
+    log.debug(f"new_hc:{new_hc}")
+    for host_comp in new_hc:
         host = Host.obj.get(id=host_comp.get('host_id', 0))
         issue.check_object_concern(host)
+        log.debug(f"before prototype check: {host_comp}")
+        if "component_prototype_id" in host_comp:
+            log.debug(f"component with prototype: {host_comp}")
+            if not action.upgrade:
+                err(
+                    'WRONG_ACTION_HC',
+                    'Hc map with components prototype available only in upgrade action',
+                )
+            proto = Prototype.obj.get(type='component', id=host_comp['component_prototype_id'])
+            for hc_acl in action.hostcomponentmap:
+                if proto.name == hc_acl['component']:
+                    buff += 1
+                    if hc_acl['action'] != 'add':
+                        err(
+                            'WRONG_ACTION_HC',
+                            'New components from bundle with upgrade you can only add, not remove',
+                        )
+            if buff == 0:
+                err('INVALID_INPUT', 'hc_acl doesn\'t allow actions with this component')
+            post_upgrade_hc.append(host_comp)
+            new_clear_hc.remove(host_comp)
 
-    return api.check_hc(cluster, hc)
+    old_hc = get_old_hc(old_hc)
+
+    new_hc_list_of_tuple = api.check_hc(cluster, new_clear_hc)
+    cook_delta(cluster, new_hc_list_of_tuple, action.hostcomponentmap, old_hc)
+    return new_hc_list_of_tuple, post_upgrade_hc
 
 
 def check_service_task(  # pylint: disable=inconsistent-return-statements
@@ -529,6 +561,7 @@ def create_task(
     hc: List[HostComponent],
     hosts: List[Host],
     verbose: bool,
+    post_upgrade_hc: List[dict],
 ) -> TaskLog:
     """Create task and jobs and lock objects for action"""
     task = TaskLog.objects.create(
@@ -538,6 +571,7 @@ def create_task(
         attr=attr,
         hostcomponentmap=hc,
         hosts=hosts,
+        post_upgrade_hc_map=post_upgrade_hc,
         verbose=verbose,
         start_date=timezone.now(),
         finish_date=timezone.now(),
