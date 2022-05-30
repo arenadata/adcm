@@ -9,6 +9,8 @@ RUN cp -r /adcm/os/* / && rm -rf /adcm/os; /build_venv.sh && rm -f /build_venv.s
 
 RUN /venv.sh reqs default /adcm/requirements.txt
 RUN /venv.sh reqs 2.9 /adcm/requirements.txt
+# rc-service crond start
+RUN /venv.sh run default apk add --no-cache openrc busybox-initscripts  # TODO: под вопросом, проверить
 
 
 # Secret_key is mandatory for build_static procedure,

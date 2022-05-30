@@ -15,7 +15,6 @@
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-import logrotate
 import cm.adcm_config
 from cm.adcm_config import ui_config, restore_cluster_config
 from cm.api import update_obj_config
@@ -51,8 +50,6 @@ class ObjectConfigUpdateSerializer(ObjectConfigSerializer):
         cl = update_obj_config(instance.obj_ref, conf, attr, desc)
         if validated_data.get('ui'):
             cl.config = ui_config(validated_data.get('obj'), cl)
-        if hasattr(instance.obj_ref, 'adcm'):
-            logrotate.run()
         return cl
 
 
