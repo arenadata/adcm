@@ -92,7 +92,7 @@ def run_configlog_rotation(configlog_days_delta: int) -> None:
         count = target_configlogs.count()
 
         with transaction.atomic():
-            DummyData.objects.first().update(date=timezone.now())
+            DummyData.objects.filter(id=1).update(date=timezone.now())
             for cl in target_configlogs:
                 if cl.obj_ref and not __has_related_records(cl.obj_ref):
                     cl.obj_ref.delete()
