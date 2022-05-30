@@ -23,7 +23,6 @@ BASE_DIR="../../python"
 init_db() {
     rm -f db_test.db
     ${BASE_DIR}/manage.py migrate
-    ${BASE_DIR}/manage.py migrate --database=background_tasks
     ${BASE_DIR}/init_db.py
     ${BASE_DIR}/manage.py upgraderole
     cp db_test.db fixture.db

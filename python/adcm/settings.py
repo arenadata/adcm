@@ -154,19 +154,7 @@ DATABASES = {
             'timeout': 20,
         },
     },
-    'background_tasks': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'data/var/background_tasks.db'),
-        'OPTIONS': {
-            'timeout': 20,
-        },
-    },
 }
-
-DATABASE_ROUTERS = ['cm.db_routers.BackgroundTasksRouter', 'cm.db_routers.DefaultRouter']
-# DATABASE_ROUTERS = ['cm.db_routers.BackgroundTasksRouter']
-# DATABASE_ROUTERS = ['cm.db_routers.DefaultRouter']
-
 # does not work for multi-table inherited model, but works fine as-is without user model swapping
 # AUTH_USER_MODEL = 'rbac.User'
 

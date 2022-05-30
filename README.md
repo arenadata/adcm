@@ -16,10 +16,9 @@ All standard Django commands are available.
 
 Run dev server for the first time with these commands:
 1. `manage.py migrate`
-2. `manage.py migrate --database=background_tasks`
-3. `init_db.py`
-4. `manage.py upgraderole`
-5. `manage.py runserver --insecure`
+2. `init_db.py`
+3. `manage.py upgraderole`
+4. `manage.py runserver --insecure`
 
 Re-run them when needed/applicable.
 
