@@ -19,8 +19,6 @@
 import json
 import os
 import string
-
-# import time
 import unittest
 from uuid import uuid4
 
@@ -169,35 +167,51 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         response = self.api_post('/provider/', {'name': name, 'prototype_id': provider_proto})
         self.assertEqual(response.status_code, 201, msg=response.text)
         provider_id = response.json()['id']
-        response = self.api_post('/host/', {'fqdn': fqdn, 'prototype_id': host_proto, 'provider_id': provider_id})
+        response = self.api_post(
+            '/host/', {'fqdn': fqdn, 'prototype_id': host_proto, 'provider_id': provider_id}
+        )
         self.assertEqual(response.status_code, 201, msg=response.text)
         host_id = response.json()['id']
         return (ssh_bundle_id, provider_id, host_id)
 
     def test_access(self):
-        api = ['cluster', 'host', 'job', 'task', 'stack']
+        api = ['cluster', 'host', 'job', 'task']
         for path in api:
             response = requests.get(self.url + '/' + path + '/')
             self.assertEqual(response.status_code, 401, msg=response.text)
-            self.assertEqual(response.json()['detail'], 'Authentication credentials were not provided.')
+            self.assertEqual(
+                response.json()['detail'], 'Authentication credentials were not provided.'
+            )
 
         for path in api:
             response = requests.post(self.url + '/' + path + '/', {})
             self.assertEqual(response.status_code, 401, msg=response.text)
-            self.assertEqual(response.json()['detail'], 'Authentication credentials were not provided.')
+            self.assertEqual(
+                response.json()['detail'], 'Authentication credentials were not provided.'
+            )
 
         for path in api:
             response = requests.put(self.url + '/' + path + '/', {})
             self.assertEqual(response.status_code, 401, msg=response.text)
-            self.assertEqual(response.json()['detail'], 'Authentication credentials were not provided.')
+            self.assertEqual(
+                response.json()['detail'], 'Authentication credentials were not provided.'
+            )
 
         for path in api:
             response = requests.delete(self.url + '/' + path + '/')
             self.assertEqual(response.status_code, 401, msg=response.text)
-            self.assertEqual(response.json()['detail'], 'Authentication credentials were not provided.')
+            self.assertEqual(
+                response.json()['detail'], 'Authentication credentials were not provided.'
+            )
 
     def test_schema(self):
         response = self.api_get('/schema/')
+        self.assertEqual(response.status_code, 200, msg=response.text)
+
+    def test_docs(self):
+        response = self.api_get('/docs/')
+        self.assertEqual(response.status_code, 200, msg=response.text)
+        response = self.api_get('/docs/md/')
         self.assertEqual(response.status_code, 200, msg=response.text)
 
     def test_cluster(self):  # pylint: disable=too-many-statements
@@ -230,7 +244,9 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, 404, msg=response.text)
         self.assertEqual(response.json()['code'], 'PROTOTYPE_NOT_FOUND')
 
-        response = self.api_post('/cluster/', {'name': cluster, 'prototype_id': proto_id, 'description': ''})
+        response = self.api_post(
+            '/cluster/', {'name': cluster, 'prototype_id': proto_id, 'description': ''}
+        )
         self.assertEqual(response.status_code, 400, msg=response.text)
         self.assertEqual(response.json()['description'], ['This field may not be blank.'])
 
@@ -290,7 +306,9 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, 201, msg=response.text)
         second_cluster_id = response.json()['id']
 
-        response = self.api_patch('/cluster/' + str(second_cluster_id) + '/', {'name': patched_name})
+        response = self.api_patch(
+            '/cluster/' + str(second_cluster_id) + '/', {'name': patched_name}
+        )
         self.assertEqual(response.status_code, 409, msg=response.text)
         self.assertEqual(response.json()['code'], 'CLUSTER_CONFLICT')
 
@@ -314,7 +332,9 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.json()['fqdn'], ['This field is required.'])
 
         ssh_bundle_id, host_proto = self.get_host_proto_id()
-        response = self.api_post('/host/', {'fqdn': host, 'prototype_id': host_proto, 'provider_id': 0})
+        response = self.api_post(
+            '/host/', {'fqdn': host, 'prototype_id': host_proto, 'provider_id': 0}
+        )
         self.assertEqual(response.status_code, 404, msg=response.text)
         self.assertEqual(response.json()['code'], 'PROVIDER_NOT_FOUND')
 
@@ -323,7 +343,9 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, 201, msg=response.text)
         provider_id = response.json()['id']
 
-        response = self.api_post('/host/', {'fqdn': host, 'prototype_id': 42, 'provider_id': provider_id})
+        response = self.api_post(
+            '/host/', {'fqdn': host, 'prototype_id': 42, 'provider_id': provider_id}
+        )
         self.assertEqual(response.status_code, 404, msg=response.text)
         self.assertEqual(response.json()['code'], 'PROTOTYPE_NOT_FOUND')
 
@@ -357,7 +379,9 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, 400, msg=response.text)
         self.assertEqual(response.json()['code'], 'WRONG_NAME')
 
-        response = self.api_post('/host/', {'fqdn': host, 'prototype_id': host_proto, 'provider_id': provider_id})
+        response = self.api_post(
+            '/host/', {'fqdn': host, 'prototype_id': host_proto, 'provider_id': provider_id}
+        )
         self.assertEqual(response.status_code, 201, msg=response.text)
         host_id = response.json()['id']
 
@@ -366,10 +390,20 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.json()['fqdn'], host)
 
         response = self.api_put('/host/' + str(host_id) + '/', {})
-        self.assertEqual(response.status_code, 405, msg=response.text)
-        self.assertEqual(response.json()['detail'], 'Method "PUT" not allowed.')
+        self.assertEqual(response.status_code, 400, msg=response.text)
+        self.assertEqual(
+            response.json(),
+            {
+                'prototype_id': ['This field is required.'],
+                'provider_id': ['This field is required.'],
+                'fqdn': ['This field is required.'],
+                'maintenance_mode': ['This field is required.'],
+            },
+        )
 
-        response = self.api_post('/host/', {'fqdn': host, 'prototype_id': host_proto, 'provider_id': provider_id})
+        response = self.api_post(
+            '/host/', {'fqdn': host, 'prototype_id': host_proto, 'provider_id': provider_id}
+        )
         self.assertEqual(response.status_code, 409, msg=response.text)
         self.assertEqual(response.json()['code'], 'HOST_CONFLICT')
 
@@ -509,7 +543,9 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, 409, msg=response.text)
         self.assertEqual(response.json()['code'], 'SERVICE_CONFLICT')
 
-        response = self.api_delete('/cluster/' + str(cluster_id) + '/service/' + str(service_id) + '/')
+        response = self.api_delete(
+            '/cluster/' + str(cluster_id) + '/service/' + str(service_id) + '/'
+        )
         self.assertEqual(response.status_code, 204, msg=response.text)
 
         response = self.api_delete('/cluster/' + str(cluster_id) + '/')
@@ -530,7 +566,9 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         response = self.api_post('/cluster/', {'name': self.cluster, 'prototype_id': cluster_proto})
         cluster_id = response.json()['id']
 
-        response = self.api_post('/cluster/' + str(cluster_id) + '/service/', {'prototype_id': service_proto_id})
+        response = self.api_post(
+            '/cluster/' + str(cluster_id) + '/service/', {'prototype_id': service_proto_id}
+        )
         self.assertEqual(response.status_code, 201, msg=response.text)
         service_id = response.json()['id']
 
@@ -616,7 +654,9 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, 404, msg=response.text)
         self.assertEqual(response.json()['code'], "CLUSTER_SERVICE_NOT_FOUND")
 
-        response = self.api_post('/cluster/' + str(cluster_id2) + '/service/', {'prototype_id': service_proto_id})
+        response = self.api_post(
+            '/cluster/' + str(cluster_id2) + '/service/', {'prototype_id': service_proto_id}
+        )
         service_id2 = response.json()['id']
         self.assertEqual(response.status_code, 201, msg=response.text)
         comp_id2 = self.get_component_id(cluster_id2, service_id2, self.component)
@@ -713,11 +753,15 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, 200, msg=response.text)
         self.assertEqual(response.json(), [])
 
-        response = self.api_post('/cluster/' + str(cluster_id) + '/service/', {'prototype_id': 100500})
+        response = self.api_post(
+            '/cluster/' + str(cluster_id) + '/service/', {'prototype_id': 100500}
+        )
         self.assertEqual(response.status_code, 404, msg=response.text)
         self.assertEqual(response.json()['code'], 'PROTOTYPE_NOT_FOUND')
 
-        response = self.api_post('/cluster/' + str(cluster_id) + '/service/', {'prototype_id': service_proto_id})
+        response = self.api_post(
+            '/cluster/' + str(cluster_id) + '/service/', {'prototype_id': service_proto_id}
+        )
         self.assertEqual(response.status_code, 201, msg=response.text)
         service_id = response.json()['id']
 
@@ -751,7 +795,9 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         config = response.json()['config']
         self.assertEqual(config['zoo.cfg']['autopurge.purgeInterval'], 42)
 
-        response = self.api_patch(zurl + 'config/history/' + str(id1) + '/restore/', {'description': 'New config'})
+        response = self.api_patch(
+            zurl + 'config/history/' + str(id1) + '/restore/', {'description': 'New config'}
+        )
         self.assertEqual(response.status_code, 200, msg=response.text)
         response = self.api_get(zurl + 'config/current/')
         config = response.json()['config']
