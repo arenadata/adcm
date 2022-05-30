@@ -81,7 +81,7 @@ class ClusterUpgradeSerializer(UpgradeSerializer):
     def get_hostcomponentmap(self, instance):
         if instance.action:
             return instance.action.hostcomponentmap
-        return {}
+        return []
 
 
 class ProviderUpgradeSerializer(UpgradeSerializer):
