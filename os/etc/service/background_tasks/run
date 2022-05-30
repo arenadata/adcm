@@ -15,7 +15,7 @@ source /etc/adcmenv
 
 waitforwsgi
 
-echo "Run process_tasks ..."
+echo "Run cron ..."
 
 source "${adcmroot}/venv/default/bin/activate"
-python ${adcmroot}/python/manage.py process_tasks --log-std
+/usr/sbin/crond -f -l 2
