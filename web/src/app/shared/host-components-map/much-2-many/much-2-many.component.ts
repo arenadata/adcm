@@ -42,11 +42,7 @@ export class Much2ManyComponent implements AfterViewChecked {
   }
 
   isHostDisabled() {
-    if (this.model?.mm === this.statusType.On) {
-      return true;
-    }
-
-    return false
+    return this.model?.mm === this.statusType.On;
   }
 
   isError() {
@@ -95,7 +91,7 @@ export class Much2ManyComponent implements AfterViewChecked {
   }
 
   tooltip() {
-    if (this.model?.mm === this.statusType.On) {
+    if (this.isHostDisabled()) {
       return 'Host is in “Maintenance mode';
     }
 
