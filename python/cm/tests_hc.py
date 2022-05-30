@@ -29,12 +29,12 @@ class TestHC(TestCase):
         h1 = Host.objects.get(provider=provider, fqdn='server01.inter.net')
 
         action = Action(name="run")
-        hc_list = cm.job.check_hostcomponentmap(cluster, action, [])
+        hc_list, _ = cm.job.check_hostcomponentmap(cluster, action, [])
         self.assertEqual(hc_list, [])
 
         try:
             action = Action(name="run", hostcomponentmap='qwe')
-            hc_list = cm.job.check_hostcomponentmap(cluster, action, [])
+            hc_list, _ = cm.job.check_hostcomponentmap(cluster, action, [])
             self.assertNotEqual(hc_list, None)
         except AdcmEx as e:
             self.assertEqual(e.code, 'TASK_ERROR')
@@ -45,7 +45,7 @@ class TestHC(TestCase):
         try:
             action = Action(name="run", hostcomponentmap='qwe')
             hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": 500}]
-            hc_list = cm.job.check_hostcomponentmap(cluster, action, hc)
+            hc_list, _ = cm.job.check_hostcomponentmap(cluster, action, hc)
             self.assertNotEqual(hc_list, None)
         except AdcmEx as e:
             self.assertEqual(e.code, 'HOST_NOT_FOUND')
@@ -53,7 +53,7 @@ class TestHC(TestCase):
         try:
             action = Action(name="run", hostcomponentmap='qwe')
             hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": h1.id}]
-            hc_list = cm.job.check_hostcomponentmap(cluster, action, hc)
+            hc_list, _ = cm.job.check_hostcomponentmap(cluster, action, hc)
             self.assertNotEqual(hc_list, None)
         except AdcmEx as e:
             self.assertEqual(e.code, 'FOREIGN_HOST')
@@ -62,7 +62,7 @@ class TestHC(TestCase):
         try:
             action = Action(name="run", hostcomponentmap="qwe")
             hc = [{"service_id": 500, "component_id": sc1.id, "host_id": h1.id}]
-            hc_list = cm.job.check_hostcomponentmap(cluster, action, hc)
+            hc_list, _ = cm.job.check_hostcomponentmap(cluster, action, hc)
             self.assertNotEqual(hc_list, None)
         except AdcmEx as e:
             self.assertEqual(e.code, 'CLUSTER_SERVICE_NOT_FOUND')
@@ -70,7 +70,7 @@ class TestHC(TestCase):
         try:
             action = Action(name="run", hostcomponentmap="qwe")
             hc = [{"service_id": co.id, "component_id": 500, "host_id": h1.id}]
-            hc_list = cm.job.check_hostcomponentmap(cluster, action, hc)
+            hc_list, _ = cm.job.check_hostcomponentmap(cluster, action, hc)
             self.assertNotEqual(hc_list, None)
         except AdcmEx as e:
             self.assertEqual(e.code, 'COMPONENT_NOT_FOUND')
@@ -94,7 +94,7 @@ class TestHC(TestCase):
             act_hc = [{'service': 'hadoop', 'component': 'server', 'action': 'delete'}]
             action = Action(name="run", hostcomponentmap=act_hc)
             hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": h1.id}]
-            hc_list = cm.job.check_hostcomponentmap(cluster, action, hc)
+            hc_list, _ = cm.job.check_hostcomponentmap(cluster, action, hc)
             self.assertNotEqual(hc_list, None)
         except AdcmEx as e:
             self.assertEqual(e.code, 'WRONG_ACTION_HC')
@@ -106,7 +106,7 @@ class TestHC(TestCase):
             {"service_id": co.id, "component_id": sc1.id, "host_id": h1.id},
             {"service_id": co.id, "component_id": sc1.id, "host_id": h2.id},
         ]
-        hc_list = cm.job.check_hostcomponentmap(cluster, action, hc)
+        hc_list, _ = cm.job.check_hostcomponentmap(cluster, action, hc)
         self.assertNotEqual(hc_list, None)
 
         cm.api.save_hc(cluster, hc_list)
@@ -115,5 +115,5 @@ class TestHC(TestCase):
         hc = [
             {"service_id": co.id, "component_id": sc1.id, "host_id": h2.id},
         ]
-        hc_list = cm.job.check_hostcomponentmap(cluster, action, hc)
+        hc_list, _ = cm.job.check_hostcomponentmap(cluster, action, hc)
         self.assertNotEqual(hc_list, None)

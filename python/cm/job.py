@@ -114,7 +114,7 @@ def prepare_task(
         err("CONFIG_VALUE_ERROR", "Absent config in action prototype")
     check_action_hosts(action, obj, cluster, hosts)
     old_hc = api.get_hc(cluster)
-    host_map, post_upgrade_hc = check_hostcomponentmap(cluster, action, hc, old_hc)
+    host_map, post_upgrade_hc = check_hostcomponentmap(cluster, action, hc)
 
     if not attr:
         attr = {}
@@ -268,9 +268,7 @@ def cook_delta(  # pylint: disable=too-many-branches
     return delta
 
 
-def check_hostcomponentmap(
-    cluster: Cluster, action: Action, new_hc: List[dict], old_hc: List[dict]
-):
+def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict]):
 
     if not action.hostcomponentmap:
         return [], None
@@ -284,13 +282,10 @@ def check_hostcomponentmap(
     post_upgrade_hc = []
     new_clear_hc = copy.deepcopy(new_hc)
     buff = 0
-    log.debug(f"new_hc:{new_hc}")
     for host_comp in new_hc:
         host = Host.obj.get(id=host_comp.get('host_id', 0))
         issue.check_object_concern(host)
-        log.debug(f"before prototype check: {host_comp}")
         if "component_prototype_id" in host_comp:
-            log.debug(f"component with prototype: {host_comp}")
             if not action.upgrade:
                 err(
                     'WRONG_ACTION_HC',
@@ -310,7 +305,7 @@ def check_hostcomponentmap(
             post_upgrade_hc.append(host_comp)
             new_clear_hc.remove(host_comp)
 
-    old_hc = get_old_hc(old_hc)
+    old_hc = get_old_hc(api.get_hc(cluster))
 
     new_hc_list_of_tuple = api.check_hc(cluster, new_clear_hc)
     cook_delta(cluster, new_hc_list_of_tuple, action.hostcomponentmap, old_hc)

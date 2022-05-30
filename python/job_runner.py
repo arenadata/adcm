@@ -159,7 +159,7 @@ def switch_hc(task, action):
             comp = ServiceComponent.objects.get(cluster=cluster, prototype=proto)
             hc['component_id'] = comp.id
             hc['service_id'] = comp.service.id
-    host_map, _ = cm.job.check_hostcomponentmap(cluster, action, new_hc, old_hc)
+    host_map, _ = cm.job.check_hostcomponentmap(cluster, action, new_hc)
     log.debug(f"host map after check: {host_map}")
     cm.api.save_hc(cluster, host_map)
 

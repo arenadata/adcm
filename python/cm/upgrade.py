@@ -18,10 +18,9 @@ from version_utils import rpm
 
 import cm.issue
 import cm.job
-import cm.api
 import cm.status_api
 from cm.adcm_config import proto_ref, obj_ref, switch_config, make_object_config
-from cm.api import check_license, version_in
+from cm.api import check_license, version_in, add_components_to_service, add_service_to_cluster
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
@@ -293,9 +292,9 @@ def update_components_after_bundle_switch(cluster, upgrade):
             try:
                 service = ClusterObject.objects.get(cluster=cluster, prototype=proto_service)
                 if not ServiceComponent.objects.filter(cluster=cluster, service=service).exists():
-                    cm.api.add_components_to_service(cluster, service)
+                    add_components_to_service(cluster, service)
             except ClusterObject.DoesNotExist:
-                cm.api.add_service_to_cluster(cluster, proto_service)
+                add_service_to_cluster(cluster, proto_service)
 
 
 def do_upgrade(
