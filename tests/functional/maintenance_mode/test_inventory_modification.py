@@ -68,7 +68,7 @@ def cluster_with_hc_set(request, cluster_with_mm, hosts) -> Cluster:
 @pytest.fixture()
 def config_groups(cluster_with_hc_set) -> Tuple[GroupConfig, GroupConfig, GroupConfig]:
     """Add config group to the cluster, service and one of components"""
-    changed_config = {'some_param': 42}
+    changed_config = {'attr': {'group_keys': {'some_param': True}}, 'config': {'some_param': 42}}
     host_1, host_2, host_3, *_ = cluster_with_hc_set.host_list()
     service = cluster_with_hc_set.service()
     component = service.component(name=FIRST_COMPONENT)

@@ -223,7 +223,7 @@ class ClusterBindDetail(GenericUIView):
 
 class ClusterUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.UpgradeLinkSerializer
+    serializer_class = api.serializers.ClusterUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_ordering(self):
@@ -247,7 +247,7 @@ class ClusterUpgrade(GenericUIView):
 
 class ClusterUpgradeDetail(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.UpgradeLinkSerializer
+    serializer_class = api.serializers.ClusterUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
