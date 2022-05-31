@@ -92,7 +92,7 @@ export class Much2ManyComponent implements AfterViewChecked {
 
   tooltip() {
     if (this.isHostDisabled()) {
-      return 'Host is in “Maintenance mode';
+      return 'Host is in "Maintenance mode"';
     }
 
     return null;
