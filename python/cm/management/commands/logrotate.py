@@ -18,7 +18,7 @@ from enum import Enum
 
 from contextlib import suppress
 from datetime import timedelta, datetime
-from subprocess import Popen, PIPE
+from subprocess import check_output, CalledProcessError, STDOUT
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -50,7 +50,10 @@ class TargetType(Enum):
 
 class Command(BaseCommand):
     help = 'Delete / rotate log files, db records, `run` directories'
+
     __nginx_logrotate_conf = '/etc/logrotate.d/nginx'
+    __logrotate_cmd = f'logrotate {__nginx_logrotate_conf}'
+    __logrotate_cmd_debug = f'{__logrotate_cmd} -d'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -81,6 +84,18 @@ class Command(BaseCommand):
         for func in __target_method_map[target]:
             func()
 
+    def __execute_cmd(self, cmd):
+        encoding = 'utf-8'
+        self.__log(f'executing cmd: `{cmd}`', 'info')
+        try:
+            out = check_output(cmd, shell=True, stderr=STDOUT)
+            out = out.decode(encoding)
+            self.__log(out, 'debug')
+        except CalledProcessError as e:
+            err_msg = e.stdout.decode(encoding).strip('\n')
+            msg = f'Error! cmd: `{cmd}` return code: `{e.returncode}` msg: `{err_msg}`'
+            self.__log(msg, 'exception')
+
     def __get_logrotate_config(self):
         adcm_object = ADCM.objects.get(id=1)
         adcm_conf = ConfigLog.objects.get(
@@ -97,16 +112,13 @@ class Command(BaseCommand):
     def __run_nginx_log_rotation(self):
         if self.config['nginx']['nginx_server']:
             self.__log('Nginx log rotation started', 'info')
-            # TODO: нужно ли плеваться в логи этим всем? (-v)
-            cmd = ['logrotate', '-f', '-v', self.__nginx_logrotate_conf]
-            proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
-            output, error = proc.communicate()
             self.__log(
-                f"RUN: logrotate -f {self.__nginx_logrotate_conf}, "
-                f"output: {output.decode(errors='ignore')}, "
-                f"error: {error.decode(errors='ignore')}",
-                'info',
+                f'Using config file `{self.__nginx_logrotate_conf}`:\n'
+                f'{open(self.__nginx_logrotate_conf, "rt").read()}',
+                'debug',
             )
+            self.__execute_cmd(self.__logrotate_cmd_debug)
+            self.__execute_cmd(self.__logrotate_cmd)
 
     def __run_configlog_rotation(self):
         try:
