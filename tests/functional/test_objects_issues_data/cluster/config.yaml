@@ -21,7 +21,7 @@
       description: cluster bundle upgrade
       states: { available: any }
 
-  config:
+  config: &config
     required_param:
       type: integer
       required: true
@@ -35,3 +35,22 @@
         available: any
         on_success: installed
         on_fail: created
+
+
+- type: service
+  name: service_1
+  version: 3.4
+
+  config: *config
+
+  components: &components
+    test_component:
+      config: *config
+
+- type: service
+  name: service_2
+  version: 3.2
+
+  config: *config
+
+  components: *components

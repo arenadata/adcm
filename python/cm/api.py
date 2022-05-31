@@ -290,6 +290,7 @@ def delete_host(host, cancel_tasks=True):
     host.delete()
     cm.status_api.post_event('delete', 'host', host_id)
     load_service_map()
+    cm.issue.update_issue_after_deleting()
     log.info(f'host #{host_id} is deleted')
 
 
@@ -358,8 +359,8 @@ def delete_service(service: ClusterObject, cancel_tasks=True) -> None:
         _cancel_locking_tasks(service)
     service_id = service.id
     cluster = service.cluster
-    service.concerns.filter(type__in=[ConcernType.Issue, ConcernType.Flag]).delete()
     service.delete()
+    cm.issue.update_issue_after_deleting()
     cm.issue.update_hierarchy_issues(cluster)
     re_apply_object_policy(cluster)
     cm.status_api.post_event('delete', 'service', service_id)
@@ -374,13 +375,14 @@ def delete_cluster(cluster, cancel_tasks=True):
     hosts = cluster.host_set.all()
     host_ids = [str(host.id) for host in hosts]
     hosts.update(maintenance_mode=MaintenanceModeType.Disabled)
-    cluster.delete()
     log.debug(
         'Deleting cluster #%s. Set `%s` maintenance mode value for `%s` hosts.',
         cluster_id,
         MaintenanceModeType.Disabled,
         ', '.join(host_ids),
     )
+    cluster.delete()
+    cm.issue.update_issue_after_deleting()
     cm.status_api.post_event('delete', 'cluster', cluster_id)
     load_service_map()
 
@@ -492,10 +494,7 @@ def update_obj_config(obj_conf, conf, attr, desc=''):
     else:
         proto = obj.prototype
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
-    if not attr:
-        if old_conf.attr:
-            attr = old_conf.attr
-    new_conf = check_json_config(proto, group or obj, conf, old_conf.config, attr)
+    new_conf = check_json_config(proto, group or obj, conf, old_conf.config, attr, old_conf.attr)
     with transaction.atomic():
         cl = save_obj_config(obj_conf, new_conf, attr, desc)
         cm.issue.update_hierarchy_issues(obj)
@@ -640,6 +639,7 @@ def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     ctx.event.send_state()
     cm.status_api.post_event('change_hostcomponentmap', 'cluster', cluster.id)
     cm.issue.update_hierarchy_issues(cluster)
+    cm.issue.update_issue_after_deleting()
     load_service_map()
     for service in service_map:
         re_apply_object_policy(service)

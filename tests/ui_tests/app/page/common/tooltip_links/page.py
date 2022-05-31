@@ -73,6 +73,12 @@ class CommonToolbar(BasePageObject):
             expected_warn_text == warn_text_popup
         ), f"Expected warning is {expected_warn_text}, but actual is {warn_text_popup}"
 
+    @allure.step("Check no warn button in {tab_name}")
+    def check_no_warn_button(self, tab_name: str):
+        """Check there are no warn button from toolbar"""
+        self.wait_element_visible(CommonToolbarLocators.admin_link)
+        self.check_element_should_be_hidden(CommonToolbarLocators.warn_btn(tab_name.upper().strip("_")), timeout=3)
+
     def check_toolbar_elements(self, tab_names: [str]):
         self.assert_displayed_elements([CommonToolbarLocators.admin_link])
         tab_names_upper = [tab_name.upper().strip("_") for tab_name in tab_names]

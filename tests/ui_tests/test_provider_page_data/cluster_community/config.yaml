@@ -9,16 +9,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
----
-- type: service
-  name: zookeeper
-  version: 3.4.10
-
-  config:
-    - name: some_param
-      type: integer
 
 - type: cluster
-  name: Nothing
-  description: Arenadata Nothing
-  version: 1.0
+  name: test_cluster
+  version: 1.5
+  edition: community
+
+- type: service
+  name: test_service
+  description: Test service
+  version: '1.2'
+  components:
+    first:

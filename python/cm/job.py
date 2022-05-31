@@ -14,17 +14,14 @@
 
 import json
 import os
-import shutil
 import subprocess
 from configparser import ConfigParser
-from datetime import timedelta, datetime
 from typing import List, Tuple, Optional, Hashable, Any, Union
 
-from background_task import background
 from django.db import transaction
 from django.utils import timezone
 
-from cm import api, inventory, adcm_config, variant, config
+from cm import api, inventory, adcm_config, variant, config, issue
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx
 from cm.errors import raise_AdcmEx as err
@@ -38,7 +35,6 @@ from cm.models import (
     ActionType,
     Cluster,
     ClusterObject,
-    ConcernType,
     ConfigLog,
     DummyData,
     Host,
@@ -72,7 +68,6 @@ def start_task(
     ctx.event.send_state()
     run_task(task, ctx.event)
     ctx.event.send_state()
-    log_rotation()
 
     return task
 
@@ -169,11 +164,7 @@ def check_action_state(action: Action, task_object: ADCMEntity, cluster: Cluster
     else:
         obj = task_object
 
-    if obj.concerns.filter(type=ConcernType.Lock).exists():
-        err('TASK_ERROR', 'object is locked')
-
-    if obj.concerns.filter(type=ConcernType.Issue).exists():
-        err('TASK_ERROR', 'object has issues')
+    issue.check_object_concern(obj)
 
     if action.allowed(obj):
         return
@@ -282,6 +273,10 @@ def check_hostcomponentmap(
 
     if not cluster:
         err('TASK_ERROR', 'Only cluster objects can have action with hostcomponentmap')
+
+    for host_comp in hc:
+        host = Host.obj.get(id=host_comp.get('host_id', 0))
+        issue.check_object_concern(host)
 
     return api.check_hc(cluster, hc)
 
@@ -728,45 +723,6 @@ def run_task(task: TaskLog, event, args: str = ''):
     task.pid = proc.pid
 
     set_task_status(task, config.Job.RUNNING, event)
-
-
-@background(schedule=1)
-def log_rotation():
-    log.info('Run log rotation')
-    adcm_object = ADCM.objects.get(id=1)
-    cl = ConfigLog.objects.get(obj_ref=adcm_object.config, id=adcm_object.config.current)
-    adcm_conf = cl.config
-
-    log_rotation_on_db = adcm_conf['job_log']['log_rotation_in_db']
-    log_rotation_on_fs = adcm_conf['job_log']['log_rotation_on_fs']
-
-    if log_rotation_on_db:
-        rotation_jobs_on_db = JobLog.objects.filter(
-            finish_date__lt=timezone.now() - timedelta(days=log_rotation_on_db)
-        )
-        if rotation_jobs_on_db:
-            task_ids = [job['task_id'] for job in rotation_jobs_on_db.values('task_id')]
-            with transaction.atomic():
-                rotation_jobs_on_db.delete()
-                TaskLog.objects.filter(id__in=task_ids).delete()
-
-            log.info('rotation log from db')
-
-    if log_rotation_on_fs:  # pylint: disable=too-many-nested-blocks
-        for name in os.listdir(config.RUN_DIR):
-            if not name.startswith('.'):  # a line of code is used for development
-                path = os.path.join(config.RUN_DIR, name)
-                try:
-                    m_time = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.utc)
-                    if timezone.now() - m_time > timedelta(days=log_rotation_on_fs):
-                        if os.path.isdir(path):
-                            shutil.rmtree(path)
-                        else:
-                            os.remove(path)
-                except FileNotFoundError:
-                    pass
-
-        log.info('rotation log from fs')
 
 
 def prepare_ansible_config(job_id: int, action: Action, sub_action: SubAction):

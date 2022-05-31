@@ -132,6 +132,20 @@ def dicts_are_equal(actual: dict, expected: dict, message: Union[str, Callable] 
     raise AssertionError(message)
 
 
+def dicts_are_not_equal(first: dict, second: dict, message: Union[str, Callable] = '', **kwargs) -> None:
+    """
+    Check that two dicts aren't equal (direct comparison with `!=`)
+    """
+    if first != second:
+        return
+
+    allure.attach(pprint.pformat(first), name='First dictionary')
+    allure.attach(pprint.pformat(second), name='Second dictionary')
+    message = message if not callable(message) else message(**kwargs)
+    if not message:
+        message = "Two dictionaries are equal, which wasn't expected.\nCheck step attachments for more details."
+
+
 def expect_api_error(operation_name: str, operation: Callable, *args, err_: Optional[ADCMError] = None, **kwargs):
     """
     Perform "operation" and expect it to raise an API error.
