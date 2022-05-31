@@ -5,4 +5,4 @@
 0       2       *       *       *       run-parts /etc/periodic/daily
 0       3       *       *       6       run-parts /etc/periodic/weekly
 0       5       1       *       *       run-parts /etc/periodic/monthly
-*/1     *       *       *       *       /usr/bin/python /adcm/python/manage.py logrotate --target all
+*/1     *       *       *       *       python /adcm/python/manage.py logrotate --target all

@@ -18,4 +18,4 @@ waitforwsgi
 echo "Run cron ..."
 
 source "${adcmroot}/venv/default/bin/activate"
-/usr/sbin/crond -f -l 2
+crond -f -l 2  # TODO: do something with cron logs / syslogs
