@@ -164,7 +164,7 @@ class TestUpgradeActionSectionValidation:
             ('bundle_switch_in_regular_actions', INVALID_OBJECT_DEFINITION),
             ('incorrect_internal_action', INVALID_UPGRADE_DEFINITION),
             ('no_bundle_switch', INVALID_UPGRADE_DEFINITION),
-            ('hc_acl_in_provider', INVALID_UPGRADE_DEFINITION),
+            ('hc_acl_in_provider', INVALID_OBJECT_DEFINITION),
             ('non_existent_service_in_regular_action', INVALID_ACTION_DEFINITION),
             ('non_existent_component_in_regular_action', INVALID_ACTION_DEFINITION),
         ],
