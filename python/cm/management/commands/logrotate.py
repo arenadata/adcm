@@ -51,6 +51,7 @@ class TargetType(Enum):
 class Command(BaseCommand):
     help = 'Delete / rotate log files, db records, `run` directories'
 
+    __encoding = 'utf-8'
     __nginx_logrotate_conf = '/etc/logrotate.d/nginx'
     __logrotate_cmd = f'logrotate {__nginx_logrotate_conf}'
     __logrotate_cmd_debug = f'{__logrotate_cmd} -d'
@@ -85,14 +86,13 @@ class Command(BaseCommand):
             func()
 
     def __execute_cmd(self, cmd):
-        encoding = 'utf-8'
         self.__log(f'executing cmd: `{cmd}`', 'info')
         try:
             out = check_output(cmd, shell=True, stderr=STDOUT)
-            out = out.decode(encoding)
+            out = out.decode(self.__encoding)
             self.__log(out, 'debug')
         except CalledProcessError as e:
-            err_msg = e.stdout.decode(encoding).strip('\n')
+            err_msg = e.stdout.decode(self.__encoding).strip('\n')
             msg = f'Error! cmd: `{cmd}` return code: `{e.returncode}` msg: `{err_msg}`'
             self.__log(msg, 'exception')
 
@@ -114,7 +114,7 @@ class Command(BaseCommand):
             self.__log('Nginx log rotation started', 'info')
             self.__log(
                 f'Using config file `{self.__nginx_logrotate_conf}`:\n'
-                f'{open(self.__nginx_logrotate_conf, "rt").read()}',
+                f'{open(self.__nginx_logrotate_conf, "rt", encoding=self.__encoding).read()}',
                 'debug',
             )
             self.__execute_cmd(self.__logrotate_cmd_debug)
