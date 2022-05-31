@@ -153,6 +153,7 @@ def switch_hc(task, action):
     new_hc = [*task.post_upgrade_hc_map, *old_hc]
     task.hostcomponentmap = old_hc
     task.post_upgrade_hc_map = None
+    task.save()
     for hc in new_hc:
         if "component_prototype_id" in hc:
             proto = Prototype.objects.get(type='component', id=hc.pop('component_prototype_id'))

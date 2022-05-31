@@ -280,11 +280,12 @@ def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict])
         err('TASK_ERROR', 'Only cluster objects can have action with hostcomponentmap')
 
     post_upgrade_hc = []
-    new_clear_hc = copy.deepcopy(new_hc)
+    clear_hc = copy.deepcopy(new_hc)
     buff = 0
     for host_comp in new_hc:
-        host = Host.obj.get(id=host_comp.get('host_id', 0))
-        issue.check_object_concern(host)
+        if not action.upgrade:
+            host = Host.obj.get(id=host_comp.get('host_id', 0))
+            issue.check_object_concern(host)
         if "component_prototype_id" in host_comp:
             if not action.upgrade:
                 err(
@@ -303,13 +304,13 @@ def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict])
             if buff == 0:
                 err('INVALID_INPUT', 'hc_acl doesn\'t allow actions with this component')
             post_upgrade_hc.append(host_comp)
-            new_clear_hc.remove(host_comp)
+            clear_hc.remove(host_comp)
 
     old_hc = get_old_hc(api.get_hc(cluster))
 
-    new_hc_list_of_tuple = api.check_hc(cluster, new_clear_hc)
-    cook_delta(cluster, new_hc_list_of_tuple, action.hostcomponentmap, old_hc)
-    return new_hc_list_of_tuple, post_upgrade_hc
+    prepared_hc_list = api.check_hc(cluster, clear_hc)
+    cook_delta(cluster, prepared_hc_list, action.hostcomponentmap, old_hc)
+    return prepared_hc_list, post_upgrade_hc
 
 
 def check_service_task(  # pylint: disable=inconsistent-return-statements
