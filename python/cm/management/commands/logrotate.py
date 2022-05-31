@@ -12,7 +12,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from cm import config
-from cm.logger import log
+from cm.logger import log_background_task as log
 from cm.models import (
     ADCM,
     Cluster,
