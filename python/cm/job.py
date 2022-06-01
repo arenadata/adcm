@@ -283,11 +283,11 @@ def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict])
     clear_hc = copy.deepcopy(new_hc)
     buff = 0
     for host_comp in new_hc:
-        if not action.upgrade:
+        if not hasattr(action, 'upgrade'):
             host = Host.obj.get(id=host_comp.get('host_id', 0))
             issue.check_object_concern(host)
         if "component_prototype_id" in host_comp:
-            if not action.upgrade:
+            if not hasattr(action, 'upgrade'):
                 err(
                     'WRONG_ACTION_HC',
                     'Hc map with components prototype available only in upgrade action',

@@ -73,8 +73,7 @@ def switch_components(cluster: Cluster, co: ClusterObject, new_co_proto: Prototy
             sc.save()
             switch_config(sc, new_sc_prototype, old_sc_prototype)
         except Prototype.DoesNotExist:
-            # sc.delete() ?!
-            pass
+            sc.delete()
     for sc_proto in Prototype.objects.filter(parent=new_co_proto, type='component'):
         kwargs = dict(cluster=cluster, service=co, prototype=sc_proto)
         if not ServiceComponent.objects.filter(**kwargs).exists():
