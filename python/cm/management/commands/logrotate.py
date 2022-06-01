@@ -25,7 +25,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from cm import config
-from cm.logger import log_background_task as log
+from cm.logger import log_cron_task as log
 from cm.models import (
     ADCM,
     Cluster,
@@ -39,6 +39,23 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+
+
+LOGROTATE_CONF_FILE_TEMPLATE = """
+/adcm/data/log/nginx/*.log {{
+        su root root
+        size {size}
+        missingok
+        nomail
+        {no_compress}compress
+        {no_compress}delaycompress
+        rotate {num_rotations}
+        sharedscripts
+        postrotate
+                kill -USR1 `cat /run/nginx/nginx.pid`
+        endscript
+}}
+"""
 
 
 class TargetType(Enum):
@@ -109,15 +126,23 @@ class Command(BaseCommand):
         self.__log(f'Got rotation config: {logrotate_config}')
         return logrotate_config
 
+    def __generate_logrotate_conf_file(self):
+        DEBUG_DEFAULT_ARGS = {'size': '6M', 'no_compress': '#', 'num_rotations': 9}  # TODO delete
+        with open(self.__nginx_logrotate_conf, 'wt', encoding=self.__encoding) as conf_file:
+            conf_file.write(LOGROTATE_CONF_FILE_TEMPLATE.format(**DEBUG_DEFAULT_ARGS))
+        self.__log(f'conf file `{self.__nginx_logrotate_conf}` generated', 'debug')
+
     def __run_nginx_log_rotation(self):
         if self.config['nginx']['nginx_server']:
             self.__log('Nginx log rotation started', 'info')
+            self.__generate_logrotate_conf_file()
             self.__log(
                 f'Using config file `{self.__nginx_logrotate_conf}`:\n'
                 f'{open(self.__nginx_logrotate_conf, "rt", encoding=self.__encoding).read()}',
                 'debug',
             )
-            self.__execute_cmd(self.__logrotate_cmd_debug)
+            if self.verbose:
+                self.__execute_cmd(self.__logrotate_cmd_debug)
             self.__execute_cmd(self.__logrotate_cmd)
 
     def __run_configlog_rotation(self):

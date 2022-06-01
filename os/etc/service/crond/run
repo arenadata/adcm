@@ -15,7 +15,7 @@ source /etc/adcmenv
 
 waitforwsgi
 
-echo "Run cron ..."
+echo "Run crond ..."
 
 source "${adcmroot}/venv/default/bin/activate"
 crond -f -l 2  # TODO: do something with cron logs / syslogs
