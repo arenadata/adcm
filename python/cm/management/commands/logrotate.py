@@ -106,8 +106,9 @@ class Command(BaseCommand):
         self.__log(f'executing cmd: `{cmd}`', 'info')
         try:
             out = check_output(cmd, shell=True, stderr=STDOUT)
-            out = out.decode(self.__encoding)
-            self.__log(out, 'debug')
+            out = out.decode(self.__encoding).strip('\n')
+            if out:
+                self.__log(out, 'debug')
         except CalledProcessError as e:
             err_msg = e.stdout.decode(self.__encoding).strip('\n')
             msg = f'Error! cmd: `{cmd}` return code: `{e.returncode}` msg: `{err_msg}`'
@@ -115,11 +116,15 @@ class Command(BaseCommand):
 
     def __get_logrotate_config(self):
         adcm_object = ADCM.objects.get(id=1)
-        adcm_conf = ConfigLog.objects.get(
+        current_configlog = ConfigLog.objects.get(
             obj_ref=adcm_object.config, id=adcm_object.config.current
-        ).config
+        )
+        adcm_conf = current_configlog.config
         logrotate_config = {
-            'nginx': adcm_conf['logrotate'],
+            'logrotate': {
+                'active': current_configlog.attr['logrotate']['active'],
+                'nginx': adcm_conf['logrotate'],
+            },
             'job': adcm_conf['job_log'],
             'config': adcm_conf['config_rotation'],
         }
@@ -127,13 +132,17 @@ class Command(BaseCommand):
         return logrotate_config
 
     def __generate_logrotate_conf_file(self):
-        DEBUG_DEFAULT_ARGS = {'size': '6M', 'no_compress': '#', 'num_rotations': 9}  # TODO delete
+        conf_file_args = {
+            'size': f'{self.config["logrotate"]["nginx"]["size"]}M',
+            'no_compress': '' if self.config["logrotate"]["nginx"]["compress"] else '#',
+            'num_rotations': self.config["logrotate"]["nginx"]["max_history"],
+        }
         with open(self.__nginx_logrotate_conf, 'wt', encoding=self.__encoding) as conf_file:
-            conf_file.write(LOGROTATE_CONF_FILE_TEMPLATE.format(**DEBUG_DEFAULT_ARGS))
+            conf_file.write(LOGROTATE_CONF_FILE_TEMPLATE.format(**conf_file_args))
         self.__log(f'conf file `{self.__nginx_logrotate_conf}` generated', 'debug')
 
     def __run_nginx_log_rotation(self):
-        if self.config['nginx']['nginx_server']:
+        if self.config['logrotate']['active']:
             self.__log('Nginx log rotation started', 'info')
             self.__generate_logrotate_conf_file()
             self.__log(
