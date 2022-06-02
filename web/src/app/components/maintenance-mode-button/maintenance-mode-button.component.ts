@@ -55,7 +55,6 @@ export class MaintenanceModeButtonComponent<T> implements AdwpCellComponent<T> {
   ngOnInit(): void {}
 
   clickCell(event: MouseEvent, row: T): void {
-    let maintenanceMode = null;
     if (this.maintenanceModeStatus !== StatusType.Disabled && this.maintenanceModeStatus === StatusType.On) {
       this.row.maintenance_mode = StatusType.Off;
     } else if (this.maintenanceModeStatus !== StatusType.Disabled && this.maintenanceModeStatus === StatusType.Off) {
