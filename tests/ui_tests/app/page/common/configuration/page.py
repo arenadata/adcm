@@ -162,7 +162,7 @@ class CommonConfigMenuObj(BasePageObject):
 
     def activate_group_chbx(self, row: WebElement):
         """Activate group checkbox in row"""
-        
+
         group_chbx = self.find_child(row, CommonConfigMenu.ConfigRow.group_chbx)
 
         def is_checked(chbx: WebElement):
