@@ -31,6 +31,7 @@ from cm.models import (
     ClusterObject,
     ConfigLog,
     DummyData,
+    GroupConfig,
     Host,
     HostProvider,
     JobLog,
@@ -167,6 +168,10 @@ class Command(BaseCommand):
             for cl in target_configlogs:
                 for cl_pk in (cl.obj_ref.current, cl.obj_ref.previous):
                     exclude_pks.add(cl_pk)
+            for gc in GroupConfig.objects.all():
+                if gc.config:
+                    exclude_pks.add(gc.config.previous)
+                    exclude_pks.add(gc.config.current)
             target_configlogs = target_configlogs.exclude(pk__in=exclude_pks)
 
             target_configlog_ids = set(i[0] for i in target_configlogs.values_list('id'))
@@ -202,6 +207,7 @@ class Command(BaseCommand):
                     Host.objects.filter(config=obj_conf).count(),
                     HostProvider.objects.filter(config=obj_conf).count(),
                     ServiceComponent.objects.filter(config=obj_conf).count(),
+                    GroupConfig.objects.filter(config=obj_conf).count(),
                 ]
             )
             > 0
