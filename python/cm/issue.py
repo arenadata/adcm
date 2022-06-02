@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from functools import partial
-
 from cm.adcm_config import proto_ref, obj_ref, get_prototype_config
 from cm.errors import AdcmEx, raise_AdcmEx as err
 from cm.hierarchy import Tree
@@ -319,30 +317,25 @@ def recheck_issues(obj: ADCMEntity) -> None:
             remove_issue(obj, issue_cause)
 
 
-def update_hierarchy_issues(  # pylint: disable=inconsistent-return-statements
-    obj: ADCMEntity, remove_obj: bool = False
-):
-    """
-    Update issues on all directly connected objects
-    If remove_obj is True, returns func that must be called after actual object deletion
-    to avoid requests to non-existent object
-    """
+def update_hierarchy_issues(obj: ADCMEntity):
+    """Update issues on all directly connected objects"""
+    tree = Tree(obj)
+    affected_nodes = tree.get_directly_affected(tree.built_from)
+    for node in affected_nodes:
+        node_value = node.value
+        recheck_issues(node_value)
 
-    def del_obj(model_objects):
-        for model_obj in model_objects:
-            obj_str = str(model_obj)
-            model_obj.delete()
-            log.debug('Deleted %s', obj_str)
 
-    if remove_obj:
-        delete_func_args = []
-        for concern in obj.concerns.exclude(type=ConcernType.Lock):
-            if concern.owner == obj:
-                delete_func_args.append(concern)
-        return partial(del_obj, delete_func_args)
-    else:
-        tree = Tree(obj)
-        affected_nodes = tree.get_directly_affected(tree.built_from)
-        for node in affected_nodes:
-            obj = node.value
-            recheck_issues(obj)
+def update_issue_after_deleting():
+    """Remove issues which have no owners after object deleting"""
+    for concern in ConcernItem.objects.exclude(type=ConcernType.Lock):
+        tree = Tree(concern.owner)
+        affected = {node.value for node in tree.get_directly_affected(tree.built_from)}
+        related = set(concern.related_objects)  # pylint: disable=consider-using-set-comprehension
+        if concern.owner is None:
+            concern_str = str(concern)
+            concern.delete()
+            log.info('Deleted %s', concern_str)
+        elif related != affected:
+            for object_moved_out_hierarchy in related.difference(affected):
+                object_moved_out_hierarchy.remove_from_concerns(concern)

@@ -46,10 +46,14 @@ class GenericUIView(GenericAPIView):
 
     permission_classes = (DjangoObjectPermissions,)
     serializer_class_post: serializers.Serializer = None
+    serializer_class_put: serializers.Serializer = None
+    serializer_class_patch: serializers.Serializer = None
     serializer_class_ui: serializers.Serializer = None
     serializer_class: serializers.Serializer = None
 
     def _is_for_ui(self) -> bool:
+        if not self.request:
+            return False
         view = self.request.query_params.get('view', None)
         return view == 'interface'
 
@@ -58,6 +62,12 @@ class GenericUIView(GenericAPIView):
             if self.request.method == 'POST':
                 if self.serializer_class_post:
                     return self.serializer_class_post
+            elif self.request.method == 'PUT':
+                if self.serializer_class_put:
+                    return self.serializer_class_put
+            elif self.request.method == 'PATCH':
+                if self.serializer_class_patch:
+                    return self.serializer_class_patch
             elif self._is_for_ui():
                 if self.serializer_class_ui:
                     return self.serializer_class_ui

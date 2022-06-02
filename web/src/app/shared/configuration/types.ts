@@ -85,6 +85,7 @@ export interface IFieldStack {
   description?: string;
   limits?: ILimits;
   ui_options?: IUIoptions;
+  group_config?: { [key: string]: boolean };
 }
 
 /**
@@ -109,8 +110,8 @@ export interface IConfig {
 export interface IConfigAttr {
   [group: string]: { active?: boolean };
 
-  group_keys?: { [key: string]: boolean };
-  custom_group_keys?: { [key: string]: boolean };
+  group_keys?: { [key: string]: { [key: string]: boolean }};
+  custom_group_keys?: { [key: string]: { [key: string]: boolean }};
 }
 
 //#region Modified data for ngForm build

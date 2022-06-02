@@ -12,12 +12,15 @@
 """
 Common functions and helpers for testing ADCM
 """
-from typing import List, Tuple, Callable, Union, Iterable
+import json
+from typing import List, Tuple, Callable, Union, Iterable, Dict, Collection
 
 import allure
 import pytest
 
 from _pytest.outcomes import Failed
+from adcm_pytest_plugin.utils import catch_failed
+from adcm_pytest_plugin.docker_utils import get_file_from_container, ADCM
 from coreapi.exceptions import ErrorMessage
 from adcm_client.base import ObjectNotFound, PagingEnds
 from adcm_client.objects import (
@@ -35,7 +38,6 @@ from adcm_client.objects import (
     Group,
     User,
 )
-from adcm_pytest_plugin.utils import catch_failed
 
 
 BEFORE_UPGRADE_DEFAULT_STATE = None
@@ -125,3 +127,30 @@ def create_config_group_and_add_host(
         for host in hosts:
             group.host_add(host)
         return group
+
+
+def get_inventory_file(adcm_fs: ADCM, task_id: int) -> dict:
+    """Get inventory.json file from ADCM as dict"""
+    file = get_file_from_container(adcm_fs, f'/adcm/data/run/{task_id}/', 'inventory.json')
+    content = file.read().decode('utf8')
+    return json.loads(content)
+
+
+# !===== HC ACL builder =====!
+
+
+def build_hc_for_hc_acl_action(
+    cluster: Cluster, add: Collection[Tuple[Component, Host]] = (), remove: Collection[Tuple[Component, Host]] = ()
+) -> List[Dict[str, int]]:
+    """
+    Build a `hc` argument for a `hc_acl` action run based on cluster's hostcomponent and add/remove "directives".
+    Result contains only unique entries (because of the HC nature).
+    """
+    hostcomponent = {(hc['service_id'], hc['component_id'], hc['host_id']) for hc in cluster.hostcomponent()}
+    to_remove = {(component.service_id, component.id, from_host.id) for component, from_host in remove}
+    hostcomponent.difference_update(to_remove)
+    to_add = {(component.service_id, component.id, to_host.id) for component, to_host in add}
+    return [
+        {'service_id': service_id, 'component_id': component_id, 'host_id': host_id}
+        for service_id, component_id, host_id in (hostcomponent | to_add)
+    ]

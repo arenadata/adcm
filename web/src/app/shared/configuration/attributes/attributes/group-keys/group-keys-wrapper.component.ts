@@ -82,7 +82,7 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
     if (!this.groupControl || !this.parameterControl()) return;
 
     path.forEach((part) => {
-      enabled = enabled[part];
+      enabled = this._getFieldValue(enabled, part);
     });
 
     if (!enabled) {
@@ -119,5 +119,11 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
     if (this.field?.disabled) {
       this.field.disabled = this._disabled;
     }
+  }
+
+  private _getFieldValue(attr, key) {
+    if (attr?.fields) return attr?.fields[key]
+
+    return attr[key];
   }
 }

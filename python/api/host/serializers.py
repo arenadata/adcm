@@ -20,7 +20,7 @@ from api.utils import hlink, check_obj, filter_actions, CommonAPIURL, ObjectURL
 from cm.adcm_config import get_main_info
 from cm.api import add_host
 from cm.errors import AdcmEx
-from cm.models import HostProvider, Prototype, Action
+from cm.models import HostProvider, Prototype, Action, MaintenanceModeType
 from cm.stack import validate_name
 from cm.status_api import get_host_status
 
@@ -31,8 +31,9 @@ class HostSerializer(serializers.Serializer):
     prototype_id = serializers.IntegerField(help_text='id of host type')
     provider_id = serializers.IntegerField()
     fqdn = serializers.CharField(help_text='fully qualified domain name')
-    description = serializers.CharField(required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
     state = serializers.CharField(read_only=True)
+    maintenance_mode = serializers.ChoiceField(choices=MaintenanceModeType.choices, read_only=True)
     url = ObjectURL(read_only=True, view_name='host-details')
 
     def validate_prototype_id(self, prototype_id):
@@ -68,6 +69,17 @@ class HostDetailSerializer(HostSerializer):
 
     def get_status(self, obj):
         return get_host_status(obj)
+
+
+class HostUpdateSerializer(HostDetailSerializer):
+    maintenance_mode = serializers.ChoiceField(choices=MaintenanceModeType.choices)
+
+    def update(self, instance, validated_data):
+        instance.maintenance_mode = validated_data.get(
+            'maintenance_mode', instance.maintenance_mode
+        )
+        instance.save()
+        return instance
 
 
 class ClusterHostSerializer(HostSerializer):

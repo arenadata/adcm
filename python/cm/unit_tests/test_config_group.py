@@ -26,7 +26,11 @@ class GroupConfigTest(TestCase):
         self.cluster_attr = {'activatable_group': {'active': True}}
         self.cluster = utils.gen_cluster()
         utils.gen_prototype_config(
-            prototype=self.cluster.prototype, name='group', field_type='group', display_name='group'
+            prototype=self.cluster.prototype,
+            name='group',
+            field_type='group',
+            display_name='group',
+            group_customization=True,
         )
         utils.gen_prototype_config(
             prototype=self.cluster.prototype,
@@ -34,12 +38,15 @@ class GroupConfigTest(TestCase):
             field_type='string',
             subname='string',
             display_name='string',
+            group_customization=True,
         )
         utils.gen_prototype_config(
             prototype=self.cluster.prototype,
             name='activatable_group',
             field_type='group',
             display_name='activatable_group',
+            limits='{"activatable": true, "active": true}',
+            group_customization=True,
         )
         utils.gen_prototype_config(
             prototype=self.cluster.prototype,
@@ -47,6 +54,7 @@ class GroupConfigTest(TestCase):
             field_type='integer',
             subname='integer',
             display_name='integer',
+            group_customization=True,
         )
         self.cluster.config = utils.gen_config(config=self.cluster_config, attr=self.cluster_attr)
         self.cluster.save()
@@ -61,32 +69,45 @@ class GroupConfigTest(TestCase):
         """Test create groups for objects"""
         group = self.create_group('group', self.cluster.id, 'cluster')
         parent_cl = ConfigLog.objects.get(id=self.cluster.config.current)
-        parent_cl.save()
         cl = ConfigLog.objects.get(id=group.config.current)
         self.assertDictEqual(parent_cl.config, cl.config)
         self.assertDictEqual(parent_cl.attr, {'activatable_group': {'active': True}})
         cl_attr = {
             'activatable_group': {'active': True},
-            'group_keys': {'group': {'string': False}, 'activatable_group': {'integer': False}},
+            'group_keys': {
+                'group': {'value': None, 'fields': {'string': False}},
+                'activatable_group': {'value': False, 'fields': {'integer': False}},
+            },
             'custom_group_keys': {
-                'group': {'string': False},
-                'activatable_group': {'integer': False},
+                'group': {'value': True, 'fields': {'string': True}},
+                'activatable_group': {'value': True, 'fields': {'integer': True}},
             },
         }
         self.assertDictEqual(cl.attr, cl_attr)
 
-    def test_get_group_config(self):
-        """Test get_group_config() method"""
+    def test_get_diff_config_attr(self):
+        """Test get_diff_config_attr() method"""
         group = self.create_group('group', self.cluster.id, 'cluster')
-        self.assertDictEqual(group.get_diff_config(), {})
+        diff_config, diff_attr = group.get_diff_config_attr()
+        self.assertDictEqual(diff_config, {})
+        self.assertDictEqual(diff_attr, {})
         cl = ConfigLog.objects.get(id=group.config.current)
         cl.config = {'group': {'string': 'str'}, 'activatable_group': {'integer': 1}}
         cl.attr = {
             'activatable_group': {'active': True},
-            'group_keys': {'group': {'string': True}, 'activatable_group': {'integer': False}},
+            'group_keys': {
+                'group': {'value': None, 'fields': {'string': True}},
+                'activatable_group': {'value': False, 'fields': {'integer': False}},
+            },
+            'custom_group_keys': {
+                'group': {'value': True, 'fields': {'string': True}},
+                'activatable_group': {'value': True, 'fields': {'integer': True}},
+            },
         }
         cl.save()
-        self.assertDictEqual(group.get_diff_config(), {'group': {'string': 'str'}})
+        diff_config, diff_attr = group.get_diff_config_attr()
+        self.assertDictEqual(diff_config, {'group': {'string': 'str'}})
+        self.assertDictEqual(diff_attr, {})
 
     def test_get_config_spec(self):
         """Test get_config_spec() method"""
@@ -94,24 +115,24 @@ class GroupConfigTest(TestCase):
         spec = {
             'group': {
                 'type': 'group',
-                'group_customization': False,
+                'group_customization': True,
                 'limits': {},
                 'fields': {
                     'string': {
                         'type': 'string',
-                        'group_customization': False,
+                        'group_customization': True,
                         'limits': {},
                     }
                 },
             },
             'activatable_group': {
                 'type': 'group',
-                'group_customization': False,
-                'limits': {},
+                'group_customization': True,
+                'limits': '{"activatable": true, "active": true}',
                 'fields': {
                     'integer': {
                         'type': 'integer',
-                        'group_customization': False,
+                        'group_customization': True,
                         'limits': {},
                     }
                 },
@@ -148,18 +169,36 @@ class GroupConfigTest(TestCase):
             group_customization=True,
         )
         test_group_keys = {
-            'activatable_group': {'integer': False},
-            'group': {'string': False},
+            'activatable_group': {
+                'value': False,
+                'fields': {'integer': False},
+            },
+            'group': {
+                'value': None,
+                'fields': {'string': False},
+            },
             'level1_1': False,
             'level1_2': False,
-            'level1_3': {'level2_1': False},
+            'level1_3': {
+                'value': None,
+                'fields': {'level2_1': False},
+            },
         }
         test_custom_group_keys = {
-            'activatable_group': {'integer': False},
-            'group': {'string': False},
+            'activatable_group': {
+                'value': True,
+                'fields': {'integer': True},
+            },
+            'group': {
+                'value': True,
+                'fields': {'string': True},
+            },
             'level1_1': True,
             'level1_2': False,
-            'level1_3': {'level2_1': True},
+            'level1_3': {
+                'value': False,
+                'fields': {'level2_1': True},
+            },
         }
         group_keys, custom_group_keys = group.create_group_keys(group.get_config_spec())
         self.assertDictEqual(test_group_keys, group_keys)
@@ -168,17 +207,31 @@ class GroupConfigTest(TestCase):
     def test_update_parent_config(self):
         """Test update parent config for group"""
         group = self.create_group('group', self.cluster.id, 'cluster')
+
         cl = ConfigLog.objects.get(id=group.config.current)
-        cl.config = {'group': {'string': 'str'}, 'activatable_group': {'integer': 1}}
+        parent_cl = ConfigLog.objects.get(id=self.cluster.config.current)
+
+        # change group.string
+
+        cl.config = {
+            'group': {'string': 'str'},
+            'activatable_group': {'integer': 1},
+        }
         cl.attr = {
             'activatable_group': {'active': True},
-            'group_keys': {'group': {'string': True}, 'activatable_group': {'integer': False}},
+            'group_keys': {
+                'group': {'value': None, 'fields': {'string': True}},
+                'activatable_group': {'value': False, 'fields': {'integer': False}},
+            },
+            'custom_group_keys': {
+                'group': {'value': True, 'fields': {'string': True}},
+                'activatable_group': {'value': True, 'fields': {'integer': True}},
+            },
         }
         cl.save()
-        parent_cl = ConfigLog.objects.get(id=self.cluster.config.current)
+
         parent_cl.config = {'group': {'string': 'string'}, 'activatable_group': {'integer': 100}}
         parent_cl.save()
-
         group.refresh_from_db()
         cl = ConfigLog.objects.get(id=group.config.current)
         self.assertDictEqual(
@@ -188,7 +241,6 @@ class GroupConfigTest(TestCase):
         parent_cl.config = {'group': {'string': 'string'}, 'activatable_group': {'integer': 100}}
         parent_cl.attr = {'activatable_group': {'active': False}}
         parent_cl.save()
-
         group.refresh_from_db()
         cl = ConfigLog.objects.get(id=group.config.current)
         self.assertDictEqual(
@@ -197,11 +249,45 @@ class GroupConfigTest(TestCase):
         self.assertDictEqual(
             cl.attr,
             {
-                'activatable_group': {'active': True},
-                'group_keys': {'group': {'string': True}, 'activatable_group': {'integer': False}},
+                'activatable_group': {'active': False},
+                'group_keys': {
+                    'group': {'value': None, 'fields': {'string': True}},
+                    'activatable_group': {'value': False, 'fields': {'integer': False}},
+                },
                 'custom_group_keys': {
-                    'group': {'string': False},
-                    'activatable_group': {'integer': False},
+                    'group': {'value': True, 'fields': {'string': True}},
+                    'activatable_group': {'value': True, 'fields': {'integer': True}},
+                },
+            },
+        )
+
+        cl.attr = {
+            'activatable_group': {'active': True},
+            'group_keys': {
+                'group': {'value': None, 'fields': {'string': True}},
+                'activatable_group': {'value': True, 'fields': {'integer': False}},
+            },
+            'custom_group_keys': {
+                'group': {'value': True, 'fields': {'string': True}},
+                'activatable_group': {'value': True, 'fields': {'integer': True}},
+            },
+        }
+        cl.save()
+        parent_cl.attr = {'activatable_group': {'active': False}}
+        parent_cl.save()
+        group.refresh_from_db()
+        cl = ConfigLog.objects.get(id=group.config.current)
+        self.assertDictEqual(
+            cl.attr,
+            {
+                'activatable_group': {'active': True},
+                'group_keys': {
+                    'group': {'value': None, 'fields': {'string': True}},
+                    'activatable_group': {'value': True, 'fields': {'integer': False}},
+                },
+                'custom_group_keys': {
+                    'group': {'value': True, 'fields': {'string': True}},
+                    'activatable_group': {'value': True, 'fields': {'integer': True}},
                 },
             },
         )
@@ -214,8 +300,8 @@ class GroupConfigTest(TestCase):
         attr.update(
             {
                 'custom_group_keys': {
-                    'group': {'string': True},
-                    'activatable_group': {'integer': True},
+                    'group': {'value': False, 'fields': {'string': False}},
+                    'activatable_group': {'value': False, 'fields': {'integer': False}},
                 }
             }
         )
@@ -223,3 +309,100 @@ class GroupConfigTest(TestCase):
             obj_ref=cl_current.obj_ref, config=cl_current.config, attr=attr
         )
         self.assertDictEqual(cl_current.attr, cl_new.attr)
+
+    def test_upgrade_cluster_config(self):
+        """Test upgrade cluster with GroupConfig"""
+
+        group = self.create_group('group', self.cluster.id, 'cluster')
+        cl = ConfigLog.objects.get(id=group.config.current)
+        self.assertDictEqual(
+            cl.config,
+            {
+                'group': {'string': 'string'},
+                'activatable_group': {'integer': 1},
+            },
+        )
+        self.assertDictEqual(
+            cl.attr,
+            {
+                'activatable_group': {'active': True},
+                'group_keys': {
+                    'group': {'fields': {'string': False}, 'value': None},
+                    'activatable_group': {'fields': {'integer': False}, 'value': False},
+                },
+                'custom_group_keys': {
+                    'group': {'fields': {'string': True}, 'value': True},
+                    'activatable_group': {'fields': {'integer': True}, 'value': True},
+                },
+            },
+        )
+
+        utils.gen_prototype_config(
+            prototype=self.cluster.prototype,
+            name='float',
+            field_type='float',
+            display_name='float',
+            group_customization=True,
+        )
+        utils.gen_prototype_config(
+            prototype=self.cluster.prototype,
+            name='group',
+            field_type='float',
+            subname='float',
+            display_name='float',
+            group_customization=True,
+        )
+        utils.gen_prototype_config(
+            prototype=self.cluster.prototype,
+            name='activatable_group',
+            field_type='float',
+            subname='float',
+            display_name='float',
+            group_customization=True,
+        )
+
+        parent_config = {
+            'float': 0.1,
+            'group': {'string': 'string', 'float': 0.1},
+            'activatable_group': {'integer': 1, 'float': 0.1},
+        }
+        parent_attr = {'activatable_group': {'active': True}}
+        ConfigLog.objects.create(
+            obj_ref=self.cluster.config,
+            description='upgrade',
+            config=parent_config,
+            attr=parent_attr,
+        )
+
+        group.refresh_from_db()
+        cl = ConfigLog.objects.get(id=group.config.current)
+        self.assertDictEqual(
+            cl.config,
+            {
+                'float': 0.1,
+                'group': {'string': 'string', 'float': 0.1},
+                'activatable_group': {'integer': 1, 'float': 0.1},
+            },
+        )
+        self.assertDictEqual(
+            cl.attr,
+            {
+                'activatable_group': {'active': True},
+                'group_keys': {
+                    'float': False,
+                    'group': {'fields': {'string': False, 'float': False}, 'value': None},
+                    'activatable_group': {
+                        'fields': {'integer': False, 'float': False},
+                        'value': False,
+                    },
+                },
+                'custom_group_keys': {
+                    'float': True,
+                    'group': {'fields': {'string': True, 'float': True}, 'value': True},
+                    'activatable_group': {
+                        'fields': {'integer': True, 'float': True},
+                        'value': True,
+                    },
+                },
+            },
+        )

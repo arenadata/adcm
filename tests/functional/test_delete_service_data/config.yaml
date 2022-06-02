@@ -12,7 +12,11 @@
 ---
 - type: service
   name: zookeeper
-  version: &zookeeper_version 3.4.10
+  version: 3.4.10
+
+  config:
+    - name: some_param
+      type: integer
 
 - type: cluster
   name: Nothing

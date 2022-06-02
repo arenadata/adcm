@@ -25,6 +25,9 @@ urlpatterns = [
     path(
         'load/servicemap/', views.LoadBundle.as_view({'put': 'servicemap'}), name='load-servicemap'
     ),
+    path(
+        'load/hostmap/', views.LoadBundle.as_view({'put': 'hostmap'}), name='load-hostmap'
+    ),
     path('bundle/', include([
         path('', views.BundleList.as_view(), name='bundle'),
         path('<int:bundle_id>/', include([

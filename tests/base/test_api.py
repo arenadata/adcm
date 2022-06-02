@@ -19,8 +19,6 @@
 import json
 import os
 import string
-
-# import time
 import unittest
 from uuid import uuid4
 
@@ -175,7 +173,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         return (ssh_bundle_id, provider_id, host_id)
 
     def test_access(self):
-        api = ['cluster', 'host', 'job', 'task', 'stack']
+        api = ['cluster', 'host', 'job', 'task']
         for path in api:
             response = requests.get(self.url + '/' + path + '/')
             self.assertEqual(response.status_code, 401, msg=response.text)
@@ -198,6 +196,12 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
 
     def test_schema(self):
         response = self.api_get('/schema/')
+        self.assertEqual(response.status_code, 200, msg=response.text)
+
+    def test_docs(self):
+        response = self.api_get('/docs/')
+        self.assertEqual(response.status_code, 200, msg=response.text)
+        response = self.api_get('/docs/md/')
         self.assertEqual(response.status_code, 200, msg=response.text)
 
     def test_cluster(self):  # pylint: disable=too-many-statements
@@ -366,8 +370,16 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.json()['fqdn'], host)
 
         response = self.api_put('/host/' + str(host_id) + '/', {})
-        self.assertEqual(response.status_code, 405, msg=response.text)
-        self.assertEqual(response.json()['detail'], 'Method "PUT" not allowed.')
+        self.assertEqual(response.status_code, 400, msg=response.text)
+        self.assertEqual(
+            response.json(),
+            {
+                'prototype_id': ['This field is required.'],
+                'provider_id': ['This field is required.'],
+                'fqdn': ['This field is required.'],
+                'maintenance_mode': ['This field is required.'],
+            },
+        )
 
         response = self.api_post('/host/', {'fqdn': host, 'prototype_id': host_proto, 'provider_id': provider_id})
         self.assertEqual(response.status_code, 409, msg=response.text)
