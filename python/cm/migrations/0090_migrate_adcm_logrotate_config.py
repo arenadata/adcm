@@ -20,7 +20,11 @@ def migrate_logrotate_config(apps, schema_editor):
     ADCM = apps.get_model('cm', 'ADCM')
     ConfigLog = apps.get_model('cm', 'ConfigLog')
 
-    adcm_object = ADCM.objects.get(id=1)
+    try:
+        adcm_object = ADCM.objects.get(id=1)
+    except ADCM.DoesNotExist:
+        # run on a clean database, no migration required
+        return
 
     adcm_configlog = ConfigLog.objects.get(
         obj_ref=adcm_object.config, id=adcm_object.config.current
