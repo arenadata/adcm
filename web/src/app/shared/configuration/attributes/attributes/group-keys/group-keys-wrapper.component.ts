@@ -62,6 +62,10 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
     });
   }
 
+  repairControlsAfterSave(currentParametersForm) {
+    this._resolveAndSetupControls(this.attributeForm, currentParametersForm, this.fieldOptions);
+  }
+
   private disableIfReadOnly() {
     if (this.field?.options?.read_only) {
       this.groupControl.disable();
