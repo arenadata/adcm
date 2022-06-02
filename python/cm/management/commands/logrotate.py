@@ -220,12 +220,14 @@ class Command(BaseCommand):
                 'info',
             )
             if days_delta_db > 0:
-                rotation_jobs_on_db = JobLog.objects.filter(finish_date__lt=threshold_date_db)
-                if rotation_jobs_on_db:
-                    task_ids = [job['task_id'] for job in rotation_jobs_on_db.values('task_id')]
+                target_tasklogs = TaskLog.objects.filter(
+                    finish_date__lte=threshold_date_db, status__in=['success', 'failed']
+                )
+                if target_tasklogs:
                     with transaction.atomic():
-                        rotation_jobs_on_db.delete()
-                        TaskLog.objects.filter(id__in=task_ids).delete()
+                        target_tasklogs.delete()
+                        # valid as long as `on_delete=models.SET_NULL` in JobLog.task field
+                        JobLog.objects.filter(task__isnull=True).delete()
 
                 self.__log('db JobLog rotated', 'info')
 
