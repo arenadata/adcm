@@ -13,6 +13,7 @@
 - type: cluster
   version: 3
   name: test_cluster
+  config_group_customization: true
 
   config: &config
     - name: param
@@ -42,11 +43,13 @@
 - type: service
   name: test_service
   version: 2
+  config_group_customization: true
 
   config: *config
   actions: *actions
 
   components:
     test_component:
+      config_group_customization: true
       config: *config
       actions: *actions

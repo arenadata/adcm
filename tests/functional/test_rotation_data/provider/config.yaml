@@ -13,6 +13,7 @@
 - type: provider
   version: 3
   name: test_provider
+  config_group_customization: true
 
   config: &config
     - name: param
