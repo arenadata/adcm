@@ -169,19 +169,24 @@ class Command(BaseCommand):
                 for cl_pk in (cl.obj_ref.current, cl.obj_ref.previous):
                     exclude_pks.add(cl_pk)
             target_configlogs = target_configlogs.exclude(pk__in=exclude_pks)
-            count = target_configlogs.count()
+
+            target_configlog_ids = set(i[0] for i in target_configlogs.values_list('id'))
+            target_objectconfig_ids = set(
+                cl.obj_ref.id
+                for cl in target_configlogs
+                if not self.__has_related_records(cl.obj_ref)
+            )
 
             with transaction.atomic():
                 DummyData.objects.filter(id=1).update(date=timezone.now())
-                for cl in target_configlogs:
-                    if cl.obj_ref and not self.__has_related_records(cl.obj_ref):
-                        cl.obj_ref.delete()
-                    with suppress(
-                        Exception
-                    ):  # may be already deleted because of `obj_conf.delete() CASCADE`
-                        cl.delete()
+                ConfigLog.objects.filter(id__in=target_configlog_ids).delete()
+                ObjectConfig.objects.filter(id__in=target_objectconfig_ids).delete()
 
-            self.__log(f'Deleted {count} ConfigLogs', 'info')
+            self.__log(
+                f'Deleted {len(target_configlog_ids)} ConfigLogs and '
+                f'{len(target_objectconfig_ids)} ObjectConfigs',
+                'info',
+            )
 
         except Exception as e:  # pylint: disable=broad-except
             self.__log('Error in ConfigLog rotation', 'warning')
@@ -251,5 +256,6 @@ class Command(BaseCommand):
             self.__log(e, 'exception')
 
     def __log(self, msg, method='debug'):
+        self.stdout.write(msg)
         if self.verbose:
             getattr(log, method)(msg)
