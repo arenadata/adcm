@@ -16,7 +16,6 @@ import shutil
 
 from enum import Enum
 
-from contextlib import suppress
 from datetime import timedelta, datetime
 from subprocess import check_output, CalledProcessError, STDOUT
 
