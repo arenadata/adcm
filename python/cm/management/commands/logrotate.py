@@ -235,6 +235,7 @@ class Command(BaseCommand):
                 )
                 if target_tasklogs:
                     with transaction.atomic():
+                        DummyData.objects.filter(id=1).update(date=timezone.now())
                         target_tasklogs.delete()
                         # valid as long as `on_delete=models.SET_NULL` in JobLog.task field
                         JobLog.objects.filter(task__isnull=True).delete()
