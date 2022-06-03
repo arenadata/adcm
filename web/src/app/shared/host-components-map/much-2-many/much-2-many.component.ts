@@ -11,8 +11,9 @@
 // limitations under the License.
 import { AfterViewChecked, ChangeDetectorRef, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup } from '@angular/forms';
-import { isNumber } from '@app/core/types';
+import { IActionParameter, isNumber } from '@app/core/types';
 import { CompTile, Tile } from '../types';
+import { StatusType } from "@app/components/maintenance-mode-button/maintenance-mode-button.component";
 
 @Component({
   selector: 'app-much-2-many',
@@ -21,11 +22,13 @@ import { CompTile, Tile } from '../types';
 })
 export class Much2ManyComponent implements AfterViewChecked {
   isShow = false;
+  statusType = StatusType;
 
   @Output() clickToTitleEvt: EventEmitter<any> = new EventEmitter();
   @Output() clearRelationEvt: EventEmitter<{ relation: Tile; model: Tile }> = new EventEmitter();
   @Input() model: Tile;
   @Input() form: FormGroup;
+  @Input() actionParameters: IActionParameter[];
 
   constructor(private cdRef : ChangeDetectorRef) {}
 
@@ -36,6 +39,10 @@ export class Much2ManyComponent implements AfterViewChecked {
   isDisabled() {
     if (this.model.actions) return !this.model.actions.length;
     return this.model.disabled;
+  }
+
+  isHostDisabled() {
+    return this.model?.mm === this.statusType.On;
   }
 
   isError() {
@@ -81,5 +88,13 @@ export class Much2ManyComponent implements AfterViewChecked {
     const [a, b] = this.model.limit,
       lim = isNumber(b) ? b : a === 'odd' ? 1 : a === 'depend' ? 0 : a;
     return `${this.model.relations.length}${lim !== 0 ? ` / ${lim}` : ''}`;
+  }
+
+  tooltip() {
+    if (this.isHostDisabled()) {
+      return 'Host is in "Maintenance mode"';
+    }
+
+    return null;
   }
 }
