@@ -16,7 +16,7 @@ Test "scripts" section of bundle's "upgrade" section
 
 import json
 import os
-from typing import Set, Tuple
+from typing import Set, Tuple, Optional
 
 import allure
 import pytest
@@ -364,8 +364,42 @@ class TestSuccessfulUpgrade:
             check_cluster_objects_configs_equal_bundle_default(old_cluster, new_bundle)
 
 
+# pylint: disable-next=too-few-public-methods
+class FailedUploadMixin:
+    """Useful methods for upload failures tests"""
+
+    @allure.step('Upload new version of cluster bundle')
+    def _upload_new_version(self, client: ADCMClient, name: str, directories: tuple = (FAILURES_DIR,)) -> Bundle:
+        """Upload new version of bundle based on the given bundle file_name"""
+        return client.upload_from_fs(get_data_dir(__file__, *directories, name))
+
+    @allure.step('Upgrade cluster and expect it to enter the "{state}" state')
+    def _upgrade_and_expect_state(self, cluster: Cluster, state: str, name: Optional[str] = None, **kwargs):
+        """
+        Upgrade cluster to a new version (expect upgrade to fail)
+        and check if it's state is correct
+        """
+        task = (cluster.upgrade(name=name) if name is not None else cluster.upgrade()).do(**kwargs)
+        assert task.wait() == 'failed', 'Upgrade action should have failed'
+        check_state(cluster, state)
+
+    @allure.step('Check that cluster have "before_upgrade" equal to {state}')
+    def _check_before_upgrade_state(self, cluster: Cluster, state: str):
+        cluster.reread()
+        assert (
+            actual_state := cluster.before_upgrade['state']
+        ) == state, f'"before_upgrade" should be {state}, not {actual_state}'
+
+    @allure.step('Check list of available actions on cluster')
+    def _check_action_list(self, cluster: Cluster, action_names: Set[str]):
+        """Check that action list is equal to given one (by names)"""
+        cluster.reread()
+        presented_action_names = {a.name for a in cluster.action_list()}
+        sets_are_equal(presented_action_names, action_names, message='Incorrect action list')
+
+
 @pytest.mark.parametrize('old_cluster', [(FAILURES_DIR, 'old')], indirect=True, ids=['failures_old_bundle'])
-class TestFailedUpgradeAction:
+class TestFailedUpgradeAction(FailedUploadMixin):
     """Test cases when upgrade action is failed during execution"""
 
     def test_fail_before_switch(self, sdk_client_fs, old_cluster):
@@ -432,24 +466,10 @@ class TestFailedUpgradeAction:
         self._upload_new_version(sdk_client_fs, 'upgrade_action_has_on_fail')
         self._upgrade_and_expect_state(old_cluster, 'something_failed', name=upgrade_name)
 
-    def test_hc_acl_fail_before_switch(self, sdk_client_fs, old_cluster, two_hosts):
-        """
-        Test an upgrade with `hc_acl` failed before the bundle switch
-        """
-        host_1, host_2 = two_hosts
 
-        new_bundle = self._upload_new_version(sdk_client_fs, 'hc_acl', ())
-        hc_argument = _set_hc_and_prepare_new_hc_for_upgrade_action(old_cluster, new_bundle, host_1, host_2)
-        expected_hc = _get_hc_names(old_cluster.hostcomponent())
-
-        self._upgrade_and_expect_state(old_cluster, 'created', name='fail before switch', hc=hc_argument)
-
-        _check_service_is_in_cluster(old_cluster, TEST_SERVICE_NAME)
-        _check_service_is_in_cluster(old_cluster, SERVICE_WILL_BE_REMOVED)
-        _check_service_is_not_in_cluster(old_cluster, NEW_SERVICE)
-
-        actual_hc = _get_hc_names(old_cluster.hostcomponent())
-        sets_are_equal(actual_hc, expected_hc, 'The hostcomponent from before the upgrade was expected')
+@create_cluster_from_old_bundle
+class TestUpgradeWithHCFailures(FailedUploadMixin):
+    """Test upgrades failures with `hc_acl` in upgrade"""
 
     @pytest.mark.parametrize(
         'upgrade_name', ['fail after switch', 'fail on first action after switch'], ids=lambda x: x.replace(' ', '_')
@@ -473,34 +493,24 @@ class TestFailedUpgradeAction:
         actual_hc = _get_hc_names(old_cluster.hostcomponent())
         sets_are_equal(actual_hc, expected_hc, 'The hostcomponent from hc argument for an upgrade')
 
-    @allure.step('Upload new version of cluster bundle')
-    def _upload_new_version(self, client: ADCMClient, name: str, directories: tuple = (FAILURES_DIR, )) -> Bundle:
-        """Upload new version of bundle based on the given bundle file_name"""
-        return client.upload_from_fs(get_data_dir(__file__, *directories, name))
-
-    @allure.step('Upgrade cluster and expect it to enter the "{state}" state')
-    def _upgrade_and_expect_state(self, cluster: Cluster, state: str, **kwargs):
+    def test_hc_acl_fail_before_switch(self, sdk_client_fs, old_cluster, two_hosts):
         """
-        Upgrade cluster to a new version (expect upgrade to fail)
-        and check if it's state is correct
+        Test an upgrade with `hc_acl` failed before the bundle switch
         """
-        task = cluster.upgrade(**kwargs).do()
-        assert task.wait() == 'failed', 'Upgrade action should have failed'
-        check_state(cluster, state)
+        host_1, host_2 = two_hosts
 
-    @allure.step('Check that cluster have "before_upgrade" equal to {state}')
-    def _check_before_upgrade_state(self, cluster: Cluster, state: str):
-        cluster.reread()
-        assert (
-            actual_state := cluster.before_upgrade['state']
-        ) == state, f'"before_upgrade" should be {state}, not {actual_state}'
+        new_bundle = self._upload_new_version(sdk_client_fs, 'hc_acl', ())
+        hc_argument = _set_hc_and_prepare_new_hc_for_upgrade_action(old_cluster, new_bundle, host_1, host_2)
+        expected_hc = _get_hc_names(old_cluster.hostcomponent())
 
-    @allure.step('Check list of available actions on cluster')
-    def _check_action_list(self, cluster: Cluster, action_names: Set[str]):
-        """Check that action list is equal to given one (by names)"""
-        cluster.reread()
-        presented_action_names = {a.name for a in cluster.action_list()}
-        sets_are_equal(presented_action_names, action_names, message='Incorrect action list')
+        self._upgrade_and_expect_state(old_cluster, 'created', name='fail before switch', hc=hc_argument)
+
+        _check_service_is_in_cluster(old_cluster, TEST_SERVICE_NAME)
+        _check_service_is_in_cluster(old_cluster, SERVICE_WILL_BE_REMOVED)
+        _check_service_is_not_in_cluster(old_cluster, NEW_SERVICE)
+
+        actual_hc = _get_hc_names(old_cluster.hostcomponent())
+        sets_are_equal(actual_hc, expected_hc, 'The hostcomponent from before the upgrade was expected')
 
 
 # pylint: disable-next=too-few-public-methods
