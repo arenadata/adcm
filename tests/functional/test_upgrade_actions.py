@@ -31,7 +31,7 @@ from tests.functional.tools import build_hc_for_hc_acl_action, get_inventory_fil
 from tests.library.assertions import sets_are_equal
 from tests.library.errorcodes import INVALID_UPGRADE_DEFINITION, INVALID_OBJECT_DEFINITION, INVALID_ACTION_DEFINITION
 
-# pylint: disable=redefined-outer-name, no-self-use
+# pylint: disable=redefined-outer-name
 
 TEST_SERVICE_NAME = 'test_service'
 FAILURES_DIR = 'upgrade_failures'
@@ -438,7 +438,7 @@ class TestFailedUpgradeAction:
         """
         host_1, host_2 = two_hosts
 
-        new_bundle = self._upload_new_version(sdk_client_fs, 'hc_acl')
+        new_bundle = self._upload_new_version(sdk_client_fs, 'hc_acl', ())
         hc_argument = _set_hc_and_prepare_new_hc_for_upgrade_action(old_cluster, new_bundle, host_1, host_2)
         expected_hc = _get_hc_names(old_cluster.hostcomponent())
 
@@ -461,7 +461,7 @@ class TestFailedUpgradeAction:
         host_1, host_2 = two_hosts
         expected_hc = {(host_2.fqdn, TEST_SERVICE_NAME, 'test_component')}
 
-        new_bundle = self._upload_new_version(sdk_client_fs, 'hc_acl')
+        new_bundle = self._upload_new_version(sdk_client_fs, 'hc_acl', ())
         hc_argument = _set_hc_and_prepare_new_hc_for_upgrade_action(old_cluster, new_bundle, host_1, host_2)
 
         self._upgrade_and_expect_state(old_cluster, 'created', name=upgrade_name, hc=hc_argument)
@@ -474,9 +474,9 @@ class TestFailedUpgradeAction:
         sets_are_equal(actual_hc, expected_hc, 'The hostcomponent from hc argument for an upgrade')
 
     @allure.step('Upload new version of cluster bundle')
-    def _upload_new_version(self, client: ADCMClient, name: str) -> Bundle:
+    def _upload_new_version(self, client: ADCMClient, name: str, directories: tuple = (FAILURES_DIR, )) -> Bundle:
         """Upload new version of bundle based on the given bundle file_name"""
-        return client.upload_from_fs(get_data_dir(__file__, FAILURES_DIR, name))
+        return client.upload_from_fs(get_data_dir(__file__, *directories, name))
 
     @allure.step('Upgrade cluster and expect it to enter the "{state}" state')
     def _upgrade_and_expect_state(self, cluster: Cluster, state: str, **kwargs):
