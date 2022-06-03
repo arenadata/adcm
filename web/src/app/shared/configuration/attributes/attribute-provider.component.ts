@@ -8,8 +8,8 @@ import {
   ContentChild,
   ContentChildren,
   HostBinding,
-  Input,
-  QueryList,
+  Input, OnChanges,
+  QueryList, SimpleChanges,
   TemplateRef,
   ViewChild,
   ViewContainerRef
@@ -31,7 +31,7 @@ import { CONFIG_FIELD, FieldComponent } from '@app/shared/configuration/field/fi
   `,
   styleUrls: ['./attribute-provider.component.scss'],
 })
-export class ConfigFieldAttributeProviderComponent implements AfterViewInit {
+export class ConfigFieldAttributeProviderComponent implements OnChanges, AfterViewInit {
 
   template: TemplateRef<any>;
 
@@ -58,7 +58,11 @@ export class ConfigFieldAttributeProviderComponent implements AfterViewInit {
 
   constructor(private componentFactoryResolver: ComponentFactoryResolver,
               public attributesSrv: AttributeService,
-              private _cdr: ChangeDetectorRef) {}
+              private _cdr: ChangeDetectorRef) {}F
+
+  ngOnChanges(changes: SimpleChanges) {
+    this.containerRef?.instance['repairControlsAfterSave'](changes['parametersForm']['currentValue']);
+  }
 
   ngAfterViewInit(): void {
     this.container.clear();
