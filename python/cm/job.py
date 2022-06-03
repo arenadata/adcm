@@ -124,8 +124,7 @@ def prepare_task(
 
         task = create_task(action, obj, conf, attr, old_hc, hosts, verbose, post_upgrade_hc)
 
-        if host_map:
-            api.save_hc(cluster, host_map)
+        api.save_hc(cluster, host_map)
 
         if conf:
             new_conf = process_config_and_attr(task, conf, attr, spec)
@@ -238,7 +237,7 @@ def cook_delta(  # pylint: disable=too-many-branches
         key = cook_comp_key(service.prototype.name, comp.prototype.name)
         add_to_dict(new, key, host.fqdn, host)
 
-    if not old:
+    if old is None:
         old = {}
         for hc in HostComponent.objects.filter(cluster=cluster):
             key = cook_comp_key(hc.service.prototype.name, hc.component.prototype.name)
