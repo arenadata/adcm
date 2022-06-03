@@ -68,10 +68,7 @@ def switch_components(cluster: Cluster, co: ClusterObject, new_co_proto: Prototy
             new_sc_prototype = Prototype.objects.get(
                 parent=new_co_proto, type='component', name=sc.prototype.name
             )
-            old_sc_prototype = sc.prototype
-            sc.prototype = new_sc_prototype
-            sc.save()
-            switch_config(sc, new_sc_prototype, old_sc_prototype)
+            switch_object(sc, new_sc_prototype)
         except Prototype.DoesNotExist:
             # sc.delete() whyyy?!
             pass
@@ -285,10 +282,13 @@ def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
 
 def update_components_after_bundle_switch(cluster, upgrade):
     if upgrade.action and upgrade.action.hostcomponentmap:
+        log.info('update component from %s after upgrade with hc_acl', cluster)
         for hc_acl in upgrade.action.hostcomponentmap:
-            proto_service = Prototype.obj.get(
+            proto_service = Prototype.objects.filter(
                 type='service', bundle=upgrade.bundle, name=hc_acl['service']
-            )
+            ).first()
+            if not proto_service:
+                continue
             try:
                 service = ClusterObject.objects.get(cluster=cluster, prototype=proto_service)
                 if not ServiceComponent.objects.filter(cluster=cluster, service=service).exists():
