@@ -18,6 +18,7 @@ from cm.models import (
     Host,
     HostComponent,
     ServiceComponent,
+    MaintenanceModeType,
 )
 
 
@@ -163,6 +164,7 @@ class Tree:
             parent_values = [
                 hc.component
                 for hc in HostComponent.objects.filter(host=node.value)
+                .exclude(host__maintenance_mode=MaintenanceModeType.On.value)
                 .select_related('component')
                 .all()
             ]
