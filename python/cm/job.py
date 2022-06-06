@@ -123,7 +123,7 @@ def prepare_task(
         DummyData.objects.filter(id=1).update(date=timezone.now())
 
         task = create_task(action, obj, conf, attr, old_hc, hosts, verbose, post_upgrade_hc)
-        if cluster:
+        if host_map or hasattr(action, 'upgrade'):
             api.save_hc(cluster, host_map)
 
         if conf:
