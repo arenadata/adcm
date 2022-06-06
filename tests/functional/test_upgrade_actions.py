@@ -305,46 +305,45 @@ class TestSuccessfulUpgrade:
 
         self._check_inventories_of_hc_acl_upgrade(adcm_fs, host_1, host_2)
 
-    @allure.step('Check inventories file')
+    @allure.step('Check inventory files')  # pylint: disable-next=too-many-locals
     def _check_inventories_of_hc_acl_upgrade(self, adcm: ADCM, host_1, host_2):
-        before_add_group = f'{TEST_SERVICE_NAME}.test_component.add'
-        before_remove_group = f'{SERVICE_WILL_BE_REMOVED}.willbegone.remove'
-        after_add_group_1 = f'{TEST_SERVICE_NAME}.second_component.add'
-        after_add_group_2 = f'{NEW_SERVICE}.some_component.add'
+        test_component_group = f'{TEST_SERVICE_NAME}.test_component'
+        before_add_group = f'{test_component_group}.add'
+        willbegone_group = f'{SERVICE_WILL_BE_REMOVED}.willbegone'
+        before_remove_group = f'{willbegone_group}.remove'
+
+        second_component_group = f'{TEST_SERVICE_NAME}.second_component'
+        after_add_group_1 = f'{second_component_group}.add'
+        some_component_group = f'{NEW_SERVICE}.some_component'
+        after_add_group_2 = f'{some_component_group}.add'
 
         with allure.step('Check inventory of the job before the bundle switch'):
             before_switch_inventory = get_inventory_file(adcm, 1)
             groups = before_switch_inventory['all']['children']
-            assert before_add_group in groups, f'Group {before_add_group} should be in {groups.keys()}'
-            assert before_remove_group in groups, f'Group {before_remove_group} should be in {groups.keys()}'
-            assert after_add_group_1 not in groups, f'Group {after_add_group_1} should not be in {groups.keys()}'
-            assert after_add_group_2 not in groups, f'Group {after_add_group_2} should not be in {groups.keys()}'
-            assert host_2.fqdn in (
-                hosts := groups[before_add_group]['hosts']
-            ), f'Host {host_2.fqdn} should be in group {before_add_group}, but not found in: {hosts}'
-            assert host_1.fqdn in (
-                hosts := groups[before_remove_group]['hosts']
-            ), f'Host {host_1.fqdn} should be in group {before_remove_group}, but not found in {hosts}'
+            for group_name in (before_add_group, before_remove_group, test_component_group):
+                self._check_group_is_presented(group_name, groups)
+            for group_name in (willbegone_group, after_add_group_1, after_add_group_2):
+                self._check_group_is_absent(group_name, groups)
+            self._check_host_is_in_group(host_2, before_add_group, groups)
+            self._check_host_is_in_group(host_2, test_component_group, groups)
+            self._check_host_is_in_group(host_1, before_remove_group, groups)
 
         with allure.step('Check inventory of the job after the bundle switch'):
-            after_switch_inventory = get_inventory_file(adcm, 3)
+            after_switch_inventory = get_inventory_file(adcm, 4)
             groups = after_switch_inventory['all']['children']
-            assert before_add_group in groups, f'Group {before_add_group} should be in {groups.keys()}'
-            assert before_remove_group in groups, f'Group {before_remove_group} should be in {groups.keys()}'
-            assert after_add_group_1 not in groups, f'Group {after_add_group_1} should not be in {groups.keys()}'
-            assert after_add_group_2 not in groups, f'Group {after_add_group_2} should not be in {groups.keys()}'
-            assert host_1.fqdn in (
-                hosts := groups[after_add_group_1]['hosts']
-            ), f'Host {host_1.fqdn} should be in group {after_add_group_1}, but not found in: {hosts}'
-            assert host_1.fqdn in (
-                hosts := groups[after_add_group_2]['hosts']
-            ), f'Host {host_1.fqdn} should be in group {after_add_group_2}, but not found in {hosts}'
-            assert host_2.fqdn not in (
-                hosts := groups[before_add_group]['hosts']
-            ), f'Host {host_2.fqdn} should not be in group {before_add_group}, but not found in: {hosts}'
-            assert host_1.fqdn not in (
-                hosts := groups[before_remove_group]['hosts']
-            ), f'Host {host_1.fqdn} should not be in group {before_remove_group}, but not found in {hosts}'
+            self._check_group_is_presented(test_component_group, groups)
+            self._check_group_is_presented(after_add_group_1, groups)
+            self._check_group_is_presented(second_component_group, groups)
+            self._check_group_is_presented(after_add_group_2, groups)
+            self._check_group_is_presented(some_component_group, groups)
+            self._check_group_is_absent(before_add_group, groups)
+            self._check_group_is_absent(before_remove_group, groups)
+            self._check_group_is_absent(willbegone_group, groups)
+            self._check_host_is_in_group(host_1, after_add_group_1, groups)
+            self._check_host_is_in_group(host_1, after_add_group_2, groups)
+            self._check_host_is_in_group(host_1, after_add_group_1, groups)
+            self._check_host_is_in_group(host_1, second_component_group, groups)
+            self._check_host_is_in_group(host_1, some_component_group, groups)
 
     # pylint: disable=too-many-arguments
     def _upgrade_to_newly_uploaded_version(
@@ -362,6 +361,20 @@ class TestSuccessfulUpgrade:
         with allure.step('Check that prototype was upgraded successfully'):
             check_prototype(old_cluster, new_bundle.cluster_prototype().id)
             check_cluster_objects_configs_equal_bundle_default(old_cluster, new_bundle)
+
+    @staticmethod
+    def _check_group_is_presented(group_name, groups):
+        assert group_name in groups, f'Group {group_name} should be in {groups.keys()}'
+
+    @staticmethod
+    def _check_group_is_absent(group_name, groups):
+        assert group_name not in groups, f'Group {group_name} should not be in {groups.keys()}'
+
+    @staticmethod
+    def _check_host_is_in_group(host, group_name, groups):
+        assert host.fqdn in (
+            hosts := groups[group_name]['hosts']
+        ), f'Host {host.fqdn} should be in group {group_name}, but not found in: {hosts}'
 
 
 # pylint: disable-next=too-few-public-methods
