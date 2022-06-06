@@ -519,22 +519,24 @@ def get_yspec(proto, ref, bundle_hash, conf, name, subname):
 
 def check_unique_names_constraint(conf_dict):
     names = defaultdict(list)
-    firs_level_key = 'firs_level_key'
+    root_key = 'root'
     if isinstance(conf_dict, dict):
         for name, conf in conf_dict.items():
-            names[firs_level_key].append(name)
+            names[root_key].append(name)
     elif isinstance(conf_dict, list):
         for conf in conf_dict:
-            names[firs_level_key].append(conf['name'])
+            names[root_key].append(conf['name'])
             if is_group(conf):
                 for subconf in conf['subs']:
                     names[conf['name']].append(subconf['name'])
     else:
         raise NotImplementedError
+
     for key in names:
         duplicated = [i for i in names[key] if names[key].count(i) > 1]
         if duplicated:
             msg = f'Duplicated names in {key} section: {", ".join(i for i in set(duplicated))}'
+            log.exception(msg)
             err('DUPLICATED_NAME_IN_CONFIG', msg)
 
 
