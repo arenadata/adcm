@@ -24,6 +24,8 @@ from cm.models import HostProvider, Prototype, Action, MaintenanceModeType
 from cm.stack import validate_name
 from cm.status_api import get_host_status
 
+from cm.issue import update_hierarchy_issues, update_issue_after_deleting
+
 
 class HostSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
@@ -79,6 +81,8 @@ class HostUpdateSerializer(HostDetailSerializer):
             'maintenance_mode', instance.maintenance_mode
         )
         instance.save()
+        update_hierarchy_issues(instance.cluster)
+        update_issue_after_deleting()
         return instance
 
 
