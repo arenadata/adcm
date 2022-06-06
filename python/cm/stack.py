@@ -535,7 +535,7 @@ def check_unique_names_constraint(conf_dict):
     for key in names:
         duplicated = [i for i in names[key] if names[key].count(i) > 1]
         if duplicated:
-            msg = f'Duplicated names in {key} section: {", ".join(i for i in set(duplicated))}'
+            msg = f'Duplicated names in `{key}` section: `{", ".join(i for i in set(duplicated))}`'
             log.exception(msg)
             err('DUPLICATED_NAME_IN_CONFIG', msg)
 
