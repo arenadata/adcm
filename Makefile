@@ -74,8 +74,8 @@ pytest_release: ## Run functional tests on release
 	./pytest.sh --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
 
 ng_tests: ## Run Angular tests
-	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster-x64
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster-x64 ./ng_test.sh
+	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64 ./ng_test.sh
 
 linters: test_image ## Run linters
 	docker run -i --rm -e PYTHONPATH="/source/tests" -v $(CURDIR)/:/source -w /source $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) \
