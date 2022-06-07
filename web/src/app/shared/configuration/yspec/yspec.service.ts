@@ -119,7 +119,7 @@ export class YspecService {
   }
 
   field(field: { type: TNBase; path: string[] }): IYField {
-    const name = field.path.reverse()[0];
+    const name = field.path.slice().reverse()[0];
     return {
       name,
       type: field.type,
@@ -139,12 +139,12 @@ export class YspecService {
   }
 
   list(item: string, path: string[]): IYContainer {
-    const name = [...path].reverse()[0] || 'root';
+    const name = [...path].slice().reverse()[0] || 'root';
     return { type: 'list', name, options: this.build(item, [...path, item]) };
   }
 
   dict(items: IRoot, path: string[]): IYContainer {
-    const name = [...path].reverse()[0] || 'root';
+    const name = [...path].slice().reverse()[0] || 'root';
     return {
       type: 'dict',
       name,
