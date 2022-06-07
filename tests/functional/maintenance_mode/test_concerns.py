@@ -58,6 +58,7 @@ def test_mm_host_with_concern_not_raising_issue_on_cluster_objects(cluster_with_
     component = service.component()
 
     cluster_with_mm.host_add(host)
+    _check_concern_is_presented_on_object(host, f'host {host.fqdn}')
     _check_no_concerns_on_cluster_objects(cluster_with_mm)
 
     with allure.step('Map component to host with a concern and check concern appeared on cluster objects'):
@@ -88,10 +89,14 @@ def test_host_from_provider_with_concern_not_raising_issue_on_cluster_objects(
     service = cluster_with_mm.service()
     component = service.component()
 
-    cluster_with_mm.host_add(host)
-    _check_concern_is_presented_on_object(host, f'host {host.fqdn}')
-    _check_concern_is_presented_on_object(provider, f'provider {provider.name}')
-    _check_no_concerns_on_cluster_objects(cluster_with_mm)
+    with allure.step(
+        'Add host to a cluster and check that concern from provider affects host, provider, but not cluster objects'
+    ):
+        cluster_with_mm.host_add(host)
+        # since host own config is set, provider's concern should affect the host
+        _check_concern_is_presented_on_object(host, f'host {host.fqdn}')
+        _check_concern_is_presented_on_object(provider, f'provider {provider.name}')
+        _check_no_concerns_on_cluster_objects(cluster_with_mm)
 
     with allure.step(
         'Map component to host with a concern and check concern from provider appeared on cluster objects'
