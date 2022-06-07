@@ -123,7 +123,7 @@ def prepare_task(
         DummyData.objects.filter(id=1).update(date=timezone.now())
 
         task = create_task(action, obj, conf, attr, old_hc, hosts, verbose, post_upgrade_hc)
-        if host_map or hasattr(action, 'upgrade'):
+        if host_map or (hasattr(action, 'upgrade') and host_map is not None):
             api.save_hc(cluster, host_map)
 
         if conf:
@@ -270,7 +270,7 @@ def cook_delta(  # pylint: disable=too-many-branches
 def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict]):
 
     if not action.hostcomponentmap:
-        return [], None
+        return None, None
 
     if not new_hc:
         err('TASK_ERROR', 'hc is required')

@@ -282,7 +282,7 @@ def re_check_actions():
             if not sp and not (item['action'] == 'remove' and act.stageupgrade):
                 msg = (
                     'Unknown service "{}" {}.'
-                    'Acceptable only in case hc_acl in upgrade for remove old component'
+                    'Acceptable only in case hc_acl in upgrade for remove deprecated component'
                 )
                 err('INVALID_ACTION_DEFINITION', msg.format(item['service'], ref))
             if not StagePrototype.objects.filter(
@@ -290,7 +290,7 @@ def re_check_actions():
             ) and not (item['action'] == 'remove' and act.stageupgrade):
                 msg = (
                     'Unknown component "{}" of service "{}" {}. '
-                    'Acceptable only in case hc_acl in upgrade for remove old component'
+                    'Acceptable only in case hc_acl in upgrade for remove deprecated component'
                 )
                 err('INVALID_ACTION_DEFINITION', msg.format(item['component'], sp.name, ref))
 
