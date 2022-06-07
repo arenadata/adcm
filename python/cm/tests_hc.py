@@ -30,7 +30,7 @@ class TestHC(TestCase):
 
         action = Action(name="run")
         hc_list, _ = cm.job.check_hostcomponentmap(cluster, action, [])
-        self.assertEqual(hc_list, [])
+        self.assertEqual(hc_list, None)
 
         try:
             action = Action(name="run", hostcomponentmap='qwe')
