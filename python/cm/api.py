@@ -290,6 +290,7 @@ def delete_host(host, cancel_tasks=True):
     host.delete()
     cm.status_api.post_event('delete', 'host', host_id)
     load_service_map()
+    cm.issue.update_issue_after_deleting()
     log.info(f'host #{host_id} is deleted')
 
 
@@ -493,10 +494,7 @@ def update_obj_config(obj_conf, conf, attr, desc=''):
     else:
         proto = obj.prototype
     old_conf = ConfigLog.objects.get(obj_ref=obj_conf, id=obj_conf.current)
-    if not attr:
-        if old_conf.attr:
-            attr = old_conf.attr
-    new_conf = check_json_config(proto, group or obj, conf, old_conf.config, attr)
+    new_conf = check_json_config(proto, group or obj, conf, old_conf.config, attr, old_conf.attr)
     with transaction.atomic():
         cl = save_obj_config(obj_conf, new_conf, attr, desc)
         cm.issue.update_hierarchy_issues(obj)
@@ -641,6 +639,7 @@ def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     ctx.event.send_state()
     cm.status_api.post_event('change_hostcomponentmap', 'cluster', cluster.id)
     cm.issue.update_hierarchy_issues(cluster)
+    cm.issue.update_issue_after_deleting()
     load_service_map()
     for service in service_map:
         re_apply_object_policy(service)

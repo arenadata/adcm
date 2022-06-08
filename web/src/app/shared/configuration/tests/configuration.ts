@@ -45,6 +45,7 @@ export class FieldStack implements IFieldStack {
   description?: string;
   limits: ILimits;
   ui_options: IUIoptions;
+  group_config: { [key: string]: boolean };
 
   constructor(
     id: number,

@@ -170,6 +170,45 @@ export class FieldService {
   }
 
   /**
+   * Parse and prepare attrs data for group config from backend
+   */
+  public getAttrs(data: IConfig, groups: string[], dataOptions: TFormOptions[]): void {
+    if (!data?.attr || !groups) return;
+
+    groups.forEach((group) => {
+      let disabled: boolean;
+      const i = dataOptions.findIndex(item => item.name === group);
+      const config = data.config.filter(c => c.name === group && c.type === 'group');
+
+      if (config.length === 0) return;
+
+      if (!data.attr?.custom_group_keys || !data.attr?.group_keys) {
+        dataOptions[i].group_config = {
+          'exist': false,
+        }
+
+        return;
+      }
+
+      if (config[0]?.read_only || !data.attr?.custom_group_keys[group].value) {
+        disabled = true;
+      } else if (data.attr?.custom_group_keys[group].value && data.attr?.group_keys[group].value) {
+        disabled = false;
+      }
+
+      dataOptions[i] = {
+        ...dataOptions[i],
+        active: dataOptions[i]['active'],
+        group_config: {
+          'exist': true,
+          'checkboxValue':  data.attr?.custom_group_keys[group].value && data.attr?.group_keys[group].value,
+          'disabled': disabled
+        }
+      }
+    })
+  }
+
+  /**
    * Generate FormGroup
    * @param options
    */
