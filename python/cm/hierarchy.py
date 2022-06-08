@@ -164,7 +164,7 @@ class Tree:
             parent_values = [
                 hc.component
                 for hc in HostComponent.objects.filter(host=node.value)
-                .exclude(host__maintenance_mode=MaintenanceModeType.On.value)
+                .exclude(host__maintenance_mode=MaintenanceModeType.On)
                 .select_related('component')
                 .all()
             ]
