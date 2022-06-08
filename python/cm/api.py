@@ -166,7 +166,7 @@ def add_host(proto, provider, fqdn, desc=''):
         host.config = obj_conf
         host.save()
         host.add_to_concerns(ctx.lock)
-        cm.issue.update_hierarchy_issues(host)
+        cm.issue.update_hierarchy_issues(host.provider)
         re_apply_object_policy(provider)
     ctx.event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
