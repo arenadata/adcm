@@ -1699,10 +1699,10 @@ class TestClusterGroupConfigPage:
             first_row = config_rows[0]
             assert not cluster_config_page.group_config.is_customization_chbx_disabled(
                 first_row
-            ), "Checkbox for first field should be disabled"
+            ), "Checkbox for first field should be enabled"
             cluster_config_page.group_config.click_on_customization_chbx(first_row)
             cluster_config_page.config.check_inputs_enabled(first_row)
-        with allure.step("Check that second field is enabled"):
+        with allure.step("Check that second field is disabled"):
             second_row = config_rows[1]
             assert cluster_config_page.group_config.is_customization_chbx_disabled(
                 second_row
