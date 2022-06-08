@@ -175,3 +175,13 @@ class ComponentStatusPage(ComponentPageMixin, StatusPage):
         ObjectPageLocators.text,
         StatusLocators.expand_collapse_btn,
     ]
+
+    def click_host_by_name(self, host_name: str):
+        """Click on host by name"""
+
+        for row in self.get_all_rows():
+            for link in self.find_children(row, StatusLocators.StatusRow.link):
+                if link.text == host_name:
+                    link.click()
+                    return
+        raise AssertionError(f"There are no host with name '{host_name}'")
