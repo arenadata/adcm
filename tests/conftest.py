@@ -29,6 +29,8 @@ from allure_commons.model2 import TestResult, Parameter
 from allure_pytest.listener import AllureListener
 from docker.utils import parse_repository_tag
 
+from tests.library.db import QueryExecutioner
+
 pytest_plugins = "adcm_pytest_plugin"
 
 # We have a number of calls from functional or ui_tests to cm module,
@@ -224,3 +226,12 @@ def user_sdk(user, adcm_fs) -> ADCMClient:  # pylint: disable=unused-argument
     """Returns ADCMClient object from adcm_client with testing user"""
     username, password = TEST_USER_CREDENTIALS
     return ADCMClient(url=adcm_fs.url, user=username, password=password)
+
+
+# ADCM DB
+
+
+@pytest.fixture()
+def adcm_db(adcm_fs) -> QueryExecutioner:
+    """Initialized QueryExecutioner for a function scoped ADCM"""
+    return QueryExecutioner(adcm_fs.container)
