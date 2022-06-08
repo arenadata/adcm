@@ -144,7 +144,7 @@ class Tree:
             children_values = []
 
         elif node.type == 'provider':
-            children_values = []
+            children_values = Host.objects.filter(provider=node.value)
 
         for value in children_values:
             child = self._make_node(value)
