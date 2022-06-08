@@ -13,7 +13,6 @@
 from django.db.transaction import atomic
 from rest_framework import serializers
 
-import logrotate
 from api.serializers import UIConfigField
 from cm.api import update_obj_config
 from cm.models import ConfigLog
@@ -34,8 +33,6 @@ class ConfigLogSerializer(serializers.ModelSerializer):
         attr = validated_data.get('attr', {})
         description = validated_data.get('description', '')
         cl = update_obj_config(object_config, config, attr, description)
-        if hasattr(object_config, 'adcm'):
-            logrotate.run()
         return cl
 
 
