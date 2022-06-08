@@ -60,6 +60,7 @@ export class Tile {
   actions?: ActionParam[];
   color?: 'none' | 'white' | 'gray' | 'yellow';
   notification?: string;
+  mm?: string;
 }
 
 export class HostTile extends Tile {
@@ -67,6 +68,7 @@ export class HostTile extends Tile {
     super();
     this.id = rawHost.id;
     this.name = rawHost.fqdn;
+    this.mm = rawHost.maintenance_mode;
   }
 }
 

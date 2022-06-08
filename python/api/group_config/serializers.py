@@ -17,7 +17,6 @@ from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-import logrotate
 from api.serializers import (
     MultiHyperlinkedRelatedField,
     MultiHyperlinkedIdentityField,
@@ -263,8 +262,6 @@ class GroupConfigConfigLogSerializer(serializers.ModelSerializer):
         cl = update_obj_config(object_config, config, attr, description)
         if ui:
             cl.config = ui_config(object_config.object.object, cl)
-        if hasattr(object_config, 'adcm'):
-            logrotate.run()
         return cl
 
 
