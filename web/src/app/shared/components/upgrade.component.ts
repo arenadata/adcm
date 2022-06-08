@@ -71,7 +71,7 @@ export interface Upgrade {
     </mat-menu>
   `
 })
-export class UpgradeComponent extends BaseDirective {
+export class UpgradeComponent {
   EventHelper = EventHelper;
 
   list$: Observable<Upgrade[]>;
@@ -88,9 +88,7 @@ export class UpgradeComponent extends BaseDirective {
   @Output()
   refresh: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
 
-  constructor(private api: ApiService, private dialog: MatDialog) {
-    super();
-  }
+  constructor(private api: ApiService) {}
 
   checkIssue() {
     return this.pRow.upgradable && !IssueHelper.isIssue(this.pRow.issue);

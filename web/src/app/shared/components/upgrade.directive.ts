@@ -9,59 +9,71 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import {Directive, EventEmitter, HostListener, Input, Output} from '@angular/core';
+import { Directive, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DialogComponent } from './dialog.component';
 import { Upgrade } from "@app/shared/components/upgrade.component";
-import { concat, of } from "rxjs";
+import { concat, Observable, of } from "rxjs";
 import { filter, map, switchMap } from "rxjs/operators";
 import { ApiService } from "@app/core/api";
 import { EmmitRow } from "@app/core/types";
+import { BaseDirective } from "@app/shared/directives";
+import { ActionMasterComponent as component} from "@app/shared/components/actions/master/master.component";
 
 @Directive({
   selector: '[appUpgrades]'
 })
-export class UpgradesDirective {
+export class UpgradesDirective extends BaseDirective {
   @Input('appUpgrades') inputData: Upgrade;
   @Output() refresh: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
 
-  constructor(private api: ApiService, private dialog: MatDialog) {}
+  constructor(private api: ApiService, private dialog: MatDialog) {
+    super();
+  }
 
   @HostListener('click')
   onClick() {
     this.dialog.closeAll();
-    const dialogModel: MatDialogConfig = this.prepare();
-    this.dialog.open(DialogComponent, dialogModel);
+    this.prepare();
   }
 
-  prepare(): MatDialogConfig {
+  get hasConfig(): boolean {
+    return this?.inputData?.config.config.length > 0
+  }
+
+  get hasHostComponent(): boolean {
+    return this?.inputData?.hostcomponentmap.length > 0
+  }
+
+  get hasDisclaimer(): boolean {
+    return !!this?.inputData?.ui_options?.disclaimer
+  }
+
+  prepare(): void {
     const maxWidth = '1400px';
-    const model = this.inputData;
+    let dialogModel: MatDialogConfig
 
-    if (model.ui_options?.disclaimer) {
-      if (model.config.config.length === 0
-        && model.hostcomponentmap.length === 0) return { data: { title: 'No parameters for run the action', model: null, component: null } };
+    if (this.hasDisclaimer) {
+      if (this.hasConfig) {
+        if (this.hasHostComponent) {
+          dialogModel = { data: { title: 'yes config yes hostcomponent', model: null, component: null } };
+        } else {
+          dialogModel = { data: { title: 'yes config no hostcomponent', model: null, component: null } };
+        }
+      }
 
-      if (model.config.config.length > 0
-        && model.hostcomponentmap.length > 0) return { data: { title: 'No parameters for run the action', model: null, component: null } };
+      if (!this.hasConfig) {
+        if (!this.hasHostComponent) {
+          dialogModel = { data: { title: 'No config not hostcomponent', model: null, component: null } };
 
-      if (model.config.config.length > 0
-        && model.hostcomponentmap.length === 0) return { data: { title: 'No parameters for run the action', model: null, component: null } };
+          this.runOldUpgrade(this.inputData, dialogModel);
+        } else {
+          dialogModel = { data: { title: 'No config yes hostcomponent', model: null, component: null } };
+        }
+      }
 
-      if (model.config.config.length === 0
-        && model.hostcomponentmap.length > 0) return { data: { title: 'No parameters for run the action', model: null, component: null } };
-    } else {
-      if (model.config.config.length === 0
-        && model.hostcomponentmap.length === 0) return { data: { title: 'No parameters for run the action', model: null, component: null } };
-
-      if (model.config.config.length > 0
-        && model.hostcomponentmap.length > 0) return { data: { title: 'No parameters for run the action', model: null, component: null } };
-
-      if (model.config.config.length > 0
-        && model.hostcomponentmap.length === 0) return { data: { title: 'No parameters for run the action', model: null, component: null } };
-
-      if (model.config.config.length === 0
-        && model.hostcomponentmap.length > 0) return { data: { title: 'No parameters for run the action', model: null, component: null } };
+      this.runUpgrade(this.inputData, dialogModel);
+      return;
     }
 
     // const act = model.actions[0];
@@ -70,7 +82,7 @@ export class UpgradesDirective {
     // const width = isMulty || act.config?.config.length || act.hostcomponentmap?.length ? '90%' : '400px';
     // const title = act.ui_options?.disclaimer ? act.ui_options.disclaimer : isMulty ? 'Run an actions?' : `Run an action [ ${act.display_name} ]?`;
     //
-    // return {
+    // dialogModel =  {
     //   width,
     //   maxWidth,
     //   data: {
@@ -79,11 +91,11 @@ export class UpgradesDirective {
     //     component,
     //   }
     // };
+
+    this.dialog.open(DialogComponent, dialogModel);
   }
 
-  runUpgrade(item: Upgrade) {
-    const license$ = item.license === 'unaccepted' ? this.api.put(`${item.license_url}accept/`, {}) : of();
-    const do$ = this.api.post<{ id: number }>(item.do, {});
+  runUpgrade(item: Upgrade, dialogModel: MatDialogConfig) {
     this.fork(item)
       .pipe(
         switchMap(text =>
@@ -91,7 +103,38 @@ export class UpgradesDirective {
             .open(DialogComponent, {
               data: {
                 title: 'Are you sure you want to upgrade?',
-                text,
+                text: item.ui_options.disclaimer || text,
+                disabled: !item.upgradable,
+                controls: item.license === 'unaccepted' ? {
+                  label: 'Do you accept the license agreement?',
+                  buttons: ['Yes', 'No']
+                } : ['Yes', 'No']
+              }
+            })
+            .beforeClosed()
+            .pipe(
+              this.takeUntil(),
+              filter(yes => yes),
+              switchMap((): any => {
+                this.dialog.open(DialogComponent, dialogModel);
+              })
+            )
+        )
+      )
+  }
+
+  runOldUpgrade(item: Upgrade, dialogModel: MatDialogConfig) {
+    const license$ = item.license === 'unaccepted' ? this.api.put(`${item.license_url}accept/`, {}) : of();
+    const do$ = this.api.post<{ id: number }>(item.do, {});
+
+    this.fork(item)
+      .pipe(
+        switchMap(text =>
+          this.dialog
+            .open(DialogComponent, {
+              data: {
+                title: 'Are you sure you want to upgrade?',
+                text: item.ui_options.disclaimer || text,
                 disabled: !item.upgradable,
                 controls: item.license === 'unaccepted' ? {
                   label: 'Do you accept the license agreement?',
