@@ -166,7 +166,7 @@ def add_host(proto, provider, fqdn, desc=''):
         host.config = obj_conf
         host.save()
         host.add_to_concerns(ctx.lock)
-        cm.issue.update_hierarchy_issues(host)
+        cm.issue.update_hierarchy_issues(host.provider)
         re_apply_object_policy(provider)
     ctx.event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
@@ -639,6 +639,8 @@ def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     ctx.event.send_state()
     cm.status_api.post_event('change_hostcomponentmap', 'cluster', cluster.id)
     cm.issue.update_hierarchy_issues(cluster)
+    for provider in [host.provider for host in Host.objects.filter(cluster=cluster)]:
+        cm.issue.update_hierarchy_issues(provider)
     cm.issue.update_issue_after_deleting()
     load_service_map()
     for service in service_map:
