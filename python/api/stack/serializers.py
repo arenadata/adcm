@@ -82,14 +82,17 @@ class PrototypeSerializer(serializers.Serializer):
         return obj.bundle.edition
 
 
+def get_prototype_constraint(self, obj):
+    if obj.type == 'component':
+        return obj.constraint
+    else:
+        return []
+
+
 class PrototypeUISerializer(PrototypeSerializer):
     constraint = serializers.SerializerMethodField()
 
-    def get_constraint(self, obj):
-        if obj.type == 'component':
-            return obj.constraint
-        else:
-            return []
+    get_constraint = get_prototype_constraint
 
 
 class PrototypeShort(serializers.ModelSerializer):
@@ -174,8 +177,11 @@ class ProviderTypeSerializer(PrototypeSerializer):
 
 
 class PrototypeDetailSerializer(PrototypeSerializer):
+    constraint = serializers.SerializerMethodField()
     actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
+
+    get_constraint = get_prototype_constraint
 
 
 class ProviderTypeDetailSerializer(ProviderTypeSerializer):
