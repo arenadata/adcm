@@ -31,6 +31,7 @@ from allure_pytest.listener import AllureListener
 from docker.utils import parse_repository_tag
 
 from tests.library.adcm_websockets import ADCMWebsocket
+from tests.library.db import QueryExecutioner
 
 pytest_plugins = "adcm_pytest_plugin"
 
@@ -244,3 +245,12 @@ async def adcm_ws(sdk_client_fs, adcm_fs) -> ADCMWebsocket:
         uri=f'ws://{addr}/ws/event/', subprotocols=['adcm', sdk_client_fs.api_token()]
     ) as conn:
         yield ADCMWebsocket(conn)
+
+
+# ADCM DB
+
+
+@pytest.fixture()
+def adcm_db(adcm_fs) -> QueryExecutioner:
+    """Initialized QueryExecutioner for a function scoped ADCM"""
+    return QueryExecutioner(adcm_fs.container)
