@@ -82,6 +82,7 @@ class HostUpdateSerializer(HostDetailSerializer):
         )
         instance.save()
         update_hierarchy_issues(instance.cluster)
+        update_hierarchy_issues(instance.provider)
         update_issue_after_deleting()
         return instance
 
