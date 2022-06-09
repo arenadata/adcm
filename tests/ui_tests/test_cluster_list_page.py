@@ -1553,7 +1553,6 @@ class TestClusterGroupConfigPage:
         # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
 
-    @pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2802")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
@@ -1639,10 +1638,9 @@ class TestClusterGroupConfigPage:
                                 ), f"Config field {field_type} should be read only"
                         else:
                             if (
-                                ((config_group_customization is False) and (field_customization is False))
-                                or ((config_group_customization is False) and (field_customization is None))
-                                or ((config_group_customization is not False) and (field_customization is False))
-                            ):
+                                (config_group_customization is False or config_group_customization is None)
+                                and (field_customization is False or field_customization is None)
+                            ) or ((config_group_customization is not False) and (field_customization is False)):
                                 cluster_config_page.config.check_inputs_disabled(
                                     config_item, is_password=bool(field_type == "password")
                                 )
@@ -1650,6 +1648,7 @@ class TestClusterGroupConfigPage:
                                     config_item
                                 ), f"Checkbox for field {field_type} should be disabled"
                             else:
+                                cluster_config_page.config.activate_group_chbx(config_item)
                                 cluster_config_page.config.check_inputs_enabled(
                                     config_item, is_password=bool(field_type == "password")
                                 )
