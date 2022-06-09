@@ -11,25 +11,20 @@
 # limitations under the License.
 
 """Tests for object issues"""
-import asyncio
-import json
-import operator
-from typing import Tuple, Optional, Union
+
+from typing import Tuple
 
 import allure
 import coreapi
 import pytest
-import requests
-import websockets.client
 
 from adcm_client.base import ActionHasIssues
-from adcm_client.objects import ADCMClient, Provider, Host, Service
+from adcm_client.objects import ADCMClient, Provider, Host, Service, Bundle, Cluster
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import catch_failed
 from coreapi.exceptions import ErrorMessage
-from websockets.legacy.client import WebSocketClientProtocol
 
-from tests.library.assertions import dicts_are_equal
+from tests.library.adcm_websockets import ADCMWebsocket, ExpectedMessage
 from tests.library.errorcodes import UPGRADE_ERROR
 
 
@@ -179,120 +174,93 @@ def test_only_service_concerns_are_deleted_after_it(sdk_client_fs: ADCMClient):
         _check_concerns_amount(cluster, 1)
 
 
-@pytest.fixture()
-async def adcm_ws(sdk_client_fs, adcm_fs):
-    addr = f'{adcm_fs.ip}:{adcm_fs.port}'
-    async with websockets.client.connect(
-        uri=f'ws://{addr}/ws/event/', subprotocols=['adcm', sdk_client_fs.api_token()]
-    ) as conn:
-        yield ADCMWebsocket(conn)
+class TestProviderIndependence:
+    """
+    Test that provider is independent of concerns coming from hosts and cluster objects.
+    Part of tests are using websockets to read events.
+    """
 
+    async def test_provider_stays_out_of_concerns(self, sdk_client_fs, adcm_ws: ADCMWebsocket):
+        provider_bundle = 'host_with_concern'
+        cluster_bundle = 'cluster_with_constraint_concern'
+        service_name = 'service_with_concerns'
 
-class ADCMWebsocket:
-    _ws: WebSocketClientProtocol
-    _default_timeout: float
+        provider = await self._create_provider_wo_concerns(provider_bundle, sdk_client_fs, adcm_ws)
+        host = await self._create_host_and_check_provider(provider, adcm_ws)
+        cluster = await self._create_cluster_with_concerns_and_add_service(
+            cluster_bundle, service_name, sdk_client_fs, adcm_ws
+        )
+        await self._add_host_to_cluster_and_check_concerns(cluster, host, adcm_ws)
 
-    def __init__(self, conn: WebSocketClientProtocol, timeout=5.0):
-        self._ws = conn
-        self._default_timeout = timeout
+    async def _create_provider_wo_concerns(
+        self, bundle_name: str, client: ADCMClient, adcm_ws: ADCMWebsocket
+    ) -> Provider:
+        with allure.step(f'Upload provider bundle {bundle_name} and check creation event'):
+            provider_bundle = client.upload_from_fs(utils.get_data_dir(__file__, bundle_name))
+            await adcm_ws.check_next_message_is(1, event='create', type='bundle', id=provider_bundle.id)
+        with allure.step('Create provider and check it has no concerns'):
+            provider = provider_bundle.provider_create('Provider without concerns')
+            _check_object_has_no_concerns(provider)
+            await adcm_ws.check_next_message_is(1, event='create', type='provider', id=provider.id)
+            return provider
 
-    @allure.step('Get up to {max_messages} messages')
-    async def get_messages(
-        self, max_messages: int, single_msg_timeout: Union[int, float] = 1, break_on_first_fail: bool = True
-    ):
-        retrieved_messages = []
-        for _ in range(max_messages):
-            try:
-                msg = await self.get_message(single_msg_timeout)
-            except asyncio.TimeoutError:
-                if break_on_first_fail:
-                    break
-            else:
-                retrieved_messages.append(msg)
-        with allure.step(f'Retrieved {len(retrieved_messages)} messages'):
-            return retrieved_messages
-
-    @allure.step('Wait for message from websocket for {timeout} seconds')
-    async def get_message(self, timeout=None):
-        timeout = timeout or self._default_timeout
-        return json.loads(await asyncio.wait_for(self._ws.recv(), timeout))
-
-    async def expect_message(self, timeout=None) -> dict:
-        timeout = timeout or self._default_timeout
-        with catch_failed(asyncio.TimeoutError, f'Message was failed to be received in {timeout} seconds'):
-            return await self.get_message(timeout)
-
-    @allure.step("Ensure there won't come any WS message for a {timeout} seconds")
-    async def no_message_for(self, timeout=None):
-        timeout = timeout or self._default_timeout
-        try:
-            message = await self.get_message(timeout)
-        except TimeoutError:
-            pass
-        else:
-            raise AssertionError(f'At least one message came: {message}')
-
-    @allure.step('Check next incoming WS message')
-    async def check_next_message_is(self, event: str, timeout_=None, **object_field):
-        message = await self.expect_message(timeout_ or self._default_timeout)
-        return await self.check_message_is(message, event, **object_field)
-
-    @allure.step('Check next incoming WS message')
-    async def check_next_message_is_not(self, event: str, timeout_=None, **object_field):
-        message = await self.expect_message(timeout_ or self._default_timeout)
-        return await self.check_message_is_not(message, event, **object_field)
-
-    @allure.step('Check given WS message')
-    async def check_message_is(self, message_object: dict, event: str, **object_field):
-        with allure.step(f'Check that event is: {event}'):
-            assert (actual_event := message_object['event']) == event, f'Incorrect event in message: {actual_event}'
-        if not object_field:
-            with allure.step('Skip "object" data check'):
-                return message_object
-        with allure.step('Check "object" data'):
-            if 'object' not in message_object:
-                raise KeyError(f"There's no key 'object' in WS message: {message_object}")
-            object_data = message_object['object']
-            for field, value in object_field.items():
-                assert field in object_data, f'Failed to find key {field} in {object_data}'
-                assert (actual_value := object_data[field]) == value, (
-                    f'Incorrect value of key {field}.\n' f'Expected: {value}\n' f'Found: {actual_value}'
-                )
-        return message_object
-
-    @allure.step('Check given WS message')
-    async def check_message_is_not(self, message_object: dict, event: str, **object_field):
-        if not object_field:
-            with allure.step(f'Check only that event type is {event}'):
-                assert (actual_event := message_object['event']) == event, f'Incorrect event type: {actual_event}'
-                return message_object
-
-        if 'object' not in message_object:
-            raise KeyError(f"There's no key 'object' in WS message: {message_object}")
-
-        # then "wrong" will be only the exact match of all given fields
-        expected_fields = {('event', event), *{(k, v) for k, v in object_field.items()}}
-        actual_fields = {
-            ('event', message_object['event']),
-            *{(k, v) for k, v in message_object['object'].items() if k in object_field.keys()},
-        }
-        assert actual_fields != expected_fields, f'Message fields are incorrect.\nThey should not be {actual_fields}'
-
-
-async def test_provider_stays_out_of_concerns(sdk_client_fs, adcm_ws: ADCMWebsocket):
-    provider_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, 'host_with_concern'))
-    await adcm_ws.check_next_message_is('create', timeout_=1, type='bundle', id=provider_bundle.id)
-    with allure.step('Create provider and check it has no concerns'):
-        provider = provider_bundle.provider_create('Provider without concerns')
-        _check_object_has_no_concerns(provider)
-        await adcm_ws.check_next_message_is('create', timeout_=1, type='provider', id=provider.id)
-    with allure.step('Create host and ensure provider has no concerns'):
+    @allure.step('Create host and ensure provider has no concerns')
+    async def _create_host_and_check_provider(self, provider: Provider, adcm_ws: ADCMWebsocket) -> Host:
         host = provider.host_create('host-with-concern')
-        messages = await adcm_ws.get_messages(5, 1.5)
-        for msg in messages:
-            await adcm_ws.check_message_is_not(msg, 'add', type='provider-concerns')
         _check_object_has_concerns(host)
         _check_object_has_no_concerns(provider)
+        messages = await adcm_ws.get_messages(5, 1.5)
+        for msg in messages:
+            adcm_ws.check_message_is_not(msg, event='add', type='provider-concerns')
+        return host
+
+    async def _create_cluster_with_concerns_and_add_service(
+        self, bundle_name: str, service_name: str, client: ADCMClient, adcm_ws: ADCMWebsocket
+    ) -> Cluster:
+        with allure.step(f'Upload cluster bundle {bundle_name} and check creation event'):
+            cluster_bundle = client.upload_from_fs(utils.get_data_dir(__file__, bundle_name))
+            await adcm_ws.check_next_message_is(event='create', type='bundle', id=cluster_bundle.id)
+        with allure.step(f'Create cluster, add service {service_name} and check creation messages'):
+            cluster = cluster_bundle.cluster_create('Cluster without concerns')
+            await adcm_ws.check_next_message_is(event='add', type='cluster-concerns')
+            await adcm_ws.check_next_message_is(event='create', type='cluster', id=cluster.id)
+            service = cluster.service_add(name=service_name)
+            messages = await adcm_ws.get_messages(10, 1)
+
+            def concern_msg(type_):
+                return ExpectedMessage('add', {'type': type_})
+
+            adcm_ws.check_messages_are_presented(
+                (
+                    ExpectedMessage(
+                        'add',
+                        {'type': 'service', 'id': service.id, 'details': {'type': 'cluster', 'value': str(cluster.id)}},
+                    ),
+                    *[
+                        concern_msg(type_)
+                        for type_ in (
+                            'service-component-concerns',  # concern on component
+                            'cluster-concerns',  # concern on cluster
+                            'cluster-object-concerns',  # concern on service
+                        )
+                    ],
+                ),
+                messages,
+            )
+        return cluster
+
+    async def _add_host_to_cluster_and_check_concerns(self, cluster: Cluster, host: Host, adcm_ws: ADCMWebsocket):
+        service = cluster.service()
+        component = service.component()
+        with allure.step(f'Add host {host.fqdn} to a cluster'):
+            cluster.host_add(host)
+            await adcm_ws.check_next_message_is(event='add', type='host')
+        with allure.step('Check that all objects have concerns expect provider'):
+            _check_object_has_no_concerns(host.provider())
+            _check_concerns_amount(cluster, 3)
+            _check_concerns_amount(service, 3)
+            _check_concerns_amount(component, 3)
+            _check_object_has_concerns(host)
 
 
 def _check_object_has_concerns(adcm_object):
@@ -308,8 +276,8 @@ def _check_object_has_no_concerns(adcm_object):
 def _check_concerns_amount(adcm_object, expected_amount):
     adcm_object.reread()
     assert (
-        actual_amount := len(adcm_object.concerns()) == expected_amount
-    ), f'Object {adcm_object} should be {expected_amount}, not {actual_amount}'
+        actual_amount := len(adcm_object.concerns())
+    ) == expected_amount, f'Object {adcm_object} should be {expected_amount}, not {actual_amount}'
 
 
 @allure.step('Add service, map host to it and add another service')

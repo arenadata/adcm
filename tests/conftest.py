@@ -21,6 +21,7 @@ from typing import Optional, List, Tuple, Union
 
 import allure
 import pytest
+import websockets.client
 import yaml
 
 from _pytest.python import Function, FunctionDefinition, Module
@@ -28,6 +29,8 @@ from adcm_client.objects import ADCMClient, User
 from allure_commons.model2 import TestResult, Parameter
 from allure_pytest.listener import AllureListener
 from docker.utils import parse_repository_tag
+
+from tests.library.adcm_websockets import ADCMWebsocket
 
 pytest_plugins = "adcm_pytest_plugin"
 
@@ -224,3 +227,15 @@ def user_sdk(user, adcm_fs) -> ADCMClient:  # pylint: disable=unused-argument
     """Returns ADCMClient object from adcm_client with testing user"""
     username, password = TEST_USER_CREDENTIALS
     return ADCMClient(url=adcm_fs.url, user=username, password=password)
+
+
+# Websockets (Events)
+
+
+@pytest.fixture()
+async def adcm_ws(sdk_client_fs, adcm_fs) -> ADCMWebsocket:
+    addr = f'{adcm_fs.ip}:{adcm_fs.port}'
+    async with websockets.client.connect(
+        uri=f'ws://{addr}/ws/event/', subprotocols=['adcm', sdk_client_fs.api_token()]
+    ) as conn:
+        yield ADCMWebsocket(conn)
