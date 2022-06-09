@@ -77,7 +77,7 @@ export class UpgradeMasterComponent extends BaseDirective implements DynamicComp
   }
 
   ngOnInit(): void {
-    if (this.model.actions.length === 1) this.choose(this.model.actions[0]);
+    if (this.model.upgradable) this.choose(this.model.do);
   }
 
   choose(upgrade: IUpgrade) {
@@ -91,9 +91,11 @@ export class UpgradeMasterComponent extends BaseDirective implements DynamicComp
 
   run(value: IValue = {}) {
     const data: IMasterData = this.service.parseData(value);
+
     if (data) {
       data.verbose = this.verbose;
     }
+
     this.service
       .send(this.upgrade.do, data)
       .pipe(this.takeUntil())
