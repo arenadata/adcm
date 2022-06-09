@@ -11,7 +11,7 @@
 # limitations under the License.
 
 """Tests for object issues"""
-
+import itertools
 from typing import Tuple
 
 import allure
@@ -19,12 +19,13 @@ import coreapi
 import pytest
 
 from adcm_client.base import ActionHasIssues
-from adcm_client.objects import ADCMClient, Provider, Host, Service, Bundle, Cluster
+from adcm_client.objects import ADCMClient, Provider, Host, Service, Cluster
 from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import catch_failed
 from coreapi.exceptions import ErrorMessage
 
-from tests.library.adcm_websockets import ADCMWebsocket, ExpectedMessage
+from tests.functional.conftest import only_clean_adcm
+from tests.library.adcm_websockets import ADCMWebsocket, EventMessage
 from tests.library.errorcodes import UPGRADE_ERROR
 
 
@@ -180,6 +181,7 @@ class TestProviderIndependence:
     Part of tests are using websockets to read events.
     """
 
+    @only_clean_adcm
     async def test_provider_stays_out_of_concerns(self, sdk_client_fs, adcm_ws: ADCMWebsocket):
         provider_bundle = 'host_with_concern'
         cluster_bundle = 'cluster_with_constraint_concern'
@@ -191,6 +193,7 @@ class TestProviderIndependence:
             cluster_bundle, service_name, sdk_client_fs, adcm_ws
         )
         await self._add_host_to_cluster_and_check_concerns(cluster, host, adcm_ws)
+        await self._set_hc_map_and_check_concerns(cluster, host, adcm_ws)
 
     async def _create_provider_wo_concerns(
         self, bundle_name: str, client: ADCMClient, adcm_ws: ADCMWebsocket
@@ -225,19 +228,15 @@ class TestProviderIndependence:
             await adcm_ws.check_next_message_is(event='add', type='cluster-concerns')
             await adcm_ws.check_next_message_is(event='create', type='cluster', id=cluster.id)
             service = cluster.service_add(name=service_name)
-            messages = await adcm_ws.get_messages(10, 1)
-
-            def concern_msg(type_):
-                return ExpectedMessage('add', {'type': type_})
-
+            messages = await adcm_ws.get_waiting_messages()
             adcm_ws.check_messages_are_presented(
                 (
-                    ExpectedMessage(
+                    EventMessage(
                         'add',
                         {'type': 'service', 'id': service.id, 'details': {'type': 'cluster', 'value': str(cluster.id)}},
                     ),
                     *[
-                        concern_msg(type_)
+                        self._concern_add_msg(type_)
                         for type_ in (
                             'service-component-concerns',  # concern on component
                             'cluster-concerns',  # concern on cluster
@@ -261,6 +260,44 @@ class TestProviderIndependence:
             _check_concerns_amount(service, 3)
             _check_concerns_amount(component, 3)
             _check_object_has_concerns(host)
+
+    async def _set_hc_map_and_check_concerns(self, cluster: Cluster, host: Host, adcm_ws: ADCMWebsocket):
+        service = cluster.service()
+        component = service.component()
+        with allure.step(f'Map component {component.name} on host {host.fqdn}'):
+            cluster.hostcomponent_set((host, component))
+            messages = await adcm_ws.get_waiting_messages()
+        with allure.step('Check concerns and events'):
+            _check_object_has_no_concerns(host.provider())
+            _check_object_has_concerns(host)
+            # now they should have concern from host, so amount is the same as before
+            _check_concerns_amount(cluster, 3)
+            _check_concerns_amount(service, 3)
+            _check_concerns_amount(component, 3)
+            adcm_ws.check_messages_are_presented(
+                (
+                    EventMessage('change_hostcomponentmap', {'type': 'cluster', 'id': cluster.id}),
+                    *tuple(
+                        itertools.chain.from_iterable(
+                            (self._concern_add_msg(type_), self._concern_delete_msg(type_))
+                            for type_ in (
+                                'cluster-concerns',  # HC concern removed from cluster
+                                'cluster-object-concerns',  # and from service
+                                'service-component-concerns',  # and from component
+                            )
+                        )
+                    ),
+                ),
+                messages,
+            )
+
+    @staticmethod
+    def _concern_add_msg(type_) -> EventMessage:
+        return EventMessage('add', {'type': type_})
+
+    @staticmethod
+    def _concern_delete_msg(type_) -> EventMessage:
+        return EventMessage('delete', {'type': type_})
 
 
 def _check_object_has_concerns(adcm_object):
