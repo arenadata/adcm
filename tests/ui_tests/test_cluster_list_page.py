@@ -1687,7 +1687,7 @@ class TestClusterGroupConfigPage:
     def test_two_fields_on_cluster_config_page(self, sdk_client_fs: ADCMClient, app_fs):
         """Test two different fields on group config page"""
 
-        path = get_data_dir(__file__) + "/cluster_with_two_different_fields"
+        path = get_data_dir(__file__, 'cluster_with_two_different_fields')
         cluster, *_ = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
         cluster_group_config = cluster.group_config_create(name="Test group")
         cluster_config_page = ClusterGroupConfigConfig(
