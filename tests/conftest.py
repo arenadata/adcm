@@ -234,6 +234,11 @@ def user_sdk(user, adcm_fs) -> ADCMClient:  # pylint: disable=unused-argument
 
 @pytest.fixture()
 async def adcm_ws(sdk_client_fs, adcm_fs) -> ADCMWebsocket:
+    """
+    Create a connection to ADCM websocket for Admin user
+    and return ADCMWebsocket helper for tests.
+    Should be used only in async environment.
+    """
     addr = f'{adcm_fs.ip}:{adcm_fs.port}'
     async with websockets.client.connect(
         uri=f'ws://{addr}/ws/event/', subprotocols=['adcm', sdk_client_fs.api_token()]

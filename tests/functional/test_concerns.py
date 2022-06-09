@@ -175,6 +175,7 @@ def test_only_service_concerns_are_deleted_after_it(sdk_client_fs: ADCMClient):
         _check_concerns_amount(cluster, 1)
 
 
+# pylint: disable-next=too-few-public-methods
 class TestProviderIndependence:
     """
     Test that provider is independent of concerns coming from hosts and cluster objects.
@@ -183,6 +184,11 @@ class TestProviderIndependence:
 
     @only_clean_adcm
     async def test_provider_stays_out_of_concerns(self, sdk_client_fs, adcm_ws: ADCMWebsocket):
+        """
+        Test that provider doesn't get concerns from host and cluster hierarchy
+        even when a component is mapped on host.
+        This test also checks some of websocket events.
+        """
         provider_bundle = 'host_with_concern'
         cluster_bundle = 'cluster_with_constraint_concern'
         service_name = 'service_with_concerns'

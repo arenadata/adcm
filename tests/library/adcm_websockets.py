@@ -29,10 +29,20 @@ MismatchReason = str | None
 
 
 class EventMessage(NamedTuple):
+    """
+    Wrapper for checking contents of websocket event messages.
+    `event` field is obligatory, because it's expected in each event message.
+    Keys and values from `object_fields` are expected to be found inside the "object" fields.
+    Keys that aren't in `object_fields`, but does exist in "object" are ignored.
+    """
+
     event: str
     object_fields: dict[str, Any]
 
     def match(self, message: WSMessageData) -> tuple[bool, MismatchReason]:
+        """
+        Check that "event" and "object" fields match this object
+        """
         actual_event = message.get('event', None)
         if actual_event != self.event:
             return False, f'incorrect event: {actual_event}'
@@ -55,6 +65,10 @@ class EventMessage(NamedTuple):
 
 
 class ADCMWebsocket:
+    """
+    Helper for working with ADCM websocket event stream
+    """
+
     _ws: WebSocketClientProtocol
     _default_timeout: float
     # datetime here is the UTC date of **adding** message to this list
@@ -68,6 +82,12 @@ class ADCMWebsocket:
 
     @allure.step('Wait for message from websocket for {timeout} seconds')
     async def get_message(self, timeout: WaitTimeout | None = None) -> WSMessageData:
+        """
+        Get message from websocket if it already exists or will come during timeout period.
+        Raised exceptions aren't handled.
+
+        :raises asyncio.TimeoutError: If no message is there for a timeout period.
+        """
         timeout = timeout or self._default_timeout
         message = json.loads(await asyncio.wait_for(self._ws.recv(), timeout))
         self._messages.append((datetime.utcnow(), message))
@@ -77,6 +97,10 @@ class ADCMWebsocket:
     async def get_messages(
         self, max_messages: int, single_msg_timeout: WaitTimeout = 1, break_on_first_fail: bool = True
     ) -> list[WSMessageData]:
+        """
+        Get messages until `max_messages` is reached
+        or retrieve message request timed out (if `break_on_first_fail` is `True`)
+        """
         retrieved_messages = []
         for _ in range(max_messages):
             try:
@@ -99,13 +123,14 @@ class ADCMWebsocket:
         return await self._get_until_error([])
 
     async def expect_message(self, timeout=None) -> WSMessageData:
+        """Get next message or raise `AssertionError` if it won't come on time"""
         timeout = timeout or self._default_timeout
         with catch_failed(asyncio.TimeoutError, f'Message was failed to be received in {timeout} seconds'):
             return await self.get_message(timeout)
 
     @allure.step("Ensure there won't come any WS message for a {timeout} seconds")
-    async def no_message_for(self, timeout: WaitTimeout | None = None) -> None:
-        timeout = timeout or self._default_timeout
+    async def no_message_for(self, timeout: WaitTimeout) -> None:
+        """Check that there's no messages came during `timeout` period"""
         try:
             message = await self.get_message(timeout)
         except TimeoutError:
@@ -150,6 +175,12 @@ class ADCMWebsocket:
         event: str | None = None,
         **object_field,
     ) -> WSMessageData:
+        """
+        Expect next message to be presented and match the given one.
+
+        Message in `expect` is preferred for keyword based arguments.
+        Otherwise, you can provide `event` and kwargs to check "event" and "object" fields.
+        """
         message = await self.expect_message(timeout or self._default_timeout)
         return self.check_message_is(message, expected, event, **object_field)
 
@@ -161,6 +192,12 @@ class ADCMWebsocket:
         event: str | None = None,
         **object_field,
     ) -> WSMessageData:
+        """
+        Expect next message to be presented and be different from the given one.
+
+        Message in `expect` is preferred for keyword based arguments.
+        Otherwise, you can provide `event` and kwargs to check "event" and "object" fields.
+        """
         message = await self.expect_message(timeout or self._default_timeout)
         return self.check_message_is_not(message, wrong_message, event, **object_field)
 
@@ -172,6 +209,12 @@ class ADCMWebsocket:
         event: str | None = None,
         **object_field,
     ) -> WSMessageData:
+        """
+        Check messages matches.
+
+        Message in `expect` is preferred for keyword based arguments.
+        Otherwise, you can provide `event` and kwargs to check "event" and "object" fields.
+        """
         if not isinstance(expected, EventMessage):
             if event is None:
                 raise ValueError(
@@ -199,6 +242,12 @@ class ADCMWebsocket:
         event: str | None = None,
         **object_field,
     ) -> WSMessageData:
+        """
+        Check messages doesn't match.
+
+        Message in `expect` is preferred for keyword based arguments.
+        Otherwise, you can provide `event` and kwargs to check "event" and "object" fields.
+        """
         if not isinstance(wrong_message, EventMessage):
             if event is None:
                 raise ValueError(
