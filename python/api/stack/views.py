@@ -163,6 +163,7 @@ class PrototypeList(PaginatedView):
 
     queryset = Prototype.objects.all()
     serializer_class = serializers.PrototypeSerializer
+    serializer_class_ui = serializers.PrototypeUISerializer
     filterset_class = filters.PrototypeListFilter
     ordering_fields = ('display_name', 'version_order')
 
