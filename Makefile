@@ -31,7 +31,7 @@ buildss: ## Build status server
 	@docker run -i --rm -v $(CURDIR)/go:/code -w /code  golang:1.15-alpine3.13 sh -c "apk --update add make git && make && rm -f /code/adcm/go.sum"
 
 buildjs: ## Build client side js/html/css in directory wwwroot
-	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./build.sh
+	@docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./build.sh
 
 build: describe buildss buildjs ## Build final docker image and all depended targets except baseimage.
 	@docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
@@ -74,8 +74,8 @@ pytest_release: ## Run functional tests on release
 	./pytest.sh --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
 
 ng_tests: ## Run Angular tests
-	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster-x64
-	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster-x64 ./ng_test.sh
+	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64
+	docker run -i --rm -v $(CURDIR)/:/adcm -w /adcm/web hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64 ./ng_test.sh
 
 linters: test_image ## Run linters
 	docker run -i --rm -e PYTHONPATH="/source/tests" -v $(CURDIR)/:/source -w /source $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) \
@@ -88,7 +88,7 @@ linters: test_image ## Run linters
 			/linters.sh -f ./tests/ui_tests flake8_pytest_style"
 
 npm_check: ## Run npm-check
-	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:12-alpine ./npm_check.sh
+	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./npm_check.sh
 
 django_tests: test_image ## Run django tests.
 	docker run -e DJANGO_SETTINGS_MODULE=adcm.test -i --rm -v $(CURDIR)/python:/adcm/python -v $(CURDIR)/data:/adcm/data -v $(CURDIR)/requirements.txt:/adcm/requirements.txt -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /venv.sh reqs_and_run default /adcm/requirements.txt python python/manage.py test cm
