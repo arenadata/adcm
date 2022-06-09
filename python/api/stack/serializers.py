@@ -82,6 +82,16 @@ class PrototypeSerializer(serializers.Serializer):
         return obj.bundle.edition
 
 
+class PrototypeUISerializer(PrototypeSerializer):
+    constraint = serializers.SerializerMethodField()
+
+    def get_constraint(self, obj):
+        if obj.type == 'component':
+            return obj.constraint
+        else:
+            return []
+
+
 class PrototypeShort(serializers.ModelSerializer):
     class Meta:
         model = Prototype
