@@ -522,7 +522,6 @@ class TestClusterServicePage:
         service_conf_page.wait_page_is_opened()
         service_conf_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
-    @pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2790")
     def test_check_pagination_on_service_list_page(self, sdk_client_fs: ADCMClient, app_fs):
         """Test pagination on cluster/{}/service page"""
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_SERVICES)
