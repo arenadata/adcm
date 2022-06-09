@@ -20,9 +20,6 @@ export interface Status {
   styleUrls: ['./maintenance-mode-button.component.scss']
 })
 export class MaintenanceModeButtonComponent<T> implements AdwpCellComponent<T> {
-  status: Status;
-  maintenanceMode: string;
-
   statuses: { [key in StatusType]: Status; } = {
     [StatusType.On]: {
       isButtonActive: true,
@@ -44,25 +41,27 @@ export class MaintenanceModeButtonComponent<T> implements AdwpCellComponent<T> {
     }
   }
 
-  @Input() row: T;
-  @Output() onClick = new EventEmitter();
-
-  ngOnInit(): void {
-    if (!this.row) return;
-    this.maintenanceMode = this.row['maintenance_mode'];
-    this.status = this.statuses[this.maintenanceMode];
+  get maintenanceModeStatus(): string {
+   return this?.row?.maintenance_mode;
   }
 
+  get status(): Status {
+    return this.statuses[this.maintenanceModeStatus];
+  }
+
+  @Input() row: any;
+  @Output() onClick = new EventEmitter();
+
+  ngOnInit(): void {}
+
   clickCell(event: MouseEvent, row: T): void {
-    if (this.maintenanceMode !== StatusType.Disabled && this.maintenanceMode === StatusType.On) {
-      this.maintenanceMode = StatusType.Off;
-      this.status = this.statuses[StatusType.Off];
-    } else if (this.maintenanceMode !== StatusType.Disabled && this.maintenanceMode === StatusType.Off) {
-      this.maintenanceMode = StatusType.On;
-      this.status = this.statuses[StatusType.On];
+    if (this.maintenanceModeStatus !== StatusType.Disabled && this.maintenanceModeStatus === StatusType.On) {
+      this.row.maintenance_mode = StatusType.Off;
+    } else if (this.maintenanceModeStatus !== StatusType.Disabled && this.maintenanceModeStatus === StatusType.Off) {
+      this.row.maintenance_mode = StatusType.On;
     }
 
-    this.onClick.emit({ event, value: { id: this.row['id'], maintenance_mode: this.maintenanceMode } });
+    this.onClick.emit({ event, value: { id: this.row['id'], maintenance_mode: this.row.maintenance_mode } });
   }
 
   preventIfDisabled(event) {
