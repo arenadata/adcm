@@ -90,7 +90,17 @@ def get_prototype_constraint(self, obj):
 
 
 class PrototypeUISerializer(PrototypeSerializer):
-    constraint = serializers.SerializerMethodField()
+    parent_id = serializers.IntegerField()
+    version_order = serializers.IntegerField(read_only=True)
+    shared = serializers.BooleanField(read_only=True)
+    constraint = serializers.SerializerMethodField(read_only=True)
+    requires = serializers.JSONField(read_only=True)
+    bound_to = serializers.JSONField(read_only=True)
+    adcm_min_version = serializers.CharField(read_only=True)
+    monitoring = serializers.CharField(read_only=True)
+    config_group_customization = serializers.BooleanField(read_only=True)
+    venv = serializers.CharField(read_only=True)
+    allow_maintenance_mode = serializers.BooleanField(read_only=True)
 
     get_constraint = get_prototype_constraint
 
