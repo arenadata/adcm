@@ -11,14 +11,14 @@
 // limitations under the License.
 import { Directive, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { DialogComponent } from './dialog.component';
-import { Upgrade } from "@app/shared/components/upgrade.component";
+import { DialogComponent } from '../dialog.component';
+import { Upgrade } from "./upgrade.component";
 import { concat, Observable, of } from "rxjs";
-import { filter, map, switchMap } from "rxjs/operators";
-import { ApiService } from "@app/core/api";
-import { EmmitRow } from "@app/core/types";
-import { BaseDirective } from "@app/shared/directives";
-import { ActionMasterComponent as component} from "@app/shared/components/actions/master/master.component";
+import {filter, map, switchMap, tap} from "rxjs/operators";
+import { ApiService } from "../../../core/api";
+import { EmmitRow } from "../../../core/types";
+import { BaseDirective } from "../../directives";
+import { ActionMasterComponent as component} from "../actions/master/master.component";
 
 @Directive({
   selector: '[appUpgrades]'
@@ -56,24 +56,25 @@ export class UpgradesDirective extends BaseDirective {
     if (this.hasDisclaimer) {
       if (this.hasConfig) {
         if (this.hasHostComponent) {
-          dialogModel = { data: { title: 'yes config yes hostcomponent', model: null, component: null } };
+          dialogModel = { data: { title: 'yes config yes hostcomponent', model: this?.inputData, component: component } };
         } else {
-          dialogModel = { data: { title: 'yes config no hostcomponent', model: null, component: null } };
+          dialogModel = { data: { title: 'yes config no hostcomponent', model: this?.inputData, component: component } };
         }
+
+        this.runUpgrade(this.inputData, dialogModel);
       }
 
       if (!this.hasConfig) {
         if (!this.hasHostComponent) {
-          dialogModel = { data: { title: 'No config not hostcomponent', model: null, component: null } };
-
+          dialogModel = { data: { title: 'No config not hostcomponent', model: this?.inputData, component: component } };
           this.runOldUpgrade(this.inputData, dialogModel);
         } else {
-          dialogModel = { data: { title: 'No config yes hostcomponent', model: null, component: null } };
+          dialogModel = { data: { title: 'No config yes hostcomponent', model: this?.inputData, component: component } };
+          this.runUpgrade(this.inputData, dialogModel);
         }
       }
-
-      this.runUpgrade(this.inputData, dialogModel);
-      return;
+    } else {
+      this.dialog.open(DialogComponent, { data: { title: 'No disclaimer yes config yes hostcomponent', model: this?.inputData, component: component } });
     }
 
     // const act = model.actions[0];
@@ -91,36 +92,31 @@ export class UpgradesDirective extends BaseDirective {
     //     component,
     //   }
     // };
-
-    this.dialog.open(DialogComponent, dialogModel);
   }
 
   runUpgrade(item: Upgrade, dialogModel: MatDialogConfig) {
     this.fork(item)
       .pipe(
-        switchMap(text =>
-          this.dialog
-            .open(DialogComponent, {
-              data: {
-                title: 'Are you sure you want to upgrade?',
-                text: item.ui_options.disclaimer || text,
-                disabled: !item.upgradable,
-                controls: item.license === 'unaccepted' ? {
-                  label: 'Do you accept the license agreement?',
-                  buttons: ['Yes', 'No']
-                } : ['Yes', 'No']
-              }
-            })
-            .beforeClosed()
-            .pipe(
-              this.takeUntil(),
-              filter(yes => yes),
-              switchMap((): any => {
-                this.dialog.open(DialogComponent, dialogModel);
+        tap(text => {
+            return this.dialog
+              .open(DialogComponent, {
+                data: {
+                  title: 'Are you sure you want to upgrade?',
+                  text: item.ui_options.disclaimer || text,
+                  disabled: !item.upgradable,
+                  controls: item.license === 'unaccepted' ? {
+                    label: 'Do you accept the license agreement?',
+                    buttons: ['Yes', 'No']
+                  } : ['Yes', 'No']
+                }
               })
-            )
+              .afterClosed()
+              .subscribe((res) => {
+                if (res) this.dialog.open(DialogComponent, dialogModel);
+              })
+          }
         )
-      )
+      ).subscribe();
   }
 
   runOldUpgrade(item: Upgrade, dialogModel: MatDialogConfig) {

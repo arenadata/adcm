@@ -10,16 +10,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
-import { ApiService } from '@app/core/api';
-import { EmmitRow, IActionParameter, IUIOptions } from '@app/core/types';
+import { ApiService } from '../../../core/api';
+import { EmmitRow, IActionParameter, IUIOptions } from '../../../core/types';
 import { Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { EventHelper } from '@adwp-ui/widgets';
-import { BaseDirective } from '../directives';
-import { IIssues } from '@app/models/issue';
-import { IssueHelper } from '@app/helpers/issue-helper';
-import { IConfig } from "@app/shared/configuration/types";
+import { IIssues } from '../../../models/issue';
+import { IssueHelper } from '../../../helpers/issue-helper';
+import { IConfig } from "../../configuration/types";
 
 export interface UpgradeItem {
   upgradable: boolean;
@@ -64,7 +62,7 @@ export interface Upgrade {
     </button>
     <mat-menu #menu="matMenu" [overlapTrigger]="false" [xPosition]="xPosition" yPosition="below">
       <ng-template matMenuContent>
-        <button *ngFor="let item of list$ | async" mat-menu-item [appUpgrades]="item"> <!--(click)="runUpgrade(item)"-->
+        <button *ngFor="let item of list$ | async" mat-menu-item [appUpgrades]="item">
           <span>{{ item.name || 'No name' }}</span>
         </button>
       </ng-template>

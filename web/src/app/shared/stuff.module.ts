@@ -16,7 +16,7 @@ import { RouterModule } from '@angular/router';
 import { ActionsComponent, CrumbsComponent, UpgradeComponent } from './components';
 import { ActionListComponent } from './components/actions/action-list/action-list.component';
 import { ActionsDirective } from './components/actions/actions.directive';
-import { UpgradesDirective } from './components/upgrade.directive';
+import { UpgradesDirective } from './components/upgrades/upgrade.directive';
 import { TooltipDirective } from '@app/shared/components/tooltip';
 import { PopoverDirective } from '@app/directives/popover.directive';
 import {
