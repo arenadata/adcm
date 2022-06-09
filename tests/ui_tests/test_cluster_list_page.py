@@ -367,6 +367,29 @@ class TestClusterListPage:
         with allure.step("Check there are no rows"):
             assert len(cluster_page.table.get_all_rows()) == 0, "Cluster table should be empty"
 
+    def test_run_upgrade_on_cluster_list_page(self, sdk_client_fs, app_fs):
+        """Test run upgrade cluster from the /cluster page"""
+        params = {
+            "upgrade_cluster_name": "upgrade cluster",
+            "upgrade": "upgrade 2",
+            "state": "upgradated",
+        }
+        with allure.step("Create main cluster"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
+            bundle.cluster_create(name=CLUSTER_NAME)
+        with allure.step("Create cluster to upgrade"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_UPGRADE)
+            cluster_to_upgrade = bundle.cluster_create(name=params["upgrade_cluster_name"])
+        cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+        row_with_upgrade = cluster_page.get_row_by_cluster_name(cluster_to_upgrade.name)
+        cluster_page.run_upgrade_in_cluster_row(row=row_with_upgrade, upgrade_name=params["upgrade"])
+        with allure.step("Check that cluster has been upgraded"):
+            cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+            row = cluster_page.get_row_by_cluster_name(params["upgrade_cluster_name"])
+            assert (
+                cluster_page.get_cluster_state_from_row(row) == params["state"]
+            ), f"Cluster state should be {params['state']}"
+
 
 class TestClusterMainPage:
     """Tests for the /cluster/{}/main page"""
