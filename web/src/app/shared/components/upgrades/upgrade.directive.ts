@@ -13,18 +13,26 @@ import { Directive, EventEmitter, HostListener, Input, Output } from '@angular/c
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DialogComponent } from '../dialog.component';
 import { Upgrade } from "./upgrade.component";
-import { concat, Observable, of } from "rxjs";
-import {filter, map, switchMap, tap} from "rxjs/operators";
-import { ApiService } from "../../../core/api";
-import { EmmitRow } from "../../../core/types";
+import { concat, of } from "rxjs";
+import { filter, map, switchMap, tap } from "rxjs/operators";
+import { ApiService } from "@app/core/api";
+import { EmmitRow } from "@app/core/types";
 import { BaseDirective } from "../../directives";
-import { ActionMasterComponent as component} from "../actions/master/master.component";
+import { IUpgrade, UpgradeMasterComponent as component } from "../upgrades/master/master.component";
+
+export interface UpgradeParameters {
+  cluster?: {
+    id: number;
+    hostcomponent: string;
+  };
+  upgrades: IUpgrade[];
+}
 
 @Directive({
   selector: '[appUpgrades]'
 })
 export class UpgradesDirective extends BaseDirective {
-  @Input('appUpgrades') inputData: Upgrade;
+  @Input('appUpgrades') inputData: IUpgrade;
   @Output() refresh: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
 
   constructor(private api: ApiService, private dialog: MatDialog) {
@@ -46,52 +54,43 @@ export class UpgradesDirective extends BaseDirective {
   }
 
   get hasDisclaimer(): boolean {
-    return !!this?.inputData?.ui_options?.disclaimer
+    return !!this?.inputData?.ui_options['disclaimer']
   }
 
   prepare(): void {
-    const maxWidth = '1400px';
     let dialogModel: MatDialogConfig
-
-    if (this.hasDisclaimer) {
-      if (this.hasConfig) {
-        if (this.hasHostComponent) {
-          dialogModel = { data: { title: 'yes config yes hostcomponent', model: this?.inputData, component: component } };
-        } else {
-          dialogModel = { data: { title: 'yes config no hostcomponent', model: this?.inputData, component: component } };
-        }
-
-        this.runUpgrade(this.inputData, dialogModel);
-      }
-
-      if (!this.hasConfig) {
-        if (!this.hasHostComponent) {
-          dialogModel = { data: { title: 'No config not hostcomponent', model: this?.inputData, component: component } };
-          this.runOldUpgrade(this.inputData, dialogModel);
-        } else {
-          dialogModel = { data: { title: 'No config yes hostcomponent', model: this?.inputData, component: component } };
-          this.runUpgrade(this.inputData, dialogModel);
-        }
-      }
-    } else {
-      this.dialog.open(DialogComponent, { data: { title: 'No disclaimer yes config yes hostcomponent', model: this?.inputData, component: component } });
+    const maxWidth = '1400px';
+    const isMulty = this?.inputData.upgradable;
+    const width = isMulty || this?.inputData.config?.config.length || this?.inputData.hostcomponentmap?.length ? '90%' : '400px';
+    const title = this?.inputData.ui_options['disclaimer'] ? this?.inputData.ui_options['disclaimer'] : isMulty ? 'Run an actions?' : `Run an action [ ${this?.inputData.name} ]?`;
+    const data: Upgrade = this.inputData as Upgrade;
+    const model: UpgradeParameters = {
+      cluster: {
+        id: this.inputData.id,
+        hostcomponent: this.inputData.url,
+      },
+      upgrades: [this.inputData]
     }
 
-    // const act = model.actions[0];
-    // const isMulty = model.actions.length > 1;
-    //
-    // const width = isMulty || act.config?.config.length || act.hostcomponentmap?.length ? '90%' : '400px';
-    // const title = act.ui_options?.disclaimer ? act.ui_options.disclaimer : isMulty ? 'Run an actions?' : `Run an action [ ${act.display_name} ]?`;
-    //
-    // dialogModel =  {
-    //   width,
-    //   maxWidth,
-    //   data: {
-    //     title,
-    //     model,
-    //     component,
-    //   }
-    // };
+    dialogModel =  {
+      width,
+      maxWidth,
+      data: {
+        title,
+        model,
+        component,
+      }
+    };
+
+    if (this.hasDisclaimer) {
+      if (this.hasConfig || this.hasHostComponent) {
+        this.runUpgrade(data, dialogModel);
+      } else if (!this.hasConfig && !this.hasHostComponent) {
+        this.runOldUpgrade(data, dialogModel);
+      }
+    } else {
+      this.dialog.open(DialogComponent, dialogModel);
+    }
   }
 
   runUpgrade(item: Upgrade, dialogModel: MatDialogConfig) {
@@ -102,7 +101,7 @@ export class UpgradesDirective extends BaseDirective {
               .open(DialogComponent, {
                 data: {
                   title: 'Are you sure you want to upgrade?',
-                  text: item.ui_options.disclaimer || text,
+                  text: item.ui_options['disclaimer'] || text,
                   disabled: !item.upgradable,
                   controls: item.license === 'unaccepted' ? {
                     label: 'Do you accept the license agreement?',
@@ -130,7 +129,7 @@ export class UpgradesDirective extends BaseDirective {
             .open(DialogComponent, {
               data: {
                 title: 'Are you sure you want to upgrade?',
-                text: item.ui_options.disclaimer || text,
+                text: item.ui_options['disclaimer'] || text,
                 disabled: !item.upgradable,
                 controls: item.license === 'unaccepted' ? {
                   label: 'Do you accept the license agreement?',

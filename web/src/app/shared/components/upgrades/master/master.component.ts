@@ -12,10 +12,9 @@
 import { Component, ElementRef, EventEmitter, OnInit, ViewChild } from '@angular/core';
 import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic/dynamic.directive';
 import { BaseDirective } from '@app/shared/directives';
-import { UpgradesDirective} from "@app/shared/components/upgrades/upgrade.directive";
 import { IMasterData, IValue, MasterService, whatShow } from './master.service';
 import { IConfig } from "@app/shared/configuration/types";
-import { HostComponent, IUIOptions } from "@app/core/types";
+import { IActionParameter, IUIOptions } from "@app/core/types";
 
 export interface IUpgrade {
   bundle_id: number;
@@ -23,7 +22,7 @@ export interface IUpgrade {
   description: string;
   do: string;
   from_edition: string[];
-  hostcomponentmap: HostComponent[];
+  hostcomponentmap: IActionParameter[];
   id: number;
   license: string;
   license_url: string;
@@ -77,7 +76,7 @@ export class UpgradeMasterComponent extends BaseDirective implements DynamicComp
   }
 
   ngOnInit(): void {
-    if (this.model.upgradable) this.choose(this.model.do);
+    if (this.model.upgrades.length === 1) this.choose(this.model.upgrades[0]);
   }
 
   choose(upgrade: IUpgrade) {

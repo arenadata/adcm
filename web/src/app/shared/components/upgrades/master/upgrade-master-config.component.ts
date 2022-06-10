@@ -13,18 +13,19 @@ import { Component, Input, ViewChild } from '@angular/core';
 import { IAction } from '@app/core/types';
 import { FieldService } from '@app/shared/configuration/services/field.service';
 import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
+import {IUpgrade} from "@app/shared/components/upgrades/master/master.component";
 
 @Component({
-  selector: 'app-action-master-config',
+  selector: 'app-upgrade-master-config',
   template: `
     <div class="config-tools">
       <mat-checkbox [(ngModel)]="advanced" *ngIf="fields.isAdvanced">Advanced</mat-checkbox>
     </div>
-    <app-config-fields #fields [model]="action?.config" [ngStyle]="{ display: 'inherit' }"></app-config-fields>
+    <app-config-fields #fields [model]="upgrade?.config" [ngStyle]="{ display: 'inherit' }"></app-config-fields>
   `,
 })
 export class UpgradeMasterConfigComponent {
-  @Input() action: IAction;
+  @Input() upgrade: IUpgrade;
 
   @ViewChild('fields') fields: ConfigFieldsComponent = {} as ConfigFieldsComponent;
 
