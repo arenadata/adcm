@@ -40,6 +40,13 @@
       states:
         available: any
 
+    sleep:
+      type: job
+      script_type: ansible
+      script: ./sleep.yaml
+      states:
+        available: any
+
 - type: service
   name: test_service
   version: 2
