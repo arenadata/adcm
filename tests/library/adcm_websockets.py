@@ -37,9 +37,9 @@ class EventMessage(NamedTuple):
     """
 
     event: str
-    object_fields: dict[str, Any]
+    object_fields: Dict[str, Any]
 
-    def match(self, message: WSMessageData) -> tuple[bool, MismatchReason]:
+    def match(self, message: WSMessageData) -> Tuple[bool, MismatchReason]:
         """
         Check that "event" and "object" fields match this object
         """
@@ -73,7 +73,7 @@ class ADCMWebsocket:
     _default_timeout: float
     # datetime here is the UTC date of **adding** message to this list
     # not when the message was invoked
-    _messages: list[tuple[datetime, WSMessageData]]
+    _messages: List[Tuple[datetime, WSMessageData]]
 
     def __init__(self, conn: WebSocketClientProtocol, timeout: WaitTimeout = 2):
         self._ws = conn
@@ -96,7 +96,7 @@ class ADCMWebsocket:
     @allure.step('Get up to {max_messages} messages')
     async def get_messages(
         self, max_messages: int, single_msg_timeout: WaitTimeout = 1, break_on_first_fail: bool = True
-    ) -> list[WSMessageData]:
+    ) -> List[WSMessageData]:
         """
         Get messages until `max_messages` is reached
         or retrieve message request timed out (if `break_on_first_fail` is `True`)
@@ -114,7 +114,7 @@ class ADCMWebsocket:
             return retrieved_messages
 
     @allure.step('Get all "waiting" WS messages')
-    async def get_waiting_messages(self) -> list[WSMessageData]:
+    async def get_waiting_messages(self) -> List[WSMessageData]:
         """
         Get all messages that currently can be received.
 
