@@ -316,6 +316,31 @@ def test_old_adcm_config_removal(sdk_client_fs, adcm_fs, adcm_db):
     check_config_logs_are_removed(sdk_client_fs, adcm_history[:-2])
 
 
+def test_only_finished_tasks_removed(sdk_client_fs, adcm_fs, adcm_db, objects):
+    """
+    Test that running objects aren't removed from DB
+    """
+    ten_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=10)
+    cluster, *_ = objects
+
+    with allure.step('Run long action'):
+        long_task = cluster.action(name='sleep').run()
+    task_ids = [long_task.id]
+    job_ids = [long_task.job().id]
+
+    set_rotation_info_in_adcm_config(sdk_client_fs.adcm(), jobs_in_db=1, jobs_on_fs=1)
+    _set_tasks_jobs_date(adcm_fs, adcm_db, ten_days_ago, task_ids, job_ids)
+    logrotate(adcm_fs)
+
+    if long_task.status != 'running':
+        raise ValueError(
+            'Long action finished during logrotate OR right after it. Increase sleep time in sleep.yaml file'
+        )
+
+    check_task_logs_are_presented_in_db(sdk_client_fs, task_ids)
+    check_job_logs_are_presented_in_db(sdk_client_fs, job_ids)
+
+
 # !===== Steps =====!
 
 # set dates and configs
