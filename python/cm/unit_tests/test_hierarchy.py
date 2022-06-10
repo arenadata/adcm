@@ -171,8 +171,8 @@ class HierarchyTest(TestCase):
             'host_11',
             'host_12',
             'host_31',
-            'provider_1',
-            'provider_3',
+            # 'provider_1',
+            # 'provider_3',
         )
         for name in expected:
             assert tree.get_node(hierarchy_objects[name])
@@ -211,8 +211,8 @@ class HierarchyTest(TestCase):
                 'host_11',
                 'host_12',
                 'host_31',
-                'provider_1',
-                'provider_3',
+                # 'provider_1',
+                # 'provider_3',
             ),
             'service_11': (
                 'cluster_1',
@@ -221,7 +221,7 @@ class HierarchyTest(TestCase):
                 'component_112',
                 'host_11',
                 'host_12',
-                'provider_1',
+                # 'provider_1',
             ),
             'service_12': (
                 'cluster_1',
@@ -231,8 +231,8 @@ class HierarchyTest(TestCase):
                 'host_11',
                 'host_12',
                 'host_31',
-                'provider_1',
-                'provider_3',
+                # 'provider_1',
+                # 'provider_3',
             ),
             'component_111': (
                 'cluster_1',
@@ -240,7 +240,7 @@ class HierarchyTest(TestCase):
                 'component_111',
                 'host_11',
                 'host_12',
-                'provider_1',
+                # 'provider_1',
             ),
             'component_112': (
                 'cluster_1',
@@ -248,7 +248,7 @@ class HierarchyTest(TestCase):
                 'component_112',
                 'host_11',
                 'host_12',
-                'provider_1',
+                # 'provider_1',
             ),
             'component_121': (
                 'cluster_1',
@@ -257,8 +257,8 @@ class HierarchyTest(TestCase):
                 'host_11',
                 'host_12',
                 'host_31',
-                'provider_1',
-                'provider_3',
+                # 'provider_1',
+                # 'provider_3',
             ),
             'component_122': (
                 'cluster_1',
@@ -267,8 +267,8 @@ class HierarchyTest(TestCase):
                 'host_11',
                 'host_12',
                 'host_31',
-                'provider_1',
-                'provider_3',
+                # 'provider_1',
+                # 'provider_3',
             ),
             'host_11': (
                 'cluster_1',
@@ -279,7 +279,7 @@ class HierarchyTest(TestCase):
                 'component_121',
                 'component_122',
                 'host_11',
-                'provider_1',
+                # 'provider_1',
             ),
             'host_12': (
                 'cluster_1',
@@ -290,7 +290,7 @@ class HierarchyTest(TestCase):
                 'component_121',
                 'component_122',
                 'host_12',
-                'provider_1',
+                # 'provider_1',
             ),
             'host_31': (
                 'cluster_1',
@@ -298,7 +298,7 @@ class HierarchyTest(TestCase):
                 'component_121',
                 'component_122',
                 'host_31',
-                'provider_3',
+                # 'provider_3',
             ),
         }
 
@@ -327,8 +327,7 @@ class HierarchyTest(TestCase):
                 'host_11',
                 'host_12',
                 'host_31',
-                'provider_1',
-                'provider_3',
+                # 'provider_3',
             ),
             'service_11': (
                 'cluster_1',
@@ -340,7 +339,7 @@ class HierarchyTest(TestCase):
                 'component_122',
                 'host_11',
                 'host_12',
-                'provider_1',
+                # 'provider_1',
             ),
             'service_12': (
                 'cluster_1',
@@ -353,8 +352,8 @@ class HierarchyTest(TestCase):
                 'host_11',
                 'host_12',
                 'host_31',
-                'provider_1',
-                'provider_3',
+                # 'provider_1',
+                # 'provider_3',
             ),
             'component_111': (
                 'cluster_1',
@@ -366,7 +365,7 @@ class HierarchyTest(TestCase):
                 'component_122',
                 'host_11',
                 'host_12',
-                'provider_1',
+                # 'provider_1',
             ),
             'component_112': (
                 'cluster_1',
@@ -379,7 +378,7 @@ class HierarchyTest(TestCase):
                 'host_11',
                 'host_12',
                 # 'host_31',
-                'provider_1',
+                # 'provider_1',
                 # 'provider_3',
             ),
             'component_121': (
@@ -393,8 +392,8 @@ class HierarchyTest(TestCase):
                 'host_11',
                 'host_12',
                 'host_31',
-                'provider_1',
-                'provider_3',
+                # 'provider_1',
+                # 'provider_3',
             ),
             'component_122': (
                 'cluster_1',
@@ -407,8 +406,8 @@ class HierarchyTest(TestCase):
                 'host_11',
                 'host_12',
                 'host_31',
-                'provider_1',
-                'provider_3',
+                # 'provider_1',
+                # 'provider_3',
             ),
             'host_11': (
                 'cluster_1',
@@ -419,7 +418,7 @@ class HierarchyTest(TestCase):
                 'component_121',
                 'component_122',
                 'host_11',
-                'provider_1',
+                # 'provider_1',
             ),
             'host_12': (
                 'cluster_1',
@@ -430,7 +429,7 @@ class HierarchyTest(TestCase):
                 'component_121',
                 'component_122',
                 'host_12',
-                'provider_1',
+                # 'provider_1',
             ),
             'host_31': (
                 'cluster_1',
@@ -438,27 +437,7 @@ class HierarchyTest(TestCase):
                 'component_121',
                 'component_122',
                 'host_31',
-                'provider_3',
-            ),
-            'provider_1': (
-                'cluster_1',
-                'service_11',
-                'service_12',
-                'component_111',
-                'component_112',
-                'component_121',
-                'component_122',
-                'host_11',
-                'host_12',
-                'provider_1',
-            ),
-            'provider_3': (
-                'cluster_1',
-                'service_12',
-                'component_121',
-                'component_122',
-                'host_31',
-                'provider_3',
+                # 'provider_3',
             ),
         }
 
