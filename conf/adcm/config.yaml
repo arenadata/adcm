@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 1.6
+  version: 1.7
 
   config:
     - name: "global"
@@ -109,3 +109,51 @@
           min: 0
           description: |
             You can set the time (number of days) after which the Objects configuration will be deleted from the database.
+    - name: "ldap_integration"
+      display_name: "LDAP integration"
+      type: "group"
+      activatable: true
+      active: false
+      subs:
+        - name: "ldap_uri"
+          display_name: "LDAP URI"
+          description: |
+            The URI of the LDAP server.
+          type: string
+        - name: "ldap_user"
+          display_name: "LDAP User"
+          description: |
+            The distinguished name (DN) of the user that is used to connect to the LDAP server. For example: "cn=admin,dc=ad,dc=ranger-test".
+          type: string
+        - name: "ldap_password"
+          display_name: "LDAP Password"
+          description: |
+            Password for access to the LDAP server of the user specified in the "LDAP User" field.
+          type: string
+        - name: "user_search_base"
+          display_name: "User search base"
+          description: |
+            The distinguished name (DN) of the directory object from which to search for entries. For example: "ou=Peoples,dc=ad,dc=ranger-test".
+          type: string
+        - name: "user_search_filter"
+          display_name: "User search filter"
+          description: |
+            User attribute and its value for which the search is performed.
+          type: string
+          default: "sAMAccountName=%(user)s"
+        - name: "group_search_base"
+          display_name: "Group search base"
+          description: |
+            The distinguished name (DN) of the directory object from which to search for entries. For example: "ou=Groups,dc=ad,dc=ranger-test".
+          type: string
+        - name: "group_search_filter"
+          display_name: "Group search filter"
+          description: |
+            Group attribute and its value for which the search is performed.
+          type: string
+        - name: "sync_interval"
+          display_name: "Sync interval"
+          description: |
+            Amount of time in minutes that group memberships and user distinguished names are synchronized between AD and ADCM.
+          type: integer
+          default: 60
