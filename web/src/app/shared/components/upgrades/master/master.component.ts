@@ -13,30 +13,7 @@ import { Component, ElementRef, EventEmitter, OnInit, ViewChild } from '@angular
 import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic/dynamic.directive';
 import { BaseDirective } from '@app/shared/directives';
 import { IMasterData, IValue, MasterService, whatShow } from './master.service';
-import { IConfig } from "@app/shared/configuration/types";
-import { IActionParameter, IUIOptions } from "@app/core/types";
-
-export interface IUpgrade {
-  bundle_id: number;
-  config: IConfig;
-  description: string;
-  do: string;
-  from_edition: string[];
-  hostcomponentmap: IActionParameter[];
-  id: number;
-  license: string;
-  license_url: string;
-  max_strict: boolean;
-  max_version: string;
-  min_strict: boolean;
-  min_version: string;
-  name: string;
-  state_available: string;
-  state_on_success: string;
-  ui_options: IUIOptions[];
-  upgradable: boolean;
-  url: string;
-}
+import { Upgrade } from "@app/shared/components";
 
 @Component({
   selector: 'app-master',
@@ -64,7 +41,7 @@ export interface IUpgrade {
 export class UpgradeMasterComponent extends BaseDirective implements DynamicComponent, OnInit {
   event: EventEmitter<DynamicEvent> = new EventEmitter();
   model: /*UpgradeParameters*/any;
-  upgrade: IUpgrade;
+  upgrade: Upgrade;
   show: whatShow;
 
   verbose = false;
@@ -79,7 +56,7 @@ export class UpgradeMasterComponent extends BaseDirective implements DynamicComp
     if (this.model.upgrades.length === 1) this.choose(this.model.upgrades[0]);
   }
 
-  choose(upgrade: IUpgrade) {
+  choose(upgrade: Upgrade) {
     this.upgrade = upgrade;
     this.show = this.service.spotShow(upgrade);
   }

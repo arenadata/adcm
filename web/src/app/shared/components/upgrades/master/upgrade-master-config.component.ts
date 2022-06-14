@@ -10,10 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, ViewChild } from '@angular/core';
-import { IAction } from '@app/core/types';
 import { FieldService } from '@app/shared/configuration/services/field.service';
 import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
-import {IUpgrade} from "@app/shared/components/upgrades/master/master.component";
+import { Upgrade } from "@app/shared/components";
 
 @Component({
   selector: 'app-upgrade-master-config',
@@ -25,7 +24,7 @@ import {IUpgrade} from "@app/shared/components/upgrades/master/master.component"
   `,
 })
 export class UpgradeMasterConfigComponent {
-  @Input() upgrade: IUpgrade;
+  @Input() upgrade: Upgrade;
 
   @ViewChild('fields') fields: ConfigFieldsComponent = {} as ConfigFieldsComponent;
 

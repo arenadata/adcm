@@ -62,7 +62,7 @@ export interface Upgrade {
     </button>
     <mat-menu #menu="matMenu" [overlapTrigger]="false" [xPosition]="xPosition" yPosition="below">
       <ng-template matMenuContent>
-        <button *ngFor="let item of list$ | async" mat-menu-item [appUpgrades]="item">
+        <button *ngFor="let item of list$ | async" mat-menu-item [appUpgrades]="item" [clusterId]="pRow['id']">
           <span>{{ item.name || 'No name' }}</span>
         </button>
       </ng-template>
@@ -71,7 +71,6 @@ export interface Upgrade {
 })
 export class UpgradeComponent {
   EventHelper = EventHelper;
-
   list$: Observable<Upgrade[]>;
   pRow: UpgradeItem = { upgradable: false, upgrade: '', issue: null };
 

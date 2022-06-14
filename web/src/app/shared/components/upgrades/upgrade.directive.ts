@@ -13,26 +13,27 @@ import { Directive, EventEmitter, HostListener, Input, Output } from '@angular/c
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DialogComponent } from '../dialog.component';
 import { Upgrade } from "./upgrade.component";
-import { concat, of } from "rxjs";
+import {concat, Observable, of} from "rxjs";
 import { filter, map, switchMap, tap } from "rxjs/operators";
 import { ApiService } from "@app/core/api";
 import { EmmitRow } from "@app/core/types";
 import { BaseDirective } from "../../directives";
-import { IUpgrade, UpgradeMasterComponent as component } from "../upgrades/master/master.component";
+import { UpgradeMasterComponent as component } from "../upgrades/master/master.component";
 
 export interface UpgradeParameters {
   cluster?: {
     id: number;
     hostcomponent: string;
   };
-  upgrades: IUpgrade[];
+  upgrades: Upgrade[];
 }
 
 @Directive({
   selector: '[appUpgrades]'
 })
 export class UpgradesDirective extends BaseDirective {
-  @Input('appUpgrades') inputData: IUpgrade;
+  @Input('appUpgrades') inputData: Upgrade;
+  @Input() clusterId: number;
   @Output() refresh: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
 
   constructor(private api: ApiService, private dialog: MatDialog) {
@@ -61,7 +62,7 @@ export class UpgradesDirective extends BaseDirective {
     let dialogModel: MatDialogConfig
     const maxWidth = '1400px';
     const isMulty = this?.inputData.upgradable;
-    const width = isMulty || this?.inputData.config?.config.length || this?.inputData.hostcomponentmap?.length ? '90%' : '400px';
+    const width = isMulty || this.hasConfig || this.hasHostComponent ? '90%' : '400px';
     const title = this?.inputData.ui_options['disclaimer'] ? this?.inputData.ui_options['disclaimer'] : isMulty ? 'Run an actions?' : `Run an action [ ${this?.inputData.name} ]?`;
     const data: Upgrade = this.inputData as Upgrade;
     const model: UpgradeParameters = {
@@ -81,6 +82,8 @@ export class UpgradesDirective extends BaseDirective {
         component,
       }
     };
+
+    if (this.hasHostComponent) this.checkComponents();
 
     if (this.hasDisclaimer) {
       if (this.hasConfig || this.hasHostComponent) {
@@ -151,5 +154,19 @@ export class UpgradesDirective extends BaseDirective {
   fork(item: Upgrade) {
     const flag = item.license === 'unaccepted';
     return flag ? this.api.get<{ text: string }>(item.license_url).pipe(map(a => a.text)) : of(item.description);
+  }
+
+  checkComponents() {
+    let clusterHostComponentMap;
+    this.getClusterInfo().subscribe((resp) => {
+      clusterHostComponentMap = resp
+    });
+    this.inputData.hostcomponentmap.forEach((hc) => {
+      console.log(hc);
+    })
+  }
+
+  getClusterInfo(): Observable<any> {
+    return this.api.get(`api/v1/cluster/${this.clusterId}/hostcomponent/`)
   }
 }

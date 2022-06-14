@@ -17,7 +17,7 @@ import { ServiceHostComponent } from '@app/shared/host-components-map/services2h
 import { Post } from '@app/shared/host-components-map/types';
 import { IConfigAttr } from '@app/shared/configuration/types';
 import { IOutput } from '@app/shared/configuration/services/field.service';
-import { IUpgrade } from "@app/shared/components/upgrades/master/master.component";
+import { Upgrade } from "@app/shared/components";
 
 export interface IValue {
   config?: ConfigFieldsComponent;
@@ -42,7 +42,7 @@ export interface IMasterData {
 export class MasterService {
   constructor(private api: ApiService, private configService: FieldService) {}
 
-  spotShow(upgrade: IUpgrade): whatShow {
+  spotShow(upgrade: Upgrade): whatShow {
     const config = upgrade.config?.config?.length;
     const hm = upgrade.hostcomponentmap?.length;
     return config ? (hm ? whatShow.stepper : whatShow.config) : hm ? whatShow.hostMap : whatShow.none;
