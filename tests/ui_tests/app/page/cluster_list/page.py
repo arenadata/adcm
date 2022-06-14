@@ -159,6 +159,17 @@ class ClusterListPage(BasePageObject):
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
 
+    @allure.step("Run upgrade {upgrade_name} for cluster from row")
+    def run_upgrade_in_cluster_row(self, row: WebElement, upgrade_name: str):
+        """Run upgrade for cluster from row"""
+
+        self.find_child(row, self.table.locators.ClusterRow.upgrade).click()
+        self.wait_element_visible(self.table.locators.UpgradePopup.block)
+        self.find_and_click(self.table.locators.UpgradePopup.button(upgrade_name))
+        self.wait_element_visible(ActionDialog.body)
+        self.find_and_click(ActionDialog.run)
+        self.wait_element_hide(ActionDialog.body)
+
     @allure.step("Click on cluster concern object name from the row")
     def click_on_concern_by_object_name(self, row: WebElement, concern_object_name: str):
         """Click on Cluster Concern object name from the row"""
