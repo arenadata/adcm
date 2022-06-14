@@ -1684,6 +1684,31 @@ class TestClusterGroupConfigPage:
         cluster_config_page.config.click_on_advanced()
         check_expectations()
 
+    def test_two_fields_on_cluster_config_page(self, sdk_client_fs: ADCMClient, app_fs):
+        """Test two different fields on group config page"""
+
+        path = get_data_dir(__file__, 'cluster_with_two_different_fields')
+        cluster, *_ = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
+        cluster_group_config = cluster.group_config_create(name="Test group")
+        cluster_config_page = ClusterGroupConfigConfig(
+            app_fs.driver, app_fs.adcm.url, cluster.id, cluster_group_config.id
+        ).open()
+        config_rows = cluster_config_page.group_config.get_all_group_config_rows()
+        with allure.step("Check that first field is enabled"):
+            first_row = config_rows[0]
+            assert not cluster_config_page.group_config.is_customization_chbx_disabled(
+                first_row
+            ), "Checkbox for first field should be enabled"
+            cluster_config_page.group_config.click_on_customization_chbx(first_row)
+            cluster_config_page.config.check_inputs_enabled(first_row)
+        with allure.step("Check that second field is disabled"):
+            second_row = config_rows[1]
+            assert cluster_config_page.group_config.is_customization_chbx_disabled(
+                second_row
+            ), "Checkbox for second field should be disabled"
+            cluster_config_page.group_config.click_on_customization_chbx(second_row)
+            cluster_config_page.config.check_inputs_disabled(second_row)
+
 
 class TestClusterStatusPage:
     """Tests for the /cluster/{}/status page"""
