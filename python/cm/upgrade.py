@@ -56,8 +56,10 @@ def switch_services(upgrade: Upgrade, cluster: Cluster) -> None:
             switch_object(co, prototype)
             switch_components(cluster, co, prototype)
         except ClusterObject.DoesNotExist:
-            # co.delete() ?!
             pass
+    for service in ClusterObject.objects.filter(cluster=cluster):
+        if service.prototype.bundle != upgrade.bundle:
+            service.delete()
     switch_hc(cluster, upgrade)
 
 
@@ -70,8 +72,8 @@ def switch_components(cluster: Cluster, co: ClusterObject, new_co_proto: Prototy
             )
             switch_object(sc, new_sc_prototype)
         except Prototype.DoesNotExist:
-            # sc.delete() whyyy?!
-            pass
+            sc.delete()
+
     for sc_proto in Prototype.objects.filter(parent=new_co_proto, type='component'):
         kwargs = dict(cluster=cluster, service=co, prototype=sc_proto)
         if not ServiceComponent.objects.filter(**kwargs).exists():

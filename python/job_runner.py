@@ -173,8 +173,7 @@ def main(job_id):
         try:
             task = job.task
             bundle_switch(task.task_object, job.action.upgrade)
-            if task.post_upgrade_hc_map:
-                switch_hc(task, job.action)
+            switch_hc(task, job.action)
         except AdcmEx as e:
             log.error(f'Error while upgrading bundle: {e}')
             cm.job.set_job_status(job_id, config.Job.FAILED, event)
