@@ -266,7 +266,7 @@ def cook_delta(  # pylint: disable=too-many-branches
 def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict]):
 
     if not action.hostcomponentmap:
-        return None, None
+        return None, []
 
     if not new_hc:
         err('TASK_ERROR', 'hc is required')
