@@ -22,6 +22,10 @@ from adcm_client.objects import Host
 from adcm_pytest_plugin.plugin import parametrized_by_adcm_version
 
 
+class ConfigError(Exception):
+    """Tests are configured incorrectly"""
+
+
 class RequestFailedException(Exception):
     """Request to ADCM API has status code >= 400"""
 
