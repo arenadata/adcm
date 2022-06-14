@@ -89,7 +89,7 @@ def check_prototype(cluster: Cluster, expected_prototype_id: int):
 
 
 def check_cluster_objects_configs_equal_bundle_default(
-    cluster: Cluster, bundle: Bundle, *, service_name: str = 'test_service'
+    cluster: Cluster, bundle: Bundle, *, service_names: Tuple[str, ...] = (TEST_SERVICE_NAME,)
 ):
     """
     Check that configurations of cluster, its services and components
@@ -100,7 +100,8 @@ def check_cluster_objects_configs_equal_bundle_default(
     ):
         actual_configs = _extract_configs(cluster)
         cluster_with_defaults = bundle.cluster_create(f'Cluster to take config from {random_string(4)}')
-        cluster_with_defaults.service_add(name=service_name)
+        for service in service_names:
+            cluster_with_defaults.service_add(name=service)
         expected_configs = _extract_configs(cluster_with_defaults)
 
         if actual_configs == expected_configs:
@@ -289,7 +290,13 @@ class TestSuccessfulUpgrade:
         new_bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__, 'hc_acl'))
 
         hc_after_upgrade = _set_hc_and_prepare_new_hc_for_upgrade_action(old_cluster, new_bundle, host_1, host_2)
-        self._run_successful_upgrade(new_bundle, old_cluster, 'successful', {'hc': hc_after_upgrade})
+        self._run_successful_upgrade(
+            new_bundle,
+            old_cluster,
+            'successful',
+            {'hc': hc_after_upgrade},
+            service_names=(TEST_SERVICE_NAME, NEW_SERVICE),
+        )
 
         _check_service_is_in_cluster(old_cluster, NEW_SERVICE)
         _check_service_is_in_cluster(old_cluster, TEST_SERVICE_NAME)
@@ -353,14 +360,14 @@ class TestSuccessfulUpgrade:
             new_bundle = client.upload_from_fs(get_data_dir(__file__, *new_bundle_dirs))
         self._run_successful_upgrade(new_bundle, old_cluster, upgrade_name, upgrade_config)
 
-    def _run_successful_upgrade(self, new_bundle, old_cluster, upgrade_name, upgrade_config):
+    def _run_successful_upgrade(self, new_bundle, old_cluster, upgrade_name, upgrade_config, **check_kwargs):
         with allure.step('Run upgrade and expect it to be successful'):
             upgrade_task = old_cluster.upgrade(name=upgrade_name).do(**upgrade_config)
             assert upgrade_task.wait() == 'success', f'Upgrade {upgrade_name} failed unexpectedly'
             check_state(old_cluster, 'ready_to_upgrade')
         with allure.step('Check that prototype was upgraded successfully'):
             check_prototype(old_cluster, new_bundle.cluster_prototype().id)
-            check_cluster_objects_configs_equal_bundle_default(old_cluster, new_bundle)
+            check_cluster_objects_configs_equal_bundle_default(old_cluster, new_bundle, **check_kwargs)
 
     @staticmethod
     def _check_group_is_presented(group_name, groups):
