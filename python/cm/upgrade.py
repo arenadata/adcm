@@ -50,16 +50,16 @@ def switch_object(obj: Union[Host, ClusterObject], new_prototype: Prototype) -> 
 def switch_services(upgrade: Upgrade, cluster: Cluster) -> None:
     """Upgrade services and component"""
 
-    for prototype in Prototype.objects.filter(bundle=upgrade.bundle, type='service'):
-        try:
-            co = ClusterObject.objects.get(cluster=cluster, prototype__name=prototype.name)
-            switch_object(co, prototype)
-            switch_components(cluster, co, prototype)
-        except ClusterObject.DoesNotExist:
-            pass
     for service in ClusterObject.objects.filter(cluster=cluster):
-        if service.prototype.bundle != upgrade.bundle:
+        try:
+            prototype = Prototype.objects.get(
+                bundle=upgrade.bundle, type='service', name=service.prototype.name
+            )
+            switch_object(service, prototype)
+            switch_components(cluster, service, prototype)
+        except Prototype.DoesNotExist:
             service.delete()
+
     switch_hc(cluster, upgrade)
 
 
