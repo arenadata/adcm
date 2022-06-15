@@ -29,6 +29,7 @@ from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import get_data_dir
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
 from adcm_pytest_plugin.utils import random_string
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.library.status import ADCMObjectStatusChanger
@@ -545,14 +546,17 @@ class TestClusterServicePage:
         service_conf_page.wait_page_is_opened()
         service_conf_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
-    @pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2790")
     def test_check_pagination_on_service_list_page(self, sdk_client_fs: ADCMClient, app_fs):
         """Test pagination on cluster/{}/service page"""
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_SERVICES)
         cluster = bundle.cluster_create(name=CLUSTER_NAME)
         cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_service_page.add_service_by_name(service_name="All")
-        cluster_service_page.wait_page_is_opened()
+        try:
+            cluster_service_page.wait_page_is_opened()
+        except TimeoutException:
+            cluster_service_page.driver.refresh()
+            cluster_service_page.wait_page_is_opened()
         cluster_service_page.table.check_pagination(second_page_item_amount=2)
 
     def test_delete_service_on_service_list_page(self, app_fs, create_community_cluster_with_service):
