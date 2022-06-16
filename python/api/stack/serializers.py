@@ -82,11 +82,28 @@ class PrototypeSerializer(serializers.Serializer):
         return obj.bundle.edition
 
 
-def get_prototype_constraint(self, obj):
+def get_constraint(self, obj):
     if obj.type == 'component':
         return obj.constraint
-    else:
-        return []
+    return []
+
+
+def get_service_name(self, obj):
+    if obj.type == 'component':
+        return obj.parent.name
+    return ''
+
+
+def get_service_display_name(self, obj):
+    if obj.type == 'component':
+        return obj.parent.display_name
+    return ''
+
+
+def get_service_id(self, obj):
+    if obj.type == 'component':
+        return obj.parent.id
+    return None
 
 
 class PrototypeUISerializer(PrototypeSerializer):
@@ -101,8 +118,14 @@ class PrototypeUISerializer(PrototypeSerializer):
     config_group_customization = serializers.BooleanField(read_only=True)
     venv = serializers.CharField(read_only=True)
     allow_maintenance_mode = serializers.BooleanField(read_only=True)
+    service_name = serializers.SerializerMethodField(read_only=True)
+    service_display_name = serializers.SerializerMethodField(read_only=True)
+    service_id = serializers.SerializerMethodField(read_only=True)
 
-    get_constraint = get_prototype_constraint
+    get_constraint = get_constraint
+    get_service_name = get_service_name
+    get_service_display_name = get_service_display_name
+    get_service_id = get_service_id
 
 
 class PrototypeShort(serializers.ModelSerializer):
@@ -190,8 +213,14 @@ class PrototypeDetailSerializer(PrototypeSerializer):
     constraint = serializers.SerializerMethodField()
     actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
+    service_name = serializers.SerializerMethodField(read_only=True)
+    service_display_name = serializers.SerializerMethodField(read_only=True)
+    service_id = serializers.SerializerMethodField(read_only=True)
 
-    get_constraint = get_prototype_constraint
+    get_constraint = get_constraint
+    get_service_name = get_service_name
+    get_service_display_name = get_service_display_name
+    get_service_id = get_service_id
 
 
 class ProviderTypeDetailSerializer(ProviderTypeSerializer):
