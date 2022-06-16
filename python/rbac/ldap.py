@@ -10,6 +10,9 @@ from cm.models import ADCM, ConfigLog
 from rbac.models import User, Group
 
 
+CERT_ENV_KEY = 'LDAPTLS_CACERT'
+
+
 def _get_ldap_default_settings():
     adcm_object = ADCM.objects.get(id=1)
     current_configlog = ConfigLog.objects.get(
@@ -63,7 +66,10 @@ def _get_ldap_default_settings():
                     }
                 }
             )
-            os.environ.setdefault('LDAPTLS_CACERT', ldap_config['tls_ca_cert_file'])
+            os.environ['CERT_ENV_KEY'] = ldap_config['tls_ca_cert_file']
+
+        else:
+            os.environ.pop(CERT_ENV_KEY, None)
 
         return default_settings
 
@@ -71,9 +77,9 @@ def _get_ldap_default_settings():
 
 
 class CustomLDAPBackend(LDAPBackend):
-    default_settings = _get_ldap_default_settings()
-
     def authenticate_ldap_user(self, ldap_user, password):
+        self.default_settings = _get_ldap_default_settings()
+
         try:
             user_or_none = super().authenticate_ldap_user(ldap_user, password)
         except ImproperlyConfigured as e:
