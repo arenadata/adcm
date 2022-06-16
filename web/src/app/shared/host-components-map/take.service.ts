@@ -19,7 +19,17 @@ import { filter, map, switchMap, take } from 'rxjs/operators';
 import { AddService } from '../add-component/add.service';
 import { DialogComponent } from '../components';
 import { DependenciesComponent } from './dependencies.component';
-import { CompTile, TConstraint, HostTile, IRawHosComponent, IStream, Post, StatePost, Tile } from './types';
+import {
+  CompTile,
+  TConstraint,
+  HostTile,
+  IRawHosComponent,
+  IStream,
+  Post,
+  StatePost,
+  Tile,
+  PrototypePost
+} from './types';
 
 export const getSelected = (from: Tile[]): Tile => from.find((a) => a.isSelected);
 
@@ -236,7 +246,7 @@ export class TakeService {
     host.isLink = false;
     host.relations = host.relations.filter((r) => r.id !== component.id);
 
-    state.delete(new Post(host.id, component.service_id, component.id));
+    state.delete(this.containsPrototype(component, host));
     this.clearDependencies(component, state, cs, hs, form);
     this.setFormValue(component, form);
   }
@@ -294,7 +304,7 @@ export class TakeService {
       link.relations.push(target);
       target.relations.push(link);
       target.isLink = true;
-      state.add(new Post(host.id, component.service_id, component.id));
+      state.add(this.containsPrototype(component, host));
     }
     this.setFormValue(component, form);
   }
@@ -316,6 +326,14 @@ export class TakeService {
         switchMap((result) => this.add.addService(result))
       )
       .subscribe();
+  }
+
+  containsPrototype(component, host) {
+    if (component.is_prototype) {
+      return new PrototypePost(host.id, component.service_id, component.id);
+    }
+
+    return new Post(host.id, component.service_id, component.id)
   }
   //#endregion
 }
