@@ -38,10 +38,6 @@ def _get_ldap_default_settings():
                 "last_name": "sn",
                 "email": "mail",
             },
-            # 'USER_FLAGS_BY_GROUP': {
-            #     'is_active': 'cn=Managers,ou=Groups,dc=ad,dc=ranger-test',
-            #     'is_staff': 'cn=Analysts, ou=Groups,dc=ad,dc=ranger-test',
-            # },
             'ALWAYS_UPDATE_USER': True,
             'FIND_GROUP_PERMS': True,
             'CACHE_TIMEOUT': 3600,
@@ -58,11 +54,11 @@ class CustomLDAPBackend(LDAPBackend):
         except ImproperlyConfigured as e:
             user_or_none = None
             # return None  # returns `Forbidden (403) CSRF verification failed. Request aborted.`
-        if isinstance(user_or_none, User):
-            user_or_none.is_active = True
-            user_or_none.save()
-        else:
-            raise RuntimeError
+        # if isinstance(user_or_none, User):
+        #     user_or_none.is_active = True
+        #     user_or_none.save()
+        # else:
+        #     raise RuntimeError
         return user_or_none
 
     def get_user_model(self):
