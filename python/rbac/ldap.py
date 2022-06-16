@@ -65,7 +65,7 @@ class CustomLDAPBackend(LDAPBackend):
 
     @staticmethod
     def __create_rbac_groups(user):
-        description = f'LDAP group'
+        description = 'LDAP group'
         for group in user.groups.all():
             count = Group.objects.filter(group_ptr_id=group.pk, description=description).count()
             if count < 1:
