@@ -766,6 +766,7 @@ action_script_type:
   match: set
   variants:
     - ansible
+    - python
 
 action_states_dict:
   match: dict

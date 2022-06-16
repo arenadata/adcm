@@ -2,7 +2,26 @@
 
   type: adcm
   name: ADCM
-  version: 1.6
+  version: 1.7
+
+  actions:
+    run_ldap_sync:
+      type: job
+      script_type: python
+      script: python/run_ldap_sync.py
+      display_name: Run LDAP sync
+      allow_in_maintenance_mode: true
+      states:
+        available: any
+    test_ldap_connection:
+      type: job
+      script_type: python
+      script: python/test_ldap_connection.py
+      display_name: Test LDAP connection
+      allow_to_terminate: true
+      allow_in_maintenance_mode: true
+      states:
+        available: any
 
   config:
     - name: "global"
