@@ -3,8 +3,9 @@ from django.core.exceptions import ImproperlyConfigured
 from django_auth_ldap.backend import LDAPBackend
 from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
 
+from cm.logger import log
 from cm.models import ADCM, ConfigLog
-from rbac.models import User
+from rbac.models import User, Group
 
 
 def _get_ldap_default_settings():
@@ -53,14 +54,24 @@ class CustomLDAPBackend(LDAPBackend):
         try:
             user_or_none = super().authenticate_ldap_user(ldap_user, password)
         except ImproperlyConfigured as e:
+            log.exception(e)
             user_or_none = None
-            # return None  # returns `Forbidden (403) CSRF verification failed. Request aborted.`
-        # if isinstance(user_or_none, User):
-        #     user_or_none.is_active = True
-        #     user_or_none.save()
-        # else:
-        #     raise RuntimeError
+        if isinstance(user_or_none, User):
+            self.__create_rbac_groups(user_or_none)
         return user_or_none
 
     def get_user_model(self):
         return User
+
+    @staticmethod
+    def __create_rbac_groups(user):
+        description = f'LDAP group'
+        for group in user.groups.all():
+            count = Group.objects.filter(group_ptr_id=group.pk, description=description).count()
+            if count < 1:
+                name = group.name
+                Group.objects.create(group_ptr_id=group.pk, description=description)
+                group.name = name
+                group.save()
+            elif count > 1:
+                raise RuntimeError(f'More than one `#{group.pk} {description}` groups exist')
