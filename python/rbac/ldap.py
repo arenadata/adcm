@@ -51,7 +51,8 @@ def _get_ldap_default_settings():
             'CACHE_TIMEOUT': 3600,
         }
 
-        if 'ldaps://' in ldap_config['ldap_uri']:
+        os.environ.pop(CERT_ENV_KEY, None)
+        if 'ldaps://' in ldap_config['ldap_uri'].lower():
             if not ldap_config['tls_ca_cert_file'] or not os.path.exists(
                 ldap_config['tls_ca_cert_file']
             ):
@@ -67,9 +68,6 @@ def _get_ldap_default_settings():
                 }
             )
             os.environ['CERT_ENV_KEY'] = ldap_config['tls_ca_cert_file']
-
-        else:
-            os.environ.pop(CERT_ENV_KEY, None)
 
         return default_settings
 
