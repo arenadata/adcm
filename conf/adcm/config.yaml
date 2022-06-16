@@ -139,7 +139,13 @@
           display_name: "User search filter"
           description: |
             User attribute and its value for which the search is performed.
-          type: string
+          type: variant
+          source:
+            type: inline
+            strict: False
+            value:
+              - "sAMAccountName=%(user)s"
+              - "uid=%(user)s"
           default: "sAMAccountName=%(user)s"
         - name: "group_search_base"
           display_name: "Group search base"
@@ -150,10 +156,22 @@
           display_name: "Group search filter"
           description: |
             Group attribute and its value for which the search is performed.
-          type: string
+          type: variant
+          source:
+            type: inline
+            strict: False
+            value:
+              - "(objectClass=*)"
+          default: "(objectClass=*)"
         - name: "sync_interval"
           display_name: "Sync interval"
           description: |
             Amount of time in minutes that group memberships and user distinguished names are synchronized between AD and ADCM.
           type: integer
           default: 60
+        - name: "tls_ca_cert_file"
+          display_name: "TLS CA certificate file path"
+          description: |
+            CA certificate path in ADCM container volume.
+          type: string
+          required: false
