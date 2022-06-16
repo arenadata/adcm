@@ -1,3 +1,5 @@
+import os
+
 import ldap
 from django.core.exceptions import ImproperlyConfigured
 from django_auth_ldap.backend import LDAPBackend
@@ -16,7 +18,8 @@ def _get_ldap_default_settings():
 
     if current_configlog.attr['ldap_integration']['active']:
         ldap_config = current_configlog.config['ldap_integration']
-        return {
+
+        default_settings = {
             'SERVER_URI': ldap_config['ldap_uri'],
             'BIND_DN': ldap_config['ldap_user'],
             'BIND_PASSWORD': ldap_config['ldap_password'],
@@ -44,6 +47,26 @@ def _get_ldap_default_settings():
             'FIND_GROUP_PERMS': True,
             'CACHE_TIMEOUT': 3600,
         }
+
+        if 'ldaps://' in ldap_config['ldap_uri']:
+            if not ldap_config['tls_ca_cert_file'] or not os.path.exists(
+                ldap_config['tls_ca_cert_file']
+            ):
+                raise RuntimeError('no cert file')
+
+            default_settings.update(
+                {
+                    'CONNECTION_OPTIONS': {
+                        ldap.OPT_X_TLS_CACERTFILE: ldap_config['ldap_uri'],
+                        ldap.OPT_X_TLS_REQUIRE_CERT: ldap.OPT_X_TLS_ALLOW,
+                        ldap.OPT_X_TLS_NEWCTX: 0,
+                    }
+                }
+            )
+            os.environ.setdefault('LDAPTLS_CACERT', ldap_config['tls_ca_cert_file'])
+
+        return default_settings
+
     return {}
 
 
