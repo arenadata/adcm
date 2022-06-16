@@ -38,6 +38,7 @@ def _get_ldap_default_settings():
                 "last_name": "sn",
                 "email": "mail",
             },
+            'MIRROR_GROUPS': True,
             'ALWAYS_UPDATE_USER': True,
             'FIND_GROUP_PERMS': True,
             'CACHE_TIMEOUT': 3600,
