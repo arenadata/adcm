@@ -71,7 +71,7 @@ export class UpgradesDirective extends BaseDirective {
     const maxWidth = '1400px';
     const isMulty = this?.inputData.upgradable;
     const width = isMulty || this.hasConfig || this.hasHostComponent ? '90%' : '400px';
-    const title = this?.inputData.ui_options['disclaimer'] ? this?.inputData.ui_options['disclaimer'] : isMulty ? 'Run an actions?' : `Run an action [ ${this?.inputData.name} ]?`;
+    const title = this?.inputData.ui_options['disclaimer'] ? this?.inputData.ui_options['disclaimer'] : isMulty ? 'Run an upgrades?' : `Run an upgrade [ ${this?.inputData.name} ]?`;
     const data: IUpgrade = this.inputData as IUpgrade;
     const model: UpgradeParameters = {
       cluster: {
@@ -148,7 +148,6 @@ export class UpgradesDirective extends BaseDirective {
             })
             .beforeClosed()
             .pipe(
-              this.takeUntil(),
               filter(yes => yes),
               switchMap(() => concat(license$, do$))
             )

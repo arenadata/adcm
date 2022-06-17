@@ -29,15 +29,15 @@ export interface Post {
 }
 
 export interface PrototypePost extends Post {
-  prototype_component_id: number;
+  component_prototype_id: number;
 }
 
 export class Post implements Post {
-  constructor(public host_id: number, public service_id: number, public id?: number, public component_id?: number ) {}
+  constructor(public host_id: number, public service_id: number, public component_id?: number,  public id?: number ) {}
 }
 
 export class PrototypePost implements Post {
-  constructor(public host_id: number, public service_id: number, public prototype_component_id: number, public id?: number ) {}
+  constructor(public host_id: number, public service_id: number, public component_prototype_id: number, public id?: number ) {}
 }
 
 /**
@@ -144,10 +144,10 @@ export class StatePost {
 
   containsPrototype(component): Post | PrototypePost {
    if (component?.url?.includes('prototype')) {
-     return new PrototypePost(component.host_id, component.service_id, component.id, component.component_id);
+     return new PrototypePost(component.host_id, component.service_id, component.id);
    }
 
-   return new Post(component.host_id, component.service_id, component.id, component.component_id);
+   return new Post(component.host_id, component.service_id, component.component_id, component.id);
   }
 }
 /**
