@@ -81,7 +81,7 @@ linters: test_image ## Run linters
 	docker run -i --rm -e PYTHONPATH="/source/tests" -v $(CURDIR)/:/source -w /source $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) \
         /bin/sh -eol pipefail -c "/linters.sh shellcheck && \
 			/venv.sh run default pip install -r requirements.txt -r requirements-test.txt && \
-			cd python && /venv.sh run default pylint_runner --rcfile ../pylintrc &&  cd .. \
+			cd python && /venv.sh run default pylint_runner --rcfile ../pyproject.toml &&  cd .. \
 			/linters.sh -b ./tests -f ../tests pylint && \
 			/linters.sh -f ./tests black && \
 			/linters.sh -f ./tests/functional flake8_pytest_style && \
