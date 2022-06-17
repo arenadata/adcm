@@ -100,7 +100,7 @@ export class CompTile extends Tile {
   }
 
   isPrototype(component): boolean {
-    return component.url.includes('prototype')
+    return component?.url?.includes('prototype')
   }
 }
 
@@ -143,7 +143,7 @@ export class StatePost {
   }
 
   containsPrototype(component): Post | PrototypePost {
-   if (component.url.includes('prototype')) {
+   if (component?.url?.includes('prototype')) {
      return new PrototypePost(component.host_id, component.service_id, component.id, component.component_id);
    }
 

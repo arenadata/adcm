@@ -20,6 +20,8 @@ import { ServiceHostComponent } from '@app/shared/host-components-map/services2h
 import { UpgradeMasterConfigComponent } from './upgrade-master-config.component';
 import { UpgradeMasterComponent as MasterComponent } from './master.component';
 import { MasterService } from './master.service';
+import {IConfig} from "@app/shared/configuration/types";
+import {IActionParameter, IUIOptions} from "@app/core/types";
 
 describe('MasterComponent', () => {
   let component: MasterComponent;
@@ -66,12 +68,15 @@ describe('MasterComponent', () => {
     component.model = { upgrades: [] };
     fixture.detectChanges();
     const compHost: HTMLElement = fixture.debugElement.nativeElement;
-    expect(compHost.querySelector('p').textContent).toBe('No data for the upgrade!');
+    expect(compHost.querySelector('p').textContent).toBe('No data for the upgrades!');
   });
 
   it('should be show template for current upgrade if model.upgrades.length === 1 and config = null and host-map = null', () => {
     component.model = {
-      upgrades: [{ name: 'a1', description: '', display_name: 'display a1', disabling_cause: null, run: 'url a1', ui_options: null, config: null, hostcomponentmap: null, button: null }]
+      upgrades: [{ bundle_id: 1, config: {} as IConfig, description: '', do: 'url', from_edition: ['community'],
+        hostcomponentmap: [] as IActionParameter[], id: 1, license: '', license_url: '', max_strict: true, max_version: '',
+        min_strict: false, min_version: '', name: '', state_available: '', state_on_success: '', ui_options: {} as IUIOptions,
+        upgradable: true, url: '' }]
     };
     fixture.detectChanges();
     const compHost: HTMLElement = fixture.debugElement.nativeElement;
@@ -86,29 +91,27 @@ describe('MasterComponent', () => {
   it('should be show upgrades list for choose current upgrade if model.upgrades.length > 1', () => {
     component.model = {
       upgrades: [
-        { name: 'a1', description: '', display_name: 'display a1', disabling_cause: null, run: 'url a1', ui_options: null, config: null, hostcomponentmap: null, button: null },
-        { name: 'a2', description: '', display_name: 'display a2', disabling_cause: null, run: 'url a2', ui_options: null, config: null, hostcomponentmap: null, button: null }
+        { bundle_id: 1, config: {} as IConfig, description: '', do: 'url', from_edition: ['community'],
+          hostcomponentmap: [] as IActionParameter[], id: 1, license: '', license_url: '', max_strict: true, max_version: '',
+          min_strict: false, min_version: '', name: '', state_available: '', state_on_success: '', ui_options: {} as IUIOptions,
+          upgradable: true, url: '' },
+        { bundle_id: 1, config: {} as IConfig, description: '', do: 'url', from_edition: ['community'],
+          hostcomponentmap: [] as IActionParameter[], id: 1, license: '', license_url: '', max_strict: true, max_version: '',
+          min_strict: false, min_version: '', name: '', state_available: '', state_on_success: '', ui_options: {} as IUIOptions,
+          upgradable: true, url: '' }
       ]
     };
     fixture.detectChanges();
     const compHost: HTMLElement = fixture.debugElement.nativeElement;
     // expect(compHost.querySelector('i').textContent).toBe("Let's choose first");
-    const buttonsLength = compHost.querySelector('mat-upgrade-list').getElementsByTagName('button').length;
+    const buttonsLength = compHost.querySelector('mat-action-list').getElementsByTagName('button').length;
     expect(buttonsLength).toBeGreaterThan(1);
   });
 
   it('should be show template for current upgrade if config exist only', () => {
     component.model = {
       upgrades: [
-        {
-          name: 'a1',
-          description: '',
-          display_name: 'display a1',
-          disabling_cause: null,
-          run: 'url a1',
-          ui_options: null,
-          config: {
-            config: [
+        { bundle_id: 1, config: {config: [
               {
                 type: 'string',
                 name: 'test',
@@ -122,11 +125,10 @@ describe('MasterComponent', () => {
                 activatable: false,
                 group_config: null,
               }
-            ]
-          },
-          hostcomponentmap: null,
-          button: null
-        }
+            ]} as IConfig, description: '', do: 'url', from_edition: ['community'],
+          hostcomponentmap: [] as IActionParameter[], id: 1, license: '', license_url: '', max_strict: true, max_version: '',
+          min_strict: false, min_version: '', name: '', state_available: '', state_on_success: '', ui_options: {} as IUIOptions,
+          upgradable: true, url: '' }
       ]
     };
     fixture.detectChanges();
@@ -139,9 +141,10 @@ describe('MasterComponent', () => {
 
   it('should be show template for current upgrade if host-map exist only', () => {
     component.model = {
-      upgrades: [
-        { name: 'a1', description: '', display_name: 'display a1', disabling_cause: null, run: 'url a1', ui_options: null, config: null, hostcomponentmap: [{ component: '', upgrade: 'add', service: '' }], button: null }
-      ]
+      upgrades: [{ bundle_id: 1, config: {} as IConfig, description: '', do: 'url', from_edition: ['community'],
+        hostcomponentmap:  [{ component: '', action: 'add', service: '' }] as IActionParameter[], id: 1, license: '',
+        license_url: '', max_strict: true, max_version: '', min_strict: false, min_version: '', name: '',
+        state_available: '', state_on_success: '', ui_options: {} as IUIOptions, upgradable: true, url: '' }]
     };
     fixture.detectChanges();
     const de = fixture.debugElement.nativeElement;
@@ -153,35 +156,24 @@ describe('MasterComponent', () => {
 
   it('should be show template for current upgrade with config and host-map', () => {
     component.model = {
-      upgrades: [
-        {
-          name: 'a1',
-          description: '',
-          display_name: 'display a1',
-          disabling_cause: null,
-          run: 'url a1',
-          ui_options: null,
-          config: {
-            config: [
-              {
-                type: 'string',
-                name: 'test',
-                display_name: 'display name test',
-                subname: '',
-                default: null,
-                value: null,
-                required: false,
-                description: '',
-                read_only: false,
-                activatable: false,
-                group_config: null,
-              }
-            ]
-          },
-          hostcomponentmap: [{ component: '', upgrade: 'add', service: '' }],
-          button: null
-        }
-      ]
+      upgrades: [{ bundle_id: 1, config: {config: [
+            {
+              type: 'string',
+              name: 'test',
+              display_name: 'display name test',
+              subname: '',
+              default: null,
+              value: null,
+              required: false,
+              description: '',
+              read_only: false,
+              activatable: false,
+              group_config: null,
+            }
+          ]} as IConfig, description: '', do: 'url', from_edition: ['community'],
+        hostcomponentmap:  [{ component: '', action: 'add', service: '' }] as IActionParameter[], id: 1, license: '',
+        license_url: '', max_strict: true, max_version: '', min_strict: false, min_version: '', name: '',
+        state_available: '', state_on_success: '', ui_options: {} as IUIOptions, upgradable: true, url: '' }]
     };
     fixture.detectChanges();
     const de = fixture.debugElement.nativeElement;

@@ -92,9 +92,9 @@ export class TakeService {
     return this.api.get<IRawHosComponent>(url);
   }
 
-  save(cluster_id: number, hostcomponent: string, hc: Post[]) {
+  save(cluster_id: number, hostcomponent: string | IRawHosComponent, hc: Post[]) {
     const send = { cluster_id, hc };
-    return this.api.post<Post[]>(hostcomponent, send).pipe(take(1));
+    return this.api.post<Post[]>(hostcomponent as string, send).pipe(take(1));
   }
   //#endregion
 
@@ -329,7 +329,7 @@ export class TakeService {
   }
 
   containsPrototype(component, host) {
-    if (component.is_prototype) {
+    if (component?.is_prototype) {
       return new PrototypePost(host.id, component.service_id, component.id);
     }
 

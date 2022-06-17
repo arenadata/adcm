@@ -39,7 +39,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   form = new FormGroup({});
 
   @Input()
-  cluster: { id: number; hostcomponent: string };
+  cluster: { id: number; hostcomponent: string | IRawHosComponent };
 
   /**
    * fixed position buttons for the scrolling
@@ -128,7 +128,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     const { id, type, details } = io;
     if (details.type === 'cluster' && +details.value === this.cluster.id) {
       this.service
-        .load(this.cluster.hostcomponent)
+        .load(this.cluster.hostcomponent as string)
         .pipe(this.takeUntil())
         .subscribe((raw: IRawHosComponent) => {
           if (type === 'host')

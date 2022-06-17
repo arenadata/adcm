@@ -25,26 +25,26 @@ export interface UpgradeItem {
   issue: IIssues;
 }
 
-export interface Upgrade {
-  id: number;
+export interface IUpgrade {
   bundle_id: number;
-  name: string;
+  config: IConfig;
   description: string;
   do: string;
-  upgradable: boolean;
-  from_edition: string[];
-  license: 'unaccepted' | 'absent';
+  from_edition: string[]
+  hostcomponentmap:IActionParameter[];
+  id: number;
+  license: string;
   license_url: string;
   max_strict: boolean;
   max_version: string;
   min_strict: boolean;
   min_version: string;
+  name: string;
   state_available: string;
   state_on_success: string;
-  url: string;
-  config: IConfig;
-  hostcomponentmap: IActionParameter[];
   ui_options: IUIOptions;
+  upgradable: boolean;
+  url: string;
 }
 
 @Component({
@@ -71,7 +71,7 @@ export interface Upgrade {
 })
 export class UpgradeComponent {
   EventHelper = EventHelper;
-  list$: Observable<Upgrade[]>;
+  list$: Observable<IUpgrade[]>;
   pRow: UpgradeItem = { upgradable: false, upgrade: '', issue: null };
 
   @Input() xPosition = 'before';
@@ -93,7 +93,7 @@ export class UpgradeComponent {
 
   getUpgrades(upgrade: string): Observable<any> {
     return this.api.get(`${upgrade}?ordering=-name`).pipe(
-      filter((list: Upgrade[]) => !!list.length)
+      filter((list: IUpgrade[]) => !!list.length)
     );
   }
 }

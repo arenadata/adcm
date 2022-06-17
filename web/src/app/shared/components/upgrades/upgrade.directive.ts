@@ -12,9 +12,9 @@
 import { Directive, EventEmitter, HostListener, Input, Output } from '@angular/core';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DialogComponent } from '../dialog.component';
-import { Upgrade } from "./upgrade.component";
-import {concat, forkJoin, Observable, of} from "rxjs";
-import {catchError, filter, finalize, map, mergeMap, switchMap, take, takeWhile, tap} from "rxjs/operators";
+import { IUpgrade } from "./upgrade.component";
+import { concat, Observable, of } from "rxjs";
+import { filter, map, switchMap, tap } from "rxjs/operators";
 import { ApiService } from "@app/core/api";
 import { EmmitRow } from "@app/core/types";
 import { BaseDirective } from "../../directives";
@@ -27,14 +27,14 @@ export interface UpgradeParameters {
     id: number;
     hostcomponent: IRawHosComponent;
   };
-  upgrades: Upgrade[];
+  upgrades: IUpgrade[];
 }
 
 @Directive({
   selector: '[appUpgrades]'
 })
 export class UpgradesDirective extends BaseDirective {
-  @Input('appUpgrades') inputData: Upgrade;
+  @Input('appUpgrades') inputData: IUpgrade;
   @Input() clusterId: number;
   @Output() refresh: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
 
@@ -72,7 +72,7 @@ export class UpgradesDirective extends BaseDirective {
     const isMulty = this?.inputData.upgradable;
     const width = isMulty || this.hasConfig || this.hasHostComponent ? '90%' : '400px';
     const title = this?.inputData.ui_options['disclaimer'] ? this?.inputData.ui_options['disclaimer'] : isMulty ? 'Run an actions?' : `Run an action [ ${this?.inputData.name} ]?`;
-    const data: Upgrade = this.inputData as Upgrade;
+    const data: IUpgrade = this.inputData as IUpgrade;
     const model: UpgradeParameters = {
       cluster: {
         id: this.inputData.id,
@@ -95,14 +95,14 @@ export class UpgradesDirective extends BaseDirective {
       if (this.hasConfig || this.hasHostComponent) {
         this.runUpgrade(data, dialogModel);
       } else if (!this.hasConfig && !this.hasHostComponent) {
-        this.runOldUpgrade(data, dialogModel);
+        this.runOldUpgrade(data);
       }
     } else {
       this.dialog.open(DialogComponent, dialogModel);
     }
   }
 
-  runUpgrade(item: Upgrade, dialogModel: MatDialogConfig) {
+  runUpgrade(item: IUpgrade, dialogModel: MatDialogConfig) {
     this.fork(item)
       .pipe(
         tap(text => {
@@ -127,7 +127,7 @@ export class UpgradesDirective extends BaseDirective {
       ).subscribe();
   }
 
-  runOldUpgrade(item: Upgrade, dialogModel: MatDialogConfig) {
+  runOldUpgrade(item: IUpgrade) {
     const license$ = item.license === 'unaccepted' ? this.api.put(`${item.license_url}accept/`, {}) : of();
     const do$ = this.api.post<{ id: number }>(item.do, {});
 
@@ -157,7 +157,7 @@ export class UpgradesDirective extends BaseDirective {
       .subscribe(row => this.refresh.emit({ cmd: 'refresh', row }));
   }
 
-  fork(item: Upgrade) {
+  fork(item: IUpgrade) {
     const flag = item.license === 'unaccepted';
     return flag ? this.api.get<{ text: string }>(item.license_url).pipe(map(a => a.text)) : of(item.description);
   }

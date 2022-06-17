@@ -12,7 +12,7 @@
 import { Component, Input, ViewChild } from '@angular/core';
 import { FieldService } from '@app/shared/configuration/services/field.service';
 import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.component';
-import { Upgrade } from "@app/shared/components";
+import { IUpgrade } from "@app/shared/components";
 
 @Component({
   selector: 'app-upgrade-master-config',
@@ -24,7 +24,7 @@ import { Upgrade } from "@app/shared/components";
   `,
 })
 export class UpgradeMasterConfigComponent {
-  @Input() upgrade: Upgrade;
+  @Input() upgrade: IUpgrade;
 
   @ViewChild('fields') fields: ConfigFieldsComponent = {} as ConfigFieldsComponent;
 
