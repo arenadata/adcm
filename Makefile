@@ -1,11 +1,11 @@
 # Set number of threads
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 
-###   TODO: revert this
+# TODO: fix on release base image before merge in develop
 ADCMBASE_IMAGE ?= hub.adsw.io/adcm/base
 ADCMTEST_IMAGE ?= hub.adsw.io/adcm/test
-ADCMBASE_TAG ?= 20220614120220
-###   END TODO
+ADCMBASE_TAG ?= ADCM-2891
+# END TODO
 APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
 
