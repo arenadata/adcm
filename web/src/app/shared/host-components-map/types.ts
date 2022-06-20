@@ -25,11 +25,19 @@ export interface Post {
   id?: number;
   host_id: number;
   service_id: number;
-  component_id: number;
+  component_id?: number;
+}
+
+export interface PrototypePost extends Post {
+  component_prototype_id: number;
 }
 
 export class Post implements Post {
-  constructor(public host_id: number, public service_id: number, public component_id: number, public id?: number) {}
+  constructor(public host_id: number, public service_id: number, public component_id?: number,  public id?: number ) {}
+}
+
+export class PrototypePost implements Post {
+  constructor(public host_id: number, public service_id: number, public component_prototype_id: number, public id?: number ) {}
 }
 
 /**
@@ -61,6 +69,7 @@ export class Tile {
   color?: 'none' | 'white' | 'gray' | 'yellow';
   notification?: string;
   mm?: string;
+  is_prototype?: boolean;
 }
 
 export class HostTile extends Tile {
@@ -87,6 +96,11 @@ export class CompTile extends Tile {
     this.limit = rawComponent.constraint;
     this.requires = rawComponent.requires;
     this.prototype_id = rawComponent.prototype_id;
+    this.is_prototype = this.isPrototype(rawComponent);
+  }
+
+  isPrototype(component): boolean {
+    return component?.url?.includes('prototype')
   }
 }
 
@@ -125,7 +139,15 @@ export class StatePost {
   }
 
   update(data: Post[]) {
-    data.forEach((a) => this.add(new Post(a.host_id, a.service_id, a.component_id, a.id)));
+    data.forEach((a) => this.add(this.containsPrototype(a)));
+  }
+
+  containsPrototype(component): Post | PrototypePost {
+   if (component?.url?.includes('prototype')) {
+     return new PrototypePost(component.host_id, component.service_id, component.id);
+   }
+
+   return new Post(component.host_id, component.service_id, component.component_id, component.id);
   }
 }
 /**

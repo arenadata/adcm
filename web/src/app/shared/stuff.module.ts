@@ -16,6 +16,7 @@ import { RouterModule } from '@angular/router';
 import { ActionsComponent, CrumbsComponent, UpgradeComponent } from './components';
 import { ActionListComponent } from './components/actions/action-list/action-list.component';
 import { ActionsDirective } from './components/actions/actions.directive';
+import { UpgradesDirective } from './components/upgrades/upgrade.directive';
 import { TooltipDirective } from '@app/shared/components/tooltip';
 import { PopoverDirective } from '@app/directives/popover.directive';
 import {
@@ -53,6 +54,7 @@ import { HasSelectedPipe } from '@app/pipes/has-selected.pipe';
     InfinityScrollDirective,
     ActionsComponent,
     ActionsDirective,
+    UpgradesDirective,
     ActionListComponent,
     MenuItemComponent,
     PopoverDirective,
@@ -85,6 +87,7 @@ import { HasSelectedPipe } from '@app/pipes/has-selected.pipe';
     InfinityScrollDirective,
     ActionsComponent,
     ActionsDirective,
+    UpgradesDirective,
     ActionListComponent,
     MenuItemComponent,
     PopoverDirective,

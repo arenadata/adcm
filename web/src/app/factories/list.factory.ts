@@ -83,6 +83,16 @@ export class ListFactory {
     };
   }
 
+  static updateColumn(): IComponentColumn<any> {
+    return {
+      label: 'Upgrade',
+      type: 'component',
+      className: 'list-control',
+      headerClassName: 'list-control',
+      component: UpgradeComponent,
+    };
+  }
+
   static importColumn<T>(listDirective: AdwpListDirective<T>): IButtonsColumn<T> {
     return {
       label: 'Import',
@@ -114,16 +124,6 @@ export class ListFactory {
       label: 'Bundle',
       sort: 'prototype_display_name',
       value: (row) => [row.prototype_display_name || row.prototype_name, row.prototype_version, row.edition].join(' '),
-    };
-  }
-
-  static updateColumn(): IComponentColumn<any> {
-    return {
-      label: 'Upgrade',
-      type: 'component',
-      className: 'list-control',
-      headerClassName: 'list-control',
-      component: UpgradeComponent,
     };
   }
 
