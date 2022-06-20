@@ -31,19 +31,20 @@ def _get_ldap_default_settings():
             'USER_SEARCH': LDAPSearch(
                 base_dn=ldap_config['user_search_base'],
                 scope=ldap.SCOPE_SUBTREE,
-                filterstr=ldap_config['user_search_filter'],
+                # filterstr=f'(objectClass={ldap_config.get("user_object_class", "*")})',
+                filterstr=f'{ldap_config["user_name_attribute"]}=%(user)s',
             ),
             'GROUP_SEARCH': LDAPSearch(
                 base_dn=ldap_config['group_search_base'],
                 scope=ldap.SCOPE_SUBTREE,
-                filterstr=ldap_config['group_search_filter'],
+                filterstr=f'(objectClass={ldap_config.get("group_object_class", "*")})',
             ),
             'USER_FLAGS_BY_GROUP': {
                 'is_active': ldap_config['group_search_base'],
             },
-            'GROUP_TYPE': GroupOfNamesType(name_attr="cn"),
+            'GROUP_TYPE': GroupOfNamesType(name_attr=ldap_config['group_name_attribute']),
             'USER_ATTR_MAP': {
-                "first_name": "givenName",
+                "first_name": ldap_config['user_name_attribute'],
                 "last_name": "sn",
                 "email": "mail",
             },
