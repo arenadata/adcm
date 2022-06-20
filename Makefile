@@ -80,7 +80,7 @@ ng_tests: ## Run Angular tests
 linters: test_image ## Run linters
 	docker run -i --rm -e PYTHONPATH="/source/tests" -v $(CURDIR)/:/source -w /source $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) \
         /bin/sh -eol pipefail -c "/linters.sh shellcheck && \
-			/venv.sh run default pip install -r requirements.txt -r requirements-test.txt && \
+			/venv.sh run default pip install -U -r requirements.txt -r requirements-test.txt && \
 			/venv.sh run default pylint --rcfile pyproject.toml --recursive y python && \
 			/linters.sh -b ./tests -f ../tests pylint && \
 			/linters.sh -f ./tests black && \
