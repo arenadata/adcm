@@ -14,6 +14,7 @@
 
 # pylint: disable=W0621
 import os
+import pathlib
 import sys
 import tarfile
 from pathlib import PosixPath
@@ -115,6 +116,29 @@ def pytest_runtest_setup(item: Function):
 def pytest_collection_modifyitems(session, config, items):  # pylint: disable=unused-argument
     """Run tests with id "adcm_with_dummy_data" after everything else"""
     items.sort(key=lambda x: 'adcm_with_dummy_data' in x.name)
+
+
+def pytest_addoption(parser):
+    """
+    Additional options for ADCM testing
+    """
+    parser.addoption(
+        '--ldap-conf',
+        action="store",
+        default=None,
+        help=(
+            """
+            This option is required to run ldap-related tests.
+            Value should be a path to a YAML file with content like:
+              ad:
+                uri: ldaps://some.ldap.server
+                admin_dn: admin user DN
+                admin_pass: admin password
+                base_ou_dn: DN in which to create all test-related entities
+            """
+        ),
+        type=pathlib.Path,
+    )
 
 
 def _override_allure_test_parameters(item: Function):
