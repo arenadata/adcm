@@ -161,7 +161,8 @@ def switch_hc(task, action):
             hc['component_id'] = comp.id
             hc['service_id'] = comp.service.id
     host_map, _ = cm.job.check_hostcomponentmap(cluster, action, new_hc)
-    cm.api.save_hc(cluster, host_map)
+    if host_map is not None:
+        cm.api.save_hc(cluster, host_map)
 
 
 def main(job_id):
@@ -173,8 +174,7 @@ def main(job_id):
         try:
             task = job.task
             bundle_switch(task.task_object, job.action.upgrade)
-            if task.post_upgrade_hc_map:
-                switch_hc(task, job.action)
+            switch_hc(task, job.action)
         except AdcmEx as e:
             log.error(f'Error while upgrading bundle: {e}')
             cm.job.set_job_status(job_id, config.Job.FAILED, event)
