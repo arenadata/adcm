@@ -14,6 +14,8 @@ CERT_ENV_KEY = 'LDAPTLS_CACERT'
 
 
 def _get_ldap_default_settings():
+    os.environ.pop(CERT_ENV_KEY, None)
+
     adcm_object = ADCM.objects.get(id=1)
     current_configlog = ConfigLog.objects.get(
         obj_ref=adcm_object.config, id=adcm_object.config.current
@@ -51,17 +53,19 @@ def _get_ldap_default_settings():
             'CACHE_TIMEOUT': 3600,
         }
 
-        os.environ.pop(CERT_ENV_KEY, None)
         if 'ldaps://' in ldap_config['ldap_uri'].lower():
-            if not ldap_config['tls_ca_cert_file'] or not os.path.exists(
-                ldap_config['tls_ca_cert_file']
+            if not any(
+                [
+                    ldap_config.get('tls_ca_cert_file', None),
+                    os.path.exists(ldap_config['tls_ca_cert_file']),
+                ]
             ):
-                raise RuntimeError('no cert file')
+                raise ImproperlyConfigured('no cert file')
 
             default_settings.update(
                 {
                     'CONNECTION_OPTIONS': {
-                        ldap.OPT_X_TLS_CACERTFILE: ldap_config['ldap_uri'],
+                        ldap.OPT_X_TLS_CACERTFILE: ldap_config['tls_ca_cert_file'],
                         ldap.OPT_X_TLS_REQUIRE_CERT: ldap.OPT_X_TLS_ALLOW,
                         ldap.OPT_X_TLS_NEWCTX: 0,
                     }

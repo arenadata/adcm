@@ -271,6 +271,11 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'django_auth_ldap': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
 
