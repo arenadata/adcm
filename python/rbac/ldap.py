@@ -31,7 +31,6 @@ def _get_ldap_default_settings():
             'USER_SEARCH': LDAPSearch(
                 base_dn=ldap_config['user_search_base'],
                 scope=ldap.SCOPE_SUBTREE,
-                # filterstr=f'(objectClass={ldap_config.get("user_object_class", "*")})',
                 filterstr=f'{ldap_config["user_name_attribute"]}=%(user)s',
             ),
             'GROUP_SEARCH': LDAPSearch(
