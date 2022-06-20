@@ -5,6 +5,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django_auth_ldap.backend import LDAPBackend
 from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
 
+from cm.adcm_config import ansible_decrypt
 from cm.logger import log
 from cm.models import ADCM, ConfigLog
 from rbac.models import User, Group
@@ -27,7 +28,7 @@ def _get_ldap_default_settings():
         default_settings = {
             'SERVER_URI': ldap_config['ldap_uri'],
             'BIND_DN': ldap_config['ldap_user'],
-            'BIND_PASSWORD': ldap_config['ldap_password'],
+            'BIND_PASSWORD': ansible_decrypt(ldap_config['ldap_password']),
             'USER_SEARCH': LDAPSearch(
                 base_dn=ldap_config['user_search_base'],
                 scope=ldap.SCOPE_SUBTREE,

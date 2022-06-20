@@ -129,7 +129,7 @@
           display_name: "Bind Password"
           description: |
             Password for access to the LDAP server of the user specified in the "LDAP User" field.
-          type: string  # TODO: password
+          type: password
         - name: "user_search_base"
           display_name: "User search base"
           description: |
