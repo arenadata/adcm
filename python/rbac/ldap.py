@@ -3,7 +3,7 @@ import os
 import ldap
 from django.core.exceptions import ImproperlyConfigured
 from django_auth_ldap.backend import LDAPBackend
-from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
+from django_auth_ldap.config import LDAPSearch, MemberDNGroupType
 
 from cm.adcm_config import ansible_decrypt
 from cm.logger import log
@@ -44,9 +44,11 @@ def _get_ldap_default_settings():
             "last_name": "sn",
             "email": "mail",
         }
-        group_type = GroupOfNamesType(name_attr=ldap_config['group_name_attribute'])
+        group_type = MemberDNGroupType(
+            member_attr=ldap_config['group_member_attribute_name'],
+            name_attr=ldap_config['group_name_attribute'],
+        )
 
-        # group_member_attribute_name
         default_settings = {
             'SERVER_URI': ldap_config['ldap_uri'],
             'BIND_DN': ldap_config['ldap_user'],
