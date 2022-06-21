@@ -18,8 +18,7 @@ from api.config.serializers import ConfigSerializerUI
 from api.utils import check_obj, hlink, UrlField
 from cm.adcm_config import ui_config, get_prototype_config, get_action_variant
 from cm.errors import raise_AdcmEx
-from cm.models import Upgrade, GroupConfig, Cluster, HostProvider, PrototypeConfig
-from cm.upgrade import do_upgrade
+from cm.models import GroupConfig, Cluster, HostProvider, PrototypeConfig
 
 
 class UpgradeSerializer(serializers.Serializer):
@@ -98,13 +97,7 @@ class DoUpgradeSerializer(serializers.Serializer):
     upgradable = serializers.BooleanField(read_only=True)
     config = serializers.JSONField(required=False, default=dict)
     task_id = serializers.IntegerField(read_only=True)
-    hc = serializers.JSONField(required=False, default=list)
-
-    def create(self, validated_data):
-        upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')
-        config = validated_data.get('config')
-        hc = validated_data.get('hc')
-        return do_upgrade(validated_data.get('obj'), upgrade, config, hc)
+    attr = serializers.JSONField(required=False, default=dict)
 
 
 class StringListSerializer(serializers.ListField):

@@ -300,7 +300,11 @@ def update_components_after_bundle_switch(cluster, upgrade):
 
 
 def do_upgrade(
-    obj: Union[Cluster, HostProvider], upgrade: Upgrade, config: dict, hc: List = None
+    obj: Union[Cluster, HostProvider],
+    upgrade: Upgrade,
+    config: dict,
+    attr: dict,
+    hc: list,
 ) -> dict:
     old_proto = obj.prototype
     check_license(obj.prototype.bundle)
@@ -318,7 +322,7 @@ def do_upgrade(
             obj.state = upgrade.state_on_success
             obj.save()
     else:
-        task = cm.job.start_task(upgrade.action, obj, config, {}, hc, [], False)
+        task = cm.job.start_task(upgrade.action, obj, config, attr, hc, [], False)
         task_id = task.id
 
     obj.refresh_from_db()

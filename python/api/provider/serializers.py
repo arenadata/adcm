@@ -15,6 +15,9 @@ from rest_framework import serializers
 
 import cm
 from api.action.serializers import ActionShort
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.serializers import StringListSerializer, DoUpgradeSerializer
 from api.utils import (
     hlink,
     check_obj,
@@ -23,12 +26,10 @@ from api.utils import (
     CommonAPIURL,
     ObjectURL,
 )
-from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
-from api.serializers import StringListSerializer
 from cm.adcm_config import get_main_info
 from cm.errors import AdcmEx
-from cm.models import Action, Prototype
+from cm.models import Action, Prototype, Upgrade
+from cm.upgrade import do_upgrade
 
 
 class ProviderSerializer(serializers.Serializer):
@@ -100,3 +101,11 @@ class ProviderUISerializer(ProviderDetailSerializer):
 
     def get_main_info(self, obj):
         return get_main_info(obj)
+
+
+class DoProviderUpgradeSerializer(DoUpgradeSerializer):
+    def create(self, validated_data):
+        upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')
+        config = validated_data.get('config', {})
+        attr = validated_data.get('attr', {})
+        return do_upgrade(validated_data.get('obj'), upgrade, config, attr, [])

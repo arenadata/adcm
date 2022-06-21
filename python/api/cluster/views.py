@@ -269,7 +269,7 @@ class ClusterUpgradeDetail(GenericUIView):
 
 class DoClusterUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.DoUpgradeSerializer
+    serializer_class = serializers.DoClusterUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
