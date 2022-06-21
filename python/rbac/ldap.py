@@ -40,7 +40,7 @@ def _get_ldap_default_settings():
             'is_active': ldap_config['group_search_base'],
         }
         user_attr_map = {
-            "first_name": ldap_config['user_name_attribute'],
+            "first_name": 'givenName',
             "last_name": "sn",
             "email": "mail",
         }
