@@ -569,14 +569,9 @@ class AdminPoliciesPage(GeneralAdminPage):
             self.wait_element_visible(available_items_locator)
             self.wait_element_clickable(available_items_locator)
             for count, available_item in enumerate(self.find_elements(available_items_locator)):
-                try:
-                    if available_item.text == item:
-                        self.scroll_to(available_item)
-                        available_item.click()
-                        break
-                except StaleElementReferenceException:
-                    if self.find_elements(available_items_locator)[count].text == item:
-                        self.find_elements(available_items_locator)[count].click()
+                if available_item.text == item:
+                    available_item.click()
+                    break
             else:
                 raise AssertionError(f"There are no item {item} in select popup")
 
