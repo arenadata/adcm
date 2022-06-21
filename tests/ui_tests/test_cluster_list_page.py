@@ -91,6 +91,7 @@ BUNDLE_COMMUNITY = "cluster_community"
 BUNDLE_ENTERPRISE = "cluster_enterprise"
 BUNDLE_IMPORT = "cluster_to_import"
 BUNDLE_UPGRADE = "upgradable_cluster"
+BUNDLE_UPGRADE_V2 = "upgradable_cluster_v2"
 BUNDLE_REQUIRED_FIELDS = "cluster_and_service_with_required_string"
 BUNDLE_DEFAULT_FIELDS = "cluster_and_service_with_default_string"
 BUNDLE_WITH_SERVICES = "cluster_with_services"
@@ -383,6 +384,27 @@ class TestClusterListPage:
             cluster_to_upgrade = bundle.cluster_create(name=params["upgrade_cluster_name"])
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         row_with_upgrade = cluster_page.get_row_by_cluster_name(cluster_to_upgrade.name)
+        cluster_page.run_upgrade_in_cluster_row(row=row_with_upgrade, upgrade_name=params["upgrade"])
+        with allure.step("Check that cluster has been upgraded"):
+            cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+            row = cluster_page.get_row_by_cluster_name(params["upgrade_cluster_name"])
+            assert (
+                cluster_page.get_cluster_state_from_row(row) == params["state"]
+            ), f"Cluster state should be {params['state']}"
+
+    def test_run_upgrade_v2_on_cluster_list_page(self, sdk_client_fs, app_fs):
+        """Test run upgrade new version from the /cluster page"""
+        params = {
+            "upgrade": "simple_upgrade_with_hc_acl",
+            "state": "upgraded",
+        }
+        with allure.step("Upload main cluster bundle"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
+            bundle.cluster_create(name=CLUSTER_NAME)
+        with allure.step("Upload cluster bundle to upgrade"):
+            cluster_bundle(sdk_client_fs, BUNDLE_UPGRADE_V2)
+        cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+        row_with_upgrade = cluster_page.get_row_by_cluster_name("Test cluster")
         cluster_page.run_upgrade_in_cluster_row(row=row_with_upgrade, upgrade_name=params["upgrade"])
         with allure.step("Check that cluster has been upgraded"):
             cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
