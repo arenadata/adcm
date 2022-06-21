@@ -42,7 +42,7 @@ class Event:
         while self.events:
             try:
                 func, args = self.events.pop(0)
-                func.__call__(*args)  # pylint: disable=unnecessary-dunder-call
+                func.__call__(*args)
             except IndexError:
                 pass
 
