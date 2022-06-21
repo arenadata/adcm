@@ -25,29 +25,37 @@ def _get_ldap_default_settings():
     if current_configlog.attr['ldap_integration']['active']:
         ldap_config = current_configlog.config['ldap_integration']
 
+        user_search = LDAPSearch(
+            base_dn=ldap_config['user_search_base'],
+            scope=ldap.SCOPE_SUBTREE,
+            filterstr=f'(&(objectClass={ldap_config.get("user_object_class", "*")})'
+            f'({ldap_config["user_name_attribute"]}=%(user)s))',
+        )
+        group_search = LDAPSearch(
+            base_dn=ldap_config['group_search_base'],
+            scope=ldap.SCOPE_SUBTREE,
+            filterstr=f'(objectClass={ldap_config.get("group_object_class", "*")})',
+        )
+        user_flags_by_group = {
+            'is_active': ldap_config['group_search_base'],
+        }
+        user_attr_map = {
+            "first_name": ldap_config['user_name_attribute'],
+            "last_name": "sn",
+            "email": "mail",
+        }
+        group_type = GroupOfNamesType(name_attr=ldap_config['group_name_attribute'])
+
+        # group_member_attribute_name
         default_settings = {
             'SERVER_URI': ldap_config['ldap_uri'],
             'BIND_DN': ldap_config['ldap_user'],
             'BIND_PASSWORD': ansible_decrypt(ldap_config['ldap_password']),
-            'USER_SEARCH': LDAPSearch(
-                base_dn=ldap_config['user_search_base'],
-                scope=ldap.SCOPE_SUBTREE,
-                filterstr=f'{ldap_config["user_name_attribute"]}=%(user)s',
-            ),
-            'GROUP_SEARCH': LDAPSearch(
-                base_dn=ldap_config['group_search_base'],
-                scope=ldap.SCOPE_SUBTREE,
-                filterstr=f'(objectClass={ldap_config.get("group_object_class", "*")})',
-            ),
-            'USER_FLAGS_BY_GROUP': {
-                'is_active': ldap_config['group_search_base'],
-            },
-            'GROUP_TYPE': GroupOfNamesType(name_attr=ldap_config['group_name_attribute']),
-            'USER_ATTR_MAP': {
-                "first_name": ldap_config['user_name_attribute'],
-                "last_name": "sn",
-                "email": "mail",
-            },
+            'USER_SEARCH': user_search,
+            'GROUP_SEARCH': group_search,
+            'USER_FLAGS_BY_GROUP': user_flags_by_group,
+            'GROUP_TYPE': group_type,
+            'USER_ATTR_MAP': user_attr_map,
             'MIRROR_GROUPS': True,
             'ALWAYS_UPDATE_USER': True,
             'FIND_GROUP_PERMS': True,
@@ -55,24 +63,22 @@ def _get_ldap_default_settings():
         }
 
         if 'ldaps://' in ldap_config['ldap_uri'].lower():
+            cert_filepath = ldap_config.get('tls_ca_cert_file', '')
             if not any(
                 [
-                    ldap_config.get('tls_ca_cert_file', None),
-                    os.path.exists(ldap_config['tls_ca_cert_file']),
+                    cert_filepath,
+                    os.path.exists(cert_filepath),
                 ]
             ):
                 raise ImproperlyConfigured('no cert file')
 
-            default_settings.update(
-                {
-                    'CONNECTION_OPTIONS': {
-                        ldap.OPT_X_TLS_CACERTFILE: ldap_config['tls_ca_cert_file'],
-                        ldap.OPT_X_TLS_REQUIRE_CERT: ldap.OPT_X_TLS_ALLOW,
-                        ldap.OPT_X_TLS_NEWCTX: 0,
-                    }
-                }
-            )
-            os.environ['CERT_ENV_KEY'] = ldap_config['tls_ca_cert_file']
+            connection_options = {
+                ldap.OPT_X_TLS_CACERTFILE: cert_filepath,
+                ldap.OPT_X_TLS_REQUIRE_CERT: ldap.OPT_X_TLS_ALLOW,
+                ldap.OPT_X_TLS_NEWCTX: 0,
+            }
+            default_settings.update({'CONNECTION_OPTIONS': connection_options})
+            os.environ['CERT_ENV_KEY'] = cert_filepath
 
         return default_settings
 
