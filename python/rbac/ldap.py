@@ -36,9 +36,6 @@ def _get_ldap_default_settings():
             scope=ldap.SCOPE_SUBTREE,
             filterstr=f'(objectClass={ldap_config.get("group_object_class", "*")})',
         )
-        user_flags_by_group = {
-            'is_active': ldap_config['group_search_base'],
-        }
         user_attr_map = {
             "first_name": 'givenName',
             "last_name": "sn",
@@ -55,7 +52,6 @@ def _get_ldap_default_settings():
             'BIND_PASSWORD': ansible_decrypt(ldap_config['ldap_password']),
             'USER_SEARCH': user_search,
             'GROUP_SEARCH': group_search,
-            'USER_FLAGS_BY_GROUP': user_flags_by_group,
             'GROUP_TYPE': group_type,
             'USER_ATTR_MAP': user_attr_map,
             'MIRROR_GROUPS': True,
