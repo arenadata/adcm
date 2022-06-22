@@ -231,7 +231,7 @@ def get_prototype_config(proto: Prototype, action: Action = None) -> Tuple[dict,
         else:
             spec[c.name][c.subname] = obj_to_dict(c, flist)
             conf[c.name][c.subname] = get_default(c, proto)
-    return (spec, flat_spec, conf, attr)
+    return spec, flat_spec, conf, attr
 
 
 def make_object_config(obj: ADCMEntity, prototype: Prototype) -> None:

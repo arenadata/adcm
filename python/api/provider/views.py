@@ -27,8 +27,8 @@ from api.utils import (
 from cm.api import delete_host_provider
 from cm.models import HostProvider, Upgrade
 from cm.upgrade import get_upgrade
-from . import serializers
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from . import serializers
 
 
 class ProviderList(PermissionListMixin, PaginatedView):
@@ -126,7 +126,7 @@ class ProviderUpgradeDetail(GenericUIView):
 
 class DoProviderUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.DoUpgradeSerializer
+    serializer_class = serializers.DoProviderUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
