@@ -44,7 +44,7 @@ class ADCMError:  # pylint: disable=too-few-public-methods
             )
         assert not get_failures(), "All assertions should passed"
 
-    def _get_data_err_messages(self, error) -> List[str]:  # pylint: disable=no-self-use
+    def _get_data_err_messages(self, error) -> List[str]:
         """Extract all messages from _data attribute or an error if it is presented"""
         data = getattr(error, '_data', None)
         if data is None:
@@ -260,3 +260,5 @@ INVALID_HC_HOST_IN_MM = ADCMError(
     '409 Conflict',
     'INVALID_HC_HOST_IN_MM',
 )
+
+UNAUTHORIZED = ADCMError('401 Unauthorized', '')  # there's no code
