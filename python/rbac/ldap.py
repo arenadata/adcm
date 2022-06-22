@@ -8,7 +8,7 @@ from django_auth_ldap.config import LDAPSearch, MemberDNGroupType
 from cm.adcm_config import ansible_decrypt
 from cm.logger import log
 from cm.models import ADCM, ConfigLog
-from rbac.models import User, Group
+from rbac.models import User, Group, OriginType
 
 
 CERT_ENV_KEY = 'LDAPTLS_CACERT'
@@ -94,6 +94,8 @@ class CustomLDAPBackend(LDAPBackend):
             user_or_none = None
         if isinstance(user_or_none, User):
             self.__create_rbac_groups(user_or_none)
+            user_or_none.type = OriginType.LDAP
+            user_or_none.save()
         return user_or_none
 
     def get_user_model(self):
@@ -101,13 +103,14 @@ class CustomLDAPBackend(LDAPBackend):
 
     @staticmethod
     def __create_rbac_groups(user):
-        description = 'LDAP group'
         for group in user.groups.all():
-            count = Group.objects.filter(group_ptr_id=group.pk, description=description).count()
+            count = Group.objects.filter(group_ptr_id=group.pk, type=OriginType.LDAP).count()
             if count < 1:
                 name = group.name
-                Group.objects.create(group_ptr_id=group.pk, description=description)
+                Group.objects.create(group_ptr_id=group.pk, type=OriginType.LDAP)
                 group.name = name
                 group.save()
             elif count > 1:
-                raise RuntimeError(f'More than one `#{group.pk} {description}` groups exist')
+                raise RuntimeError(
+                    f'More than one {OriginType.LDAP.value} group_ptr={group.pk} groups exist'
+                )
