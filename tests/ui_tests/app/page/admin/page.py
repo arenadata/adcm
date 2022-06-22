@@ -566,7 +566,6 @@ class AdminPoliciesPage(GeneralAdminPage):
     def fill_select_in_policy_popup(self, items, available_items_locator):
         for item in items.split(", "):
             self.wait_element_visible(available_items_locator)
-            self.wait_element_clickable(available_items_locator)
             for count, available_item in enumerate(self.find_elements(available_items_locator)):
                 if available_item.text == item:
                     available_item.click()
