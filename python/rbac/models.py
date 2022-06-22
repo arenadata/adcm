@@ -41,6 +41,11 @@ def validate_object_type(value):
         raise ValidationError('Not a valid object type.')
 
 
+class OriginType(models.TextChoices):
+    Local = 'local', 'local'
+    LDAP = 'ldap', 'ldap'
+
+
 class User(AuthUser):
     """
     Beware the Multi-table inheritance
@@ -49,6 +54,9 @@ class User(AuthUser):
 
     profile = models.JSONField(default=str)
     built_in = models.BooleanField(default=False, null=False)
+    type = models.CharField(
+        max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
+    )
 
 
 class Group(AuthGroup):
@@ -59,6 +67,9 @@ class Group(AuthGroup):
 
     description = models.CharField(max_length=255, null=True)
     built_in = models.BooleanField(default=False, null=False)
+    type = models.CharField(
+        max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
+    )
 
 
 class RoleTypes(models.TextChoices):
