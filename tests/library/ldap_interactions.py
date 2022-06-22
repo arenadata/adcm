@@ -111,16 +111,12 @@ class LDAPEntityManager:
     @allure.step('Activate user {user_dn}')
     def activate_user(self, user_dn: str, uac: bytes = _ACTIVE_USER_UAC) -> None:
         """Activate user"""
-        self.conn.modify_s(
-            user_dn, [(ldap.MOD_REPLACE, 'userAccountControl', uac)]  # pylint: disable=no-member
-        )
+        self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, 'userAccountControl', uac)])  # pylint: disable=no-member
 
     @allure.step('Deactivate user {user_dn}')
     def deactivate_user(self, user_dn: str, uac: bytes = _INACTIVE_USER_UAC) -> None:
         """Deactivate user"""
-        self.conn.modify_s(
-            user_dn, [(ldap.MOD_REPLACE, 'userAccountControl', uac)]  # pylint: disable=no-member
-        )
+        self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, 'userAccountControl', uac)])  # pylint: disable=no-member
 
     @allure.step('Set password "{password}" for user {user_dn}')
     def set_user_password(self, user_dn: str, password: str) -> None:

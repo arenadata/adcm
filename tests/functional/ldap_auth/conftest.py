@@ -21,7 +21,7 @@ import pytest
 import yaml
 from _pytest.fixtures import SubRequest
 from adcm_client.base import ObjectNotFound
-from adcm_client.objects import ADCMClient
+from adcm_client.objects import ADCMClient, Group, User
 
 from tests.api.utils.tools import random_string
 from tests.library.ldap_interactions import LDAPTestConfig, LDAPEntityManager
@@ -125,9 +125,9 @@ def ldap_user_in_group(ldap_ad, ldap_basic_ous, ldap_group) -> dict:
 
 @allure.title('Configure ADCM for LDAP (AD) integration')
 @pytest.fixture()
-def configure_adcm_ldap_ad(sdk_client_fs: ADCMClient, ldap_basic_ous, ldap_group, ad_config):
+def configure_adcm_ldap_ad(sdk_client_fs: ADCMClient, ldap_basic_ous, ad_config):
     """Configure ADCM to allow AD users"""
-    _, users_ou = ldap_basic_ous
+    groups_ou, users_ou = ldap_basic_ous
     adcm = sdk_client_fs.adcm()
     adcm.config_set_diff(
         {
@@ -139,15 +139,14 @@ def configure_adcm_ldap_ad(sdk_client_fs: ADCMClient, ldap_basic_ous, ldap_group
                     'ldap_user': ad_config.admin_dn,
                     'ldap_password': ad_config.admin_pass,
                     'user_search_base': users_ou,
-                    # now only the exact user group here allows users to log in
-                    'group_search_base': ldap_group['dn'],
+                    'group_search_base': groups_ou,
                 }
             },
         }
     )
 
 
-def get_ldap_user_from_adcm(client: ADCMClient, name: str):
+def get_ldap_user_from_adcm(client: ADCMClient, name: str) -> User:
     """
     Get LDAP user from ADCM.
     Name should be sAMAccount value.
@@ -160,7 +159,7 @@ def get_ldap_user_from_adcm(client: ADCMClient, name: str):
         raise AssertionError(f'LDAP user "{name}" should be available as ADCM "{username}" user') from e
 
 
-def get_ldap_group_from_adcm(client: ADCMClient, name: str):
+def get_ldap_group_from_adcm(client: ADCMClient, name: str) -> Group:
     """
     Get LDAP group from ADCM.
     :raises AssertionError: when there's no group presented in ADCM
