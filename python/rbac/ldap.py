@@ -107,7 +107,7 @@ def _get_ldap_default_settings():
 
         return default_settings
 
-    return {}
+    return None
 
 
 class CustomLDAPBackend(LDAPBackend):
