@@ -38,6 +38,12 @@ class CommonTable:
         )
         action_buttons = Locator(By.CSS_SELECTOR, "button[adcm_test='action_btn']", "Button with action")
 
+    class UpgradePopup:
+        """Common popup for upgrade in tables."""
+
+        block = Locator(By.CSS_SELECTOR, "div[role='menu']", "Upgrade popup block")
+        button = TemplateLocator(By.XPATH, "//button[./span[text()='{}']]", "Button with upgrade {}")
+
     class Pagination:
         """Common table pagination locators."""
 

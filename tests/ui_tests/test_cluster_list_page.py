@@ -29,6 +29,7 @@ from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.utils import get_data_dir
 from adcm_pytest_plugin.utils import parametrize_by_data_subdirs
 from adcm_pytest_plugin.utils import random_string
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.library.status import ADCMObjectStatusChanger
@@ -367,6 +368,29 @@ class TestClusterListPage:
         with allure.step("Check there are no rows"):
             assert len(cluster_page.table.get_all_rows()) == 0, "Cluster table should be empty"
 
+    def test_run_upgrade_on_cluster_list_page(self, sdk_client_fs, app_fs):
+        """Test run upgrade cluster from the /cluster page"""
+        params = {
+            "upgrade_cluster_name": "upgrade cluster",
+            "upgrade": "upgrade 2",
+            "state": "upgradated",
+        }
+        with allure.step("Create main cluster"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
+            bundle.cluster_create(name=CLUSTER_NAME)
+        with allure.step("Create cluster to upgrade"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_UPGRADE)
+            cluster_to_upgrade = bundle.cluster_create(name=params["upgrade_cluster_name"])
+        cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+        row_with_upgrade = cluster_page.get_row_by_cluster_name(cluster_to_upgrade.name)
+        cluster_page.run_upgrade_in_cluster_row(row=row_with_upgrade, upgrade_name=params["upgrade"])
+        with allure.step("Check that cluster has been upgraded"):
+            cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+            row = cluster_page.get_row_by_cluster_name(params["upgrade_cluster_name"])
+            assert (
+                cluster_page.get_cluster_state_from_row(row) == params["state"]
+            ), f"Cluster state should be {params['state']}"
+
 
 class TestClusterMainPage:
     """Tests for the /cluster/{}/main page"""
@@ -522,14 +546,17 @@ class TestClusterServicePage:
         service_conf_page.wait_page_is_opened()
         service_conf_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
-    @pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2790")
     def test_check_pagination_on_service_list_page(self, sdk_client_fs: ADCMClient, app_fs):
         """Test pagination on cluster/{}/service page"""
         bundle = cluster_bundle(sdk_client_fs, BUNDLE_WITH_SERVICES)
         cluster = bundle.cluster_create(name=CLUSTER_NAME)
         cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_service_page.add_service_by_name(service_name="All")
-        cluster_service_page.wait_page_is_opened()
+        try:
+            cluster_service_page.wait_page_is_opened(timeout=30)
+        except TimeoutException:
+            cluster_service_page.driver.refresh()
+            cluster_service_page.wait_page_is_opened(timeout=30)
         cluster_service_page.table.check_pagination(second_page_item_amount=2)
 
     def test_delete_service_on_service_list_page(self, app_fs, create_community_cluster_with_service):
@@ -1553,7 +1580,6 @@ class TestClusterGroupConfigPage:
         # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
 
-    @pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2802")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
@@ -1639,10 +1665,9 @@ class TestClusterGroupConfigPage:
                                 ), f"Config field {field_type} should be read only"
                         else:
                             if (
-                                ((config_group_customization is False) and (field_customization is False))
-                                or ((config_group_customization is False) and (field_customization is None))
-                                or ((config_group_customization is not False) and (field_customization is False))
-                            ):
+                                (config_group_customization is False or config_group_customization is None)
+                                and (field_customization is False or field_customization is None)
+                            ) or ((config_group_customization is not False) and (field_customization is False)):
                                 cluster_config_page.config.check_inputs_disabled(
                                     config_item, is_password=bool(field_type == "password")
                                 )
@@ -1650,6 +1675,7 @@ class TestClusterGroupConfigPage:
                                     config_item
                                 ), f"Checkbox for field {field_type} should be disabled"
                             else:
+                                cluster_config_page.config.activate_group_chbx(config_item)
                                 cluster_config_page.config.check_inputs_enabled(
                                     config_item, is_password=bool(field_type == "password")
                                 )
@@ -1684,6 +1710,31 @@ class TestClusterGroupConfigPage:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
         check_expectations()
+
+    def test_two_fields_on_cluster_config_page(self, sdk_client_fs: ADCMClient, app_fs):
+        """Test two different fields on group config page"""
+
+        path = get_data_dir(__file__, 'cluster_with_two_different_fields')
+        cluster, *_ = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
+        cluster_group_config = cluster.group_config_create(name="Test group")
+        cluster_config_page = ClusterGroupConfigConfig(
+            app_fs.driver, app_fs.adcm.url, cluster.id, cluster_group_config.id
+        ).open()
+        config_rows = cluster_config_page.group_config.get_all_group_config_rows()
+        with allure.step("Check that first field is enabled"):
+            first_row = config_rows[0]
+            assert not cluster_config_page.group_config.is_customization_chbx_disabled(
+                first_row
+            ), "Checkbox for first field should be enabled"
+            cluster_config_page.group_config.click_on_customization_chbx(first_row)
+            cluster_config_page.config.check_inputs_enabled(first_row)
+        with allure.step("Check that second field is disabled"):
+            second_row = config_rows[1]
+            assert cluster_config_page.group_config.is_customization_chbx_disabled(
+                second_row
+            ), "Checkbox for second field should be disabled"
+            cluster_config_page.group_config.click_on_customization_chbx(second_row)
+            cluster_config_page.config.check_inputs_disabled(second_row)
 
 
 class TestClusterStatusPage:
