@@ -116,7 +116,7 @@ class CustomLDAPBackend(LDAPBackend):
             log.exception(e)
             user_or_none = None
         except ValueError as e:
-            if (
+            if (  # pylint: disable=protected-access
                 'option error' in str(e).lower()
                 and User.objects.filter(username=ldap_user._username).exists()
             ):
@@ -125,9 +125,9 @@ class CustomLDAPBackend(LDAPBackend):
                 #   2. `TLS CA certificate file path` setting was changed
                 #       to incorrect but existing certificate/file
                 #   3. attempt to log in as user from p.1
+                # pylint: disable=raise-missing-from
                 raise AdcmEx('LDAP_BROKEN_CONFIG_USER_EXISTS')
-            else:
-                raise e
+            raise e
         if isinstance(user_or_none, User):
             user_or_none.type = OriginType.LDAP
             user_or_none.save()
@@ -138,9 +138,7 @@ class CustomLDAPBackend(LDAPBackend):
         return User
 
     def __create_rbac_groups(self, user):
-        ldap_groups = [
-            (n, dn) for n, dn in zip(user.ldap_user.group_names, user.ldap_user.group_dns)
-        ]
+        ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
         for group in user.groups.filter(name__in=[i[0] for i in ldap_groups]):
             group_creation_policy = self.__get_group_creation_policy(group)
             if group_creation_policy == _GroupCreationPolicy.LDAP_NO_ACTION:
