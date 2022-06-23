@@ -21,6 +21,7 @@ from django_auth_ldap.backend import LDAPBackend
 from django_auth_ldap.config import LDAPSearch, MemberDNGroupType
 
 from cm.adcm_config import ansible_decrypt
+from cm.errors import AdcmEx
 from cm.logger import log
 from cm.models import ADCM, ConfigLog
 from rbac.models import User, Group, OriginType
@@ -89,13 +90,8 @@ def _get_ldap_default_settings():
 
         if 'ldaps://' in ldap_config['ldap_uri'].lower():
             cert_filepath = ldap_config.get('tls_ca_cert_file', '')
-            if not any(
-                [
-                    cert_filepath,
-                    os.path.exists(cert_filepath),
-                ]
-            ):
-                raise ImproperlyConfigured('no cert file')
+            if not cert_filepath or not os.path.exists(cert_filepath):
+                raise AdcmEx('LDAP_NO_CERT_FILE')
 
             connection_options = {
                 ldap.OPT_X_TLS_CACERTFILE: cert_filepath,
@@ -144,11 +140,8 @@ class CustomLDAPBackend(LDAPBackend):
                 rbac_group.save()
             elif group_creation_policy == _GroupCreationPolicy.RAISE_EXC:
                 group.user_set.remove(user)
-                raise GroupNameCollision(
-                    f'Group name collision. Can\'t create `{group.name}` ldap group.'
-                )
+                raise AdcmEx('LDAP_GROUP_NAMES_COLLISION')
             else:
-                # error; not all cases covered
                 raise RuntimeError('not all cases covered')
 
     @staticmethod
@@ -172,14 +165,6 @@ class CustomLDAPBackend(LDAPBackend):
                 return _GroupCreationPolicy.RAISE_EXC
 
     @staticmethod
-    def __create_rbac_group(group):
-        name = group.name
-        rbac_group = Group.objects.create(group_ptr_id=group.pk)
-        group.name = name
-        group.save()
-        return rbac_group
-
-    @staticmethod
     def __get_rbac_user(user):
         if isinstance(user, User):
             return user
@@ -190,8 +175,15 @@ class CustomLDAPBackend(LDAPBackend):
 
     def __get_rbac_group(self, group):
         if isinstance(group, Group):
-            return self.__create_rbac_group(group)
+            return group
         elif isinstance(group, DjangoGroup):
-            return Group.objects.get(group_ptr=group)
+            try:
+                return Group.objects.get(group_ptr=group)
+            except Group.DoesNotExist:
+                name = group.name
+                rbac_group = Group.objects.create(group_ptr_id=group.pk)
+                group.name = name
+                group.save()
+                return rbac_group
         else:
             raise ValueError('wrong group type')

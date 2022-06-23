@@ -167,6 +167,16 @@ ERRORS = {
         rfs.HTTP_409_CONFLICT,
         ERR,
     ),
+    'LDAP_NO_CERT_FILE': (
+        'missing cert file for `ldaps://` connection',
+        rfs.HTTP_400_BAD_REQUEST,
+        ERR,
+    ),
+    'LDAP_GROUP_NAMES_COLLISION': (
+        'group names collision',
+        rfs.HTTP_400_BAD_REQUEST,
+        ERR,
+    ),
 }
 
 
