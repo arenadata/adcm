@@ -172,7 +172,6 @@ class CustomLDAPBackend(LDAPBackend):
                 [self.__get_rbac_user(u).type == OriginType.LDAP for u in group.user_set.all()]
                 or [True]
             ):
-                log.critical(f'{group} is a ldap group')
                 return _GroupCreationPolicy.CONVERT_TO_LDAP
             else:
                 return _GroupCreationPolicy.RAISE_EXC
