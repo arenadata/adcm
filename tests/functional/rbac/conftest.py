@@ -501,7 +501,7 @@ def is_denied(
             else:
                 try:
                     role.method_call(base_object, *args, **kwargs)
-                except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied):
+                except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied, ObjectNotFound):
                     pass
                 else:
                     raise AssertionError(f"{role.role_name} on {object_represent} should not be allowed")

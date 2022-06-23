@@ -15,11 +15,13 @@
 from pathlib import Path
 from typing import Generator
 
+import allure
 import ldap
 import pytest
 import yaml
 from _pytest.fixtures import SubRequest
-from adcm_client.objects import ADCMClient
+from adcm_client.base import ObjectNotFound
+from adcm_client.objects import ADCMClient, Group, User
 
 from tests.api.utils.tools import random_string
 from tests.library.ldap_interactions import LDAPTestConfig, LDAPEntityManager
@@ -28,6 +30,10 @@ from tests.library.utils import ConfigError
 # pylint: disable=redefined-outer-name
 
 
+BASE_BUNDLES_DIR = Path(__file__).parent / 'bundles'
+
+
+@allure.title('[SS] Get LDAP config')
 @pytest.fixture(scope='session')
 def ldap_config(cmd_opts) -> dict:
     """
@@ -47,6 +53,7 @@ def ldap_config(cmd_opts) -> dict:
     return config
 
 
+@allure.title('[SS] Extract AD config')
 @pytest.fixture(scope='session')
 def ad_config(ldap_config: dict) -> LDAPTestConfig:
     """Create AD config from config file"""
@@ -68,6 +75,7 @@ def ad_config(ldap_config: dict) -> LDAPTestConfig:
     )
 
 
+@allure.title('Prepare LDAP entities manager')
 @pytest.fixture()
 def ldap_ad(request: SubRequest, ad_config) -> Generator[LDAPEntityManager, None, None]:
     """Create LDAP entities manager from AD config"""
@@ -75,23 +83,26 @@ def ldap_ad(request: SubRequest, ad_config) -> Generator[LDAPEntityManager, None
         yield ldap_manager
 
 
+@allure.title('Create basic OUs for testing')
 @pytest.fixture()
 def ldap_basic_ous(ldap_ad):
-    """Get LDAP group (ou) DNs for users and groups"""
+    """Get LDAP group (ou) DNs for groups and users"""
     groups_ou_dn = ldap_ad.create_ou('groups-main')
     users_ou_dn = ldap_ad.create_ou('users-main')
     return groups_ou_dn, users_ou_dn
 
 
+@allure.title('Create LDAP user without group')
 @pytest.fixture()
 def ldap_user(ldap_ad, ldap_basic_ous) -> dict:
     """Create LDAP AD user"""
-    user = {'name': 'user_without_group', 'password': random_string(12)}
+    user = {'name': f'user_wo_group_{random_string(6)}', 'password': random_string(12)}
     _, users_dn = ldap_basic_ous
     user['dn'] = ldap_ad.create_user(**user, custom_base_dn=users_dn)
     return user
 
 
+@allure.title('Create LDAP group')
 @pytest.fixture()
 def ldap_group(ldap_ad, ldap_basic_ous) -> dict:
     """Create LDAP AD group for adding users"""
@@ -101,20 +112,22 @@ def ldap_group(ldap_ad, ldap_basic_ous) -> dict:
     return group
 
 
+@allure.title('Create LDAP user in group')
 @pytest.fixture()
 def ldap_user_in_group(ldap_ad, ldap_basic_ous, ldap_group) -> dict:
     """Create LDAP AD user and add it to a default "allowed to log to ADCM" group"""
-    user = {'name': 'user_in_group', 'password': random_string(12)}
+    user = {'name': f'user_in_group_{random_string(6)}', 'password': random_string(12)}
     _, users_dn = ldap_basic_ous
     user['dn'] = ldap_ad.create_user(**user, custom_base_dn=users_dn)
     ldap_ad.add_user_to_group(user['dn'], ldap_group['dn'])
     return user
 
 
+@allure.title('Configure ADCM for LDAP (AD) integration')
 @pytest.fixture()
-def configure_adcm_ldap_ad(sdk_client_fs: ADCMClient, ldap_basic_ous, ldap_group, ad_config):
+def configure_adcm_ldap_ad(sdk_client_fs: ADCMClient, ldap_basic_ous, ad_config):
     """Configure ADCM to allow AD users"""
-    _, users_ou = ldap_basic_ous
+    groups_ou, users_ou = ldap_basic_ous
     adcm = sdk_client_fs.adcm()
     adcm.config_set_diff(
         {
@@ -126,9 +139,32 @@ def configure_adcm_ldap_ad(sdk_client_fs: ADCMClient, ldap_basic_ous, ldap_group
                     'ldap_user': ad_config.admin_dn,
                     'ldap_password': ad_config.admin_pass,
                     'user_search_base': users_ou,
-                    # now only the exact user group here allows users to log in
-                    'group_search_base': ldap_group['dn'],
+                    'group_search_base': groups_ou,
                 }
             },
         }
     )
+
+
+def get_ldap_user_from_adcm(client: ADCMClient, name: str) -> User:
+    """
+    Get LDAP user from ADCM.
+    Name should be sAMAccount value.
+    :raises AssertionError: when there's no user presented in ADCM
+    """
+    username = name.lower()
+    try:
+        return client.user(username=username)
+    except ObjectNotFound as e:
+        raise AssertionError(f'LDAP user "{name}" should be available as ADCM "{username}" user') from e
+
+
+def get_ldap_group_from_adcm(client: ADCMClient, name: str) -> Group:
+    """
+    Get LDAP group from ADCM.
+    :raises AssertionError: when there's no group presented in ADCM
+    """
+    try:
+        return client.group(name=name)
+    except ObjectNotFound as e:
+        raise AssertionError(f'LDAP group "{name}" should be available as ADCM group "{name}"') from e
