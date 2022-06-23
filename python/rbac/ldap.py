@@ -12,8 +12,10 @@
 
 
 import os
+from enum import Enum
 
 import ldap
+from django.contrib.auth.models import User as DjangoUser, Group as DjangoGroup
 from django.core.exceptions import ImproperlyConfigured
 from django_auth_ldap.backend import LDAPBackend
 from django_auth_ldap.config import LDAPSearch, MemberDNGroupType
@@ -25,6 +27,18 @@ from rbac.models import User, Group, OriginType
 
 
 CERT_ENV_KEY = 'LDAPTLS_CACERT'
+
+
+class _GroupCreationPolicy(Enum):
+    CONVERT_TO_LDAP = 'CONVERT_TO_LDAP'
+    # ldap group with existing rbac group; only ldap users in this group
+    LDAP_NO_ACTION = 'LDAP_NO_ACTION'
+    # group has non-ldap users; raise an `group names collision exception`; remove user from group
+    RAISE_EXC = 'RAISE_EXC'
+
+
+class GroupNameCollision(Exception):
+    pass
 
 
 def _get_ldap_default_settings():
@@ -106,24 +120,78 @@ class CustomLDAPBackend(LDAPBackend):
             log.exception(e)
             user_or_none = None
         if isinstance(user_or_none, User):
-            self.__create_rbac_groups(user_or_none)
             user_or_none.type = OriginType.LDAP
             user_or_none.save()
+            self.__create_rbac_groups(user_or_none)
         return user_or_none
 
     def get_user_model(self):
         return User
 
-    @staticmethod
-    def __create_rbac_groups(user):
-        for group in user.groups.all():
-            count = Group.objects.filter(group_ptr_id=group.pk, type=OriginType.LDAP).count()
-            if count < 1:
-                name = group.name
-                Group.objects.create(group_ptr_id=group.pk, type=OriginType.LDAP)
-                group.name = name
-                group.save()
-            elif count > 1:
-                raise RuntimeError(
-                    f'More than one {OriginType.LDAP.value} group_ptr={group.pk} groups exist'
+    def __create_rbac_groups(self, user):
+        ldap_groups = [
+            (n, dn) for n, dn in zip(user.ldap_user.group_names, user.ldap_user.group_dns)
+        ]
+        for group in user.groups.filter(name__in=[i[0] for i in ldap_groups]):
+            group_creation_policy = self.__get_group_creation_policy(group)
+            if group_creation_policy == _GroupCreationPolicy.LDAP_NO_ACTION:
+                # user already added to right group
+                pass
+            elif group_creation_policy == _GroupCreationPolicy.CONVERT_TO_LDAP:
+                rbac_group = self.__get_rbac_group(group)
+                rbac_group.type = OriginType.LDAP
+                rbac_group.description = self.__det_ldap_group_dn(group.name, ldap_groups)
+                rbac_group.save()
+            elif group_creation_policy == _GroupCreationPolicy.RAISE_EXC:
+                group.user_set.remove(user)
+                raise GroupNameCollision(
+                    f'Group name collision. Can\'t create `{group.name}` ldap group.'
                 )
+            else:
+                # error; not all cases covered
+                raise RuntimeError('not all cases covered')
+
+    @staticmethod
+    def __det_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
+        return [i for i in ldap_groups if i[0] == group_name][0][1]
+
+    def __get_group_creation_policy(self, group):
+        group = self.__get_rbac_group(group)
+        if group.type == OriginType.LDAP:
+            return _GroupCreationPolicy.LDAP_NO_ACTION
+        else:
+            # groups, created by this backend can't be empty, but just in case
+            # empty existing groups will be converted to `ldap` type
+            if all(
+                [self.__get_rbac_user(u).type == OriginType.LDAP for u in group.user_set.all()]
+                or [True]
+            ):
+                log.critical(f'{group} is a ldap group')
+                return _GroupCreationPolicy.CONVERT_TO_LDAP
+            else:
+                return _GroupCreationPolicy.RAISE_EXC
+
+    @staticmethod
+    def __create_rbac_group(group):
+        name = group.name
+        rbac_group = Group.objects.create(group_ptr_id=group.pk)
+        group.name = name
+        group.save()
+        return rbac_group
+
+    @staticmethod
+    def __get_rbac_user(user):
+        if isinstance(user, User):
+            return user
+        elif isinstance(user, DjangoUser):
+            return User.objects.get(user_ptr=user)
+        else:
+            raise ValueError('wrong user type')
+
+    def __get_rbac_group(self, group):
+        if isinstance(group, Group):
+            return self.__create_rbac_group(group)
+        elif isinstance(group, DjangoGroup):
+            return Group.objects.get(group_ptr=group)
+        else:
+            raise ValueError('wrong group type')
