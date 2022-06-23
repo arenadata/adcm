@@ -160,6 +160,23 @@ class CommonConfigMenuObj(BasePageObject):
         for row_input in self.find_children(row, locator):
             assert row_input.get_attribute("disabled") == 'true', "Input should be disabled"
 
+    def activate_group_chbx(self, row: WebElement):
+        """Activate group checkbox in row"""
+
+        group_chbx = self.find_child(row, CommonConfigMenu.ConfigRow.group_chbx)
+
+        def is_checked(chbx: WebElement):
+            return "checked" in chbx.get_attribute("class")
+
+        def assert_checked():
+            if not is_checked(group_chbx):
+                group_chbx.click()
+            assert is_checked(
+                self.find_child(row, CommonConfigMenu.ConfigRow.group_chbx)
+            ), "Group checkbox in row is not checked"
+
+        wait_until_step_succeeds(assert_checked, timeout=3, period=0.5)
+
     def check_inputs_enabled(self, row: WebElement, is_password: bool = False):
         """Check that inputs in row are enabled"""
 

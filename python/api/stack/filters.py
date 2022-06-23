@@ -1,4 +1,3 @@
-#!/bin/sh
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,11 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source /etc/adcmenv
 
-waitforwsgi
+from django_filters import rest_framework as drf_filters
+from cm.models import Prototype
 
-echo "Run process_tasks ..."
 
-source "${adcmroot}/venv/default/bin/activate"
-python ${adcmroot}/python/manage.py process_tasks --log-std
+class StringInFilter(drf_filters.BaseInFilter, drf_filters.CharFilter):
+    pass
+
+
+class PrototypeListFilter(drf_filters.FilterSet):
+    name = StringInFilter(label='name', field_name='name', lookup_expr='in')
+    parent_name = StringInFilter(label='parent_name', field_name='parent', lookup_expr='name__in')
+
+    class Meta:
+        model = Prototype
+        fields = ['bundle_id', 'type']
