@@ -173,6 +173,7 @@ def run_python(job):
     out_file, err_file = process_err_out_file(job.id, 'python')
     conf = read_config(job.id)
     script_path = conf['job']['playbook']
+    #    os.chdir(conf['env']['stack_dir'])
     cmd = ['python', script_path]
     ret = start_subprocess(job.id, cmd, conf, out_file, err_file)
     sys.exit(ret)
