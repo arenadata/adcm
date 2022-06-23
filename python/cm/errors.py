@@ -174,6 +174,11 @@ ERRORS = {
     ),
     'LDAP_GROUP_NAMES_COLLISION': (
         'group names collision',
+        rfs.HTTP_409_CONFLICT,
+        ERR,
+    ),
+    'LDAP_BROKEN_CONFIG_USER_EXISTS': (
+        'can\'t log in under existing user. check ldap config',
         rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),
