@@ -4,7 +4,7 @@ import ldap
 os.environ["PYTHONPATH"] = "/adcm/python/"
 sys.path.append("/adcm/python/")
 
-import adcm.init_django
+import adcm.init_django  # pylint: disable=unused-import
 from rbac.models import User, Group, OriginType
 from rbac.ldap import _get_ldap_default_settings
 from django.db import DataError, IntegrityError

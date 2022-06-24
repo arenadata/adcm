@@ -5,7 +5,7 @@ import ldap
 os.environ["PYTHONPATH"] = "/adcm/python/"
 sys.path.append("/adcm/python/")
 
-import adcm.init_django
+import adcm.init_django  # pylint: disable=unused-import
 from cm.models import ADCM, ConfigLog
 from cm.adcm_config import ansible_decrypt
 
