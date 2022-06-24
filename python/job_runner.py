@@ -23,7 +23,7 @@ from cm import config
 from cm.ansible_plugin import finish_check
 import cm.job
 from cm.logger import log
-from cm.models import LogStorage, JobLog
+from cm.models import LogStorage, JobLog, Prototype, ServiceComponent
 from cm.status_api import Event
 from cm.upgrade import bundle_switch
 from cm.errors import AdcmEx
@@ -102,7 +102,7 @@ def get_venv(job_id: int) -> str:
 
 
 def run_ansible(job_id):
-    log.debug("job_runner.py called as: %s", sys.argv)
+    log.debug("job_runner.py starts to run ansible job %s", job_id)
     conf = read_config(job_id)
     playbook = conf['job']['playbook']
     out_file = open_file(config.RUN_DIR, 'ansible-stdout', job_id)
@@ -147,14 +147,36 @@ def run_ansible(job_id):
     sys.exit(ret)
 
 
+def switch_hc(task, action):
+    cluster = task.task_object
+    old_hc = cm.api.get_hc(cluster)
+    new_hc = [*task.post_upgrade_hc_map, *old_hc]
+    task.hostcomponentmap = old_hc
+    task.post_upgrade_hc_map = None
+    task.save()
+    for hc in new_hc:
+        if "component_prototype_id" in hc:
+            proto = Prototype.objects.get(type='component', id=hc.pop('component_prototype_id'))
+            comp = ServiceComponent.objects.get(cluster=cluster, prototype=proto)
+            hc['component_id'] = comp.id
+            hc['service_id'] = comp.service.id
+    host_map, _ = cm.job.check_hostcomponentmap(cluster, action, new_hc)
+    if host_map is not None:
+        cm.api.save_hc(cluster, host_map)
+
+
 def main(job_id):
+    log.debug("job_runner.py called as: %s", sys.argv)
     job = JobLog.objects.get(id=job_id)
     if job.sub_action and job.sub_action.script_type == 'internal':
         event = Event()
         cm.job.set_job_status(job_id, config.Job.RUNNING, event)
         try:
-            bundle_switch(job.task.task_object, job.action.upgrade)
-        except AdcmEx:
+            task = job.task
+            bundle_switch(task.task_object, job.action.upgrade)
+            switch_hc(task, job.action)
+        except AdcmEx as e:
+            log.error(f'Error while upgrading bundle: {e}')
             cm.job.set_job_status(job_id, config.Job.FAILED, event)
             sys.exit(1)
         cm.job.set_job_status(job_id, config.Job.SUCCESS, event)

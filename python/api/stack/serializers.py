@@ -82,6 +82,52 @@ class PrototypeSerializer(serializers.Serializer):
         return obj.bundle.edition
 
 
+def get_constraint(self, obj):
+    if obj.type == 'component':
+        return obj.constraint
+    return []
+
+
+def get_service_name(self, obj):
+    if obj.type == 'component':
+        return obj.parent.name
+    return ''
+
+
+def get_service_display_name(self, obj):
+    if obj.type == 'component':
+        return obj.parent.display_name
+    return ''
+
+
+def get_service_id(self, obj):
+    if obj.type == 'component':
+        return obj.parent.id
+    return None
+
+
+class PrototypeUISerializer(PrototypeSerializer):
+    parent_id = serializers.IntegerField(read_only=True)
+    version_order = serializers.IntegerField(read_only=True)
+    shared = serializers.BooleanField(read_only=True)
+    constraint = serializers.SerializerMethodField(read_only=True)
+    requires = serializers.JSONField(read_only=True)
+    bound_to = serializers.JSONField(read_only=True)
+    adcm_min_version = serializers.CharField(read_only=True)
+    monitoring = serializers.CharField(read_only=True)
+    config_group_customization = serializers.BooleanField(read_only=True)
+    venv = serializers.CharField(read_only=True)
+    allow_maintenance_mode = serializers.BooleanField(read_only=True)
+    service_name = serializers.SerializerMethodField(read_only=True)
+    service_display_name = serializers.SerializerMethodField(read_only=True)
+    service_id = serializers.SerializerMethodField(read_only=True)
+
+    get_constraint = get_constraint
+    get_service_name = get_service_name
+    get_service_display_name = get_service_display_name
+    get_service_id = get_service_id
+
+
 class PrototypeShort(serializers.ModelSerializer):
     class Meta:
         model = Prototype
@@ -164,8 +210,17 @@ class ProviderTypeSerializer(PrototypeSerializer):
 
 
 class PrototypeDetailSerializer(PrototypeSerializer):
+    constraint = serializers.SerializerMethodField()
     actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
+    service_name = serializers.SerializerMethodField(read_only=True)
+    service_display_name = serializers.SerializerMethodField(read_only=True)
+    service_id = serializers.SerializerMethodField(read_only=True)
+
+    get_constraint = get_constraint
+    get_service_name = get_service_name
+    get_service_display_name = get_service_display_name
+    get_service_id = get_service_id
 
 
 class ProviderTypeDetailSerializer(ProviderTypeSerializer):
