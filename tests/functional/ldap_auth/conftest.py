@@ -15,7 +15,6 @@
 from pathlib import Path
 from typing import Generator
 
-
 import allure
 import ldap
 import pytest
@@ -145,6 +144,7 @@ def configure_adcm_ldap_ad(sdk_client_fs: ADCMClient, ldap_basic_ous, ad_config)
             },
         }
     )
+
 
 def get_ldap_user_from_adcm(client: ADCMClient, name: str) -> User:
     """
