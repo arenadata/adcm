@@ -177,8 +177,8 @@ ERRORS = {
         rfs.HTTP_409_CONFLICT,
         ERR,
     ),
-    'LDAP_BROKEN_CONFIG_USER_EXISTS': (
-        'can\'t log in under existing user. check ldap config',
+    'LDAP_BROKEN_CONFIG': (
+        'check ldap config',
         rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),

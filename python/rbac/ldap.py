@@ -116,17 +116,8 @@ class CustomLDAPBackend(LDAPBackend):
             log.exception(e)
             user_or_none = None
         except ValueError as e:
-            if (  # pylint: disable=protected-access
-                'option error' in str(e).lower()
-                and User.objects.filter(username=ldap_user._username).exists()
-            ):
-                # known case (may be incomplete!):
-                #   1. user was successfully created with a working ldap(s) connection config
-                #   2. `TLS CA certificate file path` setting was changed
-                #       to incorrect but existing certificate/file
-                #   3. attempt to log in as user from p.1
-                # pylint: disable=raise-missing-from
-                raise AdcmEx('LDAP_BROKEN_CONFIG_USER_EXISTS')
+            if 'option error' in str(e).lower():
+                raise AdcmEx('LDAP_BROKEN_CONFIG')
             raise e
         if isinstance(user_or_none, User):
             user_or_none.type = OriginType.LDAP
