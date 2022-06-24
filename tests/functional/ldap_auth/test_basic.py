@@ -106,7 +106,7 @@ def test_ssl_ldap_fails_with_wrong_path(sdk_client_fs, ldap_user_in_group):
     _login_should_succeed('login with LDAP user and OK config', sdk_client_fs, user, password)
     with allure.step('Set incorrect path to a file and check login fails'):
         adcm.config_set_diff({'ldap_integration': {'tls_ca_cert_file': '/does/not/exist'}})
-        _login_should_fail('login with LDAP user and wrong file in config', sdk_client_fs, user, password)
+        _login_should_fail('login with LDAP user and wrong file in config', sdk_client_fs, user, password, None)
 
 
 @including_https
@@ -125,7 +125,7 @@ def test_ssl_ldap_fails_with_wrong_cert_content(adcm_fs, sdk_client_fs, ldap_use
         result = adcm_fs.container.exec_run(['sh', '-c', f'echo "notacert" > {path}'])
         if result.exit_code != 0:
             raise ValueError('Failed to change certificate content')
-        _login_should_fail('login with LDAP user and wrong cert content', sdk_client_fs, user, password)
+        _login_should_fail('login with LDAP user and wrong cert content', sdk_client_fs, user, password, None)
 
 
 def _login_should_succeed(operation_name: str, client: ADCMClient, username: str, password: str):
