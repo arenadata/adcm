@@ -2,7 +2,6 @@ import os
 import sys
 import ldap
 os.environ["PYTHONPATH"] = "/adcm/python/"
-sys.path.append(os.path.join(os.getcwd(), '../'))
 sys.path.append("/adcm/python/")
 
 import adcm.init_django
@@ -77,7 +76,7 @@ class SyncLDAP:
                 print("Error creating group %s: %s" % (defaults['name'], e))
             else:
                 if created:
-                    print("Created group %s" % defaults['name'])
+                    print("Create new group: %s" % defaults['name'])
 
     def _sync_ldap_users(self, ldap_users):
         ldap_usernames = set()
@@ -104,7 +103,7 @@ class SyncLDAP:
             else:
                 updated = False
                 if created:
-                    print("Create user %s" % username)
+                    print("Create user: %s" % username)
                     user.set_unusable_password()
                 else:
                     for name, attr in defaults.items():
@@ -113,18 +112,20 @@ class SyncLDAP:
                             setattr(user, name, attr)
                             updated = True
                     if updated:
-                        print("Updated user %s" % username)
+                        print("Updated user: %s" % username)
 
                 user.save()
                 ldap_usernames.add(username)
                 for group in ldap_attributes.get('memberof', []):
                     name = group.split(',')[0][3:]
                     try:
-                        group = Group.objects.get(name=name)
+                        group, created = Group.objects.get_or_create(name=name, built_in=False, type=OriginType.LDAP)
                         group.user_set.add(user)
+                        if created:
+                            print(f"Create new group: {name}")
                         print(f"Add user {user} to group {group}")
-                    except Group.DoesNotExist:
-                        print(f"Group {name} doesn't exist")
+                    except (IntegrityError, DataError) as e:
+                        print("Error creating group %s: %s" % (name, e))
 
         django_usernames = User.objects.filter(type=OriginType.LDAP).values_list('username', flat=True)
         django_usernames = set([item.lower() for item in django_usernames])

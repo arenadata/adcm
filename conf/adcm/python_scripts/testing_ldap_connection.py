@@ -3,7 +3,6 @@ import sys
 import ldap
 
 os.environ["PYTHONPATH"] = "/adcm/python/"
-sys.path.append(os.path.join(os.getcwd(), '../'))
 sys.path.append("/adcm/python/")
 
 import adcm.init_django
