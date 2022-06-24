@@ -7,6 +7,7 @@ docker
 jsonschema
 pylint_runner
 pytest
+pytest-asyncio
 pytest-lazy-fixture
 pytest-xdist
 pytest-rerunfailures
@@ -20,3 +21,4 @@ selenium~=3.141.0
 multipledispatch
 rstr
 genson
+websockets
