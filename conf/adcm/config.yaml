@@ -105,7 +105,7 @@
           display_name: "Objects configurations rotation period"
           type: integer
           required: false
-          default: 365
+          default: 0
           min: 0
           description: |
             You can set the time (number of days) after which the Objects configuration will be deleted from the database.
