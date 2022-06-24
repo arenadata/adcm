@@ -117,7 +117,7 @@ class CustomLDAPBackend(LDAPBackend):
             user_or_none = None
         except ValueError as e:
             if 'option error' in str(e).lower():
-                raise AdcmEx('LDAP_BROKEN_CONFIG')
+                raise AdcmEx('LDAP_BROKEN_CONFIG') from None
             raise e
         if isinstance(user_or_none, User):
             user_or_none.type = OriginType.LDAP
