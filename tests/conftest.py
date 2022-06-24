@@ -14,6 +14,7 @@
 
 # pylint: disable=W0621
 import os
+import pathlib
 import sys
 import tarfile
 from pathlib import PosixPath
@@ -21,6 +22,7 @@ from typing import Optional, List, Tuple, Union
 
 import allure
 import pytest
+import websockets.client
 import yaml
 
 from _pytest.python import Function, FunctionDefinition, Module
@@ -29,6 +31,7 @@ from allure_commons.model2 import TestResult, Parameter
 from allure_pytest.listener import AllureListener
 from docker.utils import parse_repository_tag
 
+from tests.library.adcm_websockets import ADCMWebsocket
 from tests.library.db import QueryExecutioner
 
 pytest_plugins = "adcm_pytest_plugin"
@@ -113,6 +116,29 @@ def pytest_runtest_setup(item: Function):
 def pytest_collection_modifyitems(session, config, items):  # pylint: disable=unused-argument
     """Run tests with id "adcm_with_dummy_data" after everything else"""
     items.sort(key=lambda x: 'adcm_with_dummy_data' in x.name)
+
+
+def pytest_addoption(parser):
+    """
+    Additional options for ADCM testing
+    """
+    parser.addoption(
+        '--ldap-conf',
+        action="store",
+        default=None,
+        help=(
+            """
+            This option is required to run ldap-related tests.
+            Value should be a path to a YAML file with content like:
+              ad:
+                uri: ldaps://some.ldap.server
+                admin_dn: admin user DN
+                admin_pass: admin password
+                base_ou_dn: DN in which to create all test-related entities
+            """
+        ),
+        type=pathlib.Path,
+    )
 
 
 def _override_allure_test_parameters(item: Function):
@@ -226,6 +252,23 @@ def user_sdk(user, adcm_fs) -> ADCMClient:  # pylint: disable=unused-argument
     """Returns ADCMClient object from adcm_client with testing user"""
     username, password = TEST_USER_CREDENTIALS
     return ADCMClient(url=adcm_fs.url, user=username, password=password)
+
+
+# Websockets (Events)
+
+
+@pytest.fixture()
+async def adcm_ws(sdk_client_fs, adcm_fs) -> ADCMWebsocket:
+    """
+    Create a connection to ADCM websocket for Admin user
+    and return ADCMWebsocket helper for tests.
+    Should be used only in async environment.
+    """
+    addr = f'{adcm_fs.ip}:{adcm_fs.port}'
+    async with websockets.client.connect(
+        uri=f'ws://{addr}/ws/event/', subprotocols=['adcm', sdk_client_fs.api_token()]
+    ) as conn:
+        yield ADCMWebsocket(conn)
 
 
 # ADCM DB

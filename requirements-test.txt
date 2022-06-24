@@ -1,17 +1,19 @@
 --extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
 adcm_client>=adcm_client-2022.6.2.8
-adcm-pytest-plugin~=4.18.0rc94
+adcm-pytest-plugin~=4.19.0rc95
 attr
 allure-pytest
 docker
 jsonschema
 pylint_runner
 pytest
+pytest-asyncio
 pytest-lazy-fixture
 pytest-xdist
 pytest-rerunfailures
 pytest-timeout
 pytest-check
+python-ldap~=3.4
 pyyaml
 requests
 requests-toolbelt
@@ -19,3 +21,4 @@ selenium~=3.141.0
 multipledispatch
 rstr
 genson
+websockets
