@@ -11,6 +11,7 @@
 # limitations under the License.
 
 """Test basic login scenarios"""
+from typing import Union, Callable
 
 import allure
 import pytest
@@ -37,7 +38,11 @@ def test_basic_ldap_auth(sdk_client_fs, ldap_user, ldap_user_in_group):
         'login with LDAP user in group', sdk_client_fs, ldap_user_in_group['name'], ldap_user_in_group['password']
     )
     _login_should_fail(
-        'login with LDAP user not in allowed group', sdk_client_fs, ldap_user['name'], ldap_user['password']
+        'login with LDAP user not in allowed group',
+        sdk_client_fs,
+        ldap_user['name'],
+        ldap_user['password'],
+        UNAUTHORIZED,
     )
 
 
@@ -50,7 +55,7 @@ def test_remove_from_group_leads_to_access_loss(sdk_client_fs, ldap_ad, ldap_use
     username, password = ldap_user_in_group['name'], ldap_user_in_group['password']
     _login_should_succeed('login with LDAP user in group', sdk_client_fs, username, password)
     ldap_ad.remove_user_from_group(ldap_user_in_group['dn'], ldap_group['dn'])
-    _login_should_fail('login with removed from group LDAP user', sdk_client_fs, username, password)
+    _login_should_fail('login with removed from group LDAP user', sdk_client_fs, username, password, UNAUTHORIZED)
 
 
 @including_https
@@ -61,7 +66,7 @@ def test_deactivation_leads_to_access_loss(sdk_client_fs, ldap_ad, ldap_user_in_
     username, password = ldap_user_in_group['name'], ldap_user_in_group['password']
     _login_should_succeed('login with LDAP user in group', sdk_client_fs, username, password)
     ldap_ad.deactivate_user(ldap_user_in_group['dn'])
-    _login_should_fail('login with removed from group LDAP user', sdk_client_fs, username, password, None)
+    _login_should_fail('login with removed from group LDAP user', sdk_client_fs, username, password)
 
 
 @pytest.mark.xfail(reason="Expected behavior isn't finally decided: https://tracker.yandex.ru/ADCM-2916")
@@ -80,9 +85,9 @@ def test_ldap_user_access_restriction(sdk_client_fs, ldap_ad, ldap_group, ldap_b
     with allure.step('Create user and deactivate it'):
         user_dn = ldap_ad.create_user(username, password, users_ou)
         ldap_ad.deactivate_user(user_dn)
-    _login_should_fail('login as deactivated user not in group', sdk_client_fs, username, password, None)
+    _login_should_fail('login as deactivated user not in group', sdk_client_fs, username, password)
     ldap_ad.add_user_to_group(user_dn, ldap_group['dn'])
-    _login_should_fail('login as deactivated user in group', sdk_client_fs, username, password, None)
+    _login_should_fail('login as deactivated user in group', sdk_client_fs, username, password)
     ldap_ad.activate_user(user_dn)
     _login_should_succeed('login as activated user in group', sdk_client_fs, username, password)
     ldap_ad.set_user_password(user_dn, new_password)
@@ -90,7 +95,7 @@ def test_ldap_user_access_restriction(sdk_client_fs, ldap_ad, ldap_group, ldap_b
     # _login_should_fail('login as activated user with wrong password', sdk_client_fs, username, password, None)
     _login_should_succeed('login as activated user with new password', sdk_client_fs, username, new_password)
     ldap_ad.remove_user_from_group(user_dn, ldap_group['dn'])
-    _login_should_fail('login as user removed from group', sdk_client_fs, username, new_password, None)
+    _login_should_fail('login as user removed from group', sdk_client_fs, username, new_password)
 
 
 @including_https
@@ -106,7 +111,7 @@ def test_ssl_ldap_fails_with_wrong_path(sdk_client_fs, ldap_user_in_group):
     _login_should_succeed('login with LDAP user and OK config', sdk_client_fs, user, password)
     with allure.step('Set incorrect path to a file and check login fails'):
         adcm.config_set_diff({'ldap_integration': {'tls_ca_cert_file': '/does/not/exist'}})
-        _login_should_fail('login with LDAP user and wrong file in config', sdk_client_fs, user, password, None)
+        _login_should_fail('login with LDAP user and wrong file in config', sdk_client_fs, user, password)
 
 
 @including_https
@@ -125,7 +130,35 @@ def test_ssl_ldap_fails_with_wrong_cert_content(adcm_fs, sdk_client_fs, ldap_use
         result = adcm_fs.container.exec_run(['sh', '-c', f'echo "notacert" > {path}'])
         if result.exit_code != 0:
             raise ValueError('Failed to change certificate content')
-        _login_should_fail('login with LDAP user and wrong cert content', sdk_client_fs, user, password, None)
+        _login_should_fail('login with LDAP user and wrong cert content', sdk_client_fs, user, password)
+
+
+def _alter_user_search_base(client: ADCMClient) -> dict:
+    old_base: str = client.adcm().config()['ldap_integration']['user_search_base']
+    new_base = f'CN=notexist-{old_base[3:]}'
+    return {'ldap_integration': {'user_search_base': new_base}}
+
+
+@pytest.mark.parametrize(
+    ('change_name', 'config'),
+    [
+        ('LDAP config turned off', {'attr': {'ldap_integration': {'active': False}}}),
+        ('wrong user', {'ldap_integration': {'ldap_user': '!#)F(JDKSLJ'}}),
+        ('wrong password', {'ldap_integration': {'ldap_password': random_string(6)}}),
+    ],
+    ids=lambda x: x.replace(' ', '_') if isinstance(x, str) else x,
+)
+def test_ldap_config_change(change_name: str, config: Union[dict, Callable], sdk_client_fs, ldap_user_in_group):
+    """Test that changing ldap config to "incorrect" leads to users access loss"""
+    login_operation = 'login as LDAP user'
+    user, password = ldap_user_in_group['name'], ldap_user_in_group['password']
+    adcm = sdk_client_fs.adcm()
+
+    _login_should_succeed(login_operation, sdk_client_fs, user, password)
+    with allure.step(f'Check login is disabled after: {change_name}'):
+        config = config if not callable(config) else config(sdk_client_fs)
+        adcm.config_set_diff(config)
+        _login_should_fail(login_operation, sdk_client_fs, user, password)
 
 
 def _login_should_succeed(operation_name: str, client: ADCMClient, username: str, password: str):
@@ -139,7 +172,7 @@ def _login_should_succeed(operation_name: str, client: ADCMClient, username: str
         )
 
 
-def _login_should_fail(operation_name: str, client: ADCMClient, username: str, password: str, err=UNAUTHORIZED):
+def _login_should_fail(operation_name: str, client: ADCMClient, username: str, password: str, err=None):
     with allure.step(operation_name.capitalize()):
         expect_api_error(
             operation_name,
