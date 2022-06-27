@@ -50,6 +50,7 @@ def _get_ldap_default_settings():
             filterstr=f'(objectClass={ldap_config.get("group_object_class", "*")})',
         )
         user_attr_map = {
+            "username": ldap_config["user_name_attribute"],
             "first_name": 'givenName',
             "last_name": "sn",
             "email": "mail",
