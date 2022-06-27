@@ -78,6 +78,7 @@ class GroupSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
     user = UserSerializer(many=True, required=False, source='user_set')
     url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
     built_in = serializers.BooleanField(read_only=True)
+    type = serializers.CharField(read_only=True)
 
     class Meta:
         expandable_fields = {'user': (ExpandedUserSerializer, {'many': True, 'source': 'user_set'})}
