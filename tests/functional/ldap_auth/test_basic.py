@@ -17,6 +17,7 @@ import allure
 import pytest
 from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.params import including_https
+from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import random_string
 
 from tests.functional.conftest import only_clean_adcm
@@ -139,13 +140,17 @@ def _alter_user_search_base(client: ADCMClient) -> dict:
     return {'ldap_integration': {'user_search_base': new_base}}
 
 
+_wrong_user_password = (
+    ('wrong user', {'ldap_integration': {'ldap_user': '!#)F(JDKSLJ'}}),
+    ('wrong password', {'ldap_integration': {'ldap_password': random_string(6)}}),
+)
+
+_deactivate_ldap_integration = ('LDAP config turned off', {'attr': {'ldap_integration': {'active': False}}})
+
+
 @pytest.mark.parametrize(
     ('change_name', 'config'),
-    [
-        ('LDAP config turned off', {'attr': {'ldap_integration': {'active': False}}}),
-        ('wrong user', {'ldap_integration': {'ldap_user': '!#)F(JDKSLJ'}}),
-        ('wrong password', {'ldap_integration': {'ldap_password': random_string(6)}}),
-    ],
+    [_deactivate_ldap_integration, *_wrong_user_password],
     ids=lambda x: x.replace(' ', '_') if isinstance(x, str) else x,
 )
 def test_ldap_config_change(change_name: str, config: Union[dict, Callable], sdk_client_fs, ldap_user_in_group):
@@ -159,6 +164,24 @@ def test_ldap_config_change(change_name: str, config: Union[dict, Callable], sdk
         config = config if not callable(config) else config(sdk_client_fs)
         adcm.config_set_diff(config)
         _login_should_fail(login_operation, sdk_client_fs, user, password)
+
+
+@pytest.mark.parametrize('action_name', ('test_ldap_connection', 'run_ldap_sync'))
+def test_wrong_ldap_config_fail_actions(action_name: str, sdk_client_fs):
+    """Test that incorrect/turned off LDAP configuration leads ldap-related actions to have disabling cause"""
+    adcm = sdk_client_fs.adcm()
+    original_config = adcm.config()
+    for change_name, config in _wrong_user_password:
+        with allure.step(f'Change LDAP config: {change_name}; and expect {action_name} to fail'):
+            adcm.config_set_diff(config)
+            task = adcm.action(name=action_name).run()
+            wait_for_task_and_assert_result(task, 'failed')
+            adcm.config_set_diff(original_config)
+    with allure.step(f'Deactivate LDAP integration in settings and check action {action_name} is disabled'):
+        adcm.config_set_diff(_deactivate_ldap_integration[1])
+        assert action_name in [
+            a.name for a in adcm.action_list() if a.disabling_cause == 'no_ldap_settings'
+        ], f'Action {action_name} have "no_ldap_settings" disabling cause'
 
 
 def _login_should_succeed(operation_name: str, client: ADCMClient, username: str, password: str):
