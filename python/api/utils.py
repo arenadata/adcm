@@ -33,7 +33,6 @@ from cm.models import (
     HostComponent,
     MaintenanceModeType,
     Host,
-    ADCM,
     ConfigLog,
 )
 
