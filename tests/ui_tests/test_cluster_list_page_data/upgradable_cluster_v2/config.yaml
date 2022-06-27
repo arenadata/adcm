@@ -17,7 +17,7 @@
 
   upgrade:
     - &upgrade
-      name: simple_upgrade_with_hc_acl
+      name: simple_upgrade
       versions:
         min: 0.1
         max: 1.5
@@ -31,17 +31,30 @@
           script_type: internal
         - <<: *action
           name: first action after switch
-      hc_acl:
-        - service: test_service
-          component: test_component
-          action: add
-
       states:
         available: any
         on_success: upgraded
 
     - <<: *upgrade
-      name: simple_upgrade_without_hc_acl
+      name: upgrade_with_hc_acl
+      versions:
+        min: 0.1
+        max: 1.5
+      scripts:
+        - <<: *action
+          name: first_action
+        - name: switch action
+          script: bundle_switch
+          script_type: internal
+        - <<: *action
+          name: first action after switch
+      hc_acl:
+        - service: test_service
+          component: test_component
+          action: add
+
+    - <<: *upgrade
+      name: upgrade_with_config
       versions:
         min: 0.1
         max: 1.5
@@ -54,9 +67,38 @@
         - <<: *action
           name: first action after switch
 
-      states:
-        available: any
-        on_success: upgraded
+      config:
+        - name: somestring2
+          type: string
+          required: false
+        - name: someint2
+          type: integer
+          default: 122
+
+    - <<: *upgrade
+      name: upgrade_with_config_and_hc_acl
+      versions:
+        min: 0.1
+        max: 1.5
+      scripts:
+        - <<: *action
+          name: first_action
+        - name: switch action
+          script: bundle_switch
+          script_type: internal
+        - <<: *action
+          name: first action after switch
+      hc_acl:
+        - service: test_service
+          component: test_component
+          action: add
+      config:
+        - name: somestring2
+          type: string
+          required: false
+        - name: someint2
+          type: integer
+          default: 122
 
 
   config: &config

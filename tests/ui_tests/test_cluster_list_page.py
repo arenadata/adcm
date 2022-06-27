@@ -392,23 +392,37 @@ class TestClusterListPage:
                 cluster_page.get_cluster_state_from_row(row) == params["state"]
             ), f"Cluster state should be {params['state']}"
 
-    def test_run_upgrade_v2_on_cluster_list_page(self, sdk_client_fs, app_fs):
+    @pytest.mark.parametrize(
+        ("upgrade_name", "config", "hc_acl"),
+        [
+            ("simple_upgrade", None, False),
+            ("upgrade_with_hc_acl", None, True),
+            ("upgrade_with_config", {"somestring2": "test"}, False),
+            ("upgrade_with_config_and_hc_acl", {"somestring2": "test"}, True),
+        ],
+    )
+    def test_run_upgrade_v2_on_cluster_list_page(
+        self, create_host, sdk_client_fs, app_fs, upgrade_name, config, hc_acl
+    ):
         """Test run upgrade new version from the /cluster page"""
         params = {
-            "upgrade": "simple_upgrade_with_hc_acl",
             "state": "upgraded",
         }
         with allure.step("Upload main cluster bundle"):
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
-            bundle.cluster_create(name=CLUSTER_NAME)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            cluster.host_add(create_host)
         with allure.step("Upload cluster bundle to upgrade"):
             cluster_bundle(sdk_client_fs, BUNDLE_UPGRADE_V2)
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         row_with_upgrade = cluster_page.get_row_by_cluster_name("Test cluster")
-        cluster_page.run_upgrade_in_cluster_row(row=row_with_upgrade, upgrade_name=params["upgrade"])
+        cluster_page.run_upgrade_in_cluster_row(
+            row=row_with_upgrade, upgrade_name=upgrade_name, config=config, hc_acl=hc_acl
+        )
         with allure.step("Check that cluster has been upgraded"):
             cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-            row = cluster_page.get_row_by_cluster_name(params["upgrade_cluster_name"])
+            cluster_page.header.wait_success_job_amount_from_header(1)
+            row = cluster_page.get_row_by_cluster_name("Test cluster")
             assert (
                 cluster_page.get_cluster_state_from_row(row) == params["state"]
             ), f"Cluster state should be {params['state']}"

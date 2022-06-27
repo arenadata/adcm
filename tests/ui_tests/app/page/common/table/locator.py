@@ -44,6 +44,12 @@ class CommonTable:
         block = Locator(By.CSS_SELECTOR, "div[role='menu']", "Upgrade popup block")
         button = TemplateLocator(By.XPATH, "//button[./span[text()='{}']]", "Button with upgrade {}")
 
+    class ActionUpgradePopup:
+        """Common popup for action upgrade in tables."""
+
+        block = Locator(By.CSS_SELECTOR, "mat-dialog-container[role='dialog']", "Upgrade popup block")
+        verbose_chbx = Locator(By.XPATH, "//mat-checkbox[./label/span[text()='Verbose']]", "Verbose checkbox")
+
     class Pagination:
         """Common table pagination locators."""
 
