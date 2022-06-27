@@ -159,13 +159,19 @@ def run_ansible(job_id):
 def run_upgrade(job):
     event = Event()
     cm.job.set_job_status(job.id, config.Job.RUNNING, event)
+    out_file, err_file = process_err_out_file(job.id, 'internal')
     try:
         bundle_switch(job.task.task_object, job.action.upgrade)
-    except AdcmEx:
+    except AdcmEx as e:
+        err_file.write(e.msg)
         cm.job.set_job_status(job.id, config.Job.FAILED, event)
+        out_file.close()
+        err_file.close()
         sys.exit(1)
     cm.job.set_job_status(job.id, config.Job.SUCCESS, event)
     event.send_state()
+    out_file.close()
+    err_file.close()
     sys.exit(0)
 
 
