@@ -152,11 +152,10 @@ def get_ldap_user_from_adcm(client: ADCMClient, name: str) -> User:
     Name should be sAMAccount value.
     :raises AssertionError: when there's no user presented in ADCM
     """
-    username = name.lower()
     try:
-        return client.user(username=username)
+        return client.user(username=name)
     except ObjectNotFound as e:
-        raise AssertionError(f'LDAP user "{name}" should be available as ADCM "{username}" user') from e
+        raise AssertionError(f'LDAP user "{name}" should be available as ADCM "{name}" user') from e
 
 
 def get_ldap_group_from_adcm(client: ADCMClient, name: str) -> Group:
