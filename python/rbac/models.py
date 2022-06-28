@@ -77,9 +77,7 @@ class Group(AuthGroup):
 @receiver(pre_save, sender=Group)
 def concat_name_type(sender, instance, **kwargs):
     name_parts = instance.name.split(' [')
-    if len(name_parts) == 1:
-        pass
-    else:
+    if len(name_parts) > 1:
         name_parts = name_parts[:-1]
     base_name = ''.join(name_parts)
     instance.name = f'{base_name} [{instance.type}]'
