@@ -153,15 +153,7 @@ class CustomLDAPBackend(LDAPBackend):
         if group.type == OriginType.LDAP:
             return _GroupCreationPolicy.LDAP_NO_ACTION
         else:
-            # groups, created by this backend can't be empty, but just in case
-            # empty existing groups will be converted to `ldap` type
-            if all(
-                [self.__get_rbac_user(u).type == OriginType.LDAP for u in group.user_set.all()]
-                or [True]
-            ):
-                return _GroupCreationPolicy.CONVERT_TO_LDAP
-            else:
-                return _GroupCreationPolicy.RAISE_EXC
+            return _GroupCreationPolicy.CONVERT_TO_LDAP
 
     @staticmethod
     def __get_rbac_user(user):
@@ -172,7 +164,8 @@ class CustomLDAPBackend(LDAPBackend):
         else:
             raise ValueError('wrong user type')
 
-    def __get_rbac_group(self, group):
+    @staticmethod
+    def __get_rbac_group(group):
         if isinstance(group, Group):
             return group
         elif isinstance(group, DjangoGroup):
