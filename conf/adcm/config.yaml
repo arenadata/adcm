@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 1.7
+  version: 1.8
 
   config:
     - name: "global"
@@ -79,9 +79,8 @@
           display_name: "Max file size"
           description: |
             Specifies the allowed size (in Mb) the log file can reach before it is archived
-          type: integer
-          default: 10
-          min: 1
+          type: string
+          default: 10M
         - name: max_history
           display_name: "Max files history"
           description: |
