@@ -177,6 +177,11 @@ ERRORS = {
         rfs.HTTP_409_CONFLICT,
         ERR,
     ),
+    'LDAP_USERNAMES_COLLISION': (
+        'usernames collision',
+        rfs.HTTP_409_CONFLICT,
+        ERR,
+    ),
     'LDAP_BROKEN_CONFIG': (
         'check ldap config',
         rfs.HTTP_400_BAD_REQUEST,

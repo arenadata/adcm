@@ -108,6 +108,7 @@ class CustomLDAPBackend(LDAPBackend):
         if not self.default_settings:
             return None
 
+        self.__check_user(ldap_user._username)  # pylint: disable=protected-access
         try:
             user_or_none = super().authenticate_ldap_user(ldap_user, password)
         except ImproperlyConfigured as e:
@@ -143,6 +144,11 @@ class CustomLDAPBackend(LDAPBackend):
                 raise AdcmEx('LDAP_GROUP_NAMES_COLLISION')
             else:
                 raise RuntimeError('not all cases covered')
+
+    @staticmethod
+    def __check_user(username: str):
+        if User.objects.filter(username__iexact=username, type=OriginType.Local).exists():
+            raise AdcmEx('LDAP_USERNAMES_COLLISION')
 
     @staticmethod
     def __det_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
