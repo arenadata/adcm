@@ -162,15 +162,6 @@ class CustomLDAPBackend(LDAPBackend):
             return _GroupCreationPolicy.CONVERT_TO_LDAP
 
     @staticmethod
-    def __get_rbac_user(user):
-        if isinstance(user, User):
-            return user
-        elif isinstance(user, DjangoUser):
-            return User.objects.get(user_ptr=user)
-        else:
-            raise ValueError('wrong user type')
-
-    @staticmethod
     def __get_rbac_group(group):
         if isinstance(group, Group):
             return group
