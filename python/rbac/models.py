@@ -19,7 +19,9 @@ from django.contrib.auth.models import User as AuthUser, Group as AuthGroup, Per
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.db.models.signals import pre_save
 from django.db.transaction import atomic
+from django.dispatch import receiver
 from guardian.models import UserObjectPermission, GroupObjectPermission
 from rest_framework.exceptions import ValidationError
 
@@ -70,6 +72,17 @@ class Group(AuthGroup):
     type = models.CharField(
         max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
     )
+
+
+@receiver(pre_save, sender=Group)
+def concat_name_type(sender, instance, **kwargs):
+    name_parts = instance.name.split(' [')
+    if len(name_parts) == 1:
+        pass
+    else:
+        name_parts = name_parts[:-1]
+    base_name = ''.join(name_parts)
+    instance.name = f'{base_name} [{instance.type}]'
 
 
 class RoleTypes(models.TextChoices):

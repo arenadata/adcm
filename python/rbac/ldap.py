@@ -12,7 +12,6 @@
 
 
 import os
-from enum import Enum
 
 import ldap
 from django.contrib.auth.models import Group as DjangoGroup
@@ -28,14 +27,6 @@ from rbac.models import User, Group, OriginType
 
 
 CERT_ENV_KEY = 'LDAPTLS_CACERT'
-
-
-class _GroupCreationPolicy(Enum):
-    CONVERT_TO_LDAP = 'CONVERT_TO_LDAP'
-    # ldap group with existing rbac group; only ldap users in this group
-    LDAP_NO_ACTION = 'LDAP_NO_ACTION'
-    # group has non-ldap users; raise an `group names collision exception`; remove user from group
-    RAISE_EXC = 'RAISE_EXC'
 
 
 def _get_ldap_default_settings():
@@ -118,10 +109,12 @@ class CustomLDAPBackend(LDAPBackend):
             if 'option error' in str(e).lower():
                 raise AdcmEx('LDAP_BROKEN_CONFIG') from None
             raise e
+
         if isinstance(user_or_none, User):
             user_or_none.type = OriginType.LDAP
             user_or_none.save()
             self.__create_rbac_groups(user_or_none)
+
         return user_or_none
 
     def get_user_model(self):
@@ -129,21 +122,34 @@ class CustomLDAPBackend(LDAPBackend):
 
     def __create_rbac_groups(self, user):
         ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
+
         for group in user.groups.filter(name__in=[i[0] for i in ldap_groups]):
-            group_creation_policy = self.__get_group_creation_policy(group)
-            if group_creation_policy == _GroupCreationPolicy.LDAP_NO_ACTION:
-                # user already added to right group
-                pass
-            elif group_creation_policy == _GroupCreationPolicy.CONVERT_TO_LDAP:
-                rbac_group = self.__get_rbac_group(group)
-                rbac_group.type = OriginType.LDAP
-                rbac_group.description = self.__det_ldap_group_dn(group.name, ldap_groups)
-                rbac_group.save()
-            elif group_creation_policy == _GroupCreationPolicy.RAISE_EXC:
+            rbac_group = self.__get_rbac_group(group)
+            ldap_group_dn = self.__det_ldap_group_dn(group.name, ldap_groups)
+            log.critical(rbac_group)
+
+            if rbac_group.type != OriginType.LDAP:
+                log.critical('not ldap type')
                 group.user_set.remove(user)
-                raise AdcmEx('LDAP_GROUP_NAMES_COLLISION')
-            else:
-                raise RuntimeError('not all cases covered')
+
+                existing_groups = Group.objects.filter(group_ptr_id=group.pk, type=OriginType.LDAP)
+                count = existing_groups.count()
+                log.critical(f'count: {count}')
+
+                if count == 1:
+                    existing_groups[0].user_set.add(user)
+                    existing_groups.update(description=ldap_group_dn)
+                elif count < 1:
+                    ldap_group = Group.objects.create(
+                        group_ptr_id=group.pk, type=OriginType.LDAP, description=ldap_group_dn
+                    )
+                    ldap_group.user_set.add(user)
+                elif count > 1:
+                    raise RuntimeError
+
+                # this is created by ldap-auth `local` group with single user
+                if group.user_set.count() == 0:
+                    group.delete()
 
     @staticmethod
     def __check_user(username: str):
@@ -154,25 +160,20 @@ class CustomLDAPBackend(LDAPBackend):
     def __det_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
         return [i for i in ldap_groups if i[0] == group_name][0][1]
 
-    def __get_group_creation_policy(self, group):
-        group = self.__get_rbac_group(group)
-        if group.type == OriginType.LDAP:
-            return _GroupCreationPolicy.LDAP_NO_ACTION
-        else:
-            return _GroupCreationPolicy.CONVERT_TO_LDAP
-
     @staticmethod
     def __get_rbac_group(group):
+        """
+        Get corresponding rbac_group for auth_group or create `ldap` type rbac_group if not exists
+        """
         if isinstance(group, Group):
             return group
         elif isinstance(group, DjangoGroup):
             try:
-                return Group.objects.get(group_ptr=group)
+                return Group.objects.get(group_ptr_id=group.pk, type=OriginType.LDAP)
             except Group.DoesNotExist:
-                name = group.name
-                rbac_group = Group.objects.create(group_ptr_id=group.pk)
-                group.name = name
-                group.save()
+                rbac_group = Group.objects.create(
+                    group_ptr_id=group.pk, name=group.name, type=OriginType.LDAP
+                )
                 return rbac_group
         else:
             raise ValueError('wrong group type')
