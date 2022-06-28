@@ -78,7 +78,7 @@
         - name: size
           display_name: "Max file size"
           description: |
-            Specifies the allowed size (in Mb) the log file can reach before it is archived
+            Specifies the allowed size the log file can reach before it is archived
           type: string
           default: 10M
         - name: max_history
