@@ -15,7 +15,7 @@ import os
 from enum import Enum
 
 import ldap
-from django.contrib.auth.models import User as DjangoUser, Group as DjangoGroup
+from django.contrib.auth.models import Group as DjangoGroup
 from django.core.exceptions import ImproperlyConfigured
 from django_auth_ldap.backend import LDAPBackend
 from django_auth_ldap.config import LDAPSearch, MemberDNGroupType
