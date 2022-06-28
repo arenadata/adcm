@@ -172,11 +172,6 @@ ERRORS = {
         rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),
-    'LDAP_GROUP_NAMES_COLLISION': (
-        'group names collision',
-        rfs.HTTP_409_CONFLICT,
-        ERR,
-    ),
     'LDAP_USERNAMES_COLLISION': (
         'usernames collision',
         rfs.HTTP_409_CONFLICT,
