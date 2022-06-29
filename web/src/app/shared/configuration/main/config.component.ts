@@ -145,7 +145,7 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   save(url: string): void {
     const form = this.fields.form;
 
-    if (form.valid) {
+    if (this._isValid()) {
       this.saveFlag = true;
       this.historyComponent.reset();
       const config = this.service.parseValue(this.fields.form.getRawValue(), this.rawConfig.value.config);
@@ -202,9 +202,11 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
   mergeAttrsWithField(): IConfigAttr {
     const attr = this.rawConfig.getValue().attr;
     const attrSrv = this.attributesSrv.rawAttributes();
+
     Object.keys(attr).forEach(a => {
       Object.keys(attr[a]).forEach((key) => {
-        if (attrSrv[a] && attrSrv[a][key]) {
+        // we use here hasOwnProperty because field has boolean value and ruin condition check
+        if (attrSrv[a] && attrSrv[a].hasOwnProperty(key)) {
           if (attr[a][key]?.fields) {
             attr[a][key].fields = attrSrv[a][key];
           } else {
@@ -229,5 +231,10 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
         return of(null);
       })
     );
+  }
+
+  _isValid() {
+    const f = this.fields.form;
+    return f.status !== 'INVALID';
   }
 }

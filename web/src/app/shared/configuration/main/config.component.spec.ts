@@ -150,6 +150,10 @@ describe('Configuration : ConfigComponent >> ', () => {
     fixture.detectChanges();
     const de = fixture.debugElement.nativeElement;
     const saveBtn = de.querySelector('app-tools div.control-buttons button.form_config_button_save');
+
+    component.isLock = true;
+    component.cd.detectChanges();
+
     expect(saveBtn).toBeTruthy();
     expect(saveBtn.disabled).toBeTrue();
   });
