@@ -126,15 +126,12 @@ class CustomLDAPBackend(LDAPBackend):
         for group in user.groups.filter(name__in=[i[0] for i in ldap_groups]):
             rbac_group = self.__get_rbac_group(group)
             ldap_group_dn = self.__det_ldap_group_dn(group.name, ldap_groups)
-            log.critical(rbac_group)
 
             if rbac_group.type != OriginType.LDAP:
-                log.critical('not ldap type')
                 group.user_set.remove(user)
 
                 existing_groups = Group.objects.filter(group_ptr_id=group.pk, type=OriginType.LDAP)
                 count = existing_groups.count()
-                log.critical(f'count: {count}')
 
                 if count == 1:
                     existing_groups[0].user_set.add(user)
@@ -154,6 +151,7 @@ class CustomLDAPBackend(LDAPBackend):
     @staticmethod
     def __check_user(username: str):
         if User.objects.filter(username__iexact=username, type=OriginType.Local).exists():
+            log.exception('usernames collision: `%s`', username)
             raise AdcmEx('LDAP_USERNAMES_COLLISION')
 
     @staticmethod
