@@ -20,6 +20,7 @@ sys.path.append("/adcm/python/")
 import adcm.init_django  # pylint: disable=unused-import
 from rbac.models import User, Group, OriginType
 from rbac.ldap import _get_ldap_default_settings
+from cm.logger import log
 from django.db import DataError, IntegrityError
 
 
@@ -73,6 +74,7 @@ class SyncLDAP:
         print("Users are synchronized")
 
     def _sync_ldap_groups(self, ldap_groups):
+        error_names = []
         for cname, ldap_attributes in ldap_groups:
             defaults = {}
 
@@ -86,14 +88,19 @@ class SyncLDAP:
                     name=defaults['name'], built_in=False, type=OriginType.LDAP
                 )
             except (IntegrityError, DataError) as e:
+                error_names.append(defaults['name'])
                 print("Error creating group %s: %s" % (defaults['name'], e))
+                continue
             else:
                 if created:
                     print("Create new group: %s" % defaults['name'])
+        msg = "Sync of groups ended successfully."
+        msg += f"Couldn\'t synchronize groups: {error_names}" if error_names else ""
+        log.debug(msg)
 
     def _sync_ldap_users(self, ldap_users):
         ldap_usernames = set()
-
+        error_names = []
         for cname, ldap_attributes in ldap_users:
             defaults = {}
             for field, ldap_name in self.settings['USER_ATTR_MAP'].items():
@@ -112,7 +119,9 @@ class SyncLDAP:
             try:
                 user, created = User.objects.get_or_create(**kwargs)
             except (IntegrityError, DataError) as e:
+                error_names.append(username)
                 print("Error creating user %s: %s" % (username, e))
+                continue
             else:
                 updated = False
                 if created:
@@ -140,13 +149,14 @@ class SyncLDAP:
                     except (IntegrityError, DataError) as e:
                         print("Error creating group %s: %s" % (name, e))
 
-        django_usernames = User.objects.filter(type=OriginType.LDAP).values_list('username', flat=True)
-        django_usernames = set([item.lower() for item in django_usernames])
+        django_usernames = set(User.objects.filter(type=OriginType.LDAP).values_list('username', flat=True))
         for username in django_usernames - ldap_usernames:
-            user = User.objects.get(username=username)
+            user = User.objects.get(username__iexact=username)
             print(f"We will delete this user: {user}")
             user.delete()
-        return ldap_users
+        msg = "Sync of users ended successfully."
+        msg += f"Couldn\'t synchronize users: {error_names}" if error_names else ""
+        log.debug(msg)
 
 
 if __name__ == '__main__':
