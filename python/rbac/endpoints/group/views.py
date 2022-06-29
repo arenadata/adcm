@@ -11,6 +11,7 @@
 # limitations under the License.
 
 """Group view sets"""
+import logging
 
 from adwp_base.errors import AdwpEx
 from guardian.mixins import PermissionListMixin
@@ -71,7 +72,7 @@ class GroupSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
     """
 
     id = serializers.IntegerField(read_only=True)
-    name = serializers.RegexField(r'^[^\n]+$', max_length=150, source='get_display_name')
+    name = serializers.RegexField(r'^[^\n]+$', max_length=150, source='name_to_display')
     description = serializers.CharField(
         max_length=255, allow_blank=True, required=False, default=''
     )

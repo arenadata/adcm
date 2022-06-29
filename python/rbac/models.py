@@ -13,6 +13,7 @@
 """RBAC models"""
 
 import importlib
+import re
 
 from adwp_base.errors import raise_AdwpEx as err
 from django.contrib.auth.models import User as AuthUser, Group as AuthGroup, Permission
@@ -76,18 +77,21 @@ class Group(AuthGroup):
     # to bypass unique constraint on `AuthGroup` base table
     display_name = models.CharField(max_length=150, null=True)
 
-    def get_display_name(self):
+    def name_to_display(self):
         return self.display_name
+
+
+BASE_GROUP_NAME_PATTERN = re.compile(
+    rf'(?P<base_name>.*)(?: \[(?:{"|".join(OriginType.values)})\])?'
+)
 
 
 @receiver(pre_save, sender=Group)
 def handle_name_type_display_name(sender, instance, **kwargs):
-    name_parts = instance.name.split(' [')
-    if len(name_parts) > 1:
-        name_parts = name_parts[:-1]
-    base_name = ''.join(name_parts)
-    instance.name = f'{base_name} [{instance.type}]'
-    instance.display_name = base_name
+    match = BASE_GROUP_NAME_PATTERN.match(instance.name)
+    if match and match.group('base_name'):
+        instance.name = f'{match.group("base_name")} [{instance.type}]'
+        instance.display_name = match.group("base_name")
 
 
 class RoleTypes(models.TextChoices):
