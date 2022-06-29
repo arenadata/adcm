@@ -72,7 +72,12 @@ class Group(AuthGroup):
     type = models.CharField(
         max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
     )
+    # works as `name` field because `name` field now contains name and type
+    # to bypass unique constraint on `AuthGroup` base table
     display_name = models.CharField(max_length=150, null=True)
+
+    def get_display_name(self):
+        return self.display_name
 
 
 @receiver(pre_save, sender=Group)
