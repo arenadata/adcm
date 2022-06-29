@@ -17,6 +17,7 @@ import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
 import { IConfig, IPanelOptions } from '../types';
 import { BaseDirective } from '@adwp-ui/widgets';
+import { FormGroup } from "@angular/forms";
 
 @Component({
   selector: 'app-config-fields',
@@ -36,7 +37,7 @@ import { BaseDirective } from '@adwp-ui/widgets';
 export class ConfigFieldsComponent extends BaseDirective {
 
   @Input() dataOptions: TFormOptions[] = [];
-  @Input() form = this.service.toFormGroup();
+  @Input() form: FormGroup;
   @Output()
   event = new EventEmitter<{ name: string; data?: any }>();
 
