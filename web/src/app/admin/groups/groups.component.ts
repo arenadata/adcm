@@ -50,6 +50,12 @@ export class GroupsComponent extends RbacEntityListDirective<RbacGroupModel> {
       label: 'Users',
       className: 'one-line-string',
       value: userNameMapper,
+    },
+    // mocked
+    {
+      label: 'Type',
+      sort: 'type',
+      value: (row) => 'test',
     }
   ] as IColumns<RbacGroupModel>;
 
