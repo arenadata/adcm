@@ -72,15 +72,17 @@ class Group(AuthGroup):
     type = models.CharField(
         max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
     )
+    display_name = models.CharField(max_length=150, null=True)
 
 
 @receiver(pre_save, sender=Group)
-def concat_name_type(sender, instance, **kwargs):
+def handle_name_type_display_name(sender, instance, **kwargs):
     name_parts = instance.name.split(' [')
     if len(name_parts) > 1:
         name_parts = name_parts[:-1]
     base_name = ''.join(name_parts)
     instance.name = f'{base_name} [{instance.type}]'
+    instance.display_name = base_name
 
 
 class RoleTypes(models.TextChoices):
