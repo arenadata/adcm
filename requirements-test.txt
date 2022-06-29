@@ -1,9 +1,5 @@
 --extra-index-url https://ci.arenadata.io/artifactory/api/pypi/python-packages/simple
-# TODO: set correct adcm_client version
-# TODO:   after merging https://github.com/arenadata/adcm_client/pull/120
-#adcm_client>=adcm_client-2022.6.2.8
-adcm_client==2022.6.28.15.dev0+adcm.2925
-# END TODO
+adcm_client>=adcm_client-2022.6.2.8
 adcm-pytest-plugin~=4.19.0rc95
 attr
 allure-pytest
