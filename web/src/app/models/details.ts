@@ -34,6 +34,8 @@ export interface INavItem {
   status?: number;
   statusMessage?: string;
   action?: () => void;
+  path?: string;
+  name?: string;
 }
 
 export interface IStyledNavItem {
