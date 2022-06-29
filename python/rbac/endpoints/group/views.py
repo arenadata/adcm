@@ -11,7 +11,6 @@
 # limitations under the License.
 
 """Group view sets"""
-import logging
 
 from adwp_base.errors import AdwpEx
 from guardian.mixins import PermissionListMixin
