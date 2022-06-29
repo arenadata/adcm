@@ -105,6 +105,7 @@ BUNDLE_WITH_REQUIRED_FIELDS = "cluster_required_fields"
 BUNDLE_WITH_DESCRIPTION_FIELDS = "cluster_with_all_config_params"
 BUNDLE_WITH_REQUIRED_IMPORT = "cluster_required_import"
 BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
+DISCLAIMER_TEXT = "Are you really want to click me?"
 
 
 # pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-many-lines,too-many-public-methods
@@ -393,16 +394,19 @@ class TestClusterListPage:
             ), f"Cluster state should be {params['state']}"
 
     @pytest.mark.parametrize(
-        ("upgrade_name", "config", "hc_acl"),
+        ("upgrade_name", "config", "hc_acl", "disclaimer_text"),
         [
-            ("simple_upgrade", None, False),
-            ("upgrade_with_hc_acl", None, True),
-            ("upgrade_with_config", {"somestring2": "test"}, False),
-            ("upgrade_with_config_and_hc_acl", {"somestring2": "test"}, True),
+            ("simple_upgrade", None, False, False),
+            ("upgrade_with_hc_acl", None, True, False),
+            ("upgrade_with_config", {"somestring2": "test"}, False, False),
+            ("upgrade_with_config_and_hc_acl", {"somestring2": "test"}, True, False),
+            ("upgrade_with_hc_acl_and_disclaimer", None, True, DISCLAIMER_TEXT),
+            ("upgrade_with_config_and_disclaimer", {"somestring2": "test"}, False, DISCLAIMER_TEXT),
+            ("upgrade_with_config_and_hc_acl_and_disclaimer", {"somestring2": "test"}, True, DISCLAIMER_TEXT),
         ],
     )
     def test_run_upgrade_v2_on_cluster_list_page(
-        self, create_host, sdk_client_fs, app_fs, upgrade_name, config, hc_acl
+        self, create_host, sdk_client_fs, app_fs, upgrade_name, config, hc_acl, disclaimer_text
     ):
         """Test run upgrade new version from the /cluster page"""
         params = {
@@ -417,7 +421,11 @@ class TestClusterListPage:
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         row_with_upgrade = cluster_page.get_row_by_cluster_name("Test cluster")
         cluster_page.run_upgrade_in_cluster_row(
-            row=row_with_upgrade, upgrade_name=upgrade_name, config=config, hc_acl=hc_acl
+            row=row_with_upgrade,
+            upgrade_name=upgrade_name,
+            config=config,
+            hc_acl=hc_acl,
+            disclaimer_text=disclaimer_text,
         )
         with allure.step("Check that cluster has been upgraded"):
             cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()

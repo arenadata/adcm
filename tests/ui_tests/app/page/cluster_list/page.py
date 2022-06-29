@@ -28,6 +28,7 @@ from tests.ui_tests.app.page.common.base_page import (
     PageHeader,
     PageFooter,
 )
+from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs_locators import (
     ActionDialog,
@@ -166,7 +167,12 @@ class ClusterListPage(BasePageObject):
 
     @allure.step("Run upgrade {upgrade_name} for cluster from row")
     def run_upgrade_in_cluster_row(
-        self, row: WebElement, upgrade_name: str, config: Optional[dict] = None, hc_acl: bool = False
+        self,
+        row: WebElement,
+        upgrade_name: str,
+        config: Optional[dict] = None,
+        hc_acl: bool = False,
+        disclaimer_text: Optional[str] = None,
     ):
         """Run upgrade for cluster from row"""
 
@@ -174,8 +180,13 @@ class ClusterListPage(BasePageObject):
         self.wait_element_visible(self.table.locators.UpgradePopup.block)
         self.find_and_click(self.table.locators.UpgradePopup.button(upgrade_name))
         self.wait_element_visible(ActionDialog.body)
+        if disclaimer_text:
+            assert self.find_element(ActionDialog.text).text == disclaimer_text, "Different text in disclaimer dialog"
+            self.find_and_click(ActionDialog.run)
+            self.wait_element_visible(ActionDialog.body)
         if config:
             for key in config:
+                self.wait_element_visible(CommonConfigMenu.config_row)
                 self.config.type_in_field_with_few_inputs(
                     row=self.config.get_config_row(display_name=key), values=[config[key]]
                 )
@@ -183,7 +194,9 @@ class ClusterListPage(BasePageObject):
                 self.find_and_click(ActionDialog.next_btn)
         if hc_acl:
             for comp_row in self.find_elements(ClusterComponentsLocators.component_row):
-                self.find_child(comp_row, ClusterComponentsLocators.Row.name).click()
+                comp_row_name = self.find_child(comp_row, ClusterComponentsLocators.Row.name)
+                self.wait_element_visible(comp_row_name)
+                comp_row_name.click()
             self.find_child(
                 self.find_elements(ClusterComponentsLocators.host_row)[0], ClusterComponentsLocators.Row.name
             ).click()
