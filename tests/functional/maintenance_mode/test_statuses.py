@@ -144,12 +144,12 @@ class TestStatusAggregationWithMM:
 
         self._turn_off_component_not_on_mm_host(sdk_client_fs, status_changer, cluster, host_2, host_3)
 
-    @allure.step('Turn all components in cluster "on"')  # pylint: disable-next=no-self-use
+    @allure.step('Turn all components in cluster "on"')
     def enable_cluster(self, status_changer, cluster) -> None:
         """Enable all components on all hosts of the cluster"""
         status_changer.enable_cluster(cluster)
 
-    # pylint: disable-next=no-self-use, too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def _turn_off_component_not_on_mm_host(self, client, status_changer, cluster, host_2, host_3):
         service = cluster.service(name=DEFAULT_SERVICE_NAME)
         component_1 = service.component(name=FIRST_COMPONENT)

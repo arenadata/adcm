@@ -754,7 +754,6 @@ class TestConfigFieldTypes:
                 objects_to_change, default_diff, 'check_changed', 'check_default'
             )
 
-    # pylint: disable-next=no-self-use
     def _change_config_and_check_changed_by_action(
         self, objects_to_change: Tuple[AnyADCMObject], config_to_set: dict, action_before: str, action_after: str
     ):

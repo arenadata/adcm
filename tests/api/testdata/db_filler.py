@@ -361,7 +361,6 @@ class DbFiller:
             for generic_key in current_value
         ]
 
-    # pylint: disable-next=no-self-use
     def _get_new_id_by_type(self, prev_id: int, key_type: str, api_wrapper: ADCMTestApiWrapper) -> int:
         """
         Get new item by type name (when type name can be converted directly to endpoint).

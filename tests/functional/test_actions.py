@@ -12,7 +12,7 @@
 
 """Tests for actions"""
 
-# pylint: disable=redefined-outer-name, no-self-use
+# pylint: disable=redefined-outer-name
 import allure
 import pytest
 

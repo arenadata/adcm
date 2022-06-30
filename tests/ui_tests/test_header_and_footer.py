@@ -34,7 +34,7 @@ from tests.ui_tests.utils import (
     close_current_tab,
 )
 
-# pylint: disable=no-self-use, too-few-public-methods
+# pylint: disable=too-few-public-methods
 
 pytestmark = [pytest.mark.usefixtures("login_to_adcm_over_api")]
 

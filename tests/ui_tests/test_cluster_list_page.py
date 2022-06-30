@@ -106,7 +106,7 @@ BUNDLE_WITH_REQUIRED_IMPORT = "cluster_required_import"
 BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
 
 
-# pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-many-lines,too-many-public-methods
+# pylint: disable=redefined-outer-name,unused-argument,too-many-lines,too-many-public-methods
 # pylint: disable=too-many-arguments
 
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")

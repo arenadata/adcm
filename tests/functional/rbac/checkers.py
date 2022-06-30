@@ -153,7 +153,7 @@ class ForbiddenCallChecker:  # pylint: disable=too-few-public-methods
         }
         return f'{infix_template.format(**template_format_arguments)}{self.url_suffix}/'
 
-    def _build_resource_path_for_host_on_cluster(self, adcm_object: Host, **_):  # pylint: disable=no-self-use
+    def _build_resource_path_for_host_on_cluster(self, adcm_object: Host, **_):
         """Build resource path string for host that belongs to a cluster"""
         if not isinstance(adcm_object, Host) or not adcm_object.cluster_id:
             raise ValueError(f'Object {adcm_object} should be of type Host and be bond to a cluster')
