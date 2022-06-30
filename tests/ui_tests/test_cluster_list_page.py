@@ -553,10 +553,10 @@ class TestClusterServicePage:
         cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         cluster_service_page.add_service_by_name(service_name="All")
         try:
-            cluster_service_page.wait_page_is_opened()
+            cluster_service_page.wait_page_is_opened(timeout=30)
         except TimeoutException:
             cluster_service_page.driver.refresh()
-            cluster_service_page.wait_page_is_opened()
+            cluster_service_page.wait_page_is_opened(timeout=30)
         cluster_service_page.table.check_pagination(second_page_item_amount=2)
 
     def test_delete_service_on_service_list_page(self, app_fs, create_community_cluster_with_service):

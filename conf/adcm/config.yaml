@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 1.6
+  version: 1.8
 
   config:
     - name: "global"
@@ -78,10 +78,9 @@
         - name: size
           display_name: "Max file size"
           description: |
-            Specifies the allowed size (in Mb) the log file can reach before it is archived
-          type: integer
-          default: 10
-          min: 1
+            Specifies the allowed size the log file can reach before it is archived
+          type: string
+          default: 10M
         - name: max_history
           display_name: "Max files history"
           description: |
@@ -105,7 +104,7 @@
           display_name: "Objects configurations rotation period"
           type: integer
           required: false
-          default: 365
+          default: 0
           min: 0
           description: |
-            You can set the time (number of days) after which the Objects configuration will be deleted from the database.
+            You can set the time (number of days) after which the Objects configuration will be deleted from the database. 0 is infinite storing.
