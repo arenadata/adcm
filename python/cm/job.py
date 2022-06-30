@@ -556,8 +556,9 @@ def create_task(
             finish_date=timezone.now(),
             status=config.Job.CREATED,
         )
-        LogStorage.objects.create(job=job, name='ansible', type='stdout', format='txt')
-        LogStorage.objects.create(job=job, name='ansible', type='stderr', format='txt')
+        log_type = sub_action.script_type if sub_action else action.script_type
+        LogStorage.objects.create(job=job, name=log_type, type='stdout', format='txt')
+        LogStorage.objects.create(job=job, name=log_type, type='stderr', format='txt')
         set_job_status(job.pk, config.Job.CREATED, ctx.event)
         os.makedirs(os.path.join(config.RUN_DIR, f'{job.pk}', 'tmp'), exist_ok=True)
 
