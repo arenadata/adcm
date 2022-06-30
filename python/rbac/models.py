@@ -82,7 +82,7 @@ class Group(AuthGroup):
 
 
 BASE_GROUP_NAME_PATTERN = re.compile(
-    rf'(?P<base_name>.*)(?: \[(?:{"|".join(OriginType.values)})\])?'
+    rf'(?P<base_name>.*?)(?: |$)(?:\[(?:{"|".join(OriginType.values)})\])?'
 )
 
 
