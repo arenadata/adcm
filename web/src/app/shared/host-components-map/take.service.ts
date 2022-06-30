@@ -112,7 +112,7 @@ export class TakeService {
       (c) =>
         new CompTile(
           c,
-          ap ? ap.filter((a) => a.service === c.service_name && a.component === c.name).map((b) => b.action) : null
+          ap ? ap.filter((a) => a?.service === c?.service_name && a?.component === c?.name).map((b) => b.action) : null
         )
     );
   }

@@ -88,14 +88,16 @@ export class CompTile extends Tile {
   requires: IRequires[];
   constructor(rawComponent: IComponent, public actions?: ActionParam[]) {
     super();
-    this.id = rawComponent.id;
-    this.service_id = rawComponent.service_id;
-    this.component = `${rawComponent.service_name}/${rawComponent.name}`;
-    this.name = rawComponent.display_name;
-    this.disabled = rawComponent.service_state !== 'created';
-    this.limit = rawComponent.constraint;
-    this.requires = rawComponent.requires;
-    this.prototype_id = rawComponent.prototype_id;
+    if (rawComponent) {
+      this.id = rawComponent.id;
+      this.service_id = rawComponent.service_id;
+      this.component = `${rawComponent.service_name}/${rawComponent.name}`;
+      this.name = rawComponent.display_name;
+      this.disabled = rawComponent.service_state !== 'created';
+      this.limit = rawComponent.constraint;
+      this.requires = rawComponent.requires;
+      this.prototype_id = rawComponent.prototype_id;
+    }
     this.is_prototype = this.isPrototype(rawComponent);
   }
 

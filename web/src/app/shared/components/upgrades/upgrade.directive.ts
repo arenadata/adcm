@@ -71,11 +71,11 @@ export class UpgradesDirective extends BaseDirective {
     const maxWidth = '1400px';
     const isMulty = this?.inputData.upgradable;
     const width = isMulty || this.hasConfig || this.hasHostComponent ? '90%' : '400px';
-    const title = this?.inputData.ui_options['disclaimer'] ? this?.inputData.ui_options['disclaimer'] : isMulty ? 'Run an upgrades?' : `Run an upgrade [ ${this?.inputData.name} ]?`;
+    const title = this?.inputData.ui_options['disclaimer'] ? this?.inputData.ui_options['disclaimer'] : isMulty ? 'Run upgrades?' : `Run upgrade [ ${this?.inputData.name} ]?`;
     const data: IUpgrade = this.inputData as IUpgrade;
     const model: UpgradeParameters = {
       cluster: {
-        id: this.inputData.id,
+        id: this.clusterId,
         hostcomponent: this.hc,
       },
       upgrades: [this.inputData]
@@ -180,8 +180,10 @@ export class UpgradesDirective extends BaseDirective {
 
             // fix later
             this.service.getPrototype('prototype', params).subscribe((prototype): any => {
-                cluster.component.push(prototype[0]);
-                this.hc = cluster;
+                if (prototype[0]) {
+                  cluster.component.push(prototype[0]);
+                  this.hc = cluster;
+                }
 
                 if (hostComponentMap.length === index+1) {
                   this.prepare();

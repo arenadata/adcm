@@ -176,7 +176,6 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   }
 
   init(raw: IRawHosComponent) {
-    console.log(raw);
     if (raw.host) this.Hosts = raw.host.map((h) => new HostTile(h));
 
     if (raw.component)
