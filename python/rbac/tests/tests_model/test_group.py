@@ -77,8 +77,11 @@ def test_group_creation_deletion():
 
         assert int(basse_g_pk)
 
-        for attr in expected:
-            assert getattr(g, attr) == expected[attr], f'{g}: wrong {attr}'
+        for attr, expected_value in expected.items():
+            actual_value = getattr(g, attr)
+            assert (
+                actual_value == expected_value
+            ), f'{g}: wrong {attr} (`{actual_value}`, expected: `{expected_value}`)'
 
         g.delete()
 
