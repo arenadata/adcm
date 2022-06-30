@@ -13,13 +13,16 @@
 """RBAC models"""
 
 import importlib
+import re
 
 from adwp_base.errors import raise_AdwpEx as err
 from django.contrib.auth.models import User as AuthUser, Group as AuthGroup, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.db.models.signals import pre_save
 from django.db.transaction import atomic
+from django.dispatch import receiver
 from guardian.models import UserObjectPermission, GroupObjectPermission
 from rest_framework.exceptions import ValidationError
 
@@ -70,6 +73,25 @@ class Group(AuthGroup):
     type = models.CharField(
         max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
     )
+    # works as `name` field because `name` field now contains name and type
+    # to bypass unique constraint on `AuthGroup` base table
+    display_name = models.CharField(max_length=150, null=True)
+
+    def name_to_display(self):
+        return self.display_name
+
+
+BASE_GROUP_NAME_PATTERN = re.compile(
+    rf'(?P<base_name>.*?)(?: |$)(?:\[(?:{"|".join(OriginType.values)})\])?'
+)
+
+
+@receiver(pre_save, sender=Group)
+def handle_name_type_display_name(sender, instance, **kwargs):
+    match = BASE_GROUP_NAME_PATTERN.match(instance.name)
+    if match and match.group('base_name'):
+        instance.name = f'{match.group("base_name")} [{instance.type}]'
+        instance.display_name = match.group("base_name")
 
 
 class RoleTypes(models.TextChoices):
