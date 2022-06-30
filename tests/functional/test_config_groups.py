@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=redefined-outer-name, unused-argument, duplicate-code, dangerous-default-value
+# pylint: disable=redefined-outer-name, unused-argument, dangerous-default-value
 
 """Tests for config groups"""
 import json

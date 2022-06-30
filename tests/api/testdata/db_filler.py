@@ -11,7 +11,6 @@
 # limitations under the License.
 
 """Fill DB methods"""
-# pylint: disable=invalid-name
 
 import random
 from collections import defaultdict
@@ -38,7 +37,6 @@ from tests.api.utils.types import (
 )
 
 
-# pylint: disable=too-few-public-methods
 from tests.api.utils.api_objects import ADCMTestApiWrapper
 
 

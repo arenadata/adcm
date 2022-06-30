@@ -37,7 +37,7 @@ from tests.ui_tests.app.page.provider.page import (
 )
 from tests.ui_tests.app.page.provider_list.page import ProviderListPage
 
-# pylint: disable=redefined-outer-name,unused-argument,too-few-public-methods
+# pylint: disable=redefined-outer-name,unused-argument
 
 
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")

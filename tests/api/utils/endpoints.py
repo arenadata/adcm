@@ -12,7 +12,6 @@
 
 """ADCM Endpoints classes and methods"""
 
-# pylint: disable=too-few-public-methods,invalid-name
 from enum import Enum
 from typing import List, Type, Optional, Callable
 

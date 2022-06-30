@@ -40,7 +40,7 @@ def random_datetime():
 
 
 @attr.dataclass
-class PreparedFieldValue:  # pylint: disable=too-few-public-methods,function-redefined
+class PreparedFieldValue:  # pylint: disable=function-redefined
     """
     PreparedFieldValue is object for body testing. Used for both positive and negative cases.
 
@@ -495,7 +495,7 @@ class EmptyList(BaseType):
 
 
 @attr.dataclass
-class Field:  # pylint: disable=too-few-public-methods
+class Field:
     """Field class based on ADCM API spec"""
 
     name: str

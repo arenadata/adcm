@@ -43,7 +43,7 @@ RoleTargetObject = Union[AnyADCMObject, AnyRBACObject, Bundle, ADCM]
 RoleTargetType = Type[RoleTargetObject]
 
 
-class ForbiddenCallChecker:  # pylint: disable=too-few-public-methods
+class ForbiddenCallChecker:
     """
     Helper class to build a checker that ensures that
     interaction with an ADCM object is truly forbidden via direct calls to API
@@ -188,7 +188,7 @@ def _deny_endpoint_call(endpoint: str, method: HTTPMethod):
     return partial(ForbiddenCallChecker, endpoint_suffix=endpoint, method=method)
 
 
-class Deny:  # pylint: disable=too-few-public-methods
+class Deny:
     """Description of possible "deny" checks"""
 
     ViewConfigOf = _deny_endpoint_call('config/current', HTTPMethod.GET)

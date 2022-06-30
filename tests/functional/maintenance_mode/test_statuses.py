@@ -213,7 +213,7 @@ def check_statuses(
     are expected to have negative status
     otherwise the positive status is expected
     """
-    p = not_ if default_positive else truth  # pylint: disable=invalid-name
+    p = not_ if default_positive else truth
 
     expected_statuses = {
         'name': statuses['name'],

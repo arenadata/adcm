@@ -300,7 +300,7 @@ class TestClusterServiceConfig:
             err.CONFIG_NOT_FOUND.equal(e, "config param doesn't exist")
 
 
-class TestClusterServiceConfigHistory:  # pylint: disable=too-few-public-methods
+class TestClusterServiceConfigHistory:
     """Tests for service config history"""
 
     def test_get_config_from_nonexistent_cluster_service(self, cluster_with_service: Tuple[Cluster, Service]):

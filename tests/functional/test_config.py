@@ -708,7 +708,6 @@ def provider(request: SubRequest, sdk_client_fs: ADCMClient) -> Provider:
 # !===== Secret text config field type =====!
 
 
-# pylint: disable-next=too-few-public-methods
 class TestConfigFieldTypes:
     """Test different types of fields"""
 

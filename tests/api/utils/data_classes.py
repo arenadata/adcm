@@ -11,7 +11,6 @@
 # limitations under the License.
 
 """Endpoint data classes definition"""
-# pylint: disable=too-few-public-methods
 
 from abc import ABC
 from typing import List, Callable
