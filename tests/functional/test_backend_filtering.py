@@ -428,9 +428,7 @@ def test_filter(sdk_client: ADCMClient, tested_class, tested_list_class, search_
     with allure.step('Inspect first (and only) element of list'):
         for k, v in expected_args.items():
             assert getattr(objects[0], k) == v
-    with allure.step(
-        'Create single object over class call (like Cluster or Bundle) with tested filter as search args'
-    ):
+    with allure.step('Create single object over class call (like Cluster or Bundle) with tested filter as search args'):
         single_object = tested_class(sdk_client._api, **search_args)
     with allure.step('Check created object'):
         for k, v in expected_args.items():
