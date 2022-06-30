@@ -14,21 +14,21 @@
 from enum import Enum
 
 
-class States:  # pylint: disable=too-few-public-methods
+class States:
     """Possible states dataclass"""
 
     failed = 'failed'
     success = 'success'
 
 
-class MessageStates:  # pylint: disable=too-few-public-methods
+class MessageStates:
     """Possible states messages dataclass"""
 
     fail_msg = 'fail_msg'
     success_msg = 'success_msg'
 
 
-class HTTPMethod(Enum):  # pylint: disable=too-few-public-methods
+class HTTPMethod(Enum):
     """HTTP methods"""
 
     GET = 'get'
