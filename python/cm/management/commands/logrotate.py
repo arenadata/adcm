@@ -133,7 +133,7 @@ class Command(BaseCommand):
 
     def __generate_logrotate_conf_file(self):
         conf_file_args = {
-            'size': f'{self.config["logrotate"]["nginx"]["size"]}M',
+            'size': f'{self.config["logrotate"]["nginx"]["size"]}',
             'no_compress': '' if self.config["logrotate"]["nginx"]["compress"] else '#',
             'num_rotations': self.config["logrotate"]["nginx"]["max_history"],
         }
