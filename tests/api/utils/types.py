@@ -495,7 +495,7 @@ class EmptyList(BaseType):
 
 
 @attr.dataclass
-class Field:
+class Field:  # pylint: disable=too-many-instance-attributes
     """Field class based on ADCM API spec"""
 
     name: str

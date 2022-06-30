@@ -33,7 +33,7 @@ min-similarity-lines=5
 
 [tool.pylint.message_control]
 disable=[
-    "fixme", "invalid-name", "duplicate-code", "too-few-public-methods"
+    "fixme", "invalid-name", "duplicate-code", "too-few-public-methods", "no-member"
 ]
 
 [tool.pylint.basic]
