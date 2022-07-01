@@ -25,8 +25,6 @@ from adcm_pytest_plugin.docker_utils import ADCM
 from tests.library.errorcodes import UPGRADE_ERROR
 from tests.functional.tools import BEFORE_UPGRADE_DEFAULT_STATE, get_object_represent
 
-# pylint: disable=no-self-use
-
 
 @pytest.fixture()
 def old_bundle(sdk_client_fs) -> Bundle:

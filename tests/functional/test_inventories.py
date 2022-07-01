@@ -102,7 +102,7 @@ class TestStateBeforeUpgrade:
     """Test that state before upgrade is correctly presented in inventory.json file"""
 
     @pytest.fixture()
-    def old_cluster(self, sdk_client_fs) -> Cluster:  # pylint: disable=no-self-use
+    def old_cluster(self, sdk_client_fs) -> Cluster:
         """Upload old and new version of cluster, create old one"""
         old_bundle = sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "upgrade", "old"))
         sdk_client_fs.upload_from_fs(utils.get_data_dir(__file__, "upgrade", "new"))
@@ -122,7 +122,6 @@ class TestStateBeforeUpgrade:
             task.wait()
             self.check_before_upgrade_state_equal_to(state_before_upgrade, get_inventory_file(adcm_fs, task.id))
 
-    # pylint: disable-next=no-self-use
     def check_before_upgrade_state_equal_to(self, expected_state: Optional[str], inventory: dict):
         """Check that `state` key in inventory dictionary is equal to expected"""
         with utils.catch_failed(KeyError, "Structure of inventory.json file is unexpected"):

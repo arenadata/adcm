@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=no-self-use
-
 """Test roles reassignment in various situations"""
 
 from contextlib import contextmanager
@@ -150,7 +148,6 @@ class TestReapplyTriggers:
             another_host, *_ = as_user_objects(clients.user, admin_another_host)
             _check_host_configs([another_host], [host])
 
-    # pylint: disable-next=no-self-use
     def grant_role(self, client: ADCMClient, user: User, role: RbacRoles, *objects: AnyADCMObject) -> Policy:
         """Grant RBAC default role to a user"""
         with allure.step(f'Grant role "{role.value}" to user {user.username}'):

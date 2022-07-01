@@ -12,7 +12,7 @@
 
 """Tests for adcm_state plugin"""
 
-# pylint:disable=redefined-outer-name, duplicate-code
+# pylint:disable=redefined-outer-name
 from typing import Tuple
 
 import allure

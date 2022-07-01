@@ -78,7 +78,7 @@ export class ItemComponent implements OnInit {
 
   get isValid() {
     const f = this.control;
-    return f.valid && (f.dirty || f.touched);
+    return f.status !== 'INVALID' && (f.dirty || f.touched);
   }
 
   hasError(title: string) {

@@ -23,7 +23,7 @@ from coreapi.exceptions import ErrorMessage
 
 from tests.library.errorcodes import ADCMError
 
-T = TypeVar('T')  # pylint: disable=invalid-name
+T = TypeVar('T')
 
 
 def is_superset_of(first: set, second: set, assertion_message: Union[str, Callable], *args, **kwargs) -> None:
