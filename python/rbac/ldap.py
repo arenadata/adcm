@@ -41,16 +41,24 @@ def _get_ldap_default_settings():
     if current_configlog.attr['ldap_integration']['active']:
         ldap_config = current_configlog.config['ldap_integration']
 
+        user_search_filter = ldap_config.get('user_search_filter') or ''
+        if user_search_filter:
+            user_search_filter = f'({user_search_filter})'
         user_search = LDAPSearch(
             base_dn=ldap_config['user_search_base'],
             scope=ldap.SCOPE_SUBTREE,
             filterstr=f'(&(objectClass={ldap_config.get("user_object_class", "*")})'
-            f'({ldap_config["user_name_attribute"]}=%(user)s))',
+            f'({ldap_config["user_name_attribute"]}=%(user)s){user_search_filter})',
         )
+        group_filterstr = f'(objectClass={ldap_config.get("group_object_class", "*")})'
+        group_search_filter = ldap_config.get('group_search_filter') or ''
+        if group_search_filter:
+            group_search_filter = f'({group_search_filter})'
+            group_filterstr = f'(&{group_filterstr}{group_search_filter})'
         group_search = LDAPSearch(
             base_dn=ldap_config['group_search_base'],
             scope=ldap.SCOPE_SUBTREE,
-            filterstr=f'(objectClass={ldap_config.get("group_object_class", "*")})',
+            filterstr=group_filterstr,
         )
         user_attr_map = {
             "username": ldap_config["user_name_attribute"],
