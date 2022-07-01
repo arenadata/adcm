@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name,no-self-use,unused-argument
+# pylint: disable=redefined-outer-name,unused-argument
 
 """UI tests for /cluster page"""
 

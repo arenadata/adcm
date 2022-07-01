@@ -175,7 +175,6 @@ def test_only_service_concerns_are_deleted_after_it(sdk_client_fs: ADCMClient):
         _check_concerns_amount(cluster, 1)
 
 
-# pylint: disable-next=too-few-public-methods
 class TestProviderIndependence:
     """
     Test that provider is independent of concerns coming from hosts and cluster objects.

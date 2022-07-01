@@ -39,8 +39,6 @@ from tests.functional.rbac.conftest import (
 )
 from tests.functional.rbac.action_role_utils import create_action_policy, action_business_role
 
-# pylint: disable=no-self-use
-
 
 @contextmanager
 def granted_policy(client, business_role, adcm_object, user):
