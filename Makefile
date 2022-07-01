@@ -1,11 +1,9 @@
 # Set number of threads
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 
-# TODO: fix on release base image before merge in develop
-ADCMBASE_IMAGE ?= hub.adsw.io/adcm/base
-ADCMTEST_IMAGE ?= hub.adsw.io/adcm/test
-ADCMBASE_TAG ?= ADCM-2891
-# END TODO
+ADCMBASE_IMAGE ?= hub.arenadata.io/adcm/base
+ADCMTEST_IMAGE ?= hub.arenadata.io/adcm/test
+ADCMBASE_TAG ?= 20220630133845
 APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
 
@@ -86,8 +84,8 @@ ng_tests: ## Run Angular tests
 linters: test_image ## Run linters
 	docker run -i --rm -e PYTHONPATH="/source/tests" -v $(CURDIR)/:/source -w /source $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) \
         /bin/sh -eol pipefail -c "/linters.sh shellcheck && \
-			/venv.sh run default pip install -r requirements.txt -r requirements-test.txt && \
-			cd python && /venv.sh run default pylint_runner --rcfile ../pylintrc &&  cd .. \
+			/venv.sh run default pip install -U -r requirements.txt -r requirements-test.txt && \
+			/venv.sh run default pylint --rcfile pyproject.toml --recursive y python && \
 			/linters.sh -b ./tests -f ../tests pylint && \
 			/linters.sh -f ./tests black && \
 			/linters.sh -f ./tests/functional flake8_pytest_style && \

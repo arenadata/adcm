@@ -12,8 +12,6 @@
 
 """Tests on known bugs that can't be categorised by any other attribute"""
 
-# pylint: disable=no-self-use
-
 from typing import Type
 
 import allure

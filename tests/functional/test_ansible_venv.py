@@ -12,6 +12,8 @@
 
 """Tests for service delete method"""
 
+# pylint: disable=redefined-outer-name
+
 import allure
 import pytest
 from adcm_client.objects import Cluster, ADCMClient, Provider

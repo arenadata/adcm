@@ -25,7 +25,7 @@ from tests.api.steps.asserts import status_code_should_be, body_should_be, Expec
 
 
 @dataclass
-class Request:  # pylint: disable=too-few-public-methods
+class Request:
     """Request for a specific endpoint"""
 
     method: Methods
@@ -37,7 +37,7 @@ class Request:  # pylint: disable=too-few-public-methods
 
 
 @dataclass
-class ExpectedResponse:  # pylint: disable=too-few-public-methods
+class ExpectedResponse:
     """
     Response to be expected.
     Checking the status code and body or some fields values if present
