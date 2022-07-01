@@ -66,10 +66,8 @@ def _get_ldap_default_settings():
         group_search = LDAPSearch(
             base_dn=ldap_config['group_search_base'],
             scope=ldap.SCOPE_SUBTREE,
-            filterstr=f'(&'
-            f'(objectClass={ldap_config.get("group_object_class") or "*"})'
-            f'{_process_extra_filter(ldap_config.get("group_search_filter"))}'
-            f')',
+            filterstr=f'(objectClass={ldap_config.get("group_object_class") or "*"})'
+            f'{_process_extra_filter(ldap_config.get("group_search_filter"))}',
         )
         user_attr_map = {
             "username": ldap_config["user_name_attribute"],
@@ -145,29 +143,12 @@ class CustomLDAPBackend(LDAPBackend):
         ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
 
         for group in user.groups.filter(name__in=[i[0] for i in ldap_groups]):
-            rbac_group = self.__get_rbac_group(group)
             ldap_group_dn = self.__det_ldap_group_dn(group.name, ldap_groups)
-
-            if rbac_group.type != OriginType.LDAP:
-                group.user_set.remove(user)
-
-                existing_groups = Group.objects.filter(group_ptr_id=group.pk, type=OriginType.LDAP)
-                count = existing_groups.count()
-
-                if count == 1:
-                    existing_groups[0].user_set.add(user)
-                    existing_groups.update(description=ldap_group_dn)
-                elif count < 1:
-                    ldap_group = Group.objects.create(
-                        group_ptr_id=group.pk, type=OriginType.LDAP, description=ldap_group_dn
-                    )
-                    ldap_group.user_set.add(user)
-                elif count > 1:
-                    raise RuntimeError
-
-                # this is created by ldap-auth `local` group with single user
-                if group.user_set.count() == 0:
-                    group.delete()
+            rbac_group = self.__get_rbac_group(group, ldap_group_dn)
+            group.user_set.remove(user)
+            rbac_group.group_ptr.user_set.add(user.user_ptr)
+            if group.user_set.count() == 0:
+                group.delete()
 
     @staticmethod
     def __check_user(username: str):
@@ -180,7 +161,7 @@ class CustomLDAPBackend(LDAPBackend):
         return [i for i in ldap_groups if i[0] == group_name][0][1]
 
     @staticmethod
-    def __get_rbac_group(group):
+    def __get_rbac_group(group, ldap_group_dn):
         """
         Get corresponding rbac_group for auth_group or create `ldap` type rbac_group if not exists
         """
@@ -188,10 +169,15 @@ class CustomLDAPBackend(LDAPBackend):
             return group
         elif isinstance(group, DjangoGroup):
             try:
-                return Group.objects.get(group_ptr_id=group.pk, type=OriginType.LDAP)
+                # maybe we'll need more accurate filtering here
+                return Group.objects.get(
+                    name=f'{group.name} [{OriginType.LDAP.value}]', type=OriginType.LDAP.value
+                )
             except Group.DoesNotExist:
                 rbac_group = Group.objects.create(
-                    group_ptr_id=group.pk, name=group.name, type=OriginType.LDAP
+                    name=group.name,
+                    type=OriginType.LDAP,
+                    description=ldap_group_dn,
                 )
                 return rbac_group
         else:
