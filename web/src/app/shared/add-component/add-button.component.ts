@@ -49,6 +49,7 @@ export class AddButtonComponent extends BaseDirective implements OnDestroy {
   @Input() name: string;
   @Input() component: Type<BaseFormDirective>;
   @Input() dialogConfig: AddButtonDialogConfig = {};
+  @Input() clusterId: number;
   @Output() added = new EventEmitter();
 
   constructor(@Inject(ADD_SERVICE_PROVIDER) private service: IAddService,
@@ -61,6 +62,10 @@ export class AddButtonComponent extends BaseDirective implements OnDestroy {
     const model = data || this.service?.model(this.name);
     if (this.component) {
       model.component = this.component;
+    }
+
+    if (this.clusterId) {
+      model.clusterId = this.clusterId;
     }
 
     const name = model.title || model.name;

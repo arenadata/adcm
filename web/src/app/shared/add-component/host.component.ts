@@ -144,7 +144,7 @@ export class HostComponent extends BaseFormDirective implements OnInit {
 
   save() {
     const data = clearEmptyField(this.form.value) as Host;
-    if (this.displayMode !== 0) data.cluster_id = this.service.Cluster.id;
+    if (this.displayMode !== 0) data.cluster_id = this.service.Cluster?.id;
     this.service
       .addHost(data)
       .pipe(

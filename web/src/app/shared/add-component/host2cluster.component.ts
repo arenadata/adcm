@@ -9,7 +9,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatSelectionList, MatSelectionListChange } from '@angular/material/list';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
@@ -67,6 +67,7 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
   showForm = false;
   Count = 0;
   displayMode: DisplayMode = DisplayMode.default;
+  @Input() clusterId: number;
   @Output() event = new EventEmitter();
   @ViewChild('form') hostForm: HostComponent;
   @ViewChild('listHosts') listHosts: MatSelectionList;
@@ -114,8 +115,8 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
 
   save() {
     if (this.hostForm.form.valid) {
-      const host = this.hostForm.form.value;
-      host.cluster_id = this.service.Cluster.id;
+      const host = this.hostForm?.form?.value;
+      host.cluster_id = this.service?.Cluster?.id || this.clusterId;
       this.service
         .addHost(host)
         .pipe(this.takeUntil())

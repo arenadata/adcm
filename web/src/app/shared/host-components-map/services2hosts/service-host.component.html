@@ -17,7 +17,7 @@
   </div>
   <div>
     <h3><span>Hosts</span>
-      <app-add-button [name]="'host2cluster'" [asIcon]="true" [style.lineHeight.px]="16"></app-add-button>
+      <app-add-button [name]="'host2cluster'" [asIcon]="true" [style.lineHeight.px]="16" [clusterId]="cluster.id"></app-add-button>
     </h3>
     <div class="wrapper">
       <div *ngIf="!Hosts?.length">
