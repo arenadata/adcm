@@ -63,7 +63,7 @@ CLUSTER_NAME = 'test_cluster'
 SERVICE_NAME = 'test_service'
 COMPONENT_NAME = 'test_component'
 
-# pylint: disable=redefined-outer-name, no-self-use
+# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture()

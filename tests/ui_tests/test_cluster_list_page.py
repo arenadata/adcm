@@ -106,8 +106,8 @@ BUNDLE_WITH_REQUIRED_IMPORT = "cluster_required_import"
 BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
 
 
-# pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-many-lines,too-many-public-methods
-# pylint: disable=too-many-arguments
+# pylint: disable=redefined-outer-name,unused-argument,too-many-lines,too-many-public-methods
+# pylint: disable=too-many-arguments,too-many-boolean-expressions,too-many-branches,too-many-nested-blocks
 
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
@@ -562,7 +562,7 @@ class TestClusterServicePage:
     def test_delete_service_on_service_list_page(self, app_fs, create_community_cluster_with_service):
         """Test delete service from cluster/{}/service page"""
 
-        cluster, service = create_community_cluster_with_service
+        cluster, _ = create_community_cluster_with_service
         cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         row = cluster_service_page.table.get_all_rows()[0]
         cluster_service_page.click_delete_btn_in_row(row)

@@ -708,7 +708,6 @@ def provider(request: SubRequest, sdk_client_fs: ADCMClient) -> Provider:
 # !===== Secret text config field type =====!
 
 
-# pylint: disable-next=too-few-public-methods
 class TestConfigFieldTypes:
     """Test different types of fields"""
 
@@ -754,7 +753,6 @@ class TestConfigFieldTypes:
                 objects_to_change, default_diff, 'check_changed', 'check_default'
             )
 
-    # pylint: disable-next=no-self-use
     def _change_config_and_check_changed_by_action(
         self, objects_to_change: Tuple[AnyADCMObject], config_to_set: dict, action_before: str, action_after: str
     ):

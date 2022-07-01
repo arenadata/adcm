@@ -24,7 +24,7 @@ from adcm_pytest_plugin.steps.actions import (
     run_component_action_and_assert_result,
 )
 
-# pylint: disable=redefined-outer-name,no-self-use
+# pylint: disable=redefined-outer-name
 
 
 CLUSTER_NAME = 'Best Cluster Ever'

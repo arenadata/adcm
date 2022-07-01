@@ -11,7 +11,6 @@
 # limitations under the License.
 
 """Fill DB methods"""
-# pylint: disable=invalid-name
 
 import random
 from collections import defaultdict
@@ -38,7 +37,6 @@ from tests.api.utils.types import (
 )
 
 
-# pylint: disable=too-few-public-methods
 from tests.api.utils.api_objects import ADCMTestApiWrapper
 
 
@@ -361,7 +359,6 @@ class DbFiller:
             for generic_key in current_value
         ]
 
-    # pylint: disable-next=no-self-use
     def _get_new_id_by_type(self, prev_id: int, key_type: str, api_wrapper: ADCMTestApiWrapper) -> int:
         """
         Get new item by type name (when type name can be converted directly to endpoint).
