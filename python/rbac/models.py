@@ -43,12 +43,6 @@ def validate_object_type(value):
         raise ValidationError('Not a valid object type.')
 
 
-class UserQuerySet(models.QuerySet):
-    def delete(self):
-        for user_obj in self:
-            delete_user(user_obj)
-
-
 class User(AuthUser):
     """
     Beware the Multi-table inheritance
@@ -58,8 +52,6 @@ class User(AuthUser):
     profile = models.JSONField(default=str)
     built_in = models.BooleanField(default=False, null=False)
     date_unjoined = models.DateTimeField(null=True)
-
-    objects = UserQuerySet.as_manager()
 
     def delete(self, using=None, keep_parents=False):
         delete_user(self)
