@@ -126,7 +126,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
 
   add(io: IEMObject) {
     const { id, type, details } = io;
-    if (details.type === 'cluster' && +details.value === this.cluster.id) {
+    if (details.type === 'cluster' && +details.value === this.cluster.id && typeof this.cluster.hostcomponent === 'string') {
       this.service
         .load(this.cluster.hostcomponent as string)
         .pipe(this.takeUntil())
