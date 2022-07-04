@@ -49,6 +49,7 @@ class User(AuthUser):
 
     profile = models.JSONField(default=str)
     built_in = models.BooleanField(default=False, null=False)
+    date_unjoined = models.DateTimeField(null=True)
 
 
 class Group(AuthGroup):
