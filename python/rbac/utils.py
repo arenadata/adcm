@@ -13,6 +13,7 @@
 from typing import Type, Tuple, Any
 
 from django.db.models import Model
+from django.utils import timezone as tz
 from rest_framework import serializers
 
 
@@ -75,3 +76,16 @@ def set_not_empty_attr(obj, partial: bool, attr: str, value: Any, default: Any =
     else:
         value = value if value is not Empty else default
         setattr(obj, attr, value)
+
+
+def delete_user(user):
+    """mark user as inactive and set date_unjoined"""
+    date_fmt = '%Y-%m-%d_%H:%M:%S'
+    now = tz.now()
+    user.date_unjoined = now
+    user.is_active = False
+    user.username = (
+        f'{user.username}_{user.date_joined.strftime(date_fmt)}_{now.strftime(date_fmt)}'
+    )
+    user.save()
+    return user
