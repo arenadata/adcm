@@ -13,7 +13,7 @@
 """Simple working with LDAP for tests purposes"""
 
 import uuid
-from typing import NamedTuple, List
+from typing import NamedTuple, List, Optional
 from zlib import crc32
 
 import allure
@@ -29,6 +29,7 @@ class LDAPTestConfig(NamedTuple):
     admin_dn: str
     admin_pass: SecureString
     base_ou_dn: str
+    cert: Optional[SecureString] = None
 
 
 class LDAPEntityManager:

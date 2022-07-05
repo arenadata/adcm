@@ -18,7 +18,7 @@ import pytest_check as check
 from pytest_check.check_methods import get_failures
 
 
-class ADCMError:  # pylint: disable=too-few-public-methods
+class ADCMError:
     """
     ADCM error wrapper
     Used for error assertions

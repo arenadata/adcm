@@ -30,7 +30,7 @@ from tests.functional.conftest import only_clean_adcm
 from tests.library.assertions import sets_are_equal
 from tests.library.errorcodes import INVALID_UPGRADE_DEFINITION, INVALID_OBJECT_DEFINITION
 
-# pylint: disable=redefined-outer-name, no-self-use
+# pylint: disable=redefined-outer-name
 
 TEST_SERVICE_NAME = 'test_service'
 FAILURES_DIR = 'upgrade_failures'

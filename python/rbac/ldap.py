@@ -14,11 +14,14 @@
 import os
 
 import ldap
+
+from django.contrib.auth.models import Group as DjangoGroup
 from django.core.exceptions import ImproperlyConfigured
 from django_auth_ldap.backend import LDAPBackend
 from django_auth_ldap.config import LDAPSearch, MemberDNGroupType
 
 from cm.adcm_config import ansible_decrypt
+from cm.errors import AdcmEx
 from cm.logger import log
 from cm.models import ADCM, ConfigLog
 from rbac.models import User, Group, OriginType
@@ -50,6 +53,7 @@ def _get_ldap_default_settings():
             filterstr=f'(objectClass={ldap_config.get("group_object_class", "*")})',
         )
         user_attr_map = {
+            "username": ldap_config["user_name_attribute"],
             "first_name": 'givenName',
             "last_name": "sn",
             "email": "mail",
@@ -75,13 +79,8 @@ def _get_ldap_default_settings():
 
         if 'ldaps://' in ldap_config['ldap_uri'].lower():
             cert_filepath = ldap_config.get('tls_ca_cert_file', '')
-            if not any(
-                [
-                    cert_filepath,
-                    os.path.exists(cert_filepath),
-                ]
-            ):
-                raise ImproperlyConfigured('no cert file')
+            if not cert_filepath or not os.path.exists(cert_filepath):
+                raise AdcmEx('LDAP_NO_CERT_FILE')
 
             connection_options = {
                 ldap.OPT_X_TLS_CACERTFILE: cert_filepath,
@@ -99,31 +98,82 @@ def _get_ldap_default_settings():
 class CustomLDAPBackend(LDAPBackend):
     def authenticate_ldap_user(self, ldap_user, password):
         self.default_settings = _get_ldap_default_settings()
+        if not self.default_settings:
+            return None
 
+        self.__check_user(ldap_user._username)  # pylint: disable=protected-access
         try:
             user_or_none = super().authenticate_ldap_user(ldap_user, password)
         except ImproperlyConfigured as e:
             log.exception(e)
             user_or_none = None
+        except ValueError as e:
+            if 'option error' in str(e).lower():
+                raise AdcmEx('LDAP_BROKEN_CONFIG') from None
+            raise e
+
         if isinstance(user_or_none, User):
-            self.__create_rbac_groups(user_or_none)
             user_or_none.type = OriginType.LDAP
             user_or_none.save()
+            self.__create_rbac_groups(user_or_none)
+
         return user_or_none
 
     def get_user_model(self):
         return User
 
+    def __create_rbac_groups(self, user):
+        ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
+
+        for group in user.groups.filter(name__in=[i[0] for i in ldap_groups]):
+            rbac_group = self.__get_rbac_group(group)
+            ldap_group_dn = self.__det_ldap_group_dn(group.name, ldap_groups)
+
+            if rbac_group.type != OriginType.LDAP:
+                group.user_set.remove(user)
+
+                existing_groups = Group.objects.filter(group_ptr_id=group.pk, type=OriginType.LDAP)
+                count = existing_groups.count()
+
+                if count == 1:
+                    existing_groups[0].user_set.add(user)
+                    existing_groups.update(description=ldap_group_dn)
+                elif count < 1:
+                    ldap_group = Group.objects.create(
+                        group_ptr_id=group.pk, type=OriginType.LDAP, description=ldap_group_dn
+                    )
+                    ldap_group.user_set.add(user)
+                elif count > 1:
+                    raise RuntimeError
+
+                # this is created by ldap-auth `local` group with single user
+                if group.user_set.count() == 0:
+                    group.delete()
+
     @staticmethod
-    def __create_rbac_groups(user):
-        for group in user.groups.all():
-            count = Group.objects.filter(group_ptr_id=group.pk, type=OriginType.LDAP).count()
-            if count < 1:
-                name = group.name
-                Group.objects.create(group_ptr_id=group.pk, type=OriginType.LDAP)
-                group.name = name
-                group.save()
-            elif count > 1:
-                raise RuntimeError(
-                    f'More than one {OriginType.LDAP.value} group_ptr={group.pk} groups exist'
+    def __check_user(username: str):
+        if User.objects.filter(username__iexact=username, type=OriginType.Local).exists():
+            log.exception('usernames collision: `%s`', username)
+            raise AdcmEx('LDAP_USERNAMES_COLLISION')
+
+    @staticmethod
+    def __det_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
+        return [i for i in ldap_groups if i[0] == group_name][0][1]
+
+    @staticmethod
+    def __get_rbac_group(group):
+        """
+        Get corresponding rbac_group for auth_group or create `ldap` type rbac_group if not exists
+        """
+        if isinstance(group, Group):
+            return group
+        elif isinstance(group, DjangoGroup):
+            try:
+                return Group.objects.get(group_ptr_id=group.pk, type=OriginType.LDAP)
+            except Group.DoesNotExist:
+                rbac_group = Group.objects.create(
+                    group_ptr_id=group.pk, name=group.name, type=OriginType.LDAP
                 )
+                return rbac_group
+        else:
+            raise ValueError('wrong group type')

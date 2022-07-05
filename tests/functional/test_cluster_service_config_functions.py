@@ -25,7 +25,7 @@ from adcm_pytest_plugin import utils
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from jsonschema import validate
 
-# pylint: disable=no-self-use,redefined-outer-name
+# pylint: disable=redefined-outer-name
 from tests.library import errorcodes as err
 
 BUNDLES = os.path.join(os.path.dirname(__file__), "../stack/")
@@ -300,7 +300,7 @@ class TestClusterServiceConfig:
             err.CONFIG_NOT_FOUND.equal(e, "config param doesn't exist")
 
 
-class TestClusterServiceConfigHistory:  # pylint: disable=too-few-public-methods
+class TestClusterServiceConfigHistory:
     """Tests for service config history"""
 
     def test_get_config_from_nonexistent_cluster_service(self, cluster_with_service: Tuple[Cluster, Service]):
