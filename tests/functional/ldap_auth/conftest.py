@@ -145,15 +145,16 @@ def configure_adcm_ldap_ad(request, sdk_client_fs: ADCMClient, ldap_basic_ous, a
     ssl_extra_config = {}
     groups_ou, users_ou = ldap_basic_ous
 
+    uri = ad_config.uri
     # we suggest that configuration is right
     if ssl_on:
         if ad_config.uri.startswith(LDAP_PREFIX):
-            ad_config.uri.replace(LDAP_PREFIX, LDAPS_PREFIX)
+            uri = uri.replace(LDAP_PREFIX, LDAPS_PREFIX)
         if ad_ssl_cert is None:
             raise ConfigError('AD SSL cert should be uploaded to ADCM')
         ssl_extra_config['tls_ca_cert_file'] = str(ad_ssl_cert)
     elif not ssl_on and ad_config.uri.startswith(LDAPS_PREFIX):
-        ad_config.uri.replace(LDAPS_PREFIX, LDAP_PREFIX)
+        uri = uri.replace(LDAPS_PREFIX, LDAP_PREFIX)
 
     adcm = sdk_client_fs.adcm()
     adcm.config_set_diff(
@@ -161,7 +162,7 @@ def configure_adcm_ldap_ad(request, sdk_client_fs: ADCMClient, ldap_basic_ous, a
             'attr': {'ldap_integration': {'active': True}},
             'config': {
                 'ldap_integration': {
-                    'ldap_uri': ad_config.uri,
+                    'ldap_uri': uri,
                     'ldap_user': ad_config.admin_dn,
                     'ldap_password': ad_config.admin_pass,
                     'user_search_base': users_ou,
