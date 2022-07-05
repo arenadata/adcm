@@ -93,7 +93,7 @@ def handle_name_type_display_name(sender, instance, **kwargs):
         instance.name = f'{match.group("base_name")} [{instance.type}]'
         instance.display_name = match.group("base_name")
     else:
-        raise RuntimeError('Check regex. Data: `%s`' % instance.name)
+        raise RuntimeError(f'Check regex. Data: `{instance.name}`')
 
 
 class RoleTypes(models.TextChoices):
