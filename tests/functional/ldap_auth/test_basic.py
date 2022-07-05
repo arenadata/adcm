@@ -26,6 +26,7 @@ pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad')
 
 
 @pytest.mark.xfail(reason="Expected behavior isn't finally decided: https://tracker.yandex.ru/ADCM-2916")
+@pytest.mark.parametrize('configure_adcm_ldap_ad', [False, True], ids=['ssl_off', 'ssl_on'], indirect=True)
 def test_basic_ldap_auth(sdk_client_fs, ldap_user, ldap_user_in_group):
     """
     Test basic scenarios of LDAP auth:
@@ -90,6 +91,41 @@ def test_ldap_user_access_restriction(sdk_client_fs, ldap_ad, ldap_group, ldap_b
     _login_should_succeed('login as activated user with new password', sdk_client_fs, username, new_password)
     ldap_ad.remove_user_from_group(user_dn, ldap_group['dn'])
     _login_should_fail('login as user removed from group', sdk_client_fs, username, new_password, None)
+
+
+@including_https
+@pytest.mark.usefixtures('configure_adcm_ldap_ad')
+@pytest.mark.parametrize('configure_adcm_ldap_ad', [True], ids=['ssl-on'], indirect=True)
+def test_ssl_ldap_fails_with_wrong_path(sdk_client_fs, ldap_user_in_group):
+    """
+    Test that incorrect certificate path leads ldaps connection to fail to give the access to a user.
+    """
+    user, password = ldap_user_in_group['name'], ldap_user_in_group['password']
+    adcm = sdk_client_fs.adcm()
+
+    _login_should_succeed('login with LDAP user and OK config', sdk_client_fs, user, password)
+    with allure.step('Set incorrect path to a file and check login fails'):
+        adcm.config_set_diff({'ldap_integration': {'tls_ca_cert_file': '/does/not/exist'}})
+        _login_should_fail('login with LDAP user and wrong file in config', sdk_client_fs, user, password, None)
+
+
+@including_https
+@pytest.mark.usefixtures('configure_adcm_ldap_ad')
+@pytest.mark.parametrize('configure_adcm_ldap_ad', [True], ids=['ssl-on'], indirect=True)
+def test_ssl_ldap_fails_with_wrong_cert_content(adcm_fs, sdk_client_fs, ldap_user_in_group):
+    """
+    Test that incorrect certificate file content leads ldaps connection to fail to give the access to a user.
+    """
+    user, password = ldap_user_in_group['name'], ldap_user_in_group['password']
+    adcm = sdk_client_fs.adcm()
+
+    _login_should_succeed('login with LDAP user and OK config', sdk_client_fs, user, password)
+    with allure.step('Set incorrect data to a cert file and check login fails'):
+        path = adcm.config()['ldap_integration']['tls_ca_cert_file']
+        result = adcm_fs.container.exec_run(['sh', '-c', f'echo "notacert" > {path}'])
+        if result.exit_code != 0:
+            raise ValueError('Failed to change certificate content')
+        _login_should_fail('login with LDAP user and wrong cert content', sdk_client_fs, user, password, None)
 
 
 def _login_should_succeed(operation_name: str, client: ADCMClient, username: str, password: str):

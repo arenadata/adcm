@@ -13,7 +13,7 @@
 """Conftest for LDAP-related tests"""
 
 from pathlib import Path
-from typing import Generator
+from typing import Generator, Optional
 
 import allure
 import ldap
@@ -29,7 +29,8 @@ from tests.library.utils import ConfigError
 
 # pylint: disable=redefined-outer-name
 
-
+LDAP_PREFIX = 'ldap://'
+LDAPS_PREFIX = 'ldaps://'
 BASE_BUNDLES_DIR = Path(__file__).parent / 'bundles'
 
 
@@ -72,6 +73,7 @@ def ad_config(ldap_config: dict) -> LDAPTestConfig:
         config['admin_dn'],
         config['admin_pass'],
         config['base_ou_dn'],
+        config.get('cert', None),
     )
 
 
@@ -123,23 +125,49 @@ def ldap_user_in_group(ldap_ad, ldap_basic_ous, ldap_group) -> dict:
     return user
 
 
-@allure.title('Configure ADCM for LDAP (AD) integration')
 @pytest.fixture()
-def configure_adcm_ldap_ad(sdk_client_fs: ADCMClient, ldap_basic_ous, ad_config):
+def ad_ssl_cert(adcm_fs, ad_config) -> Optional[Path]:
+    """Put SSL certificate from config to ADCM container and return path to it"""
+    if ad_config.cert is None:
+        return None
+    path = Path('/adcm/.ad-cert')
+    result = adcm_fs.container.exec_run(['sh', '-c', f'echo "{ad_config.cert}" > {path}'])
+    if result.exit_code != 0:
+        raise ValueError('Failed to upload AD certificate to ADCM')
+    return path
+
+
+@allure.title('Configure ADCM for LDAP (AD) integration')
+@pytest.fixture(params=[False], ids=['ssl_off'])
+def configure_adcm_ldap_ad(request, sdk_client_fs: ADCMClient, ldap_basic_ous, ad_config, ad_ssl_cert):
     """Configure ADCM to allow AD users"""
+    ssl_on = request.param
+    ssl_extra_config = {}
     groups_ou, users_ou = ldap_basic_ous
+
+    uri = ad_config.uri
+    # we suggest that configuration is right
+    if ssl_on:
+        if ad_config.uri.startswith(LDAP_PREFIX):
+            uri = uri.replace(LDAP_PREFIX, LDAPS_PREFIX)
+        if ad_ssl_cert is None:
+            raise ConfigError('AD SSL cert should be uploaded to ADCM')
+        ssl_extra_config['tls_ca_cert_file'] = str(ad_ssl_cert)
+    elif not ssl_on and ad_config.uri.startswith(LDAPS_PREFIX):
+        uri = uri.replace(LDAPS_PREFIX, LDAP_PREFIX)
+
     adcm = sdk_client_fs.adcm()
     adcm.config_set_diff(
         {
             'attr': {'ldap_integration': {'active': True}},
             'config': {
                 'ldap_integration': {
-                    # now only `ldap` is allowed
-                    'ldap_uri': ad_config.uri.replace('ldaps://', 'ldap://'),
+                    'ldap_uri': uri,
                     'ldap_user': ad_config.admin_dn,
                     'ldap_password': ad_config.admin_pass,
                     'user_search_base': users_ou,
                     'group_search_base': groups_ou,
+                    **ssl_extra_config,
                 }
             },
         }

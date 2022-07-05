@@ -135,6 +135,7 @@ def pytest_addoption(parser):
                 admin_dn: admin user DN
                 admin_pass: admin password
                 base_ou_dn: DN in which to create all test-related entities
+                cert: plaintest of a certificate for admin user to access LDAP server securely
             """
         ),
         type=pathlib.Path,
