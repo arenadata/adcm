@@ -12,7 +12,7 @@
 
 """Test permissions on actions behavior during upgrade"""
 
-# pylint: disable=redefined-outer-name, no-self-use
+# pylint: disable=redefined-outer-name
 
 from typing import List, Tuple, Dict, Literal, Iterable
 

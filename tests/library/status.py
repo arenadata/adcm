@@ -129,7 +129,6 @@ class ADCMObjectStatusChanger:
                 f'and message: {get_json_or_text(response)}'
             )
 
-    # pylint: disable-next=no-self-use
     def _extract_status_api_token(self, adcm_container: ADCM) -> str:
         """Get status API token from secrets file"""
         exit_code, output = adcm_container.container.exec_run(f'cat {_PATH_TO_ADCM_SECRETS}')

@@ -11,7 +11,7 @@
 # limitations under the License.
 
 """ADCM API PUT body tests"""
-# pylint: disable=redefined-outer-name, invalid-name
+# pylint: disable=redefined-outer-name
 from copy import deepcopy
 from typing import List
 

@@ -17,9 +17,6 @@ from selenium.webdriver.common.by import By
 from tests.ui_tests.app.helpers.locator import Locator
 
 
-# pylint: disable=too-few-public-methods
-
-
 class CommonLocators:
     """Locators common to all pages"""
 
