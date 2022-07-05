@@ -289,7 +289,6 @@ def adcm_db(adcm_fs) -> QueryExecutioner:
 
 LDAP_PREFIX = 'ldap://'
 LDAPS_PREFIX = 'ldaps://'
-BASE_BUNDLES_DIR = pathlib.Path(__file__).parent / 'bundles'
 
 
 @allure.title('[SS] Get LDAP config')
