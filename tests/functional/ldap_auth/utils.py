@@ -16,13 +16,16 @@ from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCMClient, Group, User
 
 
+SYNC_ACTION_NAME = 'run_ldap_sync'
+
+
 def get_ldap_user_from_adcm(client: ADCMClient, name: str) -> User:
     """
     Get LDAP user from ADCM.
     Name should be sAMAccount value.
     :raises AssertionError: when there's no user presented in ADCM
     """
-    username = name.lower()
+    username = name
     try:
         return client.user(username=username)
     except ObjectNotFound as e:
@@ -35,6 +38,6 @@ def get_ldap_group_from_adcm(client: ADCMClient, name: str) -> Group:
     :raises AssertionError: when there's no group presented in ADCM
     """
     try:
-        return client.group(name=name)
+        return client.group(name=name, type='ldap')
     except ObjectNotFound as e:
         raise AssertionError(f'LDAP group "{name}" should be available as ADCM group "{name}"') from e
