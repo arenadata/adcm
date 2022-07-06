@@ -720,7 +720,6 @@ def run_task(task: TaskLog, event, args: str = ''):
         stderr=err_file,
     )
     log.info("task run #%s, python process %s", task.pk, proc.pid)
-    task.pid = proc.pid
 
     set_task_status(task, config.Job.RUNNING, event)
 
