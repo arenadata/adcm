@@ -91,6 +91,7 @@ BUNDLE_COMMUNITY = "cluster_community"
 BUNDLE_ENTERPRISE = "cluster_enterprise"
 BUNDLE_IMPORT = "cluster_to_import"
 BUNDLE_UPGRADE = "upgradable_cluster"
+BUNDLE_UPGRADE_V2 = "upgradable_cluster_v2"
 BUNDLE_REQUIRED_FIELDS = "cluster_and_service_with_required_string"
 BUNDLE_DEFAULT_FIELDS = "cluster_and_service_with_default_string"
 BUNDLE_WITH_SERVICES = "cluster_with_services"
@@ -104,6 +105,7 @@ BUNDLE_WITH_REQUIRED_FIELDS = "cluster_required_fields"
 BUNDLE_WITH_DESCRIPTION_FIELDS = "cluster_with_all_config_params"
 BUNDLE_WITH_REQUIRED_IMPORT = "cluster_required_import"
 BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
+DISCLAIMER_TEXT = "Are you really want to click me?"
 
 
 # pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-many-lines,too-many-public-methods
@@ -387,6 +389,48 @@ class TestClusterListPage:
         with allure.step("Check that cluster has been upgraded"):
             cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
             row = cluster_page.get_row_by_cluster_name(params["upgrade_cluster_name"])
+            assert (
+                cluster_page.get_cluster_state_from_row(row) == params["state"]
+            ), f"Cluster state should be {params['state']}"
+
+    @pytest.mark.parametrize(
+        ("upgrade_name", "config", "hc_acl", "disclaimer_text"),
+        [
+            ("simple_upgrade", None, False, False),
+            ("upgrade_with_hc_acl", None, True, False),
+            ("upgrade_with_config", {"somestring2": "test"}, False, False),
+            ("upgrade_with_config_and_hc_acl", {"somestring2": "test"}, True, False),
+            ("upgrade_with_hc_acl_and_disclaimer", None, True, DISCLAIMER_TEXT),
+            ("upgrade_with_config_and_disclaimer", {"somestring2": "test"}, False, DISCLAIMER_TEXT),
+            ("upgrade_with_config_and_hc_acl_and_disclaimer", {"somestring2": "test"}, True, DISCLAIMER_TEXT),
+        ],
+    )
+    def test_run_upgrade_v2_on_cluster_list_page(
+        self, create_host, sdk_client_fs, app_fs, upgrade_name, config, hc_acl, disclaimer_text
+    ):
+        """Test run upgrade new version from the /cluster page"""
+        params = {
+            "state": "upgraded",
+        }
+        with allure.step("Upload main cluster bundle"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            cluster.host_add(create_host)
+        with allure.step("Upload cluster bundle to upgrade"):
+            cluster_bundle(sdk_client_fs, BUNDLE_UPGRADE_V2)
+        cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+        row_with_upgrade = cluster_page.get_row_by_cluster_name("Test cluster")
+        cluster_page.run_upgrade_in_cluster_row(
+            row=row_with_upgrade,
+            upgrade_name=upgrade_name,
+            config=config,
+            hc_acl=hc_acl,
+            disclaimer_text=disclaimer_text,
+        )
+        with allure.step("Check that cluster has been upgraded"):
+            cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+            cluster_page.header.wait_success_job_amount_from_header(1)
+            row = cluster_page.get_row_by_cluster_name("Test cluster")
             assert (
                 cluster_page.get_cluster_state_from_row(row) == params["state"]
             ), f"Cluster state should be {params['state']}"
