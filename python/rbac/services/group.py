@@ -19,7 +19,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 from rest_framework import status
 
-from cm.errors import raise_AdcmEx as err
 from rbac import models
 from rbac.utils import Empty, set_not_empty_attr
 
@@ -28,7 +27,7 @@ def _update_users(group: models.Group, users: [Empty, List[dict]]) -> None:
     if users is Empty:
         return
     if group.type == models.OriginType.LDAP:
-        err('GROUP_CONFLICT', msg="You can\'t change users in LDAP group")
+        raise AdwpEx('GROUP_UPDATE_ERROR', msg="You can\'t change users in LDAP group")
     group_users = {u.id: u for u in group.user_set.all()}
     new_users = [u['id'] for u in users]
 
@@ -78,7 +77,7 @@ def update(
 ) -> models.Group:
     """Full or partial Group object update"""
     if group.type == models.OriginType.LDAP:
-        err('GROUP_CONFLICT', msg='you cannot change LDAP type group')
+        raise AdwpEx('GROUP_UPDATE_ERROR', msg='You cannot change LDAP type group')
     set_not_empty_attr(group, partial, 'name', name_to_display)
     set_not_empty_attr(group, partial, 'description', description, '')
     try:

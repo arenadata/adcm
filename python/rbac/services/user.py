@@ -21,7 +21,6 @@ from django.db import IntegrityError, transaction
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 
-from cm.errors import raise_AdcmEx as err
 from rbac import models
 from rbac.utils import Empty, set_not_empty_attr
 
@@ -61,7 +60,7 @@ def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
                 'USER_UPDATE_ERROR', msg=msg, http_code=status.HTTP_400_BAD_REQUEST
             ) from exc
         if group.type == models.OriginType.LDAP:
-            err('USER_CONFLICT', msg="You cannot add user to LDAP group")
+            raise AdwpEx('USER_UPDATE_ERROR', msg="You cannot add user to LDAP group")
         user.groups.add(group)
         user_groups[group_id] = group
 
@@ -69,7 +68,7 @@ def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
         if group_id in new_groups:
             continue
         if group.type == models.OriginType.LDAP:
-            err('USER_CONFLICT', msg="You cannot remove user from original LDAP group")
+            raise AdwpEx('USER_UPDATE_ERROR', msg="You cannot remove user from original LDAP group")
         user.groups.remove(group)
 
 
@@ -119,7 +118,7 @@ def update(
     if user.type == models.OriginType.LDAP and any(
         (value is not Empty and getattr(user, key) != value) for key, value in names.items()
     ):
-        err('USER_CONFLICT', msg='You cannot change LDAP type user')
+        raise AdwpEx('USER_UPDATE_ERROR', msg='You cannot change LDAP type user')
     set_not_empty_attr(user, partial, 'first_name', first_name, '')
     set_not_empty_attr(user, partial, 'last_name', last_name, '')
     set_not_empty_attr(user, partial, 'email', email, '')
