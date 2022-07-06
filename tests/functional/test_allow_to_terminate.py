@@ -31,7 +31,7 @@ def cluster(sdk_client_fs) -> Cluster:
     return bundle.cluster_create('Test Cluster')
 
 
-@pytest.mark.parametrize('action_name', ('multi', 'simple'))
+@pytest.mark.parametrize('action_name', ['multi', 'simple'])
 def test_allow_to_terminate(action_name: str, cluster):
     """Test that tasks that are allowed to be terminated are cancelled correctly"""
     with allure.step(f'Run action {action_name} and terminate it right away'):
