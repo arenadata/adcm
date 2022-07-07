@@ -116,6 +116,11 @@ class LDAPEntityManager:
         self.activate_user(new_dn)
         return new_dn
 
+    def delete(self, dn: str) -> None:
+        """Delete record from LDAP"""
+        self.conn.delete_s(dn)
+        self._created_records.remove(dn)
+
     @allure.step('Activate user {user_dn}')
     def activate_user(self, user_dn: str, uac: bytes = _ACTIVE_USER_UAC) -> None:
         """Activate user"""
