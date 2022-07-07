@@ -14,8 +14,8 @@
 
 import allure
 import pytest
-from adcm_client.objects import Cluster
-from adcm_pytest_plugin.utils import get_data_dir
+from adcm_client.objects import Cluster, Component
+from adcm_pytest_plugin.utils import get_data_dir, wait_until_step_succeeds
 
 from tests.library.assertions import expect_no_api_error, expect_api_error
 
@@ -36,12 +36,17 @@ def test_allow_to_terminate(action_name: str, cluster):
     """Test that tasks that are allowed to be terminated are cancelled correctly"""
     with allure.step(f'Run action {action_name} and terminate it right away'):
         task = cluster.action(name=action_name).run()
-        expect_no_api_error(f'cancel task from action {action_name}', task.cancel)
+        # action need time to "actually" launch
+        wait_until_step_succeeds(
+            expect_no_api_error,
+            timeout=5,
+            period=0.5,
+            operation_name=f'cancel task from action "{action_name}"',
+            operation=task.cancel,
+        )
+
     with allure.step('Check that action execution is cancelled correctly'):
-        task.reread()
-        assert (
-            actual_status := task.status
-        ) == CANCELLED_STATUS, f'Task should be of status "{CANCELLED_STATUS}", not "{actual_status}"'
+        _wait_state_is_aborted(task)
         assert any(
             j.status == CANCELLED_STATUS for j in task.job_list()
         ), f'At least one job of the cancelled task should have status "{CANCELLED_STATUS}"'
@@ -67,3 +72,40 @@ def test_disallow_to_terminate(cluster):
             len(cluster.concerns()) == 0
         ), 'There should not be any concerns on the cluster object after the task is finished'
         assert cluster.action_list() != [], 'Actions should be available on cluster'
+
+
+def test_terminate_action_with_hc_acl(cluster, generic_provider):
+    """Test that termination of action with hc_acl leads to "restore" of previous HC map"""
+    original_hc = ()
+    host = cluster.host_add(generic_provider.host_create('something'))
+    component: Component = cluster.service_add(name='test_service').component()
+
+    with allure.step('Run action with hc_acl and terminate it right away'):
+        task = cluster.action(name='with_hc_acl').run(
+            hc=[{'host_id': host.id, 'service_id': component.service_id, 'component_id': component.id}]
+        )
+        # action need time to "actually" launch
+        wait_until_step_succeeds(
+            expect_no_api_error,
+            timeout=5,
+            period=0.5,
+            operation_name='cancel task with hc_acl',
+            operation=task.cancel,
+        )
+
+    with allure.step('Check that HC is the same as the original one after task is cancelled'):
+        _wait_state_is_aborted(task)
+        cluster.reread()
+        new_hc = tuple(cluster.hostcomponent())
+        assert new_hc == original_hc, 'Hostcomponent is incorrect after cancellation of action with hc_acl'
+
+
+def _wait_state_is_aborted(task):
+    # cancellation can take a moment
+    def _wait_cancel():
+        task.reread()
+        assert (
+            actual_status := task.status
+        ) == CANCELLED_STATUS, f'Task should be of status "{CANCELLED_STATUS}", not "{actual_status}"'
+
+    wait_until_step_succeeds(_wait_cancel, timeout=5, period=0.5)

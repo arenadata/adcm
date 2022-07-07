@@ -42,3 +42,18 @@
       params:
         ansible_tags:
           - short
+
+    with_hc_acl:
+      <<: *simple
+
+      hc_acl:
+        - service: test_service
+          component: test_component
+          action: add
+
+- type: service
+  version: 0.2
+  name: test_service
+
+  components:
+    test_component:
