@@ -166,7 +166,7 @@ def test_ldap_config_change(change_name: str, config: Union[dict, Callable], sdk
         _login_should_fail(login_operation, sdk_client_fs, user, password)
 
 
-@pytest.mark.parametrize('action_name', ('test_ldap_connection', 'run_ldap_sync'))
+@pytest.mark.parametrize('action_name', ['test_ldap_connection', 'run_ldap_sync'])
 def test_wrong_ldap_config_fail_actions(action_name: str, sdk_client_fs):
     """Test that incorrect/turned off LDAP configuration leads ldap-related actions to have disabling cause"""
     adcm = sdk_client_fs.adcm()
