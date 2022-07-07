@@ -59,12 +59,16 @@ def _update_groups(user: models.User, groups: [Empty, List[dict]]) -> None:
             raise AdwpEx(
                 'USER_UPDATE_ERROR', msg=msg, http_code=status.HTTP_400_BAD_REQUEST
             ) from exc
+        if group.type == models.OriginType.LDAP:
+            raise AdwpEx('USER_UPDATE_ERROR', msg="You cannot add user to LDAP group")
         user.groups.add(group)
         user_groups[group_id] = group
 
     for group_id, group in user_groups.items():
         if group_id in new_groups:
             continue
+        if group.type == models.OriginType.LDAP:
+            raise AdwpEx('USER_UPDATE_ERROR', msg="You cannot remove user from original LDAP group")
         user.groups.remove(group)
 
 
@@ -103,7 +107,18 @@ def update(
         email_user = models.User.objects.get(email=email)
         if email_user != user:
             raise AdwpEx('USER_UPDATE_ERROR', msg='User with the same email already exist')
-
+    names = {
+        'username': username,
+        'first_name': first_name,
+        'last_name': last_name,
+        'email': email,
+        'is_superuser': is_superuser,
+        'password': password,
+    }
+    if user.type == models.OriginType.LDAP and any(
+        (value is not Empty and getattr(user, key) != value) for key, value in names.items()
+    ):
+        raise AdwpEx('USER_UPDATE_ERROR', msg='You cannot change LDAP type user')
     set_not_empty_attr(user, partial, 'first_name', first_name, '')
     set_not_empty_attr(user, partial, 'last_name', last_name, '')
     set_not_empty_attr(user, partial, 'email', email, '')

@@ -26,7 +26,8 @@ from rbac.utils import Empty, set_not_empty_attr
 def _update_users(group: models.Group, users: [Empty, List[dict]]) -> None:
     if users is Empty:
         return
-
+    if group.type == models.OriginType.LDAP:
+        raise AdwpEx('GROUP_UPDATE_ERROR', msg="You can\'t change users in LDAP group")
     group_users = {u.id: u for u in group.user_set.all()}
     new_users = [u['id'] for u in users]
 
@@ -75,6 +76,8 @@ def update(
     user_set: List[dict] = Empty,
 ) -> models.Group:
     """Full or partial Group object update"""
+    if group.type == models.OriginType.LDAP:
+        raise AdwpEx('GROUP_UPDATE_ERROR', msg='You cannot change LDAP type group')
     set_not_empty_attr(group, partial, 'name', name_to_display)
     set_not_empty_attr(group, partial, 'description', description, '')
     try:
