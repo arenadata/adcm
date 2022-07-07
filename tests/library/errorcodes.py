@@ -261,14 +261,8 @@ INVALID_HC_HOST_IN_MM = ADCMError(
     'INVALID_HC_HOST_IN_MM',
 )
 
-USER_UPDATE_ERROR = ADCMError(
-    '400 Bad Request',
-    'USER_UPDATE_ERROR'
-)
+USER_UPDATE_ERROR = ADCMError('400 Bad Request', 'USER_UPDATE_ERROR')
 
-GROUP_UPDATE_ERROR = ADCMError(
-    '400 Bad Request',
-    'GROUP_UPDATE_ERROR'
-)
+GROUP_UPDATE_ERROR = ADCMError('400 Bad Request', 'GROUP_UPDATE_ERROR')
 
 UNAUTHORIZED = ADCMError('401 Unauthorized', '')  # there's no code
