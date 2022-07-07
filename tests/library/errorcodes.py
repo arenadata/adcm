@@ -266,4 +266,9 @@ USER_UPDATE_ERROR = ADCMError(
     'USER_UPDATE_ERROR'
 )
 
+GROUP_UPDATE_ERROR = ADCMError(
+    '400 Bad Request',
+    'GROUP_UPDATE_ERROR'
+)
+
 UNAUTHORIZED = ADCMError('401 Unauthorized', '')  # there's no code
