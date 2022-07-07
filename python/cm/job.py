@@ -628,7 +628,7 @@ def set_action_state(
 
 
 def restore_hc(task: TaskLog, action: Action, status: str):
-    if status != config.Job.FAILED:
+    if status not in [config.Job.FAILED, config.Job.ABORTED]:
         return
     if not action.hostcomponentmap:
         return
