@@ -760,7 +760,7 @@ def _reorder_struct_field(struct_value, limits):
     order_key = limits.get('yspec', {}).get('root', {}).get('item')
     if not order_key or limits['yspec'][order_key].get('match') != 'dict':
         return struct_value
-    order_fields = [i for i in limits['yspec'][order_key]['items']]
+    order_fields = list(limits['yspec'][order_key]['items'])
 
     ordered = []
     for item in struct_value:
@@ -768,9 +768,8 @@ def _reorder_struct_field(struct_value, limits):
     return ordered
 
 
-def check_config_spec(
-    proto, obj, spec, flat_spec, conf, old_conf=None, attr=None
-):  # pylint: disable=too-many-branches,too-many-statements
+# pylint: disable=too-many-branches,too-many-statements, too-many-locals
+def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=None):
     group = None
     if isinstance(obj, GroupConfig):
         group = obj
