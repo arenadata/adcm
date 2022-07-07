@@ -746,6 +746,28 @@ def check_attr(proto, obj, attr, spec):  # pylint: disable=too-many-branches
         check_group_keys_attr(attr, spec, obj)
 
 
+def _reorder_struct_field(struct_value, limits):
+    """
+    reorganize `structure` type field according to it's limits (preserve fields order)
+    """
+    if not limits or not struct_value:
+        return struct_value
+    if not isinstance(struct_value, list):
+        raise RuntimeError  # TODO: AdcmEx
+    if not all((isinstance(i, dict) for i in struct_value)):
+        raise RuntimeError  # TODO: AdcmEx
+
+    order_key = limits.get('yspec', {}).get('root', {}).get('item')
+    if not order_key or limits['yspec'][order_key].get('match') != 'dict':
+        return struct_value
+    order_fields = [i for i in limits['yspec'][order_key]['items']]
+
+    ordered = []
+    for item in struct_value:
+        ordered.append(OrderedDict({k: item[k] for k in order_fields}))
+    return ordered
+
+
 def check_config_spec(
     proto, obj, spec, flat_spec, conf, old_conf=None, attr=None
 ):  # pylint: disable=too-many-branches,too-many-statements
@@ -773,6 +795,13 @@ def check_config_spec(
                 return not bool(attr[key]['active'])
         return False
 
+    def is_structure(spec_part):
+        if not isinstance(spec_part, dict):
+            return False
+        if spec_part.get('type') == 'structure':
+            return True
+        return False
+
     def check_sub(key):
         if not isinstance(conf[key], dict):
             msg = 'There are not any subkeys for key "{}" ({})'
@@ -795,6 +824,10 @@ def check_config_spec(
                     False,
                     is_inactive(key),
                 )
+                if is_structure(spec[key][subkey]):
+                    conf[key][subkey] = _reorder_struct_field(
+                        conf[key][subkey], spec[key][subkey].get('limits')
+                    )
             elif key_is_required(key, subkey, spec[key][subkey]):
                 msg = 'There is no required subkey "{}" for key "{}" ({})'
                 err('CONFIG_KEY_ERROR', msg.format(subkey, key, ref))
@@ -815,11 +848,15 @@ def check_config_spec(
             if isinstance(conf[key], dict) and not type_is_complex(spec[key]['type']):
                 msg = 'Key "{}" in input config should not have any subkeys ({})'
                 err('CONFIG_KEY_ERROR', msg.format(key, ref))
+        if is_structure(spec[key]):
+            conf[key] = _reorder_struct_field(conf[key], spec[key].get('limits'))
 
     for key in spec:
         if 'type' in spec[key] and spec[key]['type'] != 'group':
             if key in conf:
                 check_config_type(proto, key, '', spec[key], conf[key])
+                if is_structure(spec[key]):
+                    conf[key] = _reorder_struct_field(conf[key], spec[key].get('limits'))
             elif key_is_required(key, '', spec[key]):
                 msg = 'There is no required key "{}" in input config ({})'
                 err('CONFIG_KEY_ERROR', msg.format(key, ref))
