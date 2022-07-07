@@ -1569,15 +1569,13 @@ class TestClusterGroupConfigPage:
             if expected['alerts'] and (not is_read_only) and config_group_customization:
                 cluster_config_page.config.check_invalid_value_message(field_type)
 
-        # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
-        # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if is_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
-        # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
-        # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
 
     @pytest.mark.full()
@@ -1701,8 +1699,7 @@ class TestClusterGroupConfigPage:
                     else:
                         assert len(cluster_config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
 
-        # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
-        # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if group_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
             cluster_config_page.group_config.check_no_rows()
