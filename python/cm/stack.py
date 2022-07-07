@@ -13,6 +13,7 @@
 
 import os
 import re
+from collections import OrderedDict
 from copy import deepcopy
 from typing import Any
 from version_utils import rpm
@@ -541,9 +542,9 @@ def save_prototype_config(
         return source
 
     def process_limits(conf, name, subname):
-        opt = {}
+        opt = OrderedDict()
         if conf['type'] == 'option':
-            opt = {'option': conf['option']}
+            opt = OrderedDict({'option': conf['option']})
         elif conf['type'] == 'variant':
             opt['source'] = check_variant(conf, name, subname)
         elif conf['type'] == 'integer' or conf['type'] == 'float':
