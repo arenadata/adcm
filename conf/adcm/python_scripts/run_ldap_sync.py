@@ -14,6 +14,7 @@
 import os
 import sys
 import ldap
+
 os.environ["PYTHONPATH"] = "/adcm/python/"
 sys.path.append("/adcm/python/")
 
@@ -62,13 +63,18 @@ class SyncLDAP:
 
     def sync_groups(self):
         """Synchronize LDAP groups with group model and delete groups which is not found in LDAP"""
+        self.settings['GROUP_SEARCH'].filterstr = f'(&' \
+                                                  f'(objectClass={self.settings["GROUP_OBJECT_CLASS"]})' \
+                                                  f'{self.settings["GROUP_FILTER"]})'
         ldap_groups = self.settings['GROUP_SEARCH'].execute(self.conn, {})
         self._sync_ldap_groups(ldap_groups)
         print("Groups are synchronized")
 
     def sync_users(self):
         """Synchronize LDAP users with user model and delete users which is not found in LDAP"""
-        self.settings['USER_SEARCH'].filterstr = f'(objectClass=user)'
+        self.settings['USER_SEARCH'].filterstr = f'(&' \
+                                                 f'(objectClass={self.settings["USER_OBJECT_CLASS"]})' \
+                                                 f'{self.settings["USER_FILTER"]})'
         ldap_users = self.settings['USER_SEARCH'].execute(self.conn, {'user': '*'}, True)
         self._sync_ldap_users(ldap_users)
         print("Users are synchronized")
@@ -85,7 +91,7 @@ class SyncLDAP:
 
             try:
                 group, created = Group.objects.get_or_create(
-                    name=defaults['name'], built_in=False, type=OriginType.LDAP
+                    name=f'{defaults["name"]} [ldap]', built_in=False, type=OriginType.LDAP
                 )
             except (IntegrityError, DataError) as e:
                 error_names.append(defaults['name'])
@@ -141,7 +147,8 @@ class SyncLDAP:
                 for group in ldap_attributes.get('memberof', []):
                     name = group.split(',')[0][3:]
                     try:
-                        group, created = Group.objects.get_or_create(name=name, built_in=False, type=OriginType.LDAP)
+                        group, created = Group.objects.get_or_create(name=f'{name} [ldap]', built_in=False,
+                                                                     type=OriginType.LDAP)
                         group.user_set.add(user)
                         if created:
                             print(f"Create new group: {name}")

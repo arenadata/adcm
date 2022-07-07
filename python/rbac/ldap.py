@@ -30,6 +30,19 @@ from rbac.models import User, Group, OriginType
 CERT_ENV_KEY = 'LDAPTLS_CACERT'
 
 
+def _process_extra_filter(filterstr: str) -> str:
+    filterstr = filterstr or ''
+    if filterstr == '':
+        return filterstr
+
+    # simple single filter ex: `primaryGroupID=513`
+    if '(' not in filterstr and ')' not in filterstr:
+        return f'({filterstr})'
+    else:
+        # assume that composed filter is syntactically valid
+        return filterstr
+
+
 def _get_ldap_default_settings():
     os.environ.pop(CERT_ENV_KEY, None)
 
@@ -44,13 +57,17 @@ def _get_ldap_default_settings():
         user_search = LDAPSearch(
             base_dn=ldap_config['user_search_base'],
             scope=ldap.SCOPE_SUBTREE,
-            filterstr=f'(&(objectClass={ldap_config.get("user_object_class", "*")})'
-            f'({ldap_config["user_name_attribute"]}=%(user)s))',
+            filterstr=f'(&'
+            f'(objectClass={ldap_config.get("user_object_class") or "*"})'
+            f'({ldap_config["user_name_attribute"]}=%(user)s)'
+            f'{_process_extra_filter(ldap_config.get("user_search_filter"))}'
+            f')',
         )
         group_search = LDAPSearch(
             base_dn=ldap_config['group_search_base'],
             scope=ldap.SCOPE_SUBTREE,
-            filterstr=f'(objectClass={ldap_config.get("group_object_class", "*")})',
+            filterstr=f'(objectClass={ldap_config.get("group_object_class") or "*"})'
+            f'{_process_extra_filter(ldap_config.get("group_search_filter"))}',
         )
         user_attr_map = {
             "username": ldap_config["user_name_attribute"],
@@ -68,8 +85,12 @@ def _get_ldap_default_settings():
             'BIND_DN': ldap_config['ldap_user'],
             'BIND_PASSWORD': ansible_decrypt(ldap_config['ldap_password']),
             'USER_SEARCH': user_search,
+            'USER_OBJECT_CLASS': ldap_config.get("user_object_class", "*"),
+            'USER_FILTER': _process_extra_filter(ldap_config.get("user_search_filter", '')),
             'GROUP_SEARCH': group_search,
             'GROUP_TYPE': group_type,
+            'GROUP_FILTER': {_process_extra_filter(ldap_config.get("group_search_filter", ''))},
+            'GROUP_OBJECT_CLASS': ldap_config.get("group_object_class", "*"),
             'USER_ATTR_MAP': user_attr_map,
             'MIRROR_GROUPS': True,
             'ALWAYS_UPDATE_USER': True,
@@ -126,29 +147,12 @@ class CustomLDAPBackend(LDAPBackend):
         ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
 
         for group in user.groups.filter(name__in=[i[0] for i in ldap_groups]):
-            rbac_group = self.__get_rbac_group(group)
             ldap_group_dn = self.__det_ldap_group_dn(group.name, ldap_groups)
-
-            if rbac_group.type != OriginType.LDAP:
-                group.user_set.remove(user)
-
-                existing_groups = Group.objects.filter(group_ptr_id=group.pk, type=OriginType.LDAP)
-                count = existing_groups.count()
-
-                if count == 1:
-                    existing_groups[0].user_set.add(user)
-                    existing_groups.update(description=ldap_group_dn)
-                elif count < 1:
-                    ldap_group = Group.objects.create(
-                        group_ptr_id=group.pk, type=OriginType.LDAP, description=ldap_group_dn
-                    )
-                    ldap_group.user_set.add(user)
-                elif count > 1:
-                    raise RuntimeError
-
-                # this is created by ldap-auth `local` group with single user
-                if group.user_set.count() == 0:
-                    group.delete()
+            rbac_group = self.__get_rbac_group(group, ldap_group_dn)
+            group.user_set.remove(user)
+            rbac_group.group_ptr.user_set.add(user.user_ptr)
+            if group.user_set.count() == 0:
+                group.delete()
 
     @staticmethod
     def __check_user(username: str):
@@ -161,7 +165,7 @@ class CustomLDAPBackend(LDAPBackend):
         return [i for i in ldap_groups if i[0] == group_name][0][1]
 
     @staticmethod
-    def __get_rbac_group(group):
+    def __get_rbac_group(group, ldap_group_dn):
         """
         Get corresponding rbac_group for auth_group or create `ldap` type rbac_group if not exists
         """
@@ -169,10 +173,15 @@ class CustomLDAPBackend(LDAPBackend):
             return group
         elif isinstance(group, DjangoGroup):
             try:
-                return Group.objects.get(group_ptr_id=group.pk, type=OriginType.LDAP)
+                # maybe we'll need more accurate filtering here
+                return Group.objects.get(
+                    name=f'{group.name} [{OriginType.LDAP.value}]', type=OriginType.LDAP.value
+                )
             except Group.DoesNotExist:
                 rbac_group = Group.objects.create(
-                    group_ptr_id=group.pk, name=group.name, type=OriginType.LDAP
+                    name=group.name,
+                    type=OriginType.LDAP,
+                    description=ldap_group_dn,
                 )
                 return rbac_group
         else:

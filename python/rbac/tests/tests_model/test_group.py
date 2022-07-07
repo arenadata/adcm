@@ -20,11 +20,11 @@ from rbac.models import Group, OriginType
 def test_group_creation_blank():
     g = Group.objects.create()
     assert int(g.group_ptr_id)
-    assert g.name == ''
+    assert g.name == f' [{OriginType.Local.value}]'
     assert g.description is None
     assert g.built_in is False
     assert g.type == OriginType.Local.value
-    assert g.display_name is None
+    assert g.display_name == ''
 
 
 @pytest.mark.django_db

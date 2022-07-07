@@ -82,16 +82,18 @@ class Group(AuthGroup):
 
 
 BASE_GROUP_NAME_PATTERN = re.compile(
-    rf'(?P<base_name>.*?)(?: |$)(?:\[(?:{"|".join(OriginType.values)})\])?'
+    rf'(?P<base_name>.*?)(?: \[(?:{"|".join(OriginType.values)})\]|$)'
 )
 
 
 @receiver(pre_save, sender=Group)
 def handle_name_type_display_name(sender, instance, **kwargs):
     match = BASE_GROUP_NAME_PATTERN.match(instance.name)
-    if match and match.group('base_name'):
+    if match and (match.group('base_name') or match.group(0) == match.group('base_name') == ''):
         instance.name = f'{match.group("base_name")} [{instance.type}]'
         instance.display_name = match.group("base_name")
+    else:
+        raise RuntimeError(f'Check regex. Data: `{instance.name}`')
 
 
 class RoleTypes(models.TextChoices):
