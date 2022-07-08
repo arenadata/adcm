@@ -33,7 +33,13 @@ from cm.errors import raise_AdcmEx as err
 from cm import config
 import cm.checker
 
-from cm.adcm_config import proto_ref, check_config_type, type_is_complex, read_bundle_file
+from cm.adcm_config import (
+    proto_ref,
+    check_config_type,
+    type_is_complex,
+    read_bundle_file,
+    _reorder_struct_field,
+)
 from cm.models import StagePrototype, StageAction, StagePrototypeConfig
 from cm.models import StagePrototypeExport, StagePrototypeImport, StageUpgrade, StageSubAction
 
@@ -588,6 +594,8 @@ def save_prototype_config(
                 sc.display_name = name
         if 'default' in conf:
             check_config_type(proto, name, subname, conf, conf['default'], bundle_hash)
+            if conf['type'] == 'structure':
+                conf["default"] = _reorder_struct_field(conf['default'], conf['limits'])
         if type_is_complex(conf['type']):
             dict_json_to_obj(conf, 'default', sc)
         else:
