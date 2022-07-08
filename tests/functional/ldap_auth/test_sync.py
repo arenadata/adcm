@@ -20,7 +20,9 @@ import pytest
 import requests
 from adcm_client.objects import ADCMClient, Group, ADCM
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
+from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import get_ldap_group_from_adcm, get_ldap_user_from_adcm
 from tests.library.assertions import sets_are_equal, expect_no_api_error, expect_api_error
 from tests.library.errorcodes import UNAUTHORIZED
@@ -29,6 +31,9 @@ from tests.library.ldap_interactions import LDAPTestConfig, configure_adcm_for_l
 SYNC_ACTION = 'run_ldap_sync'
 TEST_CONNECTION_ACTION = 'test_ldap_connection'
 DEFAULT_LOCAL_USERS = ('admin', 'status')
+
+
+pytestmark = [only_clean_adcm]
 
 
 class TestDisablingCause:
@@ -101,7 +106,8 @@ class TestLDAPSyncAction:
         _run_sync(sdk_client_fs)
         check_existing_users(sdk_client_fs, {ldap_user_in_group['name'], ldap_user['name']})
         check_existing_groups(sdk_client_fs, {ldap_group['name']})
-        ldap_ad.delete(ldap_group['dn'])
+        with allure.step('Delete group from LDAP'):
+            ldap_ad.delete(ldap_group['dn'])
         _run_sync(sdk_client_fs)
         check_existing_users(sdk_client_fs, {ldap_user_in_group['name'], ldap_user['name']})
         check_existing_groups(sdk_client_fs)
@@ -160,6 +166,33 @@ class TestLDAPSyncAction:
                 expect_api_error('login as deleted user', ADCMClient, **credentials)
 
 
+class TestPeriodicSync:
+    """Test that periodic LDAP synchronization tasks are launched correctly"""
+
+    def test_sync_periodic_launch(self, sdk_client_fs, ad_config, ldap_basic_ous):
+        """Test that sync task is launched periodically with correct settings"""
+        groups_ou, users_ou = ldap_basic_ous
+
+        with allure.step('Turn ADCM LDAP config on'):
+            configure_adcm_for_ldap(sdk_client_fs, ad_config, False, None, users_ou, groups_ou, {'sync_interval': 1})
+
+        with allure.step('Check that 1 minute after the config has been saved the sync task was launched'):
+            assert len(sdk_client_fs.job_list()) == 0, 'There should not be any jobs right after config is saved'
+            wait_until_step_succeeds(self._check_sync_task_is_presented, timeout=70, period=7, client=sdk_client_fs)
+
+        with allure.step('Check that after 1 more minute the second sync task was launched'):
+            wait_until_step_succeeds(
+                self._check_sync_task_is_presented, timeout=70, period=7, client=sdk_client_fs, expected_amount=2
+            )
+
+    def _check_sync_task_is_presented(self, client: ADCMClient, expected_amount: int = 1):
+        with allure.step(f'Check {expected_amount} sync task(s) is presented among tasks'):
+            sync_tasks = [task for task in (j.task() for j in client.job_list()) if task.action().name == SYNC_ACTION]
+            assert (
+                actual_amount := len(sync_tasks)
+            ) == expected_amount, f'Not enough sync tasks: {actual_amount}.\nExpected: {expected_amount}'
+
+
 @allure.step('Check users existing in ADCM')
 def check_existing_users(
     client: ADCMClient, expected_ldap: Collection[str] = (), expected_local: Collection[str] = DEFAULT_LOCAL_USERS
@@ -170,7 +203,7 @@ def check_existing_users(
     expected_local = set(expected_local)
     existing_local = {u.username for u in client.user_list() if u.type == 'local'}
     with allure.step('Check users from LDAP'):
-        sets_are_equal(expected_ldap, existing_ldap)
+        sets_are_equal(existing_ldap, expected_ldap)
     with allure.step('Check local users'):
         sets_are_equal(existing_local, expected_local)
 
@@ -185,7 +218,7 @@ def check_existing_groups(
     expected_local = set(expected_local)
     existing_local = {g.name for g in client.group_list() if g.type == 'local'}
     with allure.step('Check groups from LDAP'):
-        sets_are_equal(expected_ldap, existing_ldap, message='Not all LDAP groups are presented in ADCM')
+        sets_are_equal(existing_ldap, expected_ldap, message='Not all LDAP groups are presented in ADCM')
     with allure.step('Check local groups'):
         sets_are_equal(existing_local, expected_local, message='Not all local groups are presented in ADCM')
 

@@ -186,9 +186,16 @@ class LDAPEntityManager:
 
 # pylint: disable-next=too-many-arguments
 def configure_adcm_for_ldap(
-    client: ADCMClient, config: LDAPTestConfig, ssl_on: bool, ssl_cert: Optional[Path], user_base: str, group_base: str
+    client: ADCMClient,
+    config: LDAPTestConfig,
+    ssl_on: bool,
+    ssl_cert: Optional[Path],
+    user_base: str,
+    group_base: str,
+    extra_config: Optional[dict] = None,
 ):
     """Set ADCM settings to work with LDAP (for tests only)"""
+    extra_config = extra_config or {}
     ssl_extra_config = {}
     uri = config.uri
     # we suggest that configuration is right
@@ -213,6 +220,7 @@ def configure_adcm_for_ldap(
                     'user_search_base': user_base,
                     'group_search_base': group_base,
                     **ssl_extra_config,
+                    **extra_config,
                 }
             },
         }
