@@ -59,6 +59,12 @@ class LDAPEntityManager:
     _INACTIVE_USER_UAC = b'514'  # user, inactive
     _DEFAULT_USER_UAC = b'546'  # user, inactive, password not required
 
+    _ATTR_MAP = {
+        'first_name': 'givenName',
+        'last_name': 'sn',
+        'email': 'mail',
+    }
+
     def __init__(self, config: LDAPTestConfig, test_name: str):
         ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)  # pylint: disable=no-member
         self.conn = ldap.initialize(config.uri)  # pylint: disable=no-member
@@ -143,6 +149,20 @@ class LDAPEntityManager:
         """Set password for an existing user"""
         pass_utf16 = f'"{password}"'.encode('utf-16-le')
         self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, 'unicodePwd', [pass_utf16])])  # pylint: disable=no-member
+
+    @allure.step('Update user in LDAP')
+    def update_user(self, user_dn: str, **fields: str):
+        """Update user record"""
+        try:
+            self.conn.modify_s(
+                user_dn, [(ldap.MOD_REPLACE, self._ATTR_MAP[k], [v.encode('utf-8')]) for k, v in fields.items()]
+            )
+        except KeyError as e:
+            unknown_fields = {k for k in fields if k in self._ATTR_MAP}
+            raise ValueError(
+                f'You can update only those fields: {", ".join(self._ATTR_MAP.keys())}\n'
+                f'Input was: {", ".join(unknown_fields)}'
+            ) from e
 
     @allure.step('Add user {user_dn} to {group_dn}')
     def add_user_to_group(self, user_dn: str, group_dn: str) -> None:

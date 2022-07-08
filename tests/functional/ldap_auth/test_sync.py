@@ -18,7 +18,7 @@ from typing import Collection, Optional, Tuple
 import allure
 import pytest
 import requests
-from adcm_client.objects import ADCMClient, Group, ADCM
+from adcm_client.objects import ADCMClient, Group, ADCM, User
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
@@ -164,6 +164,23 @@ class TestLDAPSyncAction:
                 _run_sync(sdk_client_fs)
                 check_existing_users(sdk_client_fs)
                 expect_api_error('login as deleted user', ADCMClient, **credentials)
+
+    def test_name_email_sync_from_ldap(self, sdk_client_fs, ldap_ad, ldap_user_in_group):
+        """Test that first/last name and email are synced with LDAP"""
+        new_user_info = {'first_name': 'Babaika', 'last_name': 'Labadaika', 'email': 'doesnt@ex.ist'}
+        _run_sync(sdk_client_fs)
+        user = get_ldap_user_from_adcm(sdk_client_fs, ldap_user_in_group['name'])
+        self._check_user_info(user, ldap_user_in_group)
+        ldap_ad.update_user(ldap_user_in_group['dn'], **new_user_info)
+        _run_sync(sdk_client_fs)
+        self._check_user_info(user, new_user_info)
+
+    def _check_user_info(self, user: User, user_ldap_info: dict):
+        user.reread()
+        for field_name in ('first_name', 'last_name', 'email'):
+            actual = getattr(user, field_name)
+            expected = user_ldap_info[field_name]
+            assert actual == expected, f'Field "{field_name}" is incorrect.\nExpected: {expected}\nActual: {actual}'
 
 
 class TestPeriodicSync:
