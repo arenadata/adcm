@@ -13,13 +13,20 @@
 """Simple working with LDAP for tests purposes"""
 
 import uuid
+from pathlib import Path
 from typing import NamedTuple, List, Optional, Tuple
 from zlib import crc32
 
 import allure
 import ldap
+from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.custom_types import SecureString
 from ldap.ldapobject import SimpleLDAPObject
+
+from tests.library.utils import ConfigError
+
+LDAP_PREFIX = 'ldap://'
+LDAPS_PREFIX = 'ldaps://'
 
 
 class LDAPTestConfig(NamedTuple):
@@ -175,3 +182,38 @@ class LDAPEntityManager:
             )
         except ldap.NO_SUCH_OBJECT:  # pylint: disable=no-member
             return []
+
+
+# pylint: disable-next=too-many-arguments
+def configure_adcm_for_ldap(
+    client: ADCMClient, config: LDAPTestConfig, ssl_on: bool, ssl_cert: Optional[Path], user_base: str, group_base: str
+):
+    """Set ADCM settings to work with LDAP (for tests only)"""
+    ssl_extra_config = {}
+    uri = config.uri
+    # we suggest that configuration is right
+    if ssl_on:
+        if config.uri.startswith(LDAP_PREFIX):
+            uri = uri.replace(LDAP_PREFIX, LDAPS_PREFIX)
+        if ssl_cert is None:
+            raise ConfigError('AD SSL cert should be uploaded to ADCM')
+        ssl_extra_config['tls_ca_cert_file'] = str(ssl_cert)
+    elif not ssl_on and config.uri.startswith(LDAPS_PREFIX):
+        uri = uri.replace(LDAPS_PREFIX, LDAP_PREFIX)
+
+    adcm = client.adcm()
+    adcm.config_set_diff(
+        {
+            'attr': {'ldap_integration': {'active': True}},
+            'config': {
+                'ldap_integration': {
+                    'ldap_uri': uri,
+                    'ldap_user': config.admin_dn,
+                    'ldap_password': config.admin_pass,
+                    'user_search_base': user_base,
+                    'group_search_base': group_base,
+                    **ssl_extra_config,
+                }
+            },
+        }
+    )
