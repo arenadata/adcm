@@ -764,7 +764,7 @@ def _reorder_struct_field(struct_value, limits):
 
     ordered = []
     for item in struct_value:
-        if not item or not all([k in item for k in order_fields]):
+        if not item or not all(k in item for k in order_fields):
             continue
         ordered.append(OrderedDict({k: item[k] for k in order_fields}))
     return ordered or struct_value
