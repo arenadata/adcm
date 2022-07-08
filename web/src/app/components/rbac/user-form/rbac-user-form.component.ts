@@ -25,6 +25,10 @@ export const passwordsConfirmValidator: ValidatorFn = (control: AbstractControl)
 export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
   private _isFirstTouch = true;
 
+  isDisabled = (value) => {
+    return value?.type === 'ldap';
+  };
+
   get userForm(): FormGroup {
     return this.form.get('user') as FormGroup;
   }
@@ -97,7 +101,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
   clearPasswordControlIfFocusIn(): void {
     const forms = Object.values(this.form.controls);
 
-    forms.forEach((form) => {
+    forms.forEach((form: AbstractControl) => {
       if (this._isFirstTouch) {
         form.get('password').setValue('');
         form.updateValueAndValidity();
@@ -115,12 +119,22 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
    */
   private _setValue(value: RbacUserModel): void {
     if (value) {
+      const type: string = this.value?.type;
+      delete this.value['type'];
       // ToDo(lihih) the "adwp-list" should not change the composition of the original model.
       //  Now he adds the "checked" key to the model
       delete this.value['checked'];
       this.form.get('user.username').disable();
       this.userForm.setValue(this.value);
       this.confirmForm.setValue({ password: this.value.password });
+
+      if (type === 'ldap') {
+        this.userForm.controls.first_name.disable();
+        this.userForm.controls.last_name.disable();
+        this.userForm.controls.email.disable();
+        this.userForm.controls.password.disable();
+        this.confirmForm.controls.password.disable();
+      }
     }
   }
 

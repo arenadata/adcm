@@ -81,7 +81,7 @@ export class DialogComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (this._isTypeLdap()) {
+    if (this._isTypeLdap() && this._isGroupDialog()) {
       this.data.disabled = true;
     }
 
@@ -113,7 +113,15 @@ export class DialogComponent implements OnInit {
   }
 
   _title(): string {
-    if (this._isTypeLdap()) return 'Group Info'
+    if (this._isTypeLdap() && this._isGroupDialog()) return 'Group Info'
     return this.data.title || 'Notification';
+  }
+
+  _isGroupDialog() {
+    return this.data.model.name === 'group';
+  }
+
+  _isUserDialog() {
+    return this.data.model.name === 'user';
   }
 }
