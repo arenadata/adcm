@@ -13,7 +13,7 @@
 """Simple working with LDAP for tests purposes"""
 
 import uuid
-from typing import NamedTuple, List, Optional
+from typing import NamedTuple, List, Optional, Tuple
 from zlib import crc32
 
 import allure
@@ -95,15 +95,22 @@ class LDAPEntityManager:
         return new_dn
 
     @allure.step('Create user {name} with password {password}')
-    def create_user(self, name: str, password: str, custom_base_dn: str = None) -> str:
+    def create_user(
+        self,
+        name: str,
+        password: str,
+        custom_base_dn: str = None,
+        extra_modlist: Optional[List[Tuple[str, List[bytes]]]] = None,
+    ) -> str:
         """
         Create user (CN) and activate it.
         `name` is used both in CN and as sAMAccountName,
         so it should be unique not only in parent OU.
         """
+        extra_modlist = extra_modlist or []
         base_dn = custom_base_dn or self.test_dn
         new_dn = f'CN={name},{base_dn}'
-        self.conn.add_s(new_dn, self._BASE_USER_MODLIST + [('sAMAccountName', name.encode('utf-8'))])
+        self.conn.add_s(new_dn, self._BASE_USER_MODLIST + [('sAMAccountName', name.encode('utf-8'))] + extra_modlist)
         self._created_records.append(new_dn)
         self.set_user_password(new_dn, password)
         self.activate_user(new_dn)

@@ -357,7 +357,7 @@ def ldap_user(ldap_ad, ldap_basic_ous) -> dict:
     """Create LDAP AD user"""
     user = {'name': f'user_wo_group_{random_string(6)}', 'password': random_string(12)}
     _, users_dn = ldap_basic_ous
-    user['dn'] = ldap_ad.create_user(**user, custom_base_dn=users_dn)
+    user['dn'] = ldap_ad.create_user(**user, custom_base_dn=users_dn, extra_modlist=_create_extra_user_modlist(user))
     return user
 
 
@@ -377,7 +377,7 @@ def ldap_user_in_group(ldap_ad, ldap_basic_ous, ldap_group) -> dict:
     """Create LDAP AD user and add it to a default "allowed to log to ADCM" group"""
     user = {'name': f'user_in_group_{random_string(6)}', 'password': random_string(12)}
     _, users_dn = ldap_basic_ous
-    user['dn'] = ldap_ad.create_user(**user, custom_base_dn=users_dn)
+    user['dn'] = ldap_ad.create_user(**user, custom_base_dn=users_dn, extra_modlist=_create_extra_user_modlist(user))
     ldap_ad.add_user_to_group(user['dn'], ldap_group['dn'])
     return user
 
@@ -429,3 +429,11 @@ def configure_adcm_ldap_ad(request, sdk_client_fs: ADCMClient, ldap_basic_ous, a
             },
         }
     )
+
+
+def _create_extra_user_modlist(user: dict) -> list:
+    return [
+        ('givenName', [user['name'].encode('utf-8')]),
+        ('sn', ['Testovich'.encode('utf-8')]),
+        ('mail', [f'{user["name"]}@nexistent.ru'.encode('utf-8')]),
+    ]
