@@ -786,7 +786,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
     def test_structure_field(self):
         response = self.api_post('/stack/load/', {'bundle_file': self.structure_field_bundle})
         self.assertEqual(response.status_code, 200, msg=response.text)
-        bundle_id, proto_id = self.get_cluster_proto_id()
+        _, proto_id = self.get_cluster_proto_id()
 
         response = self.api_post(
             '/cluster/',
@@ -816,12 +816,12 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         )
 
         default = proto_cfg['default']
-        expected_default = [[['string', 'string1'], ['integer', 1]], [['string', 'string2'], ['integer', 2]]]
+        expected_default = [{'string': 'string1', 'integer': 1}, {'string': 'string2', 'integer': 2}]
         self.assertTrue(
             isinstance(default, list) and
-            all(isinstance(i, list) for i in default) and
-            all(isinstance(i, list) for sublist in default for i in sublist) and
-            all(isinstance(i, str) or isinstance(i, int) for sublist in default for subsublist in sublist for i in subsublist) and
+            all(isinstance(i, dict) for i in default) and
+            all(isinstance(i, (int, str)) for sublist in default
+                for subsublist in sublist for i in subsublist) and
             default == expected_default,
             f'valid structure of default is: \n'
             f'{type(expected_default)} `{expected_default}`, \n'

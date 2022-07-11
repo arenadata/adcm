@@ -13,6 +13,7 @@
 # pylint: disable=too-many-lines
 
 import copy
+import json
 import os
 from collections import OrderedDict
 from collections.abc import Mapping
@@ -117,8 +118,10 @@ def get_default(c, proto=None):  # pylint: disable=too-many-branches
     elif c.type in ('password', 'secrettext'):
         if c.default:
             value = ansible_encrypt_and_format(c.default)
-    elif type_is_complex(c.type):
-        value = eval_str(c.default)
+    elif c.type == 'structure':
+        value = flat_list_to_list_of_dicts(c.default)
+    elif type_is_complex(c.type) and c.type != 'structure':
+        value = json.loads(c.default)
     elif c.type == 'integer':
         value = int(c.default)
     elif c.type == 'float':
