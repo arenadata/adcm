@@ -17,6 +17,7 @@ from adcm_client.objects import ADCMClient, Group, User
 
 
 SYNC_ACTION_NAME = 'run_ldap_sync'
+TEST_CONNECTION_ACTION = 'test_ldap_connection'
 
 
 def get_ldap_user_from_adcm(client: ADCMClient, name: str) -> User:
