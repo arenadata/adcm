@@ -23,13 +23,17 @@ from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.functional.conftest import only_clean_adcm
-from tests.functional.ldap_auth.utils import get_ldap_group_from_adcm, get_ldap_user_from_adcm
+from tests.functional.ldap_auth.utils import (
+    get_ldap_group_from_adcm,
+    get_ldap_user_from_adcm,
+    TEST_CONNECTION_ACTION,
+    SYNC_ACTION_NAME,
+)
 from tests.library.assertions import sets_are_equal, expect_no_api_error, expect_api_error
 from tests.library.errorcodes import UNAUTHORIZED
 from tests.library.ldap_interactions import LDAPTestConfig, configure_adcm_for_ldap
 
-SYNC_ACTION = 'run_ldap_sync'
-TEST_CONNECTION_ACTION = 'test_ldap_connection'
+
 DEFAULT_LOCAL_USERS = ('admin', 'status')
 
 
@@ -56,7 +60,7 @@ class TestDisablingCause:
 
     def _check_disabling_cause(self, adcm: ADCM, expected: Optional[str]):
         # retrieve each time to avoid rereading
-        sync = adcm.action(name=SYNC_ACTION)
+        sync = adcm.action(name=SYNC_ACTION_NAME)
         test_connection = adcm.action(name=TEST_CONNECTION_ACTION)
         assert (
             sync.disabling_cause == expected
@@ -204,7 +208,9 @@ class TestPeriodicSync:
 
     def _check_sync_task_is_presented(self, client: ADCMClient, expected_amount: int = 1):
         with allure.step(f'Check {expected_amount} sync task(s) is presented among tasks'):
-            sync_tasks = [task for task in (j.task() for j in client.job_list()) if task.action().name == SYNC_ACTION]
+            sync_tasks = [
+                task for task in (j.task() for j in client.job_list()) if task.action().name == SYNC_ACTION_NAME
+            ]
             assert (
                 actual_amount := len(sync_tasks)
             ) == expected_amount, f'Not enough sync tasks: {actual_amount}.\nExpected: {expected_amount}'
@@ -259,4 +265,10 @@ def session_should_expire(user: str, password: str, url: str):
 
 @allure.step('Run LDAP sync action')
 def _run_sync(client: ADCMClient):
-    wait_for_task_and_assert_result(client.adcm().action(name=SYNC_ACTION).run(), 'success')
+    action = client.adcm().action(name=SYNC_ACTION_NAME)
+    wait_for_task_and_assert_result(action.run(), 'success')
+
+
+@allure.step('Run successful test connection')
+def _test_connection(client: ADCMClient):
+    wait_for_task_and_assert_result(client.adcm().action(name=TEST_CONNECTION_ACTION).run(), 'success')

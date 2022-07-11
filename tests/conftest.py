@@ -389,6 +389,31 @@ def ldap_user_in_group(ldap_ad, ldap_basic_ous, ldap_group) -> dict:
     return user
 
 
+@allure.title('Create one more LDAP group')
+@pytest.fixture()
+def another_ldap_group(ldap_ad, ldap_basic_ous) -> dict:
+    """Create LDAP AD group for adding users"""
+    group = {'name': 'another_adcm_users'}
+    groups_dn, _ = ldap_basic_ous
+    group['dn'] = ldap_ad.create_group(**group, custom_base_dn=groups_dn)
+    return group
+
+
+@allure.title('Create LDAP user in non-default group')
+@pytest.fixture()
+def another_ldap_user_in_group(ldap_ad, ldap_basic_ous, another_ldap_group) -> dict:
+    """Create LDAP AD user and add it to "another" ADCM in AD group"""
+    _, users_dn = ldap_basic_ous
+    user = {'name': f'a_user_in_group_{random_string(4)}', 'password': random_string(12)}
+    user_fields_to_modify = _create_extra_user_modlist(user)
+    user['dn'] = ldap_ad.create_user(**user, custom_base_dn=users_dn)
+    ldap_ad.update_user(user['dn'], **user_fields_to_modify)
+    user.update(user_fields_to_modify)
+    ldap_ad.add_user_to_group(user['dn'], another_ldap_group['dn'])
+
+    return user
+
+
 @pytest.fixture()
 def ad_ssl_cert(adcm_fs, ad_config) -> Optional[pathlib.Path]:
     """Put SSL certificate from config to ADCM container and return path to it"""
