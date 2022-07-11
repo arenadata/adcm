@@ -1347,6 +1347,11 @@ class TaskLog(ADCMModel):
         Cancel running task process
         task status will be updated in separate process of task runner
         """
+        if self.pid == 0:
+            raise AdcmEx(
+                'NOT_ALLOWED_TERMINATION',
+                'Termination is too early, try to execute later',
+            )
         errors = {
             Job.FAILED: ('TASK_IS_FAILED', f'task #{self.pk} is failed'),
             Job.ABORTED: ('TASK_IS_ABORTED', f'task #{self.pk} is aborted'),
