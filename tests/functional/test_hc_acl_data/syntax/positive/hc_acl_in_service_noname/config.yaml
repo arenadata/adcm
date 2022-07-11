@@ -23,6 +23,7 @@
       hc_acl:
         - component: component
           action: add
+          service: service
 
   components:
     component:
