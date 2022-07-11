@@ -39,7 +39,7 @@ from cm.models import (
     PrototypeConfig,
 )
 
-from .utils import dict_to_list_of_lists, flat_list_to_list_of_dicts, eval_str
+from .utils import dict_to_list_of_lists, flat_list_to_list_of_dicts
 
 
 def proto_ref(proto):
