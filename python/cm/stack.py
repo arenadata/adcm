@@ -43,6 +43,8 @@ from cm.adcm_config import (
 from cm.models import StagePrototype, StageAction, StagePrototypeConfig
 from cm.models import StagePrototypeExport, StagePrototypeImport, StageUpgrade, StageSubAction
 
+from .utils import dict_to_list_of_lists
+
 
 NAME_REGEX = r'[0-9a-zA-Z_\.-]+'
 MAX_NAME_LENGTH = 256
@@ -520,6 +522,9 @@ def get_yspec(proto, ref, bundle_hash, conf, name, subname):
     if not ok:
         msg = 'yspec file of config key "{}/{}" error: {}'
         err('CONFIG_TYPE_ERROR', msg.format(name, subname, error))
+    schema[schema['root']['item']]['items'] = dict_to_list_of_lists(
+        schema[schema['root']['item']]['items']
+    )
     return schema
 
 
@@ -594,9 +599,10 @@ def save_prototype_config(
                 sc.display_name = name
         if 'default' in conf:
             check_config_type(proto, name, subname, conf, conf['default'], bundle_hash)
-            if conf['type'] == 'structure':
-                conf["default"] = _reorder_struct_field(conf['default'], conf['limits'])
-        if type_is_complex(conf['type']):
+        if conf['type'] == 'structure':  # flat and ordered structure
+            conf["default"] = _reorder_struct_field(conf['default'], conf['limits'])
+            sc.default = conf["default"]
+        elif type_is_complex(conf['type']):
             dict_json_to_obj(conf, 'default', sc)
         else:
             dict_to_obj(conf, 'default', sc)

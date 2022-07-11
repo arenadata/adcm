@@ -39,6 +39,8 @@ from cm.models import (
     PrototypeConfig,
 )
 
+from .utils import dict_to_list_of_lists, flat_list_to_list_of_dicts, eval_str
+
 
 def proto_ref(proto):
     return f'{proto.type} "{proto.name}" {proto.version}'
@@ -117,7 +119,7 @@ def get_default(c, proto=None):  # pylint: disable=too-many-branches
         if c.default:
             value = ansible_encrypt_and_format(c.default)
     elif type_is_complex(c.type):
-        value = json.loads(c.default)
+        value = eval_str(c.default)
     elif c.type == 'integer':
         value = int(c.default)
     elif c.type == 'float':
@@ -223,6 +225,8 @@ def get_prototype_config(proto: Prototype, action: Action = None) -> Tuple[dict,
             attr[c.name] = {'active': c.limits['active']}
 
     for c in PrototypeConfig.objects.filter(prototype=proto, action=action).order_by('id'):
+        if c.type == 'structure':
+            c.default = flat_list_to_list_of_dicts(c.default)
         flat_spec[f'{c.name}/{c.subname}'] = c
         if c.subname == '':
             if c.type != 'group':
@@ -752,22 +756,27 @@ def _reorder_struct_field(struct_value, limits):
     """
     if not limits or not struct_value:
         return struct_value
-    if not isinstance(struct_value, list):
+
+    order_key = limits['yspec']['root']['item']
+
+    if not isinstance(struct_value, list) or not isinstance(
+        limits['yspec'][order_key]['items'], list
+    ):
         raise RuntimeError  # TODO: AdcmEx
     if not all((isinstance(i, dict) for i in struct_value)):
         raise RuntimeError  # TODO: AdcmEx
 
-    order_key = limits.get('yspec', {}).get('root', {}).get('item')
-    if not order_key or limits['yspec'][order_key].get('match') != 'dict':
-        return struct_value
-    order_fields = list(limits['yspec'][order_key]['items'])
+    order_fields = [i[0] for i in limits['yspec'][order_key]['items']]
 
     ordered = []
     for item in struct_value:
         if not item or not all(k in item for k in order_fields):
             continue
-        ordered.append(OrderedDict({k: item[k] for k in order_fields}))
-    return ordered or struct_value
+        item_dict_flat = []
+        for k in order_fields:
+            item_dict_flat.append([k, item[k]])
+        ordered.append(item_dict_flat)
+    return ordered
 
 
 # pylint: disable=too-many-branches,too-many-statements, too-many-locals
@@ -949,6 +958,9 @@ def check_config_type(
 
     if spec['type'] == 'structure':
         schema = spec['limits']['yspec']
+        k = schema['root']['item']
+        # for schema matching
+        schema[k]['items'] = flat_list_to_list_of_dicts(schema[k]['items'])
         try:
             yspec.checker.process_rule(value, schema, 'root')
         except yspec.checker.FormatError as e:
@@ -956,6 +968,7 @@ def check_config_type(
             err('CONFIG_VALUE_ERROR', msg)
         except yspec.checker.SchemaError as e:
             err('CONFIG_VALUE_ERROR', f'yspec error: {str(e)}')
+        schema[k]['items'] = dict_to_list_of_lists(schema[k]['items'])
 
     if spec['type'] == 'boolean':
         if not isinstance(value, bool):
