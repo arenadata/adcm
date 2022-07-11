@@ -13,7 +13,6 @@
 # pylint: disable=too-many-lines
 
 import copy
-import json
 import os
 from collections import OrderedDict
 from collections.abc import Mapping

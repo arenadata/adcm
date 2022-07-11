@@ -22,7 +22,7 @@ def flat_list_to_list_of_dicts(list_):
 
     if not isinstance(list_, list):
         raise RuntimeError
-    elif all(isinstance(i, dict) for i in list_):
+    if all(isinstance(i, dict) for i in list_):
         return list_
 
     res = []
