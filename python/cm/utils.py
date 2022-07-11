@@ -41,7 +41,7 @@ def flat_list_to_list_of_dicts(list_):
     if not isinstance(list_, list):
         raise RuntimeError
 
-    if all(isinstance(i, dict) for i in list_):
+    if all(isinstance(i, OrderedDict) for i in list_):
         return list_
 
     res = []
@@ -56,7 +56,37 @@ def flat_list_to_list_of_dicts(list_):
         res = OrderedDict(list_)
     else:
         raise ValueError
+
     return res
+
+
+def get_structure_repr(structure, fmt):
+    from cm.logger import log
+
+    log.critical(f'get_structure_repr structure\n{structure}\nfmt\n{fmt}')
+    if not structure:
+        return None
+
+    if fmt not in ('list_of_lists', 'list_of_dicts') or not isinstance(structure, list):
+        raise ValueError
+
+    if all(isinstance(i, dict) for i in structure):
+        inp_fmt = 'list_of_dicts'
+    elif all(isinstance(i, list) for i in structure):
+        inp_fmt = 'list_of_lists'
+    else:
+        raise ValueError
+    log.critical(f'get_structure_repr inp_fmt\n{inp_fmt}')
+
+    convert_func = lambda x: x
+
+    if fmt == 'list_of_lists' and not all(isinstance(i, list) for i in structure):
+        convert_func = dict_to_list_of_lists
+    elif not all(isinstance(i, OrderedDict) for i in structure):
+        convert_func = flat_list_to_list_of_dicts
+
+    log.critical(f'get_structure_repr convert_func\n{convert_func}')
+    return convert_func(structure)
 
 
 #####

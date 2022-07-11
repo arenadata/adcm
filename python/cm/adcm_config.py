@@ -39,7 +39,7 @@ from cm.models import (
     PrototypeConfig,
 )
 
-from .utils import dict_to_list_of_lists, flat_list_to_list_of_dicts
+from .utils import flat_list_to_list_of_dicts, get_structure_repr, eval_str
 
 
 def proto_ref(proto):
@@ -118,10 +118,8 @@ def get_default(c, proto=None):  # pylint: disable=too-many-branches
     elif c.type in ('password', 'secrettext'):
         if c.default:
             value = ansible_encrypt_and_format(c.default)
-    elif c.type == 'structure':
-        value = flat_list_to_list_of_dicts(c.default)
-    elif type_is_complex(c.type) and c.type != 'structure':
-        value = json.loads(c.default)
+    elif type_is_complex(c.type):
+        value = eval_str(c.default)
     elif c.type == 'integer':
         value = int(c.default)
     elif c.type == 'float':
@@ -227,8 +225,6 @@ def get_prototype_config(proto: Prototype, action: Action = None) -> Tuple[dict,
             attr[c.name] = {'active': c.limits['active']}
 
     for c in PrototypeConfig.objects.filter(prototype=proto, action=action).order_by('id'):
-        if c.type == 'structure':
-            c.default = flat_list_to_list_of_dicts(c.default)
         flat_spec[f'{c.name}/{c.subname}'] = c
         if c.subname == '':
             if c.type != 'group':
@@ -492,6 +488,11 @@ def ui_config(obj, cl):  # pylint: disable=too-many-locals
             item['value'] = flat_conf[key]
         else:
             item['value'] = get_default(spec[key], obj.prototype)
+        # if item['type'] == 'structure':  # TODO: сохранять плоскую до этого
+        #     item['value'] = get_structure_repr(item['value'], 'list_of_dicts')
+        #     k = limits['yspec']['root']['item']
+        #     limits['yspec'][k]['items'] = flat_list_to_list_of_dicts(limits['yspec'][k]['items'])
+        #     item['limits'] = limits
         if group_keys:
             if spec[key].type == 'group':
                 k = key.split('/')[0]
@@ -807,13 +808,6 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
                 return not bool(attr[key]['active'])
         return False
 
-    def is_structure(spec_part):
-        if not isinstance(spec_part, dict):
-            return False
-        if spec_part.get('type') == 'structure':
-            return True
-        return False
-
     def check_sub(key):
         if not isinstance(conf[key], dict):
             msg = 'There are not any subkeys for key "{}" ({})'
@@ -836,10 +830,6 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
                     False,
                     is_inactive(key),
                 )
-                if is_structure(spec[key][subkey]):
-                    conf[key][subkey] = _reorder_struct_field(
-                        conf[key][subkey], spec[key][subkey].get('limits')
-                    )
             elif key_is_required(key, subkey, spec[key][subkey]):
                 msg = 'There is no required subkey "{}" for key "{}" ({})'
                 err('CONFIG_KEY_ERROR', msg.format(subkey, key, ref))
@@ -860,15 +850,11 @@ def check_config_spec(proto, obj, spec, flat_spec, conf, old_conf=None, attr=Non
             if isinstance(conf[key], dict) and not type_is_complex(spec[key]['type']):
                 msg = 'Key "{}" in input config should not have any subkeys ({})'
                 err('CONFIG_KEY_ERROR', msg.format(key, ref))
-        if is_structure(spec[key]):
-            conf[key] = _reorder_struct_field(conf[key], spec[key].get('limits'))
 
     for key in spec:
         if 'type' in spec[key] and spec[key]['type'] != 'group':
             if key in conf:
                 check_config_type(proto, key, '', spec[key], conf[key])
-                if is_structure(spec[key]):
-                    conf[key] = _reorder_struct_field(conf[key], spec[key].get('limits'))
             elif key_is_required(key, '', spec[key]):
                 msg = 'There is no required key "{}" in input config ({})'
                 err('CONFIG_KEY_ERROR', msg.format(key, ref))
@@ -962,7 +948,8 @@ def check_config_type(
         schema = spec['limits']['yspec']
         k = schema['root']['item']
         # for schema matching
-        schema[k]['items'] = flat_list_to_list_of_dicts(schema[k]['items'])
+        # schema[k]['items'] = flat_list_to_list_of_dicts(schema[k]['items'])
+        schema[k]['items'] = get_structure_repr(schema[k]['items'], 'list_of_dicts')
         try:
             yspec.checker.process_rule(value, schema, 'root')
         except yspec.checker.FormatError as e:
@@ -970,7 +957,8 @@ def check_config_type(
             err('CONFIG_VALUE_ERROR', msg)
         except yspec.checker.SchemaError as e:
             err('CONFIG_VALUE_ERROR', f'yspec error: {str(e)}')
-        schema[k]['items'] = dict_to_list_of_lists(schema[k]['items'])
+        schema[k]['items'] = get_structure_repr(schema[k]['items'], 'list_of_lists')
+        # schema[k]['items'] = dict_to_list_of_lists(schema[k]['items'])
 
     if spec['type'] == 'boolean':
         if not isinstance(value, bool):
