@@ -793,9 +793,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
             {'name': self.structure_field_cluster_name, 'prototype_id': proto_id}
         )
         self.assertEqual(response.status_code, 201, msg=response.text)
-        cluster_id = response.json()['id']
 
-        from pprint import pformat as pf
         proto_cluster_resp = self.api_get(f'/stack/cluster/{proto_id}/').json()
         proto_cfg = proto_cluster_resp['config']
 
@@ -806,7 +804,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue(proto_cfg['type'] == 'structure', f'{msg_part}should be `structure` type')
 
         limit_items = proto_cfg['limits']['yspec']['variable']['items']
-        expected_limit_items =[['string', 'string'], ['integer', 'integer']]
+        expected_limit_items = [['string', 'string'], ['integer', 'integer']]
         self.assertTrue(
             isinstance(limit_items, list) and
             all(isinstance(i, list) for i in limit_items) and
