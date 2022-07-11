@@ -174,7 +174,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         host_id = response.json()['id']
         return (ssh_bundle_id, provider_id, host_id)
 
-    def SKIPtest_access(self):
+    def test_access(self):
         api = ['cluster', 'host', 'job', 'task']
         for path in api:
             response = requests.get(self.url + '/' + path + '/')
@@ -196,17 +196,17 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
             self.assertEqual(response.status_code, 401, msg=response.text)
             self.assertEqual(response.json()['detail'], 'Authentication credentials were not provided.')
 
-    def SKIPtest_schema(self):
+    def test_schema(self):
         response = self.api_get('/schema/')
         self.assertEqual(response.status_code, 200, msg=response.text)
 
-    def SKIPtest_docs(self):
+    def test_docs(self):
         response = self.api_get('/docs/')
         self.assertEqual(response.status_code, 200, msg=response.text)
         response = self.api_get('/docs/md/')
         self.assertEqual(response.status_code, 200, msg=response.text)
 
-    def SKIPtest_cluster(self):  # pylint: disable=too-many-statements
+    def test_cluster(self):  # pylint: disable=too-many-statements
         cluster = 'test_cluster'
         response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
         self.assertEqual(response.status_code, 200, msg=response.text)
@@ -270,7 +270,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         response = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
         self.assertEqual(response.status_code, 204, msg=response.text)
 
-    def SKIPtest_cluster_patching(self):
+    def test_cluster_patching(self):
         name = 'test_cluster'
         response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
         self.assertEqual(response.status_code, 200, msg=response.text)
@@ -309,7 +309,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         response = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
         self.assertEqual(response.status_code, 204, msg=response.text)
 
-    def SKIPtest_host(self):  # pylint: disable=too-many-statements
+    def test_host(self):  # pylint: disable=too-many-statements
         host = 'test.server.net'
 
         response = self.api_post('/stack/load/', {'bundle_file': self.ssh_bundle})
@@ -401,7 +401,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         response = self.api_delete('/stack/bundle/' + str(ssh_bundle_id) + '/')
         self.assertEqual(response.status_code, 204, msg=response.text)
 
-    def SKIPtest_cluster_host(self):
+    def test_cluster_host(self):
         response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
         self.assertEqual(response.status_code, 200, msg=response.text)
         response = self.api_post('/stack/load/', {'bundle_file': self.ssh_bundle})
@@ -451,7 +451,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         response = self.api_delete('/stack/bundle/' + str(ssh_bundle_id) + '/')
         self.assertEqual(response.status_code, 204, msg=response.text)
 
-    def SKIPtest_service(self):
+    def test_service(self):
         response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
         self.assertEqual(response.status_code, 200, msg=response.text)
         service_id = self.get_service_proto_id()
@@ -475,7 +475,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         response = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
         self.assertEqual(response.status_code, 204, msg=response.text)
 
-    def SKIPtest_cluster_service(self):
+    def test_cluster_service(self):
         response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
         self.assertEqual(response.status_code, 200, msg=response.text)
 
@@ -532,7 +532,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         response = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
         self.assertEqual(response.status_code, 204, msg=response.text)
 
-    def SKIPtest_hostcomponent(self):  # pylint: disable=too-many-statements,too-many-locals
+    def test_hostcomponent(self):  # pylint: disable=too-many-statements,too-many-locals
         response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
         self.assertEqual(response.status_code, 200, msg=response.text)
         response = self.api_post('/stack/load/', {'bundle_file': self.ssh_bundle})
@@ -652,7 +652,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         response = self.api_delete('/stack/bundle/' + str(ssh_bundle_id) + '/')
         self.assertEqual(response.status_code, 204, msg=response.text)
 
-    # def SKIPtest_task(self):
+    # def test_task(self):
     #     response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
     #     self.assertEqual(response.status_code, 200, msg=response.text)
     #     response = self.api_post('/stack/load/', {'bundle_file': self.ssh_bundle})
@@ -715,7 +715,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
     #     response = self.api_delete('/stack/bundle/' + str(adh_bundle_id) + '/')
     #     response = self.api_delete('/stack/bundle/' + str(ssh_bundle_id) + '/')
 
-    def SKIPtest_config(self):  # pylint: disable=too-many-statements
+    def test_config(self):  # pylint: disable=too-many-statements
         response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
         self.assertEqual(response.status_code, 200, msg=response.text)
         adh_bundle_id, proto_id = self.get_cluster_proto_id()
