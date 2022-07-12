@@ -58,13 +58,13 @@ plausible_action_variants = {
         'multi_state_available': 'any',
         'multi_state_unavailable': ['bimbo'],
     },
-    'hidden_by_unavalable_state': {
+    'hidden_by_unavailable_state': {
         'state_available': 'any',
         'state_unavailable': 'any',
         'multi_state_available': 'any',
         'multi_state_unavailable': [],
     },
-    'hidden_by_unavalable_multi_state': {
+    'hidden_by_unavailable_multi_state': {
         'state_available': 'any',
         'state_unavailable': [],
         'multi_state_available': 'any',
@@ -86,8 +86,8 @@ expected_results = {
         'limited_by_unavailable_multi_state': True,
         'limited_by_available': False,
         'limited_by_unavailable': True,
-        'hidden_by_unavalable_state': False,
-        'hidden_by_unavalable_multi_state': False,
+        'hidden_by_unavailable_state': False,
+        'hidden_by_unavailable_multi_state': False,
     },
     'bimbo-unknown': {
         'unlimited': True,
@@ -97,8 +97,8 @@ expected_results = {
         'limited_by_unavailable_multi_state': True,
         'limited_by_available': False,
         'limited_by_unavailable': False,
-        'hidden_by_unavalable_state': False,
-        'hidden_by_unavalable_multi_state': False,
+        'hidden_by_unavailable_state': False,
+        'hidden_by_unavailable_multi_state': False,
     },
     'unknown-bimbo': {
         'unlimited': True,
@@ -108,8 +108,8 @@ expected_results = {
         'limited_by_unavailable_multi_state': False,
         'limited_by_available': False,
         'limited_by_unavailable': False,
-        'hidden_by_unavalable_state': False,
-        'hidden_by_unavalable_multi_state': False,
+        'hidden_by_unavailable_state': False,
+        'hidden_by_unavailable_multi_state': False,
     },
     'bimbo-bimbo': {
         'unlimited': True,
@@ -119,8 +119,8 @@ expected_results = {
         'limited_by_unavailable_multi_state': False,
         'limited_by_available': True,
         'limited_by_unavailable': False,
-        'hidden_by_unavalable_state': False,
-        'hidden_by_unavalable_multi_state': False,
+        'hidden_by_unavailable_state': False,
+        'hidden_by_unavailable_multi_state': False,
     },
 }
 
