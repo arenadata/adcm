@@ -44,10 +44,6 @@ def _process_extra_filter(filterstr: str) -> str:
         return filterstr
 
 
-def _get_groups_distinguished_names():
-    pass
-
-
 def _get_ldap_default_settings():
     os.environ.pop(CERT_ENV_KEY, None)
 
