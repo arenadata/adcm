@@ -13,28 +13,28 @@
 """Test synchronization and test connection with LDAP"""
 
 from contextlib import contextmanager
-from typing import Collection, Optional, Tuple
+from typing import Optional, Tuple
 
 import allure
 import pytest
 import requests
 from adcm_client.objects import ADCMClient, Group, ADCM, User
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
-from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from adcm_pytest_plugin.utils import wait_until_step_succeeds, random_string
 
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import (
     get_ldap_group_from_adcm,
     get_ldap_user_from_adcm,
+    check_existing_groups,
+    check_existing_users,
+    DEFAULT_LOCAL_USERS,
     TEST_CONNECTION_ACTION,
     SYNC_ACTION_NAME,
 )
-from tests.library.assertions import sets_are_equal, expect_no_api_error, expect_api_error
+from tests.library.assertions import expect_no_api_error, expect_api_error
 from tests.library.errorcodes import UNAUTHORIZED
 from tests.library.ldap_interactions import LDAPTestConfig, configure_adcm_for_ldap
-
-
-DEFAULT_LOCAL_USERS = ('admin', 'status')
 
 
 pytestmark = [only_clean_adcm]
@@ -103,6 +103,32 @@ class TestLDAPSyncAction:
         assert ldap_user_in_group['name'] in [
             u.username for u in ldap_group_in_adcm.user_list()
         ], f'Group from LDAP should have user {ldap_user_in_group["name"]}'
+
+    def test_sync_with_already_existing_user(self, sdk_client_fs, ldap_user_in_group):
+        """
+        Test that during the sync existing users isn't overridden
+        """
+        group_name = 'Some group'
+        local_password = random_string(16)
+        expected_local_users = (*DEFAULT_LOCAL_USERS, ldap_user_in_group['name'])
+
+        with allure.step('Create user with the name of LDAP user'):
+            local_user: User = sdk_client_fs.user_create(ldap_user_in_group['name'], local_password)
+        with allure.step('Create group to add user to'):
+            group: Group = sdk_client_fs.group_create(group_name)
+            group.add_user(local_user)
+        check_existing_users(sdk_client_fs, expected_local=expected_local_users)
+        check_existing_groups(sdk_client_fs, expected_local=[group_name])
+        _run_sync(sdk_client_fs)
+        local_user.reread()
+        with allure.step('Check user type is local'):
+            assert local_user.type == 'local', 'User type should stay "local"'
+        with allure.step('Check user is still in group'):
+            assert local_user.username in [
+                u.username for u in group.user_list()
+            ], 'Local user should still be a part of the group'
+        check_existing_users(sdk_client_fs, expected_local=expected_local_users)
+        check_existing_groups(sdk_client_fs, expected_local=[group_name])
 
     # pylint: disable-next=too-many-arguments
     def test_ldap_group_removed(self, sdk_client_fs, ldap_ad, ldap_group, ldap_user, ldap_user_in_group):
@@ -214,36 +240,6 @@ class TestPeriodicSync:
             assert (
                 actual_amount := len(sync_tasks)
             ) == expected_amount, f'Not enough sync tasks: {actual_amount}.\nExpected: {expected_amount}'
-
-
-@allure.step('Check users existing in ADCM')
-def check_existing_users(
-    client: ADCMClient, expected_ldap: Collection[str] = (), expected_local: Collection[str] = DEFAULT_LOCAL_USERS
-):
-    """Check that only provided users exists (both ldap and local)"""
-    expected_ldap = set(expected_ldap)
-    existing_ldap = {u.username for u in client.user_list() if u.type == 'ldap'}
-    expected_local = set(expected_local)
-    existing_local = {u.username for u in client.user_list() if u.type == 'local'}
-    with allure.step('Check users from LDAP'):
-        sets_are_equal(existing_ldap, expected_ldap)
-    with allure.step('Check local users'):
-        sets_are_equal(existing_local, expected_local)
-
-
-@allure.step('Check groups existing in ADCM')
-def check_existing_groups(
-    client: ADCMClient, expected_ldap: Collection[str] = (), expected_local: Collection[str] = ()
-):
-    """Check that only provided groups exists (both ldap and local)"""
-    expected_ldap = set(expected_ldap)
-    existing_ldap = {g.name for g in client.group_list() if g.type == 'ldap'}
-    expected_local = set(expected_local)
-    existing_local = {g.name for g in client.group_list() if g.type == 'local'}
-    with allure.step('Check groups from LDAP'):
-        sets_are_equal(existing_ldap, expected_ldap, message='Not all LDAP groups are presented in ADCM')
-    with allure.step('Check local groups'):
-        sets_are_equal(existing_local, expected_local, message='Not all local groups are presented in ADCM')
 
 
 @contextmanager
