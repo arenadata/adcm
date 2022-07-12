@@ -15,7 +15,6 @@ import os
 
 import ldap
 
-from datetime import timedelta
 from contextlib import contextmanager
 from django.contrib.auth.models import Group as DjangoGroup
 from django.core.exceptions import ImproperlyConfigured
