@@ -59,9 +59,9 @@ def check_existing_users(
     expected_local = set(expected_local)
     existing_local = {u.username for u in client.user_list() if u.type == 'local'}
     with allure.step('Check users from LDAP'):
-        sets_are_equal(existing_ldap, expected_ldap)
+        sets_are_equal(existing_ldap, expected_ldap, 'Set of users from LDAP is incorrect')
     with allure.step('Check local users'):
-        sets_are_equal(existing_local, expected_local)
+        sets_are_equal(existing_local, expected_local, 'Set of local ADCM users is incorrect')
 
 
 @allure.step('Check groups existing in ADCM')
