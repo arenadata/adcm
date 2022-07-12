@@ -166,7 +166,7 @@ def add_host(proto, provider, fqdn, desc=''):
         host.config = obj_conf
         host.save()
         host.add_to_concerns(ctx.lock)
-        cm.issue.update_hierarchy_issues(host)
+        cm.issue.update_hierarchy_issues(host.provider)
         re_apply_object_policy(provider)
     ctx.event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
@@ -290,6 +290,7 @@ def delete_host(host, cancel_tasks=True):
     host.delete()
     cm.status_api.post_event('delete', 'host', host_id)
     load_service_map()
+    cm.issue.update_issue_after_deleting()
     log.info(f'host #{host_id} is deleted')
 
 
@@ -575,11 +576,11 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
 
     cm.issue.check_component_requires(host_comp_list)
     cm.issue.check_bound_components(host_comp_list)
-    check_maintanence_mode(cluster, host_comp_list)
+    check_maintenance_mode(cluster, host_comp_list)
     return host_comp_list
 
 
-def check_maintanence_mode(cluster, host_comp_list):
+def check_maintenance_mode(cluster, host_comp_list):
     for (service, host, comp) in host_comp_list:
         try:
             HostComponent.objects.get(cluster=cluster, service=service, host=host, component=comp)
@@ -638,6 +639,9 @@ def save_hc(cluster, host_comp_list):  # pylint: disable=too-many-locals
     ctx.event.send_state()
     cm.status_api.post_event('change_hostcomponentmap', 'cluster', cluster.id)
     cm.issue.update_hierarchy_issues(cluster)
+    for provider in [host.provider for host in Host.objects.filter(cluster=cluster)]:
+        cm.issue.update_hierarchy_issues(provider)
+    cm.issue.update_issue_after_deleting()
     load_service_map()
     for service in service_map:
         re_apply_object_policy(service)

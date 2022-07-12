@@ -38,7 +38,7 @@ from tests.functional.plugin_utils import (
     TestImmediateChange,
 )
 
-# pylint:disable=redefined-outer-name, duplicate-code
+# pylint:disable=redefined-outer-name
 
 INITIAL_CONFIG = {
     "int": 1,

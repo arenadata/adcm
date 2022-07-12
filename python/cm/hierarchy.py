@@ -18,6 +18,7 @@ from cm.models import (
     Host,
     HostComponent,
     ServiceComponent,
+    MaintenanceModeType,
 )
 
 
@@ -140,10 +141,10 @@ class Tree:
             ]
 
         elif node.type == 'host':
-            children_values = [node.value.provider]
+            children_values = []
 
         elif node.type == 'provider':
-            children_values = []
+            children_values = Host.objects.filter(provider=node.value)
 
         for value in children_values:
             child = self._make_node(value)
@@ -163,6 +164,7 @@ class Tree:
             parent_values = [
                 hc.component
                 for hc in HostComponent.objects.filter(host=node.value)
+                .exclude(host__maintenance_mode=MaintenanceModeType.On)
                 .select_related('component')
                 .all()
             ]

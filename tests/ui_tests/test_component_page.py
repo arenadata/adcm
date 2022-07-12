@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name,no-self-use,unused-argument
+# pylint: disable=redefined-outer-name,unused-argument
 
 """UI tests for /cluster page"""
 
@@ -43,6 +43,9 @@ from tests.ui_tests.app.page.component.page import (
     ComponentConfigPage,
     ComponentGroupConfigPage,
     ComponentStatusPage,
+)
+from tests.ui_tests.app.page.host.page import (
+    HostStatusPage,
 )
 from tests.ui_tests.app.page.service.page import ServiceComponentPage
 
@@ -409,3 +412,16 @@ class TestComponentStatusPage:
             with component_status_page.wait_rows_collapsed():
                 component_status_page.click_collapse_all_btn()
             assert len(component_status_page.get_all_rows()) == 1, "Status rows should have been collapsed"
+
+    def test_link_to_host_on_component_status_page(
+        self, app_fs, adcm_fs, sdk_client_fs, create_cluster_with_hostcomponents
+    ):
+        """Check that host link points to the host page"""
+
+        cluster, service, host = create_cluster_with_hostcomponents
+        component = service.component(name=FIRST_COMPONENT_NAME)
+        component_status_page = ComponentStatusPage(
+            app_fs.driver, app_fs.adcm.url, cluster.id, service.id, component.id
+        ).open()
+        component_status_page.click_host_by_name(host.fqdn)
+        HostStatusPage(app_fs.driver, app_fs.adcm.url, host.id, None).wait_page_is_opened()

@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-many-arguments
+# pylint: disable=redefined-outer-name,unused-argument,too-many-arguments
 
 """UI tests for /host page"""
 

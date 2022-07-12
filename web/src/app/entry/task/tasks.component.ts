@@ -121,7 +121,7 @@ export class TasksComponent extends BaseDirective implements OnInit {
 
   deleteTask(event: EventMessage): void {
     const data: IListResult<Task> = Object.assign({}, this.data$.value);
-    const index = data.results.findIndex((task) => task.id === event.object.id);
+    const index = data.results?.findIndex((task) => task.id === event.object.id);
     if (index > -1) {
       data.results.splice(index, 1);
       data.count--;
@@ -131,7 +131,7 @@ export class TasksComponent extends BaseDirective implements OnInit {
 
   changeTask(event: EventMessage): void {
     const data: IListResult<Task> = Object.assign({}, this.data$.value);
-    const index = data.results.findIndex((a) => a.id === event.object.id);
+    const index = data.results?.findIndex((a) => a.id === event.object.id);
     if (index > -1) {
       const task: Task = Object.assign({}, data.results[index]);
       task.finish_date = new Date().toISOString();
@@ -143,7 +143,7 @@ export class TasksComponent extends BaseDirective implements OnInit {
 
   jobChanged(event: EventMessage): void {
     const data: IListResult<Task> = Object.assign({}, this.data$.value);
-    const taskIndex = data.results.findIndex(
+    const taskIndex = data.results?.findIndex(
       (item) => item.jobs.some((job) => job.id === event.object.id)
     );
     if (taskIndex > -1) {
@@ -203,6 +203,9 @@ export class TasksComponent extends BaseDirective implements OnInit {
               } else if (this.status === 'failed') {
                 this.addTask(event);
               }
+              break;
+            case 'aborted':
+              this.changeTask(event);
               break;
           }
         } else {

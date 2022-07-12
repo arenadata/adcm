@@ -27,6 +27,9 @@ from adcm_pytest_plugin import utils
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
+from tests.ui_tests.app.page.host.page import (
+    HostMainPage,
+)
 from tests.ui_tests.app.page.provider.page import (
     ProviderMainPage,
     ProviderConfigPage,
@@ -34,7 +37,7 @@ from tests.ui_tests.app.page.provider.page import (
 )
 from tests.ui_tests.app.page.provider_list.page import ProviderListPage
 
-# pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-few-public-methods
+# pylint: disable=redefined-outer-name,unused-argument
 
 
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
@@ -49,6 +52,13 @@ PROVIDER_NAME = 'test_provider'
 def bundle(request: SubRequest, sdk_client_fs: ADCMClient) -> Bundle:
     """Upload provider bundle"""
     return sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
+
+
+@pytest.fixture(params=["cluster_community"])
+def cluster(request: SubRequest, sdk_client_fs: ADCMClient):
+    """Create community edition cluster"""
+    bundle = sdk_client_fs.upload_from_fs(os.path.join(utils.get_data_dir(__file__), request.param))
+    return bundle.cluster_create(name="test_cluster")
 
 
 @pytest.fixture()
@@ -231,6 +241,19 @@ class TestProviderMainPage:
             assert (
                 provider_page.get_provider_info_from_row(row).state == params["state"]
             ), f"Provider state should be {params['state']}"
+
+    @pytest.mark.parametrize("bundle", ["provider_with_host_with_issue"], indirect=True)
+    def test_provider_with_host_with_issues(self, app_fs, bundle, upload_and_create_test_provider, cluster):
+        """Test that if host has issue then provider is not"""
+
+        host = upload_and_create_test_provider.host_create(fqdn="first")
+        service = cluster.service_add(name="test_service")
+        cluster.host_add(host)
+        cluster.hostcomponent_set((host, service.component()))
+        host_page = HostMainPage(app_fs.driver, app_fs.adcm.url, host.host_id).open()
+        host_page.toolbar.check_warn_button(tab_name="first", expected_warn_text=['first has an issue with its config'])
+        provider_page = ProviderMainPage(app_fs.driver, app_fs.adcm.url, upload_and_create_test_provider.id).open()
+        provider_page.toolbar.check_no_warn_button(tab_name=upload_and_create_test_provider.name)
 
 
 class TestProviderConfigPage:

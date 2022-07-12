@@ -1,6 +1,6 @@
 <div *ngIf="options.type === 'list' || options.type === 'dict'" class="label">
   <label>{{ options.name }}</label>
-  <button *ngIf="!isReadOnly && options.type === 'list'" mat-icon-button color="accent" (click)="add()">
+  <button *ngIf="!isReadOnly && options.type === 'list'" [disabled]="form.disabled" mat-icon-button color="accent" (click)="add()">
     <mat-icon>add_circle_outline</mat-icon>
   </button>
 </div>
@@ -19,7 +19,7 @@
       </ng-template>
 
       <button class="remote-btn" *ngIf="!isReadOnly && item.parent === 'list' && item.type === 'dict'" mat-icon-button
-        color="primary" (click)="remove(i)">
+        color="primary" [disabled]="form.disabled" (click)="remove(i)">
         <mat-icon>highlight_off</mat-icon>
       </button>
     </div>
