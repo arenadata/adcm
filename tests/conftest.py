@@ -35,7 +35,7 @@ from docker.utils import parse_repository_tag
 
 from tests.library.adcm_websockets import ADCMWebsocket
 from tests.library.db import QueryExecutioner
-from tests.library.ldap_interactions import LDAPEntityManager, LDAPTestConfig
+from tests.library.ldap_interactions import LDAPEntityManager, LDAPTestConfig, configure_adcm_for_ldap
 from tests.library.utils import ConfigError
 
 pytest_plugins = "adcm_pytest_plugin"
@@ -355,9 +355,12 @@ def ldap_basic_ous(ldap_ad):
 @pytest.fixture()
 def ldap_user(ldap_ad, ldap_basic_ous) -> dict:
     """Create LDAP AD user"""
-    user = {'name': f'user_wo_group_{random_string(6)}', 'password': random_string(12)}
     _, users_dn = ldap_basic_ous
-    user['dn'] = ldap_ad.create_user(**user, custom_base_dn=users_dn, extra_modlist=_create_extra_user_modlist(user))
+    user = {'name': f'user_wo_group_{random_string(6)}', 'password': random_string(12)}
+    user['dn'] = ldap_ad.create_user(**user, custom_base_dn=users_dn)
+    user_fields_to_modify = _create_extra_user_modlist(user)
+    ldap_ad.update_user(user['dn'], **user_fields_to_modify)
+    user.update(user_fields_to_modify)
     return user
 
 
@@ -377,8 +380,37 @@ def ldap_user_in_group(ldap_ad, ldap_basic_ous, ldap_group) -> dict:
     """Create LDAP AD user and add it to a default "allowed to log to ADCM" group"""
     user = {'name': f'user_in_group_{random_string(6)}', 'password': random_string(12)}
     _, users_dn = ldap_basic_ous
-    user['dn'] = ldap_ad.create_user(**user, custom_base_dn=users_dn, extra_modlist=_create_extra_user_modlist(user))
+    user['dn'] = ldap_ad.create_user(**user, custom_base_dn=users_dn)
+    user_fields_to_modify = _create_extra_user_modlist(user)
+    ldap_ad.update_user(user['dn'], **user_fields_to_modify)
+    user.update(user_fields_to_modify)
     ldap_ad.add_user_to_group(user['dn'], ldap_group['dn'])
+
+    return user
+
+
+@allure.title('Create one more LDAP group')
+@pytest.fixture()
+def another_ldap_group(ldap_ad, ldap_basic_ous) -> dict:
+    """Create LDAP AD group for adding users"""
+    group = {'name': 'another_adcm_users'}
+    groups_dn, _ = ldap_basic_ous
+    group['dn'] = ldap_ad.create_group(**group, custom_base_dn=groups_dn)
+    return group
+
+
+@allure.title('Create LDAP user in non-default group')
+@pytest.fixture()
+def another_ldap_user_in_group(ldap_ad, ldap_basic_ous, another_ldap_group) -> dict:
+    """Create LDAP AD user and add it to "another" ADCM in AD group"""
+    _, users_dn = ldap_basic_ous
+    user = {'name': f'a_user_in_group_{random_string(4)}', 'password': random_string(12)}
+    user_fields_to_modify = _create_extra_user_modlist(user)
+    user['dn'] = ldap_ad.create_user(**user, custom_base_dn=users_dn)
+    ldap_ad.update_user(user['dn'], **user_fields_to_modify)
+    user.update(user_fields_to_modify)
+    ldap_ad.add_user_to_group(user['dn'], another_ldap_group['dn'])
+
     return user
 
 
@@ -399,41 +431,10 @@ def ad_ssl_cert(adcm_fs, ad_config) -> Optional[pathlib.Path]:
 def configure_adcm_ldap_ad(request, sdk_client_fs: ADCMClient, ldap_basic_ous, ad_config, ad_ssl_cert):
     """Configure ADCM to allow AD users"""
     ssl_on = request.param
-    ssl_extra_config = {}
     groups_ou, users_ou = ldap_basic_ous
 
-    uri = ad_config.uri
-    # we suggest that configuration is right
-    if ssl_on:
-        if ad_config.uri.startswith(LDAP_PREFIX):
-            uri = uri.replace(LDAP_PREFIX, LDAPS_PREFIX)
-        if ad_ssl_cert is None:
-            raise ConfigError('AD SSL cert should be uploaded to ADCM')
-        ssl_extra_config['tls_ca_cert_file'] = str(ad_ssl_cert)
-    elif not ssl_on and ad_config.uri.startswith(LDAPS_PREFIX):
-        uri = uri.replace(LDAPS_PREFIX, LDAP_PREFIX)
-
-    adcm = sdk_client_fs.adcm()
-    adcm.config_set_diff(
-        {
-            'attr': {'ldap_integration': {'active': True}},
-            'config': {
-                'ldap_integration': {
-                    'ldap_uri': uri,
-                    'ldap_user': ad_config.admin_dn,
-                    'ldap_password': ad_config.admin_pass,
-                    'user_search_base': users_ou,
-                    'group_search_base': groups_ou,
-                    **ssl_extra_config,
-                }
-            },
-        }
-    )
+    configure_adcm_for_ldap(sdk_client_fs, ad_config, ssl_on, ad_ssl_cert, users_ou, groups_ou)
 
 
-def _create_extra_user_modlist(user: dict) -> list:
-    return [
-        ('givenName', [user['name'].encode('utf-8')]),
-        ('sn', ['Testovich'.encode('utf-8')]),
-        ('mail', [f'{user["name"]}@nexistent.ru'.encode('utf-8')]),
-    ]
+def _create_extra_user_modlist(user: dict) -> dict:
+    return {'first_name': user['name'], 'last_name': 'Testovich', 'email': f'{user["name"]}@nexistent.ru'}

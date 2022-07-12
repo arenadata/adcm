@@ -11,23 +11,24 @@
 # limitations under the License.
 
 """Test basic login scenarios"""
+
 from typing import Union, Callable
 
 import allure
 import pytest
-from adcm_client.objects import ADCMClient
+from adcm_client.objects import ADCMClient, User
 from adcm_pytest_plugin.params import including_https
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import random_string
 
 from tests.functional.conftest import only_clean_adcm
+from tests.functional.ldap_auth.utils import check_existing_users, DEFAULT_LOCAL_USERS, check_existing_groups
 from tests.library.assertions import expect_no_api_error, expect_api_error
 from tests.library.errorcodes import UNAUTHORIZED
 
 pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad')]
 
 
-@pytest.mark.xfail(reason="Expected behavior isn't finally decided: https://tracker.yandex.ru/ADCM-2916")
 @pytest.mark.parametrize('configure_adcm_ldap_ad', [False, True], ids=['ssl_off', 'ssl_on'], indirect=True)
 def test_basic_ldap_auth(sdk_client_fs, ldap_user, ldap_user_in_group):
     """
@@ -48,7 +49,6 @@ def test_basic_ldap_auth(sdk_client_fs, ldap_user, ldap_user_in_group):
 
 
 @including_https
-@pytest.mark.xfail(reason="Expected behavior isn't finally decided: https://tracker.yandex.ru/ADCM-2916")
 def test_remove_from_group_leads_to_access_loss(sdk_client_fs, ldap_ad, ldap_user_in_group, ldap_group):
     """
     Test that removing LDAP user from "allowed" group leads to lost access to ADCM.
@@ -70,7 +70,6 @@ def test_deactivation_leads_to_access_loss(sdk_client_fs, ldap_ad, ldap_user_in_
     _login_should_fail('login with removed from group LDAP user', sdk_client_fs, username, password)
 
 
-@pytest.mark.xfail(reason="Expected behavior isn't finally decided: https://tracker.yandex.ru/ADCM-2916")
 def test_ldap_user_access_restriction(sdk_client_fs, ldap_ad, ldap_group, ldap_basic_ous):
     """
     Test that access is denied for LDAP user:
@@ -92,8 +91,7 @@ def test_ldap_user_access_restriction(sdk_client_fs, ldap_ad, ldap_group, ldap_b
     ldap_ad.activate_user(user_dn)
     _login_should_succeed('login as activated user in group', sdk_client_fs, username, password)
     ldap_ad.set_user_password(user_dn, new_password)
-    # TODO: return after https://tracker.yandex.ru/ADCM-2916 is resolved
-    # _login_should_fail('login as activated user with wrong password', sdk_client_fs, username, password, None)
+    _login_should_fail('login as activated user with wrong password', sdk_client_fs, username, password, None)
     _login_should_succeed('login as activated user with new password', sdk_client_fs, username, new_password)
     ldap_ad.remove_user_from_group(user_dn, ldap_group['dn'])
     _login_should_fail('login as user removed from group', sdk_client_fs, username, new_password)
@@ -182,6 +180,28 @@ def test_wrong_ldap_config_fail_actions(action_name: str, sdk_client_fs):
         assert action_name in [
             a.name for a in adcm.action_list() if a.disabling_cause == 'no_ldap_settings'
         ], f'Action {action_name} have "no_ldap_settings" disabling cause'
+
+
+def test_login_as_existing_user_is_forbidden(sdk_client_fs, ldap_user_in_group):
+    """Test that login as existing user doesn't create user"""
+    local_password = random_string(16)
+    expected_local_users = (*DEFAULT_LOCAL_USERS, ldap_user_in_group['name'])
+    with allure.step('Create user with the name of LDAP user'):
+        local_user: User = sdk_client_fs.user_create(ldap_user_in_group['name'], local_password)
+    check_existing_users(sdk_client_fs, expected_local=expected_local_users)
+    check_existing_groups(sdk_client_fs)
+    _login_should_succeed('local user login', sdk_client_fs, local_user.username, local_password)
+    _login_should_fail(
+        'login as LDAP user with same username as local',
+        sdk_client_fs,
+        ldap_user_in_group['name'],
+        ldap_user_in_group['password'],
+    )
+    local_user.reread()
+    with allure.step('Check user is of local type'):
+        assert local_user.type == 'local', 'User type should be "local"'
+    check_existing_users(sdk_client_fs, expected_local=expected_local_users)
+    check_existing_groups(sdk_client_fs)
 
 
 def _login_should_succeed(operation_name: str, client: ADCMClient, username: str, password: str):

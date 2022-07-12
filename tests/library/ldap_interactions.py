@@ -13,13 +13,20 @@
 """Simple working with LDAP for tests purposes"""
 
 import uuid
+from pathlib import Path
 from typing import NamedTuple, List, Optional, Tuple
 from zlib import crc32
 
 import allure
 import ldap
+from adcm_client.objects import ADCMClient
 from adcm_pytest_plugin.custom_types import SecureString
 from ldap.ldapobject import SimpleLDAPObject
+
+from tests.library.utils import ConfigError
+
+LDAP_PREFIX = 'ldap://'
+LDAPS_PREFIX = 'ldaps://'
 
 
 class LDAPTestConfig(NamedTuple):
@@ -51,6 +58,12 @@ class LDAPEntityManager:
     _ACTIVE_USER_UAC = b'512'  # regular user
     _INACTIVE_USER_UAC = b'514'  # user, inactive
     _DEFAULT_USER_UAC = b'546'  # user, inactive, password not required
+
+    _ATTR_MAP = {
+        'first_name': 'givenName',
+        'last_name': 'sn',
+        'email': 'mail',
+    }
 
     def __init__(self, config: LDAPTestConfig, test_name: str):
         ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)  # pylint: disable=no-member
@@ -116,6 +129,11 @@ class LDAPEntityManager:
         self.activate_user(new_dn)
         return new_dn
 
+    def delete(self, dn: str) -> None:
+        """Delete record from LDAP"""
+        self.conn.delete_s(dn)
+        self._created_records.remove(dn)
+
     @allure.step('Activate user {user_dn}')
     def activate_user(self, user_dn: str, uac: bytes = _ACTIVE_USER_UAC) -> None:
         """Activate user"""
@@ -131,6 +149,20 @@ class LDAPEntityManager:
         """Set password for an existing user"""
         pass_utf16 = f'"{password}"'.encode('utf-16-le')
         self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, 'unicodePwd', [pass_utf16])])  # pylint: disable=no-member
+
+    @allure.step('Update user in LDAP')
+    def update_user(self, user_dn: str, **fields: str):
+        """Update user record"""
+        try:
+            self.conn.modify_s(
+                user_dn, [(ldap.MOD_REPLACE, self._ATTR_MAP[k], [v.encode('utf-8')]) for k, v in fields.items()]
+            )
+        except KeyError as e:
+            unknown_fields = {k for k in fields if k in self._ATTR_MAP}
+            raise ValueError(
+                f'You can update only those fields: {", ".join(self._ATTR_MAP.keys())}\n'
+                f'Input was: {", ".join(unknown_fields)}'
+            ) from e
 
     @allure.step('Add user {user_dn} to {group_dn}')
     def add_user_to_group(self, user_dn: str, group_dn: str) -> None:
@@ -170,3 +202,46 @@ class LDAPEntityManager:
             )
         except ldap.NO_SUCH_OBJECT:  # pylint: disable=no-member
             return []
+
+
+# pylint: disable-next=too-many-arguments
+def configure_adcm_for_ldap(
+    client: ADCMClient,
+    config: LDAPTestConfig,
+    ssl_on: bool,
+    ssl_cert: Optional[Path],
+    user_base: str,
+    group_base: str,
+    extra_config: Optional[dict] = None,
+):
+    """Set ADCM settings to work with LDAP (for tests only)"""
+    extra_config = extra_config or {}
+    ssl_extra_config = {}
+    uri = config.uri
+    # we suggest that configuration is right
+    if ssl_on:
+        if config.uri.startswith(LDAP_PREFIX):
+            uri = uri.replace(LDAP_PREFIX, LDAPS_PREFIX)
+        if ssl_cert is None:
+            raise ConfigError('AD SSL cert should be uploaded to ADCM')
+        ssl_extra_config['tls_ca_cert_file'] = str(ssl_cert)
+    elif not ssl_on and config.uri.startswith(LDAPS_PREFIX):
+        uri = uri.replace(LDAPS_PREFIX, LDAP_PREFIX)
+
+    adcm = client.adcm()
+    adcm.config_set_diff(
+        {
+            'attr': {'ldap_integration': {'active': True}},
+            'config': {
+                'ldap_integration': {
+                    'ldap_uri': uri,
+                    'ldap_user': config.admin_dn,
+                    'ldap_password': config.admin_pass,
+                    'user_search_base': user_base,
+                    'group_search_base': group_base,
+                    **ssl_extra_config,
+                    **extra_config,
+                }
+            },
+        }
+    )
