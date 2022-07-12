@@ -15,6 +15,8 @@ import os
 
 import ldap
 
+from datetime import timedelta
+from contextlib import contextmanager
 from django.contrib.auth.models import Group as DjangoGroup
 from django.core.exceptions import ImproperlyConfigured
 from django_auth_ldap.backend import LDAPBackend
@@ -41,6 +43,10 @@ def _process_extra_filter(filterstr: str) -> str:
     else:
         # assume that composed filter is syntactically valid
         return filterstr
+
+
+def _get_groups_distinguished_names():
+    pass
 
 
 def _get_ldap_default_settings():
@@ -122,7 +128,7 @@ class CustomLDAPBackend(LDAPBackend):
         if not self.default_settings:
             return None
 
-        self.__check_user(ldap_user._username)  # pylint: disable=protected-access
+        self.__check_user(ldap_user)
         try:
             user_or_none = super().authenticate_ldap_user(ldap_user, password)
         except ImproperlyConfigured as e:
@@ -143,6 +149,23 @@ class CustomLDAPBackend(LDAPBackend):
     def get_user_model(self):
         return User
 
+    @contextmanager
+    def __ldap_connection(self):
+        ldap.set_option(ldap.OPT_REFERRALS, 0)
+        conn = ldap.initialize(self.default_settings['SERVER_URI'])
+        conn.protocol_version = ldap.VERSION3
+        conn.simple_bind_s(self.default_settings['BIND_DN'], self.default_settings['BIND_PASSWORD'])
+        try:
+            yield conn
+        finally:
+            conn.unbind_s()
+
+    def __get_groups_by_group_search(self):
+        with self.__ldap_connection() as conn:
+            groups = self.default_settings['GROUP_SEARCH'].execute(conn)
+        log.debug(f'Found {len(groups)} groups: {[i[0] for i in groups]}')
+        return groups
+
     def __create_rbac_groups(self, user):
         ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
 
@@ -154,11 +177,20 @@ class CustomLDAPBackend(LDAPBackend):
             if group.user_set.count() == 0:
                 group.delete()
 
-    @staticmethod
-    def __check_user(username: str):
+    def __check_user(self, ldap_user):
+        user_dn = ldap_user.dn
+        username = ldap_user._username  # pylint: disable=protected-access
+
         if User.objects.filter(username__iexact=username, type=OriginType.Local).exists():
             log.exception('usernames collision: `%s`', username)
             raise AdcmEx('LDAP_USERNAMES_COLLISION')
+
+        group_member_attr = self.default_settings['GROUP_TYPE'].member_attr
+        for group_dn, group_attrs in self.__get_groups_by_group_search():
+            if user_dn.lower() in [i.lower() for i in group_attrs.get(group_member_attr, [])]:
+                break
+        else:
+            raise AdcmEx('LDAP_USER_NOT_IN_GROUPS')
 
     @staticmethod
     def __det_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
