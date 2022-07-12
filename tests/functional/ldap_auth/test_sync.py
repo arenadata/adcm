@@ -164,8 +164,9 @@ class TestLDAPSyncAction:
             another_group.reread()
             assert len(another_group.user_list()) == 2, 'Local group should still have both users in it'
 
-    def test_user_deactivated(self, sdk_client_fs, ldap_ad, ldap_user):
+    def test_user_deactivated(self, sdk_client_fs, ldap_ad, ldap_user_in_group):
         """Test that user is deactivated in ADCM after it's deactivated in AD"""
+        ldap_user = ldap_user_in_group
         credentials = {'user': ldap_user['name'], 'password': ldap_user['password'], 'url': sdk_client_fs.url}
         with allure.step('Run sync and check that user is active and can log in'):
             _run_sync(sdk_client_fs)
@@ -180,8 +181,9 @@ class TestLDAPSyncAction:
                 assert not user.is_active, 'User should be deactivated'
                 expect_api_error('login as deactivated user', ADCMClient, **credentials)
 
-    def test_user_deleted(self, sdk_client_fs, ldap_ad, ldap_user):
+    def test_user_deleted(self, sdk_client_fs, ldap_ad, ldap_user_in_group):
         """Test that user is deleted in ADCM after it's deleted in AD"""
+        ldap_user = ldap_user_in_group
         credentials = {'user': ldap_user['name'], 'password': ldap_user['password'], 'url': sdk_client_fs.url}
         with allure.step('Run sync and check that user is active and can log in'):
             _run_sync(sdk_client_fs)
@@ -192,7 +194,9 @@ class TestLDAPSyncAction:
             with session_should_expire(**credentials):
                 ldap_ad.delete(ldap_user['dn'])
                 _run_sync(sdk_client_fs)
-                check_existing_users(sdk_client_fs)
+                check_existing_users(sdk_client_fs, {ldap_user['name']})
+                user = get_ldap_user_from_adcm(sdk_client_fs, ldap_user['name'])
+                assert not user.is_active, 'User should be deactivated'
                 expect_api_error('login as deleted user', ADCMClient, **credentials)
 
     def test_name_email_sync_from_ldap(self, sdk_client_fs, ldap_ad, ldap_user_in_group):
