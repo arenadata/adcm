@@ -453,6 +453,7 @@ class TestServiceConfigPage:
         for item in CONFIG_ITEMS:
             service_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
+    @pytest.mark.skip()
     @pytest.mark.full()
     def test_save_configuration_hell_on_service_config_page(self, app_fs, sdk_client_fs):
         """
