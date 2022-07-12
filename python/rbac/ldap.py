@@ -181,7 +181,7 @@ class CustomLDAPBackend(LDAPBackend):
             raise AdcmEx('LDAP_USERNAMES_COLLISION')
 
         group_member_attr = self.default_settings['GROUP_TYPE'].member_attr
-        for group_dn, group_attrs in self.__get_groups_by_group_search():
+        for _, group_attrs in self.__get_groups_by_group_search():
             if user_dn.lower() in [i.lower() for i in group_attrs.get(group_member_attr, [])]:
                 break
         else:
