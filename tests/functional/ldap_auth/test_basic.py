@@ -27,7 +27,6 @@ from tests.library.errorcodes import UNAUTHORIZED
 pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad')]
 
 
-@pytest.mark.xfail(reason="Expected behavior isn't finally decided: https://tracker.yandex.ru/ADCM-2916")
 @pytest.mark.parametrize('configure_adcm_ldap_ad', [False, True], ids=['ssl_off', 'ssl_on'], indirect=True)
 def test_basic_ldap_auth(sdk_client_fs, ldap_user, ldap_user_in_group):
     """
@@ -48,7 +47,6 @@ def test_basic_ldap_auth(sdk_client_fs, ldap_user, ldap_user_in_group):
 
 
 @including_https
-@pytest.mark.xfail(reason="Expected behavior isn't finally decided: https://tracker.yandex.ru/ADCM-2916")
 def test_remove_from_group_leads_to_access_loss(sdk_client_fs, ldap_ad, ldap_user_in_group, ldap_group):
     """
     Test that removing LDAP user from "allowed" group leads to lost access to ADCM.
@@ -70,7 +68,6 @@ def test_deactivation_leads_to_access_loss(sdk_client_fs, ldap_ad, ldap_user_in_
     _login_should_fail('login with removed from group LDAP user', sdk_client_fs, username, password)
 
 
-@pytest.mark.xfail(reason="Expected behavior isn't finally decided: https://tracker.yandex.ru/ADCM-2916")
 def test_ldap_user_access_restriction(sdk_client_fs, ldap_ad, ldap_group, ldap_basic_ous):
     """
     Test that access is denied for LDAP user:
@@ -92,8 +89,7 @@ def test_ldap_user_access_restriction(sdk_client_fs, ldap_ad, ldap_group, ldap_b
     ldap_ad.activate_user(user_dn)
     _login_should_succeed('login as activated user in group', sdk_client_fs, username, password)
     ldap_ad.set_user_password(user_dn, new_password)
-    # TODO: return after https://tracker.yandex.ru/ADCM-2916 is resolved
-    # _login_should_fail('login as activated user with wrong password', sdk_client_fs, username, password, None)
+    _login_should_fail('login as activated user with wrong password', sdk_client_fs, username, password, None)
     _login_should_succeed('login as activated user with new password', sdk_client_fs, username, new_password)
     ldap_ad.remove_user_from_group(user_dn, ldap_group['dn'])
     _login_should_fail('login as user removed from group', sdk_client_fs, username, new_password)
