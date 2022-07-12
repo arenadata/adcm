@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -36,6 +36,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         adcm_object = ADCM.objects.get(id=1)
+        action = Action.objects.get(name='run_ldap_sync', prototype=adcm_object.prototype)
         period = get_settings(adcm_object)
         if period <= 0:
             return
@@ -45,10 +46,11 @@ class Command(BaseCommand):
         last_sync = TaskLog.objects.filter(
             action__name='run_ldap_sync', status__in=[Job.SUCCESS, Job.FAILED]
         ).last()
-        new_rotate_time = (
-            last_sync.finish_date - timedelta(minutes=1) if last_sync else datetime.min
-        ) + timedelta(minutes=period)
+        if last_sync is None:
+            log.debug("First ldap sync launched in %s", timezone.now())
+            start_task(action, adcm_object, {}, {}, [], [], False)
+            return
+        new_rotate_time = last_sync.finish_date + timedelta(minutes=period - 1)
         if new_rotate_time <= timezone.now():
             log.debug("Ldap sync launched in %s", timezone.now())
-            action = Action.objects.get(name='run_ldap_sync', prototype=adcm_object.prototype)
             start_task(action, adcm_object, {}, {}, [], [], False)
