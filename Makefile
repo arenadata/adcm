@@ -1,4 +1,5 @@
 # Set number of threads
+# EPIC ADCM-1524
 BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 ADCMBASE_IMAGE ?= hub.arenadata.io/adcm/base
