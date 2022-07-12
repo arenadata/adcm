@@ -11,7 +11,7 @@
 # limitations under the License.
 
 """Test synchronization and test connection with LDAP"""
-
+import time
 from contextlib import contextmanager
 from typing import Collection, Optional, Tuple
 
@@ -199,12 +199,19 @@ class TestPeriodicSync:
 
         with allure.step('Check that 1 minute after the config has been saved the sync task was launched'):
             assert len(sdk_client_fs.job_list()) == 0, 'There should not be any jobs right after config is saved'
-            wait_until_step_succeeds(self._check_sync_task_is_presented, timeout=70, period=7, client=sdk_client_fs)
+            wait_until_step_succeeds(self._check_sync_task_is_presented, timeout=70, period=5, client=sdk_client_fs)
 
         with allure.step('Check that after 1 more minute the second sync task was launched'):
             wait_until_step_succeeds(
-                self._check_sync_task_is_presented, timeout=70, period=7, client=sdk_client_fs, expected_amount=2
+                self._check_sync_task_is_presented, timeout=70, period=5, client=sdk_client_fs, expected_amount=2
             )
+
+        with allure.step('Disable sync in settings and check no new task was launched'):
+            configure_adcm_for_ldap(sdk_client_fs, ad_config, False, None, users_ou, groups_ou, {'sync_interval': 0})
+            # this won't check for an error like "we didn't take last non-zero value as a wrong interval",
+            # so if you'll have some more detailed check in mind, please use it
+            time.sleep(65)
+            self._check_sync_task_is_presented(sdk_client_fs, 2)
 
     def _check_sync_task_is_presented(self, client: ADCMClient, expected_amount: int = 1):
         with allure.step(f'Check {expected_amount} sync task(s) is presented among tasks'):
