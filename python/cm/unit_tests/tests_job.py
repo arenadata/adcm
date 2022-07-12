@@ -352,12 +352,10 @@ class TestJob(TestCase):
         mock_cook_script.return_value = os.path.join(
             config.BUNDLE_DIR, cluster_action.prototype.bundle.hash, cluster_action.script
         )
-
         job = models.JobLog.objects.create(
             action=cluster_action, start_date=timezone.now(), finish_date=timezone.now()
         )
 
-        # sub_action = models.SubAction(action=action)
         conf = 'test'
         proto4 = models.Prototype.objects.create(bundle=bundle, type='provider')
         provider_action = models.Action.objects.create(prototype=proto4)

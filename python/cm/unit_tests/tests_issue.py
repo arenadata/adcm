@@ -18,22 +18,23 @@ from cm.models import Bundle, Prototype, PrototypeImport, ClusterBind, ConcernCa
 
 
 class TestImport(TestCase):
-    def cook_cluster(self, proto_name, cluster_name):
+    @staticmethod
+    def cook_cluster(proto_name, cluster_name):
         b = Bundle.objects.create(name=proto_name, version='1.0')
         proto = Prototype.objects.create(type="cluster", name=proto_name, bundle=b)
         cluster = cm.api.add_cluster(proto, cluster_name)
-        return (b, proto, cluster)
+        return b, proto, cluster
 
     def test_no_import(self):
         _, _, cluster = self.cook_cluster('Hadoop', 'Cluster1')
         self.assertEqual(cm.issue.do_check_import(cluster), (True, None))
 
-    def test_import_requred(self):
+    def test_import_required(self):
         _, proto1, cluster = self.cook_cluster('Hadoop', 'Cluster1')
         PrototypeImport.objects.create(prototype=proto1, name='Monitoring', required=True)
         self.assertEqual(cm.issue.do_check_import(cluster), (False, None))
 
-    def test_import_not_requred(self):
+    def test_import_not_required(self):
         _, proto1, cluster = self.cook_cluster('Hadoop', 'Cluster1')
         PrototypeImport.objects.create(prototype=proto1, name='Monitoring', required=False)
         self.assertEqual(cm.issue.do_check_import(cluster), (True, 'NOT_REQIURED'))

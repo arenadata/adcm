@@ -30,7 +30,7 @@ def cook_provider():
     pp = Prototype.objects.create(type="provider", bundle=b)
     provider = add_host_provider(pp, 'SSHone')
     host_proto = Prototype.objects.create(bundle=b, type='host')
-    return (provider, host_proto)
+    return provider, host_proto
 
 
 def cook_service(cluster, name='UBER'):

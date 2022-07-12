@@ -22,9 +22,6 @@ from cm import models
 class TestInventory(TestCase):
     # pylint: disable=too-many-locals
 
-    def setUp(self):
-        pass
-
     @patch('cm.inventory.process_config')
     @patch('cm.inventory.get_prototype_config')
     def test_process_config_and_attr(self, mock_get_prototype_config, mock_process_config):

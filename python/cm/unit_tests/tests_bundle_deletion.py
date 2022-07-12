@@ -1,7 +1,7 @@
 from django.test import TestCase
 
 import cm.api
-from cm.tests_upgrade import SetUp
+from cm.unit_tests.tests_upgrade import SetUp
 from cm.errors import AdcmEx
 from cm.bundle import delete_bundle
 from cm.models import Host

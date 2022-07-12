@@ -33,7 +33,8 @@ from cm.unit_tests import utils
 
 
 class TestUpgradeVersion(TestCase):
-    def cook_upgrade(self):
+    @staticmethod
+    def cook_upgrade():
         return Upgrade(
             min_version="1.0",
             max_version="2.0",
@@ -100,7 +101,8 @@ class TestUpgradeVersion(TestCase):
 
 
 class SetUp:
-    def cook_cluster_bundle(self, ver):
+    @staticmethod
+    def cook_cluster_bundle(ver):
         b = Bundle.objects.create(name='ADH', version=ver)
         b.save()
         Prototype.objects.create(type="cluster", name="ADH", version=ver, bundle=b)
@@ -111,14 +113,16 @@ class SetUp:
         Prototype.objects.create(parent=sp1, type='component', name='node', bundle=b)
         return b
 
-    def cook_provider_bundle(self, ver):
+    @staticmethod
+    def cook_provider_bundle(ver):
         b = Bundle.objects.create(name='DF', version=ver)
         b.save()
         Prototype.objects.create(type="provider", name="DF", version=ver, bundle=b)
         Prototype.objects.create(type="host", name="DfHost", version=ver, bundle=b)
         return b
 
-    def cook_provider(self, bundle, name):
+    @staticmethod
+    def cook_provider(bundle, name):
         pp = Prototype.objects.get(type="provider", bundle=bundle)
         provider = cm.api.add_host_provider(pp, name)
         host_proto = Prototype.objects.get(bundle=provider.prototype.bundle, type='host')
@@ -126,7 +130,8 @@ class SetUp:
         cm.api.add_host(host_proto, provider, 'server01.inter.net')
         return provider
 
-    def cook_cluster(self, bundle, name):
+    @staticmethod
+    def cook_cluster(bundle, name):
         cp = Prototype.objects.get(type="cluster", bundle=bundle)
         cluster = cm.api.add_cluster(cp, name)
         sp2 = Prototype.objects.get(type="service", name="hive", bundle=bundle)
@@ -135,7 +140,8 @@ class SetUp:
         cm.api.add_service_to_cluster(cluster, sp1)
         return cluster
 
-    def cook_upgrade(self, bundle):
+    @staticmethod
+    def cook_upgrade(bundle):
         return Upgrade.objects.create(
             bundle=bundle, min_version="1.0", max_version="2.0", state_available=['created']
         )
@@ -152,21 +158,22 @@ def get_config(obj):
 class TestConfigUpgrade(TestCase):
     add_conf = PrototypeConfig.objects.create
 
-    def cook_proto(self):
+    @staticmethod
+    def cook_proto():
         b = Bundle.objects.create(name='AD1', version='1.0')
         proto1 = Prototype.objects.create(type="cluster", name="AD1", version="1.0", bundle=b)
         proto2 = Prototype.objects.create(type="cluster", name="AD1", version="2.0", bundle=b)
-        return (proto1, proto2)
+        return proto1, proto2
 
     def test_empty_config(self):
-        (proto1, proto2) = self.cook_proto()
+        proto1, proto2 = self.cook_proto()
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
         self.assertEqual(cluster.config, None)
         cm.adcm_config.switch_config(cluster, proto2, proto1)
         self.assertEqual(cluster.config, None)
 
     def test_empty_first_config(self):
-        (proto1, proto2) = self.cook_proto()
+        proto1, proto2 = self.cook_proto()
         self.add_conf(prototype=proto2, name='port', type='integer', default=42)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
         self.assertEqual(cluster.config, None)
@@ -175,7 +182,7 @@ class TestConfigUpgrade(TestCase):
         self.assertEqual(new_config['port'], 42)
 
     def test_adding_parameter(self):
-        (proto1, proto2) = self.cook_proto()
+        proto1, proto2 = self.cook_proto()
         self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
         self.add_conf(prototype=proto2, name='host', type='string', default='arenadata.com')
         self.add_conf(prototype=proto2, name='port', type='integer', default=42)
@@ -187,7 +194,7 @@ class TestConfigUpgrade(TestCase):
         self.assertEqual(new_config, {'host': 'arenadata.com', 'port': 42})
 
     def test_deleting_parameter(self):
-        (proto1, proto2) = self.cook_proto()
+        proto1, proto2 = self.cook_proto()
         self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
         self.add_conf(prototype=proto2, name='port', type='integer', default=42)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
@@ -198,7 +205,7 @@ class TestConfigUpgrade(TestCase):
         self.assertEqual(new_config, {'port': 42})
 
     def test_default(self):
-        (proto1, proto2) = self.cook_proto()
+        proto1, proto2 = self.cook_proto()
         self.add_conf(prototype=proto1, name='port', type='integer', default=42)
         self.add_conf(prototype=proto2, name='port', type='integer', default=43)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
@@ -209,7 +216,7 @@ class TestConfigUpgrade(TestCase):
         self.assertEqual(new_config, {'port': 43})
 
     def test_non_default(self):
-        (proto1, proto2) = self.cook_proto()
+        proto1, proto2 = self.cook_proto()
         self.add_conf(prototype=proto1, name='port', type='integer', default=42)
         self.add_conf(prototype=proto2, name='port', type='integer', default=43)
         cluster = cm.api.add_cluster(proto1, 'Cluster1')
@@ -221,7 +228,7 @@ class TestConfigUpgrade(TestCase):
         self.assertEqual(new_config, {'port': 100500})
 
     def test_add_group(self):
-        (proto1, proto2) = self.cook_proto()
+        proto1, proto2 = self.cook_proto()
         self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
         self.add_conf(prototype=proto2, name='host', type='string', default='arenadata.com')
         self.add_conf(prototype=proto2, name='advance', type='group')
@@ -234,7 +241,7 @@ class TestConfigUpgrade(TestCase):
         self.assertEqual(new_config, {'host': 'arenadata.com', 'advance': {'port': 42}})
 
     def test_add_non_active_group(self):
-        (proto1, proto2) = self.cook_proto()
+        proto1, proto2 = self.cook_proto()
         # Old config with one key "host"
         self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
 
@@ -258,7 +265,7 @@ class TestConfigUpgrade(TestCase):
         self.assertEqual(new_attr, {'advance': {'active': False}})
 
     def test_add_active_group(self):
-        (proto1, proto2) = self.cook_proto()
+        proto1, proto2 = self.cook_proto()
         self.add_conf(prototype=proto1, name='host', type='string', default='arenadata.com')
         self.add_conf(prototype=proto2, name='host', type='string', default='arenadata.com')
         limits = {"activatable": True, "active": True}
@@ -334,7 +341,7 @@ class TestConfigUpgrade(TestCase):
         self.assertEqual(old_conf, {'advance': {'port': 11}})
         self.assertEqual(old_attr, {'advance': {'active': False}})
 
-        # Ugrade
+        # Upgrade
         adcm_config.switch_config(cluster, proto2, proto1)
         new_conf, new_attr = get_config(cluster)
 
