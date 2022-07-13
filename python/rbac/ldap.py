@@ -15,7 +15,7 @@ import os
 
 import ldap
 
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 from django.contrib.auth.models import Group as DjangoGroup
 from django.core.exceptions import ImproperlyConfigured
 from django_auth_ldap.backend import LDAPBackend
