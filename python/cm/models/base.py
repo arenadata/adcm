@@ -291,6 +291,27 @@ class ADCMEntity(ADCMModel):
             self.config.delete()
 
 
+class ADCM(ADCMEntity):
+    name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
+
+    @property
+    def bundle_id(self):
+        return self.prototype.bundle_id
+
+    @property
+    def display_name(self):
+        return self.name
+
+    @property
+    def serialized_issue(self):
+        result = {
+            'id': self.id,
+            'name': self.name,
+            'issue': self.issue,
+        }
+        return result if result['issue'] else {}
+
+
 class ProductCategory(ADCMModel):
     """
     Categories are used for some models' categorization.
@@ -458,3 +479,8 @@ class ConcernItem(ADCMModel):
         for entity in self.related_objects:
             entity.remove_from_concerns(self)
         return super().delete(using, keep_parents)
+
+
+class UserProfile(ADCMModel):
+    login = models.CharField(max_length=32, unique=True)
+    profile = models.JSONField(default=str)

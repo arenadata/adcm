@@ -10,15 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines,unsupported-membership-test,unsupported-delete-operation,
-# too-many-instance-attributes
-# pylint could not understand that JSON fields are dicts
-
-from __future__ import unicode_literals
-
-from django.db import models
-
-from cm.models.base import ADCMEntity, ADCMModel
+from cm.models.base import ADCM
 from cm.models.cluster import Cluster, ClusterObject, ServiceComponent
 from cm.models.host import Host, HostProvider
 
@@ -40,29 +32,3 @@ def get_model_by_type(object_type):
         # This function should return a Model, this is necessary for the correct
         # construction of the schema.
         return Cluster
-
-
-class ADCM(ADCMEntity):
-    name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
-
-    @property
-    def bundle_id(self):
-        return self.prototype.bundle_id
-
-    @property
-    def display_name(self):
-        return self.name
-
-    @property
-    def serialized_issue(self):
-        result = {
-            'id': self.id,
-            'name': self.name,
-            'issue': self.issue,
-        }
-        return result if result['issue'] else {}
-
-
-class UserProfile(ADCMModel):
-    login = models.CharField(max_length=32, unique=True)
-    profile = models.JSONField(default=str)
