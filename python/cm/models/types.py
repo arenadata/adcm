@@ -40,6 +40,11 @@ CONFIG_FIELD_TYPE = (
     ('group', 'group'),
 )
 
+SCRIPT_TYPE = (
+    ('ansible', 'ansible'),
+    ('task_generator', 'task_generator'),
+)
+
 class PrototypeEnum(Enum):
     ADCM = 'adcm'
     Cluster = 'cluster'
@@ -53,3 +58,8 @@ class ConcernType(models.TextChoices):
     Lock = 'lock', 'lock'
     Issue = 'issue', 'issue'
     Flag = 'flag', 'flag'
+
+
+class ActionType(models.TextChoices):
+    Task = 'task', 'task'
+    Job = 'job', 'job'

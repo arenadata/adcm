@@ -30,3 +30,8 @@ def deep_merge(origin: dict, renovator: Mapping):
         else:
             origin[key] = value
     return origin
+
+
+def get_any():
+    """Get `any` literal for JSON field default value"""
+    return 'any'

@@ -25,8 +25,9 @@ from django.db import models
 
 from cm.errors import AdcmEx
 from cm.logger import log
-from cm.models.types import ConcernType, LICENSE_STATE, MONITORING_TYPE, PROTO_TYPE, PrototypeEnum
-from cm.models.utils import get_default_constraint, get_default_from_edition
+from cm.models.types import ActionType, ConcernType, LICENSE_STATE, MONITORING_TYPE, PROTO_TYPE, PrototypeEnum, \
+    SCRIPT_TYPE
+from cm.models.utils import get_any, get_default_constraint, get_default_from_edition
 
 
 class ADCMManager(models.Manager):
@@ -328,3 +329,66 @@ class Upgrade(ADCMModel):
     action = models.OneToOneField('Action', on_delete=models.CASCADE, null=True)
 
     __error_code__ = 'UPGRADE_NOT_FOUND'
+
+
+class AbstractAction(ADCMModel):
+    """Abstract base class for both Action and StageAction"""
+
+    prototype = None
+
+    name = models.CharField(max_length=160)
+    display_name = models.CharField(max_length=160, blank=True)
+    description = models.TextField(blank=True)
+    ui_options = models.JSONField(default=dict)
+
+    type = models.CharField(max_length=16, choices=ActionType.choices)
+    button = models.CharField(max_length=64, default=None, null=True)
+
+    script = models.CharField(max_length=160)
+    script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
+
+    state_available = models.JSONField(default=list)
+    state_unavailable = models.JSONField(default=list)
+    state_on_success = models.CharField(max_length=64, blank=True)
+    state_on_fail = models.CharField(max_length=64, blank=True)
+
+    multi_state_available = models.JSONField(default=get_any)
+    multi_state_unavailable = models.JSONField(default=list)
+    multi_state_on_success_set = models.JSONField(default=list)
+    multi_state_on_success_unset = models.JSONField(default=list)
+    multi_state_on_fail_set = models.JSONField(default=list)
+    multi_state_on_fail_unset = models.JSONField(default=list)
+
+    params = models.JSONField(default=dict)
+    log_files = models.JSONField(default=list)
+
+    hostcomponentmap = models.JSONField(default=list)
+    allow_to_terminate = models.BooleanField(default=False)
+    partial_execution = models.BooleanField(default=False)
+    host_action = models.BooleanField(default=False)
+    allow_in_maintenance_mode = models.BooleanField(default=False)
+
+    _venv = models.CharField(default="default", db_column="venv", max_length=160, blank=False)
+
+    @property
+    def venv(self):
+        """Property which return a venv for ansible to run.
+
+        Bundle developer could mark one action with exact venv he needs,
+        or mark all actions on prototype.
+        """
+        if self._venv == "default":
+            if self.prototype is not None:
+                return self.prototype.venv
+        return self._venv
+
+    @venv.setter
+    def venv(self, value: str):
+        self._venv = value
+
+    class Meta:
+        abstract = True
+        unique_together = (('prototype', 'name'),)
+
+    def __str__(self):
+        return f"{self.prototype} {self.display_name or self.name}"
