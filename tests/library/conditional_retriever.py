@@ -14,7 +14,7 @@
 Retrieve data in more than one way in cases when source is unstable
 (e.g. data source is at different layers for the same info)
 """
-
+import sys
 import traceback
 from typing import NamedTuple, Callable, Collection, Any, Dict, Optional, Type, List, Tuple, TypeVar
 
@@ -61,8 +61,8 @@ class _ExceptionSilencer:
         """Get value and success flag"""
         try:
             return source.get(), True
-        except self._type as e:
-            self._failures.append((source.name, traceback.format_exception(e)))
+        except self._type:
+            self._failures.append((source.name, traceback.format_exception(*sys.exc_info())))
             return None, False
 
 
@@ -101,12 +101,9 @@ class FromOneOf:
         raise AssertionError('None of the sources returned valuable result')
 
     def _check_ignore_value_is_correct(self, ignore):
-        def is_exception(arg):
-            return BaseException.__name__ in map(lambda t: t.__name__, arg.mro())
-
-        if isinstance(ignore, type) and is_exception(ignore):
+        if isinstance(ignore, type) and issubclass(ignore, BaseException):
             return
-        if isinstance(ignore, tuple) and all(is_exception(i) for i in ignore):
+        if isinstance(ignore, tuple) and all(issubclass(i, BaseException) for i in ignore):
             return
         raise ValueError(
             'Sorry, but only Exceptions can be ignored with `FromOneOf`.\nFeel free to create your own Silencer.'
