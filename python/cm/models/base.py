@@ -10,12 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-many-lines,unsupported-membership-test,unsupported-delete-operation,
-# too-many-instance-attributes
-# pylint could not understand that JSON fields are dicts
-
-from __future__ import unicode_literals
-
 from itertools import chain
 from typing import Iterable, List, Optional
 
