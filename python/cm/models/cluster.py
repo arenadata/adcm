@@ -1,7 +1,7 @@
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
-from cm.models.base import ADCMEntity, Prototype
+from cm.models.base import ADCMEntity, ADCMModel, Prototype
 from cm.models.utils import get_default_before_upgrade
 
 
@@ -145,6 +145,26 @@ class ServiceComponent(ADCMEntity):
 
     class Meta:
         unique_together = (('cluster', 'service', 'prototype'),)
+
+
+class ClusterBind(ADCMModel):
+    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
+    service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE, null=True, default=None)
+    source_cluster = models.ForeignKey(
+        Cluster, related_name='source_cluster', on_delete=models.CASCADE
+    )
+    source_service = models.ForeignKey(
+        ClusterObject,
+        related_name='source_service',
+        on_delete=models.CASCADE,
+        null=True,
+        default=None,
+    )
+
+    __error_code__ = 'BIND_NOT_FOUND'
+
+    class Meta:
+        unique_together = (('cluster', 'service', 'source_cluster', 'source_service'),)
 
 
 def get_object_cluster(obj):

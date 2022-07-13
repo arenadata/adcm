@@ -486,26 +486,6 @@ class SubAction(AbstractSubAction):
     action = models.ForeignKey(Action, on_delete=models.CASCADE)
 
 
-class ClusterBind(ADCMModel):
-    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE, null=True, default=None)
-    source_cluster = models.ForeignKey(
-        Cluster, related_name='source_cluster', on_delete=models.CASCADE
-    )
-    source_service = models.ForeignKey(
-        ClusterObject,
-        related_name='source_service',
-        on_delete=models.CASCADE,
-        null=True,
-        default=None,
-    )
-
-    __error_code__ = 'BIND_NOT_FOUND'
-
-    class Meta:
-        unique_together = (('cluster', 'service', 'source_cluster', 'source_service'),)
-
-
 JOB_STATUS = (
     ('created', 'created'),
     ('running', 'running'),
