@@ -45,6 +45,13 @@ SCRIPT_TYPE = (
     ('task_generator', 'task_generator'),
 )
 
+JOB_STATUS = (
+    ('created', 'created'),
+    ('running', 'running'),
+    ('success', 'success'),
+    ('failed', 'failed'),
+)
+
 class PrototypeEnum(Enum):
     ADCM = 'adcm'
     Cluster = 'cluster'
@@ -69,3 +76,11 @@ class MaintenanceModeType(models.TextChoices):
     Disabled = 'disabled', 'disabled'
     On = 'on', 'on'
     Off = 'off', 'off'
+
+
+class ConcernCause(models.TextChoices):
+    Config = 'config', 'config'
+    Job = 'job', 'job'
+    HostComponent = 'host-component', 'host-component'
+    Import = 'import', 'import'
+    Service = 'service', 'service'

@@ -1,7 +1,10 @@
 import os
+import signal
+import time
 from collections.abc import Mapping
 from copy import deepcopy
-from typing import Dict
+from enum import Enum
+from typing import Dict, Iterable
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -9,12 +12,14 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
 
-from cm.config import FILE_DIR
+from cm.config import FILE_DIR, Job
 from cm.errors import AdcmEx
-from cm.models.base import ADCMModel, DummyData, ObjectConfig
+from cm.models.action import Action, SubAction
+from cm.models.base import ADCMEntity, ADCMModel, ConcernItem, DummyData, ObjectConfig
 from cm.models.cluster import Cluster, ClusterObject, ServiceComponent
 from cm.models.host import Host, HostProvider
 from cm.models.prototype import PrototypeConfig
+from cm.models.types import ConcernCause, ConcernType, JOB_STATUS
 from cm.models.utils import deep_merge
 
 
@@ -22,6 +27,127 @@ def validate_line_break_character(value: str) -> None:
     """Check line break character in CharField"""
     if len(value.splitlines()) > 1:
         raise ValidationError('the string field contains a line break character')
+
+
+class MessageTemplate(ADCMModel):
+    """
+    Templates for `ConcernItem.reason
+    There are two sources of templates - they are pre-created in migrations or loaded from bundles
+
+    expected template format is
+        {
+            'message': 'Lorem ${ipsum} dolor sit ${amet}',
+            'placeholder': {
+                'lorem': {'type': 'cluster'},
+                'amet': {'type': 'action'}
+            }
+        }
+
+    placeholder fill functions have unified interface:
+      @classmethod
+      def _func(cls, placeholder_name, **kwargs) -> dict
+
+    TODO: load from bundle
+    TODO: check consistency on creation
+    TODO: separate JSON processing logic from model
+    """
+
+    name = models.CharField(max_length=160, unique=True)
+    template = models.JSONField()
+
+    class KnownNames(Enum):
+        LockedByJob = 'locked by running job on target'  # kwargs=(job, target)
+        ConfigIssue = 'object config issue'  # kwargs=(source, )
+        RequiredServiceIssue = 'required service issue'  # kwargs=(source, )
+        RequiredImportIssue = 'required import issue'  # kwargs=(source, )
+        HostComponentIssue = 'host component issue'  # kwargs=(source, )
+
+    class PlaceHolderType(Enum):
+        Action = 'action'
+        ADCMEntity = 'adcm_entity'
+        ADCM = 'adcm'
+        Cluster = 'cluster'
+        Service = 'service'
+        Component = 'component'
+        Provider = 'provider'
+        Host = 'host'
+        Job = 'job'
+
+    @classmethod
+    def get_message_from_template(cls, name: str, **kwargs) -> dict:
+        """Find message template by its name and fill placeholders"""
+        tpl = cls.obj.get(name=name).template
+        filled_placeholders = {}
+        try:
+            for ph_name, ph_data in tpl['placeholder'].items():
+                filled_placeholders[ph_name] = cls._fill_placeholder(ph_name, ph_data, **kwargs)
+        except (KeyError, AttributeError, TypeError, AssertionError) as ex:
+            if isinstance(ex, KeyError):
+                msg = f'Message templating KeyError: "{ex.args[0]}" not found'
+            elif isinstance(ex, AttributeError):
+                msg = f'Message templating AttributeError: "{ex.args[0]}"'
+            elif isinstance(ex, TypeError):
+                msg = f'Message templating TypeError: "{ex.args[0]}"'
+            elif isinstance(ex, AssertionError):
+                msg = 'Message templating AssertionError: expected kwarg were not found'
+            else:
+                msg = None
+            raise AdcmEx('MESSAGE_TEMPLATING_ERROR', msg=msg) from ex
+        tpl['placeholder'] = filled_placeholders
+        return tpl
+
+    @classmethod
+    def _fill_placeholder(cls, ph_name: str, ph_data: dict, **ph_source_data) -> dict:
+        type_map = {
+            cls.PlaceHolderType.Action.value: cls._action_placeholder,
+            cls.PlaceHolderType.ADCMEntity.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.ADCM.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Cluster.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Service.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Component.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Provider.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Host.value: cls._adcm_entity_placeholder,
+            cls.PlaceHolderType.Job.value: cls._job_placeholder,
+        }
+        return type_map[ph_data['type']](ph_name, **ph_source_data)
+
+    @classmethod
+    def _action_placeholder(cls, _, **kwargs) -> dict:
+        action = kwargs.get('action')
+        assert action
+        target = kwargs.get('target')
+        assert target
+
+        ids = target.get_id_chain()
+        ids['action'] = action.pk
+        return {
+            'type': cls.PlaceHolderType.Action.value,
+            'name': action.display_name,
+            'ids': ids,
+        }
+
+    @classmethod
+    def _adcm_entity_placeholder(cls, ph_name, **kwargs) -> dict:
+        obj = kwargs.get(ph_name)
+        assert obj
+
+        return {
+            'type': obj.prototype.type,
+            'name': obj.display_name,
+            'ids': obj.get_id_chain(),
+        }
+
+    @classmethod
+    def _job_placeholder(cls, _, **kwargs) -> dict:
+        job = kwargs.get('job')
+        assert job
+        action = job.sub_action or job.action
+
+        return {
+            'type': cls.PlaceHolderType.Job.value,
+            'name': action.display_name or action.name,
+            'ids': job.id,
+        }
 
 
 class GroupConfig(ADCMModel):
@@ -361,3 +487,117 @@ class ConfigLog(ADCMModel):
             self.attr.update({'custom_group_keys': custom_group_keys})
 
         super().save(*args, **kwargs)
+
+
+class TaskLog(ADCMModel):
+    object_id = models.PositiveIntegerField()
+    object_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)
+    task_object = GenericForeignKey('object_type', 'object_id')
+    action = models.ForeignKey(Action, on_delete=models.SET_NULL, null=True, default=None)
+    pid = models.PositiveIntegerField(blank=True, default=0)
+    selector = models.JSONField(default=dict)
+    status = models.CharField(max_length=16, choices=JOB_STATUS)
+    config = models.JSONField(null=True, default=None)
+    attr = models.JSONField(default=dict)
+    hostcomponentmap = models.JSONField(null=True, default=None)
+    hosts = models.JSONField(null=True, default=None)
+    verbose = models.BooleanField(default=False)
+    start_date = models.DateTimeField()
+    finish_date = models.DateTimeField()
+    lock = models.ForeignKey('ConcernItem', null=True, on_delete=models.SET_NULL, default=None)
+
+    def lock_affected(self, objects: Iterable[ADCMEntity]) -> None:
+        if self.lock:
+            return
+        first_job = JobLog.obj.filter(task=self).order_by('id').first()
+        reason = MessageTemplate.get_message_from_template(
+            MessageTemplate.KnownNames.LockedByJob.value,
+            job=first_job,
+            target=self.task_object,
+        )
+        self.lock = ConcernItem.objects.create(
+            type=ConcernType.Lock.value,
+            name=None,
+            reason=reason,
+            blocking=True,
+            owner=self.task_object,
+            cause=ConcernCause.Job.value,
+        )
+        self.save()
+        for obj in objects:
+            obj.add_to_concerns(self.lock)
+
+    def unlock_affected(self) -> None:
+        if not self.lock:
+            return
+
+        lock = self.lock
+        self.lock = None
+        self.save()
+        lock.delete()
+
+    def cancel(self, event_queue: 'cm.status_api.Event' = None):
+        """
+        Cancel running task process
+        task status will be updated in separate process of task runner
+        """
+        if self.pid == 0:
+            raise AdcmEx(
+                'NOT_ALLOWED_TERMINATION',
+                'Termination is too early, try to execute later',
+            )
+        errors = {
+            Job.FAILED: ('TASK_IS_FAILED', f'task #{self.pk} is failed'),
+            Job.ABORTED: ('TASK_IS_ABORTED', f'task #{self.pk} is aborted'),
+            Job.SUCCESS: ('TASK_IS_SUCCESS', f'task #{self.pk} is success'),
+        }
+        action = self.action
+        if action and not action.allow_to_terminate:
+            raise AdcmEx(
+                'NOT_ALLOWED_TERMINATION',
+                f'not allowed termination task #{self.pk} for action #{action.pk}',
+            )
+        if self.status in [Job.FAILED, Job.ABORTED, Job.SUCCESS]:
+            raise AdcmEx(*errors.get(self.status))
+        i = 0
+        while not JobLog.objects.filter(task=self, status=Job.RUNNING) and i < 10:
+            time.sleep(0.5)
+            i += 1
+        if i == 10:
+            raise AdcmEx('NO_JOBS_RUNNING', 'no jobs running')
+        self.unlock_affected()
+        if event_queue:
+            event_queue.send_state()
+        os.kill(self.pid, signal.SIGTERM)
+
+
+class JobLog(ADCMModel):
+    task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
+    action = models.ForeignKey(Action, on_delete=models.SET_NULL, null=True, default=None)
+    sub_action = models.ForeignKey(SubAction, on_delete=models.SET_NULL, null=True, default=None)
+    pid = models.PositiveIntegerField(blank=True, default=0)
+    selector = models.JSONField(default=dict)
+    log_files = models.JSONField(default=list)
+    status = models.CharField(max_length=16, choices=JOB_STATUS)
+    start_date = models.DateTimeField()
+    finish_date = models.DateTimeField(db_index=True)
+
+    __error_code__ = 'JOB_NOT_FOUND'
+
+
+class GroupCheckLog(ADCMModel):
+    job = models.ForeignKey(JobLog, on_delete=models.SET_NULL, null=True, default=None)
+    title = models.TextField()
+    message = models.TextField(blank=True, null=True)
+    result = models.BooleanField(blank=True, null=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['job', 'title'], name='unique_group_job')]
+
+
+class CheckLog(ADCMModel):
+    group = models.ForeignKey(GroupCheckLog, blank=True, null=True, on_delete=models.CASCADE)
+    job = models.ForeignKey(JobLog, on_delete=models.SET_NULL, null=True, default=None)
+    title = models.TextField()
+    message = models.TextField()
+    result = models.BooleanField()

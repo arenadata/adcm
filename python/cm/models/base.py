@@ -16,17 +16,18 @@
 
 from __future__ import unicode_literals
 
-from typing import List, Optional
+from itertools import chain
+from typing import Iterable, List, Optional
 
-from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
 from cm.errors import AdcmEx
 from cm.logger import log
-from cm.models.types import ActionType, ConcernType, LICENSE_STATE, MONITORING_TYPE, PROTO_TYPE, PrototypeEnum, \
-    SCRIPT_TYPE
+from cm.models.types import ActionType, ConcernCause, ConcernType, LICENSE_STATE, MONITORING_TYPE, PROTO_TYPE, \
+    PrototypeEnum, SCRIPT_TYPE
 from cm.models.utils import get_any, get_default_constraint, get_default_from_edition
 
 
@@ -412,3 +413,48 @@ class AbstractSubAction(ADCMModel):
 
 class DummyData(ADCMModel):
     date = models.DateTimeField(auto_now=True)
+
+
+class ConcernItem(ADCMModel):
+    """
+    Representation for object's lock/issue/flag
+    Man-to-many from ADCMEntities
+    One-to-one from TaskLog
+    ...
+
+    `type` is literally type of concern
+    `name` is used for (un)setting flags from ansible playbooks
+    `reason` is used to display/notify on front-end, text template and data for URL generation
+        should be generated from pre-created templates model `MessageTemplate`
+    `blocking` blocks actions from running
+    `owner` is object-origin of concern
+    `cause` is owner's parameter causing concern
+    `related_objects` are back-refs from affected ADCMEntities.concerns
+    """
+
+    type = models.CharField(max_length=8, choices=ConcernType.choices, default=ConcernType.Lock)
+    name = models.CharField(max_length=160, null=True, unique=True)
+    reason = models.JSONField(default=dict)
+    blocking = models.BooleanField(default=True)
+    owner_id = models.PositiveIntegerField(null=True)
+    owner_type = models.ForeignKey(ContentType, null=True, on_delete=models.CASCADE)
+    owner = GenericForeignKey('owner_type', 'owner_id')
+    cause = models.CharField(max_length=16, null=True, choices=ConcernCause.choices)
+
+    @property
+    def related_objects(self) -> Iterable[ADCMEntity]:
+        """List of objects that has that item in concerns"""
+        return chain(
+            self.adcm_entities.all(),
+            self.cluster_entities.all(),
+            self.clusterobject_entities.all(),
+            self.servicecomponent_entities.all(),
+            self.hostprovider_entities.all(),
+            self.host_entities.all(),
+        )
+
+    def delete(self, using=None, keep_parents=False):
+        """Explicit remove many-to-many references before deletion in order to emit signals"""
+        for entity in self.related_objects:
+            entity.remove_from_concerns(self)
+        return super().delete(using, keep_parents)
