@@ -154,7 +154,7 @@ def expect_api_error(operation_name: str, operation: Callable, *args, err_: Opti
     If `err_` is provided, raised exception will be checked against it by calling `.equal`
     """
     with allure.step(f'Execute "{operation_name}" and expect it to raise API error "{err_}"'):
-        with pytest.raises(ErrorMessage) as e:
+        with pytest.raises((ErrorMessage, ADCMApiError)) as e:
             operation(*args, **kwargs)
         if err_:
             err_.equal(e)
