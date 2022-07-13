@@ -44,8 +44,37 @@ def _process_extra_filter(filterstr: str) -> str:
         return filterstr
 
 
-def _get_ldap_default_settings():
+def configupre_tls(enabled, cert_filepath='', conn=None):
     os.environ.pop(CERT_ENV_KEY, None)
+    ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
+
+    if not enabled:
+        return
+
+    if cert_filepath:
+        os.environ[CERT_ENV_KEY] = cert_filepath
+
+    opts = {
+        ldap.OPT_X_TLS_CACERTFILE: cert_filepath,
+        ldap.OPT_X_TLS_REQUIRE_CERT: ldap.OPT_X_TLS_ALLOW,
+        ldap.OPT_X_TLS_NEWCTX: 0,
+    }
+
+    if not conn:
+        return opts
+
+    for opt_key, opt_val in opts.items():
+        conn.set_option(opt_key, opt_val)
+
+
+def is_tls(ldap_uri):
+    if 'ldaps://' in ldap_uri.lower():
+        return True
+    return False
+
+
+def _get_ldap_default_settings():
+    configupre_tls(enabled=False)
 
     adcm_object = ADCM.objects.get(id=1)
     current_configlog = ConfigLog.objects.get(
@@ -99,18 +128,12 @@ def _get_ldap_default_settings():
             'CACHE_TIMEOUT': 3600,
         }
 
-        if 'ldaps://' in ldap_config['ldap_uri'].lower():
+        if is_tls(ldap_config['ldap_uri']):
             cert_filepath = ldap_config.get('tls_ca_cert_file', '')
             if not cert_filepath or not os.path.exists(cert_filepath):
                 raise AdcmEx('LDAP_NO_CERT_FILE')
-
-            connection_options = {
-                ldap.OPT_X_TLS_CACERTFILE: cert_filepath,
-                ldap.OPT_X_TLS_REQUIRE_CERT: ldap.OPT_X_TLS_ALLOW,
-                ldap.OPT_X_TLS_NEWCTX: 0,
-            }
+            connection_options = configupre_tls(enabled=True, cert_filepath=cert_filepath)
             default_settings.update({'CONNECTION_OPTIONS': connection_options})
-            os.environ['CERT_ENV_KEY'] = cert_filepath
 
         return default_settings
 
@@ -118,10 +141,14 @@ def _get_ldap_default_settings():
 
 
 class CustomLDAPBackend(LDAPBackend):
+    default_settings = {}
+    is_tls = False
+
     def authenticate_ldap_user(self, ldap_user, password):
         self.default_settings = _get_ldap_default_settings()
         if not self.default_settings:
             return None
+        self.is_tls = is_tls(self.default_settings['SERVER_URI'])
 
         try:
             if not self.__check_user(ldap_user):
@@ -152,6 +179,7 @@ class CustomLDAPBackend(LDAPBackend):
         ldap.set_option(ldap.OPT_REFERRALS, 0)
         conn = ldap.initialize(self.default_settings['SERVER_URI'])
         conn.protocol_version = ldap.VERSION3
+        configupre_tls(self.is_tls, os.environ.get(CERT_ENV_KEY, ''), conn)
         conn.simple_bind_s(self.default_settings['BIND_DN'], self.default_settings['BIND_PASSWORD'])
         try:
             yield conn
