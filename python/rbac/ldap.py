@@ -123,7 +123,8 @@ class CustomLDAPBackend(LDAPBackend):
         if not self.default_settings:
             return None
 
-        self.__check_user(ldap_user)
+        if not self.__check_user(ldap_user):
+            return None
         try:
             user_or_none = super().authenticate_ldap_user(ldap_user, password)
         except ImproperlyConfigured as e:
@@ -185,7 +186,9 @@ class CustomLDAPBackend(LDAPBackend):
             if user_dn.lower() in [i.lower() for i in group_attrs.get(group_member_attr, [])]:
                 break
         else:
-            raise AdcmEx('AUTHENTICATION_ERROR')
+            return False
+
+        return True
 
     @staticmethod
     def __det_ldap_group_dn(group_name: str, ldap_groups: list) -> str:

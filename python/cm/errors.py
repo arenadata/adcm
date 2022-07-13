@@ -182,11 +182,6 @@ ERRORS = {
         rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),
-    'AUTHENTICATION_ERROR': (
-        'authenticate error',
-        rfs.HTTP_400_BAD_REQUEST,
-        ERR,
-    ),
 }
 
 
