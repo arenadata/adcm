@@ -145,3 +145,12 @@ class ServiceComponent(ADCMEntity):
 
     class Meta:
         unique_together = (('cluster', 'service', 'prototype'),)
+
+
+def get_object_cluster(obj):
+    if isinstance(obj, Cluster):
+        return obj
+    if hasattr(obj, 'cluster'):
+        return obj.cluster
+    else:
+        return None

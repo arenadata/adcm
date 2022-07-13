@@ -66,15 +66,6 @@ def get_model_by_type(object_type):
         return Cluster
 
 
-def get_object_cluster(obj):
-    if isinstance(obj, Cluster):
-        return obj
-    if hasattr(obj, 'cluster'):
-        return obj.cluster
-    else:
-        return None
-
-
 class ConfigLog(ADCMModel):
     obj_ref = models.ForeignKey(ObjectConfig, on_delete=models.CASCADE)
     config = models.JSONField(default=dict)
