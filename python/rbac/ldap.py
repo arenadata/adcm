@@ -89,7 +89,7 @@ def _get_ldap_default_settings():
             'USER_FILTER': _process_extra_filter(ldap_config.get("user_search_filter", '')),
             'GROUP_SEARCH': group_search,
             'GROUP_TYPE': group_type,
-            'GROUP_FILTER': {_process_extra_filter(ldap_config.get("group_search_filter", ''))},
+            'GROUP_FILTER': _process_extra_filter(ldap_config.get("group_search_filter", '')),
             'GROUP_OBJECT_CLASS': ldap_config.get("group_object_class", "*"),
             'USER_ATTR_MAP': user_attr_map,
             'MIRROR_GROUPS': True,

@@ -40,9 +40,9 @@ def bind():
             l.protocol_version = ldap.VERSION3
             l.simple_bind_s(BASE_USER, BASE_PASS)
         except ldap.LDAPError as e:
-            print(f"Can't connect to {ldap_URI} with user: {BASE_USER}. Error: {e}")
+            sys.stderr.write(f"Can't connect to {ldap_URI} with user: {BASE_USER}. Error: {e}\n")
             raise
-        print(f"Connection successful to {ldap_URI}")
+        sys.stdout.write(f"Connection successful to {ldap_URI}\n")
 
 
 if __name__ == '__main__':
