@@ -15,7 +15,7 @@ import os
 
 import ldap
 
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from django.contrib.auth.models import Group as DjangoGroup
 from django.core.exceptions import ImproperlyConfigured
 from django_auth_ldap.backend import LDAPBackend
@@ -123,9 +123,9 @@ class CustomLDAPBackend(LDAPBackend):
         if not self.default_settings:
             return None
 
-        if not self.__check_user(ldap_user):
-            return None
         try:
+            if not self.__check_user(ldap_user):
+                return None
             user_or_none = super().authenticate_ldap_user(ldap_user, password)
         except ImproperlyConfigured as e:
             log.exception(e)
@@ -134,6 +134,8 @@ class CustomLDAPBackend(LDAPBackend):
             if 'option error' in str(e).lower():
                 raise AdcmEx('LDAP_BROKEN_CONFIG') from None
             raise e
+        except ldap.LDAPError as e:
+            return None
 
         if isinstance(user_or_none, User):
             user_or_none.type = OriginType.LDAP
