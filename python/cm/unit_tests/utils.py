@@ -12,8 +12,10 @@
 
 from uuid import uuid4
 
-from cm import models
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
+
+from cm import models
 
 
 def _gen_name(prefix: str, name='name'):
@@ -47,7 +49,7 @@ def gen_adcm() -> models.ADCM:
     """Generate or return existing the only ADCM object"""
     try:
         return models.ADCM.objects.get(name='ADCM')
-    except models.ObjectDoesNotExist:
+    except ObjectDoesNotExist:
         bundle = gen_bundle()
         prototype = gen_prototype(bundle, 'adcm')
         return models.ADCM.objects.create(name='ADCM', prototype=prototype)
