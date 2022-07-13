@@ -408,3 +408,7 @@ class AbstractSubAction(ADCMModel):
 
     class Meta:
         abstract = True
+
+
+class DummyData(ADCMModel):
+    date = models.DateTimeField(auto_now=True)
