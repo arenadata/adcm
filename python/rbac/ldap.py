@@ -44,6 +44,7 @@ def _process_extra_filter(filterstr: str) -> str:
         return filterstr
 
 
+# pylint: disable=inconsistent-return-statements
 def configupre_tls(enabled, cert_filepath='', conn=None):
     os.environ.pop(CERT_ENV_KEY, None)
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
@@ -189,7 +190,7 @@ class CustomLDAPBackend(LDAPBackend):
     def __get_groups_by_group_search(self):
         with self.__ldap_connection() as conn:
             groups = self.default_settings['GROUP_SEARCH'].execute(conn)
-        log.debug(f'Found {len(groups)} groups: {[i[0] for i in groups]}')
+        log.debug('Found %s groups: %s', len(groups), [i[0] for i in groups])
         return groups
 
     def __create_rbac_groups(self, user):
