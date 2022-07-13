@@ -172,7 +172,7 @@ class TestAllowToTerminate:
 
     pytestmark = [
         pytest.mark.parametrize('generic_bundle', ['action_termination_allowed'], indirect=True),
-        pytest.mark.usefixtures('login_to_adcm_over_api', '_bind_client', '_cluster'),
+        pytest.mark.usefixtures('login_to_adcm_over_api', '_bind_client', 'cluster'),
     ]
 
     @pytest.fixture()
@@ -180,7 +180,8 @@ class TestAllowToTerminate:
         self.client = sdk_client_fs
 
     @pytest.fixture()
-    def _cluster(self, generic_bundle) -> Cluster:
+    def cluster(self, generic_bundle) -> Cluster:
+        """Create a cluster from the generic bundle with allow_to_terminate actions"""
         return generic_bundle.cluster_create(self.CLUSTER_NAME)
 
     @pytest.fixture()
