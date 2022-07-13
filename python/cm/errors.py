@@ -182,9 +182,9 @@ ERRORS = {
         rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),
-    'LDAP_USER_NOT_IN_GROUPS': (
-        'user not in any of groups specified by group_search',
-        rfs.HTTP_403_FORBIDDEN,
+    'AUTHENTICATION_ERROR': (
+        'authenticate error',
+        rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),
 }

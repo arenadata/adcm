@@ -185,7 +185,7 @@ class CustomLDAPBackend(LDAPBackend):
             if user_dn.lower() in [i.lower() for i in group_attrs.get(group_member_attr, [])]:
                 break
         else:
-            raise AdcmEx('LDAP_USER_NOT_IN_GROUPS')
+            raise AdcmEx('AUTHENTICATION_ERROR')
 
     @staticmethod
     def __det_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
