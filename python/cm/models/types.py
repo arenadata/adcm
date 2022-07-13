@@ -63,3 +63,9 @@ class ConcernType(models.TextChoices):
 class ActionType(models.TextChoices):
     Task = 'task', 'task'
     Job = 'job', 'job'
+
+
+class MaintenanceModeType(models.TextChoices):
+    Disabled = 'disabled', 'disabled'
+    On = 'on', 'on'
+    Off = 'off', 'off'
