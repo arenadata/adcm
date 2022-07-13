@@ -19,7 +19,7 @@ from cm.models.base import ADCMEntity, ADCMModel, ConcernItem, DummyData, Object
 from cm.models.cluster import Cluster, ClusterObject, ServiceComponent
 from cm.models.host import Host, HostProvider
 from cm.models.prototype import PrototypeConfig
-from cm.models.types import ConcernCause, ConcernType, JOB_STATUS
+from cm.models.types import ConcernCause, ConcernType, FORMAT_TYPE, JOB_STATUS, LOG_TYPE
 from cm.models.utils import deep_merge
 
 
@@ -601,3 +601,18 @@ class CheckLog(ADCMModel):
     title = models.TextField()
     message = models.TextField()
     result = models.BooleanField()
+
+
+class LogStorage(ADCMModel):
+    job = models.ForeignKey(JobLog, on_delete=models.CASCADE)
+    name = models.TextField(default='')
+    body = models.TextField(blank=True, null=True)
+    type = models.CharField(max_length=16, choices=LOG_TYPE)
+    format = models.CharField(max_length=16, choices=FORMAT_TYPE)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['job'], condition=models.Q(type='check'), name='unique_check_job'
+            )
+        ]

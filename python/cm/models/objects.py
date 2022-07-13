@@ -21,7 +21,6 @@ from django.db import models
 from cm.models.base import AbstractAction, AbstractSubAction, ADCMEntity, ADCMModel
 from cm.models.cluster import Cluster, ClusterObject, ServiceComponent
 from cm.models.host import Host, HostProvider
-from cm.models.log import JobLog
 from cm.models.types import CONFIG_FIELD_TYPE, MONITORING_TYPE, PROTO_TYPE
 from cm.models.utils import get_default_constraint, get_default_from_edition
 
@@ -66,38 +65,9 @@ class ADCM(ADCMEntity):
         return result if result['issue'] else {}
 
 
-
 class UserProfile(ADCMModel):
     login = models.CharField(max_length=32, unique=True)
     profile = models.JSONField(default=str)
-
-
-LOG_TYPE = (
-    ('stdout', 'stdout'),
-    ('stderr', 'stderr'),
-    ('check', 'check'),
-    ('custom', 'custom'),
-)
-
-FORMAT_TYPE = (
-    ('txt', 'txt'),
-    ('json', 'json'),
-)
-
-
-class LogStorage(ADCMModel):
-    job = models.ForeignKey(JobLog, on_delete=models.CASCADE)
-    name = models.TextField(default='')
-    body = models.TextField(blank=True, null=True)
-    type = models.CharField(max_length=16, choices=LOG_TYPE)
-    format = models.CharField(max_length=16, choices=FORMAT_TYPE)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['job'], condition=models.Q(type='check'), name='unique_check_job'
-            )
-        ]
 
 
 # Stage: Temporary tables to load bundle

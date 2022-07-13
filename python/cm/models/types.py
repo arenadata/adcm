@@ -52,6 +52,18 @@ JOB_STATUS = (
     ('failed', 'failed'),
 )
 
+LOG_TYPE = (
+    ('stdout', 'stdout'),
+    ('stderr', 'stderr'),
+    ('check', 'check'),
+    ('custom', 'custom'),
+)
+
+FORMAT_TYPE = (
+    ('txt', 'txt'),
+    ('json', 'json'),
+)
+
 class PrototypeEnum(Enum):
     ADCM = 'adcm'
     Cluster = 'cluster'
