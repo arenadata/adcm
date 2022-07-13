@@ -17,6 +17,7 @@ from typing import Callable, Union, Collection, TypeVar, Optional
 
 import allure
 import pytest
+from adcm_client.wrappers.api import ADCMApiError
 from adcm_pytest_plugin.utils import catch_failed
 from coreapi.exceptions import ErrorMessage
 
