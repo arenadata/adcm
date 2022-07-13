@@ -392,3 +392,19 @@ class AbstractAction(ADCMModel):
 
     def __str__(self):
         return f"{self.prototype} {self.display_name or self.name}"
+
+
+class AbstractSubAction(ADCMModel):
+    action = None
+
+    name = models.CharField(max_length=160)
+    display_name = models.CharField(max_length=160, blank=True)
+    script = models.CharField(max_length=160)
+    script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
+    state_on_fail = models.CharField(max_length=64, blank=True)
+    multi_state_on_fail_set = models.JSONField(default=list)
+    multi_state_on_fail_unset = models.JSONField(default=list)
+    params = models.JSONField(default=dict)
+
+    class Meta:
+        abstract = True

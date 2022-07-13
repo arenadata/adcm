@@ -35,7 +35,7 @@ from django.utils import timezone
 
 from cm.config import FILE_DIR, Job
 from cm.errors import AdcmEx
-from cm.models.base import ADCMEntity, ADCMModel, ObjectConfig, Prototype, AbstractAction
+from cm.models.base import ADCMEntity, ADCMModel, ObjectConfig, Prototype, AbstractAction, AbstractSubAction
 from cm.models.cluster import Cluster, ClusterObject, ServiceComponent
 from cm.models.prototype import PrototypeConfig
 from cm.models.types import ConcernType, CONFIG_FIELD_TYPE, MONITORING_TYPE, PROTO_TYPE, SCRIPT_TYPE
@@ -569,22 +569,6 @@ class Action(AbstractAction):
             multi_state_allowed = True
 
         return state_allowed and multi_state_allowed
-
-
-class AbstractSubAction(ADCMModel):
-    action = None
-
-    name = models.CharField(max_length=160)
-    display_name = models.CharField(max_length=160, blank=True)
-    script = models.CharField(max_length=160)
-    script_type = models.CharField(max_length=16, choices=SCRIPT_TYPE)
-    state_on_fail = models.CharField(max_length=64, blank=True)
-    multi_state_on_fail_set = models.JSONField(default=list)
-    multi_state_on_fail_unset = models.JSONField(default=list)
-    params = models.JSONField(default=dict)
-
-    class Meta:
-        abstract = True
 
 
 class SubAction(AbstractSubAction):
