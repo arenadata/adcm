@@ -1,8 +1,8 @@
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
-from cm.models.base import ADCMEntity
-from cm.models.cluster import Cluster
+from cm.models.base import ADCMEntity, ADCMModel
+from cm.models.cluster import Cluster, ClusterObject, ServiceComponent
 from cm.models.types import MaintenanceModeType
 from cm.models.utils import get_default_before_upgrade
 
@@ -78,3 +78,14 @@ class Host(ADCMEntity):
         if provider_issue:
             result['issue']['provider'] = provider_issue
         return result if result['issue'] else {}
+
+
+class HostComponent(ADCMModel):
+    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
+    host = models.ForeignKey(Host, on_delete=models.CASCADE)
+    service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
+    component = models.ForeignKey(ServiceComponent, on_delete=models.CASCADE)
+    state = models.CharField(max_length=64, default='created')
+
+    class Meta:
+        unique_together = (('host', 'service', 'component'),)

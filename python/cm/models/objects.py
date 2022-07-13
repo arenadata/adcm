@@ -486,17 +486,6 @@ class SubAction(AbstractSubAction):
     action = models.ForeignKey(Action, on_delete=models.CASCADE)
 
 
-class HostComponent(ADCMModel):
-    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    host = models.ForeignKey(Host, on_delete=models.CASCADE)
-    service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE)
-    component = models.ForeignKey(ServiceComponent, on_delete=models.CASCADE)
-    state = models.CharField(max_length=64, default='created')
-
-    class Meta:
-        unique_together = (('host', 'service', 'component'),)
-
-
 class ClusterBind(ADCMModel):
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
     service = models.ForeignKey(ClusterObject, on_delete=models.CASCADE, null=True, default=None)
