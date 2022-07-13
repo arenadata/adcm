@@ -45,7 +45,7 @@ def _process_extra_filter(filterstr: str) -> str:
 
 
 # pylint: disable=inconsistent-return-statements
-def configupre_tls(enabled, cert_filepath='', conn=None):
+def configure_tls(enabled, cert_filepath='', conn=None):
     os.environ.pop(CERT_ENV_KEY, None)
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
 
@@ -75,7 +75,7 @@ def is_tls(ldap_uri):
 
 
 def _get_ldap_default_settings():
-    configupre_tls(enabled=False)
+    configure_tls(enabled=False)
 
     adcm_object = ADCM.objects.get(id=1)
     current_configlog = ConfigLog.objects.get(
@@ -133,7 +133,7 @@ def _get_ldap_default_settings():
             cert_filepath = ldap_config.get('tls_ca_cert_file', '')
             if not cert_filepath or not os.path.exists(cert_filepath):
                 raise AdcmEx('LDAP_NO_CERT_FILE')
-            connection_options = configupre_tls(enabled=True, cert_filepath=cert_filepath)
+            connection_options = configure_tls(enabled=True, cert_filepath=cert_filepath)
             default_settings.update({'CONNECTION_OPTIONS': connection_options})
 
         return default_settings
@@ -180,7 +180,7 @@ class CustomLDAPBackend(LDAPBackend):
         ldap.set_option(ldap.OPT_REFERRALS, 0)
         conn = ldap.initialize(self.default_settings['SERVER_URI'])
         conn.protocol_version = ldap.VERSION3
-        configupre_tls(self.is_tls, os.environ.get(CERT_ENV_KEY, ''), conn)
+        configure_tls(self.is_tls, os.environ.get(CERT_ENV_KEY, ''), conn)
         conn.simple_bind_s(self.default_settings['BIND_DN'], self.default_settings['BIND_PASSWORD'])
         try:
             yield conn
