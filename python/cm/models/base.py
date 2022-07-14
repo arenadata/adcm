@@ -20,8 +20,16 @@ from django.db import models
 
 from cm.errors import AdcmEx
 from cm.logger import log
-from cm.models.types import ActionType, ConcernCause, ConcernType, LICENSE_STATE, MONITORING_TYPE, PROTO_TYPE, \
-    PrototypeEnum, SCRIPT_TYPE
+from cm.models.types import (
+    ActionType,
+    ConcernCause,
+    ConcernType,
+    LICENSE_STATE,
+    MONITORING_TYPE,
+    PROTO_TYPE,
+    PrototypeEnum,
+    SCRIPT_TYPE,
+)
 from cm.models.utils import get_any, get_default_constraint, get_default_from_edition
 
 
@@ -250,7 +258,7 @@ class ADCMEntity(ADCMModel):
 
     def set_multi_state(self, multi_state: str, event=None) -> None:
         """Append new unique multi_state to entity._multi_state"""
-        if multi_state in self._multi_state:
+        if multi_state in self._multi_state:  # pylint: disable=unsupported-membership-test
             return
 
         self._multi_state.update({multi_state: 1})
@@ -261,10 +269,10 @@ class ADCMEntity(ADCMModel):
 
     def unset_multi_state(self, multi_state: str, event=None) -> None:
         """Remove specified multi_state from entity._multi_state"""
-        if multi_state not in self._multi_state:
+        if multi_state not in self._multi_state:  # pylint: disable=unsupported-membership-test
             return
 
-        del self._multi_state[multi_state]
+        del self._multi_state[multi_state]  # pylint: disable=unsupported-delete-operation
         self.save()
         if event:
             event.change_object_multi_state(self.prototype.type, self.id, multi_state)

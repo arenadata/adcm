@@ -76,6 +76,7 @@ FORMAT_TYPE = (
     ('json', 'json'),
 )
 
+
 class PrototypeEnum(Enum):
     ADCM = 'adcm'
     Cluster = 'cluster'

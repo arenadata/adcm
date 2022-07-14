@@ -16,39 +16,100 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='AuditLog',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('operation_name', models.CharField(max_length=160)),
-                ('operation_type', models.CharField(choices=[('create', 'create'), ('update', 'update'), ('delete', 'delete')], max_length=16)),
-                ('operation_result', models.CharField(choices=[('success', 'success'), ('failed', 'failed'), ('in_progress', 'in_progress')], max_length=16)),
+                (
+                    'operation_type',
+                    models.CharField(
+                        choices=[('create', 'create'), ('update', 'update'), ('delete', 'delete')],
+                        max_length=16,
+                    ),
+                ),
+                (
+                    'operation_result',
+                    models.CharField(
+                        choices=[
+                            ('success', 'success'),
+                            ('failed', 'failed'),
+                            ('in_progress', 'in_progress'),
+                        ],
+                        max_length=16,
+                    ),
+                ),
                 ('operation_time', models.DateTimeField(auto_now_add=True)),
             ],
         ),
         migrations.CreateModel(
             name='AuditObject',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('object_id', models.PositiveIntegerField()),
                 ('object_name', models.CharField(max_length=160)),
-                ('object_type', models.CharField(choices=[('cluster', 'cluster'), ('service', 'service'), ('component', 'component'), ('host', 'host'), ('provider', 'provider'), ('bundle', 'bundle'), ('adcm', 'adcm'), ('user', 'user'), ('group', 'group'), ('role', 'role'), ('policy', 'policy')], max_length=16)),
+                (
+                    'object_type',
+                    models.CharField(
+                        choices=[
+                            ('cluster', 'cluster'),
+                            ('service', 'service'),
+                            ('component', 'component'),
+                            ('host', 'host'),
+                            ('provider', 'provider'),
+                            ('bundle', 'bundle'),
+                            ('adcm', 'adcm'),
+                            ('user', 'user'),
+                            ('group', 'group'),
+                            ('role', 'role'),
+                            ('policy', 'policy'),
+                        ],
+                        max_length=16,
+                    ),
+                ),
                 ('is_deleted', models.BooleanField(default=False)),
             ],
         ),
         migrations.CreateModel(
             name='AuditObjectChanges',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name='ID'
+                    ),
+                ),
                 ('object_attr', models.CharField(max_length=160)),
                 ('attr_old_value', models.CharField(max_length=160)),
                 ('attr_new_value', models.CharField(max_length=160)),
                 ('change_time', models.DateTimeField(auto_now_add=True)),
-                ('audit_log', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='audit.auditlog')),
-                ('audit_object_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='audit.auditobject')),
+                (
+                    'audit_log',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to='audit.auditlog'
+                    ),
+                ),
+                (
+                    'audit_object_id',
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to='audit.auditobject'
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
             model_name='auditlog',
             name='audit_object_id',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='audit.auditobject'),
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to='audit.auditobject'
+            ),
         ),
         migrations.AddField(
             model_name='auditlog',

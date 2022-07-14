@@ -47,7 +47,10 @@ class Action(AbstractAction):
         if self.state_unavailable == 'any' or self.multi_state_unavailable == 'any':
             return False
 
-        if isinstance(self.state_unavailable, list) and obj.state in self.state_unavailable:
+        if (
+            isinstance(self.state_unavailable, list)
+            and obj.state in self.state_unavailable  # pylint: disable=unsupported-membership-test
+        ):
             return False
 
         if isinstance(self.multi_state_unavailable, list) and obj.has_multi_state_intersection(
@@ -58,7 +61,10 @@ class Action(AbstractAction):
         state_allowed = False
         if self.state_available == 'any':
             state_allowed = True
-        elif isinstance(self.state_available, list) and obj.state in self.state_available:
+        elif (
+            isinstance(self.state_available, list)
+            and obj.state in self.state_available  # pylint: disable=unsupported-membership-test
+        ):
             state_allowed = True
 
         multi_state_allowed = False
