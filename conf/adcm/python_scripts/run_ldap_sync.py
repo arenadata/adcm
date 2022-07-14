@@ -98,6 +98,7 @@ class SyncLDAP:
                 group, created = Group.objects.get_or_create(
                     name=f'{name} [ldap]', built_in=False, type=OriginType.LDAP
                 )
+                group.user_set.clear()
                 new_groups.add(name)
             except (IntegrityError, DataError) as e:
                 error_names.append(name)
