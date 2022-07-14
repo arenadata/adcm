@@ -18,13 +18,12 @@ from rbac.models import Group, OriginType
 
 @pytest.mark.django_db
 def test_group_creation_blank():
-    g = Group.objects.create()
-    assert int(g.group_ptr_id)
-    assert g.name == f' [{OriginType.Local.value}]'
-    assert g.description is None
-    assert g.built_in is False
-    assert g.type == OriginType.Local.value
-    assert g.display_name == ''
+    try:
+        g = Group.objects.create()
+    except RuntimeError as e:
+        assert 'Check regex. Data: ' in str(e)
+    else:
+        raise AssertionError('group creation with no args is not allowed')
 
 
 @pytest.mark.django_db
