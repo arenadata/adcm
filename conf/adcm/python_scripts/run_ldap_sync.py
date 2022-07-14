@@ -42,7 +42,7 @@ class SyncLDAP:
         try:
             l.simple_bind_s(self.settings["BIND_DN"], self.settings["BIND_PASSWORD"])
         except ldap.LDAPError as e:
-            print("Error connecting to %s: %s" % (self.settings["BIND_DN"], e))
+            print(f"Can't connect to {self.settings['SERVER_URI']} with user: {self.settings['BIND_DN']}. Error: {e}")
             raise
         return l
 
@@ -130,6 +130,9 @@ class SyncLDAP:
                 continue
             else:
                 updated = False
+                user.is_active = False
+                if not hex(int(ldap_attributes['useraccountcontrol'][0])).endswith('2'):
+                    user.is_active = True
                 if created:
                     print("Create user: %s" % username)
                     user.set_unusable_password()
@@ -159,8 +162,9 @@ class SyncLDAP:
         django_usernames = set(User.objects.filter(type=OriginType.LDAP).values_list('username', flat=True))
         for username in django_usernames - ldap_usernames:
             user = User.objects.get(username__iexact=username)
-            print(f"We will delete this user: {user}")
-            user.delete()
+            print(f"We will delete this user and deactivate its session: {user}")
+            user.is_active = False
+            user.save()
         msg = "Sync of users ended successfully."
         msg += f"Couldn\'t synchronize users: {error_names}" if error_names else ""
         log.debug(msg)

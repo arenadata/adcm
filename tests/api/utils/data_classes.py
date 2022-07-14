@@ -283,6 +283,7 @@ class RbacUserFields(BaseClass):
     url = Field(name="url", f_type=String(), default_value=AUTO_VALUE)
     built_in = Field(name="built_in", f_type=Boolean(), default_value=AUTO_VALUE)
     type = Field(name="type", f_type=String(max_length=16), default_value=AUTO_VALUE)
+    is_active = Field(name='is_active', f_type=Boolean(), default_value=True)
 
 
 class RbacGroupFields(BaseClass):
