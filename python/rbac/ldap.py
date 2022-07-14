@@ -17,12 +17,10 @@ import ldap
 
 from contextlib import contextmanager
 from django.contrib.auth.models import Group as DjangoGroup
-from django.core.exceptions import ImproperlyConfigured
 from django_auth_ldap.backend import LDAPBackend
 from django_auth_ldap.config import LDAPSearch, MemberDNGroupType
 
 from cm.adcm_config import ansible_decrypt
-from cm.errors import AdcmEx
 from cm.logger import log
 from cm.models import ADCM, ConfigLog
 from rbac.models import User, Group, OriginType
@@ -132,7 +130,8 @@ def _get_ldap_default_settings():
         if is_tls(ldap_config['ldap_uri']):
             cert_filepath = ldap_config.get('tls_ca_cert_file', '')
             if not cert_filepath or not os.path.exists(cert_filepath):
-                raise AdcmEx('LDAP_NO_CERT_FILE')
+                log.warning('missing cert file for `ldaps://` connection')
+                return {}
             connection_options = configure_tls(enabled=True, cert_filepath=cert_filepath)
             default_settings.update({'CONNECTION_OPTIONS': connection_options})
 
@@ -155,14 +154,8 @@ class CustomLDAPBackend(LDAPBackend):
             if not self.__check_user(ldap_user):
                 return None
             user_or_none = super().authenticate_ldap_user(ldap_user, password)
-        except ImproperlyConfigured as e:
+        except Exception as e:  # pylint: disable=broad-except
             log.exception(e)
-            user_or_none = None
-        except ValueError as e:
-            if 'option error' in str(e).lower():
-                raise AdcmEx('LDAP_BROKEN_CONFIG') from None
-            raise e
-        except ldap.LDAPError as e:
             return None
 
         if isinstance(user_or_none, User):
@@ -210,7 +203,7 @@ class CustomLDAPBackend(LDAPBackend):
 
         if User.objects.filter(username__iexact=username, type=OriginType.Local).exists():
             log.exception('usernames collision: `%s`', username)
-            raise AdcmEx('LDAP_USERNAMES_COLLISION')
+            return False
 
         group_member_attr = self.default_settings['GROUP_TYPE'].member_attr
         for _, group_attrs in self.__get_groups_by_group_search():
