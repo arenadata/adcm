@@ -190,7 +190,7 @@ class CustomLDAPBackend(LDAPBackend):
         ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
 
         for group in user.groups.filter(name__in=[i[0] for i in ldap_groups]):
-            ldap_group_dn = self.__det_ldap_group_dn(group.name, ldap_groups)
+            ldap_group_dn = self.__get_ldap_group_dn(group.name, ldap_groups)
             rbac_group = self.__get_rbac_group(group, ldap_group_dn)
             group.user_set.remove(user)
             rbac_group.group_ptr.user_set.add(user.user_ptr)
@@ -215,7 +215,7 @@ class CustomLDAPBackend(LDAPBackend):
         return True
 
     @staticmethod
-    def __det_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
+    def __get_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
         return [i for i in ldap_groups if i[0] == group_name][0][1]
 
     @staticmethod
