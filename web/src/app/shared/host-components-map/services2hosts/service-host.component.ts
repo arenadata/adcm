@@ -16,10 +16,11 @@ import { keyChannelStrim } from '@app/core/services';
 import { EventMessage, IEMObject, SocketState } from '@app/core/store';
 import { IActionParameter } from '@app/core/types';
 import { Store } from '@ngrx/store';
-
 import { SocketListenerDirective } from '@app/shared/directives';
 import { getSelected, TakeService } from '../take.service';
 import { CompTile, HostTile, IRawHosComponent, Post, StatePost, Tile } from '../types';
+import { ApiService } from "@app/core/api";
+import { Observable } from "rxjs";
 
 @Component({
   selector: 'app-service-host',
@@ -79,7 +80,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     this.sourceMap.set('compo', v);
   }
 
-  constructor(public service: TakeService, private channel: ChannelService, socket: Store<SocketState>) {
+  constructor(public service: TakeService, private channel: ChannelService, socket: Store<SocketState>, private api: ApiService) {
     super(socket);
   }
 
@@ -95,6 +96,10 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
       .on(keyChannelStrim.scroll)
       .pipe(this.takeUntil())
       .subscribe((e) => (this.scrollEventData = e));
+  }
+
+  getClusterInfo(): Observable<any> {
+    return this.api.get(`api/v1/cluster/${this.cluster.id}/hostcomponent/`);
   }
 
   socketListener(m: EventMessage) {
@@ -147,6 +152,18 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
                 this.actionParameters
               ),
             ];
+        });
+    } else if (typeof this.cluster.hostcomponent !== 'string') {
+      this.getClusterInfo()
+        .pipe(this.takeUntil())
+        .subscribe((res) => {
+          this.Hosts = [
+            ...this.Hosts,
+            ...this.service.fillHost(
+              res.host.map((h) => new HostTile(h)).filter((h) => h.id === id),
+              this.actionParameters
+            ),
+          ];
         });
     }
   }

@@ -15,10 +15,11 @@ import { MatSelectionList, MatSelectionListChange } from '@angular/material/list
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { openClose } from '@app/core/animations';
 import { Host } from '@app/core/types';
-
 import { BaseFormDirective } from './base-form.directive';
 import { HostComponent } from './host.component';
 import { DisplayMode } from './provider.component';
+import { ICluster } from "@app/models/cluster";
+import { tap } from "rxjs/operators";
 
 @Component({
   selector: 'app-add-host2cluster',
@@ -81,7 +82,14 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
   }
 
   ngOnInit() {
-    this.getAvailableHosts();
+    if (!this.service.Cluster) {
+      const cluster$ = this.service['api'].getOne<ICluster>('cluster', this.clusterId);
+      cluster$.pipe(
+        tap((cluster: ICluster) => (this.service['cluster'].Cluster = cluster))
+      ).subscribe(() => this.getAvailableHosts());
+    } else {
+      this.getAvailableHosts();
+    }
   }
 
   getAvailableHosts(pageIndex = 0, pageSize = 10) {
