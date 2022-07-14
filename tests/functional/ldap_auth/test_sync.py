@@ -160,7 +160,7 @@ class TestLDAPSyncAction:
             group.reread()
             assert len(group.user_list()) == 0, 'Group from LDAP should be empty'
             another_group.reread()
-            assert len(another_group.user_list()) == 2, 'Local group should still have both users in it'
+            assert len(another_group.user_list()) == 1, 'Local group should still have deactivated users in it'
 
     def test_user_deactivated(self, sdk_client_fs, ldap_ad, ldap_user_in_group):
         """Test that user is deactivated in ADCM after it's deactivated in AD"""
