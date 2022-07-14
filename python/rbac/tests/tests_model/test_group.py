@@ -19,7 +19,7 @@ from rbac.models import Group, OriginType
 @pytest.mark.django_db
 def test_group_creation_blank():
     try:
-        g = Group.objects.create()
+        Group.objects.create()
     except RuntimeError as e:
         assert 'Check regex. Data: ' in str(e)
     else:
