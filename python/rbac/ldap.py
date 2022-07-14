@@ -12,11 +12,11 @@
 
 
 import os
+from contextlib import contextmanager
 
 import ldap
-
-from contextlib import contextmanager
 from django.contrib.auth.models import Group as DjangoGroup
+from django.db.transaction import atomic
 from django_auth_ldap.backend import LDAPBackend
 from django_auth_ldap.config import LDAPSearch, MemberDNGroupType
 
@@ -232,11 +232,12 @@ class CustomLDAPBackend(LDAPBackend):
                     name=f'{group.name} [{OriginType.LDAP.value}]', type=OriginType.LDAP.value
                 )
             except Group.DoesNotExist:
-                rbac_group = Group.objects.create(
-                    name=group.name,
-                    type=OriginType.LDAP,
-                    description=ldap_group_dn,
-                )
-                return rbac_group
+                with atomic():
+                    rbac_group = Group.objects.create(
+                        name=group.name,
+                        type=OriginType.LDAP,
+                        description=ldap_group_dn,
+                    )
+                    return rbac_group
         else:
             raise ValueError('wrong group type')
