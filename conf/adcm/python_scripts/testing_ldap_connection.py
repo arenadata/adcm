@@ -19,28 +19,23 @@ os.environ["PYTHONPATH"] = "/adcm/python/"
 sys.path.append("/adcm/python/")
 
 import adcm.init_django  # pylint: disable=unused-import
-from cm.models import ADCM, ConfigLog
-from cm.adcm_config import ansible_decrypt
+from rbac.ldap import _get_ldap_default_settings, configure_tls, is_tls
+
+CERT_ENV_KEY = 'LDAPTLS_CACERT'
 
 
 def bind():
-    adcm = ADCM.objects.get()
-    configlog = ConfigLog.objects.get(
-        obj_ref=adcm.config, id=adcm.config.current
-    )
-    if configlog.attr['ldap_integration']['active']:
-        ldap_config = configlog.config['ldap_integration']
-
+    ldap_config = _get_ldap_default_settings()
+    if ldap_config:
         ldap.set_option(ldap.OPT_REFERRALS, 0)
-        ldap_URI = ldap_config.get('ldap_uri')
-        BASE_USER = ldap_config.get('ldap_user')
-        BASE_PASS = ansible_decrypt(ldap_config.get('ldap_password'))
+        ldap_URI = ldap_config['SERVER_URI']
         try:
-            l = ldap.initialize(ldap_URI)
-            l.protocol_version = ldap.VERSION3
-            l.simple_bind_s(BASE_USER, BASE_PASS)
+            conn = ldap.initialize(ldap_URI)
+            conn.protocol_version = ldap.VERSION3
+            configure_tls(is_tls(ldap_URI), os.environ.get(CERT_ENV_KEY, ''), conn)
+            conn.simple_bind_s(ldap_config['BIND_DN'], ldap_config['BIND_PASSWORD'])
         except ldap.LDAPError as e:
-            print(f"Can't connect to {ldap_URI} with user: {BASE_USER}. Error: {e}")
+            print(f"Can't connect to {ldap_URI} with user: {ldap_config['BIND_DN']}. Error: {e}")
             raise
         print(f"Connection successful to {ldap_URI}")
 
