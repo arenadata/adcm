@@ -15,7 +15,7 @@
 import allure
 import pytest
 from adcm_client.objects import Cluster, Component
-from adcm_pytest_plugin.utils import get_data_dir, wait_until_step_succeeds
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.library.assertions import expect_no_api_error, expect_api_error
 
@@ -23,12 +23,13 @@ from tests.library.assertions import expect_no_api_error, expect_api_error
 
 CANCELLED_STATUS = 'aborted'
 
+pytestmark = [pytest.mark.parametrize('generic_bundle', ['action_termination_allowed'], indirect=True)]
+
 
 @pytest.fixture()
-def cluster(sdk_client_fs) -> Cluster:
+def cluster(generic_bundle) -> Cluster:
     """Create cluster from newly uploaded bundle"""
-    bundle = sdk_client_fs.upload_from_fs(get_data_dir(__file__))
-    return bundle.cluster_create('Test Cluster')
+    return generic_bundle.cluster_create('Test Cluster')
 
 
 @pytest.mark.parametrize('action_name', ['multi', 'simple'])
