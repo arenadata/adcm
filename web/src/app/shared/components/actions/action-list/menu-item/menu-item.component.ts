@@ -16,7 +16,7 @@ import { MatMenu } from '@angular/material/menu';
 @Component({
   selector: 'app-menu-item',
   styleUrls: ['./menu-item.component.scss'],
-  template: ` <mat-menu #menu="matMenu" xPosition="before" yPosition="below" overlapTrigger="false">
+  template: ` <mat-menu #menu="matMenu" xPosition="after" yPosition="below" overlapTrigger="false">
     <div mat-menu-item disabled *ngIf="!items?.length; else list">
       <i>No actions</i>
     </div>
