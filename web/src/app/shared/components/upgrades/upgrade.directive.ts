@@ -186,9 +186,13 @@ export class UpgradesDirective extends BaseDirective {
                 }
 
                 if (hostComponentMap.length === index+1) {
+                  if (!this.hc) this.hc = cluster;
                   this.prepare();
                 }
               })
+            } else {
+              this.hc = cluster;
+              this.prepare();
             }
           })
         }),
