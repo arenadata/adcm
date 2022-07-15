@@ -12,7 +12,7 @@
 
 
 import os
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 
 import ldap
 from django.contrib.auth.models import Group as DjangoGroup
@@ -216,7 +216,10 @@ class CustomLDAPBackend(LDAPBackend):
 
     @staticmethod
     def __get_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
-        return [i for i in ldap_groups if i[0] == group_name][0][1]
+        group_dn = ''
+        with suppress(IndexError):
+            group_dn = [i for i in ldap_groups if i[0] == group_name][0][1]
+        return group_dn
 
     @staticmethod
     def __get_rbac_group(group, ldap_group_dn):
