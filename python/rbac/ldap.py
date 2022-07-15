@@ -42,13 +42,12 @@ def _process_extra_filter(filterstr: str) -> str:
         return filterstr
 
 
-# pylint: disable=inconsistent-return-statements
 def configure_tls(enabled, cert_filepath='', conn=None):
     os.environ.pop(CERT_ENV_KEY, None)
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
 
     if not enabled:
-        return
+        return None
 
     if cert_filepath:
         os.environ[CERT_ENV_KEY] = cert_filepath
@@ -64,6 +63,7 @@ def configure_tls(enabled, cert_filepath='', conn=None):
 
     for opt_key, opt_val in opts.items():
         conn.set_option(opt_key, opt_val)
+    return None
 
 
 def is_tls(ldap_uri):
