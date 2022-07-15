@@ -18,7 +18,7 @@ import allure
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCMClient, Group, User
 
-from tests.library.assertions import sets_are_equal
+from tests.library.assertions import sets_are_equal, expect_api_error, expect_no_api_error
 
 SYNC_ACTION_NAME = 'run_ldap_sync'
 TEST_CONNECTION_ACTION = 'test_ldap_connection'
@@ -77,3 +77,28 @@ def check_existing_groups(
         sets_are_equal(existing_ldap, expected_ldap, message='Not all LDAP groups are presented in ADCM')
     with allure.step('Check local groups'):
         sets_are_equal(existing_local, expected_local, message='Not all local groups are presented in ADCM')
+
+
+def login_should_succeed(operation_name: str, client: ADCMClient, username: str, password: str):
+    """Check that given user can log in to ADCM without error"""
+    with allure.step(operation_name.capitalize()):
+        expect_no_api_error(
+            operation_name,
+            ADCMClient,
+            url=client.url,
+            user=username,
+            password=password,
+        )
+
+
+def login_should_fail(operation_name: str, client: ADCMClient, username: str, password: str, err=None):
+    """Check that an error is raised on login attempt with given credentials"""
+    with allure.step(operation_name.capitalize()):
+        expect_api_error(
+            operation_name,
+            ADCMClient,
+            err_=err,
+            url=client.url,
+            user=username,
+            password=password,
+        )
