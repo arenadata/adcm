@@ -29,18 +29,15 @@ class ADCMError:
     def __init__(self, title, code):
         self.title = title
         self.code = code
-        self._comparator = {
-            ErrorMessage: self._compare_error_message,
-            ADCMApiError: self._compare_adcm_api_error,
-        }
+        self._special_comparators = {ADCMApiError: self._compare_adcm_api_error}
 
     def equal(self, e, *args):
         """Assert error properties"""
-        for err_class, comparator in self._comparator.items():
+        for err_class, comparator in self._special_comparators.items():
             if e.__class__ is err_class or issubclass(e.__class__, err_class):
                 comparator(e, *args)
                 return
-        raise KeyError(f'Error comparator is not specified for {e.__class__}')
+        self._compare_error_message(e, *args)
 
     def _compare_error_message(self, e: ErrorMessage, *args):
         error = e.value.error if hasattr(e, 'value') else e.error
