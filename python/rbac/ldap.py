@@ -141,8 +141,9 @@ def _get_ldap_default_settings():
 
 
 class CustomLDAPBackend(LDAPBackend):
-    default_settings = {}
-    is_tls = False
+    def __init__(self):
+        self.default_settings = {}
+        self.is_tls = False
 
     def authenticate_ldap_user(self, ldap_user, password):
         self.default_settings = _get_ldap_default_settings()
