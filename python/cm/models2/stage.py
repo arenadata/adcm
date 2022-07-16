@@ -12,10 +12,10 @@
 
 from django.db import models
 
-from cm.models.action import AbstractAction, AbstractSubAction
-from cm.models.base import ADCMModel
-from cm.models.types import CONFIG_FIELD_TYPE, MONITORING_TYPE, PROTO_TYPE
-from cm.models.utils import get_default_constraint, get_default_from_edition
+from cm.models2.action import AbstractAction, AbstractSubAction
+from cm.models2.base import ADCMModel
+from cm.models2.types import CONFIG_FIELD_TYPE, MONITORING_TYPE, PROTO_TYPE
+from cm.models2.utils import get_default_constraint, get_default_from_edition
 
 
 class StagePrototype(ADCMModel):

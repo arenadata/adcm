@@ -12,8 +12,8 @@
 
 from django.db import models
 
-from cm.models.base import ADCMModel, Prototype
-from cm.models.types import CONFIG_FIELD_TYPE
+from cm.models2.base import ADCMModel, Prototype
+from cm.models2.types import CONFIG_FIELD_TYPE
 
 
 class PrototypeConfig(ADCMModel):

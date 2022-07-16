@@ -10,9 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models.base import ADCM
-from cm.models.cluster import Cluster, ClusterObject, ServiceComponent
-from cm.models.host import Host, HostProvider
+from cm.models2.base import ADCM
+from cm.models2.cluster import Cluster, ClusterObject, ServiceComponent
+from cm.models2.host import Host, HostProvider
 
 
 def get_model_by_type(object_type):

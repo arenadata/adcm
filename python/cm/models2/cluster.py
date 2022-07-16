@@ -13,8 +13,8 @@
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
-from cm.models.base import ADCMEntity, ADCMModel, Prototype
-from cm.models.utils import get_default_before_upgrade
+from cm.models2.base import ADCMEntity, ADCMModel, Prototype
+from cm.models2.utils import get_default_before_upgrade
 
 
 class Cluster(ADCMEntity):

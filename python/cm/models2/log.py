@@ -28,13 +28,13 @@ from django.utils import timezone
 
 from cm.config import FILE_DIR, Job
 from cm.errors import AdcmEx
-from cm.models.action import Action, SubAction
-from cm.models.base import ADCMEntity, ADCMModel, ConcernItem, DummyData, ObjectConfig
-from cm.models.cluster import Cluster, ClusterObject, ServiceComponent
-from cm.models.host import Host, HostProvider
-from cm.models.prototype import PrototypeConfig
-from cm.models.types import ConcernCause, ConcernType, FORMAT_TYPE, JOB_STATUS, LOG_TYPE
-from cm.models.utils import deep_merge
+from cm.models2.action import Action, SubAction
+from cm.models2.base import ADCMEntity, ADCMModel, ConcernItem, DummyData, ObjectConfig
+from cm.models2.cluster import Cluster, ClusterObject, ServiceComponent
+from cm.models2.host import Host, HostProvider
+from cm.models2.prototype import PrototypeConfig
+from cm.models2.types import ConcernCause, ConcernType, FORMAT_TYPE, JOB_STATUS, LOG_TYPE
+from cm.models2.utils import deep_merge
 
 
 def validate_line_break_character(value: str) -> None:

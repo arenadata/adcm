@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.models.action import Action, SubAction
-from cm.models.base import (
+from cm.models2.action import Action, SubAction
+from cm.models2.base import (
     ADCM,
     ADCMEntity,
     ADCMModel,
@@ -24,16 +24,16 @@ from cm.models.base import (
     Upgrade,
     UserProfile,
 )
-from cm.models.cluster import (
+from cm.models2.cluster import (
     Cluster,
     ClusterBind,
     ClusterObject,
     get_object_cluster,
     ServiceComponent,
 )
-from cm.models.get_model_by_type import get_model_by_type
-from cm.models.host import Host, HostComponent, HostProvider
-from cm.models.log import (
+from cm.models2.get_model_by_type import get_model_by_type
+from cm.models2.host import Host, HostComponent, HostProvider
+from cm.models2.log import (
     CheckLog,
     ConfigLog,
     GroupCheckLog,
@@ -44,8 +44,8 @@ from cm.models.log import (
     TaskLog,
     validate_line_break_character,
 )
-from cm.models.prototype import PrototypeConfig, PrototypeExport, PrototypeImport
-from cm.models.stage import (
+from cm.models2.prototype import PrototypeConfig, PrototypeExport, PrototypeImport
+from cm.models2.stage import (
     StageAction,
     StagePrototype,
     StagePrototypeConfig,
@@ -54,14 +54,14 @@ from cm.models.stage import (
     StageSubAction,
     StageUpgrade,
 )
-from cm.models.types import (
+from cm.models2.types import (
     ActionType,
     ConcernCause,
     ConcernType,
     MaintenanceModeType,
     PrototypeEnum,
 )
-from cm.models.utils import (
+from cm.models2.utils import (
     get_any,
     get_default_before_upgrade,
     get_default_constraint,

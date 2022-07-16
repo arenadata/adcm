@@ -12,7 +12,7 @@
 
 from django.db import models
 
-from cm.models.base import AbstractAction, AbstractSubAction, ADCMEntity, Prototype
+from cm.models2.base import AbstractAction, AbstractSubAction, ADCMEntity, Prototype
 
 
 class Action(AbstractAction):

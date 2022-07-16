@@ -20,7 +20,7 @@ from django.db import models
 
 from cm.errors import AdcmEx
 from cm.logger import log
-from cm.models.types import (
+from cm.models2.types import (
     ActionType,
     ConcernCause,
     ConcernType,
@@ -30,7 +30,7 @@ from cm.models.types import (
     PrototypeEnum,
     SCRIPT_TYPE,
 )
-from cm.models.utils import get_any, get_default_constraint, get_default_from_edition
+from cm.models2.utils import get_any, get_default_constraint, get_default_from_edition
 
 
 class ADCMManager(models.Manager):
