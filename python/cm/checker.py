@@ -112,8 +112,8 @@ def match_dict(data, rules, rule, path, parent=None, is_service=False):
             if i not in data:
                 if is_service and i == "service":
                     continue
-                else:
-                    raise FormatError(path, f'There is no required key "{i}" in map.', data, rule)
+
+                raise FormatError(path, f'There is no required key "{i}" in map.', data, rule)
     for k in data:
         is_service = data.get("type") == "service"
         new_path = path + [('Value of map key', k)]
