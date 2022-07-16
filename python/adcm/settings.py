@@ -77,7 +77,6 @@ INSTALLED_APPS = [
     'guardian',
     'adwp_events',
     'cm.apps.CmConfig',
-    'audit',
 ]
 
 MIDDLEWARE = [
