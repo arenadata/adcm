@@ -110,7 +110,9 @@ def match_dict(data, rules, rule, path, parent=None, is_service=False):
     if 'required_items' in rules[rule]:
         for i in rules[rule]['required_items']:
             if i not in data:
-                if not is_service and i == "service":
+                if is_service and i == "service":
+                    continue
+                else:
                     raise FormatError(path, f'There is no required key "{i}" in map.', data, rule)
     for k in data:
         is_service = data.get("type") == "service"
