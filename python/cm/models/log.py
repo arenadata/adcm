@@ -22,6 +22,8 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models.signals import m2m_changed
+from django.dispatch import receiver
 from django.utils import timezone
 
 from cm.config import FILE_DIR, Job
@@ -396,6 +398,19 @@ class GroupConfig(ADCMModel):
                 self.config.save()
         super().save(*args, **kwargs)
         self.preparing_file_type_field()
+
+
+@receiver(m2m_changed, sender=GroupConfig.hosts.through)
+def verify_host_candidate_for_group_config(sender, **kwargs):
+    """Checking host candidate for group config before add to group"""
+    group_config = kwargs.get('instance')
+    action = kwargs.get('action')
+    host_ids = kwargs.get('pk_set')
+
+    if action == 'pre_add':
+        for host_id in host_ids:
+            host = Host.objects.get(id=host_id)
+            group_config.check_host_candidate(host)
 
 
 class ConfigLog(ADCMModel):
