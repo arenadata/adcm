@@ -18,9 +18,6 @@ import cm.adcm_config
 
 
 class TestAdcmConfig(TestCase):
-    def setUp(self):
-        pass
-
     @patch('cm.adcm_config.cook_file_type_name')
     def test_process_config(self, mock_cook_file_type_name):
         mock_cook_file_type_name.return_value = 'data_from_file'

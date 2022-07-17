@@ -16,7 +16,7 @@ import cm.api
 import cm.job
 from cm.models import Host, ClusterObject, ServiceComponent, Action
 from cm.errors import AdcmEx
-from cm.tests_upgrade import SetUp
+from cm.unit_tests.tests_upgrade import SetUp
 
 
 class TestHC(TestCase):
