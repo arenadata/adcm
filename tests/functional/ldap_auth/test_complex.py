@@ -177,4 +177,5 @@ def _check_users_in_group(group: Group, *users: User):
 
 
 def _get_usernames_in_group(group: Group) -> Set[str]:
+    group.reread()
     return {u.username for u in group.user_list()}
