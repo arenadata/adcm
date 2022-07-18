@@ -328,7 +328,7 @@ class BasePageObject:
         page_name = self.__class__.__name__.replace('Page', '')
         with allure.step(f'Wait page {page_name} is opened'):
             wait_until_step_succeeds(_assert_page_is_opened, period=0.5, timeout=timeout)
-            self.wait_element_hide(CommonToolbarLocators.progress_bar)
+            self.wait_element_hide(CommonToolbarLocators.progress_bar, timeout=60)
 
     @allure.step('Write text to input element: "{text}"')
     def send_text_to_element(
