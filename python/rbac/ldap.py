@@ -12,7 +12,7 @@
 
 
 import os
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 
 import ldap
 from django.contrib.auth.models import Group as DjangoGroup
@@ -42,13 +42,12 @@ def _process_extra_filter(filterstr: str) -> str:
         return filterstr
 
 
-# pylint: disable=inconsistent-return-statements
 def configure_tls(enabled, cert_filepath='', conn=None):
     os.environ.pop(CERT_ENV_KEY, None)
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
 
     if not enabled:
-        return
+        return None
 
     if cert_filepath:
         os.environ[CERT_ENV_KEY] = cert_filepath
@@ -64,6 +63,7 @@ def configure_tls(enabled, cert_filepath='', conn=None):
 
     for opt_key, opt_val in opts.items():
         conn.set_option(opt_key, opt_val)
+    return None
 
 
 def is_tls(ldap_uri):
@@ -141,8 +141,9 @@ def _get_ldap_default_settings():
 
 
 class CustomLDAPBackend(LDAPBackend):
-    default_settings = {}
-    is_tls = False
+    def __init__(self):
+        self.default_settings = {}
+        self.is_tls = False
 
     def authenticate_ldap_user(self, ldap_user, password):
         self.default_settings = _get_ldap_default_settings()
@@ -216,7 +217,10 @@ class CustomLDAPBackend(LDAPBackend):
 
     @staticmethod
     def __get_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
-        return [i for i in ldap_groups if i[0] == group_name][0][1]
+        group_dn = ''
+        with suppress(IndexError):
+            group_dn = [i for i in ldap_groups if i[0] == group_name][0][1]
+        return group_dn
 
     @staticmethod
     def __get_rbac_group(group, ldap_group_dn):
