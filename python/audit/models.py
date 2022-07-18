@@ -40,6 +40,13 @@ class AuditLogOperationResult(models.TextChoices):
     InProgress = "in_progress", "in_progress"
 
 
+class AuditSessionLoginResult(models.TextChoices):
+    Success = "success", "success"
+    WrongPassword = "wrong_password", "wrong_password"
+    AccountDisabled = "account_disabled", "account_disabled"
+    UserNotFound = "user_not_found", "user_not_found"
+
+
 class AuditObject(models.Model):
     object_id = models.PositiveIntegerField()
     object_name = models.CharField(max_length=160)
@@ -54,12 +61,10 @@ class AuditLog(models.Model):
     operation_result = models.CharField(max_length=16, choices=AuditLogOperationResult.choices)
     operation_time = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    object_changes = models.JSONField(default=dict)
 
 
-class AuditObjectChanges(models.Model):
-    audit_object_id = models.ForeignKey(AuditObject, on_delete=models.CASCADE)
-    object_attr = models.CharField(max_length=160)
-    attr_old_value = models.CharField(max_length=160)
-    attr_new_value = models.CharField(max_length=160)
-    change_time = models.DateTimeField(auto_now_add=True)
-    audit_log = models.ForeignKey(AuditLog, on_delete=models.CASCADE)
+class AuditSession(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    login_result = models.CharField(max_length=64, choices=AuditSessionLoginResult.choices)
+    login_time = models.DateTimeField(auto_now_add=True)
