@@ -49,7 +49,7 @@
 </ng-template>
 
 <ng-template #controls let-value="value">
-  <div class="controls-container">
+  <div class="controls-container" [class.margin]="needMargin()">
 
     <mat-checkbox [(ngModel)]="verbose">Verbose</mat-checkbox>
 
