@@ -49,7 +49,6 @@ def test_basic_ldap_auth(sdk_client_fs, ldap_user, ldap_user_in_group):
         sdk_client_fs,
         ldap_user['name'],
         ldap_user['password'],
-        UNAUTHORIZED,
     )
 
 
