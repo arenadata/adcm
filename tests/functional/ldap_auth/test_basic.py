@@ -24,7 +24,7 @@ from adcm_pytest_plugin.utils import random_string
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import check_existing_users, DEFAULT_LOCAL_USERS, check_existing_groups
 from tests.library.assertions import expect_no_api_error, expect_api_error
-from tests.library.errorcodes import UNAUTHORIZED
+from tests.library.errorcodes import AUTH_ERROR
 
 pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad')]
 
@@ -44,7 +44,6 @@ def test_basic_ldap_auth(sdk_client_fs, ldap_user, ldap_user_in_group):
         sdk_client_fs,
         ldap_user['name'],
         ldap_user['password'],
-        UNAUTHORIZED,
     )
 
 
@@ -56,7 +55,7 @@ def test_remove_from_group_leads_to_access_loss(sdk_client_fs, ldap_ad, ldap_use
     username, password = ldap_user_in_group['name'], ldap_user_in_group['password']
     _login_should_succeed('login with LDAP user in group', sdk_client_fs, username, password)
     ldap_ad.remove_user_from_group(ldap_user_in_group['dn'], ldap_group['dn'])
-    _login_should_fail('login with removed from group LDAP user', sdk_client_fs, username, password, UNAUTHORIZED)
+    _login_should_fail('login with removed from group LDAP user', sdk_client_fs, username, password, AUTH_ERROR)
 
 
 @including_https
@@ -215,7 +214,7 @@ def _login_should_succeed(operation_name: str, client: ADCMClient, username: str
         )
 
 
-def _login_should_fail(operation_name: str, client: ADCMClient, username: str, password: str, err=None):
+def _login_should_fail(operation_name: str, client: ADCMClient, username: str, password: str, err=AUTH_ERROR):
     with allure.step(operation_name.capitalize()):
         expect_api_error(
             operation_name,

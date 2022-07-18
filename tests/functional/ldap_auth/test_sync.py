@@ -33,7 +33,7 @@ from tests.functional.ldap_auth.utils import (
     SYNC_ACTION_NAME,
 )
 from tests.library.assertions import expect_no_api_error, expect_api_error
-from tests.library.errorcodes import UNAUTHORIZED
+from tests.library.errorcodes import AUTH_ERROR
 from tests.library.ldap_interactions import LDAPTestConfig, configure_adcm_for_ldap
 
 
@@ -267,7 +267,7 @@ def session_should_expire(user: str, password: str, url: str):
             response = session.get(f'{url}/api/v1/cluster')
             assert response.status_code == 401, 'Request to ADCM should fail with 401 status'
     with allure.step('Check call via client is considered unauthorized'):
-        expect_api_error('get cluster list', client.cluster_list, err_=UNAUTHORIZED)
+        expect_api_error('get cluster list', client.cluster_list, err_=AUTH_ERROR)
 
 
 @allure.step('Run LDAP sync action')
