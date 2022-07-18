@@ -29,7 +29,6 @@ from tests.functional.ldap_auth.utils import (
     login_should_succeed,
     login_should_fail,
 )
-from tests.library.errorcodes import UNAUTHORIZED
 
 pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad')]
 
@@ -60,7 +59,7 @@ def test_remove_from_group_leads_to_access_loss(sdk_client_fs, ldap_ad, ldap_use
     username, password = ldap_user_in_group['name'], ldap_user_in_group['password']
     login_should_succeed('login with LDAP user in group', sdk_client_fs, username, password)
     ldap_ad.remove_user_from_group(ldap_user_in_group['dn'], ldap_group['dn'])
-    login_should_fail('login with removed from group LDAP user', sdk_client_fs, username, password, UNAUTHORIZED)
+    login_should_fail('login with removed from group LDAP user', sdk_client_fs, username, password)
 
 
 @including_https
