@@ -169,10 +169,13 @@ export class BellComponent extends BaseDirective implements AfterViewInit {
       const updatedTaskId = event.object.id;
       const index = tasks.findIndex(item => item.id === updatedTaskId);
       if (index >= 0) {
-        const task: TaskRaw = Object.assign({}, tasks[index]);
-        this.taskService.get(updatedTaskId).subscribe((updatedTask) => this.updateTask(updatedTaskId, updatedTask, event.object.details.value));
-        tasks.splice(index, 1, task);
-        this.tasks.next(tasks);
+        this.taskService.get(updatedTaskId).subscribe((updatedTask) => {
+          this.updateTask(updatedTaskId, updatedTask, event.object.details.value);
+
+          const task: TaskRaw = Object.assign({}, this.tasks.value[index]);
+          tasks.splice(index, 1, task);
+          this.tasks.next(tasks);
+        });
       } else {
         this.taskService.get(event.object.id).subscribe((task) => {
           task.status = event.object.details.value;
