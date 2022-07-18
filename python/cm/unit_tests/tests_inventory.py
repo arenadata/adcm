@@ -20,11 +20,6 @@ from cm import models
 
 
 class TestInventory(TestCase):
-    # pylint: disable=too-many-locals
-
-    def setUp(self):
-        pass
-
     @patch('cm.inventory.process_config')
     @patch('cm.inventory.get_prototype_config')
     def test_process_config_and_attr(self, mock_get_prototype_config, mock_process_config):
@@ -189,6 +184,8 @@ class TestInventory(TestCase):
     @patch('json.dump')
     @patch('cm.inventory.open')
     def test_prepare_job_inventory(self, mock_open, mock_dump):
+        # pylint: disable=too-many-locals
+
         bundle = models.Bundle.objects.create(edition='community')
         proto1 = models.Prototype.objects.create(bundle=bundle, version='2.2', type='cluster')
         cluster = models.Cluster.objects.create(prototype=proto1)

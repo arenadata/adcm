@@ -27,9 +27,6 @@ from cm.unit_tests import utils
 
 
 class TestJob(TestCase):
-    # pylint: disable=too-many-instance-attributes
-    # pylint: disable=too-many-public-methods
-    # pylint: disable=too-many-locals
     def setUp(self):
         log.debug = Mock()
         log.error = Mock()
@@ -127,6 +124,8 @@ class TestJob(TestCase):
             self.assertListEqual(m_state_unset, exp_m_state_unset)
 
     def test_set_action_state(self):
+        # pylint: disable=too-many-locals
+
         bundle = models.Bundle.objects.create()
         prototype = models.Prototype.objects.create(bundle=bundle)
         cluster = models.Cluster.objects.create(prototype=prototype)
@@ -333,6 +332,8 @@ class TestJob(TestCase):
         mock_get_bundle_root,
         mock_cook_script,
     ):
+        # pylint: disable=too-many-locals
+
         bundle = models.Bundle.objects.create()
         proto1 = models.Prototype.objects.create(bundle=bundle, type='cluster')
         cluster = models.Cluster.objects.create(prototype=proto1)
@@ -357,7 +358,6 @@ class TestJob(TestCase):
             action=cluster_action, start_date=timezone.now(), finish_date=timezone.now()
         )
 
-        # sub_action = models.SubAction(action=action)
         conf = 'test'
         proto4 = models.Prototype.objects.create(bundle=bundle, type='provider')
         provider_action = models.Action.objects.create(prototype=proto4)
@@ -443,6 +443,8 @@ class TestJob(TestCase):
     def test_re_prepare_job(
         self, mock_prepare_job, mock_get_new_hc, mock_get_old_hc, mock_cook_delta
     ):
+        # pylint: disable=too-many-locals
+
         new_hc = Mock()
         mock_get_new_hc.return_value = new_hc
         old_hc = Mock()
