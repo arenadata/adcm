@@ -80,12 +80,12 @@ class TestLDAPSyncAction:
 
     pytestmark = [pytest.mark.usefixtures('configure_adcm_ldap_ad')]
 
-    def test_ldap_simple_sync(self, sdk_client_fs, ldap_user, ldap_user_in_group, ldap_group):
+    def test_ldap_simple_sync(self, sdk_client_fs, ldap_user_in_group, ldap_group):
         """Test that LDAP sync action pulls users and groups from LDAP"""
         check_existing_users(sdk_client_fs)
         check_existing_groups(sdk_client_fs)
         _run_sync(sdk_client_fs)
-        check_existing_users(sdk_client_fs, {ldap_user['name'], ldap_user_in_group['name']})
+        check_existing_users(sdk_client_fs, {ldap_user_in_group['name']})
         check_existing_groups(sdk_client_fs, {ldap_group['name']})
 
     def test_sync_with_already_existing_group(self, sdk_client_fs, ldap_user_in_group, ldap_group):
@@ -104,7 +104,7 @@ class TestLDAPSyncAction:
             u.username for u in ldap_group_in_adcm.user_list()
         ], f'Group from LDAP should have user {ldap_user_in_group["name"]}'
 
-    def test_sync_with_already_existing_user(self, sdk_client_fs, ldap_user_in_group):
+    def test_sync_with_already_existing_user(self, sdk_client_fs, ldap_group, ldap_user_in_group):
         """
         Test that during the sync existing users isn't overridden
         """
@@ -128,41 +128,39 @@ class TestLDAPSyncAction:
                 u.username for u in group.user_list()
             ], 'Local user should still be a part of the group'
         check_existing_users(sdk_client_fs, expected_local=expected_local_users)
-        check_existing_groups(sdk_client_fs, expected_local=[group_name])
+        check_existing_groups(sdk_client_fs, expected_ldap=[ldap_group['name']], expected_local=[group_name])
 
     # pylint: disable-next=too-many-arguments
-    def test_ldap_group_removed(self, sdk_client_fs, ldap_ad, ldap_group, ldap_user, ldap_user_in_group):
+    def test_ldap_group_removed(self, sdk_client_fs, ldap_ad, ldap_group, ldap_user_in_group):
         """Test LDAP group removed from ADCM after it's removed from LDAP"""
         _run_sync(sdk_client_fs)
-        check_existing_users(sdk_client_fs, {ldap_user_in_group['name'], ldap_user['name']})
+        check_existing_users(sdk_client_fs, {ldap_user_in_group['name']})
         check_existing_groups(sdk_client_fs, {ldap_group['name']})
         with allure.step('Delete group from LDAP'):
             ldap_ad.delete(ldap_group['dn'])
         _run_sync(sdk_client_fs)
-        check_existing_users(sdk_client_fs, {ldap_user_in_group['name'], ldap_user['name']})
+        check_existing_users(sdk_client_fs, {ldap_user_in_group['name']})
         check_existing_groups(sdk_client_fs)
 
     # pylint: disable-next=too-many-arguments
-    def test_user_removed_from_group(self, sdk_client_fs, ldap_ad, ldap_group, ldap_user_in_group, ldap_user):
+    def test_user_removed_from_group(self, sdk_client_fs, ldap_ad, ldap_group, ldap_user_in_group):
         """Test that when user is removed from group in AD, it is also removed in ADCM's LDAP group"""
         another_group: Group = sdk_client_fs.group_create('Another group')
         _run_sync(sdk_client_fs)
         with allure.step('Add LDAP users to the local group'):
             user_in_group = get_ldap_user_from_adcm(sdk_client_fs, ldap_user_in_group['name'])
-            simple_user = get_ldap_user_from_adcm(sdk_client_fs, ldap_user['name'])
             group = get_ldap_group_from_adcm(sdk_client_fs, ldap_group['name'])
             another_group.add_user(user_in_group)
-            another_group.add_user(simple_user)
         with allure.step('Remove user in AD from LDAP group and rerun sync'):
             ldap_ad.remove_user_from_group(ldap_user_in_group['dn'], ldap_group['dn'])
             _run_sync(sdk_client_fs)
         with allure.step('Check user was removed only from LDAP group'):
-            check_existing_users(sdk_client_fs, {ldap_user['name'], ldap_user_in_group['name']})
+            check_existing_users(sdk_client_fs, {ldap_user_in_group['name']})
             check_existing_groups(sdk_client_fs, {ldap_group['name']}, {another_group.name})
             group.reread()
             assert len(group.user_list()) == 0, 'Group from LDAP should be empty'
             another_group.reread()
-            assert len(another_group.user_list()) == 2, 'Local group should still have both users in it'
+            assert len(another_group.user_list()) == 1, 'Local group should still have deactivated users in it'
 
     def test_user_deactivated(self, sdk_client_fs, ldap_ad, ldap_user_in_group):
         """Test that user is deactivated in ADCM after it's deactivated in AD"""
@@ -183,19 +181,22 @@ class TestLDAPSyncAction:
 
     def test_user_deleted(self, sdk_client_fs, ldap_ad, ldap_user_in_group):
         """Test that user is deleted in ADCM after it's deleted in AD"""
-        ldap_user = ldap_user_in_group
-        credentials = {'user': ldap_user['name'], 'password': ldap_user['password'], 'url': sdk_client_fs.url}
+        credentials = {
+            'user': ldap_user_in_group['name'],
+            'password': ldap_user_in_group['password'],
+            'url': sdk_client_fs.url,
+        }
         with allure.step('Run sync and check that user is active and can log in'):
             _run_sync(sdk_client_fs)
 
-            check_existing_users(sdk_client_fs, {ldap_user['name']})
+            check_existing_users(sdk_client_fs, {ldap_user_in_group['name']})
             expect_no_api_error('login as LDAP user', ADCMClient, **credentials)
         with allure.step('Delete user in LDAP and check access denied'):
             with session_should_expire(**credentials):
-                ldap_ad.delete(ldap_user['dn'])
+                ldap_ad.delete(ldap_user_in_group['dn'])
                 _run_sync(sdk_client_fs)
-                check_existing_users(sdk_client_fs, {ldap_user['name']})
-                user = get_ldap_user_from_adcm(sdk_client_fs, ldap_user['name'])
+                check_existing_users(sdk_client_fs, {ldap_user_in_group['name']})
+                user = get_ldap_user_from_adcm(sdk_client_fs, ldap_user_in_group['name'])
                 assert not user.is_active, 'User should be deactivated'
                 expect_api_error('login as deleted user', ADCMClient, **credentials)
 
