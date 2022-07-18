@@ -35,9 +35,9 @@ def bind():
             configure_tls(is_tls(ldap_URI), os.environ.get(CERT_ENV_KEY, ''), conn)
             conn.simple_bind_s(ldap_config['BIND_DN'], ldap_config['BIND_PASSWORD'])
         except ldap.LDAPError as e:
-            print(f"Can't connect to {ldap_URI} with user: {ldap_config['BIND_DN']}. Error: {e}")
+            sys.stderr.write(f"Can't connect to {ldap_URI} with user: {ldap_config['BIND_DN']}. Error: {e}\n")
             raise
-        print(f"Connection successful to {ldap_URI}")
+        sys.stdout.write(f"Connection successful to {ldap_URI}\n")
 
 
 if __name__ == '__main__':
