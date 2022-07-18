@@ -107,6 +107,10 @@ def match_list(data, rules, rule, path, parent=None, is_service=False):
 
 def match_dict(data, rules, rule, path, parent=None, is_service=False):
     check_match_type('match_dict', data, dict, path, rule, parent)
+
+    if is_service is False:
+        is_service = data.get("type") == "service"
+
     if 'required_items' in rules[rule]:
         for i in rules[rule]['required_items']:
             if i not in data:
@@ -114,8 +118,8 @@ def match_dict(data, rules, rule, path, parent=None, is_service=False):
                     continue
 
                 raise FormatError(path, f'There is no required key "{i}" in map.', data, rule)
+
     for k in data:
-        is_service = data.get("type") == "service"
         new_path = path + [('Value of map key', k)]
         if 'items' in rules[rule] and k in rules[rule]['items']:
             process_rule(data[k], rules, rules[rule]['items'][k], new_path, data, is_service)
@@ -123,6 +127,7 @@ def match_dict(data, rules, rule, path, parent=None, is_service=False):
             process_rule(data[k], rules, rules[rule]['default_item'], new_path, data, is_service)
         else:
             msg = f'Map key "{k}" is not allowed here (rule "{rule}")'
+
             raise FormatError(path, msg, data, rule)
 
 
