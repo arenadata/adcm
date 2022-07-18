@@ -27,7 +27,7 @@ import websockets.client
 import yaml
 
 from _pytest.python import Function, FunctionDefinition, Module
-from adcm_client.objects import ADCMClient, User
+from adcm_client.objects import ADCMClient, User, Provider, Bundle
 from adcm_pytest_plugin.utils import random_string
 from allure_commons.model2 import TestResult, Parameter
 from allure_pytest.listener import AllureListener
@@ -170,6 +170,29 @@ def _get_listener_by_item_if_present(item: Function) -> Optional[AllureListener]
         )
         return listener
     return None
+
+
+# Generic bundles
+
+GENERIC_BUNDLES_DIR = pathlib.Path(__file__).parent / 'generic_bundles'
+
+
+@pytest.fixture()
+def generic_bundle(request, sdk_client_fs) -> Bundle:
+    """Upload bundle from generic bundles dir"""
+    if not hasattr(request, "param") or not isinstance(request.param, str):
+        raise ValueError('You should parametrize "generic_bundle" fixture with bundle dir name as string')
+    return sdk_client_fs.upload_from_fs(GENERIC_BUNDLES_DIR / request.param)
+
+
+@pytest.fixture()
+def generic_provider(sdk_client_fs) -> Provider:
+    """Create generic simple provider to use as "dummy" provider in tests"""
+    bundle = sdk_client_fs.upload_from_fs(GENERIC_BUNDLES_DIR / 'simple_provider')
+    return bundle.provider_create(f'Simple Test Provider {random_string(4)}')
+
+
+# Archives
 
 
 @pytest.fixture()

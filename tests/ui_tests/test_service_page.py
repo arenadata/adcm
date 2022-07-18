@@ -453,6 +453,7 @@ class TestServiceConfigPage:
         for item in CONFIG_ITEMS:
             service_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
+    @pytest.mark.skip()
     @pytest.mark.full()
     def test_save_configuration_hell_on_service_config_page(self, app_fs, sdk_client_fs):
         """
@@ -503,7 +504,7 @@ class TestServiceConfigPage:
                 service_config_page.config.type_in_field_with_few_inputs(row=row, values=value)
         service_config_page.config.save_config(load_timeout=40)
         with allure.step('Ensure page is still opened'):
-            service_config_page.wait_page_is_opened(timeout=1)
+            service_config_page.wait_page_is_opened(timeout=15)
         with allure.step('Check that popup is not presented on page'):
             assert not service_config_page.is_popup_presented_on_page(), 'No popup should be shown after save'
 
