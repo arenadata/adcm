@@ -22,9 +22,13 @@ from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import random_string
 
 from tests.functional.conftest import only_clean_adcm
-from tests.functional.ldap_auth.utils import check_existing_users, DEFAULT_LOCAL_USERS, check_existing_groups
-from tests.library.assertions import expect_no_api_error, expect_api_error
-from tests.library.errorcodes import AUTH_ERROR
+from tests.functional.ldap_auth.utils import (
+    check_existing_users,
+    DEFAULT_LOCAL_USERS,
+    check_existing_groups,
+    login_should_succeed,
+    login_should_fail,
+)
 
 pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad')]
 
@@ -36,10 +40,10 @@ def test_basic_ldap_auth(sdk_client_fs, ldap_user, ldap_user_in_group):
     1. Login of user in "correct" group is permitted
     2. Login of user not in group is not permitted
     """
-    _login_should_succeed(
+    login_should_succeed(
         'login with LDAP user in group', sdk_client_fs, ldap_user_in_group['name'], ldap_user_in_group['password']
     )
-    _login_should_fail(
+    login_should_fail(
         'login with LDAP user not in allowed group',
         sdk_client_fs,
         ldap_user['name'],
@@ -53,9 +57,9 @@ def test_remove_from_group_leads_to_access_loss(sdk_client_fs, ldap_ad, ldap_use
     Test that removing LDAP user from "allowed" group leads to lost access to ADCM.
     """
     username, password = ldap_user_in_group['name'], ldap_user_in_group['password']
-    _login_should_succeed('login with LDAP user in group', sdk_client_fs, username, password)
+    login_should_succeed('login with LDAP user in group', sdk_client_fs, username, password)
     ldap_ad.remove_user_from_group(ldap_user_in_group['dn'], ldap_group['dn'])
-    _login_should_fail('login with removed from group LDAP user', sdk_client_fs, username, password, AUTH_ERROR)
+    login_should_fail('login with removed from group LDAP user', sdk_client_fs, username, password)
 
 
 @including_https
@@ -64,9 +68,9 @@ def test_deactivation_leads_to_access_loss(sdk_client_fs, ldap_ad, ldap_user_in_
     Test that LDAP user deactivation leads to lost access to ADCM.
     """
     username, password = ldap_user_in_group['name'], ldap_user_in_group['password']
-    _login_should_succeed('login with LDAP user in group', sdk_client_fs, username, password)
+    login_should_succeed('login with LDAP user in group', sdk_client_fs, username, password)
     ldap_ad.deactivate_user(ldap_user_in_group['dn'])
-    _login_should_fail('login with removed from group LDAP user', sdk_client_fs, username, password)
+    login_should_fail('login with removed from group LDAP user', sdk_client_fs, username, password)
 
 
 def test_ldap_user_access_restriction(sdk_client_fs, ldap_ad, ldap_group, ldap_basic_ous):
@@ -84,16 +88,16 @@ def test_ldap_user_access_restriction(sdk_client_fs, ldap_ad, ldap_group, ldap_b
     with allure.step('Create user and deactivate it'):
         user_dn = ldap_ad.create_user(username, password, users_ou)
         ldap_ad.deactivate_user(user_dn)
-    _login_should_fail('login as deactivated user not in group', sdk_client_fs, username, password)
+    login_should_fail('login as deactivated user not in group', sdk_client_fs, username, password)
     ldap_ad.add_user_to_group(user_dn, ldap_group['dn'])
-    _login_should_fail('login as deactivated user in group', sdk_client_fs, username, password)
+    login_should_fail('login as deactivated user in group', sdk_client_fs, username, password)
     ldap_ad.activate_user(user_dn)
-    _login_should_succeed('login as activated user in group', sdk_client_fs, username, password)
+    login_should_succeed('login as activated user in group', sdk_client_fs, username, password)
     ldap_ad.set_user_password(user_dn, new_password)
-    _login_should_fail('login as activated user with wrong password', sdk_client_fs, username, password, None)
-    _login_should_succeed('login as activated user with new password', sdk_client_fs, username, new_password)
+    login_should_fail('login as activated user with wrong password', sdk_client_fs, username, password, None)
+    login_should_succeed('login as activated user with new password', sdk_client_fs, username, new_password)
     ldap_ad.remove_user_from_group(user_dn, ldap_group['dn'])
-    _login_should_fail('login as user removed from group', sdk_client_fs, username, new_password)
+    login_should_fail('login as user removed from group', sdk_client_fs, username, new_password)
 
 
 @including_https
@@ -106,10 +110,10 @@ def test_ssl_ldap_fails_with_wrong_path(sdk_client_fs, ldap_user_in_group):
     user, password = ldap_user_in_group['name'], ldap_user_in_group['password']
     adcm = sdk_client_fs.adcm()
 
-    _login_should_succeed('login with LDAP user and OK config', sdk_client_fs, user, password)
+    login_should_succeed('login with LDAP user and OK config', sdk_client_fs, user, password)
     with allure.step('Set incorrect path to a file and check login fails'):
         adcm.config_set_diff({'ldap_integration': {'tls_ca_cert_file': '/does/not/exist'}})
-        _login_should_fail('login with LDAP user and wrong file in config', sdk_client_fs, user, password)
+        login_should_fail('login with LDAP user and wrong file in config', sdk_client_fs, user, password)
 
 
 @including_https
@@ -122,13 +126,13 @@ def test_ssl_ldap_fails_with_wrong_cert_content(adcm_fs, sdk_client_fs, ldap_use
     user, password = ldap_user_in_group['name'], ldap_user_in_group['password']
     adcm = sdk_client_fs.adcm()
 
-    _login_should_succeed('login with LDAP user and OK config', sdk_client_fs, user, password)
+    login_should_succeed('login with LDAP user and OK config', sdk_client_fs, user, password)
     with allure.step('Set incorrect data to a cert file and check login fails'):
         path = adcm.config()['ldap_integration']['tls_ca_cert_file']
         result = adcm_fs.container.exec_run(['sh', '-c', f'echo "notacert" > {path}'])
         if result.exit_code != 0:
             raise ValueError('Failed to change certificate content')
-        _login_should_fail('login with LDAP user and wrong cert content', sdk_client_fs, user, password)
+        login_should_fail('login with LDAP user and wrong cert content', sdk_client_fs, user, password)
 
 
 def _alter_user_search_base(client: ADCMClient) -> dict:
@@ -156,11 +160,11 @@ def test_ldap_config_change(change_name: str, config: Union[dict, Callable], sdk
     user, password = ldap_user_in_group['name'], ldap_user_in_group['password']
     adcm = sdk_client_fs.adcm()
 
-    _login_should_succeed(login_operation, sdk_client_fs, user, password)
+    login_should_succeed(login_operation, sdk_client_fs, user, password)
     with allure.step(f'Check login is disabled after: {change_name}'):
         config = config if not callable(config) else config(sdk_client_fs)
         adcm.config_set_diff(config)
-        _login_should_fail(login_operation, sdk_client_fs, user, password)
+        login_should_fail(login_operation, sdk_client_fs, user, password)
 
 
 @pytest.mark.parametrize('action_name', ['test_ldap_connection', 'run_ldap_sync'])
@@ -189,8 +193,8 @@ def test_login_as_existing_user_is_forbidden(sdk_client_fs, ldap_user_in_group):
         local_user: User = sdk_client_fs.user_create(ldap_user_in_group['name'], local_password)
     check_existing_users(sdk_client_fs, expected_local=expected_local_users)
     check_existing_groups(sdk_client_fs)
-    _login_should_succeed('local user login', sdk_client_fs, local_user.username, local_password)
-    _login_should_fail(
+    login_should_succeed('local user login', sdk_client_fs, local_user.username, local_password)
+    login_should_fail(
         'login as LDAP user with same username as local',
         sdk_client_fs,
         ldap_user_in_group['name'],
@@ -201,26 +205,3 @@ def test_login_as_existing_user_is_forbidden(sdk_client_fs, ldap_user_in_group):
         assert local_user.type == 'local', 'User type should be "local"'
     check_existing_users(sdk_client_fs, expected_local=expected_local_users)
     check_existing_groups(sdk_client_fs)
-
-
-def _login_should_succeed(operation_name: str, client: ADCMClient, username: str, password: str):
-    with allure.step(operation_name.capitalize()):
-        expect_no_api_error(
-            operation_name,
-            ADCMClient,
-            url=client.url,
-            user=username,
-            password=password,
-        )
-
-
-def _login_should_fail(operation_name: str, client: ADCMClient, username: str, password: str, err=AUTH_ERROR):
-    with allure.step(operation_name.capitalize()):
-        expect_api_error(
-            operation_name,
-            ADCMClient,
-            err_=err,
-            url=client.url,
-            user=username,
-            password=password,
-        )
