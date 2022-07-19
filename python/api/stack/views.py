@@ -10,30 +10,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import decorators
-from rest_framework import status
-from rest_framework.authentication import TokenAuthentication, SessionAuthentication
+import cm.api
+import cm.bundle
+from api.action.serializers import StackActionSerializer
+from api.base_view import (
+    DetailView,
+    GenericUIView,
+    GenericUIViewSet,
+    ModelPermOrReadOnlyForAuth,
+    PaginatedView,
+)
+from api.stack import serializers
+from api.utils import check_obj
+from audit.utils import audit
+from cm.models import (
+    Action,
+    Bundle,
+    Prototype,
+    PrototypeConfig,
+    PrototypeExport,
+    PrototypeImport,
+    Upgrade,
+)
+from rest_framework import decorators, status
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.mixins import CreateModelMixin
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-
-import cm.api
-import cm.bundle
-from api.action.serializers import StackActionSerializer
-from api.base_view import (
-    GenericUIView,
-    DetailView,
-    PaginatedView,
-    GenericUIViewSet,
-    ModelPermOrReadOnlyForAuth,
-)
-from api.utils import check_obj
-from cm.models import Bundle, Prototype, Action
-from cm.models import PrototypeConfig, Upgrade, PrototypeExport
-from cm.models import PrototypeImport
-from . import serializers
 
 
 class CsrfOffSessionAuthentication(SessionAuthentication):
@@ -47,6 +52,7 @@ class UploadBundle(GenericUIView):
     authentication_classes = (CsrfOffSessionAuthentication, TokenAuthentication)
     parser_classes = (MultiPartParser,)
 
+    @audit
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
@@ -69,6 +75,7 @@ class LoadBundle(CreateModelMixin, GenericUIViewSet):
         cm.api.load_host_map()
         return Response(status=status.HTTP_200_OK)
 
+    @audit
     def create(self, request, *args, **kwargs):
         """
         post:

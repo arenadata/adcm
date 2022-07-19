@@ -10,8 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
+
+from django.contrib.auth.models import User
 from django.db import models
-from rbac.models import User
 
 
 class AuditObjectType(models.TextChoices):
@@ -55,7 +57,7 @@ class AuditObject(models.Model):
 
 
 class AuditLog(models.Model):
-    audit_object_id = models.ForeignKey(AuditObject, on_delete=models.CASCADE, null=True)
+    audit_object = models.ForeignKey(AuditObject, on_delete=models.CASCADE, null=True)
     operation_name = models.CharField(max_length=160)
     operation_type = models.CharField(max_length=16, choices=AuditLogOperationType.choices)
     operation_result = models.CharField(max_length=16, choices=AuditLogOperationResult.choices)
@@ -68,3 +70,24 @@ class AuditSession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     login_result = models.CharField(max_length=64, choices=AuditSessionLoginResult.choices)
     login_time = models.DateTimeField(auto_now_add=True)
+
+
+@dataclass
+class AuditOperation:
+    name: str
+    operation_type: str
+    object_type: str
+
+
+AUDIT_OPERATION_MAP = {
+    "LoadBundle": AuditOperation(
+        name="Bundle loaded",
+        operation_type=AuditLogOperationType.Create.label,
+        object_type=AuditObjectType.Bundle.label,
+    ),
+    "UploadBundle": AuditOperation(
+        name="Bundle uploaded",
+        operation_type=AuditLogOperationType.Create.label,
+        object_type=AuditObjectType.Bundle.label,
+    ),
+}
