@@ -570,9 +570,14 @@ class AdminPoliciesPage(GeneralAdminPage):
         for item in items.split(", "):
             self.wait_element_visible(available_items_locator)
             for count, available_item in enumerate(self.find_elements(available_items_locator)):
-                if available_item.text == item:
-                    available_item.click()
-                    break
+                try:
+                    if available_item.text == item:
+                        available_item.click()
+                        break
+                except StaleElementReferenceException:
+                    if self.find_elements(available_items_locator)[count].text == item:
+                        self.find_elements(available_items_locator)[count].click()
+                        break
             else:
                 raise AssertionError(f"There are no item {item} in select popup")
 
@@ -589,12 +594,8 @@ class AdminPoliciesPage(GeneralAdminPage):
 
         def fill_select(locator_select: Locator, locator_items: Locator, values: str):
             with allure.step(f"Select {values} in popup"):
-                try:
-                    self.wait_element_visible(locator_select)
-                    self.find_and_click(locator_select)
-                except StaleElementReferenceException:
-                    self.scroll_to(locator_select)
-                    self.find_and_click(locator_select)
+                self.wait_element_visible(locator_select)
+                self.find_and_click(locator_select)
                 self.wait_element_visible(locator_items)
                 self.fill_select_in_policy_popup(values, locator_items)
 
