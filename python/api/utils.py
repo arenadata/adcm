@@ -267,4 +267,4 @@ class SuperuserPermissionListMixin(PermissionListMixin):
         else:
             exclude_pks = self.superuser_queryset.values_list('pk', flat=True)
 
-        return super().get_queryset(*args, **kwargs).model.objects.exclude(pk__in=exclude_pks)
+        return super().get_queryset(*args, **kwargs).exclude(pk__in=exclude_pks)
