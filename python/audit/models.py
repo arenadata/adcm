@@ -55,7 +55,7 @@ class AuditObject(models.Model):
 
 
 class AuditLog(models.Model):
-    audit_object_id = models.ForeignKey(AuditObject, on_delete=models.CASCADE)
+    audit_object_id = models.ForeignKey(AuditObject, on_delete=models.CASCADE, null=True)
     operation_name = models.CharField(max_length=160)
     operation_type = models.CharField(max_length=16, choices=AuditLogOperationType.choices)
     operation_result = models.CharField(max_length=16, choices=AuditLogOperationResult.choices)
@@ -65,6 +65,6 @@ class AuditLog(models.Model):
 
 
 class AuditSession(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     login_result = models.CharField(max_length=64, choices=AuditSessionLoginResult.choices)
     login_time = models.DateTimeField(auto_now_add=True)
