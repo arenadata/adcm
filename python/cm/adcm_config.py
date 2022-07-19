@@ -998,7 +998,10 @@ def set_object_config(obj, keys, value):
     replace_object_config(obj, key, subkey, value)
     if pconf.type == 'file':
         save_file_type(obj, key, subkey, value)
-    log.info('update %s config %s/%s to "%s"', obj_ref(obj), key, subkey, value)
+    log_value = value
+    if pconf.type in ('password', 'secrettext'):
+        log_value = '****'
+    log.info('update %s config %s/%s to "%s"', obj_ref(obj), key, subkey, log_value)
     return value
 
 
