@@ -20,9 +20,11 @@ sys.path.append("/adcm/python/")
 
 import adcm.init_django  # pylint: disable=unused-import
 from rbac.models import User, Group, OriginType
-from rbac.ldap import _get_ldap_default_settings
+from rbac.ldap import _get_ldap_default_settings, configure_tls, is_tls
 from cm.logger import log
 from django.db import DataError, IntegrityError
+
+CERT_ENV_KEY = 'LDAPTLS_CACERT'
 
 
 class SyncLDAP:
@@ -36,15 +38,17 @@ class SyncLDAP:
         return self._conn
 
     def _bind(self):
-        ldap.set_option(ldap.OPT_REFERRALS, 0)
-        l = ldap.initialize(self.settings["SERVER_URI"])
-        l.protocol_version = ldap.VERSION3
         try:
-            l.simple_bind_s(self.settings["BIND_DN"], self.settings["BIND_PASSWORD"])
+            ldap.set_option(ldap.OPT_REFERRALS, 0)
+            conn = ldap.initialize(self.settings["SERVER_URI"])
+            conn.protocol_version = ldap.VERSION3
+            configure_tls(is_tls(self.settings["SERVER_URI"]), os.environ.get(CERT_ENV_KEY, ''), conn)
+            conn.simple_bind_s(self.settings["BIND_DN"], self.settings["BIND_PASSWORD"])
         except ldap.LDAPError as e:
             sys.stderr.write(f"Can't connect to {self.settings['SERVER_URI']} with user: {self.settings['BIND_DN']}. Error: {e}\n")
+
             raise
-        return l
+        return conn
 
     def unbind(self):
         if self._conn is not None:
