@@ -246,10 +246,10 @@ class TestAdminSettingsPage:
         """Test ldap"""
         params = {'test_action': "Test LDAP connection", 'connect_action': "Run LDAP sync", "test_value": "test"}
         with allure.step("Check ldap actions are disabled"):
-            assert settings_page.toolbar.is_adcm_actions_inactive(
+            assert settings_page.toolbar.is_adcm_action_inactive(
                 action_name=params['connect_action']
             ), f"Action {params['connect_action']} should be disabled"
-            assert settings_page.toolbar.is_adcm_actions_inactive(
+            assert settings_page.toolbar.is_adcm_action_inactive(
                 action_name=params['test_action']
             ), f"Action {params['test_action']} should be disabled"
         with allure.step("Fill ldap config"):
@@ -264,10 +264,10 @@ class TestAdminSettingsPage:
             settings_page.config.save_config()
             settings_page.config.wait_config_loaded()
         with allure.step("Check ldap actions are enabled"):
-            assert not settings_page.toolbar.is_adcm_actions_inactive(
+            assert not settings_page.toolbar.is_adcm_action_inactive(
                 action_name=params['connect_action']
             ), f"Action {params['connect_action']} should be enabled"
-            assert not settings_page.toolbar.is_adcm_actions_inactive(
+            assert not settings_page.toolbar.is_adcm_action_inactive(
                 action_name=params['test_action']
             ), f"Action {params['test_action']} should be enabled"
         with allure.step("Check Test LDAP connection action"):

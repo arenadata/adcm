@@ -52,7 +52,7 @@ class CommonToolbar(BasePageObject):
         self.wait_element_hide(ActionDialog.body)
 
     @allure.step("Check action {action_name} in ADCM tab is inactive")
-    def is_adcm_actions_inactive(self, action_name: str):
+    def is_adcm_action_inactive(self, action_name: str):
         """Check Action from toolbar"""
 
         self.wait_element_visible(CommonToolbarLocators.admin_link)
