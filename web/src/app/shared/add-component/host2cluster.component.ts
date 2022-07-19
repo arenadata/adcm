@@ -78,7 +78,7 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
   selected: { [key: number]: boolean } = {};
 
   get disabled() {
-    return !Object.keys(this.selected).length;
+    return !Object.keys(this.selected)?.length;
   }
 
   ngOnInit() {
@@ -101,7 +101,7 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
         this.showForm = !r.count;
         this.displayMode = r.count > 0 ? 2 : 1;
         this.list = r.results;
-        if (this.listHosts?.options.length) this.allCbx.checked = false;
+        if (this.listHosts?.options?.length) this.allCbx.checked = false;
       });
   }
 

@@ -61,7 +61,7 @@ export class ActionsComponent extends BaseDirective implements OnInit, AfterView
   @Input() cluster: { id: number; hostcomponent: string };
   @Input() set source(actions: IAction[]) {
     this.actions = actions;
-    if (!actions.length) this.render.setStyle(this.more.nativeElement, 'display', 'none');
+    if (!actions?.length) this.render.setStyle(this.more.nativeElement, 'display', 'none');
   }
 
   stateButtons = 0;
@@ -87,8 +87,8 @@ export class ActionsComponent extends BaseDirective implements OnInit, AfterView
   }
 
   ngAfterViewChecked(): void {
-    if (this.stateButtons !== this.buttons.length) {
-      this.stateButtons = this.buttons.length;
+    if (this.stateButtons !== this.buttons?.length) {
+      this.stateButtons = this.buttons?.length;
       setTimeout(() => this.onresize(), 0);
     }
   }
