@@ -55,11 +55,11 @@ export class UpgradesDirective extends BaseDirective {
   }
 
   get hasConfig(): boolean {
-    return this?.inputData?.config.config.length > 0
+    return this?.inputData?.config?.config?.length > 0
   }
 
   get hasHostComponent(): boolean {
-    return this?.inputData?.hostcomponentmap.length > 0
+    return this?.inputData?.hostcomponentmap?.length > 0
   }
 
   get hasDisclaimer(): boolean {
