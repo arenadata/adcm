@@ -72,6 +72,6 @@ export class UpgradeMasterComponent extends BaseDirective implements DynamicComp
   }
 
   needMargin() {
-    return !(this?.model?.upgrades[0]?.config?.config.length > 0 && this?.model?.upgrades[0]?.hostcomponentmap.length > 0);
+    return !(this?.model?.upgrades[0]?.config?.config?.length > 0 && this?.model?.upgrades[0]?.hostcomponentmap?.length > 0);
   }
 }
