@@ -243,6 +243,7 @@ class TestAdminSettingsPage:
 
     @pytest.mark.full()
     def test_ldap_config(self, settings_page: AdminSettingsPage):
+        """Test ldap"""
         params = {'test_action': "Test LDAP connection", 'connect_action': "Run LDAP sync", "test_value": "test"}
         with allure.step("Check ldap actions are disabled"):
             assert settings_page.toolbar.is_adcm_actions_inactive(
