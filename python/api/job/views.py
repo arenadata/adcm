@@ -13,8 +13,10 @@
 import os
 import re
 
+from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
 from guardian.mixins import PermissionListMixin
+from api.utils import SuperuserPermissionListMixin
 from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -153,13 +155,16 @@ class LogFile(GenericUIView):
         return Response(serializer.data)
 
 
-class Task(PermissionListMixin, PaginatedView):
+class Task(SuperuserPermissionListMixin, PaginatedView):
     """
     get:
     List all tasks
     """
 
     queryset = TaskLog.objects.order_by('-id')
+    superuser_queryset = TaskLog.objects.filter(
+        object_type=ContentType.objects.get(app_label='cm', model='adcm')
+    )
     permission_required = ['cm.view_tasklog']
     serializer_class = serializers.TaskListSerializer
     serializer_class_ui = serializers.TaskSerializer
