@@ -263,6 +263,7 @@ def cook_delta(  # pylint: disable=too-many-branches
     return delta
 
 
+# pylint: disable-next=too-many-branches
 def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict]):
 
     if not action.hostcomponentmap:
