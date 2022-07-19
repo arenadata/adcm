@@ -20,6 +20,9 @@ from typing import (
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
+from selenium.common.exceptions import (
+    StaleElementReferenceException,
+)
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 
@@ -586,8 +589,12 @@ class AdminPoliciesPage(GeneralAdminPage):
 
         def fill_select(locator_select: Locator, locator_items: Locator, values: str):
             with allure.step(f"Select {values} in popup"):
-                self.wait_element_visible(locator_select)
-                self.find_and_click(locator_select)
+                try:
+                    self.wait_element_visible(locator_select)
+                    self.find_and_click(locator_select)
+                except StaleElementReferenceException:
+                    self.scroll_to(locator_select)
+                    self.find_and_click(locator_select)
                 self.wait_element_visible(locator_items)
                 self.fill_select_in_policy_popup(values, locator_items)
 
