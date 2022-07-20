@@ -92,11 +92,11 @@ npm_check: ## Run npm-check
 	docker run -i --rm -v $(CURDIR)/wwwroot:/wwwroot -v $(CURDIR)/web:/code -w /code  node:16-alpine ./npm_check.sh
 
 django_tests: test_image ## Run django tests.
-	docker run -e DJANGO_SETTINGS_MODULE=adcm.test -i --rm -v $(CURDIR)/python:/adcm/python -v $(CURDIR)/data:/adcm/data -v $(CURDIR)/requirements.txt:/adcm/requirements.txt -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /venv.sh reqs_and_run default /adcm/requirements.txt python python/manage.py test cm
+	docker run -e DJANGO_SETTINGS_MODULE=adcm.settings -i --rm -v $(CURDIR)/python:/adcm/python -v $(CURDIR)/data:/adcm/data -v $(CURDIR)/requirements.txt:/adcm/requirements.txt -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /venv.sh reqs_and_run default /adcm/requirements.txt python python/manage.py test cm
 
 ##################################################
 #                 U T I L S
 ##################################################
 
 base_shell: ## Just mount a dir to base image and run bash on it over docker run
-	docker run -e DJANGO_SETTINGS_MODULE=adcm.test -it --rm -v $(CURDIR)/python:/adcm/python -v $(CURDIR)/data:/adcm/data -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/bash -l
+	docker run -e DJANGO_SETTINGS_MODULE=adcm.settings -it --rm -v $(CURDIR)/python:/adcm/python -v $(CURDIR)/data:/adcm/data -w /adcm/ $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /bin/bash -l
