@@ -12,30 +12,53 @@
 
 from itertools import chain
 
-from guardian.mixins import PermissionListMixin
-from rest_framework import status, permissions
-from rest_framework.response import Response
-
-import api.serializers
 import cm.api
 import cm.bundle
 import cm.job
-from api.base_view import GenericUIView, DetailView, PaginatedView
-from api.stack.serializers import ImportSerializer, ServiceSerializer, BundleServiceUISerializer
+from api.base_view import DetailView, GenericUIView, PaginatedView
+from api.cluster.serializers import (
+    BindSerializer,
+    ClusterBindSerializer,
+    ClusterDetailSerializer,
+    ClusterSerializer,
+    ClusterUISerializer,
+    DoBindSerializer,
+    HostComponentSaveSerializer,
+    HostComponentSerializer,
+    HostComponentUISerializer,
+    PostImportSerializer,
+    StatusSerializer,
+)
+from api.serializers import DoUpgradeSerializer, UpgradeLinkSerializer
+from api.stack.serializers import (
+    BundleServiceUISerializer,
+    ImportSerializer,
+    ServiceSerializer,
+)
 from api.utils import (
     AdcmOrderingFilter,
     check_custom_perm,
     check_obj,
     create,
-    update,
     get_object_for_user,
+    update,
 )
+from audit.utils import audit
 from cm.errors import AdcmEx
-from cm.models import Cluster, HostComponent, Prototype, ClusterObject, Upgrade, ClusterBind
+from cm.models import (
+    Cluster,
+    ClusterBind,
+    ClusterObject,
+    HostComponent,
+    Prototype,
+    Upgrade,
+)
 from cm.status_api import make_ui_cluster_status
 from cm.upgrade import get_upgrade
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from . import serializers
+from rest_framework import permissions, status
+from rest_framework.response import Response
 
 
 def get_obj_conf(cluster_id, service_id):
@@ -62,13 +85,14 @@ class ClusterList(PermissionListMixin, PaginatedView):
     """
 
     queryset = Cluster.objects.all()
-    serializer_class = serializers.ClusterSerializer
-    serializer_class_ui = serializers.ClusterUISerializer
-    serializer_class_post = serializers.ClusterDetailSerializer
+    serializer_class = ClusterSerializer
+    serializer_class_ui = ClusterUISerializer
+    serializer_class_post = ClusterDetailSerializer
     filterset_fields = ('name', 'prototype_id')
     ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
     permission_required = ['cm.view_cluster']
 
+    @audit
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         return create(serializer)
@@ -83,8 +107,8 @@ class ClusterDetail(PermissionListMixin, DetailView):
     queryset = Cluster.objects.all()
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_cluster']
-    serializer_class = serializers.ClusterDetailSerializer
-    serializer_class_ui = serializers.ClusterUISerializer
+    serializer_class = ClusterDetailSerializer
+    serializer_class_ui = ClusterUISerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'cluster_id'
     error_code = 'CLUSTER_NOT_FOUND'
@@ -130,12 +154,13 @@ class ClusterBundle(GenericUIView):
 class ClusterImport(GenericUIView):
     queryset = Prototype.objects.all()
     serializer_class = ImportSerializer
-    serializer_class_post = serializers.PostImportSerializer
+    serializer_class_post = PostImportSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
-    def get(self, request, *args, **kwargs):
+    @staticmethod
+    def get(request, *args, **kwargs):
         """
-        List all imports avaliable for specified cluster
+        List all imports available for specified cluster
         """
         cluster = get_object_for_user(
             request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
@@ -163,8 +188,8 @@ class ClusterImport(GenericUIView):
 
 class ClusterBindList(GenericUIView):
     queryset = ClusterBind.objects.all()
-    serializer_class = serializers.ClusterBindSerializer
-    serializer_class_post = serializers.DoBindSerializer
+    serializer_class = ClusterBindSerializer
+    serializer_class_post = DoBindSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -193,7 +218,7 @@ class ClusterBindList(GenericUIView):
 
 class ClusterBindDetail(GenericUIView):
     queryset = ClusterBind.objects.all()
-    serializer_class = serializers.BindSerializer
+    serializer_class = BindSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -208,7 +233,8 @@ class ClusterBindDetail(GenericUIView):
         serializer = self.get_serializer(bind)
         return Response(serializer.data)
 
-    def delete(self, request, *args, **kwargs):
+    @staticmethod
+    def delete(request, *args, **kwargs):
         """
         Unbind specified bind of specified cluster
         """
@@ -223,16 +249,16 @@ class ClusterBindDetail(GenericUIView):
 
 class ClusterUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.UpgradeLinkSerializer
+    serializer_class = UpgradeLinkSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_ordering(self):
-        Order = AdcmOrderingFilter()
-        return Order.get_ordering(self.request, self.get_queryset(), self)
+        order = AdcmOrderingFilter()
+        return order.get_ordering(self.request, self.get_queryset(), self)
 
     def get(self, request, *args, **kwargs):
         """
-        List all avaliable upgrades for specified cluster
+        List all available upgrades for specified cluster
         """
         cluster = get_object_for_user(
             request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
@@ -247,12 +273,12 @@ class ClusterUpgrade(GenericUIView):
 
 class ClusterUpgradeDetail(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.UpgradeLinkSerializer
+    serializer_class = UpgradeLinkSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         """
-        List all avaliable upgrades for specified cluster
+        List all available upgrades for specified cluster
         """
         cluster = get_object_for_user(
             request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
@@ -269,7 +295,7 @@ class ClusterUpgradeDetail(GenericUIView):
 
 class DoClusterUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.DoUpgradeSerializer
+    serializer_class = DoUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
@@ -287,7 +313,7 @@ class DoClusterUpgrade(GenericUIView):
 class StatusList(GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = HostComponent.objects.all()
-    serializer_class = serializers.StatusSerializer
+    serializer_class = StatusSerializer
 
     def get(self, request, *args, **kwargs):
         """
@@ -306,9 +332,9 @@ class StatusList(GenericUIView):
 
 class HostComponentList(GenericUIView):
     queryset = HostComponent.objects.all()
-    serializer_class = serializers.HostComponentSerializer
-    serializer_class_ui = serializers.HostComponentUISerializer
-    serializer_class_post = serializers.HostComponentSaveSerializer
+    serializer_class = HostComponentSerializer
+    serializer_class_ui = HostComponentUISerializer
+    serializer_class_post = HostComponentSaveSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -349,16 +375,16 @@ class HostComponentList(GenericUIView):
         )
         if serializer.is_valid():
             hc_list = serializer.save()
-            responce_serializer = self.serializer_class(
+            response_serializer = self.serializer_class(
                 hc_list, many=True, context={'request': request}
             )
-            return Response(responce_serializer.data, status.HTTP_201_CREATED)
+            return Response(response_serializer.data, status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class HostComponentDetail(GenericUIView):
     queryset = HostComponent.objects.all()
-    serializer_class = serializers.HostComponentSerializer
+    serializer_class = HostComponentSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_obj(self, cluster_id, hs_id):
