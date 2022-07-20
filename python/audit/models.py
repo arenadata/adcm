@@ -109,7 +109,7 @@ AUDIT_OPERATION_MAP = {
             object_type="???",
         ),
     },
-    "HostList": {
+    "HostListProvider": {
         "POST": AuditOperation(
             name=f"{AuditObjectType.Host.label.capitalize()} {AuditLogOperationType.Create.label}d",
             operation_type=AuditLogOperationType.Create.label,
