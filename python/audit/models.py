@@ -97,7 +97,7 @@ AUDIT_OPERATION_MAP = {
     "ClusterList": {
         "POST": AuditOperation(
             name=f"{AuditObjectType.Cluster.label.capitalize()} "
-                 f"{AuditLogOperationType.Create.label}d",
+            f"{AuditLogOperationType.Create.label}d",
             operation_type=AuditLogOperationType.Create.label,
             object_type=AuditObjectType.Cluster.label,
         ),
