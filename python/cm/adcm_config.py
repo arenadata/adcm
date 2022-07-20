@@ -673,12 +673,21 @@ def check_value_unselected_field(
                 obj,
             )
         else:
-            if spec[k]['type'] in ['list', 'map', 'string']:
-                if config_is_ro(obj, k, spec[k]['limits']) or (
-                    k in current_config
-                    and k in new_config
-                    and bool(current_config[k]) is False
-                    and new_config[k] is None
+            if spec[k]['type'] in ['list', 'map', 'string', 'structure']:
+                if (
+                    config_is_ro(obj, k, spec[k]['limits'])
+                    or (
+                        k in current_config
+                        and k in new_config
+                        and bool(current_config[k]) is False
+                        and new_config[k] is None
+                    )
+                    or (
+                        k in current_config
+                        and k in new_config
+                        and current_config[k] is None
+                        and bool(new_config[k]) is False
+                    )
                 ):
                     continue
 
