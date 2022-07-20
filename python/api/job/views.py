@@ -21,7 +21,7 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
 from api.base_view import GenericUIView, DetailView, PaginatedView
-from api.utils import get_object_for_user, check_custom_perm
+from api.utils import get_object_for_user, check_custom_perm, SuperuserPermissionListMixin
 from cm import config
 from cm.errors import AdcmEx
 from cm.job import get_log, restart_task, cancel_task
