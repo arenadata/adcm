@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 
 from audit.models import (
     AUDIT_OPERATION_MAP,
@@ -6,6 +7,7 @@ from audit.models import (
     AuditLogOperationResult,
     AuditLogOperationType,
 )
+from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 
@@ -18,9 +20,15 @@ class TestBundle(BaseTestCase):
 
         self.audit_operation_upload_bundle = AUDIT_OPERATION_MAP["UploadBundle"]
         self.audit_operation_load_bundle = AUDIT_OPERATION_MAP["LoadBundle"]
+        self.test_bundle_filename = "test_bundle.tar"
+        self.test_bundle_path = Path(
+            settings.BASE_DIR,
+            "python/audit/tests/files",
+            self.test_bundle_filename,
+        )
 
     def test_upload_bundle_success(self):
-        with open("./audit/tests/files/test_bundle.tar", encoding="utf-8") as f:
+        with open(self.test_bundle_path, encoding="utf-8") as f:
             self.client.post(
                 path=reverse("upload-bundle"),
                 data={"file": f},
@@ -37,7 +45,7 @@ class TestBundle(BaseTestCase):
         assert isinstance(log.object_changes, dict)
 
     def test_upload_bundle_fail(self):
-        with open("./audit/tests/files/test_bundle.tar", encoding="utf-8") as f:
+        with open(self.test_bundle_path, encoding="utf-8") as f:
             self.client.post(
                 path=reverse("upload-bundle"),
                 data={"no_file": f},
@@ -54,7 +62,7 @@ class TestBundle(BaseTestCase):
         assert isinstance(log.object_changes, dict)
 
     def test_load_bundle(self):
-        with open("./audit/tests/files/test_bundle.tar", encoding="utf-8") as f:
+        with open(self.test_bundle_path, encoding="utf-8") as f:
             self.client.post(
                 path=reverse("upload-bundle"),
                 data={"file": f},
@@ -62,7 +70,7 @@ class TestBundle(BaseTestCase):
 
         res: Response = self.client.post(
             path=reverse("load-bundle"),
-            data={"bundle_file": "test_bundle.tar"},
+            data={"bundle_file": self.test_bundle_filename},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -80,7 +88,7 @@ class TestBundle(BaseTestCase):
 
         self.client.post(
             path=reverse("load-bundle"),
-            data={"bundle_file": "test_bundle.tar"},
+            data={"bundle_file": self.test_bundle_filename},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
