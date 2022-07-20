@@ -350,6 +350,7 @@ class BasePageObject:
             if clean_input:
                 self.clear_by_keys(element)
             input_element = self.find_element(element, timeout) if isinstance(element, Locator) else element
+            input_element.click()
             input_element.send_keys(text)
             assert (actual_value := input_element.get_property('value')) == text, (
                 f'Value of input {element.name if isinstance(element, Locator) else element.text} '
