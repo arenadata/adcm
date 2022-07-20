@@ -25,7 +25,7 @@ def audit(func):
             status_code = exc.status_code
 
         view: View = args[0]
-        audit_operation = AUDIT_OPERATION_MAP.get(view.__class__.__name__)
+        audit_operation = AUDIT_OPERATION_MAP[view.__class__.__name__][view.request.method]
         object_changes = {}
 
         if is_success(status_code):

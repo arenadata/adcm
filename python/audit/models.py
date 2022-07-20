@@ -80,14 +80,25 @@ class AuditOperation:
 
 
 AUDIT_OPERATION_MAP = {
-    "LoadBundle": AuditOperation(
-        name="Bundle loaded",
-        operation_type=AuditLogOperationType.Create.label,
-        object_type=AuditObjectType.Bundle.label,
-    ),
-    "UploadBundle": AuditOperation(
-        name="Bundle uploaded",
-        operation_type=AuditLogOperationType.Create.label,
-        object_type=AuditObjectType.Bundle.label,
-    ),
+    "LoadBundle": {
+        "POST": AuditOperation(
+            name="Bundle loaded",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Bundle.label,
+        ),
+    },
+    "UploadBundle": {
+        "POST": AuditOperation(
+            name="Bundle uploaded",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Bundle.label,
+        ),
+    },
+    "ClusterList": {
+        "POST": AuditOperation(
+            name="Cluster created",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Cluster.label,
+        ),
+    },
 }

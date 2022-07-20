@@ -1,38 +1,26 @@
 from datetime import datetime
-from pathlib import Path
 
+from django.urls import reverse
+from rest_framework.response import Response
+
+from adcm.tests.base import BaseTestCase
 from audit.models import (
     AUDIT_OPERATION_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
 )
-from django.conf import settings
-from django.urls import reverse
-from rest_framework.response import Response
-
-from adcm.tests.base import BaseTestCase
 
 
 class TestBundle(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.audit_operation_upload_bundle = AUDIT_OPERATION_MAP["UploadBundle"]
-        self.audit_operation_load_bundle = AUDIT_OPERATION_MAP["LoadBundle"]
-        self.test_bundle_filename = "test_bundle.tar"
-        self.test_bundle_path = Path(
-            settings.BASE_DIR,
-            "python/audit/tests/files",
-            self.test_bundle_filename,
-        )
+        self.audit_operation_upload_bundle = AUDIT_OPERATION_MAP["UploadBundle"]["POST"]
+        self.audit_operation_load_bundle = AUDIT_OPERATION_MAP["LoadBundle"]["POST"]
 
     def test_upload_bundle_success(self):
-        with open(self.test_bundle_path, encoding="utf-8") as f:
-            self.client.post(
-                path=reverse("upload-bundle"),
-                data={"file": f},
-            )
+        self.upload_bundle()
 
         log: AuditLog = AuditLog.objects.first()
 
@@ -62,16 +50,9 @@ class TestBundle(BaseTestCase):
         assert isinstance(log.object_changes, dict)
 
     def test_load_bundle(self):
-        with open(self.test_bundle_path, encoding="utf-8") as f:
-            self.client.post(
-                path=reverse("upload-bundle"),
-                data={"file": f},
-            )
+        self.upload_bundle()
 
-        res: Response = self.client.post(
-            path=reverse("load-bundle"),
-            data={"bundle_file": self.test_bundle_filename},
-        )
+        res: Response = self.load_bundle()
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -86,10 +67,7 @@ class TestBundle(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
-        self.client.post(
-            path=reverse("load-bundle"),
-            data={"bundle_file": self.test_bundle_filename},
-        )
+        self.load_bundle()
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
