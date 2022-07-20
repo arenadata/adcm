@@ -3,6 +3,7 @@ from pathlib import Path
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
+from rest_framework.response import Response
 
 from rbac.models import Role, User
 
@@ -33,7 +34,7 @@ class BaseTestCase(TestCase):
         )
 
     def login(self):
-        res = self.client.post(
+        res: Response = self.client.post(
             path=reverse("rbac:token"),
             data={"username": self.test_user_username, "password": self.test_user_password},
             content_type="application/json",

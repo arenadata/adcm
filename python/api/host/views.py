@@ -143,6 +143,7 @@ class HostList(PermissionListMixin, PaginatedView):
         queryset = get_host_queryset(queryset, self.request.user, self.kwargs)
         return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
 
+    @audit
     def post(self, request, *args, **kwargs):
         """
         Create host
@@ -177,7 +178,6 @@ class HostListProvider(HostList):
 class HostListCluster(HostList):
     serializer_class = ClusterHostSerializer
 
-    @audit
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):

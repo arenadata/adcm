@@ -82,21 +82,22 @@ class AuditOperation:
 AUDIT_OPERATION_MAP = {
     "LoadBundle": {
         "POST": AuditOperation(
-            name="Bundle loaded",
+            name=f"{AuditObjectType.Bundle.label.capitalize()} loaded",
             operation_type=AuditLogOperationType.Create.label,
             object_type=AuditObjectType.Bundle.label,
         ),
     },
     "UploadBundle": {
         "POST": AuditOperation(
-            name="Bundle uploaded",
+            name=f"{AuditObjectType.Bundle.label.capitalize()} uploaded",
             operation_type=AuditLogOperationType.Create.label,
             object_type=AuditObjectType.Bundle.label,
         ),
     },
     "ClusterList": {
         "POST": AuditOperation(
-            name="Cluster created",
+            name=f"{AuditObjectType.Cluster.label.capitalize()} "
+                 f"{AuditLogOperationType.Create.label}d",
             operation_type=AuditLogOperationType.Create.label,
             object_type=AuditObjectType.Cluster.label,
         ),
@@ -106,6 +107,13 @@ AUDIT_OPERATION_MAP = {
             name="???",
             operation_type=AuditLogOperationType.Create.label,
             object_type="???",
+        ),
+    },
+    "HostList": {
+        "POST": AuditOperation(
+            name=f"{AuditObjectType.Host.label.capitalize()} {AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Host.label,
         ),
     },
 }
