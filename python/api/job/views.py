@@ -154,7 +154,7 @@ class LogFile(GenericUIView):
         return Response(serializer.data)
 
 
-class Task(SuperuserPermissionListMixin, PaginatedView):
+class Task(PermissionListMixin, PaginatedView):
     """
     get:
     List all tasks
