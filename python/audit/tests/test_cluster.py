@@ -1,14 +1,14 @@
 from datetime import datetime
 
-from rest_framework.response import Response
-
-from adcm.tests.base import BaseTestCase
 from audit.models import (
     AUDIT_OPERATION_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
 )
+from rest_framework.response import Response
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestCluster(BaseTestCase):
@@ -21,7 +21,7 @@ class TestCluster(BaseTestCase):
         self.test_cluster_name = "test_cluster"
         self.audit_operation_create_cluster = AUDIT_OPERATION_MAP["ClusterList"]["POST"]
 
-    def test_cluster_create(self):
+    def test_create(self):
         res: Response = self.create_cluster(self.bundle_id, self.test_cluster_name)
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

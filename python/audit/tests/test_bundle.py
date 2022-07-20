@@ -1,15 +1,15 @@
 from datetime import datetime
 
-from django.urls import reverse
-from rest_framework.response import Response
-
-from adcm.tests.base import BaseTestCase
 from audit.models import (
     AUDIT_OPERATION_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
 )
+from django.urls import reverse
+from rest_framework.response import Response
+
+from adcm.tests.base import BaseTestCase
 
 
 class TestBundle(BaseTestCase):
@@ -19,7 +19,7 @@ class TestBundle(BaseTestCase):
         self.audit_operation_upload_bundle = AUDIT_OPERATION_MAP["UploadBundle"]["POST"]
         self.audit_operation_load_bundle = AUDIT_OPERATION_MAP["LoadBundle"]["POST"]
 
-    def test_upload_bundle_success(self):
+    def test_upload_success(self):
         self.upload_bundle()
 
         log: AuditLog = AuditLog.objects.first()
@@ -32,7 +32,7 @@ class TestBundle(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
-    def test_upload_bundle_fail(self):
+    def test_upload_fail(self):
         with open(self.test_bundle_path, encoding="utf-8") as f:
             self.client.post(
                 path=reverse("upload-bundle"),
@@ -49,7 +49,7 @@ class TestBundle(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
-    def test_load_bundle(self):
+    def test_load(self):
         self.upload_bundle()
 
         res: Response = self.load_bundle()

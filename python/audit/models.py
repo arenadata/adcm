@@ -101,4 +101,11 @@ AUDIT_OPERATION_MAP = {
             object_type=AuditObjectType.Cluster.label,
         ),
     },
+    "ConfigLogViewSet": {
+        "POST": AuditOperation(
+            name="???",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type="???",
+        ),
+    },
 }
