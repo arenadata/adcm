@@ -650,6 +650,15 @@ def check_value_unselected_field(
     :param spec: Config specification
     :param obj: Parent object (Cluster, Service, Component Provider or Host)
     """
+
+    # pylint: disable=too-many-boolean-expressions
+    def check_empty_values(key, current, new):
+        if (key in current and key in new and bool(current[key]) is False and new[key] is None) or (
+            key in current and key in new and current[key] is None and bool(new[key]) is False
+        ):
+            return True
+        return False
+
     for k, v in group_keys.items():
         if isinstance(v, Mapping):
             if (
@@ -674,20 +683,8 @@ def check_value_unselected_field(
             )
         else:
             if spec[k]['type'] in ['list', 'map', 'string', 'structure']:
-                if (
-                    config_is_ro(obj, k, spec[k]['limits'])
-                    or (
-                        k in current_config
-                        and k in new_config
-                        and bool(current_config[k]) is False
-                        and new_config[k] is None
-                    )
-                    or (
-                        k in current_config
-                        and k in new_config
-                        and current_config[k] is None
-                        and bool(new_config[k]) is False
-                    )
+                if config_is_ro(obj, k, spec[k]['limits']) or check_empty_values(
+                    k, current_config, new_config
                 ):
                     continue
 
