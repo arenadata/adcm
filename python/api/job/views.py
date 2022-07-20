@@ -43,6 +43,14 @@ class JobList(PermissionListMixin, PaginatedView):
     permission_classes = (permissions.DjangoModelPermissions,)
     permission_required = ['cm.view_joblog']
 
+    def get_queryset(self, *args, **kwargs):
+        if self.request.user.is_superuser:
+            exclude_pks = []
+        else:
+            exclude_pks = JobLog.get_adcm_jobs_qs().values_list('pk', flat=True)
+
+        return super().get_queryset(*args, **kwargs).exclude(pk__in=exclude_pks)
+
 
 class JobDetail(PermissionListMixin, GenericUIView):
     queryset = JobLog.objects.all()

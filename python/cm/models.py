@@ -1396,6 +1396,10 @@ class JobLog(ADCMModel):
 
     __error_code__ = 'JOB_NOT_FOUND'
 
+    @staticmethod
+    def get_adcm_jobs_qs():
+        return JobLog.objects.filter(task__in=TaskLog.get_adcm_tasks_qs())
+
 
 class GroupCheckLog(ADCMModel):
     job = models.ForeignKey(JobLog, on_delete=models.SET_NULL, null=True, default=None)
