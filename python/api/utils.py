@@ -17,7 +17,6 @@ from typing import List
 from django.core.exceptions import ObjectDoesNotExist
 from django.http.request import QueryDict
 from django_filters import rest_framework as drf_filters
-from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
 from rest_framework import status, serializers, exceptions
 from rest_framework.filters import OrderingFilter
@@ -252,19 +251,3 @@ class AdcmFilterBackend(drf_filters.DjangoFilterBackend):
             'queryset': queryset,
             'request': request,
         }
-
-
-class SuperuserPermissionListMixin(PermissionListMixin):
-    """
-    Only superuser can see objects specified in superuser_queryset
-    """
-
-    superuser_queryset = None
-
-    def get_queryset(self, *args, **kwargs):
-        if not self.superuser_queryset or self.request.user.is_superuser:
-            exclude_pks = []
-        else:
-            exclude_pks = self.superuser_queryset.values_list('pk', flat=True)
-
-        return super().get_queryset(*args, **kwargs).exclude(pk__in=exclude_pks)

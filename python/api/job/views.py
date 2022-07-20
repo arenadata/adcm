@@ -13,7 +13,6 @@
 import os
 import re
 
-from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
 from guardian.mixins import PermissionListMixin
 from rest_framework import status, permissions
@@ -21,7 +20,7 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
 from api.base_view import GenericUIView, DetailView, PaginatedView
-from api.utils import get_object_for_user, check_custom_perm, SuperuserPermissionListMixin
+from api.utils import get_object_for_user, check_custom_perm
 from cm import config
 from cm.errors import AdcmEx
 from cm.job import get_log, restart_task, cancel_task
@@ -154,21 +153,26 @@ class LogFile(GenericUIView):
         return Response(serializer.data)
 
 
-class Task(SuperuserPermissionListMixin, PaginatedView):
+class Task(PermissionListMixin, PaginatedView):
     """
     get:
     List all tasks
     """
 
     queryset = TaskLog.objects.order_by('-id')
-    superuser_queryset = TaskLog.objects.filter(
-        object_type=ContentType.objects.get(app_label='cm', model='adcm')
-    )
     permission_required = ['cm.view_tasklog']
     serializer_class = serializers.TaskListSerializer
     serializer_class_ui = serializers.TaskSerializer
     filterset_fields = ('action_id', 'pid', 'status', 'start_date', 'finish_date')
     ordering_fields = ('status', 'start_date', 'finish_date')
+
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            exclude_pks = []
+        else:
+            exclude_pks = TaskLog.get_adcm_tasks_qs().values_list('pk', flat=True)
+
+        return super().get_queryset().exclude(pk__in=exclude_pks)
 
 
 class TaskDetail(PermissionListMixin, DetailView):

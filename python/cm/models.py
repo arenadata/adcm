@@ -1376,6 +1376,12 @@ class TaskLog(ADCMModel):
             event_queue.send_state()
         os.kill(self.pid, signal.SIGTERM)
 
+    @staticmethod
+    def get_adcm_tasks_qs():
+        return TaskLog.objects.filter(
+            object_type=ContentType.objects.get(app_label='cm', model='adcm')
+        )
+
 
 class JobLog(ADCMModel):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
