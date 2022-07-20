@@ -79,6 +79,13 @@ class AuditOperation:
     object_type: str
 
 
+HOST_AUDIT_OPERATION = AuditOperation(
+    name=f"{AuditObjectType.Host.label.capitalize()} {AuditLogOperationType.Create.label}d",
+    operation_type=AuditLogOperationType.Create.label,
+    object_type=AuditObjectType.Host.label,
+)
+
+
 AUDIT_OPERATION_MAP = {
     "LoadBundle": {
         "POST": AuditOperation(
@@ -109,11 +116,6 @@ AUDIT_OPERATION_MAP = {
             object_type="???",
         ),
     },
-    "HostListProvider": {
-        "POST": AuditOperation(
-            name=f"{AuditObjectType.Host.label.capitalize()} {AuditLogOperationType.Create.label}d",
-            operation_type=AuditLogOperationType.Create.label,
-            object_type=AuditObjectType.Host.label,
-        ),
-    },
+    "HostList": {"POST": HOST_AUDIT_OPERATION},
+    "HostListProvider": {"POST": HOST_AUDIT_OPERATION},
 }

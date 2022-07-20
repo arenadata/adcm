@@ -25,7 +25,7 @@ class TestHost(BaseTestCase):
             prototype=provider_prototype,
         )
         self.fqdn = "test_fqdn"
-        self.audit_operation_create_host = AUDIT_OPERATION_MAP["HostList"]["POST"]
+        self.audit_operation_create_host = AUDIT_OPERATION_MAP["HostListProvider"]["POST"]
 
     def test_create(self):
         res: Response = self.client.post(
