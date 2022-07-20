@@ -106,7 +106,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     const isCurrent = (type: string, id: number) => type === 'cluster' && id === this.cluster.id;
     if (
       (m.event === 'change_hostcomponentmap' || m.event === 'change_state') &&
-      isCurrent(m.object.type, m.object.id) &&
+      isCurrent(m.object.type, m.object?.id) &&
       !this.saveFlag
     ) {
       this.reset().load();
@@ -131,7 +131,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
 
   add(io: IEMObject) {
     const { id, type, details } = io;
-    if (details.type === 'cluster' && +details.value === this.cluster.id && typeof this.cluster.hostcomponent === 'string') {
+    if (details.type === 'cluster' && +details.value === this.cluster?.id && typeof this.cluster.hostcomponent === 'string') {
       this.service
         .load(this.cluster.hostcomponent as string)
         .pipe(this.takeUntil())
@@ -140,7 +140,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
             this.Hosts = [
               ...this.Hosts,
               ...this.service.fillHost(
-                raw.host.map((h) => new HostTile(h)).filter((h) => h.id === id),
+                raw.host.map((h) => new HostTile(h)).filter((h) => h?.id === id),
                 this.actionParameters
               ),
             ];
@@ -148,7 +148,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
             this.Components = [
               ...this.Components,
               ...this.service.fillComponent(
-                raw.component.filter((a) => a.service_id === id && this.Components.every((b) => b.id !== a.id)),
+                raw.component.filter((a) => a.service_id === id && this.Components.every((b) => b?.id !== a?.id)),
                 this.actionParameters
               ),
             ];
@@ -160,7 +160,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
           this.Hosts = [
             ...this.Hosts,
             ...this.service.fillHost(
-              res.host.map((h) => new HostTile(h)).filter((h) => h.id === id),
+              res.host.map((h) => new HostTile(h)).filter((h) => h?.id === id),
               this.actionParameters
             ),
           ];
@@ -172,7 +172,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   remove(io: IEMObject) {
     if (io.type === 'host') {
       const { id } = io;
-      this.Hosts = this.Hosts.filter((a) => a.id !== id);
+      this.Hosts = this.Hosts.filter((a) => a?.id !== id);
     }
   }
 
