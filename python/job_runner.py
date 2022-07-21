@@ -150,7 +150,10 @@ def run_ansible(job_id):
 def switch_hc(task, action):
     cluster = task.task_object
     old_hc = cm.api.get_hc(cluster)
-    new_hc = [*task.post_upgrade_hc_map, *old_hc]
+    new_hc = []
+    for hc in [*task.post_upgrade_hc_map, *old_hc]:
+        if hc not in new_hc:
+            new_hc.append(hc)
     task.hostcomponentmap = old_hc
     task.post_upgrade_hc_map = None
     task.save()
