@@ -22,6 +22,9 @@ from selenium.webdriver.remote.webdriver import WebElement
 from tests.ui_tests.app.page.cluster.locators import (
     ClusterComponentsLocators,
 )
+from tests.ui_tests.app.page.cluster.page import (
+    ClusterComponentsPage,
+)
 from tests.ui_tests.app.page.cluster_list.locators import ClusterListLocators
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
@@ -33,6 +36,9 @@ from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuOb
 from tests.ui_tests.app.page.common.dialogs_locators import (
     ActionDialog,
     DeleteDialog,
+)
+from tests.ui_tests.app.page.common.popups.locator import (
+    HostCreationLocators,
 )
 from tests.ui_tests.app.page.common.popups.locator import ListConcernPopupLocators
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
@@ -172,6 +178,7 @@ class ClusterListPage(BasePageObject):
         upgrade_name: str,
         config: Optional[dict] = None,
         hc_acl: bool = False,
+        is_new_host: bool = False,
         disclaimer_text: Optional[str] = None,
     ):
         """Run upgrade for cluster from row"""
@@ -193,6 +200,11 @@ class ClusterListPage(BasePageObject):
             if self.is_element_displayed(ActionDialog.next_btn):
                 self.find_and_click(ActionDialog.next_btn)
         if hc_acl:
+            if is_new_host:
+                cluster_components_page = ClusterComponentsPage(self.driver, self.base_url, 1)
+                cluster_components_page.click_add_host_btn()
+                cluster_components_page.host_popup.create_host("Test_host")
+                self.wait_element_hide(HostCreationLocators.block)
             for comp_row in self.find_elements(ClusterComponentsLocators.component_row):
                 comp_row_name = self.find_child(comp_row, ClusterComponentsLocators.Row.name)
                 self.wait_element_visible(comp_row_name)
