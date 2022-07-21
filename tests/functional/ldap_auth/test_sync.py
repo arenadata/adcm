@@ -21,6 +21,7 @@ import requests
 from adcm_client.objects import ADCMClient, Group, ADCM, User
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import wait_until_step_succeeds, random_string
+from coreapi.exceptions import ErrorMessage
 
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import (
@@ -33,7 +34,6 @@ from tests.functional.ldap_auth.utils import (
     SYNC_ACTION_NAME,
 )
 from tests.library.assertions import expect_no_api_error, expect_api_error
-from tests.library.errorcodes import AUTH_ERROR
 from tests.library.ldap_interactions import LDAPTestConfig, configure_adcm_for_ldap
 
 
@@ -268,7 +268,15 @@ def session_should_expire(user: str, password: str, url: str):
             response = session.get(f'{url}/api/v1/cluster')
             assert response.status_code == 401, 'Request to ADCM should fail with 401 status'
     with allure.step('Check call via client is considered unauthorized'):
-        expect_api_error('get cluster list', client.cluster_list, err_=AUTH_ERROR)
+        try:
+            client.cluster_list()
+        except ErrorMessage as e:
+            try:
+                assert '401 Unauthorized' in e.error.title, 'Operation should fail with 401 code'
+            except (KeyError, AttributeError) as err:
+                raise AssertionError(
+                    'Operation should fail as an unauthorized one\nBut check was failed due to {err}\n'
+                ) from err
 
 
 @allure.step('Run LDAP sync action')
