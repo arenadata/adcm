@@ -126,4 +126,12 @@ AUDIT_OPERATION_MAP = {
             object_type=AuditObjectType.Provider.label,
         ),
     },
+    "UserViewSet": {
+        "POST": AuditOperation(
+            name=f"{AuditObjectType.User.label.capitalize()} "
+            f"{AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.User.label,
+        ),
+    },
 }
