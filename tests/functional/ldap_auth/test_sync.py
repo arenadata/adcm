@@ -268,15 +268,14 @@ def session_should_expire(user: str, password: str, url: str):
             response = session.get(f'{url}/api/v1/cluster')
             assert response.status_code == 401, 'Request to ADCM should fail with 401 status'
     with allure.step('Check call via client is considered unauthorized'):
-        try:
+        with pytest.raises(ErrorMessage) as e:
             client.cluster_list()
-        except ErrorMessage as e:
-            try:
-                assert '401 Unauthorized' in e.error.title, 'Operation should fail with 401 code'
-            except (KeyError, AttributeError) as err:
-                raise AssertionError(
-                    'Operation should fail as an unauthorized one\nBut check was failed due to {err}\n'
-                ) from err
+        try:
+            assert '401 Unauthorized' in e.error.title, 'Operation should fail with 401 code'
+        except (KeyError, AttributeError) as err:
+            raise AssertionError(
+                'Operation should fail as an unauthorized one\nBut check was failed due to {err}\n'
+            ) from err
 
 
 @allure.step('Run LDAP sync action')
