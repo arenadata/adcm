@@ -33,11 +33,44 @@ from tests.functional.ldap_auth.utils import (
     TEST_CONNECTION_ACTION,
     SYNC_ACTION_NAME,
 )
+from tests.functional.rbac.conftest import RbacRoles, BusinessRoles
 from tests.library.assertions import expect_no_api_error, expect_api_error
 from tests.library.ldap_interactions import LDAPTestConfig, configure_adcm_for_ldap
 
+# pylint: disable=redefined-outer-name
 
 pytestmark = [only_clean_adcm]
+
+
+@pytest.fixture()
+def adcm_user_client(sdk_client_fs) -> ADCMClient:
+    """Create simple user with ADCM User role"""
+    username, password = 'SimpleUser', 'MegaPassword'
+    user = sdk_client_fs.user_create(username, password)
+    sdk_client_fs.policy_create('Simple user', role=sdk_client_fs.role(name=RbacRoles.ADCMUser.value), user=[user])
+    return ADCMClient(url=sdk_client_fs.url, user=username, password=password)
+
+
+@pytest.fixture()
+def adcm_admin_client(sdk_client_fs) -> ADCMClient:
+    """Create ADCM admin user that is allowed to edit ADCM settings"""
+    username, password = 'SupaADCMAdmin', 'MegaPassword'
+    user = sdk_client_fs.user_create(username, password)
+    role = sdk_client_fs.role_create(
+        'ADCM admin role',
+        display_name='ADCM admin role',
+        child=[{'id': sdk_client_fs.role(name=BusinessRoles.EditADCMSettings.value.role_name).id}],
+    )
+    sdk_client_fs.policy_create('ADCM Admins', role=role, user=[user])
+    return ADCMClient(url=sdk_client_fs.url, user=username, password=password)
+
+
+@pytest.fixture()
+def adcm_superuser_client(sdk_client_fs) -> ADCMClient:
+    """Create another ADCM superuser"""
+    username, password = 'SupaDupaADCMAdmin', 'MegaPassword'
+    sdk_client_fs.user_create(username, password, is_superuser=True)
+    return ADCMClient(url=sdk_client_fs.url, user=username, password=password)
 
 
 class TestDisablingCause:
@@ -82,11 +115,28 @@ class TestLDAPSyncAction:
 
     def test_ldap_simple_sync(self, sdk_client_fs, ldap_user_in_group, ldap_group):
         """Test that LDAP sync action pulls users and groups from LDAP"""
-        check_existing_users(sdk_client_fs)
-        check_existing_groups(sdk_client_fs)
-        _run_sync(sdk_client_fs)
-        check_existing_users(sdk_client_fs, {ldap_user_in_group['name']})
-        check_existing_groups(sdk_client_fs, {ldap_group['name']})
+        self._simple_sync(sdk_client_fs, ldap_group, ldap_user_in_group, DEFAULT_LOCAL_USERS)
+
+    # pylint: disable-next=too-many-arguments
+    def test_access_to_tasks(
+        self, adcm_user_client, adcm_admin_client, adcm_superuser_client, sdk_client_fs, ldap_user_in_group, ldap_group
+    ):
+        """Test that only superusers can see LDAP-related tasks"""
+        superuser_name = adcm_superuser_client.me().username
+        self._simple_sync(
+            sdk_client_fs,
+            ldap_group,
+            ldap_user_in_group,
+            (*DEFAULT_LOCAL_USERS, adcm_user_client.me().username, adcm_admin_client.me().username, superuser_name),
+        )
+        wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name=TEST_CONNECTION_ACTION).run(), 'success')
+        _check_task_logs_amount(adcm_user_client, 0)
+        _check_task_logs_amount(adcm_admin_client, 0)
+        _check_task_logs_amount(adcm_superuser_client, 2)
+        with allure.step('Make superuser a regular user and check available tasks'):
+            superuser: User = sdk_client_fs.user(username=superuser_name)
+            superuser.update(is_superuser=False)
+            _check_task_logs_amount(adcm_superuser_client, 0)
 
     def test_sync_with_already_existing_group(self, sdk_client_fs, ldap_user_in_group, ldap_group):
         """Test that when LDAP group have a local group with the same name, there won't be a conflict"""
@@ -217,6 +267,13 @@ class TestLDAPSyncAction:
             expected = user_ldap_info[field_name]
             assert actual == expected, f'Field "{field_name}" is incorrect.\nExpected: {expected}\nActual: {actual}'
 
+    def _simple_sync(self, sdk_client_fs, ldap_group, ldap_user_in_group, expected_local_users):
+        check_existing_users(sdk_client_fs, expected_local=expected_local_users)
+        check_existing_groups(sdk_client_fs)
+        _run_sync(sdk_client_fs)
+        check_existing_users(sdk_client_fs, {ldap_user_in_group['name']}, expected_local=expected_local_users)
+        check_existing_groups(sdk_client_fs, {ldap_group['name']})
+
 
 class TestPeriodicSync:
     """Test that periodic LDAP synchronization tasks are launched correctly"""
@@ -287,3 +344,10 @@ def _run_sync(client: ADCMClient):
 @allure.step('Run successful test connection')
 def _test_connection(client: ADCMClient):
     wait_for_task_and_assert_result(client.adcm().action(name=TEST_CONNECTION_ACTION).run(), 'success')
+
+
+def _check_task_logs_amount(client: ADCMClient, amount: int):
+    client.reread()
+    with allure.step(f'Check that user {client.me().username} can see {amount} tasks'):
+        tasks = tuple(j.task() for j in client.job_list())
+        assert len(tasks) == amount, f'Incorrect amount of tasks is available for user {client.me().username}'
