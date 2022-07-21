@@ -25,7 +25,7 @@ from adcm_pytest_plugin.utils import get_data_dir
 from adcm_pytest_plugin import utils
 from jsonschema import validate
 
-# pylint: disable=no-self-use,redefined-outer-name
+# pylint: disable=redefined-outer-name
 
 SCHEMAS = os.path.join(os.path.dirname(__file__), "schemas/")
 

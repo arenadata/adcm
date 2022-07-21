@@ -29,7 +29,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
-from django.db.models.signals import m2m_changed
+from django.db.models.signals import m2m_changed, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 
@@ -532,6 +532,11 @@ class ADCMEntity(ADCMModel):
         model_name = self.__class__.__name__.lower()
         return ContentType.objects.get(app_label='cm', model=model_name)
 
+    def delete(self, using=None, keep_parents=False):
+        super().delete(using, keep_parents)
+        if self.config is not None:
+            self.config.delete()
+
 
 class ADCM(ADCMEntity):
     name = models.CharField(max_length=16, choices=(('ADCM', 'ADCM'),), unique=True)
@@ -773,6 +778,12 @@ class ServiceComponent(ADCMEntity):
 
     class Meta:
         unique_together = (('cluster', 'service', 'prototype'),)
+
+
+@receiver(post_delete, sender=ServiceComponent)
+def auto_delete_config_with_servicecomponent(sender, instance, **kwargs):
+    if instance.config is not None:
+        instance.config.delete()
 
 
 class GroupConfig(ADCMModel):
@@ -1331,18 +1342,23 @@ class TaskLog(ADCMModel):
         self.save()
         lock.delete()
 
-    def cancel(self, event_queue: 'cm.status_api.Event' = None):
+    def cancel(self, event_queue: 'cm.status_api.Event' = None, obj_deletion=False):
         """
         Cancel running task process
         task status will be updated in separate process of task runner
         """
+        if self.pid == 0:
+            raise AdcmEx(
+                'NOT_ALLOWED_TERMINATION',
+                'Termination is too early, try to execute later',
+            )
         errors = {
             Job.FAILED: ('TASK_IS_FAILED', f'task #{self.pk} is failed'),
             Job.ABORTED: ('TASK_IS_ABORTED', f'task #{self.pk} is aborted'),
             Job.SUCCESS: ('TASK_IS_SUCCESS', f'task #{self.pk} is success'),
         }
         action = self.action
-        if action and not action.allow_to_terminate:
+        if action and not action.allow_to_terminate and not obj_deletion:
             raise AdcmEx(
                 'NOT_ALLOWED_TERMINATION',
                 f'not allowed termination task #{self.pk} for action #{action.pk}',
@@ -1468,7 +1484,7 @@ class StageUpgrade(ADCMModel):
     action = models.OneToOneField('StageAction', on_delete=models.CASCADE, null=True)
 
 
-class StageAction(AbstractAction):
+class StageAction(AbstractAction):  # pylint: disable=too-many-instance-attributes
     prototype = models.ForeignKey(StagePrototype, on_delete=models.CASCADE)
 
 

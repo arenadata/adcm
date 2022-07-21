@@ -37,7 +37,7 @@ from tests.ui_tests.app.page.provider.page import (
 )
 from tests.ui_tests.app.page.provider_list.page import ProviderListPage
 
-# pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-few-public-methods
+# pylint: disable=redefined-outer-name,unused-argument
 
 
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
@@ -242,7 +242,6 @@ class TestProviderMainPage:
                 provider_page.get_provider_info_from_row(row).state == params["state"]
             ), f"Provider state should be {params['state']}"
 
-    @pytest.mark.skip("https://arenadata.atlassian.net/browse/ADCM-2858")
     @pytest.mark.parametrize("bundle", ["provider_with_host_with_issue"], indirect=True)
     def test_provider_with_host_with_issues(self, app_fs, bundle, upload_and_create_test_provider, cluster):
         """Test that if host has issue then provider is not"""

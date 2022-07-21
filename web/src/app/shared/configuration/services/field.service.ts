@@ -11,7 +11,7 @@
 // limitations under the License.
 
 import { Injectable } from '@angular/core';
-import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
+import { AbstractControl, AbstractControlOptions, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { isEmptyObject } from '@app/core/types';
 
 import { ISearchParam } from '../main/main.service';
@@ -226,7 +226,7 @@ export class FieldService {
       options.reduce((p, c) => this.runByTree(c, p), {}),
       {
         validator: () => (options.filter(check).length === 0 ? { error: 'Form is empty' } : null),
-      }
+      } as AbstractControlOptions
     );
   }
 

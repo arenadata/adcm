@@ -14,7 +14,7 @@
 
 # todo add new DSL variant for job and multijob
 
-# pylint:disable=redefined-outer-name, no-self-use
+# pylint:disable=redefined-outer-name
 from typing import Tuple, Callable
 
 import allure

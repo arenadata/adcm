@@ -20,7 +20,9 @@ from typing import (
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
-from selenium.common.exceptions import StaleElementReferenceException
+from selenium.common.exceptions import (
+    StaleElementReferenceException,
+)
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 
@@ -570,12 +572,12 @@ class AdminPoliciesPage(GeneralAdminPage):
             for count, available_item in enumerate(self.find_elements(available_items_locator)):
                 try:
                     if available_item.text == item:
-                        self.scroll_to(available_item)
                         available_item.click()
                         break
                 except StaleElementReferenceException:
                     if self.find_elements(available_items_locator)[count].text == item:
                         self.find_elements(available_items_locator)[count].click()
+                        break
             else:
                 raise AssertionError(f"There are no item {item} in select popup")
 

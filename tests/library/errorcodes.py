@@ -15,10 +15,12 @@
 from typing import List, Iterable
 
 import pytest_check as check
+from adcm_client.wrappers.api import ADCMApiError
+from coreapi.exceptions import ErrorMessage
 from pytest_check.check_methods import get_failures
 
 
-class ADCMError:  # pylint: disable=too-few-public-methods
+class ADCMError:
     """
     ADCM error wrapper
     Used for error assertions
@@ -27,9 +29,17 @@ class ADCMError:  # pylint: disable=too-few-public-methods
     def __init__(self, title, code):
         self.title = title
         self.code = code
+        self._special_comparators = {ADCMApiError: self._compare_adcm_api_error}
 
     def equal(self, e, *args):
         """Assert error properties"""
+        for err_class, comparator in self._special_comparators.items():
+            if e.__class__ is err_class or issubclass(e.__class__, err_class):
+                comparator(e, *args)
+                return
+        self._compare_error_message(e, *args)
+
+    def _compare_error_message(self, e: ErrorMessage, *args):
         error = e.value.error if hasattr(e, 'value') else e.error
         title = error.title
         code = error.get("code", "")
@@ -44,7 +54,11 @@ class ADCMError:  # pylint: disable=too-few-public-methods
             )
         assert not get_failures(), "All assertions should passed"
 
-    def _get_data_err_messages(self, error) -> List[str]:  # pylint: disable=no-self-use
+    def _compare_adcm_api_error(self, e: ADCMApiError, *_):
+        code, *_ = e.args
+        assert self.code == code, f"Error expected to be {self.code}, not {code}"
+
+    def _get_data_err_messages(self, error) -> List[str]:
         """Extract all messages from _data attribute or an error if it is presented"""
         data = getattr(error, '_data', None)
         if data is None:
@@ -260,3 +274,10 @@ INVALID_HC_HOST_IN_MM = ADCMError(
     '409 Conflict',
     'INVALID_HC_HOST_IN_MM',
 )
+
+USER_UPDATE_ERROR = ADCMError('400 Bad Request', 'USER_UPDATE_ERROR')
+
+GROUP_UPDATE_ERROR = ADCMError('400 Bad Request', 'GROUP_UPDATE_ERROR')
+
+# ADCMApiError
+AUTH_ERROR = ADCMError('400 Bad Request', 'AUTH_ERROR')

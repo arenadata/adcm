@@ -21,9 +21,6 @@ from tests.ui_tests.app.helpers.locator import (
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
 
 
-# pylint: disable=too-few-public-methods
-
-
 class CommonAdminPagesLocators:
     """Common locators for admin pages"""
 

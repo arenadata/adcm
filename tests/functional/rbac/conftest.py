@@ -44,7 +44,6 @@ from tests.functional.tools import get_object_represent, AnyADCMObject, ADCMObje
 # pylint: disable=redefined-outer-name,unused-argument
 
 # Enum names doesn't conform to UPPER_CASE naming style
-# pylint: disable=invalid-name
 
 
 def pytest_collection_modifyitems(session, config, items: list):
@@ -107,8 +106,6 @@ class BusinessRole(NamedTuple):
 
 class BusinessRoles(Enum):
     """Complete list of business roles"""
-
-    # pylint: disable=invalid-name
 
     # ADCM Client root roles
 
@@ -501,7 +498,7 @@ def is_denied(
             else:
                 try:
                     role.method_call(base_object, *args, **kwargs)
-                except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied):
+                except (AccessIsDenied, NoSuchEndpointOrAccessIsDenied, ObjectNotFound):
                     pass
                 else:
                     raise AssertionError(f"{role.role_name} on {object_represent} should not be allowed")

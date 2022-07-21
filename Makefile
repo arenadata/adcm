@@ -3,7 +3,7 @@ BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD)
 
 ADCMBASE_IMAGE ?= hub.arenadata.io/adcm/base
 ADCMTEST_IMAGE ?= hub.arenadata.io/adcm/test
-ADCMBASE_TAG ?= 20220415154808
+ADCMBASE_TAG ?= 20220630133845
 APP_IMAGE ?= hub.adsw.io/adcm/adcm
 APP_TAG ?= $(subst /,_,$(BRANCH_NAME))
 
@@ -59,19 +59,23 @@ unittests: basetests test_image ## Run unittests
 
 pytest: ## Run functional tests
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster-x64
-	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
+	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host \
+	-v $(CURDIR)/:/adcm -v ${LDAP_CONF_FILE}:${LDAP_CONF_FILE} -w /adcm/ \
 	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
 	hub.adsw.io/library/functest:3.8.6.slim.buster-x64 /bin/sh -e \
-	./pytest.sh -m "not full and not extra_rbac" --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
+	./pytest.sh -m "not full and not extra_rbac" --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))' \
+	--ldap-conf ${LDAP_CONF_FILE}
 
 pytest_release: ## Run functional tests on release
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster.firefox-x64
-	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
+	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host \
+	-v $(CURDIR)/:/adcm -v ${LDAP_CONF_FILE}:${LDAP_CONF_FILE} -w /adcm/ \
 	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
 	hub.adsw.io/library/functest:3.8.6.slim.buster.firefox-x64 /bin/sh -e \
-	./pytest.sh --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
+	./pytest.sh --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))' \
+	--ldap-conf ${LDAP_CONF_FILE}
 
 ng_tests: ## Run Angular tests
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64
@@ -80,8 +84,8 @@ ng_tests: ## Run Angular tests
 linters: test_image ## Run linters
 	docker run -i --rm -e PYTHONPATH="/source/tests" -v $(CURDIR)/:/source -w /source $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) \
         /bin/sh -eol pipefail -c "/linters.sh shellcheck && \
-			/venv.sh run default pip install -r requirements.txt -r requirements-test.txt && \
-			cd python && /venv.sh run default pylint_runner --rcfile ../pylintrc &&  cd .. \
+			/venv.sh run default pip install -U -r requirements.txt -r requirements-test.txt && \
+			/venv.sh run default pylint --rcfile pyproject.toml --recursive y python && \
 			/linters.sh -b ./tests -f ../tests pylint && \
 			/linters.sh -f ./tests black && \
 			/linters.sh -f ./tests/functional flake8_pytest_style && \

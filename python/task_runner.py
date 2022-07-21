@@ -83,10 +83,11 @@ def run_job(task_id, job_id, err_file):
         return 1
 
 
-def set_body_ansible(job):
-    log_storage = LogStorage.objects.filter(job=job, name='ansible', type__in=['stdout', 'stderr'])
+def set_log_body(job):
+    name = job.sub_action.script_type if job.sub_action else job.action.script_type
+    log_storage = LogStorage.objects.filter(job=job, name=name, type__in=['stdout', 'stderr'])
     for ls in log_storage:
-        file_path = os.path.join(config.RUN_DIR, f'{ls.job.id}', f'ansible-{ls.type}.{ls.format}')
+        file_path = os.path.join(config.RUN_DIR, f'{ls.job.id}', f'{ls.name}-{ls.type}.{ls.format}')
         with open(file_path, 'r', encoding='utf_8') as f:
             body = f.read()
         LogStorage.objects.filter(job=job, name=ls.name, type=ls.type).update(body=body)
@@ -100,6 +101,8 @@ def run_task(task_id, args=None):
         log.error("no task %s", task_id)
         return
 
+    task.pid = os.getpid()
+    task.save()
     jobs = JobLog.objects.filter(task_id=task.id).order_by('id')
     if not jobs:
         log.error("no jobs for task %s", task.id)
@@ -121,10 +124,7 @@ def run_task(task_id, args=None):
         job.start_date = timezone.now()
         job.save()
         res = run_job(task.id, job.id, err_file)
-        if job.action.script_type == 'ansible' or (
-            job.sub_action and job.sub_action.script_type == 'ansible'
-        ):
-            set_body_ansible(job)
+        set_log_body(job)
         # For multi jobs task object state and/or config can be changed by adcm plugins
         if task.task_object is not None:
             try:
