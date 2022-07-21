@@ -394,13 +394,13 @@ def process_file_type(obj: Any, spec: dict, conf: dict):
 
 def ansible_encrypt(msg):
     vault = VaultAES256()
-    secret = VaultSecret(bytes(config.ANSIBLE_SECRET, 'utf-8'))
-    return vault.encrypt(bytes(msg, 'utf-8'), secret)
+    secret = VaultSecret(bytes(config.ANSIBLE_SECRET, config.ENCODING))
+    return vault.encrypt(bytes(msg, config.ENCODING), secret)
 
 
 def ansible_encrypt_and_format(msg):
     ciphertext = ansible_encrypt(msg)
-    return f'{config.ANSIBLE_VAULT_HEADER}\n{str(ciphertext, "utf-8")}'
+    return f'{config.ANSIBLE_VAULT_HEADER}\n{str(ciphertext, config.ENCODING)}'
 
 
 def ansible_decrypt(msg):
@@ -408,8 +408,16 @@ def ansible_decrypt(msg):
         return msg
     _, ciphertext = msg.split("\n")
     vault = VaultAES256()
-    secret = VaultSecret(bytes(config.ANSIBLE_SECRET, 'utf-8'))
-    return str(vault.decrypt(ciphertext, secret), 'utf-8')
+    secret = VaultSecret(bytes(config.ANSIBLE_SECRET, config.ENCODING))
+    return str(vault.decrypt(ciphertext, secret), config.ENCODING)
+
+
+def is_ansible_encrypted(msg):
+    if not isinstance(msg, str):
+        msg = str(msg, config.ENCODING)
+    if config.ANSIBLE_VAULT_HEADER in msg:
+        return True
+    return False
 
 
 def process_password(spec, conf):
@@ -967,13 +975,18 @@ def check_config_type(
                         err('CONFIG_VALUE_ERROR', tmpl2.format(msg))
 
 
-def replace_object_config(obj, key, subkey, value):
+def replace_object_config(obj, key, subkey, value, proto_conf):
     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
     conf = cl.config
+
+    if proto_conf.type in ('password', 'secrettext') and not is_ansible_encrypted(value):
+        value = ansible_encrypt_and_format(value)
+
     if subkey:
         conf[key][subkey] = value
     else:
         conf[key] = value
+
     save_obj_config(obj.config, conf, cl.attr, 'ansible update')
 
 
@@ -995,7 +1008,7 @@ def set_object_config(obj, keys, value):
     # if config_is_ro(obj, keys, pconf.limits):
     #    msg = 'config key {} of {} is read only'
     #    err('CONFIG_VALUE_ERROR', msg.format(key, ref))
-    replace_object_config(obj, key, subkey, value)
+    replace_object_config(obj, key, subkey, value, pconf)
     if pconf.type == 'file':
         save_file_type(obj, key, subkey, value)
     log_value = value
