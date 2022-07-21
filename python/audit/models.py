@@ -118,4 +118,12 @@ AUDIT_OPERATION_MAP = {
     },
     "HostList": {"POST": HOST_AUDIT_OPERATION},
     "HostListProvider": {"POST": HOST_AUDIT_OPERATION},
+    "ProviderList": {
+        "POST": AuditOperation(
+            name=f"{AuditObjectType.Cluster.label.capitalize()} "
+            f"{AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Provider.label,
+        ),
+    },
 }

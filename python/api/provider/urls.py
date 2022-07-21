@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path, include
+from django.urls import include, path
+
 from . import views
 
 # fmt: off

@@ -5,6 +5,7 @@ from audit.models import (
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
+    AuditObjectType,
 )
 from django.urls import reverse
 from rest_framework.response import Response
@@ -58,7 +59,7 @@ class TestBundle(BaseTestCase):
 
         assert log.audit_object.object_id == res.data["id"]
         assert log.audit_object.object_name == "hc_acl_in_service_noname"
-        assert log.audit_object.object_type == "bundle"
+        assert log.audit_object.object_type == AuditObjectType.Bundle.value
         assert not log.audit_object.is_deleted
         assert log.operation_name == self.audit_operation_load_bundle.name
         assert log.operation_type == AuditLogOperationType.Create.value

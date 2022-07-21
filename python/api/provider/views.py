@@ -10,25 +10,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from guardian.mixins import PermissionListMixin
-from rest_framework import status, permissions
-from rest_framework.response import Response
-
 import api.serializers
-from api.base_view import GenericUIView, DetailView, PaginatedView
+from api.base_view import DetailView, GenericUIView, PaginatedView
+from api.provider.serializers import (
+    ProviderDetailSerializer,
+    ProviderSerializer,
+    ProviderUISerializer,
+    UpgradeProviderSerializer,
+)
 from api.utils import (
-    create,
-    check_obj,
-    check_custom_perm,
     AdcmFilterBackend,
     AdcmOrderingFilter,
+    check_custom_perm,
+    check_obj,
+    create,
     get_object_for_user,
 )
+from audit.utils import audit
 from cm.api import delete_host_provider
 from cm.models import HostProvider, Upgrade
 from cm.upgrade import get_upgrade
-from . import serializers
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
+from rest_framework import permissions, status
+from rest_framework.response import Response
 
 
 class ProviderList(PermissionListMixin, PaginatedView):
@@ -41,13 +46,14 @@ class ProviderList(PermissionListMixin, PaginatedView):
     """
 
     queryset = HostProvider.objects.all()
-    serializer_class = serializers.ProviderSerializer
-    serializer_class_ui = serializers.ProviderUISerializer
-    serializer_class_post = serializers.ProviderDetailSerializer
+    serializer_class = ProviderSerializer
+    serializer_class_ui = ProviderUISerializer
+    serializer_class_post = ProviderDetailSerializer
     filterset_fields = ('name', 'prototype_id')
     ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
     permission_required = ['cm.view_hostprovider']
 
+    @audit
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         return create(serializer)
@@ -60,8 +66,8 @@ class ProviderDetail(PermissionListMixin, DetailView):
     """
 
     queryset = HostProvider.objects.all()
-    serializer_class = serializers.ProviderDetailSerializer
-    serializer_class_ui = serializers.ProviderUISerializer
+    serializer_class = ProviderDetailSerializer
+    serializer_class_ui = ProviderUISerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_hostprovider']
     lookup_field = 'id'
@@ -79,7 +85,7 @@ class ProviderDetail(PermissionListMixin, DetailView):
 
 class ProviderUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = serializers.UpgradeProviderSerializer
+    serializer_class = UpgradeProviderSerializer
     permission_classes = (permissions.IsAuthenticated,)
     filter_backends = (AdcmFilterBackend, AdcmOrderingFilter)
 
@@ -89,7 +95,7 @@ class ProviderUpgrade(GenericUIView):
 
     def get(self, request, *args, **kwargs):
         """
-        List all avaliable upgrades for specified host provider
+        List all available upgrades for specified host provider
         """
         provider = get_object_for_user(
             request.user, 'cm.view_hostprovider', HostProvider, id=kwargs['provider_id']
@@ -104,12 +110,12 @@ class ProviderUpgrade(GenericUIView):
 
 class ProviderUpgradeDetail(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = serializers.UpgradeProviderSerializer
+    serializer_class = UpgradeProviderSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         """
-        List all avaliable upgrades for specified host provider
+        List all available upgrades for specified host provider
         """
         provider = get_object_for_user(
             request.user, 'cm.view_hostprovider', HostProvider, id=kwargs['provider_id']
