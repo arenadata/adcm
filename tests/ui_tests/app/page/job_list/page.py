@@ -17,9 +17,11 @@ from enum import Enum
 from typing import TypeVar, Union, List
 
 import allure
+from selenium.common.exceptions import TimeoutException
 
 from selenium.webdriver.remote.webelement import WebElement
 
+from tests.library.conditional_retriever import FromOneOf, DataSource
 from tests.ui_tests.app.helpers.locator import Locator
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
@@ -35,6 +37,7 @@ from tests.ui_tests.app.page.job_list.locators import TaskListLocators
 class JobStatus(Enum):
     """Available job statuses"""
 
+    ABORTED = 'aborted'
     RUNNING = 'running'
     SUCCESS = 'success'
     FAILED = 'failed'
@@ -86,18 +89,37 @@ class JobListPage(BasePageObject):
                                           or just object which invoked the action
         """
         row = self.table.get_row(row_num)
+
+        def extract_status(locator):
+            return self._get_status_from_class_string(self.find_child(row, locator, timeout=4))
+
         row_locators = TaskListLocators.Table.Row
         if full_invoker_objects_link:
             invoker_objects = self.find_children(row, row_locators.invoker_objects)
             object_link = '/'.join(obj.text.strip() for obj in invoker_objects)
         else:
             object_link = self.find_child(row, row_locators.invoker_objects).text.strip()
+        # if task can be cancelled, then it will need another locator to determine the status
+        get_status = FromOneOf(
+            [
+                DataSource(extract_status, [row_locators.status]),
+                DataSource(extract_status, [row_locators.status_under_btn]),
+            ],
+            (KeyError, TimeoutError),
+        )
+        get_name_element = FromOneOf(
+            [
+                DataSource(self.find_child, [row, row_locators.action_name]),
+                DataSource(self.find_child, [row, row_locators.task_action_name]),
+            ],
+            (TimeoutError, TimeoutException),
+        )
         return TableTaskInfo(
-            action_name=self.find_child(row, row_locators.action_name).text,
+            action_name=get_name_element().text,
             invoker_objects=object_link,
             start_date=self.find_child(row, row_locators.start_date).text,
             finish_date=self.find_child(row, row_locators.finish_date).text,
-            status=self._get_status_from_class_string(self.find_child(row, row_locators.status)),
+            status=get_status(),
         )
 
     def get_task_info_from_popup(self, row_num: int = 0) -> PopupTaskInfo:
@@ -179,10 +201,13 @@ class JobListPage(BasePageObject):
         for status in JobStatus:
             if status.value in class_string:
                 return status
-        raise KeyError('Job status not found in class string: %s' % str(class_string))
+        raise KeyError(
+            'Job status not found in class string: %s' % str(class_string)  # pylint: disable=consider-using-f-string
+        )
 
     def get_selected_filter(self):
         """Get selected filter text"""
         for filter_element in self.find_elements(TaskListLocators.Filter.filter_btn):
             if filter_element.get_attribute("aria-pressed") == "true":
                 return filter_element.text
+        raise RuntimeError('None of filters are selected')

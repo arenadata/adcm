@@ -629,7 +629,7 @@ def set_action_state(
 
 
 def restore_hc(task: TaskLog, action: Action, status: str):
-    if status != config.Job.FAILED:
+    if status not in [config.Job.FAILED, config.Job.ABORTED]:
         return
     if not action.hostcomponentmap:
         return
@@ -721,7 +721,6 @@ def run_task(task: TaskLog, event, args: str = ''):
         stderr=err_file,
     )
     log.info("task run #%s, python process %s", task.pk, proc.pid)
-    task.pid = proc.pid
 
     set_task_status(task, config.Job.RUNNING, event)
 

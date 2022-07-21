@@ -13,9 +13,11 @@
 """Group view sets"""
 
 from adwp_base.errors import AdwpEx
+from django_filters.rest_framework import FilterSet, CharFilter, DjangoFilterBackend
 from guardian.mixins import PermissionListMixin
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers, status
+from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.viewsets import ModelViewSet
 
@@ -90,6 +92,34 @@ class GroupSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
         return group_services.create(**validated_data)
 
 
+class GroupFilterSet(FilterSet):
+    name = CharFilter(field_name='display_name', label='name')
+
+    class Meta:
+        model = models.Group
+        fields = ('id', 'type')
+
+
+class GroupOrderingFilter(OrderingFilter):
+    def filter_queryset(self, request, queryset, view):
+        ordering = self.get_ordering(request, queryset, view)
+
+        if not ordering:
+            return queryset
+
+        fix_ordering = []
+
+        for field in ordering:
+            if field == '-name':
+                fix_ordering.append('-display_name')
+                continue
+            if field == 'name':
+                fix_ordering.append('display_name')
+                continue
+            fix_ordering.append(field)
+        return queryset.order_by(*fix_ordering)
+
+
 class GroupViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
     """Group view set"""
 
@@ -97,9 +127,10 @@ class GroupViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-ma
     serializer_class = GroupSerializer
     permission_classes = (DjangoModelPermissions,)
     permission_required = ['rbac.view_group']
-    filterset_fields = ('id', 'name')
+    filter_backends = (DjangoFilterBackend, GroupOrderingFilter)
+    filterset_class = GroupFilterSet
     ordering_fields = ('id', 'name')
-    search_fields = ('name', 'description')
+    search_fields = ('name', 'description', 'display_name')
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()

@@ -32,7 +32,7 @@ from cm.models import (
     Action,
     Bundle,
     Cluster,
-    Host,
+    HostProvider,
     ProductCategory,
     Prototype,
     PrototypeConfig,
@@ -857,11 +857,11 @@ def clear_stage():
 
 
 def delete_bundle(bundle):
-    hosts = Host.objects.filter(prototype__bundle=bundle)
-    if hosts:
-        h = hosts[0]
-        msg = 'There is host #{} "{}" of bundle #{} "{}" {}'
-        err('BUNDLE_CONFLICT', msg.format(h.id, h.fqdn, bundle.id, bundle.name, bundle.version))
+    providers = HostProvider.objects.filter(prototype__bundle=bundle)
+    if providers:
+        p = providers[0]
+        msg = 'There is provider #{} "{}" of bundle #{} "{}" {}'
+        err('BUNDLE_CONFLICT', msg.format(p.id, p.name, bundle.id, bundle.name, bundle.version))
     clusters = Cluster.objects.filter(prototype__bundle=bundle)
     if clusters:
         cl = clusters[0]
