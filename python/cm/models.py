@@ -534,7 +534,7 @@ class ADCMEntity(ADCMModel):
 
     def delete(self, using=None, keep_parents=False):
         super().delete(using, keep_parents)
-        if self.config is not None:
+        if self.config is not None and not isinstance(self, ServiceComponent):
             self.config.delete()
 
 
