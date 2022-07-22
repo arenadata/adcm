@@ -63,8 +63,7 @@ export class UpgradeMasterComponent extends BaseDirective implements DynamicComp
   }
 
   isDisabled(value: IValue) {
-    if (value?.config?.form) return !value.config.form.valid;
-    return value?.hostmap?.noValid;
+    return value && ((value.hostmap && value.hostmap.noValid) || (value.config && !value.config.form?.valid));
   }
 
   run(value: IValue = {}) {
