@@ -328,10 +328,10 @@ def session_should_expire(user: str, password: str, url: str):
         with pytest.raises(ErrorMessage) as e:
             client.cluster_list()
         try:
-            assert '401 Unauthorized' in e.error.title, 'Operation should fail with 401 code'
+            assert '401 Unauthorized' in e.value.error.title, 'Operation should fail with 401 code'
         except (KeyError, AttributeError) as err:
             raise AssertionError(
-                'Operation should fail as an unauthorized one\nBut check was failed due to {err}\n'
+                f'Operation should fail as an unauthorized one\nBut check was failed due to {err}\n'
             ) from err
 
 
