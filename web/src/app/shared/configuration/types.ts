@@ -83,6 +83,7 @@ export interface IFieldStack {
   activatable: boolean;
   read_only: boolean;
   description?: string;
+  custom_group?: boolean;
   limits?: ILimits;
   ui_options?: IUIoptions;
   group_config?: { [key: string]: boolean };
