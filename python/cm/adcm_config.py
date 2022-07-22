@@ -40,6 +40,9 @@ from cm.models import (
 )
 
 
+SECURE_PARAM_TYPES = ('password', 'secrettext')
+
+
 def proto_ref(proto):
     return f'{proto.type} "{proto.name}" {proto.version}'
 
@@ -113,7 +116,7 @@ def get_default(c, proto=None):  # pylint: disable=too-many-branches
         value = c.default
     elif c.type == 'text':
         value = c.default
-    elif c.type in ('password', 'secrettext'):
+    elif c.type in SECURE_PARAM_TYPES:
         if c.default:
             value = ansible_encrypt_and_format(c.default)
     elif type_is_complex(c.type):
@@ -428,11 +431,11 @@ def process_password(spec, conf):
 
     for key in conf:
         if 'type' in spec[key]:
-            if spec[key]['type'] in ('password', 'secrettext') and conf[key]:
+            if spec[key]['type'] in SECURE_PARAM_TYPES and conf[key]:
                 conf[key] = update_password(conf[key])
         else:
             for subkey in conf[key]:
-                if spec[key][subkey]['type'] in ('password', 'secrettext') and conf[key][subkey]:
+                if spec[key][subkey]['type'] in SECURE_PARAM_TYPES and conf[key][subkey]:
                     conf[key][subkey] = update_password(conf[key][subkey])
     return conf
 
@@ -446,7 +449,7 @@ def process_config(obj, spec, old_conf):  # pylint: disable=too-many-branches
             if conf[key] is not None:
                 if spec[key]['type'] == 'file':
                     conf[key] = cook_file_type_name(obj, key, '')
-                elif spec[key]['type'] in ('password', 'secrettext'):
+                elif spec[key]['type'] in SECURE_PARAM_TYPES:
                     if config.ANSIBLE_VAULT_HEADER in conf[key]:
                         conf[key] = {'__ansible_vault': conf[key]}
         elif conf[key]:
@@ -454,7 +457,7 @@ def process_config(obj, spec, old_conf):  # pylint: disable=too-many-branches
                 if conf[key][subkey] is not None:
                     if spec[key][subkey]['type'] == 'file':
                         conf[key][subkey] = cook_file_type_name(obj, key, subkey)
-                    elif spec[key][subkey]['type'] in ('password', 'secrettext'):
+                    elif spec[key][subkey]['type'] in SECURE_PARAM_TYPES:
                         if config.ANSIBLE_VAULT_HEADER in conf[key][subkey]:
                             conf[key][subkey] = {'__ansible_vault': conf[key][subkey]}
     return conf
@@ -979,7 +982,7 @@ def replace_object_config(obj, key, subkey, value, proto_conf):
     cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
     conf = cl.config
 
-    if proto_conf.type in ('password', 'secrettext') and not is_ansible_encrypted(value):
+    if proto_conf.type in SECURE_PARAM_TYPES and not is_ansible_encrypted(value):
         value = ansible_encrypt_and_format(value)
 
     if subkey:
@@ -1012,7 +1015,7 @@ def set_object_config(obj, keys, value):
     if pconf.type == 'file':
         save_file_type(obj, key, subkey, value)
     log_value = value
-    if pconf.type in ('password', 'secrettext'):
+    if pconf.type in SECURE_PARAM_TYPES:
         log_value = '****'
     log.info('update %s config %s/%s to "%s"', obj_ref(obj), key, subkey, log_value)
     return value
