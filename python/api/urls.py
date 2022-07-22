@@ -48,3 +48,4 @@ urlpatterns = [
     path('rbac/', include(('rbac.urls', 'rbac'))),
     path('token/', token.GetAuthToken.as_view(), name='token'),
 ]
+urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))]

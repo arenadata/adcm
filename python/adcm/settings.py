@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'social_django',
     'guardian',
+    'silk',
     'adwp_events',
     'cm.apps.CmConfig',
 ]
@@ -83,6 +84,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'silk.middleware.SilkyMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
