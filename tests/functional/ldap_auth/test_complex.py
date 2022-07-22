@@ -138,6 +138,7 @@ def test_users_in_groups_sync(
     with allure.step('Remove one LDAP user from one group'):
         ldap_ad.remove_user_from_group(user_info_2['dn'], group_info_1['dn'])
     with allure.step('Sync and check user state'):
+        _run_sync(sdk_client_fs)
         check_existing_groups(
             sdk_client_fs, {group_info_1['name'], group_info_2['name']}, {adcm_group_1.name, adcm_group_2.name}
         )
