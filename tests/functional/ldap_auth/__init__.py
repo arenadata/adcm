@@ -15,6 +15,7 @@ Suite with maintenance mode tests
 import pytest
 
 pytestmark = [
+    pytest.mark.ldap(),
     pytest.mark.allure_label("API Tests", label_type="layer"),
     pytest.mark.allure_label("Functional Tests", label_type="parentSuite"),
     pytest.mark.allure_label("Functional Tests", label_type="page_url"),
