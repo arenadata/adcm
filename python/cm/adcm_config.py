@@ -653,8 +653,10 @@ def check_value_unselected_field(
 
     # pylint: disable=too-many-boolean-expressions
     def check_empty_values(key, current, new):
-        if (key in current and key in new and bool(current[key]) is False and new[key] is None) or (
-            key in current and key in new and current[key] is None and bool(new[key]) is False
+        key_in_config = key in current and key in new
+        if key_in_config and (
+            (bool(current[key]) is False and new[key] is None)
+            or (current[key] is None and bool(new[key]) is False)
         ):
             return True
         return False
