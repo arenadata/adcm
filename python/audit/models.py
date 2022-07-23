@@ -142,4 +142,12 @@ AUDIT_OPERATION_MAP = {
             object_type=AuditObjectType.Role.label,
         ),
     },
+    "GroupViewSet": {
+        "POST": AuditOperation(
+            name=f"{AuditObjectType.Group.label.capitalize()} "
+            f"{AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Group.label,
+        ),
+    },
 }
