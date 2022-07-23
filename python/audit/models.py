@@ -134,4 +134,12 @@ AUDIT_OPERATION_MAP = {
             object_type=AuditObjectType.User.label,
         ),
     },
+    "RoleView": {
+        "POST": AuditOperation(
+            name=f"{AuditObjectType.Role.label.capitalize()} "
+            f"{AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Role.label,
+        ),
+    },
 }

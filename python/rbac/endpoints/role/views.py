@@ -10,28 +10,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db.models import Q, Prefetch
+from audit.utils import audit
+from cm.models import ProductCategory
+from django.db.models import Prefetch, Q
 from django_filters import rest_framework as filters
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
+from rbac.models import Role, RoleTypes
+from rbac.services.role import role_create, role_update
+from rbac.utils import BaseRelatedSerializer
 from rest_flex_fields import is_expanded
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.decorators import action
 from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from cm.models import ProductCategory
-from rbac.models import Role, RoleTypes
-from rbac.services.role import role_create, role_update
-from rbac.utils import BaseRelatedSerializer
-
 
 class RoleChildSerializer(BaseRelatedSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
     url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
 
 
 class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
@@ -64,7 +69,8 @@ class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
         }
         expandable_fields = {'child': ('rbac.endpoints.role.views.RoleSerializer', {'many': True})}
 
-    def get_category(self, obj):
+    @staticmethod
+    def get_category(obj):
         return [c.value for c in obj.category.all()]
 
 
@@ -107,6 +113,7 @@ class RoleView(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-a
             )
         return queryset
 
+    @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
