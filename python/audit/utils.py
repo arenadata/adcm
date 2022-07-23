@@ -64,3 +64,12 @@ def audit(func):
         return resp
 
     return wrapped
+
+
+def mark_deleted_audit_object(instance):
+    audit_objs = []
+    for audit_obj in AuditObject.objects.filter(object_id=instance.pk):
+        audit_obj.is_deleted = True
+        audit_objs.append(audit_obj)
+
+    AuditObject.objects.bulk_update(objs=audit_objs, fields=["is_deleted"])

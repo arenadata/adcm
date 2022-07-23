@@ -25,7 +25,6 @@ from enum import Enum
 from itertools import chain
 from typing import Dict, Iterable, List, Optional
 
-from audit.models import AuditObject
 from cm.config import FILE_DIR, Job
 from cm.errors import AdcmEx
 from cm.logger import log
@@ -1715,13 +1714,3 @@ class ConcernItem(ADCMModel):
         for entity in self.related_objects:
             entity.remove_from_concerns(self)
         return super().delete(using, keep_parents)
-
-
-@receiver(post_delete, sender=Bundle)
-def mark_deleted_audit_object(sender, instance, **kwargs):
-    audit_objs = []
-    for audit_obj in AuditObject.objects.filter(object_id=instance.pk):
-        audit_obj.is_deleted = True
-        audit_objs.append(audit_obj)
-
-    AuditObject.objects.bulk_update(objs=audit_objs, fields=["is_deleted"])
