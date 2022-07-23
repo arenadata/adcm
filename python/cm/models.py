@@ -25,6 +25,10 @@ from enum import Enum
 from itertools import chain
 from typing import Dict, Iterable, List, Optional
 
+from audit.models import AuditObject
+from cm.config import FILE_DIR, Job
+from cm.errors import AdcmEx
+from cm.logger import log
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -32,10 +36,6 @@ from django.db import models, transaction
 from django.db.models.signals import m2m_changed, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
-
-from cm.config import FILE_DIR, Job
-from cm.errors import AdcmEx
-from cm.logger import log
 
 
 def validate_line_break_character(value: str) -> None:
@@ -1715,3 +1715,13 @@ class ConcernItem(ADCMModel):
         for entity in self.related_objects:
             entity.remove_from_concerns(self)
         return super().delete(using, keep_parents)
+
+
+@receiver(post_delete, sender=Bundle)
+def mark_deleted_audit_object(sender, instance, **kwargs):
+    audit_objs = []
+    for audit_obj in AuditObject.objects.filter(object_id=instance.pk):
+        audit_obj.is_deleted = True
+        audit_objs.append(audit_obj)
+
+    AuditObject.objects.bulk_update(objs=audit_objs, fields=["is_deleted"])
