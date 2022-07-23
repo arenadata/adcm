@@ -7,6 +7,7 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
+from cm.models import Bundle
 from django.urls import reverse
 from rest_framework.response import Response
 
@@ -54,7 +55,6 @@ class TestBundle(BaseTestCase):
         self.upload_bundle()
 
         res: Response = self.load_bundle()
-
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert log.audit_object.object_id == res.data["id"]
@@ -79,3 +79,25 @@ class TestBundle(BaseTestCase):
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
+
+    def test_load_and_delete(self):
+        self.upload_bundle()
+
+        res: Response = self.load_bundle()
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == res.data["id"]
+        assert log.audit_object.object_name == "hc_acl_in_service_noname"
+        assert log.audit_object.object_type == "bundle"
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == self.audit_operation_load_bundle.name
+        assert log.operation_type == AuditLogOperationType.Create.value
+        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+        Bundle.objects.get(pk=res.data["id"]).delete()
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.is_deleted
