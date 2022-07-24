@@ -13,14 +13,13 @@
 """View and serializer for Authentication token"""
 
 import django.contrib.auth
-
-import rest_framework
 import rest_framework.authtoken.serializers
+from adwp_base.errors import AdwpEx
+from audit.utils import audit
+from rest_framework import authentication, permissions
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-
-from adwp_base.errors import AdwpEx
 
 
 class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
@@ -35,14 +34,21 @@ class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
         attrs['user'] = user
         return attrs
 
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
+
 
 class GetAuthToken(GenericAPIView):
     """Authentication token view"""
 
-    authentication_classes = (rest_framework.authentication.TokenAuthentication,)
-    permission_classes = (rest_framework.permissions.AllowAny,)
+    authentication_classes = (authentication.TokenAuthentication,)
+    permission_classes = (permissions.AllowAny,)
     serializer_class = AuthSerializer
 
+    # @audit
     def post(self, request, *args, **kwargs):
         """
         Provide authentication token

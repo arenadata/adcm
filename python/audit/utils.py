@@ -32,15 +32,21 @@ def audit(func):
         if is_success(status_code):
             operation_result = AuditLogOperationResult.Success
             if resp.data:
-                if hasattr(resp.data.serializer.instance, "name"):
-                    object_name = resp.data.serializer.instance.name
-                elif hasattr(resp.data.serializer.instance, "fqdn"):
-                    object_name = resp.data.serializer.instance.fqdn
+                if getattr(resp.data, "serializer"):
+                    if hasattr(resp.data.serializer.instance, "name"):
+                        object_name = resp.data.serializer.instance.name
+                    elif hasattr(resp.data.serializer.instance, "fqdn"):
+                        object_name = resp.data.serializer.instance.fqdn
+                    else:
+                        object_name = str(resp.data.serializer.instance)
+
+                    object_id = resp.data.serializer.instance.id
                 else:
-                    object_name = str(resp.data.serializer.instance)
+                    object_name = audit_operation.object_type
+                    object_id = ""
 
                 audit_object = AuditObject.objects.create(
-                    object_id=resp.data.serializer.instance.id,
+                    object_id=object_id,
                     object_name=object_name,
                     object_type=audit_operation.object_type,
                 )

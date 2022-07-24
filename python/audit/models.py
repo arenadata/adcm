@@ -28,6 +28,7 @@ class AuditObjectType(models.TextChoices):
     Group = "group", "group"
     Role = "role", "role"
     Policy = "policy", "policy"
+    Token = "token", "token"
 
 
 class AuditLogOperationType(models.TextChoices):
@@ -156,6 +157,14 @@ AUDIT_OPERATION_MAP = {
             f"{AuditLogOperationType.Create.label}d",
             operation_type=AuditLogOperationType.Create.label,
             object_type=AuditObjectType.Policy.label,
+        ),
+    },
+    "GetAuthToken": {
+        "POST": AuditOperation(
+            name=f"{AuditObjectType.Token.label.capitalize()} "
+            f"{AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Token.label,
         ),
     },
 }
