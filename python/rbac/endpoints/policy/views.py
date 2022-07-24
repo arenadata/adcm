@@ -9,25 +9,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 
 import jsonschema
+from audit.utils import audit
+from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 from guardian.mixins import PermissionListMixin
+from rbac.models import Group, Policy, Role, RoleTypes, User
+from rbac.services.policy import policy_create, policy_update
+from rbac.utils import BaseRelatedSerializer
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.response import Response
 from rest_framework.validators import ValidationError
 from rest_framework.viewsets import ModelViewSet
 
-from cm.models import Cluster, ClusterObject, ServiceComponent, HostProvider, Host
-from rbac.models import Policy, User, Group, Role, RoleTypes
-from rbac.services.policy import policy_create, policy_update
-from rbac.utils import BaseRelatedSerializer
-
 
 class ObjectField(serializers.JSONField):
-    def schema_validate(self, value):
+    @staticmethod
+    def schema_validate(value):
         schema = {
             'type': 'array',
             'items': {
@@ -60,6 +61,7 @@ class ObjectField(serializers.JSONField):
     }
 
     def to_internal_value(self, data):
+        data = json.loads(data)
         self.schema_validate(data)
         objects = []
         for obj in data:
@@ -83,15 +85,33 @@ class PolicyRoleSerializer(BaseRelatedSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
     url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
 
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
+
 
 class PolicyUserSerializer(BaseRelatedSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
     url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
 
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
+
 
 class PolicyGroupSerializer(BaseRelatedSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all())
     url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
 
 
 class PolicySerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
@@ -122,7 +142,8 @@ class PolicySerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
             'role': 'rbac.endpoints.role.views.RoleSerializer',
         }
 
-    def validate_role(self, role):
+    @staticmethod
+    def validate_role(role):
         if role.type != RoleTypes.role:
             raise serializers.ValidationError(
                 f'Role with type "{role.type}" could not be used in policy'
@@ -138,6 +159,7 @@ class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-m
     filterset_fields = ('id', 'name', 'built_in', 'role', 'user', 'group')
     ordering_fields = ('id', 'name', 'built_in', 'role')
 
+    @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):

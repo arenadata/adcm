@@ -41,3 +41,21 @@ class TestUser(BaseTestCase):
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
+
+        self.client.post(
+            path=reverse("rbac:user-list"),
+            data={
+                "username": self.username,
+                "password": "test_password",
+            },
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert not log.audit_object
+        assert log.operation_name == self.audit_operation_create_user.name
+        assert log.operation_type == AuditLogOperationType.Create.value
+        assert log.operation_result == AuditLogOperationResult.Failed.value
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)

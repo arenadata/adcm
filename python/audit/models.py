@@ -150,4 +150,12 @@ AUDIT_OPERATION_MAP = {
             object_type=AuditObjectType.Group.label,
         ),
     },
+    "PolicyViewSet": {
+        "POST": AuditOperation(
+            name=f"{AuditObjectType.Policy.label.capitalize()} "
+            f"{AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Policy.label,
+        ),
+    },
 }

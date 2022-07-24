@@ -1,5 +1,6 @@
 from functools import wraps
 
+from adwp_base.errors import AdwpEx
 from audit.models import (
     AUDIT_OPERATION_MAP,
     AuditLog,
@@ -19,7 +20,7 @@ def audit(func):
         try:
             resp = func(*args, **kwargs)
             status_code = resp.status_code
-        except AdcmEx as exc:
+        except (AdcmEx, AdwpEx) as exc:
             error = exc
             resp = None
             status_code = exc.status_code
