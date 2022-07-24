@@ -32,7 +32,7 @@ def audit(func):
         if is_success(status_code):
             operation_result = AuditLogOperationResult.Success
             if resp.data:
-                if getattr(resp.data, "serializer"):
+                if resp.data.get("serializer"):
                     if hasattr(resp.data.serializer.instance, "name"):
                         object_name = resp.data.serializer.instance.name
                     elif hasattr(resp.data.serializer.instance, "fqdn"):
@@ -42,8 +42,9 @@ def audit(func):
 
                     object_id = resp.data.serializer.instance.id
                 else:
+                    # For token there is no actually audit object
                     object_name = audit_operation.object_type
-                    object_id = ""
+                    object_id = args[1].user.pk
 
                 audit_object = AuditObject.objects.create(
                     object_id=object_id,

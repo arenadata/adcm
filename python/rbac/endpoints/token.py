@@ -48,7 +48,7 @@ class GetAuthToken(GenericAPIView):
     permission_classes = (permissions.AllowAny,)
     serializer_class = AuthSerializer
 
-    # @audit
+    @audit
     def post(self, request, *args, **kwargs):
         """
         Provide authentication token
