@@ -10,22 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api.serializers import (
+    MultiHyperlinkedIdentityField,
+    MultiHyperlinkedRelatedField,
+    UIConfigField,
+)
+from cm.adcm_config import ui_config
+from cm.api import update_obj_config
+from cm.errors import AdcmEx
+from cm.models import ConfigLog, GroupConfig, Host, ObjectConfig
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db.transaction import atomic
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.reverse import reverse
-
-from api.serializers import (
-    MultiHyperlinkedRelatedField,
-    MultiHyperlinkedIdentityField,
-    UIConfigField,
-)
-from cm.adcm_config import ui_config
-from cm.api import update_obj_config
-from cm.errors import AdcmEx
-from cm.models import GroupConfig, Host, ObjectConfig, ConfigLog
 
 
 class HostFlexFieldsSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
@@ -83,8 +82,8 @@ class ObjectTypeField(serializers.Field):
 class GroupConfigsHyperlinkedIdentityField(serializers.HyperlinkedIdentityField):
     """Return url for group_config for Cluster, Provider, Component or Service"""
 
-    def get_url(self, obj, view_name, request, format):  # pylint: disable=redefined-builtin
-        url = reverse(viewname=view_name, request=request, format=format)
+    def get_url(self, obj, view_name, request, _format):  # pylint: disable=redefined-builtin
+        url = reverse(viewname=view_name, request=request, format=_format)
         return f'{url}?object_id={obj.id}&object_type={obj.prototype.type}'
 
 

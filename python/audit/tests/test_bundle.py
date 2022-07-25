@@ -1,3 +1,15 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from datetime import datetime
 
 from audit.models import (
@@ -20,6 +32,25 @@ class TestBundle(BaseTestCase):
 
         self.audit_operation_upload_bundle = AUDIT_OPERATION_MAP["UploadBundle"]["POST"]
         self.audit_operation_load_bundle = AUDIT_OPERATION_MAP["LoadBundle"]["POST"]
+
+    def upload_bundle_and_check(self):
+        self.upload_bundle()
+
+        res: Response = self.load_bundle()
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == res.data["id"]
+        assert log.audit_object.object_name == "hc_acl_in_service_noname"
+        assert log.audit_object.object_type == "bundle"
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == self.audit_operation_load_bundle.name
+        assert log.operation_type == AuditLogOperationType.Create.value
+        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+        return res
 
     def test_upload_success(self):
         self.upload_bundle()
@@ -52,22 +83,7 @@ class TestBundle(BaseTestCase):
         assert isinstance(log.object_changes, dict)
 
     def test_load(self):
-        self.upload_bundle()
-
-        res: Response = self.load_bundle()
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        assert log.audit_object.object_id == res.data["id"]
-        assert log.audit_object.object_name == "hc_acl_in_service_noname"
-        assert log.audit_object.object_type == AuditObjectType.Bundle.value
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == self.audit_operation_load_bundle.name
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
-
+        self.upload_bundle_and_check()
         self.load_bundle()
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -81,21 +97,7 @@ class TestBundle(BaseTestCase):
         assert isinstance(log.object_changes, dict)
 
     def test_load_and_delete(self):
-        self.upload_bundle()
-
-        res: Response = self.load_bundle()
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        assert log.audit_object.object_id == res.data["id"]
-        assert log.audit_object.object_name == "hc_acl_in_service_noname"
-        assert log.audit_object.object_type == "bundle"
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == self.audit_operation_load_bundle.name
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        res: Response = self.upload_bundle_and_check()
 
         Bundle.objects.get(pk=res.data["id"]).delete()
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

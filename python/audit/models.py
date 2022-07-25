@@ -28,7 +28,6 @@ class AuditObjectType(models.TextChoices):
     Group = "group", "group"
     Role = "role", "role"
     Policy = "policy", "policy"
-    Token = "token", "token"
 
 
 class AuditLogOperationType(models.TextChoices):
@@ -112,19 +111,18 @@ AUDIT_OPERATION_MAP = {
     },
     "ConfigLogViewSet": {
         "POST": AuditOperation(
-            name="???",
+            name=f"config log {AuditLogOperationType.Create.label}d",
             operation_type=AuditLogOperationType.Create.label,
-            object_type="???",
+            object_type="config log",
         ),
     },
     "HostList": {"POST": HOST_AUDIT_OPERATION},
     "HostListProvider": {"POST": HOST_AUDIT_OPERATION},
-    "ProviderList": {
+    "GroupConfigViewSet": {
         "POST": AuditOperation(
-            name=f"{AuditObjectType.Cluster.label.capitalize()} "
-            f"{AuditLogOperationType.Create.label}d",
+            name=f"group config {AuditLogOperationType.Create.label}d",
             operation_type=AuditLogOperationType.Create.label,
-            object_type=AuditObjectType.Provider.label,
+            object_type="group config",
         ),
     },
     "UserViewSet": {
@@ -157,14 +155,6 @@ AUDIT_OPERATION_MAP = {
             f"{AuditLogOperationType.Create.label}d",
             operation_type=AuditLogOperationType.Create.label,
             object_type=AuditObjectType.Policy.label,
-        ),
-    },
-    "GetAuthToken": {
-        "POST": AuditOperation(
-            name=f"{AuditObjectType.Token.label.capitalize()} "
-            f"{AuditLogOperationType.Create.label}d",
-            operation_type=AuditLogOperationType.Create.label,
-            object_type=AuditObjectType.Token.label,
         ),
     },
 }

@@ -1,6 +1,17 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from functools import wraps
 
-from adwp_base.errors import AdwpEx
 from audit.models import (
     AUDIT_OPERATION_MAP,
     AuditLog,
@@ -8,6 +19,8 @@ from audit.models import (
     AuditObject,
 )
 from cm.errors import AdcmEx
+from adwp_base.errors import AdwpEx
+from django.contrib.contenttypes.models import ContentType
 from django.views.generic.base import View
 from rest_framework.status import is_success
 
@@ -15,6 +28,8 @@ from rest_framework.status import is_success
 def audit(func):
     @wraps(func)
     def wrapped(*args, **kwargs):
+        # pylint: disable=too-many-branches
+
         error = None
 
         try:
@@ -27,29 +42,35 @@ def audit(func):
 
         view: View = args[0]
         audit_operation = AUDIT_OPERATION_MAP[view.__class__.__name__][view.request.method]
+        operation_name = audit_operation.name
         object_changes = {}
 
         if is_success(status_code):
             operation_result = AuditLogOperationResult.Success
             if resp.data:
-                if resp.data.get("serializer"):
-                    if hasattr(resp.data.serializer.instance, "name"):
-                        object_name = resp.data.serializer.instance.name
-                    elif hasattr(resp.data.serializer.instance, "fqdn"):
-                        object_name = resp.data.serializer.instance.fqdn
-                    else:
-                        object_name = str(resp.data.serializer.instance)
-
-                    object_id = resp.data.serializer.instance.id
+                if hasattr(resp.data.serializer.instance, "name"):
+                    object_name = resp.data.serializer.instance.name
+                elif hasattr(resp.data.serializer.instance, "fqdn"):
+                    object_name = resp.data.serializer.instance.fqdn
                 else:
-                    # For token there is no actually audit object
-                    object_name = audit_operation.object_type
-                    object_id = args[1].user.pk
+                    object_name = str(resp.data.serializer.instance)
+
+                if audit_operation.object_type in {"group config", "config log"}:
+                    if audit_operation.object_type == "config log":
+                        object_type: str = ContentType.objects.get_for_model(
+                            resp.data.serializer.instance.obj_ref.object
+                        ).name
+                    else:
+                        object_type: str = resp.data.serializer.instance.object_type.name
+
+                    operation_name = f"{object_type.capitalize()} {operation_name}"
+                else:
+                    object_type: str = audit_operation.object_type
 
                 audit_object = AuditObject.objects.create(
-                    object_id=object_id,
+                    object_id=resp.data.serializer.instance.id,
                     object_name=object_name,
-                    object_type=audit_operation.object_type,
+                    object_type=object_type,
                 )
             else:
                 audit_object = None
@@ -59,7 +80,7 @@ def audit(func):
 
         AuditLog.objects.create(
             audit_object=audit_object,
-            operation_name=audit_operation.name,
+            operation_name=operation_name,
             operation_type=audit_operation.operation_type,
             operation_result=operation_result,
             user=view.request.user,
