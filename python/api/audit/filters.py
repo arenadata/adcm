@@ -30,5 +30,5 @@ class AuditLogListFilter(drf_filters.FilterSet):
 
 class AuditLoginSessionListFilter(drf_filters.FilterSet):
     class Meta:
-        models = AuditSession
+        model = AuditSession
         fields = ['user__username', 'login_result', 'login_time']
