@@ -84,6 +84,11 @@ HOST_AUDIT_OPERATION = AuditOperation(
     operation_type=AuditLogOperationType.Create.label,
     object_type=AuditObjectType.Host.label,
 )
+CONFIG_LOG_AUDIT_OPERATION = AuditOperation(
+    name=f"config log {AuditLogOperationType.Create.label}d",
+    operation_type=AuditLogOperationType.Create.label,
+    object_type="config log",
+)
 
 
 AUDIT_OPERATION_MAP = {
@@ -110,11 +115,7 @@ AUDIT_OPERATION_MAP = {
         ),
     },
     "ConfigLogViewSet": {
-        "POST": AuditOperation(
-            name=f"config log {AuditLogOperationType.Create.label}d",
-            operation_type=AuditLogOperationType.Create.label,
-            object_type="config log",
-        ),
+        "POST": CONFIG_LOG_AUDIT_OPERATION,
     },
     "HostList": {"POST": HOST_AUDIT_OPERATION},
     "HostListProvider": {"POST": HOST_AUDIT_OPERATION},
@@ -165,4 +166,5 @@ AUDIT_OPERATION_MAP = {
             object_type=AuditObjectType.Policy.label,
         ),
     },
+    "GroupConfigConfigLogViewSet": {"POST": CONFIG_LOG_AUDIT_OPERATION},
 }
