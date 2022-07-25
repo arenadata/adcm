@@ -10,33 +10,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django_filters import rest_framework as drf_filters
-from guardian.mixins import PermissionListMixin
-from guardian.shortcuts import get_objects_for_user
-from rest_framework import status, permissions
-from rest_framework.response import Response
-
-from api.base_view import GenericUIView, PaginatedView, DetailView
-from api.utils import (
-    create,
-    get_object_for_user,
-    check_custom_perm,
+from api.base_view import DetailView, GenericUIView, PaginatedView
+from api.host.serializers import (
+    ClusterHostSerializer,
+    HostDetailSerializer,
+    HostSerializer,
+    HostUISerializer,
+    HostUpdateSerializer,
+    ProvideHostSerializer,
+    StatusSerializer,
 )
-from cm.api import remove_host_from_cluster, delete_host, add_host_to_cluster, load_service_map
+from api.utils import check_custom_perm, create, get_object_for_user
+from audit.utils import audit
+from cm.api import (
+    add_host_to_cluster,
+    delete_host,
+    load_service_map,
+    remove_host_from_cluster,
+)
 from cm.errors import AdcmEx
 from cm.models import (
     Cluster,
-    HostProvider,
-    Host,
-    GroupConfig,
     ClusterObject,
-    ServiceComponent,
+    GroupConfig,
+    Host,
     HostComponent,
+    HostProvider,
     MaintenanceModeType,
+    ServiceComponent,
 )
 from cm.status_api import make_ui_host_status
+from django_filters import rest_framework as drf_filters
+from guardian.mixins import PermissionListMixin
+from guardian.shortcuts import get_objects_for_user
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from . import serializers
+from rest_framework import permissions, status
+from rest_framework.response import Response
 
 
 class NumberInFilter(drf_filters.BaseInFilter, drf_filters.NumberFilter):
@@ -104,8 +113,8 @@ class HostList(PermissionListMixin, PaginatedView):
     """
 
     queryset = Host.objects.all()
-    serializer_class = serializers.HostSerializer
-    serializer_class_ui = serializers.HostUISerializer
+    serializer_class = HostSerializer
+    serializer_class_ui = HostUISerializer
     permission_required = ['cm.view_host']
     filterset_class = HostFilter
     filterset_fields = (
@@ -134,6 +143,7 @@ class HostList(PermissionListMixin, PaginatedView):
         queryset = get_host_queryset(queryset, self.request.user, self.kwargs)
         return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
 
+    @audit
     def post(self, request, *args, **kwargs):
         """
         Create host
@@ -162,25 +172,29 @@ class HostList(PermissionListMixin, PaginatedView):
 
 
 class HostListProvider(HostList):
-    serializer_class = serializers.ProvideHostSerializer
+    serializer_class = ProvideHostSerializer
 
 
 class HostListCluster(HostList):
-    serializer_class = serializers.ClusterHostSerializer
+    serializer_class = ClusterHostSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             validated_data = serializer.validated_data
+
+            cluster = None
             if 'cluster_id' in kwargs:
                 cluster = get_object_for_user(
                     request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
                 )
+
             host = get_object_for_user(
                 request.user, 'cm.view_host', Host, id=validated_data.get('id')
             )
             check_custom_perm(request.user, 'map_host_to', 'cluster', cluster)
             add_host_to_cluster(cluster, host)
+
             return Response(self.get_serializer(host).data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -199,10 +213,10 @@ class HostDetail(PermissionListMixin, DetailView):
     """
 
     queryset = Host.objects.all()
-    serializer_class = serializers.HostDetailSerializer
-    serializer_class_ui = serializers.HostUISerializer
-    serializer_class_put = serializers.HostUpdateSerializer
-    serializer_class_patch = serializers.HostUpdateSerializer
+    serializer_class = HostDetailSerializer
+    serializer_class_ui = HostUISerializer
+    serializer_class_put = HostUpdateSerializer
+    serializer_class_patch = HostUpdateSerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_host']
     lookup_field = 'id'
@@ -280,7 +294,7 @@ class HostDetail(PermissionListMixin, DetailView):
 class StatusList(GenericUIView):
     queryset = HostComponent.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
-    serializer_class = serializers.StatusSerializer
+    serializer_class = StatusSerializer
 
     def get(self, request, *args, **kwargs):
         """

@@ -10,9 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db import IntegrityError
-from rest_framework import serializers
-
 import cm.api
 import cm.job
 from api.action.serializers import ActionShort
@@ -32,14 +29,10 @@ from api.utils import (
 )
 from cm.adcm_config import get_main_info
 from cm.errors import AdcmEx
-from cm.models import (
-    Action,
-    Cluster,
-    Host,
-    Prototype,
-    ServiceComponent,
-)
+from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 from cm.status_api import get_cluster_status, get_hc_status
+from django.db import IntegrityError
+from rest_framework import serializers
 
 
 def get_cluster_id(obj):
@@ -58,7 +51,8 @@ class ClusterSerializer(serializers.Serializer):
     before_upgrade = serializers.JSONField(read_only=True)
     url = hlink('cluster-details', 'id', 'cluster_id')
 
-    def validate_prototype_id(self, prototype_id):
+    @staticmethod
+    def validate_prototype_id(prototype_id):
         return check_obj(Prototype, {'id': prototype_id, 'type': 'cluster'})
 
     def create(self, validated_data):
@@ -103,7 +97,8 @@ class ClusterDetailSerializer(ClusterSerializer):
     locked = serializers.BooleanField(read_only=True)
     group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
-    def get_status(self, obj):
+    @staticmethod
+    def get_status(obj):
         return get_cluster_status(obj)
 
 
@@ -124,16 +119,20 @@ class ClusterUISerializer(ClusterDetailSerializer):
         actions = ActionShort(filter_actions(obj, act_set), many=True, context=self.context)
         return actions.data
 
-    def get_prototype_version(self, obj):
+    @staticmethod
+    def get_prototype_version(obj):
         return obj.prototype.version
 
-    def get_prototype_name(self, obj):
+    @staticmethod
+    def get_prototype_name(obj):
         return obj.prototype.name
 
-    def get_prototype_display_name(self, obj):
+    @staticmethod
+    def get_prototype_display_name(obj):
         return obj.prototype.display_name
 
-    def get_main_info(self, obj):
+    @staticmethod
+    def get_main_info(obj):
         return get_main_info(obj)
 
 
@@ -142,6 +141,12 @@ class StatusSerializer(serializers.Serializer):
     component_id = serializers.IntegerField(read_only=True)
     service_id = serializers.IntegerField(read_only=True)
     state = serializers.CharField(read_only=True, required=False)
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -175,6 +180,12 @@ class HostComponentSerializer(serializers.Serializer):
     url = MyUrlField(read_only=True, view_name='host-comp-details')
     host_url = hlink('host-details', 'host_id', 'host_id')
 
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['component'] = instance.component.prototype.name
@@ -191,6 +202,12 @@ class HostComponentUISerializer(serializers.Serializer):
     host = serializers.SerializerMethodField()
     component = serializers.SerializerMethodField()
 
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
+
     def get_host(self, obj):
         hosts = Host.objects.filter(cluster=self.context.get('cluster'))
         return HostSerializer(hosts, many=True, context=self.context).data
@@ -203,7 +220,8 @@ class HostComponentUISerializer(serializers.Serializer):
 class HostComponentSaveSerializer(serializers.Serializer):
     hc = serializers.JSONField()
 
-    def validate_hc(self, hc):
+    @staticmethod
+    def validate_hc(hc):
         if not hc:
             raise AdcmEx('INVALID_INPUT', 'hc field is required')
         if not isinstance(hc, list):
@@ -214,6 +232,9 @@ class HostComponentSaveSerializer(serializers.Serializer):
                     msg = '"{}" sub-field is required'
                     raise AdcmEx('INVALID_INPUT', msg.format(key))
         return hc
+
+    def update(self, instance, validated_data):
+        pass
 
     def create(self, validated_data):
         hc = validated_data.get('hc')
@@ -227,40 +248,41 @@ class HCComponentSerializer(ComponentDetailSerializer):
     service_state = serializers.SerializerMethodField()
     requires = serializers.SerializerMethodField()
 
-    def get_service_state(self, obj):
+    @staticmethod
+    def get_service_state(obj):
         return obj.service.state
 
-    def get_service_name(self, obj):
+    @staticmethod
+    def get_service_name(obj):
         return obj.service.prototype.name
 
-    def get_service_display_name(self, obj):
+    @staticmethod
+    def get_service_display_name(obj):
         return obj.service.prototype.display_name
 
-    def get_requires(self, obj):
+    @staticmethod
+    def get_requires(obj):
         if not obj.prototype.requires:
             return None
         comp_list = {}
 
         def process_requires(req_list):
             for c in req_list:
-                comp = Prototype.obj.get(
+                _comp = Prototype.obj.get(
                     type='component',
                     name=c['component'],
                     parent__name=c['service'],
                     parent__bundle_id=obj.prototype.bundle_id,
                 )
-                if comp == obj.prototype:
+                if _comp == obj.prototype:
                     return
-                if comp.name not in comp_list:
-                    comp_list[comp.name] = {'components': {}, 'service': comp.parent}
-                if comp.name in comp_list[comp.name]['components']:
+                if _comp.name not in comp_list:
+                    comp_list[_comp.name] = {'components': {}, 'service': _comp.parent}
+                if _comp.name in comp_list[_comp.name]['components']:
                     return
-                comp_list[comp.name]['components'][comp.name] = comp
-                if comp.requires:
-                    process_requires(comp.requires)
-
-        # def check_hc(comp):
-        #    return HostComponent.objects.filter(cluster=obj.cluster, component__component=comp)
+                comp_list[_comp.name]['components'][_comp.name] = _comp
+                if _comp.requires:
+                    process_requires(_comp.requires)
 
         process_requires(obj.requires)
         out = []
@@ -299,25 +321,36 @@ class BindSerializer(serializers.Serializer):
     import_service_id = serializers.SerializerMethodField()
     import_service_name = serializers.SerializerMethodField()
 
-    def get_export_cluster_prototype_name(self, obj):
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
+
+    @staticmethod
+    def get_export_cluster_prototype_name(obj):
         return obj.source_cluster.prototype.name
 
-    def get_export_service_name(self, obj):
+    @staticmethod
+    def get_export_service_name(obj):
         if obj.source_service:
             return obj.source_service.prototype.name
         return None
 
-    def get_export_service_id(self, obj):
+    @staticmethod
+    def get_export_service_id(obj):
         if obj.source_service:
             return obj.source_service.id
         return None
 
-    def get_import_service_id(self, obj):
+    @staticmethod
+    def get_import_service_id(obj):
         if obj.service:
             return obj.service.id
         return None
 
-    def get_import_service_name(self, obj):
+    @staticmethod
+    def get_import_service_name(obj):
         if obj.service:
             return obj.service.prototype.name
         return None
@@ -338,6 +371,9 @@ class DoBindSerializer(serializers.Serializer):
     export_cluster_name = serializers.CharField(read_only=True)
     export_cluster_prototype_name = serializers.CharField(read_only=True)
 
+    def update(self, instance, validated_data):
+        pass
+
     def create(self, validated_data):
         export_cluster = check_obj(Cluster, validated_data.get('export_cluster_id'))
         return cm.api.bind(
@@ -350,6 +386,9 @@ class DoBindSerializer(serializers.Serializer):
 
 class PostImportSerializer(serializers.Serializer):
     bind = serializers.JSONField()
+
+    def update(self, instance, validated_data):
+        pass
 
     def create(self, validated_data):
         bind = validated_data.get('bind')

@@ -25,6 +25,9 @@ from enum import Enum
 from itertools import chain
 from typing import Dict, Iterable, List, Optional
 
+from cm.config import FILE_DIR, Job
+from cm.errors import AdcmEx
+from cm.logger import log
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -32,10 +35,6 @@ from django.db import models, transaction
 from django.db.models.signals import m2m_changed, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
-
-from cm.config import FILE_DIR, Job
-from cm.errors import AdcmEx
-from cm.logger import log
 
 
 def validate_line_break_character(value: str) -> None:

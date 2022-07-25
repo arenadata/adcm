@@ -10,8 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import dataclass
+
+from django.contrib.auth.models import User
 from django.db import models
-from rbac.models import User
 
 
 class AuditObjectType(models.TextChoices):
@@ -55,7 +57,7 @@ class AuditObject(models.Model):
 
 
 class AuditLog(models.Model):
-    audit_object_id = models.ForeignKey(AuditObject, on_delete=models.CASCADE, null=True)
+    audit_object = models.ForeignKey(AuditObject, on_delete=models.CASCADE, null=True)
     operation_name = models.CharField(max_length=160)
     operation_type = models.CharField(max_length=16, choices=AuditLogOperationType.choices)
     operation_result = models.CharField(max_length=16, choices=AuditLogOperationResult.choices)
@@ -68,3 +70,59 @@ class AuditSession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     login_result = models.CharField(max_length=64, choices=AuditSessionLoginResult.choices)
     login_time = models.DateTimeField(auto_now_add=True)
+
+
+@dataclass
+class AuditOperation:
+    name: str
+    operation_type: str
+    object_type: str
+
+
+HOST_AUDIT_OPERATION = AuditOperation(
+    name=f"{AuditObjectType.Host.label.capitalize()} {AuditLogOperationType.Create.label}d",
+    operation_type=AuditLogOperationType.Create.label,
+    object_type=AuditObjectType.Host.label,
+)
+
+
+AUDIT_OPERATION_MAP = {
+    "LoadBundle": {
+        "POST": AuditOperation(
+            name=f"{AuditObjectType.Bundle.label.capitalize()} loaded",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Bundle.label,
+        ),
+    },
+    "UploadBundle": {
+        "POST": AuditOperation(
+            name=f"{AuditObjectType.Bundle.label.capitalize()} uploaded",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Bundle.label,
+        ),
+    },
+    "ClusterList": {
+        "POST": AuditOperation(
+            name=f"{AuditObjectType.Cluster.label.capitalize()} "
+            f"{AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Cluster.label,
+        ),
+    },
+    "ConfigLogViewSet": {
+        "POST": AuditOperation(
+            name=f"config log {AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type="config log",
+        ),
+    },
+    "HostList": {"POST": HOST_AUDIT_OPERATION},
+    "HostListProvider": {"POST": HOST_AUDIT_OPERATION},
+    "GroupConfigViewSet": {
+        "POST": AuditOperation(
+            name=f"group config {AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type="group config",
+        ),
+    },
+}

@@ -10,9 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path, include
+from django.urls import include, path
 
-from . import views, root
+from api.stack import root, views
 
 PROTOTYPE_ID = '<int:prototype_id>/'
 
