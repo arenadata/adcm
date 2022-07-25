@@ -17,7 +17,6 @@ from audit.models import (
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
-    AuditObjectType,
 )
 from cm.models import Bundle
 from django.urls import reverse
