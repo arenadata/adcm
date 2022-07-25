@@ -32,7 +32,15 @@ export class RbacFormDirective<T extends { url: string } = { url: string }> exte
     if (this.value) {
       // ToDo(lihih) the "adwp-list" should not change the composition of the original model.
       //  Now he adds the "checked" key to the model
-      delete this.value['checked'];
+
+      const controlsNamesList = Object.keys(this.form.controls);
+      const originalValueKeysList = Object.keys(this.value);
+      originalValueKeysList.forEach(fieldName => {
+        if (!controlsNamesList.includes(fieldName)) {
+          delete this.value[fieldName];
+        }
+      })
+
       this.form.setValue(this.value);
     }
   }
