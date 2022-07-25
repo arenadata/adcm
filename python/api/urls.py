@@ -40,6 +40,7 @@ urlpatterns = [
     path('task/', include('api.job.task_urls')),
     path('job/', include('api.job.urls')),
     path('concern/', include('api.concern.urls')),
+    path('audit/', include('api.audit.urls')),
     path('swagger/', swagger_view),
     path('schema/', schema_view),
     path('auth/', include('rest_framework.urls', namespace='rest_framework')),
