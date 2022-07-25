@@ -118,4 +118,11 @@ AUDIT_OPERATION_MAP = {
     },
     "HostList": {"POST": HOST_AUDIT_OPERATION},
     "HostListProvider": {"POST": HOST_AUDIT_OPERATION},
+    "GroupConfigViewSet": {
+        "POST": AuditOperation(
+            name=f"group config {AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type="group config",
+        ),
+    },
 }

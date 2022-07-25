@@ -26,6 +26,7 @@ def audit(func):
 
         view: View = args[0]
         audit_operation = AUDIT_OPERATION_MAP[view.__class__.__name__][view.request.method]
+        operation_name = audit_operation.name
         object_changes = {}
 
         if is_success(status_code):
@@ -38,10 +39,16 @@ def audit(func):
                 else:
                     object_name = str(resp.data.serializer.instance)
 
+                if audit_operation.object_type == "group config":
+                    object_type: str = resp.data.serializer.instance.object_type.name
+                    operation_name = f"{object_type.capitalize()} {operation_name}"
+                else:
+                    object_type: str = audit_operation.object_type
+
                 audit_object = AuditObject.objects.create(
                     object_id=resp.data.serializer.instance.id,
                     object_name=object_name,
-                    object_type=audit_operation.object_type,
+                    object_type=object_type,
                 )
             else:
                 audit_object = None
@@ -51,7 +58,7 @@ def audit(func):
 
         AuditLog.objects.create(
             audit_object=audit_object,
-            operation_name=audit_operation.name,
+            operation_name=operation_name,
             operation_type=audit_operation.operation_type,
             operation_result=operation_result,
             user=view.request.user,
