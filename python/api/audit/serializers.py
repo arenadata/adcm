@@ -17,9 +17,9 @@ from audit.models import AuditLog
 
 class AuditLogSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-    object_id = serializers.IntegerField(read_only=True, source='audit_object_id.object_id')
-    object_type = serializers.CharField(read_only=True, source='audit_object_id.object_type')
-    object_name = serializers.CharField(read_only=True, source='audit_object_id.object_name')
+    object_id = serializers.IntegerField(read_only=True, source='audit_object.object_id')
+    object_type = serializers.CharField(read_only=True, source='audit_object.object_type')
+    object_name = serializers.CharField(read_only=True, source='audit_object.object_name')
     operation_type = serializers.CharField(read_only=True)
     operation_name = serializers.CharField(read_only=True)
     operation_result = serializers.CharField(read_only=True)

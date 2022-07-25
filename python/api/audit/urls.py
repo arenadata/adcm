@@ -21,7 +21,9 @@ urlpatterns = [
         include(
             [
                 path('', views.AuditLogListView.as_view(), name='audit-operations'),
-                path('<int:id>/', views.AuditLogDetailView.as_view(), name='audit-detail'),
+                path(
+                    '<int:id>/', views.AuditLogDetailView.as_view(), name='audit-operation-detail'
+                ),
             ]
         ),
     ),

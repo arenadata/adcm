@@ -18,8 +18,8 @@ class AuditLogListFilter(drf_filters.FilterSet):
     class Meta:
         model = AuditLog
         fields = [
-            'audit_object_id__object_type',
-            'audit_object_id__object_name',
+            'audit_object__object_type',
+            'audit_object__object_name',
             'operation_type',
             'operation_name',
             'operation_result',

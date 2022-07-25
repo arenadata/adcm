@@ -21,16 +21,16 @@ from . import filters
 class AuditLogListView(PaginatedView):
     """
     get:
-    List of all auditlog entities
+    List of all AuditLog entities
     """
 
-    queryset = AuditLog.objects.select_related('audit_object_id', 'user').all()
+    queryset = AuditLog.objects.select_related('audit_object', 'user').all()
     serializer_class = serializers.AuditLogSerializer
     filterset_class = filters.AuditLogListFilter
 
 
 class AuditLogDetailView(DetailView):
-    queryset = AuditLog.objects.select_related('audit_object_id', 'user').all()
+    queryset = AuditLog.objects.select_related('audit_object', 'user').all()
     serializer_class = serializers.AuditLogSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'id'
