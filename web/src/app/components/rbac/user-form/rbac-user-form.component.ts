@@ -163,7 +163,7 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
   _updateAndSetValueForForm(form) {
     const formValue = { ...this.value };
     Object.keys(formValue).forEach((prop) => {
-      if (!form.value.hasOwnProperty(prop)) delete formValue[prop];
+      if (!form.controls.hasOwnProperty(prop)) delete formValue[prop];
     })
 
     form.setValue(formValue);

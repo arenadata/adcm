@@ -34,7 +34,7 @@ export class RbacFormDirective<T extends { url: string } = { url: string }> exte
       //  Now he adds the "checked" key to the model
       const formValue = { ...this.value };
       Object.keys(formValue).forEach((prop) => {
-        if (!this.form.value.hasOwnProperty(prop)) delete formValue[prop];
+        if (!this.form.controls.hasOwnProperty(prop)) delete formValue[prop];
       })
       this.form.setValue(formValue);
     }
