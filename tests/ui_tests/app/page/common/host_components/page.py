@@ -22,7 +22,6 @@ from tests.ui_tests.app.page.common.base_page import (
 )
 from tests.ui_tests.app.page.common.host_components.locators import HostComponentsLocators
 from tests.ui_tests.app.page.common.popups.locator import HostCreationLocators
-from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 
 
 @dataclass
@@ -35,12 +34,6 @@ class ComponentsHostRowInfo:
 
 class HostComponentsPage(BasePageObject):
     """HostComponentsPage page components menu"""
-
-    host_popup: HostCreatePopupObj
-
-    def __init__(self, driver, base_url):
-        super().__init__(driver, base_url)
-        self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
 
     def click_service_page_link(self):
         """Click on Service page link"""
