@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
+from json.decoder import JSONDecodeError
 
 import jsonschema
 from audit.utils import audit
@@ -47,25 +48,29 @@ class ObjectField(serializers.JSONField):
                 'required': ['id', 'type'],
             },
         }
-        try:
-            jsonschema.validate(value, schema)
-        except jsonschema.ValidationError:
-            raise ValidationError('the field does not match the scheme') from None
 
-    dictionary = {
-        'cluster': Cluster,
-        'service': ClusterObject,
-        'component': ServiceComponent,
-        'provider': HostProvider,
-        'host': Host,
-    }
+        try:
+            value = json.loads(value)
+            jsonschema.validate(value, schema)
+        except (TypeError, JSONDecodeError, jsonschema.ValidationError) as e:
+            raise ValidationError('the field does not match the scheme') from e
+
+        return value
 
     def to_internal_value(self, data):
-        data = json.loads(data)
-        self.schema_validate(data)
+        data = self.schema_validate(data)
+        dictionary = {
+            'cluster': Cluster,
+            'service': ClusterObject,
+            'component': ServiceComponent,
+            'provider': HostProvider,
+            'host': Host,
+        }
+
         objects = []
         for obj in data:
-            objects.append(self.dictionary[obj['type']].obj.get(id=obj['id']))
+            objects.append(dictionary[obj['type']].obj.get(id=obj['id']))
+
         return objects
 
     def to_representation(self, value):
