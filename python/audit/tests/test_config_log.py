@@ -1,6 +1,11 @@
 from datetime import datetime
 
-from audit.models import AuditLog, AuditLogOperationResult, AuditLogOperationType
+from audit.models import (
+    AuditLog,
+    AuditLogOperationResult,
+    AuditLogOperationType,
+    AuditObjectType,
+)
 from cm.models import Bundle, Cluster, ConfigLog, ObjectConfig, Prototype
 from django.urls import reverse
 from rest_framework.response import Response
@@ -28,9 +33,9 @@ class TestConfigLog(BaseTestCase):
 
         assert log.audit_object.object_id == res.data["id"]
         assert log.audit_object.object_name == str(ConfigLog.objects.get(pk=res.data["id"]))
-        assert log.audit_object.object_type == "???"
+        assert log.audit_object.object_type == AuditObjectType.Cluster.label
         assert not log.audit_object.is_deleted
-        assert log.operation_name == "???"
+        assert log.operation_name == "Cluster config log created"
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Success.value
         assert isinstance(log.operation_time, datetime)

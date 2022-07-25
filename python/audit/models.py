@@ -111,9 +111,9 @@ AUDIT_OPERATION_MAP = {
     },
     "ConfigLogViewSet": {
         "POST": AuditOperation(
-            name="???",
+            name=f"config log {AuditLogOperationType.Create.label}d",
             operation_type=AuditLogOperationType.Create.label,
-            object_type="???",
+            object_type="config log",
         ),
     },
     "HostList": {"POST": HOST_AUDIT_OPERATION},

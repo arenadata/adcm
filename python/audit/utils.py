@@ -7,6 +7,7 @@ from audit.models import (
     AuditObject,
 )
 from cm.errors import AdcmEx
+from django.contrib.contenttypes.models import ContentType
 from django.views.generic.base import View
 from rest_framework.status import is_success
 
@@ -14,6 +15,8 @@ from rest_framework.status import is_success
 def audit(func):
     @wraps(func)
     def wrapped(*args, **kwargs):
+        # pylint: disable=too-many-branches
+
         error = None
 
         try:
@@ -39,8 +42,14 @@ def audit(func):
                 else:
                     object_name = str(resp.data.serializer.instance)
 
-                if audit_operation.object_type == "group config":
-                    object_type: str = resp.data.serializer.instance.object_type.name
+                if audit_operation.object_type in {"group config", "config log"}:
+                    if audit_operation.object_type == "config log":
+                        object_type: str = ContentType.objects.get_for_model(
+                            resp.data.serializer.instance.obj_ref.object
+                        ).name
+                    else:
+                        object_type: str = resp.data.serializer.instance.object_type.name
+
                     operation_name = f"{object_type.capitalize()} {operation_name}"
                 else:
                     object_type: str = audit_operation.object_type
