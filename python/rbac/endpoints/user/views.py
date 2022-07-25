@@ -37,10 +37,10 @@ class GroupSerializer(serializers.Serializer):
     url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
 
     def update(self, instance, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def create(self, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
 
 class GroupUserSerializer(serializers.Serializer):
@@ -48,10 +48,10 @@ class GroupUserSerializer(serializers.Serializer):
     url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
 
     def update(self, instance, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def create(self, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
 
 class ExpandedGroupSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):

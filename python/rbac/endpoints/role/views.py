@@ -33,10 +33,10 @@ class RoleChildSerializer(BaseRelatedSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
 
     def update(self, instance, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def create(self, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
 
 class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):

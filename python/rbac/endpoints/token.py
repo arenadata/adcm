@@ -35,10 +35,10 @@ class AuthSerializer(rest_framework.authtoken.serializers.AuthTokenSerializer):
         return attrs
 
     def update(self, instance, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def create(self, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
 
 class GetAuthToken(GenericAPIView):
