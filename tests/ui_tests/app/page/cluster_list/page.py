@@ -39,6 +39,7 @@ from tests.ui_tests.app.page.common.popups.locator import (
     HostCreationLocators,
 )
 from tests.ui_tests.app.page.common.popups.locator import ListConcernPopupLocators
+from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 
 
@@ -51,6 +52,7 @@ class ClusterListPage(BasePageObject):
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url, ClusterListLocators.ClusterTable)
+        self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
 
     @allure.step("Create cluster")
     def create_cluster(self, bundle: str, description: str = None, is_license: bool = False):
@@ -211,7 +213,7 @@ class ClusterListPage(BasePageObject):
             if is_new_host:
                 components_page = HostComponentsPage(self.driver, self.base_url)
                 components_page.click_add_host_btn()
-                components_page.host_popup.create_host("Test_host")
+                self.host_popup.create_host("Test_host")
                 self.wait_element_hide(HostCreationLocators.block)
             for comp_row in self.find_elements(ClusterComponentsLocators.component_row):
                 comp_row_name = self.find_child(comp_row, ClusterComponentsLocators.Row.name)
