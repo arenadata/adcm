@@ -49,7 +49,6 @@ from tests.ui_tests.app.page.cluster.page import (
     ClusterHostPage,
     ClusterServicesPage,
     ClusterComponentsPage,
-    ComponentsHostRowInfo,
     ClusterStatusPage,
     ClusterGroupConfigConfig,
     ClusterGroupConfigHosts,
@@ -57,6 +56,7 @@ from tests.ui_tests.app.page.cluster.page import (
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
+from tests.ui_tests.app.page.common.host_components.page import ComponentsHostRowInfo
 from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
 from tests.ui_tests.app.page.common.status.page import (
     SUCCESS_COLOR,

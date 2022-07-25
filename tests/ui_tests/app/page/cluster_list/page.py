@@ -22,9 +22,6 @@ from selenium.webdriver.remote.webdriver import WebElement
 from tests.ui_tests.app.page.cluster.locators import (
     ClusterComponentsLocators,
 )
-from tests.ui_tests.app.page.cluster.page import (
-    ClusterComponentsPage,
-)
 from tests.ui_tests.app.page.cluster_list.locators import ClusterListLocators
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
@@ -37,6 +34,7 @@ from tests.ui_tests.app.page.common.dialogs_locators import (
     ActionDialog,
     DeleteDialog,
 )
+from tests.ui_tests.app.page.common.host_components.page import HostComponentsPage
 from tests.ui_tests.app.page.common.popups.locator import (
     HostCreationLocators,
 )
@@ -181,7 +179,17 @@ class ClusterListPage(BasePageObject):
         is_new_host: bool = False,
         disclaimer_text: Optional[str] = None,
     ):
-        """Run upgrade for cluster from row"""
+        """
+        Run upgrade for cluster from row
+
+        :param row: row with upgrade
+        :param upgrade_name: upgrade action name
+        :param config: config options
+        :param hc_acl: hc_acl options
+        :param is_new_host: condition if new host is needed, new host will be created and added in upgrade popup.
+                            only with hc_acl option
+        :param disclaimer_text: disclaimer text in first popup
+        """
 
         self.find_child(row, self.table.locators.ClusterRow.upgrade).click()
         self.wait_element_visible(self.table.locators.UpgradePopup.block)
@@ -201,9 +209,9 @@ class ClusterListPage(BasePageObject):
                 self.find_and_click(ActionDialog.next_btn)
         if hc_acl:
             if is_new_host:
-                cluster_components_page = ClusterComponentsPage(self.driver, self.base_url, 1)
-                cluster_components_page.click_add_host_btn()
-                cluster_components_page.host_popup.create_host("Test_host")
+                components_page = HostComponentsPage(self.driver, self.base_url)
+                components_page.click_add_host_btn()
+                components_page.host_popup.create_host("Test_host")
                 self.wait_element_hide(HostCreationLocators.block)
             for comp_row in self.find_elements(ClusterComponentsLocators.component_row):
                 comp_row_name = self.find_child(comp_row, ClusterComponentsLocators.Row.name)
