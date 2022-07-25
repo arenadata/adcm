@@ -11,7 +11,7 @@
 # limitations under the License.
 
 
-from api.base_view import PaginatedView
+from api.base_view import DetailView, PaginatedView
 
 from audit.models import AuditLog
 from . import serializers
@@ -27,3 +27,11 @@ class AuditLogListView(PaginatedView):
     queryset = AuditLog.objects.select_related('audit_object_id', 'user').all()
     serializer_class = serializers.AuditLogSerializer
     filterset_class = filters.AuditLogListFilter
+
+
+class AuditLogDetailView(DetailView):
+    queryset = AuditLog.objects.select_related('audit_object_id', 'user').all()
+    serializer_class = serializers.AuditLogSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
+    error_code = 'AUDITLOG_NOT_FOUND'

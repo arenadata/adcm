@@ -10,11 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path
+from django.urls import path, include
 
 from . import views
 
 
 urlpatterns = [
-    path('', views.AuditLogListView.as_view(), name='audit'),
+    path(
+        'operation/',
+        include(
+            [
+                path('', views.AuditLogListView.as_view(), name='audit-operations'),
+                path('<int:id>/', views.AuditLogDetailView.as_view(), name='audit-detail'),
+            ]
+        ),
+    ),
 ]
