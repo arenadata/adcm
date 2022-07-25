@@ -13,7 +13,7 @@
 
 from api.base_view import DetailView, PaginatedView
 
-from audit.models import AuditLog
+from audit.models import AuditLog, AuditSession
 from . import serializers
 from . import filters
 
@@ -34,4 +34,22 @@ class AuditLogDetailView(DetailView):
     serializer_class = serializers.AuditLogSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'id'
-    error_code = 'AUDITLOG_NOT_FOUND'
+    error_code = 'AUDIT_OPERATION_NOT_FOUND'
+
+
+class AuditLoginSessionListView(PaginatedView):
+    """
+    get:
+    List of all AuditSession entities
+    """
+
+    queryset = AuditSession.objects.all()
+    serializer_class = serializers.AuditSessionSerializer
+
+
+class AuditLoginSessionDetailView(DetailView):
+    queryset = AuditSession.objects.all()
+    serializer_class = serializers.AuditSessionSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'id'
+    error_code = 'AUDIT_LOGIN_SESSION_NOT_FOUND'

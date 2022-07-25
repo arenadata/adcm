@@ -12,7 +12,7 @@
 
 
 from rest_framework import serializers
-from audit.models import AuditLog
+from audit.models import AuditLog, AuditSession
 
 
 class AuditLogSerializer(serializers.Serializer):
@@ -35,3 +35,9 @@ class AuditLogSerializer(serializers.Serializer):
 
     def update(self, instance, validated_data):
         pass
+
+
+class AuditSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AuditSession
+        fields = '__all__'

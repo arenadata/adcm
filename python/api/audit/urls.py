@@ -27,4 +27,17 @@ urlpatterns = [
             ]
         ),
     ),
+    path(
+        'login-session/',
+        include(
+            [
+                path('', views.AuditLoginSessionListView.as_view(), name='audit-login-sessions'),
+                path(
+                    '<int:id>/',
+                    views.AuditLoginSessionDetailView.as_view(),
+                    name='audit-login-session-detail',
+                ),
+            ]
+        ),
+    ),
 ]
