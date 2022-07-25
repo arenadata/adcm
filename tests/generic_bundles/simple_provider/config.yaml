@@ -10,29 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Common consts for tests"""
-from enum import Enum
+- type: provider
+  version: 10.20
+  name: simple_provider
 
-
-class States:
-    """Possible states dataclass"""
-
-    failed = 'failed'
-    success = 'success'
-
-
-class MessageStates:
-    """Possible states messages dataclass"""
-
-    fail_msg = 'fail_msg'
-    success_msg = 'success_msg'
-
-
-class HTTPMethod(Enum):
-    """HTTP methods"""
-
-    GET = 'get'
-    POST = 'post'
-    PUT = 'put'
-    PATCH = 'patch'
-    DELETE = 'delete'
+- type: host
+  version: 2.2
+  name: simple_host

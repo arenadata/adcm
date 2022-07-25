@@ -70,7 +70,7 @@ BUNDLE_DEFAULT_FIELDS = "cluster_and_service_with_default_string"
 BUNDLE_WITH_DESCRIPTION_FIELDS = "service_with_all_config_params"
 
 
-# pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-many-locals
+# pylint: disable=redefined-outer-name,unused-argument,too-many-locals
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
 
@@ -503,7 +503,7 @@ class TestServiceConfigPage:
                 service_config_page.config.type_in_field_with_few_inputs(row=row, values=value)
         service_config_page.config.save_config(load_timeout=40)
         with allure.step('Ensure page is still opened'):
-            service_config_page.wait_page_is_opened(timeout=1)
+            service_config_page.wait_page_is_opened(timeout=15)
         with allure.step('Check that popup is not presented on page'):
             assert not service_config_page.is_popup_presented_on_page(), 'No popup should be shown after save'
 

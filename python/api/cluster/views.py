@@ -321,7 +321,11 @@ class HostComponentList(GenericUIView):
         check_custom_perm(
             request.user, 'view_host_components_of', 'cluster', cluster, 'view_hostcomponent'
         )
-        hc = self.get_queryset().filter(cluster=cluster)
+        hc = (
+            self.get_queryset()
+            .prefetch_related('service', 'component', 'host')
+            .filter(cluster=cluster)
+        )
         if self._is_for_ui():
             ui_hc = HostComponent()
             ui_hc.hc = hc

@@ -12,7 +12,7 @@
 
 """Test complex RBAC cases"""
 
-# pylint: disable=no-self-use, too-many-arguments
+# pylint: disable=too-many-arguments
 
 from typing import Iterable, Union
 

@@ -10,29 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Common consts for tests"""
-from enum import Enum
+---
 
+- hosts: localhost
+  gather_facts: false
+  connection: local
+  tasks:
+    - pause:
+        seconds: 60
+      tags:
+        - long
 
-class States:
-    """Possible states dataclass"""
-
-    failed = 'failed'
-    success = 'success'
-
-
-class MessageStates:
-    """Possible states messages dataclass"""
-
-    fail_msg = 'fail_msg'
-    success_msg = 'success_msg'
-
-
-class HTTPMethod(Enum):
-    """HTTP methods"""
-
-    GET = 'get'
-    POST = 'post'
-    PUT = 'put'
-    PATCH = 'patch'
-    DELETE = 'delete'
+    - pause:
+        second: 7
+      tags:
+        - short

@@ -25,7 +25,7 @@ from django.utils import timezone
 from cm import api, inventory, adcm_config, variant, config, issue
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx
-from cm.errors import raise_AdcmEx as err
+from cm.errors import AdcmEx, raise_AdcmEx as err
 from cm.hierarchy import Tree
 from cm.inventory import get_obj_config, process_config_and_attr
 from cm.logger import log
@@ -263,6 +263,7 @@ def cook_delta(  # pylint: disable=too-many-branches
     return delta
 
 
+# pylint: disable-next=too-many-branches
 def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict]):
 
     if not action.hostcomponentmap:
@@ -302,9 +303,15 @@ def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict])
             clear_hc.remove(host_comp)
 
     old_hc = get_old_hc(api.get_hc(cluster))
-
-    prepared_hc_list = api.check_hc(cluster, clear_hc)
-    cook_delta(cluster, prepared_hc_list, action.hostcomponentmap, old_hc)
+    try:
+        prepared_hc_list = api.check_hc(cluster, clear_hc)
+        cook_delta(cluster, prepared_hc_list, action.hostcomponentmap, old_hc)
+    except AdcmEx as e:
+        if e.code == 'COMPONENT_CONSTRAINT_ERROR':
+            post_upgrade_hc += clear_hc
+            prepared_hc_list = get_actual_hc(cluster)
+        else:
+            raise e
     return prepared_hc_list, post_upgrade_hc
 
 
@@ -371,7 +378,7 @@ def get_adcm_config():
     return get_obj_config(adcm)
 
 
-def get_new_hc(cluster: Cluster):
+def get_actual_hc(cluster: Cluster):
     new_hc = []
     for hc in HostComponent.objects.filter(cluster=cluster):
         new_hc.append((hc.service, hc.host, hc.component))
@@ -406,7 +413,7 @@ def re_prepare_job(task: TaskLog, job: JobLog):
     if job.sub_action_id:
         sub_action = job.sub_action
     if action.hostcomponentmap:
-        new_hc = get_new_hc(cluster)
+        new_hc = get_actual_hc(cluster)
         old_hc = get_old_hc(task.hostcomponentmap)
         delta = cook_delta(cluster, new_hc, action.hostcomponentmap, old_hc)
     prepare_job(action, sub_action, job.pk, obj, conf, delta, hosts, task.verbose)
@@ -657,7 +664,7 @@ def set_action_state(
 
 
 def restore_hc(task: TaskLog, action: Action, status: str):
-    if status != config.Job.FAILED:
+    if status not in [config.Job.FAILED, config.Job.ABORTED]:
         return
     if not action.hostcomponentmap:
         return
@@ -749,7 +756,6 @@ def run_task(task: TaskLog, event, args: str = ''):
         stderr=err_file,
     )
     log.info("task run #%s, python process %s", task.pk, proc.pid)
-    task.pid = proc.pid
 
     set_task_status(task, config.Job.RUNNING, event)
 

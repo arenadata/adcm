@@ -46,6 +46,7 @@ const rawConfig: IConfig = {
       description: '',
       required: false,
       group_config: null,
+      custom_group: true,
     },
     {
       name: 'group',
@@ -59,6 +60,7 @@ const rawConfig: IConfig = {
       description: '',
       required: false,
       group_config: null,
+      custom_group: false,
     },
     {
       name: 'group',
@@ -72,6 +74,7 @@ const rawConfig: IConfig = {
       description: '',
       required: true,
       group_config: null,
+      custom_group: false,
     },
   ],
 };
@@ -147,6 +150,10 @@ describe('Configuration : ConfigComponent >> ', () => {
     fixture.detectChanges();
     const de = fixture.debugElement.nativeElement;
     const saveBtn = de.querySelector('app-tools div.control-buttons button.form_config_button_save');
+
+    component.isLock = true;
+    component.cd.detectChanges();
+
     expect(saveBtn).toBeTruthy();
     expect(saveBtn.disabled).toBeTrue();
   });
@@ -155,7 +162,7 @@ describe('Configuration : ConfigComponent >> ', () => {
     fixture.detectChanges();
     component.rawConfig.next(rawConfig);
     component.cd.detectChanges();
-    component.tools.disabledSave = component.fields.form.invalid;
+    component.tools.disabledSave = !component.fields.isCustomGroup || component.fields.form.invalid;
     component.cd.detectChanges();
     const saveBtn = fixture.nativeElement.querySelector('app-tools div.control-buttons button.form_config_button_save');
     expect(saveBtn.disabled).toBeFalse();

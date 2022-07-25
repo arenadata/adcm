@@ -19,14 +19,14 @@ import subprocess
 import sys
 
 import adcm.init_django  # DO NOT DELETE !!!
+import cm.job
 from cm import config
 from cm.ansible_plugin import finish_check
-import cm.job
+from cm.errors import AdcmEx
 from cm.logger import log
 from cm.models import LogStorage, JobLog, Prototype, ServiceComponent
 from cm.status_api import Event
 from cm.upgrade import bundle_switch
-from cm.errors import AdcmEx
 
 
 def open_file(root, tag, job_id):
@@ -150,7 +150,10 @@ def run_ansible(job_id):
 def switch_hc(task, action):
     cluster = task.task_object
     old_hc = cm.api.get_hc(cluster)
-    new_hc = [*task.post_upgrade_hc_map, *old_hc]
+    new_hc = []
+    for hc in [*task.post_upgrade_hc_map, *old_hc]:
+        if hc not in new_hc:
+            new_hc.append(hc)
     task.hostcomponentmap = old_hc
     task.post_upgrade_hc_map = None
     task.save()
@@ -176,7 +179,7 @@ def main(job_id):
             bundle_switch(task.task_object, job.action.upgrade)
             switch_hc(task, job.action)
         except AdcmEx as e:
-            log.error(f'Error while upgrading bundle: {e}')
+            log.error('Error while upgrading bundle: %s', e)
             cm.job.set_job_status(job_id, config.Job.FAILED, event)
             sys.exit(1)
         cm.job.set_job_status(job_id, config.Job.SUCCESS, event)

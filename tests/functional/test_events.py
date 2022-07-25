@@ -47,6 +47,7 @@ def prep_url(url):
     return R_WWW_PREFIX.sub('', url).strip().strip('/')
 
 
+# pylint: disable=modified-iterating-list
 def assert_events(websocket_connection, *expected_events):
     """Assert WS events"""
     expected_list = list(expected_events)
@@ -56,6 +57,7 @@ def assert_events(websocket_connection, *expected_events):
             data = json.loads(websocket_connection.recv())
             for event in expected_list:
                 if event == data:
+                    # FIXME: modified-iterating-list
                     expected_list.remove(event)
                     continue
             count = count + 1

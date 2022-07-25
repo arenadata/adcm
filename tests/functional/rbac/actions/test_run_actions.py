@@ -257,8 +257,6 @@ class TestPluginsPermissions:
     rather than permissions to run actions
     """
 
-    # pylint: disable=no-self-use
-
     NEW_HOST = 'new-host'
 
     @pytest.fixture()

@@ -17,6 +17,7 @@ import { FieldComponent } from '../field/field.component';
 import { GroupFieldsComponent } from '../group-fields/group-fields.component';
 import { IConfig, IPanelOptions } from '../types';
 import { BaseDirective } from '@adwp-ui/widgets';
+import { FormGroup } from "@angular/forms";
 
 @Component({
   selector: 'app-config-fields',
@@ -36,15 +37,14 @@ import { BaseDirective } from '@adwp-ui/widgets';
 export class ConfigFieldsComponent extends BaseDirective {
 
   @Input() dataOptions: TFormOptions[] = [];
-  @Input() form = this.service.toFormGroup();
+  @Input() form: FormGroup;
   @Output()
   event = new EventEmitter<{ name: string; data?: any }>();
-
 
   rawConfig: IConfig;
   shapshot: any;
   isAdvanced = false;
-
+  isCustomGroup = false;
 
   @Input()
   set model(data: IConfig) {
@@ -53,6 +53,7 @@ export class ConfigFieldsComponent extends BaseDirective {
     this.dataOptions = this.service.getPanels(data);
     this.service.getAttrs(data, this.dataOptions.map(a => a.name), this.dataOptions);
     this.form = this.service.toFormGroup(this.dataOptions);
+    this.isCustomGroup = this.checkCustomGroup();
     this.isAdvanced = data.config.some((a) => a.ui_options && a.ui_options.advanced);
     this.shapshot = { ...this.form.value };
     this.event.emit({ name: 'load', data: { form: this.form } });
@@ -82,6 +83,18 @@ export class ConfigFieldsComponent extends BaseDirective {
 
   trackBy(index: number, item: IPanelOptions): string {
     return item.name;
+  }
+
+  checkCustomGroup() {
+    const check = (value) => {
+      if (!value.hasOwnProperty('custom_group')) {
+        return true;
+      }
+
+      return value.custom_group === true;
+    }
+
+    return this.dataOptions.some((config) => check(config));
   }
 
   /**
