@@ -192,7 +192,7 @@ def _set_hc_and_prepare_new_hc_for_upgrade_action(old_cluster, new_bundle, host_
     return build_hc_for_hc_acl_action(
         old_cluster,
         add=((test_component, host_2),),
-        remove=((willbegone_component, host_1),),
+        remove=(),
         add_new_bundle_components=((some_component_id, host_1), (second_component_id, host_1)),
     )
 
@@ -327,13 +327,13 @@ class TestSuccessfulUpgrade:
         with allure.step('Check inventory of the job before the bundle switch'):
             before_switch_inventory = get_inventory_file(adcm, 1)
             groups = before_switch_inventory['all']['children']
-            for group_name in (before_add_group, before_remove_group, test_component_group):
+            for group_name in (before_add_group, willbegone_group, test_component_group):
                 self._check_group_is_presented(group_name, groups)
-            for group_name in (willbegone_group, after_add_group_1, after_add_group_2):
+            for group_name in (before_remove_group, after_add_group_1, after_add_group_2):
                 self._check_group_is_absent(group_name, groups)
             self._check_host_is_in_group(host_2, before_add_group, groups)
             self._check_host_is_in_group(host_2, test_component_group, groups)
-            self._check_host_is_in_group(host_1, before_remove_group, groups)
+            self._check_host_is_in_group(host_1, willbegone_group, groups)
 
         with allure.step('Check inventory of the job after the bundle switch'):
             after_switch_inventory = get_inventory_file(adcm, 4)

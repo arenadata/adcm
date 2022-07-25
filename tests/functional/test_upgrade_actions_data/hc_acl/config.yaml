@@ -43,9 +43,6 @@
         - service: test_service
           component: test_component
           action: add
-        - service: will_be_removed
-          component: willbegone
-          action: remove
         - service: test_service
           component: second_component
           action: add
