@@ -54,7 +54,7 @@ export class UpgradeMasterComponent extends BaseDirective implements DynamicComp
   }
 
   ngOnInit(): void {
-    if (this.model.upgrades.length === 1) this.choose(this.model.upgrades[0]);
+    if (this.model.upgrades?.length === 1) this.choose(this.model.upgrades[0]);
   }
 
   choose(upgrade: IUpgrade) {
