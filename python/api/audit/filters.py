@@ -10,20 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-from api.base_view import PaginatedView
-
+from django_filters import rest_framework as drf_filters
 from audit.models import AuditLog
-from . import serializers
-from . import filters
 
 
-class AuditLogListView(PaginatedView):
-    """
-    get:
-    List of all auditlog entities
-    """
-
-    queryset = AuditLog.objects.select_related('audit_object_id', 'user').all()
-    serializer_class = serializers.AuditLogSerializer
-    filterset_class = filters.AuditLogListFilter
+class AuditLogListFilter(drf_filters.FilterSet):
+    class Meta:
+        model = AuditLog
+        fields = [
+            'audit_object_id__object_type',
+            'audit_object_id__object_name',
+            'operation_type',
+            'operation_name',
+            'operation_result',
+            'operation_time',
+            'user__username',
+        ]
