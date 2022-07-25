@@ -118,7 +118,7 @@ export class DialogComponent implements OnInit {
   }
 
   _isGroupDialog() {
-    return this.data.model.name === 'group';
+    return this.data.model.name === 'Group';
   }
 
   _isUserDialog() {
