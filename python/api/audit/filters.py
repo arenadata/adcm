@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from django_filters import rest_framework as drf_filters
-from audit.models import AuditLog
+from audit.models import AuditLog, AuditSession
 
 
 class AuditLogListFilter(drf_filters.FilterSet):
@@ -26,3 +26,9 @@ class AuditLogListFilter(drf_filters.FilterSet):
             'operation_time',
             'user__username',
         ]
+
+
+class AuditLoginSessionListFilter(drf_filters.FilterSet):
+    class Meta:
+        models = AuditSession
+        fields = ['user__username', 'login_result', 'login_time']

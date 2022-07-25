@@ -43,12 +43,13 @@ class AuditLoginSessionListView(PaginatedView):
     List of all AuditSession entities
     """
 
-    queryset = AuditSession.objects.all()
+    queryset = AuditSession.objects.select_related('user').all()
     serializer_class = serializers.AuditSessionSerializer
+    filterset_class = filters.AuditLoginSessionListFilter
 
 
 class AuditLoginSessionDetailView(DetailView):
-    queryset = AuditSession.objects.all()
+    queryset = AuditSession.objects.select_related('user').all()
     serializer_class = serializers.AuditSessionSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'id'
