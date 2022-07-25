@@ -10,21 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db import IntegrityError
-from rest_framework import serializers
-
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
-from api.utils import hlink, check_obj, filter_actions, CommonAPIURL, ObjectURL
+from api.utils import CommonAPIURL, ObjectURL, check_obj, filter_actions, hlink
 from cm.adcm_config import get_main_info
 from cm.api import add_host
 from cm.errors import AdcmEx
-from cm.models import HostProvider, Prototype, Action, MaintenanceModeType
+from cm.issue import update_hierarchy_issues, update_issue_after_deleting
+from cm.models import Action, HostProvider, MaintenanceModeType, Prototype
 from cm.stack import validate_name
 from cm.status_api import get_host_status
-
-from cm.issue import update_hierarchy_issues, update_issue_after_deleting
+from django.db import IntegrityError
+from rest_framework import serializers
 
 
 class HostSerializer(serializers.Serializer):
@@ -38,14 +36,20 @@ class HostSerializer(serializers.Serializer):
     maintenance_mode = serializers.ChoiceField(choices=MaintenanceModeType.choices, read_only=True)
     url = ObjectURL(read_only=True, view_name='host-details')
 
-    def validate_prototype_id(self, prototype_id):
+    @staticmethod
+    def validate_prototype_id(prototype_id):
         return check_obj(Prototype, {'id': prototype_id, 'type': 'host'})
 
-    def validate_provider_id(self, provider_id):
+    @staticmethod
+    def validate_provider_id(provider_id):
         return check_obj(HostProvider, provider_id)
 
-    def validate_fqdn(self, name):
+    @staticmethod
+    def validate_fqdn(name):
         return validate_name(name, 'Host name')
+
+    def update(self, instance, validated_data):
+        pass
 
     def create(self, validated_data):
         try:
@@ -69,7 +73,8 @@ class HostDetailSerializer(HostSerializer):
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = serializers.BooleanField(read_only=True)
 
-    def get_status(self, obj):
+    @staticmethod
+    def get_status(obj):
         return get_host_status(obj)
 
 
@@ -114,7 +119,14 @@ class StatusSerializer(serializers.Serializer):
     fqdn = serializers.CharField(read_only=True)
     status = serializers.SerializerMethodField()
 
-    def get_status(self, obj):
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
+
+    @staticmethod
+    def get_status(obj):
         return get_host_status(obj)
 
 
@@ -135,24 +147,30 @@ class HostUISerializer(HostDetailSerializer):
         actions = ActionShort(filter_actions(obj, act_set), many=True, context=self.context)
         return actions.data
 
-    def get_cluster_name(self, obj):
+    @staticmethod
+    def get_cluster_name(obj):
         if obj.cluster:
             return obj.cluster.name
         return None
 
-    def get_prototype_version(self, obj):
+    @staticmethod
+    def get_prototype_version(obj):
         return obj.prototype.version
 
-    def get_prototype_name(self, obj):
+    @staticmethod
+    def get_prototype_name(obj):
         return obj.prototype.name
 
-    def get_prototype_display_name(self, obj):
+    @staticmethod
+    def get_prototype_display_name(obj):
         return obj.prototype.display_name
 
-    def get_provider_name(self, obj):
+    @staticmethod
+    def get_provider_name(obj):
         if obj.provider:
             return obj.provider.name
         return None
 
-    def get_main_info(self, obj):
+    @staticmethod
+    def get_main_info(obj):
         return get_main_info(obj)

@@ -10,24 +10,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+from api.base_view import GenericUIViewSet
+from api.group_config.serializers import (
+    GroupConfigConfigLogSerializer,
+    GroupConfigConfigSerializer,
+    GroupConfigHostCandidateSerializer,
+    GroupConfigHostSerializer,
+    GroupConfigSerializer,
+    UIGroupConfigConfigLogSerializer,
+    revert_model_name,
+)
+from api.utils import permission_denied
+from audit.utils import audit
+from cm.models import ConfigLog, GroupConfig, Host, ObjectConfig
 from django.contrib.contenttypes.models import ContentType
-from django_filters.rest_framework import FilterSet, CharFilter
+from django_filters.rest_framework import CharFilter, FilterSet
 from guardian.mixins import PermissionListMixin
-from rest_framework import status, viewsets, permissions
+from rest_framework import permissions, status, viewsets
 from rest_framework.mixins import (
-    ListModelMixin,
     CreateModelMixin,
-    RetrieveModelMixin,
     DestroyModelMixin,
+    ListModelMixin,
+    RetrieveModelMixin,
 )
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
-
-from api.base_view import GenericUIViewSet
-from api.utils import permission_denied
-from cm.models import GroupConfig, Host, ObjectConfig, ConfigLog
-from . import serializers
 
 
 def has_config_perm(user, action_type, obj):
@@ -47,8 +54,9 @@ class GroupConfigFilterSet(FilterSet):
         field_name='object_type', label='object_type', method='filter_object_type'
     )
 
-    def filter_object_type(self, queryset, name, value):
-        value = serializers.revert_model_name(value)
+    @staticmethod
+    def filter_object_type(queryset, name, value):
+        value = revert_model_name(value)
         object_type = ContentType.objects.get(app_label='cm', model=value)
         return queryset.filter(**{name: object_type})
 
@@ -67,7 +75,7 @@ class GroupConfigHostViewSet(
     viewsets.GenericViewSet,
 ):  # pylint: disable=too-many-ancestors
     queryset = Host.objects.all()
-    serializer_class = serializers.GroupConfigHostSerializer
+    serializer_class = GroupConfigHostSerializer
     permission_classes = (permissions.DjangoObjectPermissions,)
     permission_required = ['view_host']
     lookup_url_kwarg = 'host_id'
@@ -92,7 +100,7 @@ class GroupConfigHostViewSet(
 class GroupConfigHostCandidateViewSet(
     PermissionListMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet
 ):  # pylint: disable=too-many-ancestors
-    serializer_class = serializers.GroupConfigHostCandidateSerializer
+    serializer_class = GroupConfigHostCandidateSerializer
     permission_classes = (permissions.DjangoObjectPermissions,)
     lookup_url_kwarg = 'host_id'
     permission_required = ['cm.view_host']
@@ -119,7 +127,7 @@ class GroupConfigConfigViewSet(
     PermissionListMixin, NestedViewSetMixin, RetrieveModelMixin, viewsets.GenericViewSet
 ):  # pylint: disable=too-many-ancestors
     queryset = ObjectConfig.objects.all()
-    serializer_class = serializers.GroupConfigConfigSerializer
+    serializer_class = GroupConfigConfigSerializer
     permission_classes = (permissions.DjangoObjectPermissions,)
     permission_required = ['view_objectconfig']
 
@@ -147,8 +155,8 @@ class GroupConfigConfigLogViewSet(
     CreateModelMixin,
     GenericUIViewSet,
 ):  # pylint: disable=too-many-ancestors
-    serializer_class = serializers.GroupConfigConfigLogSerializer
-    serializer_class_ui = serializers.UIGroupConfigConfigLogSerializer
+    serializer_class = GroupConfigConfigLogSerializer
+    serializer_class_ui = UIGroupConfigConfigLogSerializer
     permission_classes = (permissions.DjangoObjectPermissions,)
     permission_required = ['view_configlog']
     filterset_fields = ('id',)
@@ -181,11 +189,12 @@ class GroupConfigViewSet(
     PermissionListMixin, NestedViewSetMixin, viewsets.ModelViewSet
 ):  # pylint: disable=too-many-ancestors
     queryset = GroupConfig.objects.all()
-    serializer_class = serializers.GroupConfigSerializer
+    serializer_class = GroupConfigSerializer
     filterset_class = GroupConfigFilterSet
     permission_classes = (permissions.DjangoObjectPermissions,)
     permission_required = ['cm.view_groupconfig']
 
+    @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
