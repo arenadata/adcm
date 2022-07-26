@@ -18,7 +18,7 @@ import pytest_check as check
 from pytest_check.check_methods import get_failures
 
 
-class ADCMError:  # pylint: disable=too-few-public-methods
+class ADCMError:
     """
     ADCM error wrapper
     Used for error assertions
@@ -44,7 +44,7 @@ class ADCMError:  # pylint: disable=too-few-public-methods
             )
         assert not get_failures(), "All assertions should passed"
 
-    def _get_data_err_messages(self, error) -> List[str]:  # pylint: disable=no-self-use
+    def _get_data_err_messages(self, error) -> List[str]:
         """Extract all messages from _data attribute or an error if it is presented"""
         data = getattr(error, '_data', None)
         if data is None:

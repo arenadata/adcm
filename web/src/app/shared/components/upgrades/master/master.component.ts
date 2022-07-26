@@ -37,7 +37,7 @@ export class UpgradeMasterComponent extends BaseDirective implements DynamicComp
   }
 
   ngOnInit(): void {
-    if (this.model.upgrades.length === 1) this.choose(this.model.upgrades[0]);
+    if (this.model.upgrades?.length === 1) this.choose(this.model.upgrades[0]);
   }
 
   choose(upgrade: IUpgrade) {
@@ -46,8 +46,7 @@ export class UpgradeMasterComponent extends BaseDirective implements DynamicComp
   }
 
   isDisabled(value: IValue) {
-    if (value?.config?.form) return !value.config.form.valid;
-    return value?.hostmap?.noValid;
+    return value && ((value.hostmap && value.hostmap.noValid) || (value.config && !value.config.form?.valid));
   }
 
   run(value: IValue = {}) {

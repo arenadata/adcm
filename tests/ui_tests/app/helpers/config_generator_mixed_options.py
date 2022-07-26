@@ -1,3 +1,5 @@
+"""Config generator for UI tests"""
+
 import os
 
 DATA = [

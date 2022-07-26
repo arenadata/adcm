@@ -343,7 +343,6 @@ def test_result_no(sdk_client_fs: ADCMClient):
         assert not content["result"], f'Result is {content["result"]}, Expected False'
 
 
-# pylint: disable=no-self-use
 class TestDatabaseIsMalformed:
     """Test call to adcm_check from many hosts doesn't cause "database is malformed" error"""
 

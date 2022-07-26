@@ -49,7 +49,6 @@ from tests.ui_tests.app.page.cluster.page import (
     ClusterHostPage,
     ClusterServicesPage,
     ClusterComponentsPage,
-    ComponentsHostRowInfo,
     ClusterStatusPage,
     ClusterGroupConfigConfig,
     ClusterGroupConfigHosts,
@@ -57,6 +56,7 @@ from tests.ui_tests.app.page.cluster.page import (
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
+from tests.ui_tests.app.page.common.host_components.page import ComponentsHostRowInfo
 from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
 from tests.ui_tests.app.page.common.status.page import (
     SUCCESS_COLOR,
@@ -108,8 +108,8 @@ BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
 DISCLAIMER_TEXT = "Are you really want to click me?"
 
 
-# pylint: disable=redefined-outer-name,no-self-use,unused-argument,too-many-lines,too-many-public-methods
-# pylint: disable=too-many-arguments
+# pylint: disable=redefined-outer-name,unused-argument,too-many-lines,too-many-public-methods
+# pylint: disable=too-many-arguments,too-many-boolean-expressions,too-many-branches,too-many-nested-blocks
 
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
@@ -394,19 +394,32 @@ class TestClusterListPage:
             ), f"Cluster state should be {params['state']}"
 
     @pytest.mark.parametrize(
-        ("upgrade_name", "config", "hc_acl", "disclaimer_text"),
+        ("upgrade_name", "config", "hc_acl", "is_new_host", "disclaimer_text"),
         [
-            ("simple_upgrade", None, False, False),
-            ("upgrade_with_hc_acl", None, True, False),
-            ("upgrade_with_config", {"somestring2": "test"}, False, False),
-            ("upgrade_with_config_and_hc_acl", {"somestring2": "test"}, True, False),
-            ("upgrade_with_hc_acl_and_disclaimer", None, True, DISCLAIMER_TEXT),
-            ("upgrade_with_config_and_disclaimer", {"somestring2": "test"}, False, DISCLAIMER_TEXT),
-            ("upgrade_with_config_and_hc_acl_and_disclaimer", {"somestring2": "test"}, True, DISCLAIMER_TEXT),
+            ("simple_upgrade", None, False, False, False),
+            ("upgrade_with_hc_acl", None, True, False, False),
+            ("upgrade_with_config", {"somestring2": "test"}, False, False, False),
+            ("upgrade_with_config_and_hc_acl", {"somestring2": "test"}, True, False, False),
+            ("upgrade_with_hc_acl_and_disclaimer", None, True, False, DISCLAIMER_TEXT),
+            ("upgrade_with_config_and_disclaimer", {"somestring2": "test"}, False, False, DISCLAIMER_TEXT),
+            ("upgrade_with_config_and_hc_acl_and_disclaimer", {"somestring2": "test"}, True, False, DISCLAIMER_TEXT),
+            # next steps are skipped until https://tracker.yandex.ru/ADCM-3001
+            # ("upgrade_with_hc_acl", None, True, True, False),
+            # ("upgrade_with_config_and_hc_acl", {"somestring2": "test"}, True, True, False),
+            # ("upgrade_with_hc_acl_and_disclaimer", None, True, True, DISCLAIMER_TEXT),
+            # ("upgrade_with_config_and_hc_acl_and_disclaimer", {"somestring2": "test"}, True, True, DISCLAIMER_TEXT),
         ],
     )
     def test_run_upgrade_v2_on_cluster_list_page(
-        self, create_host, sdk_client_fs, app_fs, upgrade_name, config, hc_acl, disclaimer_text
+        self,
+        upload_and_create_provider,
+        sdk_client_fs,
+        app_fs,
+        upgrade_name,
+        config,
+        hc_acl,
+        is_new_host,
+        disclaimer_text,
     ):
         """Test run upgrade new version from the /cluster page"""
         params = {
@@ -415,7 +428,9 @@ class TestClusterListPage:
         with allure.step("Upload main cluster bundle"):
             bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
             cluster = bundle.cluster_create(name=CLUSTER_NAME)
-            cluster.host_add(create_host)
+            if not is_new_host:
+                host = upload_and_create_provider.host_create(HOST_NAME)
+                cluster.host_add(host)
         with allure.step("Upload cluster bundle to upgrade"):
             cluster_bundle(sdk_client_fs, BUNDLE_UPGRADE_V2)
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
@@ -425,6 +440,7 @@ class TestClusterListPage:
             upgrade_name=upgrade_name,
             config=config,
             hc_acl=hc_acl,
+            is_new_host=is_new_host,
             disclaimer_text=disclaimer_text,
         )
         with allure.step("Check that cluster has been upgraded"):
@@ -606,7 +622,7 @@ class TestClusterServicePage:
     def test_delete_service_on_service_list_page(self, app_fs, create_community_cluster_with_service):
         """Test delete service from cluster/{}/service page"""
 
-        cluster, service = create_community_cluster_with_service
+        cluster, _ = create_community_cluster_with_service
         cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         row = cluster_service_page.table.get_all_rows()[0]
         cluster_service_page.click_delete_btn_in_row(row)

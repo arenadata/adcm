@@ -23,7 +23,7 @@ _OBJECT_URL_TEMPLATE = "/{name}/{id}/"
 
 
 @attr.dataclass
-class Method:  # pylint: disable=too-few-public-methods
+class Method:
     """Describe possible methods and how they are used in ADCM api"""
 
     function: Callable

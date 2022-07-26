@@ -36,6 +36,7 @@ from tests.ui_tests.app.page.common.dialogs_locators import ActionDialog, Delete
 from tests.ui_tests.app.page.common.group_config.page import CommonGroupConfigMenu
 from tests.ui_tests.app.page.common.group_config_list.locators import GroupConfigListLocators
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigList
+from tests.ui_tests.app.page.common.host_components.page import HostComponentsPage
 from tests.ui_tests.app.page.common.import_page.locators import ImportLocators
 from tests.ui_tests.app.page.common.import_page.page import ImportPage
 from tests.ui_tests.app.page.common.popups.locator import HostAddPopupLocators
@@ -47,14 +48,6 @@ from tests.ui_tests.app.page.common.table.locator import CommonTable
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 from tests.ui_tests.app.page.common.tooltip_links.page import CommonToolbar
 from tests.ui_tests.app.page.host_list.page import HostRowInfo
-
-
-@dataclass
-class ComponentsHostRowInfo:
-    """Information from host row about host on Components page"""
-
-    name: str
-    components: str
 
 
 @dataclass
@@ -493,7 +486,7 @@ class ClusterHostPage(ClusterPageMixin):
         wait_until_step_succeeds(_check_mm_state, timeout=4, period=0.5, page=self, row=host_row)
 
 
-class ClusterComponentsPage(ClusterPageMixin):
+class ClusterComponentsPage(ClusterPageMixin, HostComponentsPage):
     """Cluster page components menu"""
 
     MENU_SUFFIX = 'host_component'
@@ -507,90 +500,6 @@ class ClusterComponentsPage(ClusterPageMixin):
         ClusterComponentsLocators.service_page_link,
         ClusterComponentsLocators.hosts_page_link,
     ]
-
-    def click_service_page_link(self):
-        """Click on Service page link"""
-        self.find_and_click(ClusterComponentsLocators.service_page_link)
-
-    def click_hosts_page_link(self):
-        """Click on Hosts page link"""
-        self.find_and_click(ClusterComponentsLocators.hosts_page_link)
-
-    def click_add_host_btn(self):
-        """Click on Add Host button"""
-        self.find_and_click(ClusterComponentsLocators.create_hosts_btn)
-        self.wait_element_visible(HostCreationLocators.block)
-
-    def get_host_rows(self):
-        """Get all hosts rows"""
-        return self.find_elements(ClusterComponentsLocators.host_row)
-
-    def get_components_rows(self):
-        """Get all components rows"""
-        return self.find_elements(ClusterComponentsLocators.component_row)
-
-    def get_row_info(self, row: WebElement):
-        """Get components row info"""
-        return ComponentsHostRowInfo(
-            name=self.find_child(row, ClusterComponentsLocators.Row.name).text,
-            components=self.find_child(row, ClusterComponentsLocators.Row.number).text,
-        )
-
-    def find_host_row_by_name(self, host_name: str):
-        """Find Host row by name"""
-        for host_row in self.get_host_rows():
-            host_name_element = self.find_child(host_row, ClusterComponentsLocators.Row.name)
-            if host_name_element.text == host_name:
-                return host_row
-        raise AssertionError(f"There are no host with name '{host_name}'")
-
-    def find_component_row_by_name(self, component_name: str):
-        """Find Component row by name"""
-        for component_row in self.get_components_rows():
-            component_name_element = self.find_child(component_row, ClusterComponentsLocators.Row.name)
-            if component_name_element.text == component_name:
-                return component_row
-        raise AssertionError(f"There are no component with name '{component_name}'")
-
-    @allure.step("Click on host row")
-    def click_host(self, host_row: WebElement):
-        """Click on Host row"""
-        self.find_child(host_row, ClusterComponentsLocators.Row.name).click()
-
-    @allure.step("Click on component row")
-    def click_component(self, component_row: WebElement):
-        """Click on Component row"""
-        self.find_child(component_row, ClusterComponentsLocators.Row.name).click()
-
-    @allure.step("Click on row number in component row")
-    def click_number_in_component(self, component_row: WebElement):
-        """Click on Component row number"""
-        self.find_child(component_row, ClusterComponentsLocators.Row.number).click()
-
-    @allure.step("Click on save button")
-    def click_save_btn(self):
-        """Click on Save button"""
-        self.find_and_click(ClusterComponentsLocators.save_btn)
-
-    @allure.step("Click on restore button")
-    def click_restore_btn(self):
-        """Click on Restore button"""
-        self.find_and_click(ClusterComponentsLocators.restore_btn)
-
-    @allure.step("Delete item {item_name} from row")
-    def delete_related_item_in_row_by_name(self, row: WebElement, item_name: str):
-        """Delete related item by button from row"""
-        self.wait_element_visible(ClusterComponentsLocators.Row.relations_row)
-        for item_row in self.find_children(row, ClusterComponentsLocators.Row.relations_row):
-            item_name_element = self.find_child(item_row, ClusterComponentsLocators.Row.RelationsRow.name)
-            if item_name_element.text == item_name:
-                self.find_child(item_row, ClusterComponentsLocators.Row.RelationsRow.delete_btn).click()
-                return
-        raise AssertionError(f"There are no item with name '{item_name}'")
-
-    def check_that_save_btn_disabled(self):
-        """Get Save button available state"""
-        return self.find_element(ClusterComponentsLocators.save_btn).get_attribute("disabled") == "true"
 
 
 class ClusterStatusPage(ClusterPageMixin, StatusPage):

@@ -65,7 +65,7 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
   }
 
   isDisabled(value: IValue) {
-    return value?.hostmap?.noValid || !value?.config?.form?.valid;
+    return value && ((value.hostmap && value.hostmap.noValid) || (value.config && !value.config.form?.valid));
   }
 
   run(value: IValue = {}) {

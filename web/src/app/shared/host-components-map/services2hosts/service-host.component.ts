@@ -103,7 +103,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   }
 
   socketListener(m: EventMessage) {
-    const isCurrent = (type: string, id: number) => type === 'cluster' && id === this.cluster.id;
+    const isCurrent = (type: string, id: number) => type === 'cluster' && id === this.cluster?.id;
     if (
       (m.event === 'change_hostcomponentmap' || m.event === 'change_state') &&
       isCurrent(m.object.type, m.object?.id) &&
