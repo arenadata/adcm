@@ -11,7 +11,7 @@
 # limitations under the License.
 
 """Methods for generate test data"""
-# pylint: disable=invalid-name
+
 from collections import ChainMap
 from http import HTTPStatus
 from typing import NamedTuple, List, Optional
@@ -37,7 +37,7 @@ class MaxRetriesError(Exception):
 
 
 @attr.dataclass(repr=False)
-class TestData:  # pylint: disable=too-few-public-methods
+class TestData:
     """Pair of request and expected response for api tests"""
 
     request: Request

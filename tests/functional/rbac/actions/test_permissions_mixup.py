@@ -36,8 +36,6 @@ DO_NOTHING_ACTION_NAME = "Do nothing"
 class TestClusterAdminRoleDoNotBreakParametrization:
     """Test that granting "Cluster Administrator" role doesn't break parametrization of other objects"""
 
-    # pylint: disable=no-self-use
-
     @pytest.fixture()
     def clusters(self, actions_cluster_bundle, simple_cluster_bundle) -> Tuple[Cluster, Cluster, Cluster, Cluster]:
         """Prepare clusters from two bundles"""

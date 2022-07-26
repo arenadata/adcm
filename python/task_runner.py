@@ -100,6 +100,8 @@ def run_task(task_id, args=None):
         log.error("no task %s", task_id)
         return
 
+    task.pid = os.getpid()
+    task.save()
     jobs = JobLog.objects.filter(task_id=task.id).order_by('id')
     if not jobs:
         log.error("no jobs for task %s", task.id)

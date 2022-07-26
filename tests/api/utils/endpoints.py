@@ -12,7 +12,6 @@
 
 """ADCM Endpoints classes and methods"""
 
-# pylint: disable=too-few-public-methods,invalid-name
 from enum import Enum
 from typing import List, Type, Optional, Callable
 
@@ -164,7 +163,7 @@ class Endpoints(Enum):
 
     def get_child_endpoint_by_fk_name(self, field_name: str) -> Optional["Endpoints"]:
         """Get child endpoint instance by data class"""
-        for field in get_fields(self.value.data_class):  # pylint: disable=no-member
+        for field in get_fields(self.value.data_class):
             if field.name == field_name:
                 try:
                     return self.get_by_data_class(field.f_type.fk_link)
