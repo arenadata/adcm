@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 
 from audit.models import (
@@ -24,7 +23,8 @@ class TestPolicy(BaseTestCase):
         self.audit_operation_create_policy = AUDIT_OPERATION_MAP["PolicyViewSet"]["POST"]
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle, type="cluster")
-        self.cluster = Cluster.objects.create(name="test_cluster", prototype=prototype)
+        self.cluster_name = "test_cluster"
+        self.cluster = Cluster.objects.create(name=self.cluster_name, prototype=prototype)
         self.role = Role.objects.create(
             name="test_role",
             display_name="test_role",
@@ -39,10 +39,11 @@ class TestPolicy(BaseTestCase):
             path=reverse("rbac:policy-list"),
             data={
                 "name": self.name,
-                "object": json.dumps([{"id": self.cluster.id, "type": "cluster"}]),
-                "role.id": self.role.pk,
-                "user[0]id": self.test_user.pk,
+                "object": [{"id": self.cluster.id, "name": self.cluster_name, "type": "cluster"}],
+                "role": {"id": self.role.pk},
+                "user": [{"id": self.test_user.pk}],
             },
+            content_type="application/json",
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -54,26 +55,6 @@ class TestPolicy(BaseTestCase):
         assert log.operation_name == self.audit_operation_create_policy.name
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Success.value
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
-
-        self.client.post(
-            path=reverse("rbac:policy-list"),
-            data={
-                "name": self.name,
-                "object": json.dumps([{"id": self.cluster.id, "type": "cluster"}]),
-                "role.id": self.role.pk,
-                "user[0]id": self.test_user.pk,
-            },
-        )
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        assert not log.audit_object
-        assert log.operation_name == self.audit_operation_create_policy.name
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Failed.value
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)

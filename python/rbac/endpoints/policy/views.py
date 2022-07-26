@@ -9,8 +9,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
-from json.decoder import JSONDecodeError
 
 import jsonschema
 from audit.utils import audit
@@ -50,15 +48,14 @@ class ObjectField(serializers.JSONField):
         }
 
         try:
-            value = json.loads(value)
             jsonschema.validate(value, schema)
-        except (TypeError, JSONDecodeError, jsonschema.ValidationError) as e:
+        except jsonschema.ValidationError as e:
             raise ValidationError('the field does not match the scheme') from e
 
         return value
 
     def to_internal_value(self, data):
-        data = self.schema_validate(data)
+        self.schema_validate(data)
         dictionary = {
             'cluster': Cluster,
             'service': ClusterObject,
