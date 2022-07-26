@@ -39,6 +39,7 @@ export class UpgradesDirective extends BaseDirective {
   @Output() refresh: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
 
   hc: IRawHosComponent;
+  needPrototype = false;
 
   constructor(private api: ApiService, private dialog: MatDialog, private service: AddService) {
     super();
@@ -169,6 +170,7 @@ export class UpgradesDirective extends BaseDirective {
 
           hostComponentMap.forEach((hc, index) => {
             if (!cluster.component.find(c => c.name === hc.component)) {
+              this.needPrototype = true;
               const params = {
                 bundle_id: this.inputData.bundle_id,
                 type: 'component',
@@ -190,11 +192,13 @@ export class UpgradesDirective extends BaseDirective {
                   this.prepare();
                 }
               })
-            } else {
-              this.hc = cluster;
-              this.prepare();
             }
           })
+
+          if (!this.needPrototype) {
+            this.hc = cluster;
+            this.prepare();
+          }
         }),
       ).subscribe();
   }
