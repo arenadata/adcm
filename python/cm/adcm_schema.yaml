@@ -8,7 +8,7 @@ root:
 #                             O B J E C T S
 ###############################################################################
 # There are a number of object types: cluster, provider, host and service
-# All of them has the same struture but with small difference
+# All of them has the same structure but with small difference
 
 object:
   match: dict_key_selection
@@ -769,6 +769,7 @@ action_hc_acl_dict:
   required_items:
     - component
     - action
+    - service
 
 hc_acl_action:
   match: set
