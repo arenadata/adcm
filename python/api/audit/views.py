@@ -18,7 +18,7 @@ from . import serializers
 from . import filters
 
 
-class AuditLogListView(PaginatedView):
+class AuditOperationListView(PaginatedView):
     """
     get:
     List of all AuditLog entities
@@ -26,10 +26,10 @@ class AuditLogListView(PaginatedView):
 
     queryset = AuditLog.objects.select_related('audit_object', 'user').all()
     serializer_class = serializers.AuditLogSerializer
-    filterset_class = filters.AuditLogListFilter
+    filterset_class = filters.AuditOperationListFilter
 
 
-class AuditLogDetailView(DetailView):
+class AuditOperationDetailView(DetailView):
     queryset = AuditLog.objects.select_related('audit_object', 'user').all()
     serializer_class = serializers.AuditLogSerializer
     lookup_field = 'id'
@@ -37,7 +37,7 @@ class AuditLogDetailView(DetailView):
     error_code = 'AUDIT_OPERATION_NOT_FOUND'
 
 
-class AuditLoginSessionListView(PaginatedView):
+class AuditLoginListView(PaginatedView):
     """
     get:
     List of all AuditSession entities
@@ -45,10 +45,10 @@ class AuditLoginSessionListView(PaginatedView):
 
     queryset = AuditSession.objects.select_related('user').all()
     serializer_class = serializers.AuditSessionSerializer
-    filterset_class = filters.AuditLoginSessionListFilter
+    filterset_class = filters.AuditLoginListFilter
 
 
-class AuditLoginSessionDetailView(DetailView):
+class AuditLoginDetailView(DetailView):
     queryset = AuditSession.objects.select_related('user').all()
     serializer_class = serializers.AuditSessionSerializer
     lookup_field = 'id'

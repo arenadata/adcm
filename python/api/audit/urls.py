@@ -20,9 +20,11 @@ urlpatterns = [
         'operation/',
         include(
             [
-                path('', views.AuditLogListView.as_view(), name='audit-operations'),
+                path('', views.AuditOperationListView.as_view(), name='audit-operations'),
                 path(
-                    '<int:id>/', views.AuditLogDetailView.as_view(), name='audit-operation-detail'
+                    '<int:id>/',
+                    views.AuditOperationDetailView.as_view(),
+                    name='audit-operation-detail',
                 ),
             ]
         ),
@@ -31,10 +33,10 @@ urlpatterns = [
         'login/',
         include(
             [
-                path('', views.AuditLoginSessionListView.as_view(), name='audit-logins'),
+                path('', views.AuditLoginListView.as_view(), name='audit-logins'),
                 path(
                     '<int:id>/',
-                    views.AuditLoginSessionDetailView.as_view(),
+                    views.AuditLoginDetailView.as_view(),
                     name='audit-login-detail',
                 ),
             ]

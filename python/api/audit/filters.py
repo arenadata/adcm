@@ -14,7 +14,11 @@ from django_filters import rest_framework as drf_filters
 from audit.models import AuditLog, AuditSession
 
 
-class AuditLogListFilter(drf_filters.FilterSet):
+class AuditOperationListFilter(drf_filters.FilterSet):
+    operation_date = drf_filters.DateFilter(
+        field_name='operation_time', lookup_expr='date', label='Operation date'
+    )
+
     class Meta:
         model = AuditLog
         fields = [
@@ -23,12 +27,16 @@ class AuditLogListFilter(drf_filters.FilterSet):
             'operation_type',
             'operation_name',
             'operation_result',
-            'operation_time',
+            'operation_date',
             'user__username',
         ]
 
 
-class AuditLoginSessionListFilter(drf_filters.FilterSet):
+class AuditLoginListFilter(drf_filters.FilterSet):
+    login_date = drf_filters.DateFilter(
+        field_name='login_time', lookup_expr='date', label='Login date'
+    )
+
     class Meta:
         model = AuditSession
-        fields = ['user__username', 'login_result', 'login_time']
+        fields = ['user__username', 'login_result', 'login_date']
