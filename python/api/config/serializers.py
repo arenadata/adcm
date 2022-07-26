@@ -12,13 +12,12 @@
 
 # pylint: disable=redefined-builtin
 
+import cm.adcm_config
+from api.utils import CommonAPIURL, get_api_url_kwargs
+from cm.adcm_config import restore_cluster_config, ui_config
+from cm.api import update_obj_config
 from rest_framework import serializers
 from rest_framework.reverse import reverse
-
-import cm.adcm_config
-from cm.adcm_config import ui_config, restore_cluster_config
-from cm.api import update_obj_config
-from api.utils import get_api_url_kwargs, CommonAPIURL
 
 
 class ConfigVersionURL(serializers.HyperlinkedIdentityField):

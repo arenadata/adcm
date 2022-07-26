@@ -13,20 +13,27 @@
 import os
 import re
 
-from django.http import HttpResponse
-from guardian.mixins import PermissionListMixin
-from rest_framework import status, permissions
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
-
-from api.base_view import GenericUIView, DetailView, PaginatedView
-from api.utils import get_object_for_user, check_custom_perm
+from api.base_view import DetailView, GenericUIView, PaginatedView
+from api.job.serializers import (
+    JobListSerializer,
+    JobSerializer,
+    LogSerializer,
+    LogStorageListSerializer,
+    LogStorageSerializer,
+    TaskListSerializer,
+    TaskSerializer,
+)
+from api.utils import check_custom_perm, get_object_for_user
 from cm import config
 from cm.errors import AdcmEx
-from cm.job import get_log, restart_task, cancel_task
-from cm.models import JobLog, TaskLog, LogStorage
+from cm.job import cancel_task, get_log, restart_task
+from cm.models import JobLog, LogStorage, TaskLog
+from django.http import HttpResponse
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from . import serializers
+from rest_framework import permissions, status
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
 
 
 class JobList(PermissionListMixin, PaginatedView):
@@ -36,8 +43,8 @@ class JobList(PermissionListMixin, PaginatedView):
     """
 
     queryset = JobLog.objects.order_by('-id')
-    serializer_class = serializers.JobListSerializer
-    serializer_class_ui = serializers.JobSerializer
+    serializer_class = JobListSerializer
+    serializer_class_ui = JobSerializer
     filterset_fields = ('action_id', 'task_id', 'pid', 'status', 'start_date', 'finish_date')
     ordering_fields = ('status', 'start_date', 'finish_date')
     permission_classes = (permissions.DjangoModelPermissions,)
@@ -48,7 +55,7 @@ class JobDetail(PermissionListMixin, GenericUIView):
     queryset = JobLog.objects.all()
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_joblog']
-    serializer_class = serializers.JobSerializer
+    serializer_class = JobSerializer
 
     def get(self, request, *args, **kwargs):
         """
@@ -75,7 +82,7 @@ class JobDetail(PermissionListMixin, GenericUIView):
 class LogStorageListView(PermissionListMixin, PaginatedView):
     queryset = LogStorage.objects.all()
     permission_required = ['cm.view_logstorage']
-    serializer_class = serializers.LogStorageListSerializer
+    serializer_class = LogStorageListSerializer
     filterset_fields = ('name', 'type', 'format')
     ordering_fields = ('id', 'name')
 
@@ -90,7 +97,7 @@ class LogStorageView(PermissionListMixin, GenericUIView):
     queryset = LogStorage.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
     permission_required = ['cm.view_logstorage']
-    serializer_class = serializers.LogStorageSerializer
+    serializer_class = LogStorageSerializer
 
     def get(self, request, *args, **kwargs):
         job = get_object_for_user(request.user, 'cm.view_joblog', JobLog, id=kwargs['job_id'])
@@ -136,7 +143,7 @@ def download_log_file(request, job_id, log_id):
 class LogFile(GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = LogStorage.objects.all()
-    serializer_class = serializers.LogSerializer
+    serializer_class = LogSerializer
 
     def get(self, request, job_id, tag, level, log_type):
         """
@@ -161,8 +168,8 @@ class Task(PermissionListMixin, PaginatedView):
 
     queryset = TaskLog.objects.order_by('-id')
     permission_required = ['cm.view_tasklog']
-    serializer_class = serializers.TaskListSerializer
-    serializer_class_ui = serializers.TaskSerializer
+    serializer_class = TaskListSerializer
+    serializer_class_ui = TaskSerializer
     filterset_fields = ('action_id', 'pid', 'status', 'start_date', 'finish_date')
     ordering_fields = ('status', 'start_date', 'finish_date')
 
@@ -175,7 +182,7 @@ class TaskDetail(PermissionListMixin, DetailView):
 
     queryset = TaskLog.objects.all()
     permission_required = ['cm.view_tasklog']
-    serializer_class = serializers.TaskSerializer
+    serializer_class = TaskSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'task_id'
     error_code = 'TASK_NOT_FOUND'
@@ -184,7 +191,7 @@ class TaskDetail(PermissionListMixin, DetailView):
 class TaskReStart(GenericUIView):
     queryset = TaskLog.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
-    serializer_class = serializers.TaskSerializer
+    serializer_class = TaskSerializer
 
     def put(self, request, *args, **kwargs):
         task = get_object_for_user(request.user, 'cm.view_tasklog', TaskLog, id=kwargs['task_id'])
@@ -196,7 +203,7 @@ class TaskReStart(GenericUIView):
 class TaskCancel(GenericUIView):
     queryset = TaskLog.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
-    serializer_class = serializers.TaskSerializer
+    serializer_class = TaskSerializer
 
     def put(self, request, *args, **kwargs):
         task = get_object_for_user(request.user, 'cm.view_tasklog', TaskLog, id=kwargs['task_id'])

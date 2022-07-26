@@ -29,7 +29,6 @@ import os
 from django.conf import settings
 from django.test.signals import setting_changed
 
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 

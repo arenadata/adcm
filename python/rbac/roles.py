@@ -13,26 +13,33 @@
 """RBAC Role classes"""
 
 from adwp_base.errors import raise_AdwpEx as err
+from cm.models import (
+    Action,
+    ClusterObject,
+    DummyData,
+    GroupConfig,
+    Host,
+    HostComponent,
+    JobLog,
+    LogStorage,
+    ServiceComponent,
+    TaskLog,
+)
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.utils import timezone
-from guardian.models import UserObjectPermission, GroupObjectPermission
-
-from cm.models import (
-    Action,
-    ClusterObject,
-    ServiceComponent,
-    Host,
-    HostComponent,
-    GroupConfig,
-    TaskLog,
-    JobLog,
-    LogStorage,
-    DummyData,
+from guardian.models import GroupObjectPermission, UserObjectPermission
+from rbac.models import (
+    Group,
+    Permission,
+    Policy,
+    PolicyPermission,
+    Role,
+    RoleTypes,
+    User,
+    get_objects_for_policy,
 )
-from rbac.models import Policy, PolicyPermission, Role, User, Group, Permission
-from rbac.models import RoleTypes, get_objects_for_policy
 
 
 class AbstractRole:

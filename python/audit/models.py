@@ -38,8 +38,8 @@ class AuditLogOperationType(models.TextChoices):
 
 class AuditLogOperationResult(models.TextChoices):
     Success = "success", "success"
-    Failed = "failed", "failed"
-    InProgress = "in_progress", "in_progress"
+    Fail = "fail", "fail"
+    Denied = "denied", "denied"
 
 
 class AuditSessionLoginResult(models.TextChoices):

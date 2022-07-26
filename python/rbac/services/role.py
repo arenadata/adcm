@@ -15,10 +15,9 @@ from typing import List
 from adwp_base.errors import AdwpEx
 from django.db import IntegrityError
 from django.db.transaction import atomic
-from rest_framework.exceptions import ValidationError
-
 from rbac.models import Role, RoleTypes
 from rbac.utils import update_m2m_field
+from rest_framework.exceptions import ValidationError
 
 
 def check_role_child(child: List[Role], partial=False):

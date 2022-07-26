@@ -14,13 +14,12 @@
 
 from collections import defaultdict
 
-from rest_framework import serializers, mixins
-from rest_framework.decorators import action
-from rest_framework.response import Response
-
 from api.base_view import GenericUIViewSet
 from cm import models as cm_models
 from rbac import models
+from rest_framework import mixins, serializers
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 
 class RoleSerializer(serializers.Serializer):

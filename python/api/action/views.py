@@ -12,11 +12,11 @@
 
 from itertools import compress
 
-from django.contrib.contenttypes.models import ContentType
-from guardian.mixins import PermissionListMixin
-from rest_framework import permissions
-from rest_framework.response import Response
-
+from api.action.serializers import (
+    ActionDetailSerializer,
+    ActionSerializer,
+    ActionUISerializer,
+)
 from api.base_view import GenericUIView
 from api.job.serializers import RunTaskSerializer
 from api.utils import (
@@ -24,21 +24,24 @@ from api.utils import (
     AdcmFilterBackend,
     create,
     filter_actions,
-    permission_denied,
     get_object_for_user,
+    permission_denied,
     set_disabling_cause,
 )
 from cm.errors import AdcmEx
 from cm.models import (
-    Host,
     Action,
-    TaskLog,
+    Host,
     HostComponent,
-    get_model_by_type,
     MaintenanceModeType,
+    TaskLog,
+    get_model_by_type,
 )
+from django.contrib.contenttypes.models import ContentType
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from . import serializers
+from rest_framework import permissions
+from rest_framework.response import Response
 
 
 def get_object_type_id(**kwargs):
@@ -57,8 +60,8 @@ def get_obj(**kwargs):
 
 class ActionList(PermissionListMixin, GenericUIView):
     queryset = Action.objects.filter(upgrade__isnull=True)
-    serializer_class = serializers.ActionSerializer
-    serializer_class_ui = serializers.ActionUISerializer
+    serializer_class = ActionSerializer
+    serializer_class_ui = ActionUISerializer
     filterset_class = ActionFilter
     filterset_fields = ('name', 'button', 'button_is_null')
     filter_backends = (AdcmFilterBackend,)
@@ -135,8 +138,8 @@ class ActionList(PermissionListMixin, GenericUIView):
 
 class ActionDetail(PermissionListMixin, GenericUIView):
     queryset = Action.objects.filter(upgrade__isnull=True)
-    serializer_class = serializers.ActionDetailSerializer
-    serializer_class_ui = serializers.ActionUISerializer
+    serializer_class = ActionDetailSerializer
+    serializer_class_ui = ActionUISerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_action']
 

@@ -10,15 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import permissions
-from rest_framework import routers
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
 import cm.api
 import cm.job
 import cm.stack
 import cm.status_api
+from rest_framework import permissions, routers
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from adcm.settings import ADCM_VERSION
 
 

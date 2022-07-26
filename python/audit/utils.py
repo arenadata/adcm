@@ -22,7 +22,7 @@ from audit.models import (
 from cm.errors import AdcmEx
 from django.contrib.contenttypes.models import ContentType
 from django.views.generic.base import View
-from rest_framework.status import is_success
+from rest_framework.status import HTTP_403_FORBIDDEN, is_success
 
 
 def audit(func):
@@ -74,8 +74,11 @@ def audit(func):
                 )
             else:
                 audit_object = None
+        elif status_code == HTTP_403_FORBIDDEN:
+            operation_result = AuditLogOperationResult.Denied
+            audit_object = None
         else:
-            operation_result = AuditLogOperationResult.Failed
+            operation_result = AuditLogOperationResult.Fail
             audit_object = None
 
         AuditLog.objects.create(
