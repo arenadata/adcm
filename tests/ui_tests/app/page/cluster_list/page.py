@@ -34,7 +34,12 @@ from tests.ui_tests.app.page.common.dialogs_locators import (
     ActionDialog,
     DeleteDialog,
 )
+from tests.ui_tests.app.page.common.host_components.page import HostComponentsPage
+from tests.ui_tests.app.page.common.popups.locator import (
+    HostCreationLocators,
+)
 from tests.ui_tests.app.page.common.popups.locator import ListConcernPopupLocators
+from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 
 
@@ -47,6 +52,7 @@ class ClusterListPage(BasePageObject):
         self.footer = PageFooter(self.driver, self.base_url)
         self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url, ClusterListLocators.ClusterTable)
+        self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
 
     @allure.step("Create cluster")
     def create_cluster(self, bundle: str, description: str = None, is_license: bool = False):
@@ -172,9 +178,20 @@ class ClusterListPage(BasePageObject):
         upgrade_name: str,
         config: Optional[dict] = None,
         hc_acl: bool = False,
+        is_new_host: bool = False,
         disclaimer_text: Optional[str] = None,
     ):
-        """Run upgrade for cluster from row"""
+        """
+        Run upgrade for cluster from row
+
+        :param row: row with upgrade
+        :param upgrade_name: upgrade action name
+        :param config: config options
+        :param hc_acl: hc_acl options
+        :param is_new_host: condition if new host is needed, new host will be created and added in upgrade popup.
+                            only with hc_acl option
+        :param disclaimer_text: disclaimer text in first popup
+        """
 
         self.find_child(row, self.table.locators.ClusterRow.upgrade).click()
         self.wait_element_visible(self.table.locators.UpgradePopup.block)
@@ -193,6 +210,11 @@ class ClusterListPage(BasePageObject):
             if self.is_element_displayed(ActionDialog.next_btn):
                 self.find_and_click(ActionDialog.next_btn)
         if hc_acl:
+            if is_new_host:
+                components_page = HostComponentsPage(self.driver, self.base_url)
+                components_page.click_add_host_btn()
+                self.host_popup.create_host("Test_host")
+                self.wait_element_hide(HostCreationLocators.block)
             for comp_row in self.find_elements(ClusterComponentsLocators.component_row):
                 comp_row_name = self.find_child(comp_row, ClusterComponentsLocators.Row.name)
                 self.wait_element_visible(comp_row_name)
