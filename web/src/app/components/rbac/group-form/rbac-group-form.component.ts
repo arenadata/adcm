@@ -42,6 +42,7 @@ export class RbacGroupFormComponent extends RbacFormDirective<RbacGroupModel> {
     if (this.value.type === 'ldap') {
       this.form.controls.name.disable();
       this.form.controls.description.disable();
+      this.form.controls.user.disable();
     }
   }
 }
