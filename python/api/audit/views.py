@@ -53,4 +53,4 @@ class AuditLoginSessionDetailView(DetailView):
     serializer_class = serializers.AuditSessionSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'id'
-    error_code = 'AUDIT_LOGIN_SESSION_NOT_FOUND'
+    error_code = 'AUDIT_LOGIN_NOT_FOUND'

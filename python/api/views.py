@@ -31,7 +31,7 @@ class APIRoot(routers.APIRootView):
     api_root_dict = {
         'adcm': 'adcm',
         'audit-operations': 'audit-operations',
-        'audit-login-sessions': 'audit-login-sessions',
+        'audit-logins': 'audit-logins',
         'cluster': 'cluster',
         'provider': 'provider',
         'host': 'host',

@@ -59,8 +59,8 @@ ERRORS = {
     'CONCERNITEM_NOT_FOUND': ("concern item doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
     'GROUP_CONFIG_NOT_FOUND': ("group config doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
     'AUDIT_OPERATION_NOT_FOUND': ("audit operation doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
-    'AUDIT_LOGIN_SESSION_NOT_FOUND': (
-        "audit login session doesn't exist",
+    'AUDIT_LOGIN_NOT_FOUND': (
+        "audit login doesn't exist",
         rfs.HTTP_404_NOT_FOUND,
         ERR,
     ),

@@ -28,14 +28,14 @@ urlpatterns = [
         ),
     ),
     path(
-        'login-session/',
+        'login/',
         include(
             [
-                path('', views.AuditLoginSessionListView.as_view(), name='audit-login-sessions'),
+                path('', views.AuditLoginSessionListView.as_view(), name='audit-logins'),
                 path(
                     '<int:id>/',
                     views.AuditLoginSessionDetailView.as_view(),
-                    name='audit-login-session-detail',
+                    name='audit-login-detail',
                 ),
             ]
         ),
