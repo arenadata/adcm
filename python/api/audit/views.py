@@ -10,46 +10,49 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from api.base_view import DetailView, PaginatedView
-
+from api.utils import SuperuserOnlyMixin
 from audit.models import AuditLog, AuditSession
 from . import serializers
 from . import filters
 
 
-class AuditOperationListView(PaginatedView):
+class AuditOperationListView(SuperuserOnlyMixin, PaginatedView):
     """
     get:
     List of all AuditLog entities
     """
 
     queryset = AuditLog.objects.select_related('audit_object', 'user').all()
+    model_class = AuditLog
     serializer_class = serializers.AuditLogSerializer
     filterset_class = filters.AuditOperationListFilter
 
 
-class AuditOperationDetailView(DetailView):
+class AuditOperationDetailView(SuperuserOnlyMixin, DetailView):
     queryset = AuditLog.objects.select_related('audit_object', 'user').all()
+    model_class = AuditLog
     serializer_class = serializers.AuditLogSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'id'
     error_code = 'AUDIT_OPERATION_NOT_FOUND'
 
 
-class AuditLoginListView(PaginatedView):
+class AuditLoginListView(SuperuserOnlyMixin, PaginatedView):
     """
     get:
     List of all AuditSession entities
     """
 
     queryset = AuditSession.objects.select_related('user').all()
+    model_class = AuditSession
     serializer_class = serializers.AuditSessionSerializer
     filterset_class = filters.AuditLoginListFilter
 
 
-class AuditLoginDetailView(DetailView):
+class AuditLoginDetailView(SuperuserOnlyMixin, DetailView):
     queryset = AuditSession.objects.select_related('user').all()
+    model_class = AuditSession
     serializer_class = serializers.AuditSessionSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'id'
