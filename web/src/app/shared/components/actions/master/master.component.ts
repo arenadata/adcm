@@ -56,7 +56,7 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
   }
 
   ngOnInit(): void {
-    if (this.model.actions.length === 1) this.choose(this.model.actions[0]);
+    if (this.model.actions?.length === 1) this.choose(this.model.actions[0]);
   }
 
   choose(action: IAction) {
@@ -65,7 +65,7 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
   }
 
   isDisabled(value: IValue) {
-    return value?.hostmap?.noValid || !value?.config?.form?.valid;
+    return value && ((value.hostmap && value.hostmap.noValid) || (value.config && !value.config.form?.valid));
   }
 
   run(value: IValue = {}) {
