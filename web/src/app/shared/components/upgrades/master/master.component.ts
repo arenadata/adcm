@@ -19,24 +19,7 @@ import { UpgradeParameters } from "@app/shared/components/upgrades/upgrade.direc
 @Component({
   selector: 'app-master',
   templateUrl: './master.component.html',
-  styles: [
-    `
-      .action-button {
-        background: none !important;
-        margin: 6px 0;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.04) !important;
-        }
-      }
-
-      .controls-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-    `,
-  ],
+  styleUrls: ['./master.component.scss'],
   providers: [MasterService],
 })
 export class UpgradeMasterComponent extends BaseDirective implements DynamicComponent, OnInit {
@@ -85,5 +68,9 @@ export class UpgradeMasterComponent extends BaseDirective implements DynamicComp
 
   cancel() {
     this.event.emit({ name: 'cancel' });
+  }
+
+  needMargin() {
+    return !(this?.model?.upgrades[0]?.config?.config?.length > 0 && this?.model?.upgrades[0]?.hostcomponentmap?.length > 0);
   }
 }

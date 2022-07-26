@@ -37,7 +37,10 @@ describe('MasterComponent', () => {
     TestBed.configureTestingModule({
       imports: [MatListModule],
       declarations: [MasterComponent, UpgradeMasterConfigComponent],
-      providers: [MasterService, { provide: ApiService, useValue: ApiServiceStub }, { provide: FieldService, useValue: FieldServiceStub }],
+      providers: [MasterService, {provide: ApiService, useValue: ApiServiceStub}, {
+        provide: FieldService,
+        useValue: FieldServiceStub
+      }],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
   });
@@ -52,20 +55,20 @@ describe('MasterComponent', () => {
   });
 
   it('input data for model property must be defined', () => {
-    component.model = { upgrades: [] };
+    component.model = {upgrades: []};
     fixture.detectChanges();
     expect(component.model).toBeDefined();
   });
 
   it('input data for model.actons property must be array', () => {
-    component.model = { upgrades: [] };
+    component.model = {upgrades: []};
     fixture.detectChanges();
     expect(component.model.upgrades).toBeDefined();
     expect(component.model.upgrades).toEqual(jasmine.any(Array));
   });
 
   it('should be show template if model.upgrades.length === 0', () => {
-    component.model = { upgrades: [] };
+    component.model = {upgrades: []};
     fixture.detectChanges();
     const compHost: HTMLElement = fixture.debugElement.nativeElement;
     expect(compHost.querySelector('p').textContent).toBe('No data for the upgrades!');
@@ -73,32 +76,83 @@ describe('MasterComponent', () => {
 
   it('should be show template for current upgrade if model.upgrades.length === 1 and config = null and host-map = null', () => {
     component.model = {
-      upgrades: [{ bundle_id: 1, config: {} as IConfig, description: '', do: 'url', from_edition: ['community'],
-        hostcomponentmap: [] as IActionParameter[], id: 1, license: '', license_url: '', max_strict: true, max_version: '',
-        min_strict: false, min_version: '', name: '', state_available: '', state_on_success: '', ui_options: {} as IUIOptions,
-        upgradable: true, url: '' }]
+      upgrades: [{
+        bundle_id: 1,
+        config: null,
+        description: '',
+        do: 'url',
+        from_edition: ['community'],
+        hostcomponentmap: null,
+        id: 1,
+        license: '',
+        license_url: '',
+        max_strict: true,
+        max_version: '',
+        min_strict: false,
+        min_version: '',
+        name: '',
+        state_available: '',
+        state_on_success: '',
+        ui_options: null,
+        upgradable: true,
+        url: ''
+      }]
     };
     fixture.detectChanges();
     const compHost: HTMLElement = fixture.debugElement.nativeElement;
     const cancelButton = compHost.querySelector('button[color="primary"]');
-    expect(cancelButton).toBeTruthy();
-    expect(cancelButton.textContent).toContain('Cancel');
     const runButton = compHost.querySelector('button[color="accent"]');
     expect(runButton).toBeTruthy();
+    expect(cancelButton).toBeTruthy();
+    expect(cancelButton.textContent).toContain('Cancel');
     expect(runButton.textContent).toContain('Run');
   });
 
   it('should be show upgrades list for choose current upgrade if model.upgrades.length > 1', () => {
     component.model = {
       upgrades: [
-        { bundle_id: 1, config: {} as IConfig, description: '', do: 'url', from_edition: ['community'],
-          hostcomponentmap: [] as IActionParameter[], id: 1, license: '', license_url: '', max_strict: true, max_version: '',
-          min_strict: false, min_version: '', name: '', state_available: '', state_on_success: '', ui_options: {} as IUIOptions,
-          upgradable: true, url: '' },
-        { bundle_id: 1, config: {} as IConfig, description: '', do: 'url', from_edition: ['community'],
-          hostcomponentmap: [] as IActionParameter[], id: 1, license: '', license_url: '', max_strict: true, max_version: '',
-          min_strict: false, min_version: '', name: '', state_available: '', state_on_success: '', ui_options: {} as IUIOptions,
-          upgradable: true, url: '' }
+        {
+          bundle_id: 1,
+          config: {} as IConfig,
+          description: '',
+          do: 'url',
+          from_edition: ['community'],
+          hostcomponentmap: [] as IActionParameter[],
+          id: 1,
+          license: '',
+          license_url: '',
+          max_strict: true,
+          max_version: '',
+          min_strict: false,
+          min_version: '',
+          name: '',
+          state_available: '',
+          state_on_success: '',
+          ui_options: {} as IUIOptions,
+          upgradable: true,
+          url: ''
+        },
+        {
+          bundle_id: 1,
+          config: {} as IConfig,
+          description: '',
+          do: 'url',
+          from_edition: ['community'],
+          hostcomponentmap: [] as IActionParameter[],
+          id: 1,
+          license: '',
+          license_url: '',
+          max_strict: true,
+          max_version: '',
+          min_strict: false,
+          min_version: '',
+          name: '',
+          state_available: '',
+          state_on_success: '',
+          ui_options: {} as IUIOptions,
+          upgradable: true,
+          url: ''
+        }
       ]
     };
     fixture.detectChanges();
@@ -111,7 +165,10 @@ describe('MasterComponent', () => {
   it('should be show template for current upgrade if config exist only', () => {
     component.model = {
       upgrades: [
-        { bundle_id: 1, config: {config: [
+        {
+          bundle_id: 1,
+          config: {
+            config: [
               {
                 type: 'string',
                 name: 'test',
@@ -125,10 +182,26 @@ describe('MasterComponent', () => {
                 activatable: false,
                 group_config: null,
               }
-            ]} as IConfig, description: '', do: 'url', from_edition: ['community'],
-          hostcomponentmap: [] as IActionParameter[], id: 1, license: '', license_url: '', max_strict: true, max_version: '',
-          min_strict: false, min_version: '', name: '', state_available: '', state_on_success: '', ui_options: {} as IUIOptions,
-          upgradable: true, url: '' }
+            ]
+          } as IConfig,
+          description: '',
+          do: 'url',
+          from_edition: ['community'],
+          hostcomponentmap: null,
+          id: 1,
+          license: '',
+          license_url: '',
+          max_strict: true,
+          max_version: '',
+          min_strict: false,
+          min_version: '',
+          name: '',
+          state_available: '',
+          state_on_success: '',
+          ui_options: {} as IUIOptions,
+          upgradable: true,
+          url: ''
+        }
       ]
     };
     fixture.detectChanges();
@@ -141,10 +214,12 @@ describe('MasterComponent', () => {
 
   it('should be show template for current upgrade if host-map exist only', () => {
     component.model = {
-      upgrades: [{ bundle_id: 1, config: {} as IConfig, description: '', do: 'url', from_edition: ['community'],
-        hostcomponentmap:  [{ component: '', action: 'add', service: '' }] as IActionParameter[], id: 1, license: '',
+      upgrades: [{
+        bundle_id: 1, config: null, description: '', do: 'url', from_edition: ['community'],
+        hostcomponentmap: [{component: '', action: 'add', service: ''}] as IActionParameter[], id: 1, license: '',
         license_url: '', max_strict: true, max_version: '', min_strict: false, min_version: '', name: '',
-        state_available: '', state_on_success: '', ui_options: {} as IUIOptions, upgradable: true, url: '' }]
+        state_available: '', state_on_success: '', ui_options: {} as IUIOptions, upgradable: true, url: ''
+      }]
     };
     fixture.detectChanges();
     const de = fixture.debugElement.nativeElement;
@@ -156,7 +231,9 @@ describe('MasterComponent', () => {
 
   it('should be show template for current upgrade with config and host-map', () => {
     component.model = {
-      upgrades: [{ bundle_id: 1, config: {config: [
+      upgrades: [{
+        bundle_id: 1, config: {
+          config: [
             {
               type: 'string',
               name: 'test',
@@ -170,10 +247,12 @@ describe('MasterComponent', () => {
               activatable: false,
               group_config: null,
             }
-          ]} as IConfig, description: '', do: 'url', from_edition: ['community'],
-        hostcomponentmap:  [{ component: '', action: 'add', service: '' }] as IActionParameter[], id: 1, license: '',
+          ]
+        } as IConfig, description: '', do: 'url', from_edition: ['community'],
+        hostcomponentmap: [{component: '', action: 'add', service: ''}] as IActionParameter[], id: 1, license: '',
         license_url: '', max_strict: true, max_version: '', min_strict: false, min_version: '', name: '',
-        state_available: '', state_on_success: '', ui_options: {} as IUIOptions, upgradable: true, url: '' }]
+        state_available: '', state_on_success: '', ui_options: {} as IUIOptions, upgradable: true, url: ''
+      }]
     };
     fixture.detectChanges();
     const de = fixture.debugElement.nativeElement;
@@ -193,24 +272,24 @@ describe('MasterComponent', () => {
     const service = fixture.debugElement.injector.get(MasterService);
 
     const config = {
-      form: new FormGroup({ string_ctr: new FormControl('string_test'), bool_ctr: new FormControl(true) }),
+      form: new FormGroup({string_ctr: new FormControl('string_test'), bool_ctr: new FormControl(true)}),
       rawConfig: {
         config: [
-          { name: 'string_ctr', type: 'string', value: 'string_test' },
-          { name: 'bool_ctr', type: 'boolean', value: true }
+          {name: 'string_ctr', type: 'string', value: 'string_test'},
+          {name: 'bool_ctr', type: 'boolean', value: true}
         ]
       }
     } as ConfigFieldsComponent;
 
-    const result = service.parseData({ config });
-    expect(result).toEqual({ config: { string_ctr: 'string_test', bool_ctr: true }, hc: undefined, attr: undefined });
+    const result = service.parseData({config});
+    expect(result).toEqual({config: {string_ctr: 'string_test', bool_ctr: true}, hc: undefined, attr: undefined});
   });
 
   it('check value when ServiceHostComponent exist', () => {
     const service = fixture.debugElement.injector.get(MasterService);
-    const hc = [{ host_id: 1, service_id: 4, component_id: 1, id: 9 }];
-    const hostmap = { statePost: { data: hc } } as ServiceHostComponent;
-    const result = service.parseData({ hostmap });
-    expect(result).toEqual({ config: undefined, hc, attr: undefined });
+    const hc = [{host_id: 1, service_id: 4, component_id: 1, id: 9}];
+    const hostmap = {statePost: {data: hc}} as ServiceHostComponent;
+    const result = service.parseData({hostmap});
+    expect(result).toEqual({config: undefined, hc, attr: undefined});
   });
 });

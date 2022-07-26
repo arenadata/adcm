@@ -56,7 +56,7 @@ export class UpgradesDirective extends BaseDirective {
   }
 
   get hasConfig(): boolean {
-    return this?.inputData?.config.config?.length > 0
+    return this?.inputData?.config?.config?.length > 0
   }
 
   get hasHostComponent(): boolean {
@@ -79,7 +79,7 @@ export class UpgradesDirective extends BaseDirective {
         id: this.clusterId,
         hostcomponent: this.hc,
       },
-      upgrades: [this.inputData]
+      upgrades: [this.inputData],
     }
 
     dialogModel =  {
@@ -99,6 +99,14 @@ export class UpgradesDirective extends BaseDirective {
         this.runOldUpgrade(data);
       }
     } else {
+      if (!this.hasConfig && !this.hasHostComponent) {
+        dialogModel.maxWidth = '1400px';
+        dialogModel.width = '400px';
+        dialogModel.height = '180px';
+        dialogModel.data.title = 'Are you sure you want to upgrade?'
+        dialogModel.data.text = 'The cluster will be prepared for upgrade';
+      }
+
       this.dialog.open(DialogComponent, dialogModel);
     }
   }
@@ -154,7 +162,7 @@ export class UpgradesDirective extends BaseDirective {
             )
         )
       )
-      .subscribe(row => this.refresh.emit({ cmd: 'refresh', row }));
+      .subscribe(row => this.refresh.emit({cmd: 'refresh', row}));
   }
 
   fork(item: IUpgrade) {
@@ -177,17 +185,17 @@ export class UpgradesDirective extends BaseDirective {
                 name: hc.component,
                 parent_name: hc.service,
                 limit: 50,
-                offset:0
+                offset: 0
               };
 
-            // fix later
-            this.service.getPrototype('prototype', params).subscribe((prototype): any => {
+              // fix later
+              this.service.getPrototype('prototype', params).subscribe((prototype): any => {
                 if (prototype[0]) {
                   cluster.component.push(prototype[0]);
                   this.hc = cluster;
                 }
 
-                if (hostComponentMap.length === index+1) {
+                if (hostComponentMap.length === index + 1) {
                   if (!this.hc) this.hc = cluster;
                   this.prepare();
                 }
