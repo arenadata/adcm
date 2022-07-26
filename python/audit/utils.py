@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from functools import wraps
+from typing import Tuple
 
 from adwp_base.errors import AdwpEx
 from audit.models import (
@@ -51,7 +52,7 @@ def _get_object_type_from_resp(audit_operation: AuditOperation, resp: Response) 
 
 def _get_audit_object_and_operation_name(
     audit_operation: AuditOperation, resp: Response
-) -> AuditObject:
+) -> Tuple[AuditObject, str]:
     operation_name: str = audit_operation.name
     object_name = _get_object_name_from_resp(resp)
 
