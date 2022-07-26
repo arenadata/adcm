@@ -279,19 +279,13 @@ def re_check_actions():
         ref = f'in hc_acl of action "{act.name}" of {proto_ref(act.prototype)}'
         for item in hc:
             sp = StagePrototype.objects.filter(type='service', name=item['service']).first()
-            if not sp and not (item['action'] == 'remove' and act.stageupgrade):
-                msg = (
-                    'Unknown service "{}" {}.'
-                    'Acceptable only in case hc_acl in upgrade for remove deprecated component'
-                )
+            if not sp:
+                msg = 'Unknown service "{}" {}'
                 err('INVALID_ACTION_DEFINITION', msg.format(item['service'], ref))
             if not StagePrototype.objects.filter(
                 parent=sp, type='component', name=item['component']
-            ) and not (item['action'] == 'remove' and act.stageupgrade):
-                msg = (
-                    'Unknown component "{}" of service "{}" {}. '
-                    'Acceptable only in case hc_acl in upgrade for remove deprecated component'
-                )
+            ):
+                msg = 'Unknown component "{}" of service "{}" {}'
                 err('INVALID_ACTION_DEFINITION', msg.format(item['component'], sp.name, ref))
 
 
