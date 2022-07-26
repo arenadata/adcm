@@ -62,24 +62,3 @@ class TestGroupConfig(BaseTestCase):
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
-
-    def test_create_config_log(self):
-        group_config_data: Response = self.create_group_config()
-        res: Response = self.client.post(
-            path=f"/api/v1/group-config/{group_config_data.data['id']}/"
-            f"config/{self.config.pk}/config-log/",
-            data={"obj_ref": self.config.pk, "config": "{}"},
-        )
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        assert log.audit_object.object_id == res.data["id"]
-        assert log.audit_object.object_name == str(ConfigLog.objects.get(pk=res.data["id"]))
-        assert log.audit_object.object_type == AuditObjectType.Cluster.label
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Cluster config log created"
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
