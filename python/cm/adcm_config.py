@@ -1015,3 +1015,13 @@ def get_main_info(obj: Optional[ADCMEntity]) -> Optional[str]:
         return get_default(spec['__main_info/'], obj.prototype)
     else:
         return None
+
+
+def get_adcm_config(section=None):
+    adcm_object = ADCM.objects.last()
+    current_configlog = ConfigLog.objects.get(
+        obj_ref=adcm_object.config, id=adcm_object.config.current
+    )
+    if not section:
+        return current_configlog.attr, current_configlog.config
+    return current_configlog.attr.get(section, None), current_configlog.config.get(section, None)
