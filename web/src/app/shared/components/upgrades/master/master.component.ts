@@ -10,41 +10,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, ElementRef, EventEmitter, OnInit, ViewChild } from '@angular/core';
-import { IAction } from '@app/core/types';
 import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic/dynamic.directive';
-
 import { BaseDirective } from '@app/shared/directives';
-import { ActionParameters } from '../actions.directive';
-
 import { IMasterData, IValue, MasterService, whatShow } from './master.service';
+import { IUpgrade } from "@app/shared/components";
+import { UpgradeParameters } from "@app/shared/components/upgrades/upgrade.directive";
 
 @Component({
   selector: 'app-master',
   templateUrl: './master.component.html',
-  styles: [
-    `
-      .action-button {
-        background: none !important;
-        margin: 6px 0;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.04) !important;
-        }
-      }
-
-      .controls-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-    `,
-  ],
+  styleUrls: ['./master.component.scss'],
   providers: [MasterService],
 })
-export class ActionMasterComponent extends BaseDirective implements DynamicComponent, OnInit {
+export class UpgradeMasterComponent extends BaseDirective implements DynamicComponent, OnInit {
   event: EventEmitter<DynamicEvent> = new EventEmitter();
-  model: ActionParameters;
-  action: IAction;
+  model: UpgradeParameters;
+  upgrade: IUpgrade;
   show: whatShow;
 
   verbose = false;
@@ -56,12 +37,12 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
   }
 
   ngOnInit(): void {
-    if (this.model?.actions?.length === 1) this.choose(this.model.actions[0]);
+    if (this.model.upgrades?.length === 1) this.choose(this.model.upgrades[0]);
   }
 
-  choose(action: IAction) {
-    this.action = action;
-    this.show = this.service.spotShow(action);
+  choose(upgrade: IUpgrade) {
+    this.upgrade = upgrade;
+    this.show = this.service.spotShow(upgrade);
   }
 
   isDisabled(value: IValue) {
@@ -70,11 +51,13 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
 
   run(value: IValue = {}) {
     const data: IMasterData = this.service.parseData(value);
+
     if (data) {
       data.verbose = this.verbose;
     }
+
     this.service
-      .send(this.action.run, data)
+      .send(this.upgrade.do, data)
       .pipe(this.takeUntil())
       .subscribe(() => this.cancel());
   }
@@ -85,5 +68,9 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
 
   cancel() {
     this.event.emit({ name: 'cancel' });
+  }
+
+  needMargin() {
+    return !(this?.model?.upgrades[0]?.config?.config?.length > 0 && this?.model?.upgrades[0]?.hostcomponentmap?.length > 0);
   }
 }

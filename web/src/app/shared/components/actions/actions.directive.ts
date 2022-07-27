@@ -46,10 +46,10 @@ export class ActionsDirective {
     if (!model.actions?.length) return { data: { title: 'No parameters for run the action', model: null, component: null } };
 
     const act = model.actions[0];
-    const isMulty = model.actions.length > 1;
+    const isMulty = model.actions?.length > 1;
 
-    const width = isMulty || act.config?.config.length || act.hostcomponentmap?.length ? '90%' : '400px';
-    const title = act.ui_options?.disclaimer ? act.ui_options.disclaimer : isMulty ? 'Run an actions?' : `Run an action [ ${act.display_name} ]?`;
+    const width = isMulty || act.config?.config?.length || act.hostcomponentmap?.length ? '90%' : '400px';
+    const title = act.ui_options?.disclaimer ? act.ui_options.disclaimer : isMulty ? 'Run actions?' : `Run an action [ ${act.display_name} ]?`;
 
     return {
       width,

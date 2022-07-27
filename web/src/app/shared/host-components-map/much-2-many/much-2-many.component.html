@@ -6,7 +6,7 @@
         [style.color]="model.color">{{ model.name }}</span>
     </button>
     <button mat-raised-button color="primary"
-      (click)="toggleRelations()">{{ model.limit?.length ? setNotify() : model.relations.length }}</button>
+      (click)="toggleRelations()">{{ model.limit?.length ? setNotify() : model.relations?.length }}</button>
   </div>
   <div [ngClass]="{'relations-list':true, 'show': model.relations.length && isShow, 'disabled': isHostDisabled()}">
     <div *ngFor="let rel of model.relations">
