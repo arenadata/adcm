@@ -1,17 +1,16 @@
 import pytest
-from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.models import ContentType
-
 from cm.models import (
     Bundle,
-    Prototype,
     Cluster,
     ClusterObject,
-    ServiceComponent,
-    HostProvider,
     Host,
+    HostProvider,
+    Prototype,
+    ServiceComponent,
 )
-from rbac.models import Role, User, Group
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
+from rbac.models import Group, Role, User
 
 
 def cook_role(name, class_name, obj_type=None):

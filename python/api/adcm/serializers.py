@@ -10,12 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import serializers
-
-from api.utils import hlink, CommonAPIURL
 from api.concern.serializers import ConcernItemSerializer
 from api.serializers import StringListSerializer
+from api.utils import CommonAPIURL, hlink
 from cm.adcm_config import get_main_info
+from rest_framework import serializers
 
 
 class AdcmSerializer(serializers.Serializer):

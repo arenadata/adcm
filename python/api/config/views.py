@@ -10,17 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from guardian.mixins import PermissionListMixin
-from rest_framework import permissions
-from rest_framework.response import Response
-
 from api.base_view import GenericUIView
-from api.utils import create, update, check_obj, permission_denied
+from api.config.serializers import (
+    ConfigHistorySerializer,
+    HistoryCurrentPreviousConfigSerializer,
+    ObjectConfigRestoreSerializer,
+    ObjectConfigSerializer,
+    ObjectConfigUpdateSerializer,
+)
+from api.utils import check_obj, create, permission_denied, update
 from cm.adcm_config import ui_config
 from cm.errors import AdcmEx
-from cm.models import get_model_by_type, ConfigLog, ObjectConfig
+from cm.models import ConfigLog, ObjectConfig, get_model_by_type
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from . import serializers
+from rest_framework import permissions
+from rest_framework.response import Response
 
 
 def get_config_version(queryset, objconf, version):
@@ -80,7 +85,7 @@ def check_config_perm(user, action_type, object_type, obj):
 
 class ConfigView(GenericUIView):
     queryset = ConfigLog.objects.all()
-    serializer_class = serializers.HistoryCurrentPreviousConfigSerializer
+    serializer_class = HistoryCurrentPreviousConfigSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -93,8 +98,8 @@ class ConfigView(GenericUIView):
 
 class ConfigHistoryView(PermissionListMixin, GenericUIView):
     queryset = ConfigLog.objects.all()
-    serializer_class = serializers.ConfigHistorySerializer
-    serializer_class_post = serializers.ObjectConfigUpdateSerializer
+    serializer_class = ConfigHistorySerializer
+    serializer_class_post = ObjectConfigUpdateSerializer
     permission_required = ['cm.view_configlog']
 
     def get_queryset(self, *args, **kwargs):
@@ -127,7 +132,7 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
 class ConfigVersionView(PermissionListMixin, GenericUIView):
     queryset = ConfigLog.objects.all()
     permission_classes = (DjangoOnlyObjectPermissions,)
-    serializer_class = serializers.ObjectConfigSerializer
+    serializer_class = ObjectConfigSerializer
     permission_required = ['cm.view_configlog']
 
     def get_queryset(self, *args, **kwargs):
@@ -150,7 +155,7 @@ class ConfigVersionView(PermissionListMixin, GenericUIView):
 
 class ConfigHistoryRestoreView(PermissionListMixin, GenericUIView):
     queryset = ConfigLog.objects.all()
-    serializer_class = serializers.ObjectConfigRestoreSerializer
+    serializer_class = ObjectConfigRestoreSerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_configlog']
 

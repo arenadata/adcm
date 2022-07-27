@@ -11,11 +11,10 @@
 # limitations under the License.
 
 
-from django.urls import path, include
-from . import views
-
+from api.host.views import HostList
+from django.urls import include, path
 
 urlpatterns = [
-    path('', views.HostList.as_view(), name='host'),
+    path('', HostList.as_view(), name='host'),
     path('', include('api.host.host_urls')),
 ]

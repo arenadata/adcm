@@ -11,7 +11,6 @@
 # limitations under the License.
 
 import pytest
-
 from rbac.models import Role
 
 

@@ -12,11 +12,10 @@
 
 """RBAC UI root URLs"""
 
-from django.urls import path, include
-
-from .endpoints_ui import root
+from django.urls import include, path
+from rbac.endpoints_ui.root import RBACUIRoot
 
 urlpatterns = [
-    path('', root.RBACUIRoot.as_view(), name='root'),
+    path('', RBACUIRoot.as_view(), name='root'),
     path('role/', include('rbac.endpoints_ui.role.urls')),
 ]

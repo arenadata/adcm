@@ -34,7 +34,10 @@ class BaseTestCase(TestCase):
         self.client = Client(HTTP_USER_AGENT='Mozilla/5.0')
         self.login()
 
-        Role.objects.create(name="Cluster Administrator", display_name="Cluster Administrator")
+        self.cluster_admin_role = Role.objects.create(
+            name="Cluster Administrator",
+            display_name="Cluster Administrator",
+        )
         Role.objects.create(name="Provider Administrator", display_name="Provider Administrator")
         Role.objects.create(name="Service Administrator", display_name="Service Administrator")
 

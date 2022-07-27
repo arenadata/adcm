@@ -10,16 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from api.config.serializers import ConfigSerializerUI
+from api.utils import UrlField, check_obj, hlink
+from cm.adcm_config import get_action_variant, get_prototype_config, ui_config
+from cm.errors import raise_AdcmEx
+from cm.models import Cluster, GroupConfig, HostProvider, PrototypeConfig, Upgrade
+from cm.upgrade import do_upgrade
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 from rest_framework_extensions.settings import extensions_api_settings
-
-from api.config.serializers import ConfigSerializerUI
-from api.utils import check_obj, hlink, UrlField
-from cm.adcm_config import ui_config, get_prototype_config, get_action_variant
-from cm.errors import raise_AdcmEx
-from cm.models import Upgrade, GroupConfig, Cluster, HostProvider, PrototypeConfig
-from cm.upgrade import do_upgrade
 
 
 class UpgradeSerializer(serializers.Serializer):

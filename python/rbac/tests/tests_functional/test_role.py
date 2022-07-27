@@ -12,22 +12,21 @@
 import json
 
 import pytest
-from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.models import ContentType
-
 from cm.models import (
-    Bundle,
-    ProductCategory,
-    Prototype,
     Action,
     ActionType,
+    Bundle,
     Cluster,
     ClusterObject,
+    ProductCategory,
+    Prototype,
     ServiceComponent,
 )
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 from init_db import init as init_adcm
 from rbac.models import Role, RoleTypes
-from rbac.upgrade.role import prepare_action_roles, init_roles
+from rbac.upgrade.role import init_roles, prepare_action_roles
 
 
 @pytest.fixture()

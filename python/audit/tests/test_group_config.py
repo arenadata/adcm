@@ -36,8 +36,8 @@ class TestGroupConfig(BaseTestCase):
         self.cluster = Cluster.objects.create(prototype=prototype, config=self.config)
         self.name = "test_group_config"
 
-    def test_create(self):
-        res: Response = self.client.post(
+    def create_group_config(self) -> Response:
+        return self.client.post(
             path=reverse("group-config-list"),
             data={
                 "name": self.name,
@@ -46,6 +46,9 @@ class TestGroupConfig(BaseTestCase):
                 "config_id": self.config.id,
             },
         )
+
+    def test_create(self):
+        res: Response = self.create_group_config()
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 

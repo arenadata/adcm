@@ -143,10 +143,10 @@ class StatusSerializer(serializers.Serializer):
     state = serializers.CharField(read_only=True, required=False)
 
     def update(self, instance, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def create(self, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -181,10 +181,10 @@ class HostComponentSerializer(serializers.Serializer):
     host_url = hlink('host-details', 'host_id', 'host_id')
 
     def update(self, instance, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def create(self, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -203,10 +203,10 @@ class HostComponentUISerializer(serializers.Serializer):
     component = serializers.SerializerMethodField()
 
     def update(self, instance, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def create(self, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def get_host(self, obj):
         hosts = Host.objects.filter(cluster=self.context.get('cluster'))
@@ -234,7 +234,7 @@ class HostComponentSaveSerializer(serializers.Serializer):
         return hc
 
     def update(self, instance, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def create(self, validated_data):
         hc = validated_data.get('hc')
@@ -322,10 +322,10 @@ class BindSerializer(serializers.Serializer):
     import_service_name = serializers.SerializerMethodField()
 
     def update(self, instance, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def create(self, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     @staticmethod
     def get_export_cluster_prototype_name(obj):
@@ -372,7 +372,7 @@ class DoBindSerializer(serializers.Serializer):
     export_cluster_prototype_name = serializers.CharField(read_only=True)
 
     def update(self, instance, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def create(self, validated_data):
         export_cluster = check_obj(Cluster, validated_data.get('export_cluster_id'))
@@ -388,7 +388,7 @@ class PostImportSerializer(serializers.Serializer):
     bind = serializers.JSONField()
 
     def update(self, instance, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def create(self, validated_data):
         bind = validated_data.get('bind')

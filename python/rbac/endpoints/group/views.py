@@ -13,14 +13,14 @@
 """Group view sets"""
 
 from adwp_base.errors import AdwpEx
+from audit.utils import audit
 from guardian.mixins import PermissionListMixin
+from rbac import models
+from rbac.services import group as group_services
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers, status
 from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.viewsets import ModelViewSet
-
-from rbac import models
-from rbac.services import group as group_services
 
 
 class UserSerializer(serializers.Serializer):
@@ -29,12 +29,24 @@ class UserSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
 
+    def update(self, instance, validated_data):
+        pass  # Class must implement all abstract methods
+
+    def create(self, validated_data):
+        pass  # Class must implement all abstract methods
+
 
 class UserGroupSerializer(serializers.Serializer):
     """Simple Group serializer"""
 
     id = serializers.IntegerField()
     url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
+
+    def update(self, instance, validated_data):
+        pass  # Class must implement all abstract methods
+
+    def create(self, validated_data):
+        pass  # Class must implement all abstract methods
 
 
 class ExpandedUserSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
@@ -99,6 +111,10 @@ class GroupViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-ma
     filterset_fields = ('id', 'name')
     ordering_fields = ('id', 'name')
     search_fields = ('name', 'description')
+
+    @audit
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()

@@ -11,17 +11,65 @@
 # limitations under the License.
 
 from functools import wraps
+from typing import Tuple
 
+from adwp_base.errors import AdwpEx
 from audit.models import (
     AUDIT_OPERATION_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditObject,
+    AuditOperation,
 )
 from cm.errors import AdcmEx
 from django.contrib.contenttypes.models import ContentType
 from django.views.generic.base import View
-from rest_framework.status import is_success
+from rest_framework.response import Response
+from rest_framework.status import HTTP_403_FORBIDDEN, is_success
+
+
+def _get_object_name_from_resp(resp: Response) -> str:
+    if hasattr(resp.data.serializer.instance, "name"):
+        object_name = resp.data.serializer.instance.name
+    elif hasattr(resp.data.serializer.instance, "fqdn"):
+        object_name = resp.data.serializer.instance.fqdn
+    else:
+        object_name = str(resp.data.serializer.instance)
+
+    return object_name
+
+
+def _get_object_type_from_resp(audit_operation: AuditOperation, resp: Response) -> str:
+    if audit_operation.object_type == "config log":
+        object_type: str = ContentType.objects.get_for_model(
+            resp.data.serializer.instance.obj_ref.object
+        ).name
+    else:
+        object_type: str = resp.data.serializer.instance.object_type.name
+
+    return object_type
+
+
+def _get_audit_object_and_operation_name(
+    audit_operation: AuditOperation, resp: Response
+) -> Tuple[AuditObject, str]:
+    operation_name: str = audit_operation.name
+    object_name = _get_object_name_from_resp(resp)
+
+    if audit_operation.object_type in {"group config", "config log"}:
+        object_type = _get_object_type_from_resp(audit_operation, resp)
+        operation_name = f"{object_type.capitalize()} {operation_name}"
+    else:
+        object_type: str = audit_operation.object_type
+
+    return (
+        AuditObject.objects.create(
+            object_id=resp.data.serializer.instance.id,
+            object_name=object_name,
+            object_type=object_type,
+        ),
+        operation_name,
+    )
 
 
 def audit(func):
@@ -34,47 +82,31 @@ def audit(func):
         try:
             resp = func(*args, **kwargs)
             status_code = resp.status_code
-        except AdcmEx as exc:
+        except (AdcmEx, AdwpEx) as exc:
             error = exc
             resp = None
             status_code = exc.status_code
 
         view: View = args[0]
-        audit_operation = AUDIT_OPERATION_MAP[view.__class__.__name__][view.request.method]
-        operation_name = audit_operation.name
-        object_changes = {}
+        audit_operation: AuditOperation = AUDIT_OPERATION_MAP[view.__class__.__name__][
+            view.request.method
+        ]
+        operation_name: str = audit_operation.name
+        object_changes: dict = {}
 
         if is_success(status_code):
             operation_result = AuditLogOperationResult.Success
             if resp.data:
-                if hasattr(resp.data.serializer.instance, "name"):
-                    object_name = resp.data.serializer.instance.name
-                elif hasattr(resp.data.serializer.instance, "fqdn"):
-                    object_name = resp.data.serializer.instance.fqdn
-                else:
-                    object_name = str(resp.data.serializer.instance)
-
-                if audit_operation.object_type in {"group config", "config log"}:
-                    if audit_operation.object_type == "config log":
-                        object_type: str = ContentType.objects.get_for_model(
-                            resp.data.serializer.instance.obj_ref.object
-                        ).name
-                    else:
-                        object_type: str = resp.data.serializer.instance.object_type.name
-
-                    operation_name = f"{object_type.capitalize()} {operation_name}"
-                else:
-                    object_type: str = audit_operation.object_type
-
-                audit_object = AuditObject.objects.create(
-                    object_id=resp.data.serializer.instance.id,
-                    object_name=object_name,
-                    object_type=object_type,
+                audit_object, operation_name = _get_audit_object_and_operation_name(
+                    audit_operation, resp
                 )
             else:
                 audit_object = None
+        elif status_code == HTTP_403_FORBIDDEN:
+            operation_result = AuditLogOperationResult.Denied
+            audit_object = None
         else:
-            operation_result = AuditLogOperationResult.Failed
+            operation_result = AuditLogOperationResult.Fail
             audit_object = None
 
         AuditLog.objects.create(

@@ -10,26 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db import IntegrityError
-from rest_framework import serializers
-
 import cm
 from api.action.serializers import ActionShort
+from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
+from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
+from api.serializers import StringListSerializer, UpgradeSerializer, UrlField
 from api.utils import (
-    hlink,
+    CommonAPIURL,
+    ObjectURL,
     check_obj,
     filter_actions,
     get_upgradable_func,
-    CommonAPIURL,
-    ObjectURL,
+    hlink,
 )
-from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
-from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
-from api.serializers import StringListSerializer
-from api.serializers import UpgradeSerializer, UrlField
 from cm.adcm_config import get_main_info
 from cm.errors import AdcmEx
 from cm.models import Action, Prototype
+from django.db import IntegrityError
+from rest_framework import serializers
 
 
 class ProviderSerializer(serializers.Serializer):
@@ -41,11 +39,15 @@ class ProviderSerializer(serializers.Serializer):
     before_upgrade = serializers.JSONField(read_only=True)
     url = hlink('provider-details', 'id', 'provider_id')
 
-    def validate_prototype_id(self, prototype_id):
+    @staticmethod
+    def validate_prototype_id(prototype_id):
         proto = check_obj(
             Prototype, {'id': prototype_id, 'type': 'provider'}, "PROTOTYPE_NOT_FOUND"
         )
         return proto
+
+    def update(self, instance, validated_data):
+        pass  # Class must implement all abstract methods
 
     def create(self, validated_data):
         try:
@@ -90,16 +92,20 @@ class ProviderUISerializer(ProviderDetailSerializer):
         actions = ActionShort(filter_actions(obj, act_set), many=True, context=self.context)
         return actions.data
 
-    def get_prototype_version(self, obj):
+    @staticmethod
+    def get_prototype_version(obj):
         return obj.prototype.version
 
-    def get_prototype_name(self, obj):
+    @staticmethod
+    def get_prototype_name(obj):
         return obj.prototype.name
 
-    def get_prototype_display_name(self, obj):
+    @staticmethod
+    def get_prototype_display_name(obj):
         return obj.prototype.display_name
 
-    def get_main_info(self, obj):
+    @staticmethod
+    def get_main_info(obj):
         return get_main_info(obj)
 
 
@@ -110,3 +116,9 @@ class UpgradeProviderSerializer(UpgradeSerializer):
 
     url = MyUrlField(read_only=True, view_name='provider-upgrade-details')
     do = MyUrlField(read_only=True, view_name='do-provider-upgrade')
+
+    def update(self, instance, validated_data):
+        pass  # Class must implement all abstract methods
+
+    def create(self, validated_data):
+        pass  # Class must implement all abstract methods
