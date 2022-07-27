@@ -75,7 +75,7 @@ class Command(BaseCommand):
                 writer.writerow(field_names)  # header
 
                 for obj in qs:
-                    row = [getattr(obj, fn) for fn in field_names]
+                    row = [str(getattr(obj, fn)) for fn in field_names]
                     writer.writerow(row)
 
             csv_files.append(tmp_cvf_name)
