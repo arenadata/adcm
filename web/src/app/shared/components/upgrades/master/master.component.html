@@ -3,7 +3,7 @@
 </ng-container>
 
 <ng-container *ngIf="!upgrade; else simple">
-  <i>Let's choose first</i>
+  <em>Let's choose first</em>
   <mat-action-list>
     <button class="action-button warn" color="primary" mat-list-item *ngFor="let upgrade of model.upgrades"
       (click)="choose(upgrade)">{{ upgrade.name }}</button>
