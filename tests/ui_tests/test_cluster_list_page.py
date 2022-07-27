@@ -252,6 +252,15 @@ def check_default_field_values_in_configs(
         cluster_config_page.config.assert_input_value_is(expected_value=expected_value, display_name=field_type)
 
 
+@allure.step("Check that cluster has been upgraded")
+def check_cluster_upgraded(app_fs, upgrade_cluster_name: str, state: str):
+    cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+    row = cluster_page.get_row_by_cluster_name(upgrade_cluster_name)
+    assert (
+        cluster_page.get_cluster_state_from_row(row) == state
+    ), f"Cluster state should be {state}"
+
+
 # !===== Tests =====!
 
 
@@ -386,12 +395,7 @@ class TestClusterListPage:
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         row_with_upgrade = cluster_page.get_row_by_cluster_name(cluster_to_upgrade.name)
         cluster_page.run_upgrade_in_cluster_row(row=row_with_upgrade, upgrade_name=params["upgrade"])
-        with allure.step("Check that cluster has been upgraded"):
-            cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-            row = cluster_page.get_row_by_cluster_name(params["upgrade_cluster_name"])
-            assert (
-                cluster_page.get_cluster_state_from_row(row) == params["state"]
-            ), f"Cluster state should be {params['state']}"
+        check_cluster_upgraded(app_fs, params["upgrade_cluster_name"], params["state"])
 
     @pytest.mark.parametrize(
         ("upgrade_name", "config", "hc_acl", "is_new_host", "disclaimer_text"),
@@ -434,7 +438,7 @@ class TestClusterListPage:
         with allure.step("Upload cluster bundle to upgrade"):
             cluster_bundle(sdk_client_fs, BUNDLE_UPGRADE_V2)
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-        row_with_upgrade = cluster_page.get_row_by_cluster_name("Test cluster")
+        row_with_upgrade = cluster_page.get_row_by_cluster_name(CLUSTER_NAME)
         cluster_page.run_upgrade_in_cluster_row(
             row=row_with_upgrade,
             upgrade_name=upgrade_name,
@@ -443,13 +447,9 @@ class TestClusterListPage:
             is_new_host=is_new_host,
             disclaimer_text=disclaimer_text,
         )
-        with allure.step("Check that cluster has been upgraded"):
-            cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-            cluster_page.header.wait_success_job_amount_from_header(1)
-            row = cluster_page.get_row_by_cluster_name("Test cluster")
-            assert (
-                cluster_page.get_cluster_state_from_row(row) == params["state"]
-            ), f"Cluster state should be {params['state']}"
+        cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+        cluster_page.header.wait_success_job_amount_from_header(1)
+        check_cluster_upgraded(app_fs, CLUSTER_NAME, params["state"])
 
 
 class TestClusterMainPage:
@@ -496,12 +496,7 @@ class TestClusterMainPage:
             cluster_to_upgrade = bundle.cluster_create(name=params["upgrade_cluster_name"])
         main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, cluster_to_upgrade.id).open()
         main_page.toolbar.run_upgrade(params["upgrade_cluster_name"], params["upgrade"])
-        with allure.step("Check that cluster has been upgraded"):
-            cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-            row = cluster_page.get_row_by_cluster_name(params["upgrade_cluster_name"])
-            assert (
-                cluster_page.get_cluster_state_from_row(row) == params["state"]
-            ), f"Cluster state should be {params['state']}"
+        check_cluster_upgraded(app_fs, params["upgrade_cluster_name"], params["state"])
 
     def test_check_cluster_run_action_on_cluster_page_by_toolbar(self, app_fs, create_community_cluster):
         """Test run action from the /cluster/{}/main page toolbar"""
