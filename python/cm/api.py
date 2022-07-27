@@ -202,11 +202,11 @@ def add_host_provider(proto, name, desc=''):
     return provider
 
 
-def _cancel_locking_tasks(obj: ADCMEntity):
+def _cancel_locking_tasks(obj: ADCMEntity, obj_deletion=False):
     """Cancel all tasks that have locks on object"""
     for lock in obj.concerns.filter(type=ConcernType.Lock):
         for task in TaskLog.objects.filter(lock=lock):
-            task.cancel()
+            task.cancel(obj_deletion=obj_deletion)
 
 
 def delete_host_provider(provider, cancel_tasks=True):
@@ -215,7 +215,7 @@ def delete_host_provider(provider, cancel_tasks=True):
         msg = 'There is host #{} "{}" of host {}'
         err('PROVIDER_CONFLICT', msg.format(hosts[0].id, hosts[0].fqdn, obj_ref(provider)))
     if cancel_tasks:
-        _cancel_locking_tasks(provider)
+        _cancel_locking_tasks(provider, obj_deletion=True)
     provider_id = provider.id
     provider.delete()
     cm.status_api.post_event('delete', 'provider', provider_id)
@@ -285,7 +285,7 @@ def delete_host(host, cancel_tasks=True):
         msg = 'Host #{} "{}" belong to {}'
         err('HOST_CONFLICT', msg.format(host.id, host.fqdn, obj_ref(cluster)))
     if cancel_tasks:
-        _cancel_locking_tasks(host)
+        _cancel_locking_tasks(host, obj_deletion=True)
     host_id = host.id
     host.delete()
     cm.status_api.post_event('delete', 'host', host_id)
@@ -356,7 +356,7 @@ def delete_service(service: ClusterObject, cancel_tasks=True) -> None:
     if ClusterBind.objects.filter(source_service=service).exists():
         err('SERVICE_CONFLICT', f'Service #{service.id} has exports(s)')
     if cancel_tasks:
-        _cancel_locking_tasks(service)
+        _cancel_locking_tasks(service, obj_deletion=True)
     service_id = service.id
     cluster = service.cluster
     service.delete()
@@ -370,7 +370,7 @@ def delete_service(service: ClusterObject, cancel_tasks=True) -> None:
 
 def delete_cluster(cluster, cancel_tasks=True):
     if cancel_tasks:
-        _cancel_locking_tasks(cluster)
+        _cancel_locking_tasks(cluster, obj_deletion=True)
     cluster_id = cluster.id
     hosts = cluster.host_set.all()
     host_ids = [str(host.id) for host in hosts]

@@ -14,14 +14,17 @@
 import os
 import sys
 import ldap
+
 os.environ["PYTHONPATH"] = "/adcm/python/"
 sys.path.append("/adcm/python/")
 
 import adcm.init_django  # pylint: disable=unused-import
 from rbac.models import User, Group, OriginType
-from rbac.ldap import _get_ldap_default_settings
+from rbac.ldap import _get_ldap_default_settings, configure_tls, is_tls
 from cm.logger import log
 from django.db import DataError, IntegrityError
+
+CERT_ENV_KEY = 'LDAPTLS_CACERT'
 
 
 class SyncLDAP:
@@ -35,15 +38,17 @@ class SyncLDAP:
         return self._conn
 
     def _bind(self):
-        ldap.set_option(ldap.OPT_REFERRALS, 0)
-        l = ldap.initialize(self.settings["SERVER_URI"])
-        l.protocol_version = ldap.VERSION3
         try:
-            l.simple_bind_s(self.settings["BIND_DN"], self.settings["BIND_PASSWORD"])
+            ldap.set_option(ldap.OPT_REFERRALS, 0)
+            conn = ldap.initialize(self.settings["SERVER_URI"])
+            conn.protocol_version = ldap.VERSION3
+            configure_tls(is_tls(self.settings["SERVER_URI"]), os.environ.get(CERT_ENV_KEY, ''), conn)
+            conn.simple_bind_s(self.settings["BIND_DN"], self.settings["BIND_PASSWORD"])
         except ldap.LDAPError as e:
-            print("Error connecting to %s: %s" % (self.settings["BIND_DN"], e))
+            sys.stderr.write(f"Can't connect to {self.settings['SERVER_URI']} with user: {self.settings['BIND_DN']}. Error: {e}\n")
+
             raise
-        return l
+        return conn
 
     def unbind(self):
         if self._conn is not None:
@@ -62,40 +67,57 @@ class SyncLDAP:
 
     def sync_groups(self):
         """Synchronize LDAP groups with group model and delete groups which is not found in LDAP"""
+        self.settings['GROUP_SEARCH'].filterstr = f'(&' \
+                                                  f'(objectClass={self.settings["GROUP_OBJECT_CLASS"]})' \
+                                                  f'{self.settings["GROUP_FILTER"]})'
         ldap_groups = self.settings['GROUP_SEARCH'].execute(self.conn, {})
         self._sync_ldap_groups(ldap_groups)
-        print("Groups are synchronized")
+        sys.stdout.write("Groups were synchronized\n")
 
     def sync_users(self):
         """Synchronize LDAP users with user model and delete users which is not found in LDAP"""
-        self.settings['USER_SEARCH'].filterstr = f'(objectClass=user)'
+        groups = Group.objects.filter(type=OriginType.LDAP).values_list('display_name', flat=True)
+        group_filter = '' if groups.count() <= 1 else '(|'
+        for group_name in groups:
+            group_filter += f'(memberOf=CN={group_name},{self.settings["GROUP_SEARCH"].base_dn})'
+        group_filter = group_filter if groups.count() <= 1 else group_filter+')'
+        self.settings['USER_SEARCH'].filterstr = f'(&' \
+                                                 f'(objectClass={self.settings["USER_OBJECT_CLASS"]})' \
+                                                 f'{self.settings["USER_FILTER"]}' \
+                                                 f'{group_filter})'
         ldap_users = self.settings['USER_SEARCH'].execute(self.conn, {'user': '*'}, True)
         self._sync_ldap_users(ldap_users)
-        print("Users are synchronized")
+        sys.stdout.write("Users were synchronized\n")
 
     def _sync_ldap_groups(self, ldap_groups):
+        new_groups = set()
         error_names = []
         for cname, ldap_attributes in ldap_groups:
-            defaults = {}
-
             try:
-                defaults['name'] = ldap_attributes[self.settings["GROUP_TYPE"].name_attr][0]
+                name = ldap_attributes[self.settings["GROUP_TYPE"].name_attr][0]
             except KeyError:
-                defaults['name'] = ''
+                name = ''
 
             try:
                 group, created = Group.objects.get_or_create(
-                    name=defaults['name'], built_in=False, type=OriginType.LDAP
+                    name=f'{name} [ldap]', built_in=False, type=OriginType.LDAP
                 )
+                group.user_set.clear()
+                new_groups.add(name)
             except (IntegrityError, DataError) as e:
-                error_names.append(defaults['name'])
-                print("Error creating group %s: %s" % (defaults['name'], e))
+                error_names.append(name)
+                sys.stdout.write("Error creating group %s: %s\n" % (name, e))
                 continue
             else:
                 if created:
-                    print("Create new group: %s" % defaults['name'])
+                    sys.stdout.write("Create new group: %s\n" % name)
+        django_groups = set(Group.objects.filter(type=OriginType.LDAP).values_list('display_name', flat=True))
+        for groupname in django_groups - new_groups:
+            group = Group.objects.get(name__iexact=f'{groupname} [ldap]')
+            sys.stdout.write(f"We will delete this group: {group}\n")
+            group.delete()
         msg = "Sync of groups ended successfully."
-        msg += f"Couldn\'t synchronize groups: {error_names}" if error_names else ""
+        msg += f"Couldn\'t synchronize groups: {error_names}\n" if error_names else "\n"
         log.debug(msg)
 
     def _sync_ldap_users(self, ldap_users):
@@ -120,12 +142,15 @@ class SyncLDAP:
                 user, created = User.objects.get_or_create(**kwargs)
             except (IntegrityError, DataError) as e:
                 error_names.append(username)
-                print("Error creating user %s: %s" % (username, e))
+                sys.stdout.write("Error creating user %s: %s\n" % (username, e))
                 continue
             else:
                 updated = False
+                user.is_active = False
+                if not hex(int(ldap_attributes['useraccountcontrol'][0])).endswith('2'):
+                    user.is_active = True
                 if created:
-                    print("Create user: %s" % username)
+                    sys.stdout.write("Create user: %s\n" % username)
                     user.set_unusable_password()
                 else:
                     for name, attr in defaults.items():
@@ -134,28 +159,28 @@ class SyncLDAP:
                             setattr(user, name, attr)
                             updated = True
                     if updated:
-                        print("Updated user: %s" % username)
+                        sys.stdout.write("Updated user: %s\n" % username)
 
                 user.save()
                 ldap_usernames.add(username)
                 for group in ldap_attributes.get('memberof', []):
                     name = group.split(',')[0][3:]
                     try:
-                        group, created = Group.objects.get_or_create(name=name, built_in=False, type=OriginType.LDAP)
+                        group = Group.objects.get(name=f'{name} [ldap]', built_in=False,
+                                                                     type=OriginType.LDAP)
                         group.user_set.add(user)
-                        if created:
-                            print(f"Create new group: {name}")
-                        print(f"Add user {user} to group {group}")
+                        sys.stdout.write(f"Add user {user} to group {group}\n")
                     except (IntegrityError, DataError) as e:
-                        print("Error creating group %s: %s" % (name, e))
+                        sys.stdout.write("Error getting group %s: %s\n" % (name, e))
 
         django_usernames = set(User.objects.filter(type=OriginType.LDAP).values_list('username', flat=True))
         for username in django_usernames - ldap_usernames:
             user = User.objects.get(username__iexact=username)
-            print(f"We will delete this user: {user}")
-            user.delete()
+            sys.stdout.write(f"We will delete this user and deactivate its session: {user}\n")
+            user.is_active = False
+            user.save()
         msg = "Sync of users ended successfully."
-        msg += f"Couldn\'t synchronize users: {error_names}" if error_names else ""
+        msg += f"Couldn\'t synchronize users: {error_names}\n" if error_names else "\n"
         log.debug(msg)
 
 

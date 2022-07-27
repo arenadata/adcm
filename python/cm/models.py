@@ -1342,18 +1342,23 @@ class TaskLog(ADCMModel):
         self.save()
         lock.delete()
 
-    def cancel(self, event_queue: 'cm.status_api.Event' = None):
+    def cancel(self, event_queue: 'cm.status_api.Event' = None, obj_deletion=False):
         """
         Cancel running task process
         task status will be updated in separate process of task runner
         """
+        if self.pid == 0:
+            raise AdcmEx(
+                'NOT_ALLOWED_TERMINATION',
+                'Termination is too early, try to execute later',
+            )
         errors = {
             Job.FAILED: ('TASK_IS_FAILED', f'task #{self.pk} is failed'),
             Job.ABORTED: ('TASK_IS_ABORTED', f'task #{self.pk} is aborted'),
             Job.SUCCESS: ('TASK_IS_SUCCESS', f'task #{self.pk} is success'),
         }
         action = self.action
-        if action and not action.allow_to_terminate:
+        if action and not action.allow_to_terminate and not obj_deletion:
             raise AdcmEx(
                 'NOT_ALLOWED_TERMINATION',
                 f'not allowed termination task #{self.pk} for action #{action.pk}',
@@ -1371,6 +1376,12 @@ class TaskLog(ADCMModel):
             event_queue.send_state()
         os.kill(self.pid, signal.SIGTERM)
 
+    @staticmethod
+    def get_adcm_tasks_qs():
+        return TaskLog.objects.filter(
+            object_type=ContentType.objects.get(app_label='cm', model='adcm')
+        )
+
 
 class JobLog(ADCMModel):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
@@ -1384,6 +1395,10 @@ class JobLog(ADCMModel):
     finish_date = models.DateTimeField(db_index=True)
 
     __error_code__ = 'JOB_NOT_FOUND'
+
+    @staticmethod
+    def get_adcm_jobs_qs():
+        return JobLog.objects.filter(task__in=TaskLog.get_adcm_tasks_qs())
 
 
 class GroupCheckLog(ADCMModel):

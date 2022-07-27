@@ -47,6 +47,7 @@ class ExpandedGroupSerializer(FlexFieldsSerializerMixin, serializers.ModelSerial
 
     user = GroupUserSerializer(many=True, source='user_set')
     url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
+    name = serializers.CharField(max_length=150, source='group.display_name')
 
     class Meta:
         model = models.Group
@@ -86,6 +87,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
     group = GroupSerializer(many=True, required=False, source='groups')
     built_in = serializers.BooleanField(read_only=True)
     type = serializers.CharField(read_only=True)
+    is_active = serializers.BooleanField(read_only=True)
 
     class Meta:
         expandable_fields = {'group': (ExpandedGroupSerializer, {'many': True, 'source': 'groups'})}

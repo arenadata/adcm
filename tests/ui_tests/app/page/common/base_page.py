@@ -328,7 +328,7 @@ class BasePageObject:
         page_name = self.__class__.__name__.replace('Page', '')
         with allure.step(f'Wait page {page_name} is opened'):
             wait_until_step_succeeds(_assert_page_is_opened, period=0.5, timeout=timeout)
-            self.wait_element_hide(CommonToolbarLocators.progress_bar)
+            self.wait_element_hide(CommonToolbarLocators.progress_bar, timeout=60)
 
     @allure.step('Write text to input element: "{text}"')
     def send_text_to_element(
@@ -350,6 +350,7 @@ class BasePageObject:
             if clean_input:
                 self.clear_by_keys(element)
             input_element = self.find_element(element, timeout) if isinstance(element, Locator) else element
+            input_element.click()
             input_element.send_keys(text)
             assert (actual_value := input_element.get_property('value')) == text, (
                 f'Value of input {element.name if isinstance(element, Locator) else element.text} '
@@ -588,6 +589,16 @@ class PageHeader(BasePageObject):
         def _wait_job():
             assert (
                 int(self.get_success_job_amount_from_header()) == expected_job_amount
+            ), f"Should be {expected_job_amount} tasks in popup header"
+
+        wait_until_step_succeeds(_wait_job, period=1, timeout=70)
+
+    def wait_in_progress_job_amount_from_header(self, expected_job_amount: int):
+        """Wait for in progress job amount to be as expected"""
+
+        def _wait_job():
+            assert (
+                int(self.get_in_progress_job_amount_from_header()) == expected_job_amount
             ), f"Should be {expected_job_amount} tasks in popup header"
 
         wait_until_step_succeeds(_wait_job, period=1, timeout=70)

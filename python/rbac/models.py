@@ -23,10 +23,11 @@ from django.db import models
 from django.db.models.signals import pre_save
 from django.db.transaction import atomic
 from django.dispatch import receiver
+from django.utils import timezone
 from guardian.models import UserObjectPermission, GroupObjectPermission
 from rest_framework.exceptions import ValidationError
 
-from cm.models import Bundle, ProductCategory, HostComponent
+from cm.models import Bundle, ProductCategory, HostComponent, DummyData
 
 
 class ObjectType(models.TextChoices):
@@ -77,12 +78,19 @@ class Group(AuthGroup):
     # to bypass unique constraint on `AuthGroup` base table
     display_name = models.CharField(max_length=150, null=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['display_name', 'type'], name='unique_display_name_type'
+            ),
+        ]
+
     def name_to_display(self):
         return self.display_name
 
 
 BASE_GROUP_NAME_PATTERN = re.compile(
-    rf'(?P<base_name>.*?)(?: |$)(?:\[(?:{"|".join(OriginType.values)})\])?'
+    rf'(?P<base_name>.*?)(?: \[(?:{"|".join(OriginType.values)})\]|$)'
 )
 
 
@@ -92,6 +100,8 @@ def handle_name_type_display_name(sender, instance, **kwargs):
     if match and match.group('base_name'):
         instance.name = f'{match.group("base_name")} [{instance.type}]'
         instance.display_name = match.group("base_name")
+    else:
+        raise RuntimeError(f'Check regex. Data: `{instance.name}`')
 
 
 class RoleTypes(models.TextChoices):
@@ -230,21 +240,23 @@ class Policy(models.Model):
     group_object_perm = models.ManyToManyField(GroupObjectPermission, blank=True)
 
     def remove_permissions(self):
-        for pp in self.model_perm.all():
-            if pp.policy_set.count() <= 1:
-                if pp.user:
-                    pp.user.user_permissions.remove(pp.permission)
-                if pp.group:
-                    pp.group.permissions.remove(pp.permission)
-            pp.policy_set.remove(self)
+        with atomic():
+            DummyData.objects.filter(id=1).update(date=timezone.now())
+            for pp in self.model_perm.all():
+                if pp.policy_set.count() <= 1:
+                    if pp.user:
+                        pp.user.user_permissions.remove(pp.permission)
+                    if pp.group:
+                        pp.group.permissions.remove(pp.permission)
+                pp.policy_set.remove(self)
 
-        for uop in self.user_object_perm.all():
-            if uop.policy_set.count() <= 1:
-                uop.delete()
+            for uop in self.user_object_perm.all():
+                if uop.policy_set.count() <= 1:
+                    uop.delete()
 
-        for gop in self.group_object_perm.all():
-            if gop.policy_set.count() <= 1:
-                gop.delete()
+            for gop in self.group_object_perm.all():
+                if gop.policy_set.count() <= 1:
+                    gop.delete()
 
     def add_object(self, obj):
         po = PolicyObject(object=obj)

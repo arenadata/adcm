@@ -41,6 +41,7 @@ class UserSerializer(serializers.Serializer):
     password = PasswordField(trim_whitespace=False)
     profile = serializers.JSONField(required=False, default='')
     type = serializers.CharField(read_only=True)
+    is_active = serializers.BooleanField(read_only=True)
 
     def update(self, instance, validated_data):
         context_user = self.context['request'].user

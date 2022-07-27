@@ -153,6 +153,12 @@
           description: |
             The distinguished name (DN) of the directory object from which to search for entries. For example: "ou=Peoples,dc=ad,dc=ranger-test".
           type: string
+        - name: "user_search_filter"
+          display_name: "User search filter"
+          description: |
+            Additional filter constraining the users selected for syncing.
+          type: string
+          required: false
         - name: "user_object_class"
           display_name: "User object class"
           description: |
@@ -170,6 +176,12 @@
           description: |
             The distinguished name (DN) of the directory object from which to search for entries. For example: "ou=Groups,dc=ad,dc=ranger-test".
           type: string
+        - name: "group_search_filter"
+          display_name: "Group search filter"
+          description: |
+            Additional filter constraining the groups selected for syncing.
+          type: string
+          required: false
         - name: "group_object_class"
           display_name: "Group object class"
           description: |

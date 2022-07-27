@@ -167,21 +167,6 @@ ERRORS = {
         rfs.HTTP_409_CONFLICT,
         ERR,
     ),
-    'LDAP_NO_CERT_FILE': (
-        'missing cert file for `ldaps://` connection',
-        rfs.HTTP_400_BAD_REQUEST,
-        ERR,
-    ),
-    'LDAP_USERNAMES_COLLISION': (
-        'usernames collision',
-        rfs.HTTP_409_CONFLICT,
-        ERR,
-    ),
-    'LDAP_BROKEN_CONFIG': (
-        'check ldap config',
-        rfs.HTTP_400_BAD_REQUEST,
-        ERR,
-    ),
 }
 
 
