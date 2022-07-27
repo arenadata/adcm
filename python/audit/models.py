@@ -70,6 +70,7 @@ class AuditSession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     login_result = models.CharField(max_length=64, choices=AuditSessionLoginResult.choices)
     login_time = models.DateTimeField(auto_now_add=True)
+    login_details = models.JSONField(default=dict)
 
 
 @dataclass
