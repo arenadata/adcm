@@ -42,6 +42,7 @@ class AuditSessionSerializer(serializers.Serializer):
     user_id = serializers.IntegerField(read_only=True)
     login_result = serializers.CharField(read_only=True)
     login_time = serializers.DateTimeField(read_only=True)
+    login_details = serializers.JSONField(read_only=True)
 
     class Meta:
         model = AuditSession
