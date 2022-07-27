@@ -11,23 +11,23 @@
 # limitations under the License.
 
 import jsonschema
+from audit.utils import audit
+from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 from guardian.mixins import PermissionListMixin
+from rbac.models import Group, Policy, Role, RoleTypes, User
+from rbac.services.policy import policy_create, policy_update
+from rbac.utils import BaseRelatedSerializer
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.response import Response
 from rest_framework.validators import ValidationError
 from rest_framework.viewsets import ModelViewSet
 
-from cm.models import Cluster, ClusterObject, ServiceComponent, HostProvider, Host
-from rbac.models import Policy, User, Group, Role, RoleTypes
-from rbac.services.policy import policy_create, policy_update
-from rbac.utils import BaseRelatedSerializer
-
 
 class ObjectField(serializers.JSONField):
-    def schema_validate(self, value):
+    @staticmethod
+    def schema_validate(value):
         schema = {
             'type': 'array',
             'items': {
@@ -46,24 +46,28 @@ class ObjectField(serializers.JSONField):
                 'required': ['id', 'type'],
             },
         }
+
         try:
             jsonschema.validate(value, schema)
-        except jsonschema.ValidationError:
-            raise ValidationError('the field does not match the scheme') from None
+        except jsonschema.ValidationError as e:
+            raise ValidationError('the field does not match the scheme') from e
 
-    dictionary = {
-        'cluster': Cluster,
-        'service': ClusterObject,
-        'component': ServiceComponent,
-        'provider': HostProvider,
-        'host': Host,
-    }
+        return value
 
     def to_internal_value(self, data):
         self.schema_validate(data)
+        dictionary = {
+            'cluster': Cluster,
+            'service': ClusterObject,
+            'component': ServiceComponent,
+            'provider': HostProvider,
+            'host': Host,
+        }
+
         objects = []
         for obj in data:
-            objects.append(self.dictionary[obj['type']].obj.get(id=obj['id']))
+            objects.append(dictionary[obj['type']].obj.get(id=obj['id']))
+
         return objects
 
     def to_representation(self, value):
@@ -83,15 +87,33 @@ class PolicyRoleSerializer(BaseRelatedSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
     url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
 
+    def update(self, instance, validated_data):
+        pass  # Class must implement all abstract methods
+
+    def create(self, validated_data):
+        pass  # Class must implement all abstract methods
+
 
 class PolicyUserSerializer(BaseRelatedSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
     url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
 
+    def update(self, instance, validated_data):
+        pass  # Class must implement all abstract methods
+
+    def create(self, validated_data):
+        pass  # Class must implement all abstract methods
+
 
 class PolicyGroupSerializer(BaseRelatedSerializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all())
     url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
+
+    def update(self, instance, validated_data):
+        pass  # Class must implement all abstract methods
+
+    def create(self, validated_data):
+        pass  # Class must implement all abstract methods
 
 
 class PolicySerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
@@ -122,7 +144,8 @@ class PolicySerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
             'role': 'rbac.endpoints.role.views.RoleSerializer',
         }
 
-    def validate_role(self, role):
+    @staticmethod
+    def validate_role(role):
         if role.type != RoleTypes.role:
             raise serializers.ValidationError(
                 f'Role with type "{role.type}" could not be used in policy'
@@ -138,6 +161,7 @@ class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-m
     filterset_fields = ('id', 'name', 'built_in', 'role', 'user', 'group')
     ordering_fields = ('id', 'name', 'built_in', 'role')
 
+    @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):

@@ -10,24 +10,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from guardian.mixins import PermissionListMixin
-from rest_framework import status, permissions
-from rest_framework.response import Response
-
 import cm.status_api
-from api.base_view import GenericUIView, PaginatedView, DetailView
+from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.cluster.serializers import BindSerializer
-from api.stack.serializers import ImportSerializer
-from api.utils import (
-    create,
-    check_obj,
-    check_custom_perm,
-    get_object_for_user,
+from api.service.serializers import (
+    ClusterServiceSerializer,
+    ImportPostSerializer,
+    ServiceBindPostSerializer,
+    ServiceBindSerializer,
+    ServiceDetailSerializer,
+    ServiceSerializer,
+    ServiceUISerializer,
+    StatusSerializer,
 )
+from api.stack.serializers import ImportSerializer
+from api.utils import check_custom_perm, check_obj, create, get_object_for_user
 from cm.api import delete_service, get_import, unbind
-from cm.models import Cluster, ClusterObject, Prototype, ClusterBind, HostComponent
+from cm.models import Cluster, ClusterBind, ClusterObject, HostComponent, Prototype
+from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from . import serializers
+from rest_framework import permissions, status
+from rest_framework.response import Response
 
 
 def check_service(user, kwargs):
@@ -42,9 +45,9 @@ def check_service(user, kwargs):
 class ServiceListView(PermissionListMixin, PaginatedView):
     queryset = ClusterObject.objects.all()
     permission_required = ['cm.view_clusterobject']
-    serializer_class = serializers.ServiceSerializer
-    serializer_class_ui = serializers.ServiceUISerializer
-    serializer_class_cluster = serializers.ClusterServiceSerializer
+    serializer_class = ServiceSerializer
+    serializer_class_ui = ServiceUISerializer
+    serializer_class_cluster = ClusterServiceSerializer
     filterset_fields = ('cluster_id',)
     ordering_fields = ('state', 'prototype__display_name', 'prototype__version_order')
 
@@ -84,8 +87,8 @@ class ServiceListView(PermissionListMixin, PaginatedView):
 
 class ServiceDetailView(PermissionListMixin, DetailView):
     queryset = ClusterObject.objects.all()
-    serializer_class = serializers.ServiceDetailSerializer
-    serializer_class_ui = serializers.ServiceUISerializer
+    serializer_class = ServiceDetailSerializer
+    serializer_class_ui = ServiceUISerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
     lookup_url_kwarg = 'service_id'
     permission_required = ['cm.view_clusterobject']
@@ -112,7 +115,7 @@ class ServiceDetailView(PermissionListMixin, DetailView):
 class ServiceImportView(GenericUIView):
     queryset = Prototype.objects.all()
     serializer_class = ImportSerializer
-    serializer_class_post = serializers.ImportPostSerializer
+    serializer_class_post = ImportPostSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -140,8 +143,8 @@ class ServiceImportView(GenericUIView):
 
 class ServiceBindView(GenericUIView):
     queryset = ClusterBind.objects.all()
-    serializer_class = serializers.ServiceBindSerializer
-    serializer_class_post = serializers.ServiceBindPostSerializer
+    serializer_class = ServiceBindSerializer
+    serializer_class_post = ServiceBindPostSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -201,7 +204,7 @@ class ServiceBindDetailView(GenericUIView):
 class StatusList(GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = HostComponent.objects.all()
-    serializer_class = serializers.StatusSerializer
+    serializer_class = StatusSerializer
 
     def get(self, request, *args, **kwargs):
         """

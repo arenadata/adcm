@@ -12,8 +12,9 @@
 
 """Management utility to create superusers"""
 
-from django.contrib.auth.management.commands.createsuperuser import Command as AuthCommand
-
+from django.contrib.auth.management.commands.createsuperuser import (
+    Command as AuthCommand,
+)
 from rbac.models import User
 
 

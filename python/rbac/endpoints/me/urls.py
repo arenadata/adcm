@@ -13,8 +13,6 @@
 """User URLs"""
 
 from django.urls import path
-
-from .views import MyselfView
-
+from rbac.endpoints.me.views import MyselfView
 
 urlpatterns = [path('', MyselfView.as_view(), name='me')]

@@ -13,11 +13,9 @@
 """Logout view and serializer"""
 
 import django.contrib.auth
-
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from rest_framework import serializers
 
 
 class LogOutSerializer(serializers.Serializer):

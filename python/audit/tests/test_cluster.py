@@ -17,6 +17,7 @@ from audit.models import (
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
+    AuditObjectType,
 )
 from rest_framework.response import Response
 
@@ -40,7 +41,7 @@ class TestCluster(BaseTestCase):
 
         assert log.audit_object.object_id == res.data["id"]
         assert log.audit_object.object_name == self.test_cluster_name
-        assert log.audit_object.object_type == "cluster"
+        assert log.audit_object.object_type == AuditObjectType.Cluster.value
         assert not log.audit_object.is_deleted
         assert log.operation_name == self.audit_operation_create_cluster.name
         assert log.operation_type == AuditLogOperationType.Create.value
@@ -56,7 +57,7 @@ class TestCluster(BaseTestCase):
         assert not log.audit_object
         assert log.operation_name == self.audit_operation_create_cluster.name
         assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Failed.value
+        assert log.operation_result == AuditLogOperationResult.Fail.value
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)

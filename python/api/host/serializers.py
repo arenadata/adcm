@@ -49,7 +49,7 @@ class HostSerializer(serializers.Serializer):
         return validate_name(name, 'Host name')
 
     def update(self, instance, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def create(self, validated_data):
         try:
@@ -120,10 +120,10 @@ class StatusSerializer(serializers.Serializer):
     status = serializers.SerializerMethodField()
 
     def update(self, instance, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     def create(self, validated_data):
-        pass
+        pass  # Class must implement all abstract methods
 
     @staticmethod
     def get_status(obj):

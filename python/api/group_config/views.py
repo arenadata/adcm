@@ -184,6 +184,10 @@ class GroupConfigConfigLogViewSet(
         context['ui'] = self._is_for_ui()
         return context
 
+    @audit
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
 
 class GroupConfigViewSet(
     PermissionListMixin, NestedViewSetMixin, viewsets.ModelViewSet

@@ -12,10 +12,9 @@
 
 import pytest
 from adwp_base.errors import AdwpEx
-
 from cm import api
-from cm.models import Bundle, Prototype, Action
-from rbac.models import Role, Policy
+from cm.models import Action, Bundle, Prototype
+from rbac.models import Policy, Role
 from rbac.roles import ModelRole
 
 

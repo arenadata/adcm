@@ -17,6 +17,7 @@ from audit.models import (
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
+    AuditObjectType,
 )
 from cm.models import Bundle, HostProvider, Prototype
 from django.urls import reverse
@@ -53,7 +54,7 @@ class TestHost(BaseTestCase):
 
         assert log.audit_object.object_id == res.data["id"]
         assert log.audit_object.object_name == self.fqdn
-        assert log.audit_object.object_type == "host"
+        assert log.audit_object.object_type == AuditObjectType.Host.value
         assert not log.audit_object.is_deleted
         assert log.operation_name == self.audit_operation_create_host.name
         assert log.operation_type == AuditLogOperationType.Create.value
@@ -76,7 +77,7 @@ class TestHost(BaseTestCase):
         assert not log.audit_object
         assert log.operation_name == self.audit_operation_create_host.name
         assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Failed.value
+        assert log.operation_result == AuditLogOperationResult.Fail.value
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)

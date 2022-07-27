@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from django.shortcuts import render
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.schemas import SchemaGenerator
 
 

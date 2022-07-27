@@ -11,27 +11,33 @@
 # limitations under the License.
 
 
-from django.urls import path, include
-from . import views
-
+from api.service.views import (
+    ServiceBindDetailView,
+    ServiceBindView,
+    ServiceDetailView,
+    ServiceImportView,
+    ServiceListView,
+    StatusList,
+)
+from django.urls import include, path
 
 urlpatterns = [
-    path('', views.ServiceListView.as_view(), name='service'),
+    path('', ServiceListView.as_view(), name='service'),
     path(
         '<int:service_id>/',
         include(
             [
-                path('', views.ServiceDetailView.as_view(), name='service-details'),
+                path('', ServiceDetailView.as_view(), name='service-details'),
                 path('component/', include('api.component.urls')),
-                path('import/', views.ServiceImportView.as_view(), name='service-import'),
+                path('import/', ServiceImportView.as_view(), name='service-import'),
                 path(
                     'bind/',
                     include(
                         [
-                            path('', views.ServiceBindView.as_view(), name='service-bind'),
+                            path('', ServiceBindView.as_view(), name='service-bind'),
                             path(
                                 '<int:bind_id>/',
-                                views.ServiceBindDetailView.as_view(),
+                                ServiceBindDetailView.as_view(),
                                 name='service-bind-details',
                             ),
                         ]
@@ -39,7 +45,7 @@ urlpatterns = [
                 ),
                 path('config/', include('api.config.urls'), {'object_type': 'service'}),
                 path('action/', include('api.action.urls'), {'object_type': 'service'}),
-                path('status/', views.StatusList.as_view(), name='service-status'),
+                path('status/', StatusList.as_view(), name='service-status'),
             ]
         ),
     ),

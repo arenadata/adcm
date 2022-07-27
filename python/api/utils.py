@@ -14,26 +14,25 @@
 
 from typing import List
 
-from django.core.exceptions import ObjectDoesNotExist
-from django.http.request import QueryDict
-from django_filters import rest_framework as drf_filters
-from guardian.shortcuts import get_objects_for_user
-from rest_framework import status, serializers, exceptions
-from rest_framework.filters import OrderingFilter
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
-
 import cm.upgrade
 from cm.errors import AdcmEx
 from cm.models import (
     Action,
     ADCMEntity,
-    PrototypeConfig,
     ConcernType,
+    Host,
     HostComponent,
     MaintenanceModeType,
-    Host,
+    PrototypeConfig,
 )
+from django.core.exceptions import ObjectDoesNotExist
+from django.http.request import QueryDict
+from django_filters import rest_framework as drf_filters
+from guardian.shortcuts import get_objects_for_user
+from rest_framework import exceptions, serializers, status
+from rest_framework.filters import OrderingFilter
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
 
 
 def get_object_for_user(user, perms, klass, **kwargs):

@@ -15,15 +15,16 @@
 import importlib
 
 from adwp_base.errors import raise_AdwpEx as err
-from django.contrib.auth.models import User as AuthUser, Group as AuthGroup, Permission
+from cm.models import Bundle, HostComponent, ProductCategory
+from django.contrib.auth.models import Group as AuthGroup
+from django.contrib.auth.models import Permission
+from django.contrib.auth.models import User as AuthUser
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.transaction import atomic
-from guardian.models import UserObjectPermission, GroupObjectPermission
+from guardian.models import GroupObjectPermission, UserObjectPermission
 from rest_framework.exceptions import ValidationError
-
-from cm.models import Bundle, ProductCategory, HostComponent
 
 
 class ObjectType(models.TextChoices):

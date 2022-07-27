@@ -18,7 +18,8 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import Bundle, Cluster, ConfigLog, ObjectConfig, Prototype
+from cm.models import Bundle, Cluster, ConfigLog, GroupConfig, ObjectConfig, Prototype
+from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from rest_framework.response import Response
 
@@ -32,17 +33,16 @@ class TestConfigLog(BaseTestCase):
         self.config = ObjectConfig.objects.create(current=1, previous=1)
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle)
-        Cluster.objects.create(prototype=prototype, config=self.config)
+        cluster = Cluster.objects.create(prototype=prototype, config=self.config)
         ConfigLog.objects.create(obj_ref=self.config, config="{}")
-
-    def test_create(self):
-        res: Response = self.client.post(
-            path=reverse("config-log-list"),
-            data={"obj_ref": self.config.pk, "config": "{}"},
+        self.group_config = GroupConfig.objects.create(
+            name="test_group_config",
+            object_id=cluster.pk,
+            object_type=ContentType.objects.get(app_label="cm", model="cluster"),
+            config_id=self.config.pk,
         )
 
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
+    def check_config_log(self, res: Response, log: AuditLog):
         assert log.audit_object.object_id == res.data["id"]
         assert log.audit_object.object_name == str(ConfigLog.objects.get(pk=res.data["id"]))
         assert log.audit_object.object_type == AuditObjectType.Cluster.label
@@ -53,3 +53,24 @@ class TestConfigLog(BaseTestCase):
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
+
+    def test_create(self):
+        res: Response = self.client.post(
+            path=reverse("config-log-list"),
+            data={"obj_ref": self.config.pk, "config": "{}"},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_config_log(res, log)
+
+    def test_create_via_group_config(self):
+        res: Response = self.client.post(
+            path=f"/api/v1/group-config/{self.group_config.pk}/"
+            f"config/{self.config.pk}/config-log/",
+            data={"obj_ref": self.config.pk, "config": "{}"},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_config_log(res, log)

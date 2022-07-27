@@ -38,8 +38,8 @@ class AuditLogOperationType(models.TextChoices):
 
 class AuditLogOperationResult(models.TextChoices):
     Success = "success", "success"
-    Failed = "failed", "failed"
-    InProgress = "in_progress", "in_progress"
+    Fail = "fail", "fail"
+    Denied = "denied", "denied"
 
 
 class AuditSessionLoginResult(models.TextChoices):
@@ -70,6 +70,7 @@ class AuditSession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     login_result = models.CharField(max_length=64, choices=AuditSessionLoginResult.choices)
     login_time = models.DateTimeField(auto_now_add=True)
+    login_details = models.JSONField(default=dict)
 
 
 @dataclass
@@ -83,6 +84,11 @@ HOST_AUDIT_OPERATION = AuditOperation(
     name=f"{AuditObjectType.Host.label.capitalize()} {AuditLogOperationType.Create.label}d",
     operation_type=AuditLogOperationType.Create.label,
     object_type=AuditObjectType.Host.label,
+)
+CONFIG_LOG_AUDIT_OPERATION = AuditOperation(
+    name=f"config log {AuditLogOperationType.Create.label}d",
+    operation_type=AuditLogOperationType.Create.label,
+    object_type="config log",
 )
 
 
@@ -110,14 +116,18 @@ AUDIT_OPERATION_MAP = {
         ),
     },
     "ConfigLogViewSet": {
-        "POST": AuditOperation(
-            name=f"config log {AuditLogOperationType.Create.label}d",
-            operation_type=AuditLogOperationType.Create.label,
-            object_type="config log",
-        ),
+        "POST": CONFIG_LOG_AUDIT_OPERATION,
     },
     "HostList": {"POST": HOST_AUDIT_OPERATION},
     "HostListProvider": {"POST": HOST_AUDIT_OPERATION},
+    "ProviderList": {
+        "POST": AuditOperation(
+            name=f"{AuditObjectType.Provider.label.capitalize()} "
+            f"{AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Provider.label,
+        ),
+    },
     "GroupConfigViewSet": {
         "POST": AuditOperation(
             name=f"group config {AuditLogOperationType.Create.label}d",
@@ -125,4 +135,37 @@ AUDIT_OPERATION_MAP = {
             object_type="group config",
         ),
     },
+    "UserViewSet": {
+        "POST": AuditOperation(
+            name=f"{AuditObjectType.User.label.capitalize()} "
+            f"{AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.User.label,
+        ),
+    },
+    "RoleView": {
+        "POST": AuditOperation(
+            name=f"{AuditObjectType.Role.label.capitalize()} "
+            f"{AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Role.label,
+        ),
+    },
+    "GroupViewSet": {
+        "POST": AuditOperation(
+            name=f"{AuditObjectType.Group.label.capitalize()} "
+            f"{AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Group.label,
+        ),
+    },
+    "PolicyViewSet": {
+        "POST": AuditOperation(
+            name=f"{AuditObjectType.Policy.label.capitalize()} "
+            f"{AuditLogOperationType.Create.label}d",
+            operation_type=AuditLogOperationType.Create.label,
+            object_type=AuditObjectType.Policy.label,
+        ),
+    },
+    "GroupConfigConfigLogViewSet": {"POST": CONFIG_LOG_AUDIT_OPERATION},
 }

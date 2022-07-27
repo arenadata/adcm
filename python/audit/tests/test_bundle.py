@@ -76,7 +76,7 @@ class TestBundle(BaseTestCase):
         assert not log.audit_object
         assert log.operation_name == self.audit_operation_upload_bundle.name
         assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Failed.value
+        assert log.operation_result == AuditLogOperationResult.Fail.value
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
@@ -90,7 +90,7 @@ class TestBundle(BaseTestCase):
         assert not log.audit_object
         assert log.operation_name == self.audit_operation_load_bundle.name
         assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Failed.value
+        assert log.operation_result == AuditLogOperationResult.Fail.value
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
