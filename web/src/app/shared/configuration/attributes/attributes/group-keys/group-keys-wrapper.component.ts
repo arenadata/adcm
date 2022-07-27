@@ -102,6 +102,7 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
         } else {
           this.parameterControl().disable();
         }
+        this.disableIfReadOnly();
       })
 
       this.tooltipText = this.wrapperOptions.tooltipText;
