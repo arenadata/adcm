@@ -19,6 +19,7 @@ from api.config.serializers import (
     ObjectConfigUpdateSerializer,
 )
 from api.utils import check_obj, create, permission_denied, update
+from audit.utils import audit
 from cm.adcm_config import ui_config
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, ObjectConfig, get_model_by_type
@@ -117,6 +118,7 @@ class ConfigHistoryView(PermissionListMixin, GenericUIView):
         serializer = self.get_serializer(cl, many=True, context={'request': request, 'object': obj})
         return Response(serializer.data)
 
+    @audit
     def post(self, request, *args, **kwargs):
         object_type, object_id, _ = get_object_type_id_version(**kwargs)
         obj, oc = get_obj(object_type, object_id)

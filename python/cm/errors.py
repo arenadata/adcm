@@ -167,6 +167,7 @@ ERRORS = {
         rfs.HTTP_409_CONFLICT,
         ERR,
     ),
+    'AUDIT_ERROR': ("audit error", rfs.HTTP_400_BAD_REQUEST, ERR),
 }
 
 
@@ -174,14 +175,14 @@ def get_error(code):
     if code in ERRORS:
         err = ERRORS[code]
         if len(err) == 1:
-            return (code, err[0], rfs.HTTP_404_NOT_FOUND, ERR)
+            return code, err[0], rfs.HTTP_404_NOT_FOUND, ERR
         elif len(err) == 2:
-            return (code, err[0], err[1], ERR)
+            return code, err[0], err[1], ERR
         else:
-            return (code, err[0], err[1], err[2])
+            return code, err[0], err[1], err[2]
     else:
-        msg = f'unknow error: "{code}"'
-        return ('UNKNOWN_ERROR', msg, rfs.HTTP_501_NOT_IMPLEMENTED, CRIT)
+        msg = f'unknown error: "{code}"'
+        return 'UNKNOWN_ERROR', msg, rfs.HTTP_501_NOT_IMPLEMENTED, CRIT
 
 
 class AdcmEx(APIException):

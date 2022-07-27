@@ -13,7 +13,6 @@
 from datetime import datetime
 
 from audit.models import (
-    AUDIT_OPERATION_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
@@ -32,7 +31,6 @@ class TestCluster(BaseTestCase):
         res: Response = self.load_bundle()
         self.bundle_id = res.data["id"]
         self.test_cluster_name = "test_cluster"
-        self.audit_operation_create_cluster = AUDIT_OPERATION_MAP["ClusterList"]["POST"]
 
     def test_create(self):
         res: Response = self.create_cluster(self.bundle_id, self.test_cluster_name)
@@ -43,7 +41,7 @@ class TestCluster(BaseTestCase):
         assert log.audit_object.object_name == self.test_cluster_name
         assert log.audit_object.object_type == AuditObjectType.Cluster.value
         assert not log.audit_object.is_deleted
-        assert log.operation_name == self.audit_operation_create_cluster.name
+        assert log.operation_name == "Cluster created"
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Success.value
         assert isinstance(log.operation_time, datetime)
@@ -55,7 +53,7 @@ class TestCluster(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert not log.audit_object
-        assert log.operation_name == self.audit_operation_create_cluster.name
+        assert log.operation_name == "Cluster created"
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Fail.value
         assert isinstance(log.operation_time, datetime)

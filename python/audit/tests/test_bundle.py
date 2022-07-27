@@ -13,10 +13,10 @@
 from datetime import datetime
 
 from audit.models import (
-    AUDIT_OPERATION_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
+    AuditObjectType,
 )
 from cm.models import Bundle
 from django.urls import reverse
@@ -26,12 +26,6 @@ from adcm.tests.base import BaseTestCase
 
 
 class TestBundle(BaseTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-
-        self.audit_operation_upload_bundle = AUDIT_OPERATION_MAP["UploadBundle"]["POST"]
-        self.audit_operation_load_bundle = AUDIT_OPERATION_MAP["LoadBundle"]["POST"]
-
     def upload_bundle_and_check(self):
         self.upload_bundle()
 
@@ -40,9 +34,9 @@ class TestBundle(BaseTestCase):
 
         assert log.audit_object.object_id == res.data["id"]
         assert log.audit_object.object_name == "hc_acl_in_service_noname"
-        assert log.audit_object.object_type == "bundle"
+        assert log.audit_object.object_type == AuditObjectType.Bundle.label
         assert not log.audit_object.is_deleted
-        assert log.operation_name == self.audit_operation_load_bundle.name
+        assert log.operation_name == "Bundle loaded"
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Success.value
         assert isinstance(log.operation_time, datetime)
@@ -57,7 +51,7 @@ class TestBundle(BaseTestCase):
         log: AuditLog = AuditLog.objects.first()
 
         assert not log.audit_object
-        assert log.operation_name == self.audit_operation_upload_bundle.name
+        assert log.operation_name == "Bundle uploaded"
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Success.value
         assert isinstance(log.operation_time, datetime)
@@ -74,7 +68,7 @@ class TestBundle(BaseTestCase):
         log: AuditLog = AuditLog.objects.first()
 
         assert not log.audit_object
-        assert log.operation_name == self.audit_operation_upload_bundle.name
+        assert log.operation_name == "Bundle uploaded"
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Fail.value
         assert isinstance(log.operation_time, datetime)
@@ -88,7 +82,7 @@ class TestBundle(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert not log.audit_object
-        assert log.operation_name == self.audit_operation_load_bundle.name
+        assert log.operation_name == "Bundle loaded"
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Fail.value
         assert isinstance(log.operation_time, datetime)

@@ -11,71 +11,197 @@
 # limitations under the License.
 
 from functools import wraps
-from typing import Tuple
+from typing import Optional, Tuple
 
 from adwp_base.errors import AdwpEx
 from audit.models import (
-    AUDIT_OPERATION_MAP,
     AuditLog,
     AuditLogOperationResult,
+    AuditLogOperationType,
     AuditObject,
+    AuditObjectType,
     AuditOperation,
 )
 from cm.errors import AdcmEx
+from cm.models import Host
 from django.contrib.contenttypes.models import ContentType
 from django.views.generic.base import View
 from rest_framework.response import Response
 from rest_framework.status import HTTP_403_FORBIDDEN, is_success
 
 
-def _get_object_name_from_resp(resp: Response) -> str:
-    if hasattr(resp.data.serializer.instance, "name"):
-        object_name = resp.data.serializer.instance.name
-    elif hasattr(resp.data.serializer.instance, "fqdn"):
-        object_name = resp.data.serializer.instance.fqdn
+def _get_audit_object_from_resp(resp: Response, obj_type: str) -> Optional[AuditObject]:
+    if resp:
+        audit_object = AuditObject.objects.create(
+            object_id=resp.data["id"],
+            object_name=resp.data["name"],
+            object_type=obj_type,
+        )
     else:
-        object_name = str(resp.data.serializer.instance)
+        audit_object = None
 
-    return object_name
-
-
-def _get_object_type_from_resp(audit_operation: AuditOperation, resp: Response) -> str:
-    if audit_operation.object_type == "config log":
-        object_type: str = ContentType.objects.get_for_model(
-            resp.data.serializer.instance.obj_ref.object
-        ).name
-    else:
-        object_type: str = resp.data.serializer.instance.object_type.name
-
-    return object_type
+    return audit_object
 
 
-def _get_audit_object_and_operation_name(
-    audit_operation: AuditOperation, resp: Response
-) -> Tuple[AuditObject, str]:
-    operation_name: str = audit_operation.name
-    object_name = _get_object_name_from_resp(resp)
+def _get_audit_operation_and_object(view: View, resp: Response) -> Tuple[AuditOperation, Optional[AuditObject], str]:
+    operation_name = None
+    path = view.request.stream.path.replace("/api/v1/", "")[:-1].split("/")
 
-    if audit_operation.object_type in {"group config", "config log"}:
-        object_type = _get_object_type_from_resp(audit_operation, resp)
-        operation_name = f"{object_type.capitalize()} {operation_name}"
-    else:
-        object_type: str = audit_operation.object_type
+    match path:
+        case ["stack", "upload"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Bundle.label.capitalize()} uploaded",
+                operation_type=AuditLogOperationType.Create.label,
+                object_type=AuditObjectType.Bundle.label,
+            )
+            audit_object = None
 
-    return (
-        AuditObject.objects.create(
-            object_id=resp.data.serializer.instance.id,
-            object_name=object_name,
-            object_type=object_type,
-        ),
-        operation_name,
-    )
+        case ["stack", "load"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Bundle.label.capitalize()} loaded",
+                operation_type=AuditLogOperationType.Create.label,
+                object_type=AuditObjectType.Bundle.label,
+            )
+            audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Bundle.label)
+
+        case ["cluster"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Cluster.label.capitalize()} "
+                f"{AuditLogOperationType.Create.label}d",
+                operation_type=AuditLogOperationType.Create.label,
+                object_type=AuditObjectType.Cluster.label,
+            )
+            audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Cluster.label)
+
+        case ["config-log"] | ["group-config", _, "config", _, "config-log"]:
+            audit_operation = AuditOperation(
+                name=f"config log {AuditLogOperationType.Create.label}d",
+                operation_type=AuditLogOperationType.Create.label,
+                object_type="config log",
+            )
+            object_type = ContentType.objects.get_for_model(
+                resp.data.serializer.instance.obj_ref.object
+            ).name
+            audit_object = AuditObject.objects.create(
+                object_id=resp.data.serializer.instance.id,
+                object_name=str(resp.data.serializer.instance),
+                object_type=object_type,
+            )
+            operation_name = f"{object_type.capitalize()} {audit_operation.name}"
+
+        case ["group-config"]:
+            audit_operation = AuditOperation(
+                name=f"group config {AuditLogOperationType.Create.label}d",
+                operation_type=AuditLogOperationType.Create.label,
+                object_type="group config",
+            )
+            object_type = resp.data.serializer.instance.object_type.name
+            audit_object = AuditObject.objects.create(
+                object_id=resp.data.serializer.instance.id,
+                object_name=resp.data.serializer.instance.name,
+                object_type=object_type,
+            )
+            operation_name = f"{object_type.capitalize()} {audit_operation.name}"
+
+        case ["rbac", "group"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Group.label.capitalize()} "
+                f"{AuditLogOperationType.Create.label}d",
+                operation_type=AuditLogOperationType.Create.label,
+                object_type=AuditObjectType.Group.label,
+            )
+            audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Group.label)
+
+        case ["rbac", "policy"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Policy.label.capitalize()} "
+                f"{AuditLogOperationType.Create.label}d",
+                operation_type=AuditLogOperationType.Create.label,
+                object_type=AuditObjectType.Policy.label,
+            )
+            audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Policy.label)
+
+        case ["rbac", "role"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Role.label.capitalize()} "
+                     f"{AuditLogOperationType.Create.label}d",
+                operation_type=AuditLogOperationType.Create.label,
+                object_type=AuditObjectType.Policy.label,
+            )
+            audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Role.label)
+
+        case ["rbac", "user"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.User.label.capitalize()} "
+                     f"{AuditLogOperationType.Create.label}d",
+                operation_type=AuditLogOperationType.Create.label,
+                object_type=AuditObjectType.Policy.label,
+            )
+            if resp:
+                audit_object = AuditObject.objects.create(
+                    object_id=resp.data["id"],
+                    object_name=resp.data["username"],
+                    object_type=AuditObjectType.User.label,
+                )
+            else:
+                audit_object = None
+
+        case ["host"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Host.label.capitalize()} "
+                     f"{AuditLogOperationType.Create.label}d",
+                operation_type=AuditLogOperationType.Create.label,
+                object_type=AuditObjectType.Host.label,
+            )
+            if resp:
+                audit_object = AuditObject.objects.create(
+                    object_id=resp.data["id"],
+                    object_name=resp.data["fqdn"],
+                    object_type=AuditObjectType.Host.label,
+                )
+            else:
+                audit_object = None
+
+        case ["provider"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Provider.label.capitalize()} "
+                f"{AuditLogOperationType.Create.label}d",
+                operation_type=AuditLogOperationType.Create.label,
+                object_type=AuditObjectType.Provider.label,
+            )
+            audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Provider.label)
+
+        case ["host", host_pk, "config", "history"]:
+            object_type = "host"
+            operation_type = AuditLogOperationType.Update.label
+            audit_operation = AuditOperation(
+                name=f"{object_type.capitalize()} configuration {operation_type}d",
+                operation_type=operation_type,
+                object_type=object_type,
+            )
+            obj = Host.objects.get(pk=host_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=host_pk,
+                object_name=obj.fqdn,
+                object_type=object_type,
+            )
+
+        case _:
+            raise AdcmEx("AUDIT_ERROR")
+
+    if not operation_name:
+        operation_name = audit_operation.name
+
+    return audit_operation, audit_object, operation_name
 
 
 def audit(func):
     @wraps(func)
     def wrapped(*args, **kwargs):
         # pylint: disable=too-many-branches
+
+        audit_operation: AuditOperation
+        audit_object: AuditObject
 
         error = None
 
@@ -88,26 +214,15 @@ def audit(func):
             status_code = exc.status_code
 
         view: View = args[0]
-        audit_operation: AuditOperation = AUDIT_OPERATION_MAP[view.__class__.__name__][
-            view.request.method
-        ]
-        operation_name: str = audit_operation.name
+        audit_operation, audit_object, operation_name = _get_audit_operation_and_object(view, resp)
         object_changes: dict = {}
 
         if is_success(status_code):
             operation_result = AuditLogOperationResult.Success
-            if resp.data:
-                audit_object, operation_name = _get_audit_object_and_operation_name(
-                    audit_operation, resp
-                )
-            else:
-                audit_object = None
         elif status_code == HTTP_403_FORBIDDEN:
             operation_result = AuditLogOperationResult.Denied
-            audit_object = None
         else:
             operation_result = AuditLogOperationResult.Fail
-            audit_object = None
 
         AuditLog.objects.create(
             audit_object=audit_object,
