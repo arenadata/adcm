@@ -1341,7 +1341,7 @@ class TaskLog(ADCMModel):
         self.save()
         lock.delete()
 
-    def cancel(self, event_queue: 'cm.status_api.Event' = None):
+    def cancel(self, event_queue: 'cm.status_api.Event' = None, obj_deletion=False):
         """
         Cancel running task process
         task status will be updated in separate process of task runner
@@ -1357,7 +1357,7 @@ class TaskLog(ADCMModel):
             Job.SUCCESS: ('TASK_IS_SUCCESS', f'task #{self.pk} is success'),
         }
         action = self.action
-        if action and not action.allow_to_terminate:
+        if action and not action.allow_to_terminate and not obj_deletion:
             raise AdcmEx(
                 'NOT_ALLOWED_TERMINATION',
                 f'not allowed termination task #{self.pk} for action #{action.pk}',
