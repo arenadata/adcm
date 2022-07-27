@@ -31,7 +31,7 @@ from tests.functional.ldap_auth.utils import (
     SYNC_ACTION_NAME,
 )
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, unused-argument
 
 UserInfo = dict
 GroupInfo = dict
