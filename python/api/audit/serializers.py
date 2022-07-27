@@ -39,7 +39,6 @@ class AuditLogSerializer(serializers.Serializer):
 
 class AuditSessionSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-
     user_id = serializers.IntegerField(read_only=True)
     login_result = serializers.CharField(read_only=True)
     login_time = serializers.DateTimeField(read_only=True)
