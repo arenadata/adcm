@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from audit.models import (
-    AUDIT_OPERATION_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
@@ -20,7 +19,6 @@ class TestPolicy(BaseTestCase):
         super().setUp()
 
         self.name = "test_policy"
-        self.audit_operation_create_policy = AUDIT_OPERATION_MAP["PolicyViewSet"]["POST"]
         bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=bundle, type="cluster")
         self.cluster_name = "test_cluster"
@@ -52,7 +50,7 @@ class TestPolicy(BaseTestCase):
         assert log.audit_object.object_name == self.name
         assert log.audit_object.object_type == AuditObjectType.Policy.value
         assert not log.audit_object.is_deleted
-        assert log.operation_name == self.audit_operation_create_policy.name
+        assert log.operation_name == "Policy created"
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Success.value
         assert isinstance(log.operation_time, datetime)

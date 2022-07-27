@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from audit.models import (
-    AUDIT_OPERATION_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
@@ -18,7 +17,6 @@ class TestGroup(BaseTestCase):
         super().setUp()
 
         self.name = "test_group"
-        self.audit_operation_create_group = AUDIT_OPERATION_MAP["GroupViewSet"]["POST"]
 
     def test_create(self):
         res: Response = self.client.post(
@@ -32,7 +30,7 @@ class TestGroup(BaseTestCase):
         assert log.audit_object.object_name == self.name
         assert log.audit_object.object_type == AuditObjectType.Group.value
         assert not log.audit_object.is_deleted
-        assert log.operation_name == self.audit_operation_create_group.name
+        assert log.operation_name == "Group created"
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Success.value
         assert isinstance(log.operation_time, datetime)
@@ -47,7 +45,7 @@ class TestGroup(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert not log.audit_object
-        assert log.operation_name == self.audit_operation_create_group.name
+        assert log.operation_name == "Group created"
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Fail.value
         assert isinstance(log.operation_time, datetime)

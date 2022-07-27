@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from audit.models import (
-    AUDIT_OPERATION_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
@@ -19,7 +18,6 @@ class TestRole(BaseTestCase):
         super().setUp()
 
         self.role_display_name = "test_role"
-        self.audit_operation_create_role = AUDIT_OPERATION_MAP["RoleView"]["POST"]
         self.child = Role.objects.create(
             name="test_child_role",
             display_name="test_child_role",
@@ -41,7 +39,7 @@ class TestRole(BaseTestCase):
         assert log.audit_object.object_name == self.role_display_name
         assert log.audit_object.object_type == AuditObjectType.Role.value
         assert not log.audit_object.is_deleted
-        assert log.operation_name == self.audit_operation_create_role.name
+        assert log.operation_name == "Role created"
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Success.value
         assert isinstance(log.operation_time, datetime)
@@ -59,7 +57,7 @@ class TestRole(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert not log.audit_object
-        assert log.operation_name == self.audit_operation_create_role.name
+        assert log.operation_name == "Role created"
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Fail.value
         assert isinstance(log.operation_time, datetime)

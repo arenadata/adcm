@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from audit.models import (
-    AUDIT_OPERATION_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
@@ -21,7 +20,6 @@ class TestProvider(BaseTestCase):
         bundle = Bundle.objects.create()
         self.prototype = Prototype.objects.create(bundle=bundle, type="provider")
         self.name = "test_provider"
-        self.audit_operation_create_provider = AUDIT_OPERATION_MAP["ProviderList"]["POST"]
 
     def test_create(self):
         res: Response = self.client.post(
@@ -38,7 +36,7 @@ class TestProvider(BaseTestCase):
         assert log.audit_object.object_name == self.name
         assert log.audit_object.object_type == AuditObjectType.Provider.value
         assert not log.audit_object.is_deleted
-        assert log.operation_name == self.audit_operation_create_provider.name
+        assert log.operation_name == "Provider created"
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Success.value
         assert isinstance(log.operation_time, datetime)
@@ -56,7 +54,7 @@ class TestProvider(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert not log.audit_object
-        assert log.operation_name == self.audit_operation_create_provider.name
+        assert log.operation_name == "Provider created"
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Fail.value
         assert isinstance(log.operation_time, datetime)
