@@ -23,6 +23,13 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
+from audit.models import (
+    AuditObject,
+    AuditLog,
+    AuditObjectType,
+    AuditLogOperationType,
+    AuditLogOperationResult,
+)
 from cm import config
 from cm.logger import log_cron_task as log
 from cm.models import (
@@ -39,7 +46,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-
+from rbac.models import User
 
 LOGROTATE_CONF_FILE_TEMPLATE = """
 /adcm/data/log/nginx/*.log {{
@@ -101,6 +108,45 @@ class Command(BaseCommand):
         self.__log(f'Running logrotation for `{target}` target', 'info')
         for func in __target_method_map[target]:
             func()
+
+    @staticmethod
+    def __make_audit_log(operation_type, result, operation_status):
+        operation_type_map = {
+            "task_db": {
+                "type": AuditLogOperationType.Delete,
+                "name": '"Task log cleanup in database on schedule" job',
+            },
+            "task_fs": {
+                "type": AuditLogOperationType.Delete,
+                "name": '"Task log cleanup in filesystem on schedule" job',
+            },
+            "config": {
+                "type": AuditLogOperationType.Delete,
+                "name": '"Objects configurations cleanup on schedule" job',
+            },
+            "sync": {"type": AuditLogOperationType.Update, "name": '"User sync on schedule" job'},
+            "audit": {
+                "type": AuditLogOperationType.Delete,
+                "name": '"Audit log cleanup/archiving on schedule" job',
+            },
+        }
+        result = (
+            AuditLogOperationResult.Success if result == 'success' else AuditLogOperationResult.Fail
+        )
+        operation_name = operation_type_map[operation_type]["name"] + ' ' + operation_status
+        audit_object, _ = AuditObject.objects.get_or_create(
+            object_id=ADCM.objects.get().id,
+            object_name='ADCM',
+            object_type=AuditObjectType.ADCM,
+        )
+        system_user = User.objects.get(username='system')
+        AuditLog.objects.create(
+            audit_object=audit_object,
+            operation_name=operation_name,
+            operation_type=operation_type_map[operation_type]['type'],
+            operation_result=result,
+            user=system_user,
+        )
 
     def __execute_cmd(self, cmd):
         self.__log(f'executing cmd: `{cmd}`', 'info')
@@ -180,11 +226,15 @@ class Command(BaseCommand):
                 for cl in target_configlogs
                 if not self.__has_related_records(cl.obj_ref)
             )
+            if target_configlog_ids or target_objectconfig_ids:
+                self.__make_audit_log('config', 'success', 'launched')
 
             with transaction.atomic():
                 DummyData.objects.filter(id=1).update(date=timezone.now())
                 ConfigLog.objects.filter(id__in=target_configlog_ids).delete()
                 ObjectConfig.objects.filter(id__in=target_objectconfig_ids).delete()
+                if target_configlog_ids or target_objectconfig_ids:
+                    self.__make_audit_log('config', 'success', 'completed')
 
             self.__log(
                 f'Deleted {len(target_configlog_ids)} ConfigLogs and '
@@ -193,6 +243,7 @@ class Command(BaseCommand):
             )
 
         except Exception as e:  # pylint: disable=broad-except
+            self.__make_audit_log('config', 'failed', 'completed')
             self.__log('Error in ConfigLog rotation', 'warning')
             self.__log(e, 'exception')
 
@@ -234,14 +285,16 @@ class Command(BaseCommand):
                     finish_date__lte=threshold_date_db, status__in=['success', 'failed']
                 )
                 if target_tasklogs:
+                    self.__make_audit_log('task_db', 'success', 'launched')
                     with transaction.atomic():
                         DummyData.objects.filter(id=1).update(date=timezone.now())
                         target_tasklogs.delete()
                         # valid as long as `on_delete=models.SET_NULL` in JobLog.task field
                         JobLog.objects.filter(task__isnull=True).delete()
+                        self.__make_audit_log('task_db', 'success', 'completed')
 
                 self.__log('db JobLog rotated', 'info')
-
+            is_deleted = False
             if days_delta_fs > 0:  # pylint: disable=too-many-nested-blocks
                 for name in os.listdir(config.RUN_DIR):
                     if not name.startswith('.'):  # a line of code is used for development
@@ -249,15 +302,20 @@ class Command(BaseCommand):
                         try:
                             m_time = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.utc)
                             if timezone.now() - m_time > timedelta(days=days_delta_fs):
+                                is_deleted = True
                                 if os.path.isdir(path):
                                     shutil.rmtree(path)
                                 else:
                                     os.remove(path)
                         except FileNotFoundError:
                             pass
-
+                if is_deleted:
+                    self.__make_audit_log('task_fs', 'success', 'launched')
+                    self.__make_audit_log('task_fs', 'success', 'completed')
                 self.__log('fs JobLog rotated', 'info')
         except Exception as e:  # pylint: disable=broad-except
+            self.__make_audit_log('task_db', 'failed', 'completed')
+            self.__make_audit_log('task_fs', 'failed', 'completed')
             self.__log('Error in JobLog rotation', 'warning')
             self.__log(e, 'exception')
 

@@ -81,6 +81,9 @@ def init():
     log.info("Start initializing ADCM DB...")
     if not User.objects.filter(username='admin').exists():
         User.objects.create_superuser('admin', 'admin@example.com', 'admin', built_in=True)
+    if not User.objects.filter(username='system').exists():
+        User.objects.create_superuser('system', "", None, built_in=True)
+        log.info('Create system user')
     create_status_user()
     event = Event()
     abort_all(event)
