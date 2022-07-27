@@ -84,7 +84,13 @@ def two_adcm_groups(sdk_client_fs) -> Tuple[Group, Group]:
     'configure_adcm_ldap_ad', 'two_ldap_users'
 )  # pylint: disable-next=too-many-arguments, too-many-locals, too-many-statements
 def test_users_in_groups_sync(
-    sdk_client_fs, ldap_ad, two_adcm_users, two_adcm_groups, two_ldap_users, two_ldap_groups_with_users
+    sdk_client_fs,
+    ldap_ad,
+    two_adcm_users,
+    two_adcm_groups,
+    two_ldap_users,
+    two_ldap_groups_with_users,
+    configure_adcm_ldap_ad,
 ):
     """
     Test ADCM/LDAP users in groups manipulation and sync.

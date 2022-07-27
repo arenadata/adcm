@@ -37,7 +37,7 @@ def test_check_login_to_adcm(app_fs, adcm_credentials):
 
 @including_https
 @pytest.mark.parametrize("configure_adcm_ldap_ad", [False, True], ids=["ssl-off", "ssl-on"], indirect=True)
-def test_login_as_ldap_user(app_fs, ldap_user_in_group):
+def test_login_as_ldap_user(app_fs, ldap_user_in_group, configure_adcm_ldap_ad):
     """Test successful LDAP user authentication"""
     username, password = ldap_user_in_group["name"], ldap_user_in_group["password"]
     login_page = LoginPage(app_fs.driver, app_fs.adcm.url)

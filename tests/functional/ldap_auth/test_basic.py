@@ -34,7 +34,7 @@ pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad')
 
 
 @pytest.mark.parametrize('configure_adcm_ldap_ad', [False, True], ids=['ssl_off', 'ssl_on'], indirect=True)
-def test_basic_ldap_auth(sdk_client_fs, ldap_user, ldap_user_in_group):
+def test_basic_ldap_auth(sdk_client_fs, ldap_user, ldap_user_in_group, configure_adcm_ldap_ad):
     """
     Test basic scenarios of LDAP auth:
     1. Login of user in "correct" group is permitted
@@ -103,7 +103,7 @@ def test_ldap_user_access_restriction(sdk_client_fs, ldap_ad, ldap_group, ldap_b
 @including_https
 @pytest.mark.usefixtures('configure_adcm_ldap_ad')
 @pytest.mark.parametrize('configure_adcm_ldap_ad', [True], ids=['ssl-on'], indirect=True)
-def test_ssl_ldap_fails_with_wrong_path(sdk_client_fs, ldap_user_in_group):
+def test_ssl_ldap_fails_with_wrong_path(sdk_client_fs, ldap_user_in_group, configure_adcm_ldap_ad):
     """
     Test that incorrect certificate path leads ldaps connection to fail to give the access to a user.
     """
@@ -119,7 +119,7 @@ def test_ssl_ldap_fails_with_wrong_path(sdk_client_fs, ldap_user_in_group):
 @including_https
 @pytest.mark.usefixtures('configure_adcm_ldap_ad')
 @pytest.mark.parametrize('configure_adcm_ldap_ad', [True], ids=['ssl-on'], indirect=True)
-def test_ssl_ldap_fails_with_wrong_cert_content(adcm_fs, sdk_client_fs, ldap_user_in_group):
+def test_ssl_ldap_fails_with_wrong_cert_content(adcm_fs, sdk_client_fs, ldap_user_in_group, configure_adcm_ldap_ad):
     """
     Test that incorrect certificate file content leads ldaps connection to fail to give the access to a user.
     """
