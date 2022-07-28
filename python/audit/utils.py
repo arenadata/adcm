@@ -218,29 +218,24 @@ def audit(func):
 
         view: View = args[0]
         audit_operation, audit_object, operation_name = _get_audit_operation_and_object(view, resp)
-        if not audit_operation:
-            if error:
-                raise error
+        if audit_operation:
+            object_changes: dict = {}
 
-            return resp
+            if is_success(status_code):
+                operation_result = AuditLogOperationResult.Success
+            elif status_code == HTTP_403_FORBIDDEN:
+                operation_result = AuditLogOperationResult.Denied
+            else:
+                operation_result = AuditLogOperationResult.Fail
 
-        object_changes: dict = {}
-
-        if is_success(status_code):
-            operation_result = AuditLogOperationResult.Success
-        elif status_code == HTTP_403_FORBIDDEN:
-            operation_result = AuditLogOperationResult.Denied
-        else:
-            operation_result = AuditLogOperationResult.Fail
-
-        AuditLog.objects.create(
-            audit_object=audit_object,
-            operation_name=operation_name,
-            operation_type=audit_operation.operation_type,
-            operation_result=operation_result,
-            user=view.request.user,
-            object_changes=object_changes,
-        )
+            AuditLog.objects.create(
+                audit_object=audit_object,
+                operation_name=operation_name,
+                operation_type=audit_operation.operation_type,
+                operation_result=operation_result,
+                user=view.request.user,
+                object_changes=object_changes,
+            )
 
         if error:
             raise error
