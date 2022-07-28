@@ -189,7 +189,7 @@ def _get_audit_operation_and_object(
             )
 
         case _:
-            raise AdcmEx("AUDIT_ERROR")
+            raise AdcmEx(code="AUDIT_ERROR", msg=f"wrong path {path}")
 
     if not operation_name:
         operation_name = audit_operation.name
@@ -204,6 +204,7 @@ def audit(func):
 
         audit_operation: AuditOperation
         audit_object: AuditObject
+        operation_name: str
 
         error = None
 
