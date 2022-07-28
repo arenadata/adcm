@@ -19,6 +19,7 @@ from . import serializers
 from . import filters
 
 
+# pylint: disable=too-many-ancestors
 class AuditOperationListView(SuperuserOnlyMixin, ListModelMixin, GenericUIViewSet):
     """
     get:
@@ -42,6 +43,7 @@ class AuditOperationDetailView(SuperuserOnlyMixin, DetailView):
     error_code = 'AUDIT_OPERATION_NOT_FOUND'
 
 
+# pylint: disable=too-many-ancestors
 class AuditLoginListView(SuperuserOnlyMixin, ListModelMixin, GenericUIViewSet):
     """
     get:

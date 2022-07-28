@@ -61,6 +61,7 @@ class TestBase(TestCase):
         )
         self.client.defaults["Authorization"] = f"Token {res.data['token']}"
 
+    # pylint: disable=too-many-arguments, too-many-locals
     def _populate_audit_tables(
         self,
         object_type: AuditObjectType = None,
