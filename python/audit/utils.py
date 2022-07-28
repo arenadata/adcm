@@ -43,24 +43,6 @@ def _get_audit_object_from_resp(resp: Response, obj_type: str) -> Optional[Audit
     return audit_object
 
 
-def _get_audit_data_create_host(resp: Response) -> Tuple[AuditOperation, Optional[AuditObject]]:
-    audit_operation = AuditOperation(
-        name=f"{AuditObjectType.Host.label.capitalize()} "
-             f"{AuditLogOperationType.Create.label}d",
-        operation_type=AuditLogOperationType.Create.label,
-        object_type=AuditObjectType.Host.label,
-    )
-    if resp:
-        audit_object = AuditObject.objects.create(
-            object_id=resp.data["id"],
-            object_name=resp.data["fqdn"],
-            object_type=AuditObjectType.Host.label,
-        )
-    else:
-        audit_object = None
-
-    return audit_operation, audit_object
-
 
 def _get_audit_operation_and_object(
         view: View, resp: Response
@@ -103,11 +85,16 @@ def _get_audit_operation_and_object(
             object_type = ContentType.objects.get_for_model(
                 resp.data.serializer.instance.obj_ref.object
             ).name
-            audit_object = AuditObject.objects.create(
-                object_id=resp.data.serializer.instance.id,
-                object_name=str(resp.data.serializer.instance),
-                object_type=object_type,
-            )
+
+            if resp:
+                audit_object = AuditObject.objects.create(
+                    object_id=resp.data.serializer.instance.id,
+                    object_name=str(resp.data.serializer.instance),
+                    object_type=object_type,
+                )
+            else:
+                audit_object = None
+
             operation_name = f"{object_type.capitalize()} {audit_operation.name}"
 
         case ["group-config"]:
@@ -167,11 +154,21 @@ def _get_audit_operation_and_object(
             else:
                 audit_object = None
 
-        case ["host"]:
-            audit_operation, audit_object = _get_audit_data_create_host(resp)
-
-        case ["provider", _, "host"]:
-            audit_operation, audit_object = _get_audit_data_create_host(resp)
+        case ["host"] | ["provider", _, "host"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Host.label.capitalize()} "
+                     f"{AuditLogOperationType.Create.label}d",
+                operation_type=AuditLogOperationType.Create.label,
+                object_type=AuditObjectType.Host.label,
+            )
+            if resp:
+                audit_object = AuditObject.objects.create(
+                    object_id=resp.data["id"],
+                    object_name=resp.data["fqdn"],
+                    object_type=AuditObjectType.Host.label,
+                )
+            else:
+                audit_object = None
 
         case ["provider"]:
             audit_operation = AuditOperation(
