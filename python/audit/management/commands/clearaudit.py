@@ -11,6 +11,7 @@ from cm.adcm_config import get_adcm_config
 from audit.models import AuditLog, AuditObject, AuditSession
 
 
+# pylint: disable=protected-access
 class Command(BaseCommand):
     encoding = 'utf-8'
     config_key = 'audit_data_retention'
@@ -36,7 +37,7 @@ class Command(BaseCommand):
             self.__log(f'Target audit records will be archived to `{self.archive_path}`')
             self.__archive(target_operations, target_logins)
         else:
-            self.__log(f'Archiving is disabled')
+            self.__log('Archiving is disabled')
 
         self.__log(f'Deleting {target_operations.count()} AuditLog')
         target_operations.delete()
