@@ -43,6 +43,25 @@ def _get_audit_object_from_resp(resp: Response, obj_type: str) -> Optional[Audit
     return audit_object
 
 
+def _get_audit_data_create_host(resp: Response) -> Tuple[AuditOperation, Optional[AuditObject]]:
+    audit_operation = AuditOperation(
+        name=f"{AuditObjectType.Host.label.capitalize()} "
+             f"{AuditLogOperationType.Create.label}d",
+        operation_type=AuditLogOperationType.Create.label,
+        object_type=AuditObjectType.Host.label,
+    )
+    if resp:
+        audit_object = AuditObject.objects.create(
+            object_id=resp.data["id"],
+            object_name=resp.data["fqdn"],
+            object_type=AuditObjectType.Host.label,
+        )
+    else:
+        audit_object = None
+
+    return audit_operation, audit_object
+
+
 def _get_audit_operation_and_object(
         view: View, resp: Response
 ) -> Tuple[Optional[AuditOperation], Optional[AuditObject], Optional[str]]:
@@ -77,8 +96,8 @@ def _get_audit_operation_and_object(
 
         case ["config-log"] | ["group-config", _, "config", _, "config-log"]:
             audit_operation = AuditOperation(
-                name=f"config log {AuditLogOperationType.Create.label}d",
-                operation_type=AuditLogOperationType.Create.label,
+                name=f"config log {AuditLogOperationType.Update.label}d",
+                operation_type=AuditLogOperationType.Update.label,
                 object_type="config log",
             )
             object_type = ContentType.objects.get_for_model(
@@ -149,20 +168,10 @@ def _get_audit_operation_and_object(
                 audit_object = None
 
         case ["host"]:
-            audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Host.label.capitalize()} "
-                     f"{AuditLogOperationType.Create.label}d",
-                operation_type=AuditLogOperationType.Create.label,
-                object_type=AuditObjectType.Host.label,
-            )
-            if resp:
-                audit_object = AuditObject.objects.create(
-                    object_id=resp.data["id"],
-                    object_name=resp.data["fqdn"],
-                    object_type=AuditObjectType.Host.label,
-                )
-            else:
-                audit_object = None
+            audit_operation, audit_object = _get_audit_data_create_host(resp)
+
+        case ["provider", _, "host"]:
+            audit_operation, audit_object = _get_audit_data_create_host(resp)
 
         case ["provider"]:
             audit_operation = AuditOperation(

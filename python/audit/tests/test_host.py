@@ -38,6 +38,18 @@ class TestHost(BaseTestCase):
         )
         self.fqdn = "test_fqdn"
 
+    def check_host(self, log: AuditLog, res: Response):
+        assert log.audit_object.object_id == res.data["id"]
+        assert log.audit_object.object_name == self.fqdn
+        assert log.audit_object.object_type == AuditObjectType.Host.value
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Host created"
+        assert log.operation_type == AuditLogOperationType.Create.value
+        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
     def test_create(self):
         res: Response = self.client.post(
             path=reverse("host"),
@@ -50,16 +62,7 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == res.data["id"]
-        assert log.audit_object.object_name == self.fqdn
-        assert log.audit_object.object_type == AuditObjectType.Host.value
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Host created"
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.check_host(log, res)
 
         self.client.post(
             path=reverse("host"),
@@ -79,6 +82,16 @@ class TestHost(BaseTestCase):
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
+
+    def test_create_via_provider(self):
+        res: Response = self.client.post(
+            path=f"/api/v1/provider/{self.provider.pk}/host/",
+            data={"fqdn": self.fqdn},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host(log, res)
 
     def test_update(self):
         config = ObjectConfig.objects.create(current=1, previous=1)

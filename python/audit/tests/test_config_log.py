@@ -47,8 +47,8 @@ class TestConfigLog(BaseTestCase):
         assert log.audit_object.object_name == str(ConfigLog.objects.get(pk=res.data["id"]))
         assert log.audit_object.object_type == AuditObjectType.Cluster.label
         assert not log.audit_object.is_deleted
-        assert log.operation_name == "Cluster config log created"
-        assert log.operation_type == AuditLogOperationType.Create.value
+        assert log.operation_name == "Cluster config log updated"
+        assert log.operation_type == AuditLogOperationType.Update.value
         assert log.operation_result == AuditLogOperationResult.Success.value
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
