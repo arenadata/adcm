@@ -121,7 +121,7 @@ class SyncLDAP:
             sys.stdout.write(f"Delete this group: {group}\n")
             group.delete()
         msg = "Sync of groups ended successfully."
-        msg += f"Couldn\'t synchronize groups: {error_names}\n" if error_names else "\n"
+        msg += f"Couldn\'t synchronize groups: {error_names}\n" if error_names else ""
         log.debug(msg)
 
     def _sync_ldap_users(self, ldap_users):
@@ -191,7 +191,7 @@ class SyncLDAP:
             # user.is_active = False
             # user.save()
         msg = "Sync of users ended successfully."
-        msg += f"Couldn\'t synchronize users: {error_names}\n" if error_names else "\n"
+        msg += f"Couldn\'t synchronize users: {error_names}\n" if error_names else ""
         log.debug(msg)
 
 
