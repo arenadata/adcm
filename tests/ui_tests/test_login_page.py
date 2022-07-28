@@ -37,10 +37,11 @@ def test_check_login_to_adcm(app_fs, adcm_credentials):
 
 @including_https
 @pytest.mark.parametrize("configure_adcm_ldap_ad", [False, True], ids=["ssl-off", "ssl-on"], indirect=True)
+@pytest.mark.usefixtures("configure_adcm_ldap_ad")
 def test_login_as_ldap_user(app_fs, ldap_user_in_group):
     """Test successful LDAP user authentication"""
     username, password = ldap_user_in_group["name"], ldap_user_in_group["password"]
-    login_page = LoginPage(app_fs.driver, app_fs.adcm.url)
+    login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
     login_page.login_user(username, password)
     with allure.step("Check if LDAP user has been authorized"):
         intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
