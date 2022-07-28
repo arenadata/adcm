@@ -1,6 +1,5 @@
 import csv
 import os
-import tempfile
 from datetime import timedelta
 
 from django.core.management.base import BaseCommand
@@ -54,13 +53,14 @@ class Command(BaseCommand):
         target_objects.delete()
 
     def __archive(self, *querysets):
-        os.makedirs(os.path.dirname(self.archive_path), exist_ok=True)
-        csv_files = self.__prepare_csvs(*querysets)
+        base_archive_dir = os.path.dirname(self.archive_path)
+        os.makedirs(base_archive_dir, exist_ok=True)
+        csv_files = self.__prepare_csvs(*querysets, base_dir=base_archive_dir)
         pass  # TODO
         for csv_file in csv_files:
             os.remove(csv_file)
 
-    def __prepare_csvs(self, *querysets):
+    def __prepare_csvs(self, *querysets, base_dir):
         now = timezone.now().date()
 
         csv_files = []
@@ -68,7 +68,7 @@ class Command(BaseCommand):
             if not qs.exists():
                 continue
 
-            tmp_cvf_name = self.__get_csv_name(now, qs)
+            tmp_cvf_name = self.__get_csv_name(qs, now, base_dir)
             with open(tmp_cvf_name, 'wt', newline='', encoding=self.encoding) as csv_file:
                 writer = csv.writer(csv_file)
 
@@ -83,9 +83,9 @@ class Command(BaseCommand):
 
         return csv_files
 
-    def __get_csv_name(self, now, queryset):
+    def __get_csv_name(self, queryset, now, base_dir):
         tmp_cvf_name = os.path.join(
-            tempfile.gettempdir(),
+            base_dir,
             f'audit_{now}_{self.archive_model_postfix_map[queryset.model._meta.object_name]}.csv',
         )
         if os.path.exists(tmp_cvf_name):
