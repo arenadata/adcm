@@ -43,7 +43,9 @@ def _get_audit_object_from_resp(resp: Response, obj_type: str) -> Optional[Audit
     return audit_object
 
 
-def _get_audit_operation_and_object(view: View, resp: Response) -> Tuple[AuditOperation, Optional[AuditObject], str]:
+def _get_audit_operation_and_object(
+        view: View, resp: Response
+) -> Tuple[AuditOperation, Optional[AuditObject], str]:
     operation_name = None
     path = view.request.stream.path.replace("/api/v1/", "")[:-1].split("/")
 
