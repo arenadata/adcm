@@ -25,7 +25,7 @@ from django.utils import timezone
 from cm import api, inventory, adcm_config, variant, config, issue
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx
-from cm.errors import AdcmEx, raise_AdcmEx as err
+from cm.errors import raise_AdcmEx as err
 from cm.hierarchy import Tree
 from cm.inventory import get_obj_config, process_config_and_attr
 from cm.logger import log
