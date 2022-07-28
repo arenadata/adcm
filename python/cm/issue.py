@@ -134,7 +134,9 @@ def check_hc(cluster):
 
     for service in ClusterObject.objects.filter(cluster=cluster):
         try:
-            check_component_constraint(service, [i for i in shc_list if i[0] == service])
+            check_component_constraint(
+                cluster, service.prototype, [i for i in shc_list if i[0] == service]
+            )
         except AdcmEx:
             return False
     try:
@@ -202,9 +204,9 @@ def get_obj_config(obj):
     return (cl.config, attr)
 
 
-def check_component_constraint(service, hc_in):
-    ref = f'in host component list for {obj_ref(service)}'
-    all_host = Host.objects.filter(cluster=service.cluster)
+def check_component_constraint(cluster, service_prototype, hc_in):
+    ref = f'in host component list for {service_prototype.type} {service_prototype.name}'
+    all_host = Host.objects.filter(cluster=cluster)
 
     def cc_err(msg):
         raise AdcmEx('COMPONENT_CONSTRAINT_ERROR', msg)
@@ -246,7 +248,7 @@ def check_component_constraint(service, hc_in):
         elif const[0] == 'odd':
             check_odd(count, const[0], comp)
 
-    for c in Prototype.objects.filter(parent=service.prototype, type='component'):
+    for c in Prototype.objects.filter(parent=service_prototype, type='component'):
         check(c, c.constraint)
 
 
