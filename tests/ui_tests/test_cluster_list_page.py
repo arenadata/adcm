@@ -255,12 +255,10 @@ def check_default_field_values_in_configs(
 @allure.step("Check that cluster has been upgraded")
 def check_cluster_upgraded(app_fs, upgrade_cluster_name: str, state: str):
     """Open cluster list page and check that cluster has been upgraded"""
-    
+
     cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
     row = cluster_page.get_row_by_cluster_name(upgrade_cluster_name)
-    assert (
-        cluster_page.get_cluster_state_from_row(row) == state
-    ), f"Cluster state should be {state}"
+    assert cluster_page.get_cluster_state_from_row(row) == state, f"Cluster state should be {state}"
 
 
 # !===== Tests =====!
