@@ -23,11 +23,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         _, config = get_adcm_config(self.config_key)
         if config['retention_period'] <= 0:
-            self.__log('Audit cleanup is disabled')
+            self.__log('Disabled')
             return
 
         threshold_date = timezone.now() - timedelta(days=config['retention_period'])
-        self.__log(f'Audit cleanup started. Threshold date: {threshold_date}')
+        self.__log(f'Started. Threshold date: {threshold_date}')
 
         target_operations = AuditLog.objects.filter(operation_time__lt=threshold_date)
         target_logins = AuditSession.objects.filter(login_time__lt=threshold_date)
@@ -94,6 +94,6 @@ class Command(BaseCommand):
         return tmp_cvf_name
 
     def __log(self, msg):
-        msg = str(msg)
+        msg = 'Audit cleanup/archiving: ' + str(msg)
         self.stdout.write(msg)
         log.info(msg)
