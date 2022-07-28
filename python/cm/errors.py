@@ -167,7 +167,6 @@ ERRORS = {
         rfs.HTTP_409_CONFLICT,
         ERR,
     ),
-    'AUDIT_ERROR': ("audit error", rfs.HTTP_400_BAD_REQUEST, ERR),
 }
 
 

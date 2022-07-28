@@ -45,7 +45,7 @@ def _get_audit_object_from_resp(resp: Response, obj_type: str) -> Optional[Audit
 
 def _get_audit_operation_and_object(
         view: View, resp: Response
-) -> Tuple[AuditOperation, Optional[AuditObject], str]:
+) -> Tuple[Optional[AuditOperation], Optional[AuditObject], Optional[str]]:
     operation_name = None
     path = view.request.stream.path.replace("/api/v1/", "")[:-1].split("/")
 
@@ -189,7 +189,7 @@ def _get_audit_operation_and_object(
             )
 
         case _:
-            raise AdcmEx(code="AUDIT_ERROR", msg=f"wrong path {path}")
+            return None, None, None
 
     if not operation_name:
         operation_name = audit_operation.name
@@ -218,6 +218,12 @@ def audit(func):
 
         view: View = args[0]
         audit_operation, audit_object, operation_name = _get_audit_operation_and_object(view, resp)
+        if not audit_operation:
+            if error:
+                raise error
+
+            return resp
+
         object_changes: dict = {}
 
         if is_success(status_code):
