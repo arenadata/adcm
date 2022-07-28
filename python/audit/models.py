@@ -55,10 +55,10 @@ class AuditObject(models.Model):
     object_type = models.CharField(max_length=16, choices=AuditObjectType.choices)
     is_deleted = models.BooleanField(default=False)
 
-    def __str__(self):
+    def get_repr(self):
         return (
-            f'{self.object_type} #{self.object_id} '
-            f'{self.object_name} deleted: {self.is_deleted}'
+            f'<{self.__class__.__name__} #{self.pk}: {self.object_type} '
+            f'#{self.object_id} {self.object_name}, deleted: {self.is_deleted}>'
         )
 
 

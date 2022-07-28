@@ -82,12 +82,10 @@ class Command(BaseCommand):
         os.makedirs(self.archive_base_dir, exist_ok=True)
         os.makedirs(self.archive_tmp_dir, exist_ok=True)
 
+        self.__extract_to_tmp_dir()
         csv_files = self.__prepare_csvs(*querysets, base_dir=self.archive_tmp_dir)
         if not csv_files:
             self.__log('No targets for archiving')
-            rmtree(self.archive_tmp_dir, ignore_errors=True)
-            return
-        self.__extract_to_tmp_dir()
         self.__archive_tmp_dir()
         self.__log(f'Files `{csv_files}` added to archive `{self.archive_name}`')
 
@@ -120,7 +118,12 @@ class Command(BaseCommand):
                 writer.writerow(field_names)  # header
 
                 for obj in qs:
-                    row = [str(getattr(obj, fn)) for fn in field_names]
+                    row = [
+                        getattr(getattr(obj, fn), 'get_repr')()
+                        if hasattr(getattr(obj, fn), 'get_repr')
+                        else str(getattr(obj, fn))
+                        for fn in field_names
+                    ]
                     writer.writerow(row)
 
             csv_files.append(tmp_cvf_name)
