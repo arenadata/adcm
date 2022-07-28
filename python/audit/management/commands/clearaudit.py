@@ -1,6 +1,8 @@
 import csv
 import os
 from datetime import timedelta
+from shutil import rmtree
+from tarfile import TarFile
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -14,7 +16,23 @@ from audit.models import AuditLog, AuditObject, AuditSession
 class Command(BaseCommand):
     encoding = 'utf-8'
     config_key = 'audit_data_retention'
-    archive_path = '/adcm/data/audit/archive.tgz'
+    archive_base_dir = '/adcm/data/audit/'
+    archive_tmp_dir = '/adcm/data/audit/tmp'
+    archive_name = 'audit_archive.tar.gz'
+    tarfile_cfg = dict(
+        read=dict(
+            name=os.path.join(archive_base_dir, archive_name),
+            mode='r:gz',
+            encoding='utf-8',
+        ),
+        write=dict(
+            name=os.path.join(archive_base_dir, archive_name),
+            mode='w:gz',
+            encoding='utf-8',
+            compresslevel=9,
+        ),
+    )
+
     archive_model_postfix_map = {
         AuditLog._meta.object_name: 'operations',
         AuditSession._meta.object_name: 'logins',
@@ -33,15 +51,20 @@ class Command(BaseCommand):
         target_logins = AuditSession.objects.filter(login_time__lt=threshold_date)
 
         if config['data_archiving']:
-            self.__log(f'Target audit records will be archived to `{self.archive_path}`')
+            self.__log(
+                f'Target audit records will be archived to '
+                f'`{os.path.join(self.archive_base_dir, self.archive_name)}`'
+            )
             self.__archive(target_operations, target_logins)
         else:
             self.__log('Archiving is disabled')
 
-        self.__log(f'Deleting {target_operations.count()} AuditLog')
-        target_operations.delete()
-        self.__log(f'Deleting {target_logins.count()} AuditSession')
-        target_logins.delete()
+        if target_operations.exists():
+            self.__log(f'Deleting {target_operations.count()} AuditLog')
+            target_operations.delete()
+        if target_logins.exists():
+            self.__log(f'Deleting {target_logins.count()} AuditSession')
+            target_logins.delete()
 
         objects_pk_to_delete = set()
         for ao in AuditObject.objects.filter(is_deleted=True):
@@ -49,16 +72,37 @@ class Command(BaseCommand):
                 objects_pk_to_delete.add(ao.pk)
         target_objects = AuditObject.objects.filter(pk__in=objects_pk_to_delete)
 
-        self.__log(f'Deleting {target_objects.count()} AuditObject')
-        target_objects.delete()
+        if target_objects.exists():
+            self.__log(f'Deleting {target_objects.count()} AuditObject')
+            target_objects.delete()
+
+        self.__log('Finished.')
 
     def __archive(self, *querysets):
-        base_archive_dir = os.path.dirname(self.archive_path)
-        os.makedirs(base_archive_dir, exist_ok=True)
-        csv_files = self.__prepare_csvs(*querysets, base_dir=base_archive_dir)
-        pass  # TODO
-        for csv_file in csv_files:
-            os.remove(csv_file)
+        os.makedirs(self.archive_base_dir, exist_ok=True)
+        os.makedirs(self.archive_tmp_dir, exist_ok=True)
+
+        csv_files = self.__prepare_csvs(*querysets, base_dir=self.archive_tmp_dir)
+        if not csv_files:
+            self.__log('No targets for archiving')
+            rmtree(self.archive_tmp_dir, ignore_errors=True)
+            return
+        self.__extract_to_tmp_dir()
+        self.__archive_tmp_dir()
+        self.__log(f'Files `{csv_files}` added to archive `{self.archive_name}`')
+
+    def __extract_to_tmp_dir(self):
+        if not os.path.exists(self.tarfile_cfg['read']['name']):
+            return
+        with TarFile.open(**self.tarfile_cfg['read']) as tar:
+            tar.extractall(path=self.archive_tmp_dir)
+        os.remove(self.tarfile_cfg['read']['name'])
+
+    def __archive_tmp_dir(self):
+        with TarFile.open(**self.tarfile_cfg['write']) as tar:
+            for f in os.listdir(self.archive_tmp_dir):
+                tar.add(name=os.path.join(self.archive_tmp_dir, f), arcname=f)
+        rmtree(self.archive_tmp_dir, ignore_errors=True)
 
     def __prepare_csvs(self, *querysets, base_dir):
         now = timezone.now().date()
