@@ -9,21 +9,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from api.base_view import DetailView, PaginatedView
+from rest_framework.mixins import ListModelMixin
+from api.base_view import DetailView, GenericUIViewSet
 from api.utils import SuperuserOnlyMixin
 from audit.models import AuditLog, AuditSession
 from . import serializers
 from . import filters
 
 
-class AuditOperationListView(SuperuserOnlyMixin, PaginatedView):
+class AuditOperationListView(SuperuserOnlyMixin, ListModelMixin, GenericUIViewSet):
     """
     get:
     List of all AuditLog entities
     """
 
-    queryset = AuditLog.objects.select_related('audit_object', 'user').all()
+    queryset = AuditLog.objects.select_related('audit_object', 'user').order_by(
+        '-operation_time', '-pk'
+    )
     model_class = AuditLog
     serializer_class = serializers.AuditLogSerializer
     filterset_class = filters.AuditOperationListFilter
@@ -38,13 +40,13 @@ class AuditOperationDetailView(SuperuserOnlyMixin, DetailView):
     error_code = 'AUDIT_OPERATION_NOT_FOUND'
 
 
-class AuditLoginListView(SuperuserOnlyMixin, PaginatedView):
+class AuditLoginListView(SuperuserOnlyMixin, ListModelMixin, GenericUIViewSet):
     """
     get:
     List of all AuditSession entities
     """
 
-    queryset = AuditSession.objects.select_related('user').all()
+    queryset = AuditSession.objects.select_related('user').order_by('-login_time', '-pk')
     model_class = AuditSession
     serializer_class = serializers.AuditSessionSerializer
     filterset_class = filters.AuditLoginListFilter
