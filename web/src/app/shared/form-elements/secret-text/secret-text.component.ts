@@ -50,8 +50,12 @@ export class SecretTextComponent extends FieldDirective implements OnInit, OnCha
     this.control.statusChanges.pipe(this.takeUntil()).subscribe((status) => {
       if (status === 'DISABLED') {
         this.dummyControl.disable();
+        this.dummyControl.markAsUntouched();
+        this.control.markAsUntouched();
       } else {
         this.dummyControl.enable();
+        this.dummyControl.markAsTouched();
+        this.control.markAsTouched();
       }
     });
   }

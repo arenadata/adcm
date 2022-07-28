@@ -162,7 +162,7 @@ describe('Configuration : ConfigComponent >> ', () => {
     fixture.detectChanges();
     component.rawConfig.next(rawConfig);
     component.cd.detectChanges();
-    component.tools.disabledSave = !component.fields.isCustomGroup || component.fields.form.invalid;
+    component.tools.disabledSave = component.fields.form.untouched || component.fields.form.invalid;
     component.cd.detectChanges();
     const saveBtn = fixture.nativeElement.querySelector('app-tools div.control-buttons button.form_config_button_save');
     expect(saveBtn.disabled).toBeFalse();

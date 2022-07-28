@@ -80,6 +80,10 @@ export class ConfigComponent extends SocketListenerDirective implements OnChange
     this.worker$ = service.worker$.pipe(this.takeUntil());
   }
 
+  get ttt() {
+      return this.fields;
+  }
+
   ngAfterViewInit(): void {
 
   }
