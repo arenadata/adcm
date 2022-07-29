@@ -121,7 +121,7 @@ class TestBase(TestCase):
 class TestViews(TestBase):
     def test_audit_visibility_regular_user(self):
         self._login_as(self.user_username, self.user_password)
-        self._populate_audit_tables(
+        audit_entities = self._populate_audit_tables(
             object_type=AuditObjectType.Cluster,
             operation_type=AuditLogOperationType.Create,
             operation_result=AuditLogOperationResult.Success,
@@ -137,14 +137,30 @@ class TestViews(TestBase):
         assert not response['results']
 
         response = self.client.get(
+            path=reverse(
+                'audit-operation-detail', kwargs={'id': audit_entities['audit_operations'][0].pk}
+            ),
+            content_type="application/json",
+        ).json()
+        assert response['code'] == 'AUDIT_OPERATION_NOT_FOUND'
+        assert 'results' not in response
+
+        response = self.client.get(
             path=reverse('audit-logins'), content_type="application/json"
         ).json()
         assert response['count'] == 0
         assert not response['results']
 
+        response = self.client.get(
+            path=reverse('audit-login-detail', kwargs={'id': audit_entities['audit_logins'][0].pk}),
+            content_type="application/json",
+        ).json()
+        assert response['code'] == 'AUDIT_LOGIN_NOT_FOUND'
+        assert 'results' not in response
+
     def test_audit_visibility_superuser(self):
         self._login_as(self.superuser_username, self.superuser_password)
-        self._populate_audit_tables(
+        audit_entities = self._populate_audit_tables(
             object_type=AuditObjectType.Cluster,
             operation_type=AuditLogOperationType.Create,
             operation_result=AuditLogOperationResult.Success,
@@ -160,10 +176,26 @@ class TestViews(TestBase):
         assert response['results']
 
         response = self.client.get(
+            path=reverse(
+                'audit-operation-detail', kwargs={'id': audit_entities['audit_operations'][0].pk}
+            ),
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        assert response.json()['user_id'] == self.superuser.pk
+
+        response = self.client.get(
             path=reverse('audit-logins'), content_type="application/json"
         ).json()
         assert response['count'] == 2
         assert response['results']
+
+        response = self.client.get(
+            path=reverse('audit-login-detail', kwargs={'id': audit_entities['audit_logins'][0].pk}),
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+        assert response.json()['user_id'] == self.superuser.pk
 
     def test_filters_operations(self):
         self._login_as(self.superuser_username, self.superuser_password)
@@ -252,12 +284,12 @@ class TestViews(TestBase):
         date = '2000-01-05'
 
         num_user_wrong_password = 4
-        audit_logins_user_wrong_password = self._populate_audit_tables(
+        self._populate_audit_tables(
             user=self.user,
             login_result=AuditSessionLoginResult.WrongPassword,
             login_details={'some_test': 'details'},
             num=num_user_wrong_password,
-        )['audit_logins']
+        )
 
         num_superuser_success = 7
         audit_logins_superuser_success = self._populate_audit_tables(
