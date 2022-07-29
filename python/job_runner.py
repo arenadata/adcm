@@ -162,9 +162,9 @@ def run_upgrade(job):
     cm.job.set_job_status(job.id, config.Job.RUNNING, event)
     out_file, err_file = process_err_out_file(job.id, 'internal')
     try:
-        with transaction.atomic:
-          bundle_switch(job.task.task_object, job.action.upgrade)
-          switch_hc(task, job.action)
+        with transaction.atomic():
+            bundle_switch(job.task.task_object, job.action.upgrade)
+            switch_hc(job.task, job.action)
     except AdcmEx as e:
         err_file.write(e.msg)
         cm.job.set_job_status(job.id, config.Job.FAILED, event)

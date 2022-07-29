@@ -318,7 +318,11 @@ def check_upgrade_hc(action, new_hc):
                     'WRONG_ACTION_HC',
                     'Hc map with components prototype available only in upgrade action',
                 )
-            proto = Prototype.obj.get(type='component', id=host_comp['component_prototype_id'])
+            proto = Prototype.obj.get(
+                type='component',
+                id=host_comp['component_prototype_id'],
+                bundle=action.upgrade.bundle,
+            )
             for hc_acl in action.hostcomponentmap:
                 if proto.name == hc_acl['component']:
                     buff += 1
