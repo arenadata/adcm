@@ -63,16 +63,6 @@ export class SchemeComponent extends FieldDirective implements OnInit, OnChanges
     this.field.limits.rules = this.rules;
     this.rules.name = '';
     this.current = this.scheme.setCurrentForm(this.rules.type as TNReq, this.form, this.field);
-
-    this.control.statusChanges.pipe(
-      this.takeUntil()
-    ).subscribe((state) => {
-      if (state === 'DISABLED') {
-        this.control.markAsUntouched();
-      } else {
-        this.control.markAsTouched();
-      }
-    });
   }
 
   /** this is using for restore default value */
