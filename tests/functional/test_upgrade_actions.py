@@ -587,10 +587,25 @@ class TestUpgradeActionRelations:
             ), "Not all actions avaliable"
 
 
+def _set_ids_for_upload_bundles_set_hc(item):
+    # is set_hc
+    if isinstance(item, int):
+        return f'component_on_all_{item}_hosts'
+    if isinstance(item, Collection):
+        # is upload_bundles
+        if isinstance(item[0], list):
+            old_constraint = str(item[0]).replace(' ', '').replace("'", '')
+            new_constraint = str(item[1]).replace(' ', '').replace("'", '')
+            return f'change_constraint_from_{old_constraint}_to_{new_constraint}'
+        # is set_hc with 2 args
+        return f'component_on_{item[0]}_hosts_out_of_{item[1]}'
+    return str(item)
+
+
 class TestConstraintsChangeAfterUpgrade:
     """
-    Test upgrade when constraints are changed in new version
-    """
+        Test upgrade when constraints are changed in new version
+    n"""
 
     pytestmark = [only_clean_adcm]
 
@@ -696,21 +711,6 @@ class TestConstraintsChangeAfterUpgrade:
                 (hosts[0], cluster.service().component(name=self.DUMMY_COMPONENT_NAME)),
                 *[(h, component) for h in hosts[:hosts_per_component]],
             )
-
-    @staticmethod
-    def _set_ids_for_upload_bundles_set_hc(item):
-        # is set_hc
-        if isinstance(item, int):
-            return f'component_on_all_{item}_hosts'
-        if isinstance(item, Collection):
-            # is upload_bundles
-            if isinstance(item[0], list):
-                old_constraint = str(item[0]).replace(' ', '').replace("'", '')
-                new_constraint = str(item[1]).replace(' ', '').replace("'", '')
-                return f'change_constraint_from_{old_constraint}_to_{new_constraint}'
-            # is set_hc with 2 args
-            return f'component_on_{item[0]}_hosts_out_of_{item[1]}'
-        return str(item)
 
     # wrap it in something readable
     @pytest.mark.parametrize('with_hc_in_upgrade', [True, False], indirect=True, ids=lambda i: f'with_hc_acl_{i}')
