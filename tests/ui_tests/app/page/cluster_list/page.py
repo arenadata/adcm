@@ -11,25 +11,35 @@
 # limitations under the License.
 
 """Cluster List page PageObjects classes"""
-
 from contextlib import contextmanager
+from typing import Optional
 
 import allure
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webdriver import WebElement
 
+from tests.ui_tests.app.page.cluster.locators import (
+    ClusterComponentsLocators,
+)
 from tests.ui_tests.app.page.cluster_list.locators import ClusterListLocators
 from tests.ui_tests.app.page.common.base_page import (
     BasePageObject,
     PageHeader,
     PageFooter,
 )
+from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
+from tests.ui_tests.app.page.common.configuration.page import CommonConfigMenuObj
 from tests.ui_tests.app.page.common.dialogs_locators import (
     ActionDialog,
     DeleteDialog,
 )
+from tests.ui_tests.app.page.common.host_components.page import HostComponentsPage
+from tests.ui_tests.app.page.common.popups.locator import (
+    HostCreationLocators,
+)
 from tests.ui_tests.app.page.common.popups.locator import ListConcernPopupLocators
+from tests.ui_tests.app.page.common.popups.page import HostCreatePopupObj
 from tests.ui_tests.app.page.common.table.page import CommonTableObj
 
 
@@ -40,7 +50,9 @@ class ClusterListPage(BasePageObject):
         super().__init__(driver, base_url, "/cluster")
         self.header = PageHeader(self.driver, self.base_url)
         self.footer = PageFooter(self.driver, self.base_url)
+        self.config = CommonConfigMenuObj(self.driver, self.base_url)
         self.table = CommonTableObj(self.driver, self.base_url, ClusterListLocators.ClusterTable)
+        self.host_popup = HostCreatePopupObj(self.driver, self.base_url)
 
     @allure.step("Create cluster")
     def create_cluster(self, bundle: str, description: str = None, is_license: bool = False):
@@ -160,13 +172,56 @@ class ClusterListPage(BasePageObject):
         self.wait_element_hide(DeleteDialog.body)
 
     @allure.step("Run upgrade {upgrade_name} for cluster from row")
-    def run_upgrade_in_cluster_row(self, row: WebElement, upgrade_name: str):
-        """Run upgrade for cluster from row"""
+    def run_upgrade_in_cluster_row(
+        self,
+        row: WebElement,
+        upgrade_name: str,
+        config: Optional[dict] = None,
+        hc_acl: bool = False,
+        is_new_host: bool = False,
+        disclaimer_text: Optional[str] = None,
+    ):
+        """
+        Run upgrade for cluster from row
+
+        :param row: row with upgrade
+        :param upgrade_name: upgrade action name
+        :param config: config options
+        :param hc_acl: hc_acl options
+        :param is_new_host: condition if new host is needed, new host will be created and added in upgrade popup.
+                            only with hc_acl option
+        :param disclaimer_text: disclaimer text in first popup
+        """
 
         self.find_child(row, self.table.locators.ClusterRow.upgrade).click()
         self.wait_element_visible(self.table.locators.UpgradePopup.block)
         self.find_and_click(self.table.locators.UpgradePopup.button(upgrade_name))
         self.wait_element_visible(ActionDialog.body)
+        if disclaimer_text:
+            assert self.find_element(ActionDialog.text).text == disclaimer_text, "Different text in disclaimer dialog"
+            self.find_and_click(ActionDialog.run)
+            self.wait_element_visible(ActionDialog.body)
+        if config:
+            for key, value in config.items():
+                self.wait_element_visible(CommonConfigMenu.config_row)
+                self.config.type_in_field_with_few_inputs(
+                    row=self.config.get_config_row(display_name=key), values=[value]
+                )
+            if self.is_element_displayed(ActionDialog.next_btn):
+                self.find_and_click(ActionDialog.next_btn)
+        if hc_acl:
+            if is_new_host:
+                components_page = HostComponentsPage(self.driver, self.base_url)
+                components_page.click_add_host_btn()
+                self.host_popup.create_host("Test_host")
+                self.wait_element_hide(HostCreationLocators.block)
+            for comp_row in self.find_elements(ClusterComponentsLocators.component_row):
+                comp_row_name = self.find_child(comp_row, ClusterComponentsLocators.Row.name)
+                self.wait_element_visible(comp_row_name)
+                comp_row_name.click()
+            self.find_child(
+                self.find_elements(ClusterComponentsLocators.host_row)[0], ClusterComponentsLocators.Row.name
+            ).click()
         self.find_and_click(ActionDialog.run)
         self.wait_element_hide(ActionDialog.body)
 

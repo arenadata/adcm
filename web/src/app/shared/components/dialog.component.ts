@@ -51,7 +51,16 @@ export interface DialogData {
       </button>
     </ng-template>
   `,
-  styles: ['pre {white-space: pre-wrap;}'],
+  styles: [`
+    mat-dialog-content {
+      height: 100%;
+    }
+    pre {
+      overflow: hidden;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  `],
 })
 export class DialogComponent implements OnInit {
   controls: string[];

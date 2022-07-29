@@ -48,9 +48,15 @@ class ADCMError:
         check.equal(title, self.title, f'Expected title is "{self.title}", actual is "{title}"')
         check.equal(code, self.code, f'Expected error code is "{self.code}", actual is "{code}"')
         for i in args:
+            err_msg = 'Unknown'
             check.is_true(
-                i in desc or i in error_args or i in self._get_data_err_messages(error),
-                f"Text '{i}' should be present in error message",
+                i in desc or i in error_args or i in (err_msg := self._get_data_err_messages(error)),
+                (
+                    f"Text '{i}' should be present in error message. Either in:\n"
+                    f'Description: {desc}\n'
+                    f'Error arguments: {error_args}\n'
+                    f'Or message: {err_msg}'
+                ),
             )
         assert not get_failures(), "All assertions should passed"
 
@@ -281,3 +287,8 @@ GROUP_UPDATE_ERROR = ADCMError('400 Bad Request', 'GROUP_UPDATE_ERROR')
 
 # ADCMApiError
 AUTH_ERROR = ADCMError('400 Bad Request', 'AUTH_ERROR')
+
+COMPONENT_CONSTRAINT_ERROR = ADCMError(
+    '409 Conflict',
+    'COMPONENT_CONSTRAINT_ERROR',
+)
