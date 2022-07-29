@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, unused-argument
 
 """UI tests for /admin page"""
 
@@ -70,14 +70,12 @@ HOST_NAME = 'test-host'
 
 
 @pytest.fixture()
-# pylint: disable-next=unused-argument
 def users_page(app_fs: ADCMTest) -> AdminUsersPage:
     """Get Admin Users Page"""
     return AdminUsersPage(app_fs.driver, app_fs.adcm.url).open()
 
 
 @pytest.fixture()
-# pylint: disable-next=unused-argument
 def settings_page(app_fs: ADCMTest) -> AdminSettingsPage:
     """Get Admin Settings Page"""
     return AdminSettingsPage(app_fs.driver, app_fs.adcm.url).open()
