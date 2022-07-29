@@ -20,6 +20,7 @@ from cm.models import (
     Action,
     ADCMEntity,
     ConcernType,
+    ConfigLog,
     Host,
     HostComponent,
     MaintenanceModeType,
@@ -99,6 +100,10 @@ def update(serializer, **kwargs):
 
 def set_disabling_cause(obj: ADCMEntity, action: Action) -> None:
     action.disabling_cause = None
+    if obj.prototype.type == 'adcm':
+        current_configlog = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
+        if not current_configlog.attr['ldap_integration']['active']:
+            action.disabling_cause = 'no_ldap_settings'
     if obj.prototype.type == 'cluster':
         mm = Host.objects.filter(cluster=obj, maintenance_mode=MaintenanceModeType.On).exists()
         if not action.allow_in_maintenance_mode and mm:
