@@ -118,7 +118,7 @@ class TestViews(TestBase):
             is_deleted=False,
             login_result=AuditSessionLoginResult.Success,
             user=self.superuser,
-            num=101,
+            num=5,
         )
         response = self.client.get(
             path=reverse('audit-operations'), content_type="application/json"
@@ -135,15 +135,15 @@ class TestViews(TestBase):
             is_deleted=False,
             login_result=AuditSessionLoginResult.Success,
             user=self.superuser,
-            num=101,
+            num=5,
         )
         response = self.client.get(
             path=reverse('audit-operations'), content_type="application/json"
         ).json()
-        assert response['count'] == 101
+        assert response['count'] == 5
         assert response['results']
 
-    def test_filters(self):
+    def test_filters_operations(self):
         self._login_as(self.superuser_username, self.superuser_password)
         self._populate_audit_tables(
             object_type=AuditObjectType.Cluster,
