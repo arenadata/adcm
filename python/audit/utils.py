@@ -44,7 +44,7 @@ def _get_audit_object_from_resp(resp: Response, obj_type: str) -> Optional[Audit
 
 
 
-def _get_audit_operation_and_object(
+def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
         view: View, resp: Response
 ) -> Tuple[Optional[AuditOperation], Optional[AuditObject], Optional[str]]:
     operation_name = None
