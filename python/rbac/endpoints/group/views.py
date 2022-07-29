@@ -14,7 +14,7 @@
 
 from adwp_base.errors import AdwpEx
 from audit.utils import audit
-from django_filters.rest_framework import FilterSet, CharFilter, DjangoFilterBackend
+from django_filters.rest_framework import CharFilter, DjangoFilterBackend, FilterSet
 from guardian.mixins import PermissionListMixin
 from rbac import models
 from rbac.services import group as group_services

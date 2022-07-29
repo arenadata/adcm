@@ -103,13 +103,17 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Create.label,
                 object_type="group config",
             )
-            object_type = resp.data.serializer.instance.object_type.name
-            audit_object = AuditObject.objects.create(
-                object_id=resp.data.serializer.instance.id,
-                object_name=resp.data.serializer.instance.name,
-                object_type=object_type,
-            )
-            operation_name = f"{object_type.capitalize()} {audit_operation.name}"
+            if resp:
+                object_type = resp.data.serializer.instance.object_type.name
+                audit_object = AuditObject.objects.create(
+                    object_id=resp.data.serializer.instance.id,
+                    object_name=resp.data.serializer.instance.name,
+                    object_type=object_type,
+                )
+                operation_name = f"{object_type.capitalize()} {audit_operation.name}"
+            else:
+                audit_object = None
+                operation_name = audit_operation.name
 
         case ["rbac", "group"]:
             audit_operation = AuditOperation(

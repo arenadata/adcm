@@ -27,7 +27,6 @@ from django.db.models.signals import pre_save
 from django.db.transaction import atomic
 from django.dispatch import receiver
 from django.utils import timezone
-
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from rest_framework.exceptions import ValidationError
 
