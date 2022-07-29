@@ -382,9 +382,9 @@ class AdminGroupsPage(GeneralAdminPage):
         self.find_and_click(DeleteDialog.yes)
         self.wait_element_hide(DeleteDialog.body)
 
-    @allure.step('Open group {group_name}')
-    def open_group_by_name(self, group_name: str):
-        """Open group by name"""
+    @allure.step('Get group {group_name}')
+    def get_group_by_name(self, group_name: str):
+        """Get group by name"""
         for group in self.table.get_all_rows():
             if group_name in group.text:
                 return group
@@ -399,7 +399,7 @@ class AdminGroupsPage(GeneralAdminPage):
                     self.find_element(loc).get_attribute("disabled") == 'true'
                 ), "Ldap group fields should be disabled"
 
-        group_row = self.open_group_by_name(group_name)
+        group_row = self.get_group_by_name(group_name)
         self.find_child(group_row, AdminGroupsLocators.GroupRow.name).click()
         self.wait_element_visible(AdminGroupsLocators.AddGroupPopup.block)
         is_disabled(
