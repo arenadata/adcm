@@ -130,14 +130,15 @@ def _get_ldap_default_settings():
         if is_tls(ldap_config['ldap_uri']):
             cert_filepath = ldap_config.get('tls_ca_cert_file', '')
             if not cert_filepath or not os.path.exists(cert_filepath):
-                log.warning('missing cert file for `ldaps://` connection')
-                return {}
+                msg = 'NO_CERT_FILE'
+                log.warning(msg)
+                return {}, msg
             connection_options = configure_tls(enabled=True, cert_filepath=cert_filepath)
             default_settings.update({'CONNECTION_OPTIONS': connection_options})
 
-        return default_settings
+        return default_settings, None
 
-    return {}
+    return {}, 'NO_LDAP_SETTINGS'
 
 
 class CustomLDAPBackend(LDAPBackend):
@@ -146,7 +147,7 @@ class CustomLDAPBackend(LDAPBackend):
         self.is_tls = False
 
     def authenticate_ldap_user(self, ldap_user, password):
-        self.default_settings = _get_ldap_default_settings()
+        self.default_settings, _ = _get_ldap_default_settings()
         if not self.default_settings:
             return None
         self.is_tls = is_tls(self.default_settings['SERVER_URI'])
