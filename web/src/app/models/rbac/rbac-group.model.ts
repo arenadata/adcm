@@ -8,4 +8,5 @@ export interface RbacGroupModel extends Entity {
   user: RbacUserModel[];
   url: string;
   built_in: boolean;
+  type: string;
 }

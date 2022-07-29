@@ -17,6 +17,7 @@ import json
 import os
 import subprocess
 import sys
+from django.db import transaction
 
 import adcm.init_django  # DO NOT DELETE !!!
 import cm.job
@@ -101,15 +102,38 @@ def get_venv(job_id: int) -> str:
     return JobLog.objects.get(id=job_id).action.venv
 
 
+def process_err_out_file(job_id, job_type):
+    out_file = open_file(config.RUN_DIR, f'{job_type}-stdout', job_id)
+    err_file = open_file(config.RUN_DIR, f'{job_type}-stderr', job_id)
+    post_log(job_id, 'stdout', f'{job_type}')
+    post_log(job_id, 'stderr', f'{job_type}')
+    return out_file, err_file
+
+
+def start_subprocess(job_id, cmd, conf, out_file, err_file):
+    event = Event()
+    log.info("job run cmd: %s", ' '.join(cmd))
+    proc = subprocess.Popen(cmd, env=env_configuration(conf), stdout=out_file, stderr=err_file)
+    cm.job.set_job_status(job_id, config.Job.RUNNING, event, proc.pid)
+    event.send_state()
+    log.info("run job #%s, pid %s", job_id, proc.pid)
+    ret = proc.wait()
+    finish_check(job_id)
+    ret = set_job_status(job_id, ret, proc.pid, event)
+    event.send_state()
+
+    out_file.close()
+    err_file.close()
+
+    log.info("finish job subprocess #%s, pid %s, ret %s", job_id, proc.pid, ret)
+    return ret
+
+
 def run_ansible(job_id):
     log.debug("job_runner.py starts to run ansible job %s", job_id)
     conf = read_config(job_id)
     playbook = conf['job']['playbook']
-    out_file = open_file(config.RUN_DIR, 'ansible-stdout', job_id)
-    err_file = open_file(config.RUN_DIR, 'ansible-stderr', job_id)
-    post_log(job_id, 'stdout', 'ansible')
-    post_log(job_id, 'stderr', 'ansible')
-    event = Event()
+    out_file, err_file = process_err_out_file(job_id, 'ansible')
 
     os.chdir(conf['env']['stack_dir'])
     cmd = [
@@ -129,21 +153,38 @@ def run_ansible(job_id):
             cmd.append('--tags=' + conf['job']['params']['ansible_tags'])
     if 'verbose' in conf['job'] and conf['job']['verbose']:
         cmd.append('-vvvv')
+    ret = start_subprocess(job_id, cmd, conf, out_file, err_file)
+    sys.exit(ret)
 
-    log.info("job run cmd: %s", ' '.join(cmd))
-    proc = subprocess.Popen(cmd, env=env_configuration(conf), stdout=out_file, stderr=err_file)
-    cm.job.set_job_status(job_id, config.Job.RUNNING, event, proc.pid)
-    event.send_state()
-    log.info("run ansible job #%s, pid %s, playbook %s", job_id, proc.pid, playbook)
-    ret = proc.wait()
-    finish_check(job_id)
-    ret = set_job_status(job_id, ret, proc.pid, event)
-    event.send_state()
 
+def run_upgrade(job):
+    event = Event()
+    cm.job.set_job_status(job.id, config.Job.RUNNING, event)
+    out_file, err_file = process_err_out_file(job.id, 'internal')
+    try:
+        with transaction.atomic:
+          bundle_switch(job.task.task_object, job.action.upgrade)
+          switch_hc(task, job.action)
+    except AdcmEx as e:
+        err_file.write(e.msg)
+        cm.job.set_job_status(job.id, config.Job.FAILED, event)
+        out_file.close()
+        err_file.close()
+        sys.exit(1)
+    cm.job.set_job_status(job.id, config.Job.SUCCESS, event)
+    event.send_state()
     out_file.close()
     err_file.close()
+    sys.exit(0)
 
-    log.info("finish ansible job #%s, pid %s, ret %s", job_id, proc.pid, ret)
+
+def run_python(job):
+    out_file, err_file = process_err_out_file(job.id, 'python')
+    conf = read_config(job.id)
+    script_path = conf['job']['playbook']
+    os.chdir(conf['env']['stack_dir'])
+    cmd = ['python', script_path]
+    ret = start_subprocess(job.id, cmd, conf, out_file, err_file)
     sys.exit(ret)
 
 
@@ -171,20 +212,11 @@ def switch_hc(task, action):
 def main(job_id):
     log.debug("job_runner.py called as: %s", sys.argv)
     job = JobLog.objects.get(id=job_id)
-    if job.sub_action and job.sub_action.script_type == 'internal':
-        event = Event()
-        cm.job.set_job_status(job_id, config.Job.RUNNING, event)
-        try:
-            task = job.task
-            bundle_switch(task.task_object, job.action.upgrade)
-            switch_hc(task, job.action)
-        except AdcmEx as e:
-            log.error('Error while upgrading bundle: %s', e)
-            cm.job.set_job_status(job_id, config.Job.FAILED, event)
-            sys.exit(1)
-        cm.job.set_job_status(job_id, config.Job.SUCCESS, event)
-        event.send_state()
-        sys.exit(0)
+    job_type = job.sub_action.script_type if job.sub_action else job.action.script_type
+    if job_type == 'internal':
+        run_upgrade(job)
+    elif job_type == 'python':
+        run_python(job)
     else:
         run_ansible(job_id)
 
