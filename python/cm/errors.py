@@ -167,6 +167,16 @@ ERRORS = {
         rfs.HTTP_409_CONFLICT,
         ERR,
     ),
+    'NO_CERT_FILE': (
+        'missing cert file for `ldaps://` connection',
+        rfs.HTTP_400_BAD_REQUEST,
+        ERR,
+    ),
+    'NO_LDAP_SETTINGS': (
+        'disabled ldap settings',
+        rfs.HTTP_400_BAD_REQUEST,
+        ERR,
+    ),
 }
 
 

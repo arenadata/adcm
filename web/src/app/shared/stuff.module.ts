@@ -40,6 +40,7 @@ import { ConcernListComponent } from '@app/components/concern/concern-list/conce
 import { ConcernListRefComponent } from '@app/components/concern/concern-list-ref/concern-list-ref.component';
 import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
 import { HasSelectedPipe } from '@app/pipes/has-selected.pipe';
+import { ActionsButtonComponent } from "@app/components/actions-button/actions-button.component";
 
 @NgModule({
   declarations: [
@@ -66,6 +67,7 @@ import { HasSelectedPipe } from '@app/pipes/has-selected.pipe';
     IsArrayPipe,
     HasSelectedPipe,
     IssuePathPipe,
+    ActionsButtonComponent,
   ],
   imports: [
     CommonModule,
@@ -98,7 +100,8 @@ import { HasSelectedPipe } from '@app/pipes/has-selected.pipe';
     HasSelectedPipe,
     IssuePathPipe,
     ConcernListRefComponent,
-    TooltipModule
+    TooltipModule,
+    ActionsButtonComponent
   ],
   providers: [
     ConcernService,
