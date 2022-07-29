@@ -20,10 +20,14 @@ from audit.models import (
     AuditLogOperationResult,
     AuditObject,
     AuditOperation,
+    AuditLogOperationType,
+    AuditObjectType,
 )
 from cm.errors import AdcmEx
+from cm.models import ADCM
 from django.contrib.contenttypes.models import ContentType
 from django.views.generic.base import View
+from rbac.models import User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_403_FORBIDDEN, is_success
 
@@ -37,6 +41,45 @@ def _get_object_name_from_resp(resp: Response) -> str:
         object_name = str(resp.data.serializer.instance)
 
     return object_name
+
+
+def make_audit_log(operation_type, result, operation_status):
+    operation_type_map = {
+        "task_db": {
+            "type": AuditLogOperationType.Delete,
+            "name": '"Task log cleanup in database on schedule" job',
+        },
+        "task_fs": {
+            "type": AuditLogOperationType.Delete,
+            "name": '"Task log cleanup in filesystem on schedule" job',
+        },
+        "config": {
+            "type": AuditLogOperationType.Delete,
+            "name": '"Objects configurations cleanup on schedule" job',
+        },
+        "sync": {"type": AuditLogOperationType.Update, "name": '"User sync on schedule" job'},
+        "audit": {
+            "type": AuditLogOperationType.Delete,
+            "name": '"Audit log cleanup/archiving on schedule" job',
+        },
+    }
+    result = (
+        AuditLogOperationResult.Success if result == 'success' else AuditLogOperationResult.Fail
+    )
+    operation_name = operation_type_map[operation_type]["name"] + ' ' + operation_status
+    audit_object, _ = AuditObject.objects.get_or_create(
+        object_id=ADCM.objects.get().id,
+        object_name='ADCM',
+        object_type=AuditObjectType.ADCM,
+    )
+    system_user = User.objects.get(username='system')
+    AuditLog.objects.create(
+        audit_object=audit_object,
+        operation_name=operation_name,
+        operation_type=operation_type_map[operation_type]['type'],
+        operation_result=result,
+        user=system_user,
+    )
 
 
 def _get_object_type_from_resp(audit_operation: AuditOperation, resp: Response) -> str:

@@ -19,6 +19,7 @@ from tarfile import TarFile
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from audit.utils import make_audit_log
 from cm.logger import log_cron_task as log
 from cm.adcm_config import get_adcm_config
 from audit.models import AuditLog, AuditObject, AuditSession
@@ -51,44 +52,57 @@ class Command(BaseCommand):
     }
 
     def handle(self, *args, **options):
-        _, config = get_adcm_config(self.config_key)
-        if config['retention_period'] <= 0:
-            self.__log('Disabled')
-            return
+        try:
+            _, config = get_adcm_config(self.config_key)
+            if config['retention_period'] <= 0:
+                self.__log('Disabled')
+                return
 
-        threshold_date = timezone.now() - timedelta(days=config['retention_period'])
-        self.__log(f'Started. Threshold date: {threshold_date}')
+            threshold_date = timezone.now() - timedelta(days=config['retention_period'])
+            self.__log(f'Started. Threshold date: {threshold_date}')
 
-        target_operations = AuditLog.objects.filter(operation_time__lt=threshold_date)
-        target_logins = AuditSession.objects.filter(login_time__lt=threshold_date)
+            target_operations = AuditLog.objects.filter(operation_time__lt=threshold_date)
+            target_logins = AuditSession.objects.filter(login_time__lt=threshold_date)
+            cleared = False
+            if target_operations or target_logins:
+                _make_audit_log('audit', 'success', 'launched')
 
-        if config['data_archiving']:
-            self.__log(
-                f'Target audit records will be archived to '
-                f'`{os.path.join(self.archive_base_dir, self.archive_name)}`'
-            )
-            self.__archive(target_operations, target_logins)
-        else:
-            self.__log('Archiving is disabled')
+            if config['data_archiving']:
+                self.__log(
+                    f'Target audit records will be archived to '
+                    f'`{os.path.join(self.archive_base_dir, self.archive_name)}`'
+                )
+                self.__archive(target_operations, target_logins)
+            else:
+                self.__log('Archiving is disabled')
 
-        if target_operations.exists():
-            self.__log(f'Deleting {target_operations.count()} AuditLog')
-            target_operations.delete()
-        if target_logins.exists():
-            self.__log(f'Deleting {target_logins.count()} AuditSession')
-            target_logins.delete()
+            if target_operations.exists():
+                self.__log(f'Deleting {target_operations.count()} AuditLog')
+                target_operations.delete()
+                cleared = True
+            if target_logins.exists():
+                self.__log(f'Deleting {target_logins.count()} AuditSession')
+                target_logins.delete()
+                cleared = True
 
-        objects_pk_to_delete = set()
-        for ao in AuditObject.objects.filter(is_deleted=True):
-            if not ao.auditlog_set.exists():
-                objects_pk_to_delete.add(ao.pk)
-        target_objects = AuditObject.objects.filter(pk__in=objects_pk_to_delete)
+            objects_pk_to_delete = set()
+            for ao in AuditObject.objects.filter(is_deleted=True):
+                if not ao.auditlog_set.exists():
+                    objects_pk_to_delete.add(ao.pk)
+            target_objects = AuditObject.objects.filter(pk__in=objects_pk_to_delete)
 
-        if target_objects.exists():
-            self.__log(f'Deleting {target_objects.count()} AuditObject')
-            target_objects.delete()
+            if target_objects.exists():
+                self.__log(f'Deleting {target_objects.count()} AuditObject')
+                target_objects.delete()
+                cleared = True
 
-        self.__log('Finished.')
+            self.__log('Finished.')
+            if cleared:
+                _make_audit_log('audit', 'success', 'completed')
+        except Exception as e:  # pylint: disable=broad-except
+            _make_audit_log('audit', 'failed', 'completed')
+            self.__log('Error in auditlog rotation', 'warning')
+            self.__log(e, 'exception')
 
     def __archive(self, *querysets):
         os.makedirs(self.archive_base_dir, exist_ok=True)

@@ -39,7 +39,7 @@ def filter_out_event(module, name, obj):
     # We filter the sending of events only for cm and rbac applications
     # 'AnonymousUser', 'admin', 'status' are filtered out due to adwp_event design issue
     if module in ['rbac.models'] and name in WATCHED_RBAC_MODELS:
-        if name == 'user' and obj.username in ['AnonymousUser', 'admin', 'status']:
+        if name == 'user' and obj.username in ['AnonymousUser', 'admin', 'status', 'system']:
             return True
         return False
     if module in ['cm.models'] and name in WATCHED_CM_MODELS:
