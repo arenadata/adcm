@@ -5,7 +5,6 @@
                      #users="rbacUsers"
                      [handler]="users.label"
                      [rbac-users-as-options]="filter"
-                     [selectRowDisableCheck]="isDisabled"
                      [options]="users.options$ | async | falseAsEmptyArray"
                      (filter)="updateFilter('search', $event)"
   ></adwp-input-select>
