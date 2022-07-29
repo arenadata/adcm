@@ -81,6 +81,7 @@ class AdminUsersLocators:
         first_name = Locator(By.NAME, "first_name", "New user first name")
         last_name = Locator(By.NAME, "last_name", "New user last name")
         email = Locator(By.NAME, "email", "New user email")
+        select_groups = Locator(By.CSS_SELECTOR, "adwp-input-select[controlname='group']", "Select groups")
 
 
 class AdminGroupsLocators(CommonAdminPagesLocators):

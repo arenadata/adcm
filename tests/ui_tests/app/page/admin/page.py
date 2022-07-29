@@ -305,6 +305,9 @@ class AdminUsersPage(GeneralAdminPage):
                 AdminUsersLocators.AddUserPopup.save_btn,
             ]
         )
+        assert (
+            self.find_element(AdminUsersLocators.AddUserPopup.select_groups).get_attribute("disabled") is None
+        ), "Ldap user group should not be disabled"
 
     @allure.step('Delete user {username}')
     def delete_user(self, username: str):
