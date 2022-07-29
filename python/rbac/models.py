@@ -51,6 +51,9 @@ class User(AuthUser):
     profile = models.JSONField(default=str)
     built_in = models.BooleanField(default=False, null=False)
 
+    def get_repr(self):
+        return f'<{self.__class__.__name__} #{self.pk} {self.username}>'
+
 
 class Group(AuthGroup):
     """
