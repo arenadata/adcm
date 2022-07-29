@@ -51,10 +51,12 @@ class ADCMError:
             err_msg = 'Unknown'
             check.is_true(
                 i in desc or i in error_args or i in (err_msg := self._get_data_err_messages(error)),
-                (f"Text '{i}' should be present in error message. Either in:\n"
-                 f'Description: {desc}\n'
-                 f'Error arguments: {error_args}\n'
-                 f'Or message: {err_msg}'),
+                (
+                    f"Text '{i}' should be present in error message. Either in:\n"
+                    f'Description: {desc}\n'
+                    f'Error arguments: {error_args}\n'
+                    f'Or message: {err_msg}'
+                ),
             )
         assert not get_failures(), "All assertions should passed"
 
