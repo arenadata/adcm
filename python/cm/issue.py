@@ -204,7 +204,7 @@ def get_obj_config(obj):
     return (cl.config, attr)
 
 
-def check_component_constraint(cluster, service_prototype, hc_in):
+def check_component_constraint(cluster, service_prototype, hc_in, old_bundle=None):
     ref = f'in host component list for {service_prototype.type} {service_prototype.name}'
     all_host = Host.objects.filter(cluster=cluster)
 
@@ -249,6 +249,16 @@ def check_component_constraint(cluster, service_prototype, hc_in):
             check_odd(count, const[0], comp)
 
     for c in Prototype.objects.filter(parent=service_prototype, type='component'):
+        if old_bundle:
+            try:
+                old_service_proto = Prototype.objects.get(
+                    name=service_prototype.name, type='service', bundle=old_bundle
+                )
+                Prototype.objects.get(
+                    parent=old_service_proto, bundle=old_bundle, type='component', name=c.name
+                )
+            except Prototype.DoesNotExist:
+                continue
         check(c, c.constraint)
 
 

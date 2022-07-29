@@ -303,7 +303,10 @@ def check_constraints_for_upgrade(cluster, upgrade, host_comp_list):
                     name=service.name, type='service', bundle=upgrade.bundle
                 )
                 issue.check_component_constraint(
-                    cluster, prototype, [i for i in host_comp_list if i[0] == service]
+                    cluster,
+                    prototype,
+                    [i for i in host_comp_list if i[0] == service],
+                    cluster.prototype.bundle,
                 )
             except Prototype.DoesNotExist:
                 pass
