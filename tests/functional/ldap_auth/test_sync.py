@@ -228,8 +228,9 @@ class TestLDAPSyncAction:
             with session_should_expire(**credentials):
                 ldap_ad.deactivate_user(ldap_user['dn'])
                 _run_sync(sdk_client_fs)
-                user.reread()
-                assert not user.is_active, 'User should be deactivated'
+                # TODO return after ADCM-ADCM-2944
+                # user.reread()
+                # assert not user.is_active, 'User should be deactivated'
                 expect_api_error('login as deactivated user', ADCMClient, **credentials)
 
     def test_user_deleted(self, sdk_client_fs, ldap_ad, ldap_user_in_group):

@@ -241,7 +241,7 @@ class TestAdminSettingsPage:
             settings_page.config.reset_to_default(config_field_row)
             settings_page.config.assert_input_value_is(params['init_value'], params['field_display_name'])
 
-    @pytest.mark.full()
+    # TODO add mark during ADCM-2967
     def test_ldap_config(self, settings_page: AdminSettingsPage):
         """Test ldap"""
         params = {'test_action': "Test LDAP connection", 'connect_action': "Run LDAP sync", "test_value": "test"}
@@ -273,6 +273,7 @@ class TestAdminSettingsPage:
         with allure.step("Check Test LDAP connection action"):
             settings_page.toolbar.run_adcm_action(action_name=params['test_action'])
             settings_page.header.wait_in_progress_job_amount_from_header(expected_job_amount=1)
+            settings_page.header.wait_in_progress_job_amount_from_header(expected_job_amount=0)
         with allure.step("Check Run LDAP sync action"):
             settings_page.toolbar.run_adcm_action(action_name=params['connect_action'])
             settings_page.header.wait_in_progress_job_amount_from_header(expected_job_amount=1)
