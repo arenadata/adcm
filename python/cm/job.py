@@ -25,7 +25,7 @@ from django.utils import timezone
 from cm import api, inventory, adcm_config, variant, config, issue
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx
-from cm.errors import AdcmEx, raise_AdcmEx as err
+from cm.errors import raise_AdcmEx as err
 from cm.hierarchy import Tree
 from cm.inventory import get_obj_config, process_config_and_attr
 from cm.logger import log
@@ -263,7 +263,6 @@ def cook_delta(  # pylint: disable=too-many-branches
     return delta
 
 
-# pylint: disable-next=too-many-branches
 def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict]):
 
     if not action.hostcomponentmap:
@@ -275,13 +274,44 @@ def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict])
     if not cluster:
         err('TASK_ERROR', 'Only cluster objects can have action with hostcomponentmap')
 
-    post_upgrade_hc = []
-    clear_hc = copy.deepcopy(new_hc)
-    buff = 0
     for host_comp in new_hc:
         if not hasattr(action, 'upgrade'):
             host = Host.obj.get(id=host_comp.get('host_id', 0))
             issue.check_object_concern(host)
+    post_upgrade_hc, clear_hc = check_upgrade_hc(action, new_hc)
+
+    old_hc = get_old_hc(api.get_hc(cluster))
+    if not hasattr(action, 'upgrade'):
+        prepared_hc_list = api.check_hc(cluster, clear_hc)
+    else:
+        api.check_sub_key(clear_hc)
+        prepared_hc_list = api.make_host_comp_list(cluster, clear_hc)
+        check_constraints_for_upgrade(cluster, action.upgrade, prepared_hc_list)
+    cook_delta(cluster, prepared_hc_list, action.hostcomponentmap, old_hc)
+    return prepared_hc_list, post_upgrade_hc
+
+
+def check_constraints_for_upgrade(cluster, upgrade, host_comp_list):
+    for service in ClusterObject.objects.filter(cluster=cluster):
+        try:
+            prototype = Prototype.objects.get(
+                name=service.name, type='service', bundle=upgrade.bundle
+            )
+            issue.check_component_constraint(
+                cluster, prototype, [i for i in host_comp_list if i[0] == service]
+            )
+        except Prototype.DoesNotExist:
+            pass
+    issue.check_component_requires(host_comp_list)
+    issue.check_bound_components(host_comp_list)
+    api.check_maintenance_mode(cluster, host_comp_list)
+
+
+def check_upgrade_hc(action, new_hc):
+    post_upgrade_hc = []
+    clear_hc = copy.deepcopy(new_hc)
+    buff = 0
+    for host_comp in new_hc:
         if "component_prototype_id" in host_comp:
             if not hasattr(action, 'upgrade'):
                 err(
@@ -301,18 +331,7 @@ def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict])
                 err('INVALID_INPUT', 'hc_acl doesn\'t allow actions with this component')
             post_upgrade_hc.append(host_comp)
             clear_hc.remove(host_comp)
-
-    old_hc = get_old_hc(api.get_hc(cluster))
-    try:
-        prepared_hc_list = api.check_hc(cluster, clear_hc)
-        cook_delta(cluster, prepared_hc_list, action.hostcomponentmap, old_hc)
-    except AdcmEx as e:
-        if e.code == 'COMPONENT_CONSTRAINT_ERROR':
-            post_upgrade_hc += clear_hc
-            prepared_hc_list = get_actual_hc(cluster)
-        else:
-            raise e
-    return prepared_hc_list, post_upgrade_hc
+    return post_upgrade_hc, clear_hc
 
 
 def check_service_task(  # pylint: disable=inconsistent-return-statements
