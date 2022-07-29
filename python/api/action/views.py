@@ -186,7 +186,7 @@ class RunTask(GenericUIView):
             permission_denied()
 
     @staticmethod
-    def check_maintenance_mode(action, obj):
+    def check_disabling_cause(action, obj):
         if isinstance(obj, Host) and obj.maintenance_mode == MaintenanceModeType.On:
             raise AdcmEx(
                 'ACTION_ERROR',
@@ -197,6 +197,11 @@ class RunTask(GenericUIView):
             raise AdcmEx(
                 'ACTION_ERROR',
                 msg='you cannot start the action because at least one host is in maintenance mode',
+            )
+        if action.disabling_cause == 'no_ldap_settings':
+            raise AdcmEx(
+                'ACTION_ERROR',
+                msg='you cannot start the action because ldap settings not configured completely',
             )
 
     def post(self, request, *args, **kwargs):
@@ -211,6 +216,6 @@ class RunTask(GenericUIView):
         )
         action = get_object_for_user(request.user, 'cm.view_action', Action, id=action_id)
         self.check_action_perm(action, obj)
-        self.check_maintenance_mode(action, obj)
+        self.check_disabling_cause(action, obj)
         serializer = self.get_serializer(data=request.data)
         return create(serializer, action=action, task_object=obj)

@@ -8,14 +8,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input } from '@angular/core';
-import { INavItem } from '@app/models/details';
+import { INavItem } from '../../../models/details';
 
 @Component({
   selector: 'app-crumbs',
   template: `
     <mat-nav-list>
       <a routerLink="/admin"><mat-icon>apps</mat-icon></a>
-      <span>&nbsp;/&nbsp;</span>
+      <span>&nbsp;{{ this.rootBreadcrumb() }}&nbsp;</span>
+      <app-actions-button *ngIf="this.isAdminPage()"
+                          class="crumbs-action-button"
+                          [row]="{id: 1, hostcomponent: null, action: this.actionsUrl}">
+
+      </app-actions-button>
       <ng-container *ngFor="let item of navigation; last as isLast; trackBy: trackBy">
         <a routerLink="{{ item.url }}">{{ item.title | uppercase }}</a>
         <mat-icon *ngIf="item.issue" [matTooltip]="item.issue" color="warn">priority_hight</mat-icon>
@@ -23,28 +28,21 @@ import { INavItem } from '@app/models/details';
       </ng-container>
     </mat-nav-list>
   `,
-  styles: [
-    `
-      :host {
-        font-size: 0.8em;
-        margin-left: 8px;
-      }
-      mat-nav-list {
-        display: flex;
-        align-items: center;
-      }
-      a {
-        line-height: normal;
-      }
-      mat-icon {
-        margin-bottom: 5px;
-      }
-    `,
-  ],
+  styleUrls: ['./crumbs.component.scss'],
 })
 export class CrumbsComponent {
   @Input() navigation: INavItem[];
-  trackBy(index: number, item: INavItem) {
+  @Input() actionsUrl: string;
+
+  isAdminPage(): boolean {
+    return this.navigation.length == 1 && this.navigation[0]?.path?.includes('admin');
+  }
+
+  rootBreadcrumb(): string {
+    return this.isAdminPage() ? '/ ADCM' : '/';
+  }
+
+  trackBy(index: number, item: INavItem): string {
     return item.url;
   }
 }
