@@ -19,12 +19,9 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterModule } from '@angular/router';
 import { AdwpListModule } from '@adwp-ui/widgets';
-
 import { StuffModule } from '../stuff.module';
 import { SubtitleComponent } from './subtitle.component';
 import { NavigationComponent } from '@app/components/navigation/navigation.component';
-import { ActionsButtonComponent } from '@app/components/actions-button/actions-button.component';
-
 import { NavItemPipe } from '@app/pipes/nav-item.pipe';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ObjectLinkColumnPipe } from '@app/pipes/object-link-column.pipe';
@@ -73,7 +70,6 @@ import {
     ClusterDetailsComponent,
     BundleDetailsComponent,
     JobDetailsComponent,
-    ActionsButtonComponent,
     MaintenanceModeButtonComponent,
     ObjectLinkColumnPipe,
     SortObjectsPipe,
@@ -91,7 +87,6 @@ import {
     JobDetailsComponent,
     SubtitleComponent,
     NavigationComponent,
-    ActionsButtonComponent,
     MaintenanceModeButtonComponent,
     NavItemPipe,
     ObjectLinkColumnPipe,
