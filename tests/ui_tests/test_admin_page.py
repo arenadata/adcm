@@ -356,7 +356,7 @@ class TestAdminUsersPage:
             AdminIntroPage(users_page.driver, users_page.base_url).wait_page_is_opened(timeout=5)
 
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_change_ldap_user(self, users_page: AdminUsersPage, ldap_user_in_group):
+    def test_disabled_ldap_user(self, users_page: AdminUsersPage, ldap_user_in_group):
         """Change ldap user"""
 
         users_page.header.wait_success_job_amount_from_header(1)
@@ -511,7 +511,7 @@ class TestAdminGroupsPage:
             assert len(page.table.get_all_rows()) == 0, "There should be 0 groups"
 
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_change_ldap_group(self, app_fs, ldap_user_in_group):
+    def test_disabled_ldap_group(self, app_fs, ldap_user_in_group):
         """Change ldap group"""
 
         params = {'group_name': 'adcm_users'}

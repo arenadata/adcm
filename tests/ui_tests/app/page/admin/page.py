@@ -299,7 +299,6 @@ class AdminUsersPage(GeneralAdminPage):
                 AdminUsersLocators.AddUserPopup.username,
                 AdminUsersLocators.AddUserPopup.password,
                 AdminUsersLocators.AddUserPopup.password_confirm,
-                # AdminUsersLocators.AddUserPopup.adcm_admin_chbx,   skipped until https://tracker.yandex.ru/ADCM-3015
                 AdminUsersLocators.AddUserPopup.first_name,
                 AdminUsersLocators.AddUserPopup.last_name,
                 AdminUsersLocators.AddUserPopup.email,
@@ -388,6 +387,7 @@ class AdminGroupsPage(GeneralAdminPage):
         for group in self.table.get_all_rows():
             if group_name in group.text:
                 return group
+        raise AssertionError(f'Group {group_name} was not found')
 
     @allure.step('Check that changing ldap group is prohibited')
     def check_ldap_group(self, group_name: str):
