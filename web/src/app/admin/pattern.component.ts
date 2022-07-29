@@ -12,18 +12,19 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { select, Store } from '@ngrx/store';
-import { exhaustMap, filter } from 'rxjs/operators';
+import { exhaustMap, filter, map, switchMap } from 'rxjs/operators';
 import { BaseDirective } from '@adwp-ui/widgets';
-
 import { ApiService } from '@app/core/api';
 import { getProfileSelector, settingsSave, State } from '@app/core/store';
 import { IConfig } from '@app/shared/configuration/types';
+import { BaseEntity } from "../core/types";
+import { Observable } from "rxjs";
 
 @Component({
   selector: 'app-pattern',
   template: `
     <mat-toolbar>
-      <app-crumbs [navigation]="crumbs"></app-crumbs>
+      <app-crumbs [navigation]="crumbs" [actionsUrl]="actionsUrl$ | async"></app-crumbs>
       <div class="example-spacer"></div>
     </mat-toolbar>
     <mat-drawer-container [style.flex]="1" autosize>
@@ -47,6 +48,7 @@ import { IConfig } from '@app/shared/configuration/types';
   styleUrls: ['../styles/details.scss'],
 })
 export class PatternComponent extends BaseDirective implements OnInit, OnDestroy {
+  actionsUrl$: Observable<string>;
   title = '';
   crumbs = [];
   leftMenu = [
@@ -72,6 +74,10 @@ export class PatternComponent extends BaseDirective implements OnInit, OnDestroy
   }
 
   ngOnInit() {
+    this.actionsUrl$ = this.api.root.pipe(
+      switchMap((root) => this.api.get<BaseEntity>(root.adcm)),
+      map((adcm) => `/api/v1/adcm/${adcm[0].id}/action/`));
+
     this.getContext(this.router.routerState.snapshot.url);
 
     this.router.events
