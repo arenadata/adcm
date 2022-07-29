@@ -25,7 +25,7 @@ from django.utils import timezone
 from cm import api, inventory, adcm_config, variant, config, issue
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx
-from cm.errors import raise_AdcmEx as err
+from cm.errors import raise_AdcmEx as err, AdcmEx
 from cm.hierarchy import Tree
 from cm.inventory import get_obj_config, process_config_and_attr
 from cm.logger import log
@@ -111,6 +111,9 @@ def prepare_task(
     check_action_hosts(action, obj, cluster, hosts)
     old_hc = api.get_hc(cluster)
     host_map, post_upgrade_hc = check_hostcomponentmap(cluster, action, hc)
+
+    if hasattr(action, 'upgrade') and not action.hostcomponentmap:
+        check_constraints_for_upgrade(cluster, action.upgrade, get_actual_hc(cluster))
 
     if not attr:
         attr = {}
@@ -292,19 +295,31 @@ def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict])
 
 
 def check_constraints_for_upgrade(cluster, upgrade, host_comp_list):
-    for service in ClusterObject.objects.filter(cluster=cluster):
-        try:
-            prototype = Prototype.objects.get(
-                name=service.name, type='service', bundle=upgrade.bundle
+    try:
+
+        for service in ClusterObject.objects.filter(cluster=cluster):
+            try:
+                prototype = Prototype.objects.get(
+                    name=service.name, type='service', bundle=upgrade.bundle
+                )
+                issue.check_component_constraint(
+                    cluster,
+                    prototype,
+                    [i for i in host_comp_list if i[0] == service],
+                    cluster.prototype.bundle,
+                )
+            except Prototype.DoesNotExist:
+                pass
+        issue.check_component_requires(host_comp_list)
+        issue.check_bound_components(host_comp_list)
+        api.check_maintenance_mode(cluster, host_comp_list)
+    except AdcmEx as e:
+        if e.code == 'COMPONENT_CONSTRAINT_ERROR':
+            e.msg = (
+                f"Host-component map of upgraded cluster should satisfy "
+                f"constraints of new bundle. Now error is: {e.msg}"
             )
-            issue.check_component_constraint(
-                cluster, prototype, [i for i in host_comp_list if i[0] == service]
-            )
-        except Prototype.DoesNotExist:
-            pass
-    issue.check_component_requires(host_comp_list)
-    issue.check_bound_components(host_comp_list)
-    api.check_maintenance_mode(cluster, host_comp_list)
+        err(e.code, e.msg)
 
 
 def check_upgrade_hc(action, new_hc):

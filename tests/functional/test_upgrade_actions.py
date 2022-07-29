@@ -16,11 +16,13 @@ Test "scripts" section of bundle's "upgrade" section
 
 import json
 import os
-from typing import Set, Tuple, Optional
+from pathlib import Path
+from typing import Set, Tuple, Optional, Collection
 
 import allure
 import pytest
-from adcm_client.objects import Cluster, ADCMClient, Bundle, Host
+import yaml
+from adcm_client.objects import Cluster, ADCMClient, Bundle, Host, Component
 from adcm_pytest_plugin.docker_utils import get_file_from_container, ADCM
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 from adcm_pytest_plugin.utils import get_data_dir, catch_failed, parametrize_by_data_subdirs, random_string
@@ -28,8 +30,13 @@ from coreapi.exceptions import ErrorMessage
 
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.tools import build_hc_for_hc_acl_action, get_inventory_file
-from tests.library.assertions import sets_are_equal
-from tests.library.errorcodes import INVALID_UPGRADE_DEFINITION, INVALID_OBJECT_DEFINITION, INVALID_ACTION_DEFINITION
+from tests.library.assertions import sets_are_equal, expect_api_error
+from tests.library.errorcodes import (
+    INVALID_UPGRADE_DEFINITION,
+    INVALID_OBJECT_DEFINITION,
+    INVALID_ACTION_DEFINITION,
+    COMPONENT_CONSTRAINT_ERROR,
+)
 
 # pylint: disable=redefined-outer-name
 
@@ -578,3 +585,171 @@ class TestUpgradeActionRelations:
             assert {action.display_name for action in actions_after} == (
                 {'dummy_action', 'restore'} if "success" in folder_dir else {'dummy_action'}
             ), "Not all actions avaliable"
+
+
+def _set_ids_for_upload_bundles_set_hc(item):
+    # is set_hc
+    if isinstance(item, int):
+        return f'component_on_all_{item}_hosts'
+    if isinstance(item, Collection):
+        # is upload_bundles
+        if isinstance(item[0], list):
+            old_constraint = str(item[0]).replace(' ', '').replace("'", '')
+            new_constraint = str(item[1]).replace(' ', '').replace("'", '')
+            return f'change_constraint_from_{old_constraint}_to_{new_constraint}'
+        # is set_hc with 2 args
+        return f'component_on_{item[0]}_hosts_out_of_{item[1]}'
+    return str(item)
+
+
+class TestConstraintsChangeAfterUpgrade:
+    """
+        Test upgrade when constraints are changed in new version
+    n"""
+
+    pytestmark = [only_clean_adcm]
+
+    OLD_CLUSTER = {'type': 'cluster', 'name': 'cluster_with_constraints', 'version': '1.0'}
+    NEW_CLUSTER = {**OLD_CLUSTER, 'version': '2.0'}
+    SERVICE_DESC = {'type': 'service', 'name': 'service_with_constraints', 'version': '1.0'}
+    COMPONENT_NAME = 'component'
+    DUMMY_COMPONENT_NAME = 'dummy'
+
+    NO_HC_ACL_UPGRADE_SECTION = {
+        'name': 'Simple upgrade',
+        'versions': {'min': 0.5, 'max': 1.9},
+        'states': {'available': 'any'},
+        'scripts': [
+            {'name': 'before', 'script': 'succeed.yaml', 'script_type': 'ansible'},
+            {'name': 'switch', 'script': 'bundle_switch', 'script_type': 'internal'},
+            {'name': 'after', 'script': 'succeed.yaml', 'script_type': 'ansible'},
+        ],
+    }
+
+    @pytest.fixture()
+    def with_hc_in_upgrade(self, request) -> bool:
+        """Flag to prepare `hc_acl` in bundle"""
+        return bool(request.param)
+
+    @pytest.fixture()
+    def upload_bundles(self, request, sdk_client_fs, tmpdir, with_hc_in_upgrade) -> Tuple[Bundle, Bundle]:
+        """Upload bundles created dynamically based on the given constraints"""
+        # request.param should be like ([0,1], ['+'])
+        old_constraint, new_constraint = request.param
+        with allure.step(f'Preparing bundles: constraint in old {old_constraint}, constraint in new {new_constraint}'):
+            old_bundle_config = [
+                self.OLD_CLUSTER,
+                {
+                    **self.SERVICE_DESC,
+                    'components': {self.COMPONENT_NAME: {'constraint': old_constraint}, self.DUMMY_COMPONENT_NAME: {}},
+                },
+            ]
+            new_bundle_config = [
+                {
+                    **self.NEW_CLUSTER,
+                    'upgrade': [
+                        {
+                            **self.NO_HC_ACL_UPGRADE_SECTION,
+                            **(
+                                {
+                                    'hc_acl': [
+                                        {
+                                            'service': self.SERVICE_DESC['name'],
+                                            'component': self.COMPONENT_NAME,
+                                            'action': 'add',
+                                        }
+                                    ]
+                                }
+                                if with_hc_in_upgrade
+                                else {}
+                            ),
+                        }
+                    ],
+                },
+                {
+                    **self.SERVICE_DESC,
+                    'components': {self.COMPONENT_NAME: {'constraint': new_constraint}, self.DUMMY_COMPONENT_NAME: {}},
+                },
+            ]
+            tdir = Path(tmpdir)
+            old_path = tdir / 'old'
+            old_path.mkdir()
+            with (old_path / 'config.yaml').open('w') as f:
+                yaml.safe_dump(old_bundle_config, f)
+            new_path = tdir / 'new'
+            new_path.mkdir()
+            with (new_path / 'config.yaml').open('w') as f:
+                yaml.safe_dump(new_bundle_config, f)
+        with allure.step('Upload old and new bundles'):
+            return sdk_client_fs.upload_from_fs(old_path), sdk_client_fs.upload_from_fs(new_path)
+
+    @allure.step('Create cluster from old bundle and add service')
+    @pytest.fixture()
+    def cluster_with_component(self, upload_bundles) -> Tuple[Cluster, Component]:
+        """Create cluster and add service"""
+        old_bundle, _ = upload_bundles
+        cluster = old_bundle.cluster_create('Cluster with constraints')
+        service = cluster.service_add(name=self.SERVICE_DESC['name'])
+        return cluster, service.component(name=self.COMPONENT_NAME)
+
+    @allure.title('Create hosts and set hostcomponent')
+    @pytest.fixture()
+    def set_hc(self, request, cluster_with_component, generic_provider) -> None:
+        """Set hostcomponent based on given component on host / hosts in cluster amount"""
+        # total amount of hosts shouldn't be 0, it'll conflict with dummy component
+        if isinstance(request.param, int):
+            hosts_per_component = hosts_in_cluster = request.param
+        elif isinstance(request.param, tuple) and all(isinstance(i, int) for i in request.param):
+            hosts_per_component, hosts_in_cluster = request.param
+        else:
+            raise ValueError('Check `set_hc` and give correct param values IDHTFCE')
+        cluster, component = cluster_with_component
+        with allure.step(f'Create {hosts_in_cluster} and add all of them to a cluster'):
+            hosts = [cluster.host_add(generic_provider.host_create(f'host-{i}')) for i in range(hosts_in_cluster)]
+        with allure.step(f'Map component to {hosts_per_component} hosts and add dummy component on one of the hosts'):
+            cluster.hostcomponent_set(
+                (hosts[0], cluster.service().component(name=self.DUMMY_COMPONENT_NAME)),
+                *[(h, component) for h in hosts[:hosts_per_component]],
+            )
+
+    # wrap it in something readable
+    @pytest.mark.parametrize('with_hc_in_upgrade', [True, False], indirect=True, ids=lambda i: f'with_hc_acl_{i}')
+    @pytest.mark.parametrize(
+        ('upload_bundles', 'set_hc'),
+        [
+            # from many hosts to 1
+            ((['+'], [1]), 2),
+            (([1, '+'], [1]), 2),
+            (([1, 2], [1]), 2),
+            (([1, 'odd'], [1]), 3),
+            # from fewer to greater
+            ((['+'], ['odd']), 2),
+            (([1, '+'], ['+']), (2, 3)),
+            (([0, 1], [1]), (0, 1)),
+            (([0, 1], [1, '+']), (0, 1)),
+            (([0, 1], ['+']), (0, 1)),
+            (([0, '+'], ['+']), (0, 2)),
+        ],
+        indirect=True,
+        ids=_set_ids_for_upload_bundles_set_hc,
+    )
+    @pytest.mark.usefixtures('set_hc', 'upload_bundles')
+    def test_incorrect_hc_without_hc_acl_in_upgrade(self, sdk_client_fs, cluster_with_component, with_hc_in_upgrade):
+        """
+        Test that when incorrect for new constraints HC is set,
+        upgrade with actions won't start
+        """
+        cluster, _ = cluster_with_component
+        hc_or_not = {'hc': build_hc_for_hc_acl_action(cluster)} if with_hc_in_upgrade else {}
+        expect_api_error(
+            'upgrade cluster with hc not suitable for new bundle version',
+            cluster.upgrade().do,
+            **hc_or_not,
+            err_=COMPONENT_CONSTRAINT_ERROR,
+            err_args_=[
+                'component "component"',
+                f'in host component list for service {self.SERVICE_DESC["name"]}',
+            ],
+        )
+        with allure.step('Check no actions were launched'):
+            assert len(sdk_client_fs.job_list()) == 0, 'At least one action has been launched. None should.'
