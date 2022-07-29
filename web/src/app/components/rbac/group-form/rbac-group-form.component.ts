@@ -34,10 +34,6 @@ export class RbacGroupFormComponent extends RbacFormDirective<RbacGroupModel> {
     this.form.markAllAsTouched();
   }
 
-  isDisabled = (value) => {
-    return value?.type === 'ldap';
-  };
-
   _checkType() {
     if (this.value.type === 'ldap') {
       this.form.controls.name.disable();
