@@ -102,7 +102,7 @@ export class UpgradesDirective extends BaseDirective {
       if (!this.hasConfig && !this.hasHostComponent) {
         dialogModel.maxWidth = '1400px';
         dialogModel.width = '400px';
-        dialogModel.height = '180px';
+        dialogModel.minHeight = '180px';
         dialogModel.data.title = 'Are you sure you want to upgrade?'
         dialogModel.data.text = 'The cluster will be prepared for upgrade';
       }
