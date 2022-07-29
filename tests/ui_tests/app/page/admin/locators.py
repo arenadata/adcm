@@ -75,6 +75,9 @@ class AdminUsersLocators:
         password_confirm = Locator(
             By.CSS_SELECTOR, "input[data-placeholder='Confirm password']", "New user password confirmation"
         )
+        adcm_admin_chbx = Locator(
+            By.CSS_SELECTOR, "mat-checkbox[formcontrolname='is_superuser']", "Checkbox ADCM Administrator"
+        )
         first_name = Locator(By.NAME, "first_name", "New user first name")
         last_name = Locator(By.NAME, "last_name", "New user last name")
         email = Locator(By.NAME, "email", "New user email")
@@ -95,7 +98,7 @@ class AdminGroupsLocators(CommonAdminPagesLocators):
         """Locators for creating groups popup"""
 
         block = Locator(By.CSS_SELECTOR, "app-rbac-group-form", "Add group popup block")
-
+        title = Locator(By.CSS_SELECTOR, "mat-dialog-container h3", "Popup title")
         name_input = Locator(By.CSS_SELECTOR, "adwp-input[label='Group name'] input", "Input name")
         description_input = Locator(By.CSS_SELECTOR, "adwp-input[label='Description'] input", "Input description")
         users_select = Locator(By.CSS_SELECTOR, "adwp-input-select[label='Select users'] adwp-select", "select users")

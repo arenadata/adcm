@@ -355,6 +355,17 @@ class TestAdminUsersPage:
         with allure.step('Check login was successful'):
             AdminIntroPage(users_page.driver, users_page.base_url).wait_page_is_opened(timeout=5)
 
+    @pytest.mark.usefixtures("configure_adcm_ldap_ad")
+    def test_change_ldap_user(self, users_page: AdminUsersPage, ldap_user_in_group):
+        """Change ldap user"""
+
+        users_page.header.wait_success_job_amount_from_header(1)
+        with allure.step(f'Check user {ldap_user_in_group["name"]} is listed in users list'):
+            assert users_page.is_user_presented(
+                ldap_user_in_group['name']
+            ), f'User {ldap_user_in_group["name"]} was not created'
+        users_page.check_ldap_user(ldap_user_in_group["name"])
+
 
 @pytest.mark.usefixtures("login_to_adcm_over_api")
 class TestAdminRolesPage:
@@ -498,6 +509,19 @@ class TestAdminGroupsPage:
         page.click_delete_button()
         with allure.step('Check that group has been deleted'):
             assert len(page.table.get_all_rows()) == 0, "There should be 0 groups"
+
+    @pytest.mark.usefixtures("configure_adcm_ldap_ad")
+    def test_change_ldap_group(self, app_fs, ldap_user_in_group):
+        """Change ldap group"""
+
+        params = {'group_name': 'adcm_users'}
+        groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
+        groups_page.header.wait_success_job_amount_from_header(1)
+        with allure.step(f"Check group {params['group_name']} is listed in groups list"):
+            assert (
+                groups_page.get_all_groups()[0].name == params['group_name']
+            ), f"Group {params['group_name']} should be in groups list"
+        groups_page.check_ldap_group(params['group_name'])
 
 
 class TestAdminPolicyPage:
