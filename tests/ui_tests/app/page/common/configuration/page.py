@@ -289,6 +289,7 @@ class CommonConfigMenuObj(BasePageObject):
                 field = self.find_children(field_row, self.locators.ConfigRow.input)[id]
             if clear:
                 field.clear()
+            self.find_children(field_row, self.locators.ConfigRow.input)[id].click()
             self.find_children(field_row, self.locators.ConfigRow.input)[id].send_keys(value)
 
     @allure.step('Select option "{option}" in option field')

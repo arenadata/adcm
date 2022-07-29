@@ -16,7 +16,7 @@ import pprint
 from typing import Callable, Union, Collection, TypeVar, Optional
 
 import allure
-import pytest
+from adcm_client.wrappers.api import ADCMApiError
 from adcm_pytest_plugin.utils import catch_failed
 from coreapi.exceptions import ErrorMessage
 
@@ -144,6 +144,7 @@ def dicts_are_not_equal(first: dict, second: dict, message: Union[str, Callable]
     message = message if not callable(message) else message(**kwargs)
     if not message:
         message = "Two dictionaries are equal, which wasn't expected.\nCheck step attachments for more details."
+    raise AssertionError(message)
 
 
 def expect_api_error(operation_name: str, operation: Callable, *args, err_: Optional[ADCMError] = None, **kwargs):
@@ -153,10 +154,13 @@ def expect_api_error(operation_name: str, operation: Callable, *args, err_: Opti
     If `err_` is provided, raised exception will be checked against it by calling `.equal`
     """
     with allure.step(f'Execute "{operation_name}" and expect it to raise API error "{err_}"'):
-        with pytest.raises(ErrorMessage) as e:
+        try:
             operation(*args, **kwargs)
-        if err_:
-            err_.equal(e)
+        except (ErrorMessage, ADCMApiError) as e:
+            if err_:
+                err_.equal(e)
+        else:
+            raise AssertionError('An API error should be raised')
 
 
 def expect_no_api_error(operation_name: str, operation: Callable, *args, **kwargs):

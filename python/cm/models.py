@@ -1375,6 +1375,12 @@ class TaskLog(ADCMModel):
             event_queue.send_state()
         os.kill(self.pid, signal.SIGTERM)
 
+    @staticmethod
+    def get_adcm_tasks_qs():
+        return TaskLog.objects.filter(
+            object_type=ContentType.objects.get(app_label='cm', model='adcm')
+        )
+
 
 class JobLog(ADCMModel):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
@@ -1388,6 +1394,10 @@ class JobLog(ADCMModel):
     finish_date = models.DateTimeField(db_index=True)
 
     __error_code__ = 'JOB_NOT_FOUND'
+
+    @staticmethod
+    def get_adcm_jobs_qs():
+        return JobLog.objects.filter(task__in=TaskLog.get_adcm_tasks_qs())
 
 
 class GroupCheckLog(ADCMModel):
