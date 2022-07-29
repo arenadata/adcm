@@ -534,7 +534,7 @@ class ADCMEntity(ADCMModel):
 
     def delete(self, using=None, keep_parents=False):
         super().delete(using, keep_parents)
-        if self.config is not None:
+        if self.config is not None and not isinstance(self, ServiceComponent):
             self.config.delete()
 
 
@@ -1306,6 +1306,7 @@ class TaskLog(ADCMModel):
     config = models.JSONField(null=True, default=None)
     attr = models.JSONField(default=dict)
     hostcomponentmap = models.JSONField(null=True, default=None)
+    post_upgrade_hc_map = models.JSONField(null=True, default=None)
     hosts = models.JSONField(null=True, default=None)
     verbose = models.BooleanField(default=False)
     start_date = models.DateTimeField()

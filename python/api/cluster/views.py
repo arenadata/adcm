@@ -223,7 +223,7 @@ class ClusterBindDetail(GenericUIView):
 
 class ClusterUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.UpgradeLinkSerializer
+    serializer_class = api.serializers.ClusterUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_ordering(self):
@@ -247,7 +247,7 @@ class ClusterUpgrade(GenericUIView):
 
 class ClusterUpgradeDetail(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.UpgradeLinkSerializer
+    serializer_class = api.serializers.ClusterUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -269,7 +269,7 @@ class ClusterUpgradeDetail(GenericUIView):
 
 class DoClusterUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.DoUpgradeSerializer
+    serializer_class = serializers.DoClusterUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
@@ -321,7 +321,11 @@ class HostComponentList(GenericUIView):
         check_custom_perm(
             request.user, 'view_host_components_of', 'cluster', cluster, 'view_hostcomponent'
         )
-        hc = self.get_queryset().filter(cluster=cluster)
+        hc = (
+            self.get_queryset()
+            .prefetch_related('service', 'component', 'host')
+            .filter(cluster=cluster)
+        )
         if self._is_for_ui():
             ui_hc = HostComponent()
             ui_hc.hc = hc
