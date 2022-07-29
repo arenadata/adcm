@@ -316,7 +316,7 @@ def check_constraints_for_upgrade(cluster, upgrade, host_comp_list):
                 f"Host-component map of upgraded cluster should satisfy "
                 f"constraints of new bundle. Now error is: {e.msg}"
             )
-        raise err(e.code, e.msg)
+        err(e.code, e.msg)
 
 
 def check_upgrade_hc(action, new_hc):
