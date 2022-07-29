@@ -127,7 +127,7 @@ def check_hc(cluster):
         for co in ClusterObject.objects.filter(cluster=cluster):
             for comp in Prototype.objects.filter(parent=co.prototype, type='component'):
                 const = comp.constraint
-                if len(const) == 2 and const[0] == 0 and (const[1] == '+' or const[1] == 'odd'):
+                if len(const) == 2 and const[0] == 0:
                     continue
                 log.debug('void host components for %s', proto_ref(co.prototype))
                 return False
