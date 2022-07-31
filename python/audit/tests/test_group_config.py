@@ -58,6 +58,18 @@ class TestGroupConfig(BaseTestCase):
             },
         )
 
+    def check_group_config_updated(self, log: AuditLog) -> None:
+        assert log.audit_object.object_id == self.cluster.pk
+        assert log.audit_object.object_name == self.cluster.name
+        assert log.audit_object.object_type == AuditObjectType.Cluster.label
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "test_group_config_2 configuration group updated"
+        assert log.operation_type == AuditLogOperationType.Update.value
+        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
     def test_create(self):
         self.create_group_config()
 
@@ -67,7 +79,7 @@ class TestGroupConfig(BaseTestCase):
         assert log.audit_object.object_name == self.cluster.name
         assert log.audit_object.object_type == AuditObjectType.Cluster.label
         assert not log.audit_object.is_deleted
-        assert log.operation_name == "Cluster configuration group created"
+        assert log.operation_name == "test_group_config configuration group created"
         assert log.operation_type == AuditLogOperationType.Create.value
         assert log.operation_result == AuditLogOperationResult.Success.value
         assert isinstance(log.operation_time, datetime)
@@ -78,7 +90,7 @@ class TestGroupConfig(BaseTestCase):
         self.client.put(
             path=f"/api/v1/group-config/{self.group_config.pk}/",
             data={
-                "name": self.name,
+                "name": self.group_config.name,
                 "object_id": self.cluster.pk,
                 "object_type": "cluster",
                 "config_id": self.config.id,
@@ -88,13 +100,20 @@ class TestGroupConfig(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == self.cluster.pk
-        assert log.audit_object.object_name == self.cluster.name
-        assert log.audit_object.object_type == AuditObjectType.Cluster.label
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Cluster configuration group updated"
-        assert log.operation_type == AuditLogOperationType.Update.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.check_group_config_updated(log)
+
+    def test_update_patch(self):
+        self.client.patch(
+            path=f"/api/v1/group-config/{self.group_config.pk}/",
+            data={
+                "name": self.group_config.name,
+                "object_id": self.cluster.pk,
+                "object_type": "cluster",
+                "config_id": self.config.id,
+            },
+            content_type="application/json",
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_group_config_updated(log)
