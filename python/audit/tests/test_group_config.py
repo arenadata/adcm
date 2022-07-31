@@ -18,7 +18,15 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import Bundle, Cluster, ConfigLog, GroupConfig, ObjectConfig, Prototype
+from cm.models import (
+    Bundle,
+    Cluster,
+    ConfigLog,
+    GroupConfig,
+    Host,
+    ObjectConfig,
+    Prototype,
+)
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from rest_framework.response import Response
@@ -45,6 +53,9 @@ class TestGroupConfig(BaseTestCase):
             object_id=self.cluster.pk,
             object_type=ContentType.objects.get(app_label="cm", model="cluster"),
             config_id=self.config.pk,
+        )
+        self.host = Host.objects.create(
+            fqdn="test_host_fqdn", prototype=prototype, cluster=self.cluster
         )
 
     def create_group_config(self) -> Response:
@@ -117,3 +128,43 @@ class TestGroupConfig(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_group_config_updated(log)
+
+    def test_add_remove_host(self):
+        self.client.post(
+            path=f"/api/v1/group-config/{self.group_config.pk}/host/",
+            data={"id": self.host.id},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.cluster.pk
+        assert log.audit_object.object_name == self.cluster.name
+        assert log.audit_object.object_type == AuditObjectType.Cluster.label
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == (
+            f"{self.host.fqdn} host added to {self.group_config.name} configuration group"
+        )
+        assert log.operation_type == AuditLogOperationType.Update.value
+        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+        self.client.delete(
+            path=f"/api/v1/group-config/{self.group_config.pk}/host/{self.host.id}/",
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.cluster.pk
+        assert log.audit_object.object_name == self.cluster.name
+        assert log.audit_object.object_type == AuditObjectType.Cluster.label
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == (
+            f"{self.host.fqdn} host removed from {self.group_config.name} configuration group"
+        )
+        assert log.operation_type == AuditLogOperationType.Update.value
+        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)

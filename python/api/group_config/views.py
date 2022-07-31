@@ -80,6 +80,11 @@ class GroupConfigHostViewSet(
     permission_required = ['view_host']
     lookup_url_kwarg = 'host_id'
 
+    @audit
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @audit
     def destroy(self, request, *args, **kwargs):
         group_config = GroupConfig.obj.get(id=self.kwargs.get('parent_lookup_group_config'))
         host = self.get_object()

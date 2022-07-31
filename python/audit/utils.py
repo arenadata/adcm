@@ -23,7 +23,7 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
-from cm.models import Host
+from cm.models import GroupConfig, Host
 from django.contrib.contenttypes.models import ContentType
 from django.views.generic.base import View
 from rest_framework.response import Response
@@ -49,7 +49,7 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
 ) -> Tuple[Optional[AuditOperation], Optional[AuditObject], Optional[str]]:
     operation_name = None
     audit_object = None
-    path = view.request.stream.path.replace("/api/v1/", "")[:-1].split("/")
+    path = view.request.path.replace("/api/v1/", "")[:-1].split("/")
 
     match path:
         case ["stack", "upload"]:
@@ -94,13 +94,11 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
                 audit_object = None
                 operation_name = audit_operation.name
 
-        case ["group-config"]| ["group-config", _]:
+        case ["group-config"] | ["group-config", _]:
             if view.action == "create":
                 operation_type = AuditLogOperationType.Create.label
-            elif view.action in {"update", "partial_update"}:
-                operation_type = AuditLogOperationType.Update.label
             else:
-                operation_type = AuditLogOperationType.Delete.label
+                operation_type = AuditLogOperationType.Update.label
 
             audit_operation = AuditOperation(
                 name=f"configuration group {operation_type}d",
@@ -117,6 +115,38 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
             else:
                 audit_object = None
                 operation_name = audit_operation.name
+
+        case ["group-config", config_group_pk, "host"]:
+            config_group = GroupConfig.objects.get(pk=config_group_pk)
+            audit_operation = AuditOperation(
+                name=f"{{fqdn}} host added to {config_group.name} configuration group",
+                operation_type=AuditLogOperationType.Update.label,
+            )
+            if resp:
+                audit_operation.name = audit_operation.name.format(fqdn=resp.data["fqdn"])
+                audit_object = AuditObject.objects.create(
+                    object_id=config_group.pk,
+                    object_name=config_group.object.name,
+                    object_type=config_group.object_type.name,
+                )
+            else:
+                audit_object = None
+
+            operation_name = audit_operation.name
+
+        case ["group-config", config_group_pk, "host", host_pk]:
+            config_group = GroupConfig.objects.get(pk=config_group_pk)
+            host = Host.objects.get(pk=host_pk)
+            audit_operation = AuditOperation(
+                name=f"{host.fqdn} host removed from {config_group.name} configuration group",
+                operation_type=AuditLogOperationType.Update.label,
+            )
+            audit_object = AuditObject.objects.create(
+                object_id=config_group.pk,
+                object_name=config_group.object.name,
+                object_type=config_group.object_type.name,
+            )
+            operation_name = audit_operation.name
 
         case ["rbac", "group"]:
             audit_operation = AuditOperation(
