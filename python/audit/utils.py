@@ -48,6 +48,7 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
         view: View, resp: Response
 ) -> Tuple[Optional[AuditOperation], Optional[AuditObject], Optional[str]]:
     operation_name = None
+    audit_object = None
     path = view.request.stream.path.replace("/api/v1/", "")[:-1].split("/")
 
     match path:
@@ -55,7 +56,6 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Bundle.label.capitalize()} uploaded",
                 operation_type=AuditLogOperationType.Create.label,
-                object_type=AuditObjectType.Bundle.label,
             )
             audit_object = None
 
@@ -63,7 +63,6 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Bundle.label.capitalize()} loaded",
                 operation_type=AuditLogOperationType.Create.label,
-                object_type=AuditObjectType.Bundle.label,
             )
             audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Bundle.label)
 
@@ -72,7 +71,6 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
                 name=f"{AuditObjectType.Cluster.label.capitalize()} "
                 f"{AuditLogOperationType.Create.label}d",
                 operation_type=AuditLogOperationType.Create.label,
-                object_type=AuditObjectType.Cluster.label,
             )
             audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Cluster.label)
 
@@ -80,7 +78,6 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
             audit_operation = AuditOperation(
                 name=f"config log {AuditLogOperationType.Update.label}d",
                 operation_type=AuditLogOperationType.Update.label,
-                object_type="config log",
             )
 
             if resp:
@@ -97,17 +94,21 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
                 audit_object = None
                 operation_name = audit_operation.name
 
-        case ["group-config"]:
+        case ["group-config"]| ["group-config", _]:
+            if view.action == "create":
+                operation_type = AuditLogOperationType.Create.label
+            else:
+                operation_type = AuditLogOperationType.Update.label
+
             audit_operation = AuditOperation(
-                name=f"group config {AuditLogOperationType.Create.label}d",
-                operation_type=AuditLogOperationType.Create.label,
-                object_type="group config",
+                name=f"configuration group {operation_type}d",
+                operation_type=operation_type,
             )
             if resp:
                 object_type = resp.data.serializer.instance.object_type.name
                 audit_object = AuditObject.objects.create(
-                    object_id=resp.data.serializer.instance.id,
-                    object_name=resp.data.serializer.instance.name,
+                    object_id=resp.data.serializer.instance.object.id,
+                    object_name=resp.data.serializer.instance.object.name,
                     object_type=object_type,
                 )
                 operation_name = f"{object_type.capitalize()} {audit_operation.name}"
@@ -120,7 +121,6 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
                 name=f"{AuditObjectType.Group.label.capitalize()} "
                 f"{AuditLogOperationType.Create.label}d",
                 operation_type=AuditLogOperationType.Create.label,
-                object_type=AuditObjectType.Group.label,
             )
             audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Group.label)
 
@@ -129,7 +129,6 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
                 name=f"{AuditObjectType.Policy.label.capitalize()} "
                 f"{AuditLogOperationType.Create.label}d",
                 operation_type=AuditLogOperationType.Create.label,
-                object_type=AuditObjectType.Policy.label,
             )
             audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Policy.label)
 
@@ -138,7 +137,6 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
                 name=f"{AuditObjectType.Role.label.capitalize()} "
                      f"{AuditLogOperationType.Create.label}d",
                 operation_type=AuditLogOperationType.Create.label,
-                object_type=AuditObjectType.Policy.label,
             )
             audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Role.label)
 
@@ -147,7 +145,6 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
                 name=f"{AuditObjectType.User.label.capitalize()} "
                      f"{AuditLogOperationType.Create.label}d",
                 operation_type=AuditLogOperationType.Create.label,
-                object_type=AuditObjectType.Policy.label,
             )
             if resp:
                 audit_object = AuditObject.objects.create(
@@ -163,7 +160,6 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
                 name=f"{AuditObjectType.Host.label.capitalize()} "
                      f"{AuditLogOperationType.Create.label}d",
                 operation_type=AuditLogOperationType.Create.label,
-                object_type=AuditObjectType.Host.label,
             )
             if resp:
                 audit_object = AuditObject.objects.create(
@@ -179,7 +175,6 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
                 name=f"{AuditObjectType.Provider.label.capitalize()} "
                 f"{AuditLogOperationType.Create.label}d",
                 operation_type=AuditLogOperationType.Create.label,
-                object_type=AuditObjectType.Provider.label,
             )
             audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Provider.label)
 
@@ -189,7 +184,6 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
             audit_operation = AuditOperation(
                 name=f"{object_type.capitalize()} configuration {operation_type}d",
                 operation_type=operation_type,
-                object_type=object_type,
             )
             obj = Host.objects.get(pk=host_pk)
             audit_object = AuditObject.objects.create(
@@ -201,7 +195,7 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements
         case _:
             return None, None, None
 
-    if not operation_name:
+    if not operation_name and audit_operation:
         operation_name = audit_operation.name
 
     return audit_operation, audit_object, operation_name

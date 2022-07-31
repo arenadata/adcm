@@ -83,4 +83,3 @@ class AuditSession(models.Model):
 class AuditOperation:
     name: str
     operation_type: str
-    object_type: str
