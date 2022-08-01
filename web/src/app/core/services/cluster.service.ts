@@ -145,11 +145,11 @@ export class ClusterService {
   }
 
   getHosts(p: ParamMap) {
-    return this.api.getList<Host>(this.Cluster.host, p);
+    return this.api.getList<Host>(this.Cluster?.host, p);
   }
 
   addHost(host_id: number) {
-    return this.api.post(this.Cluster.host, { host_id });
+    return this.api.post(this.Cluster?.host, { host_id });
   }
 
   reset(): Observable<WorkerInstance> {

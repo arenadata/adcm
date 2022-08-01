@@ -48,7 +48,7 @@
     </span>
   </ng-container>
 </div>
-<mat-list class="compare-list-container" dense *ngIf="!options.hidden && options.compare.length">
+<mat-list class="compare-list-container" dense *ngIf="!options.hidden && options.compare?.length">
   <mat-list-item *ngFor="let item of options.compare" class="compare-list">
     <mat-icon matListIcon [style.backgroundColor]="item.color">more_vert</mat-icon>
     <span class="label">
