@@ -649,7 +649,7 @@ class TestConstraintsChangeAfterUpgrade:
     @pytest.fixture()
     def hc_acl_block(self, request) -> dict:
         """Define `hc_acl` block for upgrade"""
-        if request.param:
+        if hasattr(request, 'param') and request.param:
             return request.param
         return {
             'hc_acl': [
