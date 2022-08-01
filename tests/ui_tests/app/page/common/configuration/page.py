@@ -288,8 +288,8 @@ class CommonConfigMenuObj(BasePageObject):
                 field = self.find_children(field_row, self.locators.ConfigRow.input)[id]
             if clear:
                 field.clear()
-            input_element = self.find_children(field_row, self.locators.ConfigRow.input)[id]
-            self.send_text_to_element(input_element, value)
+            self.find_children(field_row, self.locators.ConfigRow.input)[id].click()
+            self.find_children(field_row, self.locators.ConfigRow.input)[id].send_keys(value)
 
     @allure.step('Select option "{option}" in option field')
     def select_option(self, row: Union[WebElement, str], option: str):
