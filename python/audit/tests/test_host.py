@@ -23,7 +23,7 @@ from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 
-from adcm.tests.base import BaseTestCase
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestHost(BaseTestCase):
@@ -118,7 +118,7 @@ class TestHost(BaseTestCase):
         self.client.post(
             path=f"/api/v1/host/{self.host.pk}/config/history/",
             data={"config": {}},
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -127,7 +127,7 @@ class TestHost(BaseTestCase):
 
         res: Response = self.client.patch(
             path=f"/api/v1/host/{self.host.pk}/config/history/1/restore/",
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -139,7 +139,7 @@ class TestHost(BaseTestCase):
         self.client.post(
             path=f"/api/v1/provider/{self.provider.pk}/host/{self.host.pk}/config/history/",
             data={"config": {}},
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -149,7 +149,7 @@ class TestHost(BaseTestCase):
         res: Response = self.client.patch(
             path=f"/api/v1/provider/{self.provider.pk}/host/"
             f"{self.host.pk}/config/history/1/restore/",
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

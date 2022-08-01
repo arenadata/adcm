@@ -19,6 +19,8 @@ from rest_framework.response import Response
 
 from rbac.models import Role, User
 
+APPLICATION_JSON = "application/json"
+
 
 class BaseTestCase(TestCase):
     def setUp(self) -> None:
