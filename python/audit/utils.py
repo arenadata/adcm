@@ -43,12 +43,10 @@ def _get_audit_object_from_resp(resp: Response, obj_type: str) -> Optional[Audit
     return audit_object
 
 
-
 def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-many-branches
         view: View, resp: Response
 ) -> Tuple[Optional[AuditOperation], Optional[AuditObject], Optional[str]]:
     operation_name = None
-    audit_object = None
     path = view.request.path.replace("/api/v1/", "")[:-1].split("/")
 
     match path:
@@ -146,7 +144,6 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
                 object_name=config_group.object.name,
                 object_type=config_group.object_type.name,
             )
-            operation_name = audit_operation.name
 
         case ["rbac", "group"]:
             audit_operation = AuditOperation(
@@ -210,7 +207,10 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
             )
             audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Provider.label)
 
-        case ["host", host_pk, "config", "history"]:
+        case (
+            ["host", host_pk, "config", "history"]
+            | ["host", host_pk, "config", "history", _, "restore"]
+        ):
             object_type = "host"
             operation_type = AuditLogOperationType.Update.label
             audit_operation = AuditOperation(

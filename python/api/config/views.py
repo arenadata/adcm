@@ -169,6 +169,7 @@ class ConfigHistoryRestoreView(PermissionListMixin, GenericUIView):
         else:
             return super().get_queryset(*args, **kwargs).filter(obj_ref__adcm__isnull=True)
 
+    @audit
     def patch(self, request, *args, **kwargs):
         object_type, object_id, version = get_object_type_id_version(**kwargs)
         obj, oc = get_obj(object_type, object_id)
