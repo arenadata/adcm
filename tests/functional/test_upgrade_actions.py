@@ -806,11 +806,7 @@ class TestConstraintsChangeAfterUpgrade:
                 f'\nExpected: {message}\nActual: {log.content}'
             )
         with allure.step('Check that upgrade is reverted'):
-            hc = cluster.hostcomponent()
-            assert len(hc) == 1, f'Only one entry should be in HC map: {hc}'
-            assert all(
-                hc[0][id_key] for id_key in ('host_id', 'service_id', 'component_id')
-            ), f'Host, service and component id should be 1 in HC entry. Actual HC: {hc}'
+            self._check_hc_stays_the_same_after_upgrade(cluster)
             assert (
                 cluster.prototype_id == cluster_proto_id
             ), 'Cluster prototype should not be changed after failed upgrade'
@@ -820,3 +816,25 @@ class TestConstraintsChangeAfterUpgrade:
             assert (
                 component.prototype_id == component_proto_id
             ), 'Component prototype should not be changed after failed upgrade'
+
+    def test_upgrade_without_hc_acl_new_component_with_constraint(self, cluster_with_new_component, generic_provider):
+        """Test upgrade when new component appears, and it has constraints, but no hc_acl in upgrade definition"""
+        upgrade_name = 'without_hc_acl'
+        cluster, service, component = cluster_with_new_component
+        with allure.step('Map component on 1 host'):
+            cluster.hostcomponent_set((cluster.host_add(generic_provider.host_create('host-1')), component))
+        with allure.step(f'Run upgrade {upgrade_name} and expect it to succeed'):
+            task = cluster.upgrade(name=upgrade_name).do()
+            wait_for_task_and_assert_result(task, 'success', action_name=upgrade_name)
+            _ = cluster.reread() or service.reread() or component.reread()
+        with allure.step('Check that state after upgrade is correct'):
+            self._check_hc_stays_the_same_after_upgrade(cluster)
+            assert len(cluster.concerns()) == 1, 'There should be exactly 1 concern on cluster after an upgrade'
+
+    @allure.step('Check HC is the same as it was before the upgrade')
+    def _check_hc_stays_the_same_after_upgrade(self, cluster):
+        hc = cluster.hostcomponent()
+        assert len(hc) == 1, f'Only one entry should be in HC map: {hc}'
+        assert all(
+            hc[0][id_key] for id_key in ('host_id', 'service_id', 'component_id')
+        ), f'Host, service and component id should be 1 in HC entry. Actual HC: {hc}'
