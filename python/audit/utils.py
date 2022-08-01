@@ -26,6 +26,7 @@ from cm.errors import AdcmEx
 from cm.models import ADCM, GroupConfig, Host, HostProvider, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
 from django.views.generic.base import View
+from rbac.models import Group, Policy, Role, User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_403_FORBIDDEN, is_success
 
@@ -154,6 +155,19 @@ def _get_audit_operation_and_object(
             )
             audit_object = _get_audit_object_from_resp(res, AuditObjectType.Group)
 
+        case ["rbac", "group", group_pk]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Group.capitalize()} "
+                     f"{AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
+            )
+            group = Group.objects.get(pk=group_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=group_pk,
+                object_name=group.name,
+                object_type=AuditObjectType.Group,
+            )
+
         case ["rbac", "policy"]:
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Policy.capitalize()} "
@@ -162,6 +176,19 @@ def _get_audit_operation_and_object(
             )
             audit_object = _get_audit_object_from_resp(res, AuditObjectType.Policy)
 
+        case ["rbac", "policy", policy_pk]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Policy.capitalize()} "
+                     f"{AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
+            )
+            policy = Policy.objects.get(pk=policy_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=policy_pk,
+                object_name=policy.name,
+                object_type=AuditObjectType.Policy,
+            )
+
         case ["rbac", "role"]:
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Role.capitalize()} "
@@ -169,6 +196,19 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Create,
             )
             audit_object = _get_audit_object_from_resp(res, AuditObjectType.Role)
+
+        case ["rbac", "role", role_pk]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Role.capitalize()} "
+                     f"{AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
+            )
+            role = Role.objects.get(pk=role_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=role_pk,
+                object_name=role.name,
+                object_type=AuditObjectType.Role,
+            )
 
         case ["rbac", "user"]:
             audit_operation = AuditOperation(
@@ -184,6 +224,19 @@ def _get_audit_operation_and_object(
                 )
             else:
                 audit_object = None
+
+        case ["rbac", "user", user_pk]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.User.capitalize()} "
+                     f"{AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
+            )
+            user = User.objects.get(pk=user_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=user_pk,
+                object_name=user.username,
+                object_type=AuditObjectType.User,
+            )
 
         case ["host"] | ["provider", _, "host"]:
             audit_operation = AuditOperation(
