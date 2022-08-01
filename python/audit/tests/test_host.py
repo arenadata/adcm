@@ -38,8 +38,16 @@ class TestHost(BaseTestCase):
             prototype=provider_prototype,
         )
         self.fqdn = "test_fqdn"
+        config = ObjectConfig.objects.create(current=1, previous=1)
+        ConfigLog.objects.create(obj_ref=config, config="{}")
+        self.host = Host.objects.create(
+            fqdn="test_fqdn_2",
+            prototype=self.host_prototype,
+            provider=self.provider,
+            config=config,
+        )
 
-    def check_host_created(self, log: AuditLog, res: Response):
+    def check_host_created(self, log: AuditLog, res: Response) -> None:
         assert log.audit_object.object_id == res.data["id"]
         assert log.audit_object.object_name == self.fqdn
         assert log.audit_object.object_type == AuditObjectType.Host.value
@@ -51,9 +59,9 @@ class TestHost(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
-    def check_host_updated(self, log: AuditLog, host: Host):
-        assert log.audit_object.object_id == host.pk
-        assert log.audit_object.object_name == self.fqdn
+    def check_host_updated(self, log: AuditLog) -> None:
+        assert log.audit_object.object_id == self.host.pk
+        assert log.audit_object.object_name == self.host.fqdn
         assert log.audit_object.object_type == AuditObjectType.Host.label
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Host configuration updated"
@@ -107,29 +115,44 @@ class TestHost(BaseTestCase):
         self.check_host_created(log, res)
 
     def test_update_and_restore(self):
-        config = ObjectConfig.objects.create(current=1, previous=1)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
-        host = Host.objects.create(
-            fqdn=self.fqdn,
-            prototype=self.host_prototype,
-            provider=self.provider,
-            config=config,
-        )
-
         self.client.post(
-            path=f"/api/v1/host/{host.pk}/config/history/",
+            path=f"/api/v1/host/{self.host.pk}/config/history/",
             data={"config": {}},
             content_type="application/json",
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_host_updated(log, host)
+        self.check_host_updated(log)
 
-        res = self.client.patch(
-            path=f"/api/v1/host/{host.pk}/config/history/1/restore/",
+        res: Response = self.client.patch(
+            path=f"/api/v1/host/{self.host.pk}/config/history/1/restore/",
             content_type="application/json",
         )
 
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
         self.assertEqual(res.status_code, HTTP_200_OK)
-        self.check_host_updated(log, host)
+        self.check_host_updated(log)
+
+    def test_update_and_restore_via_provider(self):
+        self.client.post(
+            path=f"/api/v1/provider/{self.provider.pk}/host/{self.host.pk}/config/history/",
+            data={"config": {}},
+            content_type="application/json",
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_updated(log)
+
+        res: Response = self.client.patch(
+            path=f"/api/v1/provider/{self.provider.pk}/host/"
+            f"{self.host.pk}/config/history/1/restore/",
+            content_type="application/json",
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(res.status_code, HTTP_200_OK)
+        self.check_host_updated(log)

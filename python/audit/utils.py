@@ -23,7 +23,7 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
-from cm.models import GroupConfig, Host
+from cm.models import GroupConfig, Host, HostProvider
 from django.contrib.contenttypes.models import ContentType
 from django.views.generic.base import View
 from rest_framework.response import Response
@@ -44,7 +44,7 @@ def _get_audit_object_from_resp(resp: Response, obj_type: str) -> Optional[Audit
 
 
 def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-many-branches
-        view: View, resp: Response
+        view: View, res: Response
 ) -> Tuple[Optional[AuditOperation], Optional[AuditObject], Optional[str]]:
     operation_name = None
     path = view.request.path.replace("/api/v1/", "")[:-1].split("/")
@@ -62,7 +62,7 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
                 name=f"{AuditObjectType.Bundle.label.capitalize()} loaded",
                 operation_type=AuditLogOperationType.Create.label,
             )
-            audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Bundle.label)
+            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Bundle.label)
 
         case ["cluster"]:
             audit_operation = AuditOperation(
@@ -70,7 +70,7 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
                 f"{AuditLogOperationType.Create.label}d",
                 operation_type=AuditLogOperationType.Create.label,
             )
-            audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Cluster.label)
+            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Cluster.label)
 
         case ["config-log"] | ["group-config", _, "config", _, "config-log"]:
             audit_operation = AuditOperation(
@@ -78,13 +78,13 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
                 operation_type=AuditLogOperationType.Update.label,
             )
 
-            if resp:
+            if res:
                 object_type = ContentType.objects.get_for_model(
-                    resp.data.serializer.instance.obj_ref.object
+                    res.data.serializer.instance.obj_ref.object
                 ).name
                 audit_object = AuditObject.objects.create(
-                    object_id=resp.data.serializer.instance.id,
-                    object_name=str(resp.data.serializer.instance),
+                    object_id=res.data.serializer.instance.id,
+                    object_name=str(res.data.serializer.instance),
                     object_type=object_type,
                 )
                 operation_name = f"{object_type.capitalize()} {audit_operation.name}"
@@ -102,14 +102,14 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
                 name=f"configuration group {operation_type}d",
                 operation_type=operation_type,
             )
-            if resp:
-                object_type = resp.data.serializer.instance.object_type.name
+            if res:
+                object_type = res.data.serializer.instance.object_type.name
                 audit_object = AuditObject.objects.create(
-                    object_id=resp.data.serializer.instance.object.id,
-                    object_name=resp.data.serializer.instance.object.name,
+                    object_id=res.data.serializer.instance.object.id,
+                    object_name=res.data.serializer.instance.object.name,
                     object_type=object_type,
                 )
-                operation_name = f"{resp.data.serializer.instance.name} {audit_operation.name}"
+                operation_name = f"{res.data.serializer.instance.name} {audit_operation.name}"
             else:
                 audit_object = None
                 operation_name = audit_operation.name
@@ -120,8 +120,8 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
                 name=f"{{fqdn}} host added to {config_group.name} configuration group",
                 operation_type=AuditLogOperationType.Update.label,
             )
-            if resp:
-                audit_operation.name = audit_operation.name.format(fqdn=resp.data["fqdn"])
+            if res:
+                audit_operation.name = audit_operation.name.format(fqdn=res.data["fqdn"])
                 audit_object = AuditObject.objects.create(
                     object_id=config_group.pk,
                     object_name=config_group.object.name,
@@ -151,7 +151,7 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
                 f"{AuditLogOperationType.Create.label}d",
                 operation_type=AuditLogOperationType.Create.label,
             )
-            audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Group.label)
+            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Group.label)
 
         case ["rbac", "policy"]:
             audit_operation = AuditOperation(
@@ -159,7 +159,7 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
                 f"{AuditLogOperationType.Create.label}d",
                 operation_type=AuditLogOperationType.Create.label,
             )
-            audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Policy.label)
+            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Policy.label)
 
         case ["rbac", "role"]:
             audit_operation = AuditOperation(
@@ -167,7 +167,7 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
                      f"{AuditLogOperationType.Create.label}d",
                 operation_type=AuditLogOperationType.Create.label,
             )
-            audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Role.label)
+            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Role.label)
 
         case ["rbac", "user"]:
             audit_operation = AuditOperation(
@@ -175,10 +175,10 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
                      f"{AuditLogOperationType.Create.label}d",
                 operation_type=AuditLogOperationType.Create.label,
             )
-            if resp:
+            if res:
                 audit_object = AuditObject.objects.create(
-                    object_id=resp.data["id"],
-                    object_name=resp.data["username"],
+                    object_id=res.data["id"],
+                    object_name=res.data["username"],
                     object_type=AuditObjectType.User.label,
                 )
             else:
@@ -190,14 +190,27 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
                      f"{AuditLogOperationType.Create.label}d",
                 operation_type=AuditLogOperationType.Create.label,
             )
-            if resp:
+            if res:
                 audit_object = AuditObject.objects.create(
-                    object_id=resp.data["id"],
-                    object_name=resp.data["fqdn"],
+                    object_id=res.data["id"],
+                    object_name=res.data["fqdn"],
                     object_type=AuditObjectType.Host.label,
                 )
             else:
                 audit_object = None
+
+        case ["provider", _, "host", host_pk, "config", "history"]:
+            host = Host.objects.get(pk=host_pk)
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Host.label.capitalize()} "
+                     f"configuration {AuditLogOperationType.Update.label}d",
+                operation_type=AuditLogOperationType.Update.label,
+            )
+            audit_object = AuditObject.objects.create(
+                object_id=host.pk,
+                object_name=host.fqdn,
+                object_type=AuditObjectType.Host.label,
+            )
 
         case ["provider"]:
             audit_operation = AuditOperation(
@@ -205,7 +218,23 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
                 f"{AuditLogOperationType.Create.label}d",
                 operation_type=AuditLogOperationType.Create.label,
             )
-            audit_object = _get_audit_object_from_resp(resp, AuditObjectType.Provider.label)
+            if res:
+                audit_object = _get_audit_object_from_resp(res, AuditObjectType.Provider.label)
+            else:
+                audit_object = None
+
+        case ["provider", provider_pk, "config", "history"]:
+            provider = HostProvider.objects.get(pk=provider_pk)
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Provider.label.capitalize()} "
+                f"configuration {AuditLogOperationType.Update.label}d",
+                operation_type=AuditLogOperationType.Update.label,
+            )
+            audit_object = AuditObject.objects.create(
+                    object_id=provider.pk,
+                    object_name=provider.name,
+                    object_type=AuditObjectType.Provider.label,
+                )
 
         case (
             ["host", host_pk, "config", "history"]
@@ -245,15 +274,15 @@ def audit(func):
         error = None
 
         try:
-            resp = func(*args, **kwargs)
-            status_code = resp.status_code
+            res = func(*args, **kwargs)
+            status_code = res.status_code
         except (AdcmEx, AdwpEx) as exc:
             error = exc
-            resp = None
+            res = None
             status_code = exc.status_code
 
         view: View = args[0]
-        audit_operation, audit_object, operation_name = _get_audit_operation_and_object(view, resp)
+        audit_operation, audit_object, operation_name = _get_audit_operation_and_object(view, res)
         if audit_operation:
             object_changes: dict = {}
 
@@ -276,7 +305,7 @@ def audit(func):
         if error:
             raise error
 
-        return resp
+        return res
 
     return wrapped
 
