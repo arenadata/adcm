@@ -521,6 +521,20 @@ class TestAdminGroupsPage:
             ), f"Group {params['group_name']} should be in groups list"
         groups_page.check_ldap_group(params['group_name'])
 
+    @pytest.mark.usefixtures("configure_adcm_ldap_ad")
+    def test_add_ldap_user_to_group(self, app_fs, ldap_user_in_group):
+        """Add ldap user to group"""
+
+        params = {'group_name': 'Test_group'}
+        groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
+        groups_page.create_custom_group(name=params['group_name'], description=None, users=None)
+        groups_page.header.wait_success_job_amount_from_header(1)
+        groups_page.update_group(name=params['group_name'], users=ldap_user_in_group["name"])
+        with allure.step(f"Check group {params['group_name']} has user {ldap_user_in_group['name']}"):
+            assert (
+                ldap_user_in_group["name"] in groups_page.get_group_by_name(params['group_name']).text
+            ), f"Group {params['group_name']} should have user {ldap_user_in_group['name']}"
+
 
 class TestAdminPolicyPage:
     """Tests for the /admin/policies"""

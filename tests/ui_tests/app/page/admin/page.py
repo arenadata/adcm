@@ -361,6 +361,30 @@ class AdminGroupsPage(GeneralAdminPage):
         self.find_and_click(AdminGroupsLocators.save_btn)
         self.wait_element_hide(AdminGroupsLocators.AddGroupPopup.block)
 
+    @allure.step('Update group {name}')
+    def update_group(
+        self, name: str, new_name: Optional[str] = None, description: Optional[str] = None, users: Optional[str] = None
+    ):
+        self.get_group_by_name(name).click()
+        if new_name:
+            self.send_text_to_element(AdminGroupsLocators.AddGroupPopup.name_input, description, clean_input=True)
+        if description:
+            self.send_text_to_element(
+                AdminGroupsLocators.AddGroupPopup.description_input, description, clean_input=True
+            )
+        if users:
+            self.find_and_click(AdminGroupsLocators.AddGroupPopup.users_select)
+            self.wait_element_visible(AdminGroupsLocators.item)
+            for user in users.split(", "):
+                for user_item in self.find_elements(AdminGroupsLocators.item):
+                    if user_item.text == user:
+                        user_chbx = self.find_child(user_item, AdminGroupsLocators.AddGroupPopup.UserRow.checkbox)
+                        self.hover_element(user_chbx)
+                        user_chbx.click()
+            self.find_and_click(AdminGroupsLocators.AddGroupPopup.users_select)
+        self.find_and_click(AdminGroupsLocators.save_btn)
+        self.wait_element_hide(AdminGroupsLocators.AddGroupPopup.block)
+
     def get_all_groups(self) -> [AdminGroupInfo]:
         """Get all groups info."""
 
