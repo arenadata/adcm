@@ -30,7 +30,7 @@ from coreapi.exceptions import ErrorMessage
 
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.tools import build_hc_for_hc_acl_action, get_inventory_file
-from tests.library.assertions import sets_are_equal, expect_api_error
+from tests.library.assertions import sets_are_equal, expect_api_error, expect_no_api_error
 from tests.library.errorcodes import (
     INVALID_UPGRADE_DEFINITION,
     INVALID_OBJECT_DEFINITION,
@@ -620,11 +620,17 @@ class TestConstraintsChangeAfterUpgrade:
         'versions': {'min': 0.5, 'max': 1.9},
         'states': {'available': 'any'},
         'scripts': [
-            {'name': 'before', 'script': 'succeed.yaml', 'script_type': 'ansible'},
+            {'name': 'before', 'script': './succeed.yaml', 'script_type': 'ansible'},
             {'name': 'switch', 'script': 'bundle_switch', 'script_type': 'internal'},
-            {'name': 'after', 'script': 'succeed.yaml', 'script_type': 'ansible'},
+            {'name': 'after', 'script': './succeed.yaml', 'script_type': 'ansible'},
         ],
     }
+
+    @pytest.fixture(scope='session')
+    def dummy_action_content(self) -> str:
+        """Read dummy action file"""
+        bundle_dir = Path(get_data_dir(__file__, 'constraints', 'new'))
+        return (bundle_dir / 'succeed.yaml').read_text(encoding='utf-8')
 
     @pytest.fixture()
     def with_hc_in_upgrade(self, request) -> bool:
@@ -641,7 +647,24 @@ class TestConstraintsChangeAfterUpgrade:
         return cluster, service, service.component()
 
     @pytest.fixture()
-    def upload_bundles(self, request, sdk_client_fs, tmpdir, with_hc_in_upgrade) -> Tuple[Bundle, Bundle]:
+    def hc_acl_block(self, request) -> dict:
+        """Define `hc_acl` block for upgrade"""
+        if request.param:
+            return request.param
+        return {
+            'hc_acl': [
+                {
+                    'service': self.SERVICE_DESC['name'],
+                    'component': self.COMPONENT_NAME,
+                    'action': 'add',
+                }
+            ]
+        }
+
+    @pytest.fixture()  # pylint: disable-next=too-many-arguments
+    def upload_bundles(
+        self, request, sdk_client_fs, tmpdir, with_hc_in_upgrade, hc_acl_block, dummy_action_content
+    ) -> Tuple[Bundle, Bundle]:
         """Upload bundles created dynamically based on the given constraints"""
         # request.param should be like ([0,1], ['+'])
         old_constraint, new_constraint = request.param
@@ -663,19 +686,7 @@ class TestConstraintsChangeAfterUpgrade:
                     'upgrade': [
                         {
                             **self.NO_HC_ACL_UPGRADE_SECTION,
-                            **(
-                                {
-                                    'hc_acl': [
-                                        {
-                                            'service': self.SERVICE_DESC['name'],
-                                            'component': self.COMPONENT_NAME,
-                                            'action': 'add',
-                                        }
-                                    ]
-                                }
-                                if with_hc_in_upgrade
-                                else {}
-                            ),
+                            **(hc_acl_block if with_hc_in_upgrade else {}),
                         }
                     ],
                 },
@@ -696,6 +707,7 @@ class TestConstraintsChangeAfterUpgrade:
             new_path.mkdir()
             with (new_path / 'config.yaml').open('w') as f:
                 yaml.safe_dump(new_bundle_config, f)
+            (new_path / 'succeed.yaml').write_text(dummy_action_content, encoding='utf-8')
         with allure.step('Upload old and new bundles'):
             return sdk_client_fs.upload_from_fs(old_path), sdk_client_fs.upload_from_fs(new_path)
 
@@ -776,6 +788,40 @@ class TestConstraintsChangeAfterUpgrade:
         )
         with allure.step('Check no actions were launched'):
             assert len(sdk_client_fs.job_list()) == 0, 'At least one action has been launched. None should.'
+
+    @pytest.mark.parametrize('with_hc_in_upgrade', [True], indirect=True, ids=lambda i: f'with_hc_acl_{i}')
+    @pytest.mark.parametrize(
+        'hc_acl_block',
+        [
+            {
+                'hc_acl': [
+                    {
+                        'service': SERVICE_DESC['name'],
+                        'component': COMPONENT_NAME,
+                        'action': 'remove',
+                    }
+                ]
+            }
+        ],
+    )
+    @pytest.mark.parametrize(
+        ('upload_bundles', 'set_hc'),
+        [(([1], []), 1)],
+        indirect=True,
+        ids=_set_ids_for_upload_bundles_set_hc,
+    )
+    @pytest.mark.usefixtures('set_hc', 'upload_bundles', 'with_hc_in_upgrade')
+    def test_constraint_removed(self, cluster_with_component):
+        """Test constraint is removed in new bundle version"""
+        cluster, component = cluster_with_component
+        host = cluster.host()
+        upgrade = cluster.upgrade()
+        task = expect_no_api_error(
+            'upgrade cluster with "broken" constraint (for current proto)',
+            upgrade.do,
+            hc=build_hc_for_hc_acl_action(cluster, remove=[(component, host)]),
+        )
+        wait_for_task_and_assert_result(task, 'success', action_name=upgrade.name)
 
     # pylint: disable-next=too-many-locals
     def test_upgrade_with_hc_acl_new_component_with_constraint(self, cluster_with_new_component, generic_provider):
