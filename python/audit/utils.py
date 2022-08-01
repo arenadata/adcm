@@ -23,7 +23,7 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
-from cm.models import GroupConfig, Host, HostProvider
+from cm.models import GroupConfig, Host, HostProvider, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
 from django.views.generic.base import View
 from rest_framework.response import Response
@@ -43,7 +43,8 @@ def _get_audit_object_from_resp(resp: Response, obj_type: str) -> Optional[Audit
     return audit_object
 
 
-def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-many-branches
+# pylint: disable-next=too-many-statements,too-many-branches,too-many-locals
+def _get_audit_operation_and_object(
         view: View, res: Response
 ) -> Tuple[Optional[AuditOperation], Optional[AuditObject], Optional[str]]:
     operation_name = None
@@ -240,17 +241,29 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
             ["host", host_pk, "config", "history"]
             | ["host", host_pk, "config", "history", _, "restore"]
         ):
-            object_type = "host"
-            operation_type = AuditLogOperationType.Update
             audit_operation = AuditOperation(
-                name=f"{object_type.capitalize()} configuration {operation_type}d",
-                operation_type=operation_type,
+                name=f"{AuditObjectType.Host.capitalize()} "
+                     f"configuration {AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
             )
             obj = Host.objects.get(pk=host_pk)
             audit_object = AuditObject.objects.create(
                 object_id=host_pk,
                 object_name=obj.fqdn,
-                object_type=object_type,
+                object_type=AuditObjectType.Host,
+            )
+
+        case ["component", component_pk, "config", "history", _, "restore"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Component.capitalize()} "
+                     f"configuration {AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
+            )
+            obj = ServiceComponent.objects.get(pk=component_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=component_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Component,
             )
 
         case _:
