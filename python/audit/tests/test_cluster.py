@@ -18,6 +18,8 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
+from cm.models import Bundle, Prototype
+from django.urls import reverse
 from rest_framework.response import Response
 
 from adcm.tests.base import BaseTestCase
@@ -27,13 +29,23 @@ class TestCluster(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.upload_bundle()
-        res: Response = self.load_bundle()
-        self.bundle_id = res.data["id"]
+        self.bundle = Bundle.objects.create()
         self.test_cluster_name = "test_cluster"
+        self.prototype = Prototype.objects.create(bundle=self.bundle, type="cluster")
+
+    def create_cluster(self):
+        return self.client.post(
+            path=reverse("cluster"),
+            data={
+                "bundle_id": self.bundle.pk,
+                "display_name": f"{self.test_cluster_name}_display",
+                "name": self.test_cluster_name,
+                "prototype_id": self.prototype.pk,
+            },
+        )
 
     def test_create(self):
-        res: Response = self.create_cluster(self.bundle_id, self.test_cluster_name)
+        res: Response = self.create_cluster()
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -48,7 +60,7 @@ class TestCluster(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
-        self.create_cluster(self.bundle_id, self.test_cluster_name)
+        self.create_cluster()
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 

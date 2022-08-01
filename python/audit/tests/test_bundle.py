@@ -26,6 +26,19 @@ from adcm.tests.base import BaseTestCase
 
 
 class TestBundle(BaseTestCase):
+    def load_bundle(self):
+        return self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": self.test_bundle_filename},
+        )
+
+    def upload_bundle(self):
+        with open(self.test_bundle_path, encoding="utf-8") as f:
+            self.client.post(
+                path=reverse("upload-bundle"),
+                data={"file": f},
+            )
+
     def upload_bundle_and_check(self):
         self.upload_bundle()
 
