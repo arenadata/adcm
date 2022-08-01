@@ -50,11 +50,11 @@ class TestHost(BaseTestCase):
     def check_host_created(self, log: AuditLog, res: Response) -> None:
         assert log.audit_object.object_id == res.data["id"]
         assert log.audit_object.object_name == self.fqdn
-        assert log.audit_object.object_type == AuditObjectType.Host.value
+        assert log.audit_object.object_type == AuditObjectType.Host
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Host created"
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
@@ -62,11 +62,11 @@ class TestHost(BaseTestCase):
     def check_host_updated(self, log: AuditLog) -> None:
         assert log.audit_object.object_id == self.host.pk
         assert log.audit_object.object_name == self.host.fqdn
-        assert log.audit_object.object_type == AuditObjectType.Host.label
+        assert log.audit_object.object_type == AuditObjectType.Host
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Host configuration updated"
-        assert log.operation_type == AuditLogOperationType.Update.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
@@ -98,8 +98,8 @@ class TestHost(BaseTestCase):
 
         assert not log.audit_object
         assert log.operation_name == "Host created"
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Fail.value
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == AuditLogOperationResult.Fail
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)

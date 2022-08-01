@@ -72,11 +72,11 @@ class TestGroupConfig(BaseTestCase):
     def check_group_config_updated(self, log: AuditLog) -> None:
         assert log.audit_object.object_id == self.cluster.pk
         assert log.audit_object.object_name == self.cluster.name
-        assert log.audit_object.object_type == AuditObjectType.Cluster.label
+        assert log.audit_object.object_type == AuditObjectType.Cluster
         assert not log.audit_object.is_deleted
         assert log.operation_name == "test_group_config_2 configuration group updated"
-        assert log.operation_type == AuditLogOperationType.Update.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
@@ -88,11 +88,11 @@ class TestGroupConfig(BaseTestCase):
 
         assert log.audit_object.object_id == self.cluster.pk
         assert log.audit_object.object_name == self.cluster.name
-        assert log.audit_object.object_type == AuditObjectType.Cluster.label
+        assert log.audit_object.object_type == AuditObjectType.Cluster
         assert not log.audit_object.is_deleted
         assert log.operation_name == "test_group_config configuration group created"
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
@@ -139,13 +139,13 @@ class TestGroupConfig(BaseTestCase):
 
         assert log.audit_object.object_id == self.cluster.pk
         assert log.audit_object.object_name == self.cluster.name
-        assert log.audit_object.object_type == AuditObjectType.Cluster.label
+        assert log.audit_object.object_type == AuditObjectType.Cluster
         assert not log.audit_object.is_deleted
         assert log.operation_name == (
             f"{self.host.fqdn} host added to {self.group_config.name} configuration group"
         )
-        assert log.operation_type == AuditLogOperationType.Update.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
@@ -158,13 +158,13 @@ class TestGroupConfig(BaseTestCase):
 
         assert log.audit_object.object_id == self.cluster.pk
         assert log.audit_object.object_name == self.cluster.name
-        assert log.audit_object.object_type == AuditObjectType.Cluster.label
+        assert log.audit_object.object_type == AuditObjectType.Cluster
         assert not log.audit_object.is_deleted
         assert log.operation_name == (
             f"{self.host.fqdn} host removed from {self.group_config.name} configuration group"
         )
-        assert log.operation_type == AuditLogOperationType.Update.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)

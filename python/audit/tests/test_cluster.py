@@ -39,11 +39,11 @@ class TestCluster(BaseTestCase):
 
         assert log.audit_object.object_id == res.data["id"]
         assert log.audit_object.object_name == self.test_cluster_name
-        assert log.audit_object.object_type == AuditObjectType.Cluster.value
+        assert log.audit_object.object_type == AuditObjectType.Cluster
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Cluster created"
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
@@ -54,8 +54,8 @@ class TestCluster(BaseTestCase):
 
         assert not log.audit_object
         assert log.operation_name == "Cluster created"
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Fail.value
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == AuditLogOperationResult.Fail
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)

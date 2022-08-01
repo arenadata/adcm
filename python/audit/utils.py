@@ -52,30 +52,30 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
     match path:
         case ["stack", "upload"]:
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Bundle.label.capitalize()} uploaded",
-                operation_type=AuditLogOperationType.Create.label,
+                name=f"{AuditObjectType.Bundle.capitalize()} uploaded",
+                operation_type=AuditLogOperationType.Create,
             )
             audit_object = None
 
         case ["stack", "load"]:
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Bundle.label.capitalize()} loaded",
-                operation_type=AuditLogOperationType.Create.label,
+                name=f"{AuditObjectType.Bundle.capitalize()} loaded",
+                operation_type=AuditLogOperationType.Create,
             )
-            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Bundle.label)
+            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Bundle)
 
         case ["cluster"]:
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Cluster.label.capitalize()} "
-                f"{AuditLogOperationType.Create.label}d",
-                operation_type=AuditLogOperationType.Create.label,
+                name=f"{AuditObjectType.Cluster.capitalize()} "
+                f"{AuditLogOperationType.Create}d",
+                operation_type=AuditLogOperationType.Create,
             )
-            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Cluster.label)
+            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Cluster)
 
         case ["config-log"] | ["group-config", _, "config", _, "config-log"]:
             audit_operation = AuditOperation(
-                name=f"config log {AuditLogOperationType.Update.label}d",
-                operation_type=AuditLogOperationType.Update.label,
+                name=f"config log {AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
             )
 
             if res:
@@ -94,9 +94,9 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
 
         case ["group-config"] | ["group-config", _]:
             if view.action == "create":
-                operation_type = AuditLogOperationType.Create.label
+                operation_type = AuditLogOperationType.Create
             else:
-                operation_type = AuditLogOperationType.Update.label
+                operation_type = AuditLogOperationType.Update
 
             audit_operation = AuditOperation(
                 name=f"configuration group {operation_type}d",
@@ -118,7 +118,7 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
             config_group = GroupConfig.objects.get(pk=config_group_pk)
             audit_operation = AuditOperation(
                 name=f"{{fqdn}} host added to {config_group.name} configuration group",
-                operation_type=AuditLogOperationType.Update.label,
+                operation_type=AuditLogOperationType.Update,
             )
             if res:
                 audit_operation.name = audit_operation.name.format(fqdn=res.data["fqdn"])
@@ -137,7 +137,7 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
             host = Host.objects.get(pk=host_pk)
             audit_operation = AuditOperation(
                 name=f"{host.fqdn} host removed from {config_group.name} configuration group",
-                operation_type=AuditLogOperationType.Update.label,
+                operation_type=AuditLogOperationType.Update,
             )
             audit_object = AuditObject.objects.create(
                 object_id=config_group.pk,
@@ -147,54 +147,54 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
 
         case ["rbac", "group"]:
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Group.label.capitalize()} "
-                f"{AuditLogOperationType.Create.label}d",
-                operation_type=AuditLogOperationType.Create.label,
+                name=f"{AuditObjectType.Group.capitalize()} "
+                f"{AuditLogOperationType.Create}d",
+                operation_type=AuditLogOperationType.Create,
             )
-            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Group.label)
+            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Group)
 
         case ["rbac", "policy"]:
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Policy.label.capitalize()} "
-                f"{AuditLogOperationType.Create.label}d",
-                operation_type=AuditLogOperationType.Create.label,
+                name=f"{AuditObjectType.Policy.capitalize()} "
+                f"{AuditLogOperationType.Create}d",
+                operation_type=AuditLogOperationType.Create,
             )
-            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Policy.label)
+            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Policy)
 
         case ["rbac", "role"]:
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Role.label.capitalize()} "
-                     f"{AuditLogOperationType.Create.label}d",
-                operation_type=AuditLogOperationType.Create.label,
+                name=f"{AuditObjectType.Role.capitalize()} "
+                     f"{AuditLogOperationType.Create}d",
+                operation_type=AuditLogOperationType.Create,
             )
-            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Role.label)
+            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Role)
 
         case ["rbac", "user"]:
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.User.label.capitalize()} "
-                     f"{AuditLogOperationType.Create.label}d",
-                operation_type=AuditLogOperationType.Create.label,
+                name=f"{AuditObjectType.User.capitalize()} "
+                     f"{AuditLogOperationType.Create}d",
+                operation_type=AuditLogOperationType.Create,
             )
             if res:
                 audit_object = AuditObject.objects.create(
                     object_id=res.data["id"],
                     object_name=res.data["username"],
-                    object_type=AuditObjectType.User.label,
+                    object_type=AuditObjectType.User,
                 )
             else:
                 audit_object = None
 
         case ["host"] | ["provider", _, "host"]:
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Host.label.capitalize()} "
-                     f"{AuditLogOperationType.Create.label}d",
-                operation_type=AuditLogOperationType.Create.label,
+                name=f"{AuditObjectType.Host.capitalize()} "
+                     f"{AuditLogOperationType.Create}d",
+                operation_type=AuditLogOperationType.Create,
             )
             if res:
                 audit_object = AuditObject.objects.create(
                     object_id=res.data["id"],
                     object_name=res.data["fqdn"],
-                    object_type=AuditObjectType.Host.label,
+                    object_type=AuditObjectType.Host,
                 )
             else:
                 audit_object = None
@@ -202,38 +202,38 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
         case ["provider", _, "host", host_pk, "config", "history"]:
             host = Host.objects.get(pk=host_pk)
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Host.label.capitalize()} "
-                     f"configuration {AuditLogOperationType.Update.label}d",
-                operation_type=AuditLogOperationType.Update.label,
+                name=f"{AuditObjectType.Host.capitalize()} "
+                     f"configuration {AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
             )
             audit_object = AuditObject.objects.create(
                 object_id=host.pk,
                 object_name=host.fqdn,
-                object_type=AuditObjectType.Host.label,
+                object_type=AuditObjectType.Host,
             )
 
         case ["provider"]:
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Provider.label.capitalize()} "
-                f"{AuditLogOperationType.Create.label}d",
-                operation_type=AuditLogOperationType.Create.label,
+                name=f"{AuditObjectType.Provider.capitalize()} "
+                f"{AuditLogOperationType.Create}d",
+                operation_type=AuditLogOperationType.Create,
             )
             if res:
-                audit_object = _get_audit_object_from_resp(res, AuditObjectType.Provider.label)
+                audit_object = _get_audit_object_from_resp(res, AuditObjectType.Provider)
             else:
                 audit_object = None
 
         case ["provider", provider_pk, "config", "history"]:
             provider = HostProvider.objects.get(pk=provider_pk)
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Provider.label.capitalize()} "
-                f"configuration {AuditLogOperationType.Update.label}d",
-                operation_type=AuditLogOperationType.Update.label,
+                name=f"{AuditObjectType.Provider.capitalize()} "
+                f"configuration {AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
             )
             audit_object = AuditObject.objects.create(
                     object_id=provider.pk,
                     object_name=provider.name,
-                    object_type=AuditObjectType.Provider.label,
+                    object_type=AuditObjectType.Provider,
                 )
 
         case (
@@ -241,7 +241,7 @@ def _get_audit_operation_and_object(  # pylint: disable=too-many-statements,too-
             | ["host", host_pk, "config", "history", _, "restore"]
         ):
             object_type = "host"
-            operation_type = AuditLogOperationType.Update.label
+            operation_type = AuditLogOperationType.Update
             audit_operation = AuditOperation(
                 name=f"{object_type.capitalize()} configuration {operation_type}d",
                 operation_type=operation_type,

@@ -28,11 +28,11 @@ class TestGroup(BaseTestCase):
 
         assert log.audit_object.object_id == res.data["id"]
         assert log.audit_object.object_name == self.name
-        assert log.audit_object.object_type == AuditObjectType.Group.value
+        assert log.audit_object.object_type == AuditObjectType.Group
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Group created"
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
@@ -46,8 +46,8 @@ class TestGroup(BaseTestCase):
 
         assert not log.audit_object
         assert log.operation_name == "Group created"
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Fail.value
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == AuditLogOperationResult.Fail
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)

@@ -45,11 +45,11 @@ class TestConfigLog(BaseTestCase):
     def check_config_log(self, res: Response, log: AuditLog):
         assert log.audit_object.object_id == res.data["id"]
         assert log.audit_object.object_name == str(ConfigLog.objects.get(pk=res.data["id"]))
-        assert log.audit_object.object_type == AuditObjectType.Cluster.label
+        assert log.audit_object.object_type == AuditObjectType.Cluster
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Cluster config log updated"
-        assert log.operation_type == AuditLogOperationType.Update.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
