@@ -650,7 +650,11 @@ class TestConstraintsChangeAfterUpgrade:
                 self.OLD_CLUSTER,
                 {
                     **self.SERVICE_DESC,
-                    'components': {self.COMPONENT_NAME: {'constraint': old_constraint}, self.DUMMY_COMPONENT_NAME: {}},
+                    # old constraint may be []
+                    'components': {
+                        self.COMPONENT_NAME: ({'constraint': old_constraint} if old_constraint else {}),
+                        self.DUMMY_COMPONENT_NAME: {},
+                    },
                 },
             ]
             new_bundle_config = [
@@ -677,7 +681,10 @@ class TestConstraintsChangeAfterUpgrade:
                 },
                 {
                     **self.SERVICE_DESC,
-                    'components': {self.COMPONENT_NAME: {'constraint': new_constraint}, self.DUMMY_COMPONENT_NAME: {}},
+                    'components': {
+                        self.COMPONENT_NAME: ({'constraint': new_constraint} if new_constraint else {}),
+                        self.DUMMY_COMPONENT_NAME: {},
+                    },
                 },
             ]
             tdir = Path(tmpdir)
@@ -738,6 +745,13 @@ class TestConstraintsChangeAfterUpgrade:
             (([0, 1], [1, '+']), (0, 1)),
             (([0, 1], ['+']), (0, 1)),
             (([0, '+'], ['+']), (0, 2)),
+            # new constraint
+            (([], [1]), (0, 1)),
+            (([], [1, 2]), (0, 1)),
+            (([], ['odd']), (0, 1)),
+            (([], ['odd']), 2),
+            (([], ['+']), (0, 1)),
+            (([], [1, '+']), (0, 1)),
         ],
         indirect=True,
         ids=_set_ids_for_upload_bundles_set_hc,
