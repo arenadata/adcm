@@ -241,6 +241,43 @@ class TestAdminSettingsPage:
             settings_page.config.reset_to_default(config_field_row)
             settings_page.config.assert_input_value_is(params['init_value'], params['field_display_name'])
 
+    # TODO add mark during ADCM-2967
+    def test_ldap_config(self, settings_page: AdminSettingsPage):
+        """Test ldap"""
+        params = {'test_action': "Test LDAP connection", 'connect_action': "Run LDAP sync", "test_value": "test"}
+        with allure.step("Check ldap actions are disabled"):
+            assert settings_page.toolbar.is_adcm_action_inactive(
+                action_name=params['connect_action']
+            ), f"Action {params['connect_action']} should be disabled"
+            assert settings_page.toolbar.is_adcm_action_inactive(
+                action_name=params['test_action']
+            ), f"Action {params['test_action']} should be disabled"
+        with allure.step("Fill ldap config"):
+            settings_page.config.expand_or_close_group(group_name="LDAP integration")
+            settings_page.config.type_in_field_with_few_inputs(row="LDAP URI", values=[params['test_value']])
+            settings_page.config.type_in_field_with_few_inputs(row="Bind DN", values=[params['test_value']])
+            settings_page.config.type_in_field_with_few_inputs(
+                row="Bind Password", values=[params['test_value'], params['test_value']]
+            )
+            settings_page.config.type_in_field_with_few_inputs(row="User search base", values=[params['test_value']])
+            settings_page.config.type_in_field_with_few_inputs(row="Group search base", values=[params['test_value']])
+            settings_page.config.save_config()
+            settings_page.config.wait_config_loaded()
+        with allure.step("Check ldap actions are enabled"):
+            assert not settings_page.toolbar.is_adcm_action_inactive(
+                action_name=params['connect_action']
+            ), f"Action {params['connect_action']} should be enabled"
+            assert not settings_page.toolbar.is_adcm_action_inactive(
+                action_name=params['test_action']
+            ), f"Action {params['test_action']} should be enabled"
+        with allure.step("Check Test LDAP connection action"):
+            settings_page.toolbar.run_adcm_action(action_name=params['test_action'])
+            settings_page.header.wait_in_progress_job_amount_from_header(expected_job_amount=1)
+            settings_page.header.wait_in_progress_job_amount_from_header(expected_job_amount=0)
+        with allure.step("Check Run LDAP sync action"):
+            settings_page.toolbar.run_adcm_action(action_name=params['connect_action'])
+            settings_page.header.wait_in_progress_job_amount_from_header(expected_job_amount=1)
+
 
 @pytest.mark.usefixtures("login_to_adcm_over_api")
 class TestAdminUsersPage:

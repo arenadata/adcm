@@ -17,6 +17,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { MatTreeModule } from '@angular/material/tree';
 
 import { AddingModule } from './add-component/adding.module';
+import { UpgradeMasterComponent } from "@app/shared/components/upgrades/master/master.component";
 import {
   ActionMasterComponent,
   ButtonSpinnerComponent,
@@ -61,6 +62,7 @@ import { RbacRoleService } from '@app/services/rbac-role.service';
 import { RbacPolicyService } from '@app/services/rbac-policy.service';
 import { DynamicModule } from '@app/shared/directives/dynamic/dynamic.module';
 import { RbacObjectCandidateService } from '@app/services/rbac-object-candidate.service';
+import {UpgradeMasterConfigComponent} from "@app/shared/components/upgrades/master/upgrade-master-config.component";
 
 @NgModule({
   imports: [
@@ -96,6 +98,8 @@ import { RbacObjectCandidateService } from '@app/services/rbac-object-candidate.
     ExportComponent,
     ActionMasterComponent,
     ActionMasterConfigComponent,
+    UpgradeMasterComponent,
+    UpgradeMasterConfigComponent,
     StatusColumnComponent,
     StateColumnComponent,
     EditionColumnComponent,

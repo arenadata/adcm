@@ -130,14 +130,15 @@ def _get_ldap_default_settings():
         if is_tls(ldap_config['ldap_uri']):
             cert_filepath = ldap_config.get('tls_ca_cert_file', '')
             if not cert_filepath or not os.path.exists(cert_filepath):
-                log.warning('missing cert file for `ldaps://` connection')
-                return {}
+                msg = 'NO_CERT_FILE'
+                log.warning(msg)
+                return {}, msg
             connection_options = configure_tls(enabled=True, cert_filepath=cert_filepath)
             default_settings.update({'CONNECTION_OPTIONS': connection_options})
 
-        return default_settings
+        return default_settings, None
 
-    return {}
+    return {}, 'NO_LDAP_SETTINGS'
 
 
 class CustomLDAPBackend(LDAPBackend):
@@ -146,7 +147,7 @@ class CustomLDAPBackend(LDAPBackend):
         self.is_tls = False
 
     def authenticate_ldap_user(self, ldap_user, password):
-        self.default_settings = _get_ldap_default_settings()
+        self.default_settings, _ = _get_ldap_default_settings()
         if not self.default_settings:
             return None
         self.is_tls = is_tls(self.default_settings['SERVER_URI'])
@@ -154,6 +155,8 @@ class CustomLDAPBackend(LDAPBackend):
         try:
             if not self.__check_user(ldap_user):
                 return None
+            # pylint: disable=protected-access
+            user_local_groups = self.__get_local_groups_by_username(ldap_user._username)
             user_or_none = super().authenticate_ldap_user(ldap_user, password)
         except Exception as e:  # pylint: disable=broad-except
             log.exception(e)
@@ -162,9 +165,17 @@ class CustomLDAPBackend(LDAPBackend):
         if isinstance(user_or_none, User):
             user_or_none.type = OriginType.LDAP
             user_or_none.save()
-            self.__create_rbac_groups(user_or_none)
+            self.__process_groups(user_or_none, user_local_groups)
 
         return user_or_none
+
+    @staticmethod
+    def __get_local_groups_by_username(username):
+        groups = []
+        with suppress(User.DoesNotExist):
+            user = User.objects.get(username__iexact=username, type=OriginType.LDAP)
+            groups = [g.group for g in user.groups.all() if g.group.type == OriginType.Local]
+        return groups
 
     def get_user_model(self):
         return User
@@ -187,16 +198,19 @@ class CustomLDAPBackend(LDAPBackend):
         log.debug('Found %s groups: %s', len(groups), [i[0] for i in groups])
         return groups
 
-    def __create_rbac_groups(self, user):
+    def __process_groups(self, user, additional_groups=()):
         ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
 
+        # ladp-backend managed auth_groups
         for group in user.groups.filter(name__in=[i[0] for i in ldap_groups]):
             ldap_group_dn = self.__get_ldap_group_dn(group.name, ldap_groups)
             rbac_group = self.__get_rbac_group(group, ldap_group_dn)
             group.user_set.remove(user)
-            rbac_group.group_ptr.user_set.add(user.user_ptr)
+            rbac_group.user_set.add(user)
             if group.user_set.count() == 0:
                 group.delete()
+        for g in additional_groups:
+            g.user_set.add(user)
 
     def __check_user(self, ldap_user):
         user_dn = ldap_user.dn

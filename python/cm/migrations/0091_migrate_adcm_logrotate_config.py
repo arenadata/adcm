@@ -43,7 +43,7 @@ def migrate_logrotate_config(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cm', '0089_rm_background_tasks_app'),
+        ('cm', '0090_rm_background_tasks_app'),
     ]
 
     operations = [

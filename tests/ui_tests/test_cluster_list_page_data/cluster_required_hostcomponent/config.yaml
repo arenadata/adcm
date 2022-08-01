@@ -25,4 +25,4 @@
       requires:
         - component: Metastore
     Metastore:
-      constraint: [0,1]
+      constraint: [1]

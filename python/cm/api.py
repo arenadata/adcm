@@ -536,7 +536,7 @@ def get_hc(cluster):
     return hc_map
 
 
-def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
+def check_sub_key(hc_in):
     def check_sub(sub_key, sub_type, item):
         if sub_key not in item:
             msg = '"{}" sub-field of hostcomponent is required'
@@ -558,6 +558,8 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
             msg = 'duplicate ({}) in host service list'
             raise AdcmEx('INVALID_INPUT', msg.format(item))
 
+
+def make_host_comp_list(cluster, hc_in):
     host_comp_list = []
     for item in hc_in:
         host = Host.obj.get(id=item['host_id'])
@@ -570,9 +572,16 @@ def check_hc(cluster, hc_in):  # pylint: disable=too-many-branches
             msg = 'host {} (cluster #{}) does not belong to cluster #{}'
             raise AdcmEx("FOREIGN_HOST", msg.format(host.fqdn, host.cluster.id, cluster.id))
         host_comp_list.append((service, host, comp))
+    return host_comp_list
 
+
+def check_hc(cluster, hc_in):
+    check_sub_key(hc_in)
+    host_comp_list = make_host_comp_list(cluster, hc_in)
     for service in ClusterObject.objects.filter(cluster=cluster):
-        cm.issue.check_component_constraint(service, [i for i in host_comp_list if i[0] == service])
+        cm.issue.check_component_constraint(
+            cluster, service.prototype, [i for i in host_comp_list if i[0] == service]
+        )
 
     cm.issue.check_component_requires(host_comp_list)
     cm.issue.check_bound_components(host_comp_list)

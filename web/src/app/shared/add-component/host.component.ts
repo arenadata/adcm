@@ -134,7 +134,7 @@ export class HostComponent extends BaseFormDirective implements OnInit {
 
     if (provider && provider.actions) {
       const actions = provider.actions.filter((a) => a.button === ACTION_NAME);
-      if (actions && actions.length) {
+      if (actions && actions?.length) {
         this.action.inputData = { actions };
         this.onCancel();
         this.action.onClick();
@@ -144,7 +144,7 @@ export class HostComponent extends BaseFormDirective implements OnInit {
 
   save() {
     const data = clearEmptyField(this.form.value) as Host;
-    if (this.displayMode !== 0) data.cluster_id = this.service.Cluster.id;
+    if (this.displayMode !== 0) data.cluster_id = this.service.Cluster?.id;
     this.service
       .addHost(data)
       .pipe(
@@ -163,7 +163,7 @@ export class HostComponent extends BaseFormDirective implements OnInit {
   }
 
   getNextPageClusters() {
-    const count = this.clusters$.getValue().length;
+    const count = this.clusters$.getValue()?.length;
     if (count === this.pageCluster * this.limit) {
       this.pageCluster++;
       this.getClusters();
@@ -171,7 +171,7 @@ export class HostComponent extends BaseFormDirective implements OnInit {
   }
 
   getNextPageProvider() {
-    const count = this.providers$.getValue().length;
+    const count = this.providers$.getValue()?.length;
     if (count === this.pageProvider * this.limit) {
       this.pageProvider++;
       this.getProviders();
