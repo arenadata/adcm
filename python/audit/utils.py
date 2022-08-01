@@ -23,7 +23,7 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
-from cm.models import GroupConfig, Host, HostProvider, ServiceComponent
+from cm.models import ADCM, GroupConfig, Host, HostProvider, ServiceComponent
 from django.contrib.contenttypes.models import ContentType
 from django.views.generic.base import View
 from rest_framework.response import Response
@@ -264,6 +264,19 @@ def _get_audit_operation_and_object(
                 object_id=component_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Component,
+            )
+
+        case ["adcm", adcm_pk, "config", "history"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.ADCM.upper()} "
+                     f"configuration {AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
+            )
+            obj = ADCM.objects.get(pk=adcm_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=adcm_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.ADCM,
             )
 
         case _:
