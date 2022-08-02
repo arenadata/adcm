@@ -19,10 +19,10 @@ from tarfile import TarFile
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from audit.models import AuditLog, AuditObject, AuditSession
 from audit.utils import make_audit_log
 from cm.logger import log_cron_task as log
 from cm.adcm_config import get_adcm_config
-from audit.models import AuditLog, AuditObject, AuditSession
 
 
 # pylint: disable=protected-access
@@ -65,7 +65,7 @@ class Command(BaseCommand):
             target_logins = AuditSession.objects.filter(login_time__lt=threshold_date)
             cleared = False
             if target_operations or target_logins:
-                _make_audit_log('audit', 'success', 'launched')
+                make_audit_log('audit', 'success', 'launched')
 
             if config['data_archiving']:
                 self.__log(
@@ -98,11 +98,11 @@ class Command(BaseCommand):
 
             self.__log('Finished.')
             if cleared:
-                _make_audit_log('audit', 'success', 'completed')
+                make_audit_log('audit', 'success', 'completed')
         except Exception as e:  # pylint: disable=broad-except
-            _make_audit_log('audit', 'failed', 'completed')
-            self.__log('Error in auditlog rotation', 'warning')
-            self.__log(e, 'exception')
+            make_audit_log('audit', 'failed', 'completed')
+            self.__log('Error in auditlog rotation')
+            self.__log(e)
 
     def __archive(self, *querysets):
         os.makedirs(self.archive_base_dir, exist_ok=True)
