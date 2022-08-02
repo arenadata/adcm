@@ -23,7 +23,7 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
-from cm.models import ADCM, GroupConfig, Host, HostProvider, ServiceComponent
+from cm.models import ADCM, GroupConfig, Host, HostProvider, ServiceComponent, TaskLog
 from django.contrib.contenttypes.models import ContentType
 from django.views.generic.base import View
 from rbac.models import Group, Policy, Role, User
@@ -42,6 +42,36 @@ def _get_audit_object_from_resp(resp: Response, obj_type: str) -> Optional[Audit
         audit_object = None
 
     return audit_object
+
+
+def _task_case(task_pk: str, action: str) -> Tuple[AuditOperation, AuditObject]:
+    if action == "cancel":
+        action = f"{action}l"
+
+    obj = TaskLog.objects.get(pk=task_pk)
+    obj_type = obj.object_type.name
+
+    if obj_type == "adcm":
+        obj_type = obj_type.upper()
+    else:
+        obj_type = obj_type.capitalize()
+
+    if obj.action:
+        action_name = obj.action.display_name
+    else:
+        action_name = "task"
+
+    audit_operation = AuditOperation(
+        name=f"{obj_type} {action_name} {action}ed",
+        operation_type=AuditLogOperationType.Update,
+    )
+    audit_object = AuditObject.objects.create(
+        object_id=task_pk,
+        object_name=obj.task_object.name,
+        object_type=obj.object_type.name,
+    )
+
+    return audit_operation, audit_object
 
 
 # pylint: disable-next=too-many-statements,too-many-branches,too-many-locals
@@ -136,9 +166,9 @@ def _get_audit_operation_and_object(
 
         case ["group-config", config_group_pk, "host", host_pk]:
             config_group = GroupConfig.objects.get(pk=config_group_pk)
-            host = Host.objects.get(pk=host_pk)
+            obj = Host.objects.get(pk=host_pk)
             audit_operation = AuditOperation(
-                name=f"{host.fqdn} host removed from {config_group.name} configuration group",
+                name=f"{obj.fqdn} host removed from {config_group.name} configuration group",
                 operation_type=AuditLogOperationType.Update,
             )
             audit_object = AuditObject.objects.create(
@@ -161,10 +191,10 @@ def _get_audit_operation_and_object(
                      f"{AuditLogOperationType.Update}d",
                 operation_type=AuditLogOperationType.Update,
             )
-            group = Group.objects.get(pk=group_pk)
+            obj = Group.objects.get(pk=group_pk)
             audit_object = AuditObject.objects.create(
                 object_id=group_pk,
-                object_name=group.name,
+                object_name=obj.name,
                 object_type=AuditObjectType.Group,
             )
 
@@ -182,10 +212,10 @@ def _get_audit_operation_and_object(
                      f"{AuditLogOperationType.Update}d",
                 operation_type=AuditLogOperationType.Update,
             )
-            policy = Policy.objects.get(pk=policy_pk)
+            obj = Policy.objects.get(pk=policy_pk)
             audit_object = AuditObject.objects.create(
                 object_id=policy_pk,
-                object_name=policy.name,
+                object_name=obj.name,
                 object_type=AuditObjectType.Policy,
             )
 
@@ -203,10 +233,10 @@ def _get_audit_operation_and_object(
                      f"{AuditLogOperationType.Update}d",
                 operation_type=AuditLogOperationType.Update,
             )
-            role = Role.objects.get(pk=role_pk)
+            obj = Role.objects.get(pk=role_pk)
             audit_object = AuditObject.objects.create(
                 object_id=role_pk,
-                object_name=role.name,
+                object_name=obj.name,
                 object_type=AuditObjectType.Role,
             )
 
@@ -231,10 +261,10 @@ def _get_audit_operation_and_object(
                      f"{AuditLogOperationType.Update}d",
                 operation_type=AuditLogOperationType.Update,
             )
-            user = User.objects.get(pk=user_pk)
+            obj = User.objects.get(pk=user_pk)
             audit_object = AuditObject.objects.create(
                 object_id=user_pk,
-                object_name=user.username,
+                object_name=obj.username,
                 object_type=AuditObjectType.User,
             )
 
@@ -254,15 +284,15 @@ def _get_audit_operation_and_object(
                 audit_object = None
 
         case ["provider", _, "host", host_pk, "config", "history"]:
-            host = Host.objects.get(pk=host_pk)
+            obj = Host.objects.get(pk=host_pk)
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Host.capitalize()} "
                      f"configuration {AuditLogOperationType.Update}d",
                 operation_type=AuditLogOperationType.Update,
             )
             audit_object = AuditObject.objects.create(
-                object_id=host.pk,
-                object_name=host.fqdn,
+                object_id=obj.pk,
+                object_name=obj.fqdn,
                 object_type=AuditObjectType.Host,
             )
 
@@ -278,15 +308,15 @@ def _get_audit_operation_and_object(
                 audit_object = None
 
         case ["provider", provider_pk, "config", "history"]:
-            provider = HostProvider.objects.get(pk=provider_pk)
+            obj = HostProvider.objects.get(pk=provider_pk)
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Provider.capitalize()} "
                 f"configuration {AuditLogOperationType.Update}d",
                 operation_type=AuditLogOperationType.Update,
             )
             audit_object = AuditObject.objects.create(
-                    object_id=provider.pk,
-                    object_name=provider.name,
+                    object_id=provider_pk,
+                    object_name=obj.name,
                     object_type=AuditObjectType.Provider,
                 )
 
@@ -331,6 +361,9 @@ def _get_audit_operation_and_object(
                 object_name=obj.name,
                 object_type=AuditObjectType.ADCM,
             )
+
+        case ["task", task_pk, action] | ["task", task_pk, action]:
+            audit_operation, audit_object = _task_case(task_pk, action)
 
         case _:
             return None, None, None

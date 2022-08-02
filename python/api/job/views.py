@@ -24,6 +24,7 @@ from api.job.serializers import (
     TaskSerializer,
 )
 from api.utils import check_custom_perm, get_object_for_user
+from audit.utils import audit
 from cm import config
 from cm.errors import AdcmEx
 from cm.job import cancel_task, get_log, restart_task
@@ -209,6 +210,7 @@ class TaskReStart(GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = TaskSerializer
 
+    @audit
     def put(self, request, *args, **kwargs):
         task = get_object_for_user(request.user, 'cm.view_tasklog', TaskLog, id=kwargs['task_id'])
         check_custom_perm(request.user, 'change', TaskLog, task)
@@ -221,6 +223,7 @@ class TaskCancel(GenericUIView):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = TaskSerializer
 
+    @audit
     def put(self, request, *args, **kwargs):
         task = get_object_for_user(request.user, 'cm.view_tasklog', TaskLog, id=kwargs['task_id'])
         check_custom_perm(request.user, 'change', TaskLog, task)
