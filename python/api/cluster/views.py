@@ -170,6 +170,7 @@ class ClusterImport(GenericUIView):
         res = cm.api.get_import(cluster)
         return Response(res)
 
+    @audit
     def post(self, request, *args, **kwargs):
         """
         Update bind for cluster
