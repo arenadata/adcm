@@ -29,7 +29,7 @@ from cm.models import (
     ServiceComponent,
 )
 
-from adcm.tests.base import BaseTestCase, APPLICATION_JSON
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestComponent(BaseTestCase):
@@ -88,7 +88,7 @@ class TestComponent(BaseTestCase):
     def test_restore_via_service(self):
         self.client.patch(
             path=f"/api/v1/service/{self.service.pk}/component/"
-                 f"{self.component.pk}/config/history/1/restore/",
+            f"{self.component.pk}/config/history/1/restore/",
             content_type=APPLICATION_JSON,
         )
 
