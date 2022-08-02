@@ -159,6 +159,7 @@ class AcceptLicense(GenericUIView):
     queryset = Bundle.objects.all()
     serializer_class = serializers.LicenseSerializer
 
+    @audit
     def put(self, request, bundle_id):
         bundle = check_obj(Bundle, bundle_id, 'BUNDLE_NOT_FOUND')
         accept_license(bundle)

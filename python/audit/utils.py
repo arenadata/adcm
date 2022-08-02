@@ -116,6 +116,18 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Bundle,
             )
 
+        case ["stack", "bundle", bundle_pk, "license", "accept"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Bundle.capitalize()} license accepted",
+                operation_type=AuditLogOperationType.Update,
+            )
+            obj = Bundle.objects.get(pk=bundle_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=bundle_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Bundle,
+            )
+
         case ["cluster"]:
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Cluster.capitalize()} "

@@ -27,6 +27,17 @@ from adcm.tests.base import BaseTestCase
 
 
 class TestBundle(BaseTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        bundle_name = "test_bundle"
+        self.bundle = Bundle.objects.create(
+            name=bundle_name,
+            license_path="test_bundle_license_path",
+            license="unaccepted",
+        )
+        Prototype.objects.create(bundle=self.bundle, type="cluster", name=bundle_name)
+
     def load_bundle(self):
         return self.client.post(
             path=reverse("load-bundle"),
@@ -112,23 +123,35 @@ class TestBundle(BaseTestCase):
         assert log.audit_object.is_deleted
 
     def test_update(self):
-        bundle_name = "test_bundle"
-        bundle = Bundle.objects.create(name=bundle_name)
-        Prototype.objects.create(bundle=bundle, type="cluster", name=bundle_name)
-
         with patch("api.stack.views.update_bundle"):
             self.client.put(
-                path=f"/api/v1/stack/bundle/{bundle.pk}/update/",
+                path=f"/api/v1/stack/bundle/{self.bundle.pk}/update/",
                 data={"name": "new_bundle_name"},
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == bundle.pk
-        assert log.audit_object.object_name == bundle.name
+        assert log.audit_object.object_id == self.bundle.pk
+        assert log.audit_object.object_name == self.bundle.name
         assert log.audit_object.object_type == AuditObjectType.Bundle
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Bundle updated"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def test_license_accepted(self):
+        self.client.put(path=f"/api/v1/stack/bundle/{self.bundle.pk}/license/accept/")
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.bundle.pk
+        assert log.audit_object.object_name == self.bundle.name
+        assert log.audit_object.object_type == AuditObjectType.Bundle
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Bundle license accepted"
         assert log.operation_type == AuditLogOperationType.Update
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
