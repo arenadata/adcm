@@ -133,6 +133,7 @@ class ServiceImportView(GenericUIView):
         cluster = service.cluster
         return Response(get_import(cluster, service))
 
+    @audit
     def post(self, request, **kwargs):
         service = check_service(request.user, kwargs)
         check_custom_perm(request.user, 'change_import_of', 'clusterobject', service)

@@ -24,7 +24,7 @@ from cm.models import Bundle, Cluster, ClusterObject, ConfigLog, ObjectConfig, P
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
-class TestComponent(BaseTestCase):
+class TestService(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -84,6 +84,26 @@ class TestComponent(BaseTestCase):
         assert log.audit_object.object_type == AuditObjectType.Cluster
         assert not log.audit_object.is_deleted
         assert log.operation_name == f"{self.service.display_name} service removed"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def test_import(self):
+        self.client.post(
+            path=f"/api/v1/service/{self.service.pk}/import/",
+            data={"bind": []},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.service.pk
+        assert log.audit_object.object_name == self.service.name
+        assert log.audit_object.object_type == AuditObjectType.Service
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Service import updated"
         assert log.operation_type == AuditLogOperationType.Update
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)

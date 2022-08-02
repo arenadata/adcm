@@ -371,9 +371,8 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Host,
             )
 
-        case ["service", service_pk]:
+        case ["service", _]:
             deleted_obj: ClusterObject
-            # obj = ClusterObject.objects.get(pk=service_pk)
             audit_operation = AuditOperation(
                 name=f"{deleted_obj.display_name} service removed",
                 operation_type=AuditLogOperationType.Update,
@@ -382,6 +381,19 @@ def _get_audit_operation_and_object(
                 object_id=deleted_obj.cluster.pk,
                 object_name=deleted_obj.cluster.name,
                 object_type=AuditObjectType.Cluster,
+            )
+
+        case ["service", service_pk, "import"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Service.capitalize()} "
+                     f"import {AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
+            )
+            obj = ClusterObject.objects.get(pk=service_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=service_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Service,
             )
 
         case (
