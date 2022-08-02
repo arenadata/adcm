@@ -40,6 +40,8 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestCluster(BaseTestCase):
+    # pylint: disable=too-many-instance-attributes
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -52,10 +54,14 @@ class TestCluster(BaseTestCase):
         self.cluster = Cluster.objects.create(
             prototype=self.cluster_prototype, name="test_cluster_2", config=config
         )
-        service_prototype = Prototype.objects.create(bundle=self.bundle, type="service")
-        PrototypeExport.objects.create(prototype=service_prototype)
+        self.service_prototype = Prototype.objects.create(
+            bundle=self.bundle,
+            type="service",
+            display_name="test_service",
+        )
+        PrototypeExport.objects.create(prototype=self.service_prototype)
         self.service = ClusterObject.objects.create(
-            prototype=service_prototype, cluster=self.cluster
+            prototype=self.service_prototype, cluster=self.cluster
         )
 
         provider_prototype = Prototype.objects.create(bundle=self.bundle, type="provider")
@@ -69,19 +75,6 @@ class TestCluster(BaseTestCase):
             prototype=host_prototype,
             provider=provider,
             config=config,
-        )
-
-        service_component_prototype = Prototype.objects.create(bundle=self.bundle, type="component")
-        service_component = ServiceComponent.objects.create(
-            cluster=self.cluster,
-            service=self.service,
-            prototype=service_component_prototype,
-        )
-        self.hc = HostComponent.objects.create(
-            cluster=self.cluster,
-            host=self.host,
-            service=self.service,
-            component=service_component,
         )
 
     def create_cluster(self):
@@ -233,7 +226,7 @@ class TestCluster(BaseTestCase):
         self.client.post(
             path=reverse(
                 "config-history",
-                kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.id},
+                kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
             ),
             data={"config": {}},
             content_type=APPLICATION_JSON,
@@ -253,6 +246,18 @@ class TestCluster(BaseTestCase):
         assert isinstance(log.object_changes, dict)
 
     def test_update_hostcomponent(self):
+        service_component_prototype = Prototype.objects.create(bundle=self.bundle, type="component")
+        service_component = ServiceComponent.objects.create(
+            cluster=self.cluster,
+            service=self.service,
+            prototype=service_component_prototype,
+        )
+        hc = HostComponent.objects.create(
+            cluster=self.cluster,
+            host=self.host,
+            service=self.service,
+            component=service_component,
+        )
         self.host.cluster = self.cluster
         self.host.save(update_fields=["cluster"])
 
@@ -261,7 +266,7 @@ class TestCluster(BaseTestCase):
             data={
                 "hc": [
                     {
-                        "component_id": self.hc.pk,
+                        "component_id": hc.pk,
                         "host_id": self.host.pk,
                         "service_id": self.service.pk,
                     }
@@ -297,6 +302,52 @@ class TestCluster(BaseTestCase):
         assert log.audit_object.object_type == AuditObjectType.Cluster
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Cluster import updated"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def test_add_service(self):
+        cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_3")
+        self.client.post(
+            path=reverse("service", kwargs={"cluster_id": cluster.pk}),
+            data={
+                "service_id": self.service.pk,
+                "prototype_id": self.service_prototype.pk,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == cluster.pk
+        assert log.audit_object.object_name == cluster.name
+        assert log.audit_object.object_type == AuditObjectType.Cluster
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "test_service service added"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def test_delete_service(self):
+        self.client.delete(
+            path=reverse(
+                "service-details",
+                kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
+            ),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.cluster.pk
+        assert log.audit_object.object_name == self.cluster.name
+        assert log.audit_object.object_type == AuditObjectType.Cluster
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == f"{self.service.display_name} service removed"
         assert log.operation_type == AuditLogOperationType.Update
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)

@@ -193,6 +193,41 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Cluster,
             )
 
+        case ["cluster", cluster_pk, "service"]:
+            audit_operation = AuditOperation(
+                name="{service_display_name} service added",
+                operation_type=AuditLogOperationType.Update,
+            )
+
+            if res and res.data:
+                audit_operation.name = audit_operation.name.format(
+                    service_display_name=res.data["display_name"],
+                )
+
+            obj = Cluster.objects.get(pk=cluster_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=cluster_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Cluster,
+            )
+
+        case ["cluster", cluster_pk, "service", _]:
+            audit_operation = AuditOperation(
+                name="{service_display_name} service removed",
+                operation_type=AuditLogOperationType.Update,
+            )
+            if deleted_obj:
+                deleted_obj: ClusterObject
+                audit_operation.name = audit_operation.name.format(
+                    service_display_name=deleted_obj.display_name
+                )
+            obj = Cluster.objects.get(pk=cluster_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=cluster_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Cluster,
+            )
+
         case ["cluster", cluster_pk, "bind"]:
             obj = Cluster.objects.get(pk=cluster_pk)
             audit_operation = AuditOperation(
