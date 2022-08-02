@@ -18,11 +18,11 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import Bundle, Prototype
+from cm.models import Bundle, Cluster, Prototype
 from django.urls import reverse
 from rest_framework.response import Response
 
-from adcm.tests.base import BaseTestCase
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestCluster(BaseTestCase):
@@ -32,6 +32,7 @@ class TestCluster(BaseTestCase):
         self.bundle = Bundle.objects.create()
         self.test_cluster_name = "test_cluster"
         self.prototype = Prototype.objects.create(bundle=self.bundle, type="cluster")
+        self.cluster = Cluster.objects.create(prototype=self.prototype, name="test_cluster_2")
 
     def create_cluster(self):
         return self.client.post(
@@ -68,6 +69,26 @@ class TestCluster(BaseTestCase):
         assert log.operation_name == "Cluster created"
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Fail
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def test_update(self):
+        self.client.patch(
+            path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
+            data={"display_name": "test_cluster_another_display_name"},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.cluster.pk
+        assert log.audit_object.object_name == self.cluster.name
+        assert log.audit_object.object_type == AuditObjectType.Cluster
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Cluster updated"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)

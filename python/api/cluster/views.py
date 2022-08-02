@@ -113,6 +113,7 @@ class ClusterDetail(PermissionListMixin, DetailView):
     lookup_url_kwarg = 'cluster_id'
     error_code = 'CLUSTER_NOT_FOUND'
 
+    @audit
     def patch(self, request, *args, **kwargs):
         """
         Edit cluster
