@@ -24,6 +24,8 @@ from tests.library.audit.readers import YAMLReader, ParsedAuditLog
 
 AUDIT_LOG_SCENARIOS_DIR = Path(__file__).parent / 'scenarios'
 
+BUNDLES_DIR = Path(__file__).parent / 'bundles'
+
 
 class ScenarioArg(NamedTuple):
     """Wrapper for argument for audit log parser"""
