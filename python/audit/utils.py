@@ -26,6 +26,7 @@ from cm.errors import AdcmEx
 from cm.models import (
     ADCM,
     Bundle,
+    ClusterBind,
     ClusterObject,
     GroupConfig,
     Host,
@@ -42,11 +43,11 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_403_FORBIDDEN, is_success
 
 
-def _get_audit_object_from_resp(resp: Response, obj_type: str) -> Optional[AuditObject]:
-    if resp and resp.data:
+def _get_audit_object_from_resp(res: Response, obj_type: str) -> Optional[AuditObject]:
+    if res and res.data:
         audit_object = AuditObject.objects.create(
-            object_id=resp.data["id"],
-            object_name=resp.data["name"],
+            object_id=res.data["id"],
+            object_name=res.data["name"],
             object_type=obj_type,
         )
     else:
@@ -396,6 +397,54 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Service,
             )
 
+        case ["service", service_pk, "bind"]:
+            obj = ClusterObject.objects.get(pk=service_pk)
+            if obj.display_name:
+                obj_name = obj.display_name
+            else:
+                obj_name = str(obj)
+
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Service.capitalize()} "
+                     f"bound to {{export_cluster_name}}/{obj_name}",
+                operation_type=AuditLogOperationType.Update,
+            )
+
+            if res and res.data:
+                audit_operation.name = audit_operation.name.format(
+                    export_cluster_name=res.data["export_cluster_name"],
+                )
+
+            audit_object = AuditObject.objects.create(
+                object_id=service_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Service,
+            )
+
+        case ["service", service_pk, "bind", _]:
+            obj = ClusterObject.objects.get(pk=service_pk)
+            if obj.display_name:
+                obj_name = obj.display_name
+            else:
+                obj_name = str(obj)
+
+            audit_operation = AuditOperation(
+                name=f"{{export_cluster_name}}/{obj_name} unbound",
+                operation_type=AuditLogOperationType.Update,
+            )
+
+            if deleted_obj:
+                deleted_obj: Tuple[ClusterObject, ClusterBind]
+                audit_operation.name = audit_operation.name.format(
+                    export_cluster_name=deleted_obj[0].cluster.name,
+                )
+
+            audit_object = AuditObject.objects.create(
+                object_id=service_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Service,
+            )
+
         case (
             ["service", _, "component", component_pk, "config", "history"]
             | ["service", _, "component", component_pk, "config", "history", _, "restore"]
@@ -480,7 +529,10 @@ def audit(func):
         request: Request = args[1]
 
         if request.method == "DELETE":
-            deleted_obj = view.get_object()
+            try:
+                deleted_obj = view.get_object()
+            except AssertionError:
+                deleted_obj = view.get_obj(kwargs, kwargs["bind_id"])
         else:
             deleted_obj = None
 

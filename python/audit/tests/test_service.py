@@ -19,7 +19,17 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import Bundle, Cluster, ClusterObject, ConfigLog, ObjectConfig, Prototype
+from cm.models import (
+    Bundle,
+    Cluster,
+    ClusterBind,
+    ClusterObject,
+    ConfigLog,
+    ObjectConfig,
+    Prototype,
+    PrototypeExport,
+    PrototypeImport,
+)
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -29,8 +39,8 @@ class TestService(BaseTestCase):
         super().setUp()
 
         bundle = Bundle.objects.create()
-        cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster")
-        cluster = Cluster.objects.create(prototype=cluster_prototype, name="test_cluster")
+        self.cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster")
+        cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster")
         service_prototype = Prototype.objects.create(bundle=bundle, type="service")
         config = ObjectConfig.objects.create(current=1, previous=1)
         ConfigLog.objects.create(obj_ref=config, config="{}")
@@ -104,6 +114,53 @@ class TestService(BaseTestCase):
         assert log.audit_object.object_type == AuditObjectType.Service
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Service import updated"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def test_bind_unbind(self):
+        bundle = Bundle.objects.create(name="test_bundle_2")
+        cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster")
+        service_prototype = Prototype.objects.create(bundle=bundle, type="service")
+        cluster = Cluster.objects.create(prototype=cluster_prototype, name="test_cluster_2")
+        PrototypeExport.objects.create(prototype=cluster_prototype)
+        service = ClusterObject.objects.create(prototype=service_prototype, cluster=cluster)
+        PrototypeImport.objects.create(prototype=service_prototype)
+
+        self.client.post(
+            path=f"/api/v1/service/{service.pk}/bind/",
+            data={"export_cluster_id": cluster.pk},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == service.pk
+        assert log.audit_object.object_name == service.name
+        assert log.audit_object.object_type == AuditObjectType.Service
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == 'Service bound to test_cluster_2/service #2 ""'
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+        bind = ClusterBind.objects.first()
+        self.client.delete(
+            path=f"/api/v1/service/{service.pk}/bind/{bind.pk}/",
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == service.pk
+        assert log.audit_object.object_name == service.name
+        assert log.audit_object.object_type == AuditObjectType.Service
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == 'test_cluster_2/service #2 "" unbound'
         assert log.operation_type == AuditLogOperationType.Update
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)

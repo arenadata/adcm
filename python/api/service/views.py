@@ -164,6 +164,7 @@ class ServiceBindView(GenericUIView):
         serializer = self.get_serializer(binds, many=True)
         return Response(serializer.data)
 
+    @audit
     def post(self, request, **kwargs):
         """
         Bind two services
@@ -196,6 +197,7 @@ class ServiceBindDetailView(GenericUIView):
         serializer = self.get_serializer(bind)
         return Response(serializer.data)
 
+    @audit
     def delete(self, request, *args, **kwargs):
         """
         Unbind specified bind of service
