@@ -39,7 +39,6 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from rbac.models import User
 
 LOGROTATE_CONF_FILE_TEMPLATE = """
 /adcm/data/log/nginx/*.log {{
