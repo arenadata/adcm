@@ -16,12 +16,11 @@ from datetime import timedelta
 from shutil import rmtree
 from tarfile import TarFile
 
+from audit.models import AuditLog, AuditObject, AuditSession
+from cm.adcm_config import get_adcm_config
+from cm.logger import log_cron_task as log
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-
-from cm.logger import log_cron_task as log
-from cm.adcm_config import get_adcm_config
-from audit.models import AuditLog, AuditObject, AuditSession
 
 
 # pylint: disable=protected-access
