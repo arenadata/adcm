@@ -1,15 +1,27 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from datetime import datetime
 
 from audit.models import (
-    AUDIT_OPERATION_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import Bundle, Prototype
+from cm.models import Bundle, ConfigLog, HostProvider, ObjectConfig, Prototype
 from django.urls import reverse
 from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
 
 from adcm.tests.base import BaseTestCase
 
@@ -21,7 +33,18 @@ class TestProvider(BaseTestCase):
         bundle = Bundle.objects.create()
         self.prototype = Prototype.objects.create(bundle=bundle, type="provider")
         self.name = "test_provider"
-        self.audit_operation_create_provider = AUDIT_OPERATION_MAP["ProviderList"]["POST"]
+
+    def check_provider_updated(self, log: AuditLog, provider: HostProvider) -> None:
+        assert log.audit_object.object_id == provider.pk
+        assert log.audit_object.object_name == provider.name
+        assert log.audit_object.object_type == AuditObjectType.Provider
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Provider configuration updated"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
 
     def test_create(self):
         res: Response = self.client.post(
@@ -36,11 +59,11 @@ class TestProvider(BaseTestCase):
 
         assert log.audit_object.object_id == res.data["id"]
         assert log.audit_object.object_name == self.name
-        assert log.audit_object.object_type == AuditObjectType.Provider.value
+        assert log.audit_object.object_type == AuditObjectType.Provider
         assert not log.audit_object.is_deleted
-        assert log.operation_name == self.audit_operation_create_provider.name
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
+        assert log.operation_name == "Provider created"
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
@@ -56,9 +79,36 @@ class TestProvider(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert not log.audit_object
-        assert log.operation_name == self.audit_operation_create_provider.name
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Fail.value
+        assert log.operation_name == "Provider created"
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == AuditLogOperationResult.Fail
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
+
+    def test_update_and_restore(self):
+        config = ObjectConfig.objects.create(current=1, previous=1)
+        provider = HostProvider.objects.create(
+            prototype=self.prototype, name="test_provider", config=config
+        )
+
+        ConfigLog.objects.create(obj_ref=config, config="{}")
+        self.client.post(
+            path=f"/api/v1/provider/{provider.pk}/config/history/",
+            data={"config": {}},
+            content_type="application/json",
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_provider_updated(log, provider)
+
+        res: Response = self.client.patch(
+            path=f"/api/v1/provider/{provider.pk}/config/history/1/restore/",
+            content_type="application/json",
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(res.status_code, HTTP_200_OK)
+        self.check_provider_updated(log, provider)

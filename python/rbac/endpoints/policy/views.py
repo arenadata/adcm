@@ -171,6 +171,7 @@ class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-m
         else:
             return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @audit
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         policy = self.get_object()
