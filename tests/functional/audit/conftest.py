@@ -17,10 +17,13 @@ from typing import NamedTuple
 
 import pytest
 
+from tests.functional.conftest import only_clean_adcm
 from tests.library.audit.checkers import AuditLogChecker
 from tests.library.audit.readers import YAMLReader, ParsedAuditLog
 
 # pylint: disable=redefined-outer-name
+
+pytestmark = [only_clean_adcm]
 
 AUDIT_LOG_SCENARIOS_DIR = Path(__file__).parent / 'scenarios'
 

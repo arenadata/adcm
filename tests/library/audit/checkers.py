@@ -71,10 +71,11 @@ class AuditLogChecker:
         """
         Check if given audit records matches the scenario
         """
+        sorted_audit_records = sorted(audit_records, key=lambda rec: rec.operation_time)
         operations = convert_to_operations(
             self._raw_operations, self._operation_defaults.username, self._operation_defaults.result, self._user_map
         )
-        suitable_records = self.cut_to_start(operations[0], audit_records)
+        suitable_records = self.cut_to_start(operations[0], sorted_audit_records)
         last_processed_operation = None
         for expected_operation in operations:
             try:
@@ -84,7 +85,7 @@ class AuditLogChecker:
                     pprint.pformat(
                         [
                             ',\n'.join(f'{f.name}: {getattr(rec, f.name)}' for f in fields(Operation))
-                            for rec in audit_records
+                            for rec in sorted_audit_records
                         ]
                     ),
                     name='Audit records from API',
