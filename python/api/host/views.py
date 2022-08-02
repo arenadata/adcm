@@ -178,6 +178,7 @@ class HostListProvider(HostList):
 class HostListCluster(HostList):
     serializer_class = ClusterHostSerializer
 
+    @audit
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):

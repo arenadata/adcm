@@ -153,6 +153,21 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Cluster,
             )
 
+        case ["cluster", cluster_pk, "host"]:
+            audit_operation = AuditOperation(
+                name="{host_fqdn} added",
+                operation_type=AuditLogOperationType.Update,
+            )
+            if res and res.data:
+                audit_operation.name = audit_operation.name.format(host_fqdn=res.data["fqdn"])
+
+            obj = Cluster.objects.get(pk=cluster_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=cluster_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Cluster,
+            )
+
         case ["cluster", cluster_pk, "bind"]:
             obj = Cluster.objects.get(pk=cluster_pk)
             audit_operation = AuditOperation(
