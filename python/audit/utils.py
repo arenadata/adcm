@@ -220,6 +220,19 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Cluster,
             )
 
+        case ["cluster", _, "host", host_pk, "config", "history"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Host.capitalize()} "
+                     f"configuration {AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
+            )
+            obj = Host.objects.get(pk=host_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=host_pk,
+                object_name=obj.fqdn,
+                object_type=AuditObjectType.Host,
+            )
+
         case ["config-log"] | ["group-config", _, "config", _, "config-log"]:
             audit_operation = AuditOperation(
                 name=f"config log {AuditLogOperationType.Update}d",

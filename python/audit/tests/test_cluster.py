@@ -213,3 +213,26 @@ class TestCluster(BaseTestCase):
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
+
+    def test_update_host_config(self):
+        self.client.post(
+            path=reverse(
+                "config-history",
+                kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.id},
+            ),
+            data={"config": {}},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.host.pk
+        assert log.audit_object.object_name == self.host.fqdn
+        assert log.audit_object.object_type == AuditObjectType.Host
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Host configuration updated"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
