@@ -41,7 +41,6 @@ def _check_audit_logs(
             plain_argument = {log_field_name: filter_value}
             string_filter_args = {log_field_name: simple_type_filter}
             logs_from_client = operation(**plain_argument)
-            # prepare all type of objects (?)
             assert len(logs_from_client) > 0, 'There should be at least one item'
             result = requests.get(endpoint, params=string_filter_args, headers={'Authorization': f'Token {token}'})
             assert result.status_code == 200, (
