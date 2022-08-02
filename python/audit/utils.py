@@ -23,7 +23,15 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
-from cm.models import ADCM, GroupConfig, Host, HostProvider, ServiceComponent, TaskLog
+from cm.models import (
+    ADCM,
+    Bundle,
+    GroupConfig,
+    Host,
+    HostProvider,
+    ServiceComponent,
+    TaskLog,
+)
 from django.contrib.contenttypes.models import ContentType
 from django.views.generic.base import View
 from rbac.models import Group, Policy, Role, User
@@ -95,6 +103,18 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Create,
             )
             audit_object = _get_audit_object_from_resp(res, AuditObjectType.Bundle)
+
+        case ["stack", "bundle", bundle_pk, "update"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Bundle.capitalize()} updated",
+                operation_type=AuditLogOperationType.Update,
+            )
+            obj = Bundle.objects.get(pk=bundle_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=bundle_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Bundle,
+            )
 
         case ["cluster"]:
             audit_operation = AuditOperation(

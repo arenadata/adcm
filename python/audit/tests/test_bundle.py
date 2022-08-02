@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from datetime import datetime
+from unittest.mock import patch
 
 from audit.models import (
     AuditLog,
@@ -18,7 +19,7 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import Bundle
+from cm.models import Bundle, Prototype
 from django.urls import reverse
 from rest_framework.response import Response
 
@@ -109,3 +110,27 @@ class TestBundle(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert log.audit_object.is_deleted
+
+    def test_update(self):
+        bundle_name = "test_bundle"
+        bundle = Bundle.objects.create(name=bundle_name)
+        Prototype.objects.create(bundle=bundle, type="cluster", name=bundle_name)
+
+        with patch("api.stack.views.update_bundle"):
+            self.client.put(
+                path=f"/api/v1/stack/bundle/{bundle.pk}/update/",
+                data={"name": "new_bundle_name"},
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == bundle.pk
+        assert log.audit_object.object_name == bundle.name
+        assert log.audit_object.object_type == AuditObjectType.Bundle
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Bundle updated"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
