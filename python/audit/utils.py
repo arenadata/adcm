@@ -26,6 +26,7 @@ from cm.errors import AdcmEx
 from cm.models import (
     ADCM,
     Bundle,
+    ClusterObject,
     GroupConfig,
     Host,
     HostProvider,
@@ -382,6 +383,22 @@ def _get_audit_operation_and_object(
                 object_id=component_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Component,
+            )
+
+        case (
+            ["service", service_pk, "config", "history"]
+            | ["service", service_pk, "config", "history", _, "restore"]
+        ):
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Service.capitalize()} "
+                     f"configuration {AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
+            )
+            obj = ClusterObject.objects.get(pk=service_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=service_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Service,
             )
 
         case ["component", component_pk, "config", "history", _, "restore"]:
