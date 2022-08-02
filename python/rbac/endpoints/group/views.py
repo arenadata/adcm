@@ -19,43 +19,42 @@ from guardian.mixins import PermissionListMixin
 from rbac import models
 from rbac.services import group as group_services
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers, status
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import DjangoModelPermissions
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    HyperlinkedIdentityField,
+    IntegerField,
+    ModelSerializer,
+    RegexField,
+    Serializer,
+)
+from rest_framework.status import HTTP_405_METHOD_NOT_ALLOWED
 from rest_framework.viewsets import ModelViewSet
 
+from adcm.serializers import EmptySerializer
 
-class UserSerializer(serializers.Serializer):
+
+class UserSerializer(EmptySerializer):
     """Simple User serializer"""
 
-    id = serializers.IntegerField()
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
-    def create(self, validated_data):
-        pass  # Class must implement all abstract methods
+    id = IntegerField()
+    url = HyperlinkedIdentityField(view_name='rbac:user-detail')
 
 
-class UserGroupSerializer(serializers.Serializer):
+class UserGroupSerializer(EmptySerializer):
     """Simple Group serializer"""
 
-    id = serializers.IntegerField()
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
-    def create(self, validated_data):
-        pass  # Class must implement all abstract methods
+    id = IntegerField()
+    url = HyperlinkedIdentityField(view_name='rbac:group-detail')
 
 
-class ExpandedUserSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
+class ExpandedUserSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     """Expanded User serializer"""
 
     group = UserGroupSerializer(many=True, source='groups')
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
+    url = HyperlinkedIdentityField(view_name='rbac:user-detail')
 
     class Meta:
         model = models.User
@@ -77,22 +76,20 @@ class ExpandedUserSerializer(FlexFieldsSerializerMixin, serializers.ModelSeriali
         }
 
 
-class GroupSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
+class GroupSerializer(FlexFieldsSerializerMixin, Serializer):
     """
     Group serializer
     Group model inherits 'user_set' property from parent class, which refers to 'auth.User',
     so it has not our custom properties in expanded fields
     """
 
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.RegexField(r'^[^\n]+$', max_length=150, source='name_to_display')
-    description = serializers.CharField(
-        max_length=255, allow_blank=True, required=False, default=''
-    )
+    id = IntegerField(read_only=True)
+    name = RegexField(r'^[^\n]+$', max_length=150, source='name_to_display')
+    description = CharField(max_length=255, allow_blank=True, required=False, default='')
     user = UserSerializer(many=True, required=False, source='user_set')
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
-    built_in = serializers.BooleanField(read_only=True)
-    type = serializers.CharField(read_only=True)
+    url = HyperlinkedIdentityField(view_name='rbac:group-detail')
+    built_in = BooleanField(read_only=True)
+    type = CharField(read_only=True)
 
     class Meta:
         expandable_fields = {'user': (ExpandedUserSerializer, {'many': True, 'source': 'user_set'})}
@@ -158,6 +155,6 @@ class GroupViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-ma
             raise AdwpEx(
                 'GROUP_DELETE_ERROR',
                 msg='Built-in group could not be deleted',
-                http_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+                http_code=HTTP_405_METHOD_NOT_ALLOWED,
             )
         return super().destroy(request, args, kwargs)

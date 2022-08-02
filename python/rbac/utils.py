@@ -15,8 +15,10 @@ from typing import Any, Tuple, Type
 from django.db.models import Model
 from rest_framework import serializers
 
+from adcm.serializers import EmptySerializer
 
-class BaseRelatedSerializer(serializers.Serializer):
+
+class BaseRelatedSerializer(EmptySerializer):
     def to_internal_value(self, data):
         data = super().to_internal_value(data)
         return data['id']

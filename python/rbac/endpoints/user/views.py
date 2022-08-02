@@ -18,48 +18,49 @@ from guardian.mixins import PermissionListMixin
 from rbac import models
 from rbac.services import user as user_services
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers, status
 from rest_framework.permissions import DjangoModelPermissions
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    EmailField,
+    HyperlinkedIdentityField,
+    IntegerField,
+    JSONField,
+    ModelSerializer,
+    RegexField,
+    Serializer,
+)
+from rest_framework.status import HTTP_405_METHOD_NOT_ALLOWED
 from rest_framework.viewsets import ModelViewSet
 
+from adcm.serializers import EmptySerializer
 
-class PasswordField(serializers.CharField):
+
+class PasswordField(CharField):
     """Text field with content masking for passwords"""
 
     def to_representation(self, value):
         return user_services.PW_MASK
 
 
-class GroupSerializer(serializers.Serializer):
+class GroupSerializer(EmptySerializer):
     """Simple Group representation serializer"""
 
-    id = serializers.IntegerField()
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
-    def create(self, validated_data):
-        pass  # Class must implement all abstract methods
+    id = IntegerField()
+    url = HyperlinkedIdentityField(view_name='rbac:group-detail')
 
 
-class GroupUserSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
-    def create(self, validated_data):
-        pass  # Class must implement all abstract methods
+class GroupUserSerializer(EmptySerializer):
+    id = IntegerField()
+    url = HyperlinkedIdentityField(view_name='rbac:user-detail')
 
 
-class ExpandedGroupSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
+class ExpandedGroupSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     """Expanded Group serializer"""
 
     user = GroupUserSerializer(many=True, source='user_set')
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
-    name = serializers.CharField(max_length=150, source='group.display_name')
+    url = HyperlinkedIdentityField(view_name='rbac:group-detail')
+    name = CharField(max_length=150, source='group.display_name')
 
     class Meta:
         model = models.Group
@@ -72,34 +73,34 @@ class ExpandedGroupSerializer(FlexFieldsSerializerMixin, serializers.ModelSerial
         }
 
 
-class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
+class UserSerializer(FlexFieldsSerializerMixin, Serializer):
     """
     User serializer
     User model inherits 'groups' property from parent class, which refers to 'auth.Group',
     so it has not our custom properties in expanded fields
     """
 
-    id = serializers.IntegerField(read_only=True)
-    username = serializers.RegexField(r'^[^\s]+$', max_length=150)
-    first_name = serializers.RegexField(
+    id = IntegerField(read_only=True)
+    username = RegexField(r'^[^\s]+$', max_length=150)
+    first_name = RegexField(
         r'^[^\n]*$', max_length=150, allow_blank=True, required=False, default=''
     )
-    last_name = serializers.RegexField(
+    last_name = RegexField(
         r'^[^\n]*$', max_length=150, allow_blank=True, required=False, default=''
     )
-    email = serializers.EmailField(
+    email = EmailField(
         allow_blank=True,
         required=False,
         default='',
     )
-    is_superuser = serializers.BooleanField(default=False)
+    is_superuser = BooleanField(default=False)
     password = PasswordField(trim_whitespace=False)
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
-    profile = serializers.JSONField(required=False, default='')
+    url = HyperlinkedIdentityField(view_name='rbac:user-detail')
+    profile = JSONField(required=False, default='')
     group = GroupSerializer(many=True, required=False, source='groups')
-    built_in = serializers.BooleanField(read_only=True)
-    type = serializers.CharField(read_only=True)
-    is_active = serializers.BooleanField(read_only=True)
+    built_in = BooleanField(read_only=True)
+    type = CharField(read_only=True)
+    is_active = BooleanField(read_only=True)
 
     class Meta:
         expandable_fields = {'group': (ExpandedGroupSerializer, {'many': True, 'source': 'groups'})}
@@ -145,6 +146,6 @@ class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
             raise AdwpEx(
                 'USER_DELETE_ERROR',
                 msg='Built-in user could not be deleted',
-                http_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+                http_code=HTTP_405_METHOD_NOT_ALLOWED,
             )
         return super().destroy(request, args, kwargs)

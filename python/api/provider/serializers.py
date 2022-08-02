@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import cm
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
@@ -24,19 +23,28 @@ from api.utils import (
     hlink,
 )
 from cm.adcm_config import get_main_info
+from cm.api import add_host_provider
 from cm.errors import AdcmEx
 from cm.models import Action, Prototype
 from django.db import IntegrityError
-from rest_framework import serializers
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    IntegerField,
+    JSONField,
+    SerializerMethodField,
+)
+
+from adcm.serializers import EmptySerializer
 
 
-class ProviderSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField()
-    prototype_id = serializers.IntegerField()
-    description = serializers.CharField(required=False)
-    state = serializers.CharField(read_only=True)
-    before_upgrade = serializers.JSONField(read_only=True)
+class ProviderSerializer(EmptySerializer):
+    id = IntegerField(read_only=True)
+    name = CharField()
+    prototype_id = IntegerField()
+    description = CharField(required=False)
+    state = CharField(read_only=True)
+    before_upgrade = JSONField(read_only=True)
     url = hlink('provider-details', 'id', 'provider_id')
 
     @staticmethod
@@ -46,12 +54,9 @@ class ProviderSerializer(serializers.Serializer):
         )
         return proto
 
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
     def create(self, validated_data):
         try:
-            return cm.api.add_host_provider(
+            return add_host_provider(
                 validated_data.get('prototype_id'),
                 validated_data.get('name'),
                 validated_data.get('description', ''),
@@ -61,9 +66,9 @@ class ProviderSerializer(serializers.Serializer):
 
 
 class ProviderDetailSerializer(ProviderSerializer):
-    edition = serializers.CharField(read_only=True)
-    license = serializers.CharField(read_only=True)
-    bundle_id = serializers.IntegerField(read_only=True)
+    edition = CharField(read_only=True)
+    license = CharField(read_only=True)
+    bundle_id = IntegerField(read_only=True)
     prototype = hlink('provider-type-details', 'prototype_id', 'prototype_id')
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
@@ -71,19 +76,19 @@ class ProviderDetailSerializer(ProviderSerializer):
     host = ObjectURL(read_only=True, view_name='host')
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
-    locked = serializers.BooleanField(read_only=True)
+    locked = BooleanField(read_only=True)
     group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
 
 class ProviderUISerializer(ProviderDetailSerializer):
-    actions = serializers.SerializerMethodField()
-    prototype_version = serializers.SerializerMethodField()
-    prototype_name = serializers.SerializerMethodField()
-    prototype_display_name = serializers.SerializerMethodField()
-    upgradable = serializers.SerializerMethodField()
+    actions = SerializerMethodField()
+    prototype_version = SerializerMethodField()
+    prototype_name = SerializerMethodField()
+    prototype_display_name = SerializerMethodField()
+    upgradable = SerializerMethodField()
     get_upgradable = get_upgradable_func
     concerns = ConcernItemUISerializer(many=True, read_only=True)
-    main_info = serializers.SerializerMethodField()
+    main_info = SerializerMethodField()
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
@@ -116,9 +121,3 @@ class UpgradeProviderSerializer(UpgradeSerializer):
 
     url = MyUrlField(read_only=True, view_name='provider-upgrade-details')
     do = MyUrlField(read_only=True, view_name='do-provider-upgrade')
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
-    def create(self, validated_data):
-        pass  # Class must implement all abstract methods

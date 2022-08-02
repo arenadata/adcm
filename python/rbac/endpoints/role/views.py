@@ -21,30 +21,36 @@ from rbac.services.role import role_create, role_update
 from rbac.utils import BaseRelatedSerializer
 from rest_flex_fields import is_expanded
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers, status
 from rest_framework.decorators import action
 from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.response import Response
+from rest_framework.serializers import (
+    HyperlinkedIdentityField,
+    ModelSerializer,
+    PrimaryKeyRelatedField,
+    RegexField,
+    SerializerMethodField,
+)
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_405_METHOD_NOT_ALLOWED,
+)
 from rest_framework.viewsets import ModelViewSet
 
 
 class RoleChildSerializer(BaseRelatedSerializer):
-    id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
-    def create(self, validated_data):
-        pass  # Class must implement all abstract methods
+    id = PrimaryKeyRelatedField(queryset=Role.objects.all())
+    url = HyperlinkedIdentityField(view_name='rbac:role-detail')
 
 
-class RoleSerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
+class RoleSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    url = HyperlinkedIdentityField(view_name='rbac:role-detail')
     child = RoleChildSerializer(many=True)
-    name = serializers.RegexField(r'^[^\n]*$', max_length=160, required=False, allow_blank=True)
-    display_name = serializers.RegexField(r'^[^\n]*$', max_length=160, required=True)
-    category = serializers.SerializerMethodField(read_only=True)
+    name = RegexField(r'^[^\n]*$', max_length=160, required=False, allow_blank=True)
+    display_name = RegexField(r'^[^\n]*$', max_length=160, required=True)
+    category = SerializerMethodField(read_only=True)
 
     class Meta:
         model = Role
@@ -120,9 +126,9 @@ class RoleView(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-a
 
             role = role_create(**serializer.validated_data)
 
-            return Response(self.get_serializer(role).data, status=status.HTTP_201_CREATED)
+            return Response(self.get_serializer(role).data, status=HTTP_201_CREATED)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
     @audit
     def update(self, request, *args, **kwargs):
@@ -130,7 +136,7 @@ class RoleView(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-a
         instance = self.get_object()
 
         if instance.built_in:
-            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+            return Response(status=HTTP_405_METHOD_NOT_ALLOWED)
 
         serializer = self.get_serializer(data=request.data, partial=partial)
 
@@ -138,14 +144,14 @@ class RoleView(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-a
 
             role = role_update(instance, partial, **serializer.validated_data)
 
-            return Response(self.get_serializer(role).data, status=status.HTTP_200_OK)
+            return Response(self.get_serializer(role).data, status=HTTP_200_OK)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.built_in:
-            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+            return Response(status=HTTP_405_METHOD_NOT_ALLOWED)
         return super().destroy(request, *args, **kwargs)
 
     @action(methods=['get'], detail=False)
