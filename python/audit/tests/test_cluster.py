@@ -23,6 +23,8 @@ from cm.models import (
     Cluster,
     ClusterBind,
     ClusterObject,
+    ConfigLog,
+    ObjectConfig,
     Prototype,
     PrototypeExport,
     PrototypeImport,
@@ -41,8 +43,10 @@ class TestCluster(BaseTestCase):
         self.test_cluster_name = "test_cluster"
         self.cluster_prototype = Prototype.objects.create(bundle=self.bundle, type="cluster")
         PrototypeImport.objects.create(prototype=self.cluster_prototype)
+        config = ObjectConfig.objects.create(current=1, previous=1)
+        ConfigLog.objects.create(obj_ref=config, config="{}")
         self.cluster = Cluster.objects.create(
-            prototype=self.cluster_prototype, name="test_cluster_2"
+            prototype=self.cluster_prototype, name="test_cluster_2", config=config
         )
         service_prototype = Prototype.objects.create(bundle=self.bundle, type="service")
         PrototypeExport.objects.create(prototype=service_prototype)
@@ -148,7 +152,27 @@ class TestCluster(BaseTestCase):
         assert log.audit_object.object_name == self.cluster.name
         assert log.audit_object.object_type == AuditObjectType.Cluster
         assert not log.audit_object.is_deleted
-        assert log.operation_name == (f"{self.cluster.name}/{self.service.display_name} unbound")
+        assert log.operation_name == f"{self.cluster.name}/{self.service.display_name} unbound"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def test_update_config(self):
+        self.client.post(
+            path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+            data={"config": {}},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.cluster.pk
+        assert log.audit_object.object_name == self.cluster.name
+        assert log.audit_object.object_type == AuditObjectType.Cluster
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Cluster configuration updated"
         assert log.operation_type == AuditLogOperationType.Update
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
