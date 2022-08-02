@@ -29,7 +29,7 @@ from cm.models import (
     ServiceComponent,
 )
 
-from adcm.tests.base import BaseTestCase
+from adcm.tests.base import BaseTestCase, APPLICATION_JSON
 
 
 class TestComponent(BaseTestCase):
@@ -66,7 +66,7 @@ class TestComponent(BaseTestCase):
     def test_update(self):
         self.client.patch(
             path=f"/api/v1/component/{self.component.pk}/config/history/1/restore/",
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -78,7 +78,18 @@ class TestComponent(BaseTestCase):
             path=f"/api/v1/service/{self.service.pk}/component/"
             f"{self.component.pk}/config/history/",
             data={"config": {}},
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_component_update(log)
+
+    def test_restore_via_service(self):
+        self.client.patch(
+            path=f"/api/v1/service/{self.service.pk}/component/"
+                 f"{self.component.pk}/config/history/1/restore/",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
