@@ -364,6 +364,7 @@ class HostComponentList(GenericUIView):
             serializer = self.get_serializer(hc, many=True)
         return Response(serializer.data)
 
+    @audit
     def post(self, request, *args, **kwargs):
         """
         Create new mapping service:component <-> host in a specified cluster.

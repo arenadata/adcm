@@ -25,11 +25,13 @@ from cm.models import (
     ClusterObject,
     ConfigLog,
     Host,
+    HostComponent,
     HostProvider,
     ObjectConfig,
     Prototype,
     PrototypeExport,
     PrototypeImport,
+    ServiceComponent,
 )
 from django.urls import reverse
 from rest_framework.response import Response
@@ -67,6 +69,19 @@ class TestCluster(BaseTestCase):
             prototype=host_prototype,
             provider=provider,
             config=config,
+        )
+
+        service_component_prototype = Prototype.objects.create(bundle=self.bundle, type="component")
+        service_component = ServiceComponent.objects.create(
+            cluster=self.cluster,
+            service=self.service,
+            prototype=service_component_prototype,
+        )
+        self.hc = HostComponent.objects.create(
+            cluster=self.cluster,
+            host=self.host,
+            service=self.service,
+            component=service_component,
         )
 
     def create_cluster(self):
@@ -231,6 +246,37 @@ class TestCluster(BaseTestCase):
         assert log.audit_object.object_type == AuditObjectType.Host
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Host configuration updated"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def test_update_hostcomponent(self):
+        self.host.cluster = self.cluster
+        self.host.save(update_fields=["cluster"])
+
+        self.client.post(
+            path=reverse("host-component", kwargs={"cluster_id": self.cluster.pk}),
+            data={
+                "hc": [
+                    {
+                        "component_id": self.hc.pk,
+                        "host_id": self.host.pk,
+                        "service_id": self.service.pk,
+                    }
+                ]
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.cluster.pk
+        assert log.audit_object.object_name == self.cluster.name
+        assert log.audit_object.object_type == AuditObjectType.Cluster
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Host-Component map updated"
         assert log.operation_type == AuditLogOperationType.Update
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)

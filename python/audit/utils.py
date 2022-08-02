@@ -168,6 +168,18 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Cluster,
             )
 
+        case ["cluster", cluster_pk, "hostcomponent"]:
+            audit_operation = AuditOperation(
+                name="Host-Component map updated",
+                operation_type=AuditLogOperationType.Update,
+            )
+            obj = Cluster.objects.get(pk=cluster_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=cluster_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Cluster,
+            )
+
         case ["cluster", cluster_pk, "bind"]:
             obj = Cluster.objects.get(pk=cluster_pk)
             audit_operation = AuditOperation(
