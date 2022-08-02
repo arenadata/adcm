@@ -153,6 +153,45 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Cluster,
             )
 
+        case ["cluster", cluster_pk, "bind"]:
+            obj = Cluster.objects.get(pk=cluster_pk)
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Cluster.capitalize()} bound to "
+                     f"{obj.name}/{{service_display_name}}",
+                operation_type=AuditLogOperationType.Update,
+            )
+
+            if res and res.data:
+                service = ClusterObject.objects.get(pk=res.data["export_service_id"])
+                audit_operation.name = audit_operation.name.format(
+                    service_display_name=service.display_name,
+                )
+
+            audit_object = AuditObject.objects.create(
+                object_id=cluster_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Cluster,
+            )
+
+        case ["cluster", cluster_pk, "bind", _]:
+            obj = Cluster.objects.get(pk=cluster_pk)
+            audit_operation = AuditOperation(
+                name=f"{obj.name}/{{service_display_name}} unbound",
+                operation_type=AuditLogOperationType.Update,
+            )
+
+            if deleted_obj:
+                deleted_obj: ClusterObject
+                audit_operation.name = audit_operation.name.format(
+                    service_display_name=deleted_obj.display_name,
+                )
+
+            audit_object = AuditObject.objects.create(
+                object_id=cluster_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Cluster,
+            )
+
         case ["config-log"] | ["group-config", _, "config", _, "config-log"]:
             audit_operation = AuditOperation(
                 name=f"config log {AuditLogOperationType.Update}d",

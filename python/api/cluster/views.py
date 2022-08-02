@@ -205,6 +205,7 @@ class ClusterBindList(GenericUIView):
         serializer = self.get_serializer(obj, many=True)
         return Response(serializer.data)
 
+    @audit
     def post(self, request, *args, **kwargs):
         """
         Bind two clusters
@@ -222,6 +223,10 @@ class ClusterBindDetail(GenericUIView):
     serializer_class = BindSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+    @staticmethod
+    def get_obj(kwargs, bind_id):
+        return ClusterBind.objects.get(pk=bind_id).source_service
+
     def get(self, request, *args, **kwargs):
         """
         Show specified bind of specified cluster
@@ -234,8 +239,8 @@ class ClusterBindDetail(GenericUIView):
         serializer = self.get_serializer(bind)
         return Response(serializer.data)
 
-    @staticmethod
-    def delete(request, *args, **kwargs):
+    @audit
+    def delete(self, request, *args, **kwargs):
         """
         Unbind specified bind of specified cluster
         """

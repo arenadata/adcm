@@ -18,7 +18,15 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import Bundle, Cluster, Prototype
+from cm.models import (
+    Bundle,
+    Cluster,
+    ClusterBind,
+    ClusterObject,
+    Prototype,
+    PrototypeExport,
+    PrototypeImport,
+)
 from django.urls import reverse
 from rest_framework.response import Response
 
@@ -31,8 +39,16 @@ class TestCluster(BaseTestCase):
 
         self.bundle = Bundle.objects.create()
         self.test_cluster_name = "test_cluster"
-        self.prototype = Prototype.objects.create(bundle=self.bundle, type="cluster")
-        self.cluster = Cluster.objects.create(prototype=self.prototype, name="test_cluster_2")
+        self.cluster_prototype = Prototype.objects.create(bundle=self.bundle, type="cluster")
+        PrototypeImport.objects.create(prototype=self.cluster_prototype)
+        self.cluster = Cluster.objects.create(
+            prototype=self.cluster_prototype, name="test_cluster_2"
+        )
+        service_prototype = Prototype.objects.create(bundle=self.bundle, type="service")
+        PrototypeExport.objects.create(prototype=service_prototype)
+        self.service = ClusterObject.objects.create(
+            prototype=service_prototype, cluster=self.cluster
+        )
 
     def create_cluster(self):
         return self.client.post(
@@ -41,7 +57,7 @@ class TestCluster(BaseTestCase):
                 "bundle_id": self.bundle.pk,
                 "display_name": f"{self.test_cluster_name}_display",
                 "name": self.test_cluster_name,
-                "prototype_id": self.prototype.pk,
+                "prototype_id": self.cluster_prototype.pk,
             },
         )
 
@@ -87,6 +103,52 @@ class TestCluster(BaseTestCase):
         assert log.audit_object.object_type == AuditObjectType.Cluster
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Cluster updated"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def test_bind_unbind(self):
+        self.client.post(
+            path=reverse("cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
+            data={
+                "export_cluster_id": self.cluster.pk,
+                "export_service_id": self.service.pk,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.cluster.pk
+        assert log.audit_object.object_name == self.cluster.name
+        assert log.audit_object.object_type == AuditObjectType.Cluster
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == (
+            f"Cluster bound to {self.cluster.name}/{self.service.display_name}"
+        )
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+        bind = ClusterBind.objects.first()
+        self.client.delete(
+            path=reverse(
+                "cluster-bind-details", kwargs={"cluster_id": self.cluster.pk, "bind_id": bind.pk}
+            ),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.cluster.pk
+        assert log.audit_object.object_name == self.cluster.name
+        assert log.audit_object.object_type == AuditObjectType.Cluster
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == (f"{self.cluster.name}/{self.service.display_name} unbound")
         assert log.operation_type == AuditLogOperationType.Update
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
