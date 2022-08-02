@@ -368,6 +368,19 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Host,
             )
 
+        case ["service", _, "component", component_pk, "config", "history"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Component.capitalize()} "
+                     f"configuration {AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
+            )
+            obj = ServiceComponent.objects.get(pk=component_pk)
+            audit_object = AuditObject.objects.create(
+                object_id=component_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Component,
+            )
+
         case ["component", component_pk, "config", "history", _, "restore"]:
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Component.capitalize()} "

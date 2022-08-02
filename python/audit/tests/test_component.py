@@ -40,25 +40,18 @@ class TestComponent(BaseTestCase):
         cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster")
         cluster = Cluster.objects.create(prototype=cluster_prototype, name="test_cluster")
         service_prototype = Prototype.objects.create(bundle=bundle, type="service")
-        service = ClusterObject.objects.create(prototype=service_prototype, cluster=cluster)
+        self.service = ClusterObject.objects.create(prototype=service_prototype, cluster=cluster)
         component_prototype = Prototype.objects.create(bundle=bundle, type="component")
         config = ObjectConfig.objects.create(current=1, previous=1)
         ConfigLog.objects.create(obj_ref=config, config="{}")
         self.component = ServiceComponent.objects.create(
             prototype=component_prototype,
             cluster=cluster,
-            service=service,
+            service=self.service,
             config=config,
         )
 
-    def test_update(self):
-        self.client.patch(
-            path=f"/api/v1/component/{self.component.pk}/config/history/1/restore/",
-            content_type="application/json",
-        )
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
+    def check_component_update(self, log: AuditLog):
         assert log.audit_object.object_id == self.component.pk
         assert log.audit_object.object_name == self.component.name
         assert log.audit_object.object_type == AuditObjectType.Component
@@ -69,3 +62,25 @@ class TestComponent(BaseTestCase):
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
+
+    def test_update(self):
+        self.client.patch(
+            path=f"/api/v1/component/{self.component.pk}/config/history/1/restore/",
+            content_type="application/json",
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_component_update(log)
+
+    def test_update_via_service(self):
+        self.client.post(
+            path=f"/api/v1/service/{self.service.pk}/component/"
+            f"{self.component.pk}/config/history/",
+            data={"config": {}},
+            content_type="application/json",
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_component_update(log)
