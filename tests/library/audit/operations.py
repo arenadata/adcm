@@ -12,8 +12,8 @@
 
 """Defines basic entities like Operation and NamedOperation to work with audit log scenarios"""
 
-from dataclasses import dataclass, fields
-from typing import Optional, Dict, Union, NamedTuple, Collection, List
+from dataclasses import dataclass, fields, field
+from typing import Optional, Dict, Union, NamedTuple, Collection, List, Literal, ClassVar
 
 from adcm_client.audit import OperationType, AuditOperation, OperationResult, ObjectType
 
@@ -109,31 +109,79 @@ _NAMED_OPERATIONS: Dict[str, NamedOperation] = {
 }
 
 
-@dataclass(frozen=True)  # pylint:disable-next=too-many-instance-attributes
+@dataclass()  # pylint:disable-next=too-many-instance-attributes
 class Operation:
     """
     Information about audited operation.
     Should be used mostly to compare API operation objects with it.
     """
 
-    object_type: ObjectType
-    object_name: str
+    EXCLUDED_FROM_COMPARISON: ClassVar = ('username', 'code')
 
-    operation_type: OperationType
-    operation_name: str
-    operation_result: OperationResult
-
-    username: str
+    # main info
     user_id: int
+    operation_type: OperationType
+    operation_name: str = field(init=False)
+    operation_result: OperationResult
+    # TODO check if it's the final decision
+    object_changes: Dict[str, dict]
+    # may be or may not be based on operation type and result
+    # but they should be passed directly, because it's an important part of the logic
+    object_type: Optional[ObjectType]
+    object_name: Optional[str]
+    # not from API, but suitable for displaying what was expected
+    username: Optional[str] = field(default=None, compare=False)
+    # used for operation name building
+    # the value from "how" section of operation description in scenario
+    code: Dict[Literal['operation', 'name'], str] = field(default_factory=dict, compare=False, repr=False)
 
-    object_changes: Optional[Dict[str, dict]] = None
+    def __post_init__(self):
+        self.operation_name = self._detect_operation_name()
+        self._nullify_object()
 
     def is_equal_to(self, operation_object: AuditOperation) -> bool:
         """Compare this operation to an API audit operation object"""
-        for field_name in (f.name for f in fields(self) if f != 'username'):
+        for field_name in (f.name for f in fields(self) if f.name not in self.EXCLUDED_FROM_COMPARISON):
             if getattr(self, field_name) != getattr(operation_object, field_name):
                 return False
         return True
+
+    def _detect_operation_name(self) -> str:
+        """Detect the operation name"""
+        if self.object_type in _create_delete_types and self.operation_type in (
+            OperationType.CREATE,
+            OperationType.DELETE,
+        ):
+            return f'{self.object_type.value.capitalize()} {self.operation_type.value.lower()}d'
+
+        if not self.code or 'operation' not in self.code:
+            raise KeyError(
+                'There should be "how" section specifying operation for audit record described as\n'
+                f'"{self.operation_type.value} {self.object_type.value}: {self.operation_info}"'
+            )
+
+        named_operation = _NAMED_OPERATIONS.get(self.code['operation'], None)
+        if not named_operation:
+            raise KeyError(
+                f'Incorrect operation name: {self.code["operation"]}.\n'
+                'If operation name is correct, add it to `_NAMED_OPERATIONS`\n'
+                f'Registered names: {", ".join(_NAMED_OPERATIONS.keys())}\n'
+            )
+
+        return named_operation.resolve(self.object_type, **self.code)
+
+    def _nullify_object(self) -> None:
+        """
+        There are cases when object type is required for building operation name,
+        but will not be presented in operation object (audit object reference == None).
+        This funciton sets object-related fields to None based on the case.
+        """
+        if self.operation_type == OperationType.CREATE and self.operation_result in (
+            OperationResult.FAIL,
+            OperationResult.DENIED,
+        ):
+            self.object_type = None
+            self.object_name = None
 
 
 def convert_to_operations(
@@ -155,13 +203,15 @@ def convert_to_operations(
         object_type = ObjectType(object_['type'])
         operations.append(
             Operation(
-                object_type=object_type,
-                object_name=object_['name'],
-                operation_result=result,
-                operation_type=operation_type,
-                operation_name=_detect_operation_name(object_type, operation_type, operation_info),
-                username=username,
                 user_id=username_id_map[username],
+                operation_type=operation_type,
+                operation_result=result,
+                # TODO implement object_changes passing in scenario
+                object_changes={},
+                object_type=object_type,
+                object_name=object_.get('name', None),
+                username=username,
+                code=_unwrap_how(operation_info.get('how', {})),
             )
         )
     return operations
@@ -173,28 +223,6 @@ def is_name_of_object_type(name: str) -> bool:
         if name == type_.value:
             return True
     return False
-
-
-def _detect_operation_name(object_type: ObjectType, operation_type: OperationType, operation_info: dict) -> str:
-    if object_type in _create_delete_types and operation_type in (OperationType.CREATE, OperationType.DELETE):
-        return f'{object_type.value.capitalize()} {operation_type.value.lower()}d'
-
-    how = _unwrap_how(operation_info.get('how', {}))
-    if not how or 'operation' not in how:
-        raise KeyError(
-            'There should be "how" section specifying operation for audit record described as\n'
-            f'"{operation_type.value} {object_type.value}: {operation_info}"'
-        )
-
-    named_operation = _NAMED_OPERATIONS.get(how['operation'], None)
-    if not named_operation:
-        raise KeyError(
-            f'Incorrect operation name: {how["operation"]}.\n'
-            'If operation name is correct, add it to `_NAMED_OPERATIONS`\n'
-            f'Registered names: {", ".join(_NAMED_OPERATIONS.keys())}\n'
-        )
-
-    return named_operation.resolve(object_type, **how)
 
 
 def _check_all_users_are_presented(usernames, username_id_map):

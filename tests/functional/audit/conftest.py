@@ -13,7 +13,7 @@
 """conftest for audit tests"""
 
 from pathlib import Path
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 import pytest
 
@@ -49,6 +49,14 @@ def parsed_audit_log(request, audit_log_scenarios_reader) -> ParsedAuditLog:
     if not request.param or not isinstance(request.param, ScenarioArg):
         raise ValueError(f'Param is required and it has to be {ScenarioArg.__class__.__name__}')
     return audit_log_scenarios_reader.parse(request.param.filename, request.param.context)
+
+
+def parametrize_audit_scenario_parsing(scenario_name: str, context: Optional[dict] = None):
+    """
+    Helper to use as decorator to provide scenario name and context for parametrizing "parsed_audit_log"
+    """
+    context = {} if context is None else context
+    return pytest.mark.parametrize('parsed_audit_log', [ScenarioArg(scenario_name, context)], indirect=True)
 
 
 @pytest.fixture()

@@ -12,9 +12,8 @@
 
 """Checkers are processors of audit log scenarios after they've been parsed"""
 
-import json
 import pprint
-from dataclasses import asdict, fields
+from dataclasses import fields
 from typing import Callable, Dict, List, Optional
 
 import allure
@@ -67,9 +66,12 @@ class AuditLogChecker:
         self._expected_logs = expected_logs
         self._operation_defaults = expected_logs.defaults
 
+    @allure.step('Check that audit records match the scenario')
     def check(self, audit_records: List[AuditOperation]):
         """
-        Check if given audit records matches the scenario
+        Check if given audit records matches the scenario.
+
+        Note that given audit records are sorted by `operation_time`.
         """
         sorted_audit_records = sorted(audit_records, key=lambda rec: rec.operation_time)
         operations = convert_to_operations(
@@ -82,23 +84,24 @@ class AuditLogChecker:
                 suitable_records = self.check_next(expected_operation, suitable_records)
             except AssertionError:
                 allure.attach(
-                    pprint.pformat(
-                        [
-                            ',\n'.join(f'{f.name}: {getattr(rec, f.name)}' for f in fields(Operation))
-                            for rec in sorted_audit_records
-                        ]
+                    '\n\n'.join(
+                        f'{ind}\n'
+                        + ',\n'.join(
+                            f'{f.name}={getattr(rec, f.name)}' for f in fields(Operation) if hasattr(rec, f.name)
+                        )
+                        for ind, rec in enumerate(sorted_audit_records)
                     ),
                     name='Audit records from API',
                     attachment_type=allure.attachment_type.TEXT,
                 )
                 allure.attach(
-                    json.dumps(asdict(expected_operation), indent=2),
+                    pprint.pformat(expected_operation),
                     name='Not found operation',
                     attachment_type=allure.attachment_type.JSON,
                 )
                 if last_processed_operation:
                     allure.attach(
-                        json.dumps(asdict(last_processed_operation), indent=2),
+                        pprint.pformat(last_processed_operation),
                         name='Last processed operation',
                         attachment_type=allure.attachment_type.JSON,
                     )
