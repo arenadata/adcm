@@ -21,7 +21,7 @@ from . import filters
 
 
 class AuditRoot(APIRootView):
-    """Arenadata Audit Root"""
+    """Audit Root"""
 
     permission_classes = (AllowAny,)
     api_root_dict = {
