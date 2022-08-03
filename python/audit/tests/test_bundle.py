@@ -22,6 +22,7 @@ from audit.models import (
 from cm.models import Bundle, Prototype
 from django.urls import reverse
 from rest_framework.response import Response
+from rest_framework.status import HTTP_400_BAD_REQUEST
 
 from adcm.tests.base import BaseTestCase
 
@@ -125,6 +126,16 @@ class TestBundle(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
+        self.check_load_failed(log)
+
+        res: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle": "something wrong"},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(res.status_code, HTTP_400_BAD_REQUEST)
         self.check_load_failed(log)
 
     def test_load_and_delete(self):

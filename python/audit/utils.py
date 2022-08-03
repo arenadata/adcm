@@ -45,7 +45,7 @@ from rest_framework.status import HTTP_403_FORBIDDEN, is_success
 
 
 def _get_audit_object_from_resp(res: Response, obj_type: str) -> Optional[AuditObject]:
-    if res and res.data:
+    if res and res.data and res.data.get("id") and res.data.get("name"):
         audit_object = AuditObject.objects.create(
             object_id=res.data["id"],
             object_name=res.data["name"],
