@@ -226,22 +226,6 @@ def get_default_from_edition():
     return ['community']
 
 
-class Upgrade(ADCMModel):
-    bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
-    name = models.CharField(max_length=160, blank=True)
-    description = models.TextField(blank=True)
-    min_version = models.CharField(max_length=80)
-    max_version = models.CharField(max_length=80)
-    from_edition = models.JSONField(default=get_default_from_edition)
-    min_strict = models.BooleanField(default=False)
-    max_strict = models.BooleanField(default=False)
-    state_available = models.JSONField(default=list)
-    state_on_success = models.CharField(max_length=64, blank=True)
-    action = models.OneToOneField('Action', on_delete=models.CASCADE, null=True)
-
-    __error_code__ = 'UPGRADE_NOT_FOUND'
-
-
 MONITORING_TYPE = (
     ('active', 'active'),
     ('passive', 'passive'),
@@ -536,6 +520,35 @@ class ADCMEntity(ADCMModel):
         super().delete(using, keep_parents)
         if self.config is not None and not isinstance(self, ServiceComponent):
             self.config.delete()
+
+
+class Upgrade(ADCMModel):
+    bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
+    name = models.CharField(max_length=160, blank=True)
+    description = models.TextField(blank=True)
+    min_version = models.CharField(max_length=80)
+    max_version = models.CharField(max_length=80)
+    from_edition = models.JSONField(default=get_default_from_edition)
+    min_strict = models.BooleanField(default=False)
+    max_strict = models.BooleanField(default=False)
+    state_available = models.JSONField(default=list)
+    state_on_success = models.CharField(max_length=64, blank=True)
+    action = models.OneToOneField('Action', on_delete=models.CASCADE, null=True)
+
+    __error_code__ = 'UPGRADE_NOT_FOUND'
+
+    def allowed(self, obj: ADCMEntity) -> bool:
+        """Check if upgrade is allowed to be run on object"""
+        if self.state_available:
+            available = self.state_available
+            if obj.state in available:
+                return True
+            elif available == 'any':
+                return True
+            else:
+                return False
+        else:
+            return self.action.allowed(obj)
 
 
 class ADCM(ADCMEntity):
