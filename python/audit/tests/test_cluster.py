@@ -408,3 +408,39 @@ class TestCluster(BaseTestCase):
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
+
+    def test_update_component_config(self):
+        config = ObjectConfig.objects.create(current=2, previous=2)
+        ConfigLog.objects.create(obj_ref=config, config="{}")
+        prototype = Prototype.objects.create(bundle=self.bundle, type="component")
+        component = ServiceComponent.objects.create(
+            cluster=self.cluster,
+            service=self.service,
+            prototype=prototype,
+            config=config,
+        )
+        self.client.post(
+            path=reverse(
+                "config-history",
+                kwargs={
+                    "cluster_id": self.cluster.pk,
+                    "service_id": self.service.pk,
+                    "component_id": component.pk,
+                },
+            ),
+            data={"config": {}},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == component.pk
+        assert log.audit_object.object_name == component.name
+        assert log.audit_object.object_type == AuditObjectType.Component
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Component configuration updated"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
