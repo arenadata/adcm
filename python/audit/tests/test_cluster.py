@@ -353,3 +353,58 @@ class TestCluster(BaseTestCase):
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
+
+    def test_bind_unbind_service(self):
+        bundle = Bundle.objects.create(name="test_bundle_2")
+        cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster")
+        cluster = Cluster.objects.create(prototype=cluster_prototype, name="test_cluster_3")
+        PrototypeExport.objects.create(prototype=cluster_prototype)
+        PrototypeImport.objects.create(prototype=self.service_prototype)
+
+        self.client.post(
+            path=reverse(
+                "service-bind",
+                kwargs={"cluster_id": cluster.pk, "service_id": self.service.pk},
+            ),
+            data={"export_cluster_id": cluster.pk},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.service.pk
+        assert log.audit_object.object_name == self.service.name
+        assert log.audit_object.object_type == AuditObjectType.Service
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Service bound to test_cluster_3/test_service"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+        bind = ClusterBind.objects.first()
+        self.client.delete(
+            reverse(
+                "service-bind-details",
+                kwargs={
+                    "cluster_id": cluster.pk,
+                    "service_id": self.service.pk,
+                    "bind_id": bind.pk,
+                },
+            ),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.service.pk
+        assert log.audit_object.object_name == self.service.name
+        assert log.audit_object.object_type == AuditObjectType.Service
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == 'test_cluster_3/test_service unbound'
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)

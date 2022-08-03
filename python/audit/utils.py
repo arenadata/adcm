@@ -87,6 +87,15 @@ def _task_case(task_pk: str, action: str) -> Tuple[AuditOperation, AuditObject]:
     return audit_operation, audit_object
 
 
+def _get_service_name(service: ClusterObject) -> str:
+    if service.display_name:
+        name = service.display_name
+    else:
+        name = str(service)
+
+    return name
+
+
 # pylint: disable-next=too-many-statements,too-many-branches,too-many-locals
 def _get_audit_operation_and_object(
         view: View, res: Response, deleted_obj: Model
@@ -228,6 +237,33 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Cluster,
             )
 
+        case ["cluster", cluster_pk, "service", service_pk, "bind"]:
+            cluster = Cluster.objects.get(pk=cluster_pk)
+            service = ClusterObject.objects.get(pk=service_pk)
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Service.capitalize()} bound to "
+                     f"{cluster.name}/{_get_service_name(service)}",
+                operation_type=AuditLogOperationType.Update,
+            )
+            audit_object, _ = AuditObject.objects.get_or_create(
+                object_id=service_pk,
+                object_name=service.name,
+                object_type=AuditObjectType.Service,
+            )
+
+        case ["cluster", cluster_pk, "service", service_pk, "bind", _]:
+            cluster = Cluster.objects.get(pk=cluster_pk)
+            service = ClusterObject.objects.get(pk=service_pk)
+            audit_operation = AuditOperation(
+                name=f"{cluster.name}/{_get_service_name(service)} unbound",
+                operation_type=AuditLogOperationType.Update,
+            )
+            audit_object, _ = AuditObject.objects.get_or_create(
+                object_id=service_pk,
+                object_name=service.name,
+                object_type=AuditObjectType.Service,
+            )
+
         case ["cluster", cluster_pk, "bind"]:
             obj = Cluster.objects.get(pk=cluster_pk)
             audit_operation = AuditOperation(
@@ -239,7 +275,7 @@ def _get_audit_operation_and_object(
             if res and res.data:
                 service = ClusterObject.objects.get(pk=res.data["export_service_id"])
                 audit_operation.name = audit_operation.name.format(
-                    service_display_name=service.display_name,
+                    service_display_name=_get_service_name(service),
                 )
 
             audit_object, _ = AuditObject.objects.get_or_create(
@@ -258,7 +294,7 @@ def _get_audit_operation_and_object(
             if deleted_obj:
                 deleted_obj: ClusterObject
                 audit_operation.name = audit_operation.name.format(
-                    service_display_name=deleted_obj.display_name,
+                    service_display_name=_get_service_name(deleted_obj),
                 )
 
             audit_object, _ = AuditObject.objects.get_or_create(
@@ -552,14 +588,9 @@ def _get_audit_operation_and_object(
 
         case ["service", service_pk, "bind"]:
             obj = ClusterObject.objects.get(pk=service_pk)
-            if obj.display_name:
-                obj_name = obj.display_name
-            else:
-                obj_name = str(obj)
-
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Service.capitalize()} "
-                     f"bound to {{export_cluster_name}}/{obj_name}",
+                     f"bound to {{export_cluster_name}}/{_get_service_name(obj)}",
                 operation_type=AuditLogOperationType.Update,
             )
 
@@ -576,13 +607,8 @@ def _get_audit_operation_and_object(
 
         case ["service", service_pk, "bind", _]:
             obj = ClusterObject.objects.get(pk=service_pk)
-            if obj.display_name:
-                obj_name = obj.display_name
-            else:
-                obj_name = str(obj)
-
             audit_operation = AuditOperation(
-                name=f"{{export_cluster_name}}/{obj_name} unbound",
+                name=f"{{export_cluster_name}}/{_get_service_name(obj)} unbound",
                 operation_type=AuditLogOperationType.Update,
             )
 
