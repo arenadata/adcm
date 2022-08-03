@@ -10,12 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rest_framework.permissions import AllowAny
+from rest_framework.routers import APIRootView
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from api.utils import SuperuserOnlyMixin
 from audit.models import AuditLog, AuditSession
 from . import serializers
 from . import filters
+
+
+class AuditRoot(APIRootView):
+    """Arenadata Audit Root"""
+
+    permission_classes = (AllowAny,)
+    api_root_dict = {
+        'operations': 'audit-operations-list',
+        'logins': 'audit-logins-list',
+    }
 
 
 # pylint: disable=too-many-ancestors

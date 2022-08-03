@@ -11,12 +11,15 @@
 # limitations under the License.
 
 
+from django.urls import path
 from rest_framework.routers import SimpleRouter
 
-from .views import AuditOperationViewSet, AuditLoginViewSet
-
+from .views import AuditOperationViewSet, AuditLoginViewSet, AuditRoot
 
 router = SimpleRouter()
 router.register(r'operation', AuditOperationViewSet, basename='audit-operations')
 router.register(r'login', AuditLoginViewSet, basename='audit-logins')
-urlpatterns = router.urls
+urlpatterns = [
+    path(r'', AuditRoot.as_view(), name='root'),
+    *router.urls,
+]
