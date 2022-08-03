@@ -16,9 +16,10 @@ from typing import Type
 
 import allure
 import pytest
-from adcm_client.objects import Cluster, Service, Component, Provider
-from adcm_pytest_plugin.utils import get_data_dir
+from adcm_client.objects import Cluster, Service, Component, Provider, Task, ADCMClient
+from adcm_pytest_plugin.utils import get_data_dir, wait_until_step_succeeds
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result, run_provider_action_and_assert_result
+from coreapi.exceptions import ErrorMessage
 
 from tests.conftest import TEST_USER_CREDENTIALS
 from tests.functional.tools import AnyADCMObject, get_object_represent
@@ -27,6 +28,7 @@ from tests.ui_tests.app.page.cluster.page import ClusterMainPage
 from tests.ui_tests.app.page.common.base_page import BaseDetailedPage
 from tests.ui_tests.app.page.component.page import ComponentMainPage
 from tests.ui_tests.app.page.host.page import HostMainPage
+from tests.ui_tests.app.page.job_list.page import JobListPage, JobStatus
 from tests.ui_tests.app.page.provider.page import ProviderMainPage
 from tests.ui_tests.app.page.service.page import ServiceMainPage
 from tests.ui_tests.conftest import login_over_api
@@ -158,3 +160,58 @@ class TestMainInfo:
         else:
             ids = (adcm_object.id,)
         return page_type(app.driver, app.adcm.url, *ids)
+
+
+class TestAllowToTerminate:
+    """
+    Test cases related to task termination
+    """
+
+    CLUSTER_NAME = 'Terminator'
+    client: ADCMClient
+
+    pytestmark = [
+        pytest.mark.parametrize('generic_bundle', ['action_termination_allowed'], indirect=True),
+        pytest.mark.usefixtures('login_to_adcm_over_api', '_bind_client', 'cluster'),
+    ]
+
+    @pytest.fixture()
+    def _bind_client(self, sdk_client_fs):
+        self.client = sdk_client_fs
+
+    @pytest.fixture()
+    def cluster(self, generic_bundle) -> Cluster:
+        """Create a cluster from the generic bundle with allow_to_terminate actions"""
+        return generic_bundle.cluster_create(self.CLUSTER_NAME)
+
+    @pytest.fixture()
+    def page(self, app_fs) -> JobListPage:
+        """Get page with list of jobs"""
+        return JobListPage(app_fs.driver, app_fs.adcm.url).open()
+
+    @pytest.mark.parametrize('action_name', ['simple', 'multi'])
+    def test_cancel_job(self, action_name: str, page: JobListPage):
+        """Test cancelling task (job and multijob)"""
+        task = self._run_cluster_action(action_name)
+        with allure.step('Check that job is running'):
+            wait_until_step_succeeds(self._check_job_status, timeout=5, period=1, page=page, status=JobStatus.RUNNING)
+        with allure.step('Cancel task and check it is cancelled without page refresh'):
+            self._cancel_task(task)
+            wait_until_step_succeeds(self._check_job_status, timeout=5, period=1, page=page, status=JobStatus.ABORTED)
+
+    def _run_cluster_action(self, name: str) -> Task:
+        with allure.step(f'Run action "{name}" on cluster'):
+            return self.client.cluster(name=self.CLUSTER_NAME).action(name=name).run()
+
+    def _cancel_task(self, task: Task):
+        def _cancel():
+            try:
+                task.cancel()
+            except ErrorMessage as e:
+                raise AssertionError('Failed to cancel task') from e
+
+        wait_until_step_succeeds(_cancel, timeout=5, period=0.5)
+
+    def _check_job_status(self, page: JobListPage, status: JobStatus, row_id: int = 0):
+        row_info = page.get_task_info_from_table(row_id)
+        assert row_info.status == status, f'Job should be {status.value}'

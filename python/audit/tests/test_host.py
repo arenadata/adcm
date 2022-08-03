@@ -13,17 +13,17 @@
 from datetime import datetime
 
 from audit.models import (
-    AUDIT_OPERATION_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import Bundle, HostProvider, Prototype
+from cm.models import Bundle, ConfigLog, Host, HostProvider, ObjectConfig, Prototype
 from django.urls import reverse
 from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK
 
-from adcm.tests.base import BaseTestCase
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestHost(BaseTestCase):
@@ -38,7 +38,38 @@ class TestHost(BaseTestCase):
             prototype=provider_prototype,
         )
         self.fqdn = "test_fqdn"
-        self.audit_operation_create_host = AUDIT_OPERATION_MAP["HostListProvider"]["POST"]
+        config = ObjectConfig.objects.create(current=1, previous=1)
+        ConfigLog.objects.create(obj_ref=config, config="{}")
+        self.host = Host.objects.create(
+            fqdn="test_fqdn_2",
+            prototype=self.host_prototype,
+            provider=self.provider,
+            config=config,
+        )
+
+    def check_host_created(self, log: AuditLog, res: Response) -> None:
+        assert log.audit_object.object_id == res.data["id"]
+        assert log.audit_object.object_name == self.fqdn
+        assert log.audit_object.object_type == AuditObjectType.Host
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Host created"
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def check_host_updated(self, log: AuditLog) -> None:
+        assert log.audit_object.object_id == self.host.pk
+        assert log.audit_object.object_name == self.host.fqdn
+        assert log.audit_object.object_type == AuditObjectType.Host
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Host configuration updated"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
 
     def test_create(self):
         res: Response = self.client.post(
@@ -52,16 +83,7 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == res.data["id"]
-        assert log.audit_object.object_name == self.fqdn
-        assert log.audit_object.object_type == AuditObjectType.Host.value
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == self.audit_operation_create_host.name
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Success.value
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.check_host_created(log, res)
 
         self.client.post(
             path=reverse("host"),
@@ -75,9 +97,62 @@ class TestHost(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert not log.audit_object
-        assert log.operation_name == self.audit_operation_create_host.name
-        assert log.operation_type == AuditLogOperationType.Create.value
-        assert log.operation_result == AuditLogOperationResult.Fail.value
+        assert log.operation_name == "Host created"
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == AuditLogOperationResult.Fail
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
+
+    def test_create_via_provider(self):
+        res: Response = self.client.post(
+            path=f"/api/v1/provider/{self.provider.pk}/host/",
+            data={"fqdn": self.fqdn},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_created(log, res)
+
+    def test_update_and_restore(self):
+        self.client.post(
+            path=f"/api/v1/host/{self.host.pk}/config/history/",
+            data={"config": {}},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_updated(log)
+
+        res: Response = self.client.patch(
+            path=f"/api/v1/host/{self.host.pk}/config/history/1/restore/",
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(res.status_code, HTTP_200_OK)
+        self.check_host_updated(log)
+
+    def test_update_and_restore_via_provider(self):
+        self.client.post(
+            path=f"/api/v1/provider/{self.provider.pk}/host/{self.host.pk}/config/history/",
+            data={"config": {}},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_updated(log)
+
+        res: Response = self.client.patch(
+            path=f"/api/v1/provider/{self.provider.pk}/host/"
+            f"{self.host.pk}/config/history/1/restore/",
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(res.status_code, HTTP_200_OK)
+        self.check_host_updated(log)

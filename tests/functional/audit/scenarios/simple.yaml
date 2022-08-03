@@ -19,17 +19,22 @@ operations:
   - create:
       what: &cluster
         type: cluster
-        name: {{ adb_cluster }}
+        name: {{ cluster.name }}
   - update:
       what: *cluster
       how:
         operation: add-service
         # service display name
-        name: {{ adb_service }}
+        name: {{ cluster.adb_service.display_name }}
+  - update:
+      what:
+        type: component
+        name: {{ adb_service_component }}
+      how: set-config
   - update:
       what: &adb_service
         type: service
-        name: {{ adb_service }}
+        name: {{ cluster.adb_service.display_name }}
       how:
         operation: set-config
   - update:

@@ -30,7 +30,7 @@ export interface DialogData {
 @Component({
   selector: 'app-dialog',
   template: `
-    <h3 mat-dialog-title class="overflow">{{ data.title || 'Notification' }}</h3>
+    <h3 mat-dialog-title class="overflow">{{ _title() }}</h3>
     <mat-dialog-content class="content" appScroll (read)="scroll($event)">
       <pre *ngIf="data.text">{{ data.text }}</pre>
       <ng-template appDynamic></ng-template>
@@ -81,6 +81,10 @@ export class DialogComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    if (this._isTypeLdap() && this._isGroupDialog()) {
+      this.data.disabled = true;
+    }
+
     if (this.data.component) {
       const componentFactory = this.componentFactoryResolever.resolveComponentFactory(this.data.component);
       const viewContainerRef = this.dynamic.viewContainerRef;
@@ -102,5 +106,22 @@ export class DialogComponent implements OnInit {
 
   _noClick(): void {
     this.dialogRef.close();
+  }
+
+  _isTypeLdap() {
+    return this.data?.model?.value?.type === 'ldap'
+  }
+
+  _title(): string {
+    if (this._isTypeLdap() && this._isGroupDialog()) return 'Group Info'
+    return this.data.title || 'Notification';
+  }
+
+  _isGroupDialog() {
+    return this.data.model.name === 'Group';
+  }
+
+  _isUserDialog() {
+    return this.data.model.name === 'user';
   }
 }

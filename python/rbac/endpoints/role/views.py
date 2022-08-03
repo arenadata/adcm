@@ -124,6 +124,7 @@ class RoleView(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-a
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @audit
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()

@@ -19,6 +19,8 @@ from rest_framework.response import Response
 
 from rbac.models import Role, User
 
+APPLICATION_JSON = "application/json"
+
 
 class BaseTestCase(TestCase):
     def setUp(self) -> None:
@@ -55,27 +57,3 @@ class BaseTestCase(TestCase):
             content_type="application/json",
         )
         self.client.defaults["Authorization"] = f"Token {res.data['token']}"
-
-    def upload_bundle(self):
-        with open(self.test_bundle_path, encoding="utf-8") as f:
-            self.client.post(
-                path=reverse("upload-bundle"),
-                data={"file": f},
-            )
-
-    def load_bundle(self):
-        return self.client.post(
-            path=reverse("load-bundle"),
-            data={"bundle_file": self.test_bundle_filename},
-        )
-
-    def create_cluster(self, bundle_id: int, cluster_name: str):
-        return self.client.post(
-            path=reverse("cluster"),
-            data={
-                "bundle_id": bundle_id,
-                "display_name": f"{cluster_name}_display",
-                "name": cluster_name,
-                "prototype_id": bundle_id,
-            },
-        )
