@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from api.utils import SuperuserOnlyMixin
 from audit.models import AuditLog, AuditSession
@@ -18,7 +18,7 @@ from . import serializers
 from . import filters
 
 
-class AuditOperationViewSet(SuperuserOnlyMixin, ModelViewSet):
+class AuditOperationViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
     queryset = AuditLog.objects.select_related('audit_object', 'user').order_by(
         '-operation_time', '-pk'
     )
@@ -27,7 +27,7 @@ class AuditOperationViewSet(SuperuserOnlyMixin, ModelViewSet):
     filterset_class = filters.AuditOperationListFilter
 
 
-class AuditLoginViewSet(SuperuserOnlyMixin, ModelViewSet):
+class AuditLoginViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
     queryset = AuditSession.objects.select_related('user').order_by('-login_time', '-pk')
     model_class = AuditSession
     serializer_class = serializers.AuditSessionSerializer
