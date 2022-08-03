@@ -534,7 +534,7 @@ class ADCMEntity(ADCMModel):
 
     def delete(self, using=None, keep_parents=False):
         super().delete(using, keep_parents)
-        if self.config is not None:
+        if self.config is not None and not isinstance(self, ServiceComponent):
             self.config.delete()
 
 
@@ -1306,6 +1306,7 @@ class TaskLog(ADCMModel):
     config = models.JSONField(null=True, default=None)
     attr = models.JSONField(default=dict)
     hostcomponentmap = models.JSONField(null=True, default=None)
+    post_upgrade_hc_map = models.JSONField(null=True, default=None)
     hosts = models.JSONField(null=True, default=None)
     verbose = models.BooleanField(default=False)
     start_date = models.DateTimeField()
@@ -1376,6 +1377,12 @@ class TaskLog(ADCMModel):
             event_queue.send_state()
         os.kill(self.pid, signal.SIGTERM)
 
+    @staticmethod
+    def get_adcm_tasks_qs():
+        return TaskLog.objects.filter(
+            object_type=ContentType.objects.get(app_label='cm', model='adcm')
+        )
+
 
 class JobLog(ADCMModel):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
@@ -1389,6 +1396,10 @@ class JobLog(ADCMModel):
     finish_date = models.DateTimeField(db_index=True)
 
     __error_code__ = 'JOB_NOT_FOUND'
+
+    @staticmethod
+    def get_adcm_jobs_qs():
+        return JobLog.objects.filter(task__in=TaskLog.get_adcm_tasks_qs())
 
 
 class GroupCheckLog(ADCMModel):

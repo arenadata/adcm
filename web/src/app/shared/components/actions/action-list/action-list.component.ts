@@ -17,34 +17,8 @@ import { ActionsService } from '../actions.service';
 
 @Component({
   selector: 'app-action-list',
-  template: `
-    <button
-      *ngIf="!asButton; else btn"
-      mat-icon-button
-      color="accent"
-      [disabled]="disabled"
-      [matMenuTriggerFor]="panel.menu"
-      (click)="getData()"
-      matTooltip="Choose action"
-    >
-      <mat-icon>play_circle_outline</mat-icon>
-    </button>
-    <ng-template #btn>
-      <button
-        mat-raised-button
-        color="accent"
-        [disabled]="disabled"
-        [matMenuTriggerFor]="panel.menu"
-        (click)="getData()"
-      >
-        <span>Run action</span>
-        &nbsp;
-        <mat-icon class="icon-locked running" *ngIf="state === 'locked'; else pi">autorenew</mat-icon>
-        <ng-template #pi><mat-icon>play_circle_outline</mat-icon></ng-template>
-      </button>
-    </ng-template>
-    <app-menu-item #panel [items]="actions$ | async" [cluster]="cluster"></app-menu-item>
-  `,
+  templateUrl: './action-list.component.html',
+  styleUrls: ['./action-list.component.scss']
 })
 export class ActionListComponent {
   @Input() cluster: { id: number; hostcomponent: string };

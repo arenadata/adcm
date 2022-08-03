@@ -28,11 +28,9 @@ from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.common_locators import (
-    ObjectPageLocators,
-)
-from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageMenuLocators,
     CommonLocators,
+    ObjectPageLocators,
 )
 from tests.ui_tests.app.page.common.configuration.fields import ConfigFieldsManipulator
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
@@ -98,6 +96,7 @@ class CommonConfigMenuObj(BasePageObject):
     def save_config(self, load_timeout: int = 5):
         """Save current configuration"""
 
+        self.find_and_click(self.locators.search_input)
         self.find_and_click(self.locators.save_btn)
         self.wait_element_hide(self.locators.loading_text, timeout=load_timeout)
 
@@ -289,6 +288,7 @@ class CommonConfigMenuObj(BasePageObject):
                 field = self.find_children(field_row, self.locators.ConfigRow.input)[id]
             if clear:
                 field.clear()
+            self.find_children(field_row, self.locators.ConfigRow.input)[id].click()
             self.find_children(field_row, self.locators.ConfigRow.input)[id].send_keys(value)
 
     @allure.step('Select option "{option}" in option field')

@@ -16,6 +16,7 @@ export interface FormModel<T = any> {
   form?: FormGroup;
   success?: EventEmitter<{ flag: boolean; obj: any }>;
   component?: Type<BaseFormDirective>;
+  clusterId?: number;
 }
 
 export interface IAddService {

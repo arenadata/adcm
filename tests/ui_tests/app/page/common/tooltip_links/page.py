@@ -51,6 +51,30 @@ class CommonToolbar(BasePageObject):
         self.find_and_click(ActionDialog.run)
         self.wait_element_hide(ActionDialog.body)
 
+    @allure.step("Check action {action_name} in ADCM tab is inactive")
+    def is_adcm_action_inactive(self, action_name: str):
+        """Check Action from toolbar"""
+
+        self.wait_element_visible(CommonToolbarLocators.admin_link)
+        self.find_and_click(CommonToolbarLocators.adcm_action_btn)
+        is_active = (
+            self.wait_element_visible(CommonToolbarLocators.Popup.item(action_name)).get_attribute('disabled') == "true"
+        )
+        self.find_and_click(CommonToolbarLocators.adcm_action_btn, is_js=True)
+        return is_active
+
+    @allure.step("Run action {action_name} in ADCM tab")
+    def run_adcm_action(self, action_name: str):
+        """Run Action from toolbar"""
+
+        self.wait_element_visible(CommonToolbarLocators.admin_link)
+        self.find_and_click(CommonToolbarLocators.adcm_action_btn)
+        self.wait_element_visible(CommonToolbarLocators.Popup.popup_block)
+        self.wait_element_clickable(CommonToolbarLocators.Popup.item(action_name)).click()
+        self.wait_element_visible(ActionDialog.body)
+        self.find_and_click(ActionDialog.run)
+        self.wait_element_hide(ActionDialog.body)
+
     @allure.step("Run upgrade {upgrade_name} in {tab_name}")
     def run_upgrade(self, tab_name: str, upgrade_name: str):
         """Run Upgrade from toolbar"""

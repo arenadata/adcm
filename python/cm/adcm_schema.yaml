@@ -55,7 +55,7 @@ cluster_object:
   <<: *common_object
   items:
     <<: *common_object_items
-    upgrade: upgrade_list
+    upgrade: cluster_upgrade_list
     import: import_dict
     export: export
     config_group_customization: boolean
@@ -70,14 +70,14 @@ provider_object:
   <<: *common_object
   items:
     <<: *common_object_items
-    upgrade: upgrade_list
+    upgrade: provider_upgrade_list
     config_group_customization: boolean
 
 adcm_object:
   <<: *common_object
   items:
     <<: *common_object_items
-    upgrade: upgrade_list
+    upgrade: provider_upgrade_list
 
 export:
   match: one_of
@@ -162,20 +162,23 @@ version_rule:
     - float
 
 # Upgrade Block
-upgrade_list:
+cluster_upgrade_list:
   match: list
-  item: upgrade_obj
+  item: cluster_upgrade_obj
 
-upgrade_obj:
+provider_upgrade_list:
+  match: list
+  item: provider_upgrade_obj
+
+upgrade_obj: &common_upgrade_object
   match: dict
-  items:
+  items: &common_upgrade_object_items
     name: version_rule
     description: string
     versions: version_dict
     states: states_dict
     from_edition: any_or_list
     scripts: upgrade_task_list
-    hc_acl: action_hc_acl_list
     venv: string
     ui_options: json
     config: config_obj
@@ -183,6 +186,17 @@ upgrade_obj:
   required_items:
     - name
     - versions
+
+provider_upgrade_obj:
+  <<: *common_upgrade_object
+  items:
+    <<: *common_upgrade_object_items
+
+cluster_upgrade_obj:
+  <<: *common_upgrade_object
+  items:
+    <<: *common_upgrade_object_items
+    hc_acl: action_hc_acl_list
 
 upgrade_task_list:
   match: list
@@ -767,6 +781,7 @@ action_script_type:
   match: set
   variants:
     - ansible
+    - python
 
 action_states_dict:
   match: dict
