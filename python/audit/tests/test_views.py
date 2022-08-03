@@ -131,31 +131,33 @@ class TestViews(TestBase):
             num=5,
         )
         response = self.client.get(
-            path=reverse('audit-operations'), content_type="application/json"
+            path=reverse('audit-operations-list'), content_type="application/json"
         ).json()
         assert response['count'] == 0
         assert not response['results']
 
         response = self.client.get(
             path=reverse(
-                'audit-operation-detail', kwargs={'id': audit_entities['audit_operations'][0].pk}
+                'audit-operations-detail', args=(audit_entities['audit_operations'][0].pk,)
             ),
             content_type="application/json",
-        ).json()
-        assert response['code'] == 'AUDIT_OPERATION_NOT_FOUND'
+        )
+        assert response.status_code == 404
+        response = response.json()
         assert 'results' not in response
 
         response = self.client.get(
-            path=reverse('audit-logins'), content_type="application/json"
+            path=reverse('audit-logins-list'), content_type="application/json"
         ).json()
         assert response['count'] == 0
         assert not response['results']
 
         response = self.client.get(
-            path=reverse('audit-login-detail', kwargs={'id': audit_entities['audit_logins'][0].pk}),
+            path=reverse('audit-logins-detail', args=(audit_entities['audit_logins'][0].pk,)),
             content_type="application/json",
-        ).json()
-        assert response['code'] == 'AUDIT_LOGIN_NOT_FOUND'
+        )
+        assert response.status_code == 404
+        response = response.json()
         assert 'results' not in response
 
     def test_audit_visibility_superuser(self):
@@ -170,14 +172,14 @@ class TestViews(TestBase):
             num=2,
         )
         response = self.client.get(
-            path=reverse('audit-operations'), content_type="application/json"
+            path=reverse('audit-operations-list'), content_type="application/json"
         ).json()
         assert response['count'] == 2
         assert response['results']
 
         response = self.client.get(
             path=reverse(
-                'audit-operation-detail', kwargs={'id': audit_entities['audit_operations'][0].pk}
+                'audit-operations-detail', args=(audit_entities['audit_operations'][0].pk,)
             ),
             content_type="application/json",
         )
@@ -185,13 +187,13 @@ class TestViews(TestBase):
         assert response.json()['user_id'] == self.superuser.pk
 
         response = self.client.get(
-            path=reverse('audit-logins'), content_type="application/json"
+            path=reverse('audit-logins-list'), content_type="application/json"
         ).json()
         assert response['count'] == 2
         assert response['results']
 
         response = self.client.get(
-            path=reverse('audit-login-detail', kwargs={'id': audit_entities['audit_logins'][0].pk}),
+            path=reverse('audit-logins-detail', args=(audit_entities['audit_logins'][0].pk,)),
             content_type="application/json",
         )
         assert response.status_code == 200
@@ -225,54 +227,54 @@ class TestViews(TestBase):
         )
 
         response = self.client.get(
-            path=reverse('audit-operations'), content_type="application/json"
+            path=reverse('audit-operations-list'), content_type="application/json"
         ).json()
         assert response['count'] == 5
 
         response = self.client.get(
-            path=reverse('audit-operations'),
+            path=reverse('audit-operations-list'),
             data={'object_type': 'cluster'},
             content_type="application/json",
         ).json()
         assert response['count'] == 2
 
         response = self.client.get(
-            path=reverse('audit-operations'),
+            path=reverse('audit-operations-list'),
             data={'object_name': object_name},
             content_type="application/json",
         ).json()
         assert response['count'] == 3
 
         response = self.client.get(
-            path=reverse('audit-operations'),
+            path=reverse('audit-operations-list'),
             data={'operation_type': 'update'},
             content_type="application/json",
         ).json()
         assert response['count'] == 3
 
         response = self.client.get(
-            path=reverse('audit-operations'),
+            path=reverse('audit-operations-list'),
             data={'operation_name': operation_name},
             content_type="application/json",
         ).json()
         assert response['count'] == 3
 
         response = self.client.get(
-            path=reverse('audit-operations'),
+            path=reverse('audit-operations-list'),
             data={'operation_result': 'fail'},
             content_type="application/json",
         ).json()
         assert response['count'] == 3
 
         response = self.client.get(
-            path=reverse('audit-operations'),
+            path=reverse('audit-operations-list'),
             data={'username': self.user_username},
             content_type="application/json",
         ).json()
         assert response['count'] == 3
 
         response = self.client.get(
-            path=reverse('audit-operations'),
+            path=reverse('audit-operations-list'),
             data={'operation_date': date},
             content_type="application/json",
         ).json()
@@ -300,27 +302,27 @@ class TestViews(TestBase):
         )['audit_logins']
 
         response = self.client.get(
-            path=reverse('audit-logins'),
+            path=reverse('audit-logins-list'),
             content_type="application/json",
         ).json()
         assert response['count'] == num_user_wrong_password + num_superuser_success
 
         response = self.client.get(
-            path=reverse('audit-logins'),
+            path=reverse('audit-logins-list'),
             data={'username': self.user_username},
             content_type="application/json",
         ).json()
         assert response['count'] == num_user_wrong_password
 
         response = self.client.get(
-            path=reverse('audit-logins'),
+            path=reverse('audit-logins-list'),
             data={'login_result': AuditSessionLoginResult.Success.value},
             content_type="application/json",
         ).json()
         assert response['count'] == num_superuser_success
 
         response = self.client.get(
-            path=reverse('audit-logins'),
+            path=reverse('audit-logins-list'),
             data={'login_date': wrong_date},
             content_type="application/json",
         ).json()
@@ -330,7 +332,7 @@ class TestViews(TestBase):
             pk__in=[as_.pk for as_ in audit_logins_superuser_success]
         ).update(login_time=date)
         response = self.client.get(
-            path=reverse('audit-logins'),
+            path=reverse('audit-logins-list'),
             data={'login_date': date},
             content_type="application/json",
         ).json()
