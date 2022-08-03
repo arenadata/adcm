@@ -46,7 +46,7 @@ from rest_framework.status import HTTP_403_FORBIDDEN, is_success
 
 def _get_audit_object_from_resp(res: Response, obj_type: str) -> Optional[AuditObject]:
     if res and res.data and res.data.get("id") and res.data.get("name"):
-        audit_object = AuditObject.objects.create(
+        audit_object, _ = AuditObject.objects.get_or_create(
             object_id=res.data["id"],
             object_name=res.data["name"],
             object_type=obj_type,
@@ -78,7 +78,7 @@ def _task_case(task_pk: str, action: str) -> Tuple[AuditOperation, AuditObject]:
         name=f"{obj_type} {action_name} {action}ed",
         operation_type=AuditLogOperationType.Update,
     )
-    audit_object = AuditObject.objects.create(
+    audit_object, _ = AuditObject.objects.get_or_create(
         object_id=task_pk,
         object_name=obj.task_object.name,
         object_type=obj.object_type.name,
@@ -115,7 +115,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = Bundle.objects.get(pk=bundle_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=bundle_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Bundle,
@@ -127,7 +127,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = Bundle.objects.get(pk=bundle_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=bundle_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Bundle,
@@ -147,7 +147,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = Cluster.objects.get(pk=cluster_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=cluster_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Cluster,
@@ -162,7 +162,7 @@ def _get_audit_operation_and_object(
                 audit_operation.name = audit_operation.name.format(host_fqdn=res.data["fqdn"])
 
             obj = Cluster.objects.get(pk=cluster_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=cluster_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Cluster,
@@ -174,7 +174,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = Cluster.objects.get(pk=cluster_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=cluster_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Cluster,
@@ -187,7 +187,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = Cluster.objects.get(pk=cluster_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=cluster_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Cluster,
@@ -205,7 +205,7 @@ def _get_audit_operation_and_object(
                 )
 
             obj = Cluster.objects.get(pk=cluster_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=cluster_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Cluster,
@@ -222,7 +222,7 @@ def _get_audit_operation_and_object(
                     service_display_name=deleted_obj.display_name
                 )
             obj = Cluster.objects.get(pk=cluster_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=cluster_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Cluster,
@@ -242,7 +242,7 @@ def _get_audit_operation_and_object(
                     service_display_name=service.display_name,
                 )
 
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=cluster_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Cluster,
@@ -261,7 +261,7 @@ def _get_audit_operation_and_object(
                     service_display_name=deleted_obj.display_name,
                 )
 
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=cluster_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Cluster,
@@ -274,7 +274,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = Cluster.objects.get(pk=cluster_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=cluster_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Cluster,
@@ -287,7 +287,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = Host.objects.get(pk=host_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=host_pk,
                 object_name=obj.fqdn,
                 object_type=AuditObjectType.Host,
@@ -303,7 +303,7 @@ def _get_audit_operation_and_object(
                 object_type = ContentType.objects.get_for_model(
                     res.data.serializer.instance.obj_ref.object
                 ).name
-                audit_object = AuditObject.objects.create(
+                audit_object, _ = AuditObject.objects.get_or_create(
                     object_id=res.data.serializer.instance.id,
                     object_name=str(res.data.serializer.instance),
                     object_type=object_type,
@@ -325,7 +325,7 @@ def _get_audit_operation_and_object(
             )
             if res:
                 object_type = res.data.serializer.instance.object_type.name
-                audit_object = AuditObject.objects.create(
+                audit_object, _ = AuditObject.objects.get_or_create(
                     object_id=res.data.serializer.instance.object.id,
                     object_name=res.data.serializer.instance.object.name,
                     object_type=object_type,
@@ -343,7 +343,7 @@ def _get_audit_operation_and_object(
             )
             if res:
                 audit_operation.name = audit_operation.name.format(fqdn=res.data["fqdn"])
-                audit_object = AuditObject.objects.create(
+                audit_object, _ = AuditObject.objects.get_or_create(
                     object_id=config_group.pk,
                     object_name=config_group.object.name,
                     object_type=config_group.object_type.name,
@@ -360,7 +360,7 @@ def _get_audit_operation_and_object(
                 name=f"{obj.fqdn} host removed from {config_group.name} configuration group",
                 operation_type=AuditLogOperationType.Update,
             )
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=config_group.pk,
                 object_name=config_group.object.name,
                 object_type=config_group.object_type.name,
@@ -381,7 +381,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = Group.objects.get(pk=group_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=group_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Group,
@@ -402,7 +402,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = Policy.objects.get(pk=policy_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=policy_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Policy,
@@ -423,7 +423,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = Role.objects.get(pk=role_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=role_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Role,
@@ -436,7 +436,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Create,
             )
             if res:
-                audit_object = AuditObject.objects.create(
+                audit_object, _ = AuditObject.objects.get_or_create(
                     object_id=res.data["id"],
                     object_name=res.data["username"],
                     object_type=AuditObjectType.User,
@@ -451,7 +451,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = User.objects.get(pk=user_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=user_pk,
                 object_name=obj.username,
                 object_type=AuditObjectType.User,
@@ -464,7 +464,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Create,
             )
             if res:
-                audit_object = AuditObject.objects.create(
+                audit_object, _ = AuditObject.objects.get_or_create(
                     object_id=res.data["id"],
                     object_name=res.data["fqdn"],
                     object_type=AuditObjectType.Host,
@@ -479,7 +479,7 @@ def _get_audit_operation_and_object(
                      f"configuration {AuditLogOperationType.Update}d",
                 operation_type=AuditLogOperationType.Update,
             )
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=obj.pk,
                 object_name=obj.fqdn,
                 object_type=AuditObjectType.Host,
@@ -503,7 +503,7 @@ def _get_audit_operation_and_object(
                 f"configuration {AuditLogOperationType.Update}d",
                 operation_type=AuditLogOperationType.Update,
             )
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                     object_id=provider_pk,
                     object_name=obj.name,
                     object_type=AuditObjectType.Provider,
@@ -519,7 +519,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = Host.objects.get(pk=host_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=host_pk,
                 object_name=obj.fqdn,
                 object_type=AuditObjectType.Host,
@@ -531,7 +531,7 @@ def _get_audit_operation_and_object(
                 name=f"{deleted_obj.display_name} service removed",
                 operation_type=AuditLogOperationType.Update,
             )
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=deleted_obj.cluster.pk,
                 object_name=deleted_obj.cluster.name,
                 object_type=AuditObjectType.Cluster,
@@ -544,7 +544,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = ClusterObject.objects.get(pk=service_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=service_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Service,
@@ -568,7 +568,7 @@ def _get_audit_operation_and_object(
                     export_cluster_name=res.data["export_cluster_name"],
                 )
 
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=service_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Service,
@@ -592,7 +592,7 @@ def _get_audit_operation_and_object(
                     export_cluster_name=deleted_obj[0].cluster.name,
                 )
 
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=service_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Service,
@@ -608,7 +608,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = ServiceComponent.objects.get(pk=component_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=component_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Component,
@@ -624,7 +624,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = ClusterObject.objects.get(pk=service_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=service_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Service,
@@ -637,7 +637,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = ServiceComponent.objects.get(pk=component_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=component_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.Component,
@@ -650,7 +650,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             obj = ADCM.objects.get(pk=adcm_pk)
-            audit_object = AuditObject.objects.create(
+            audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=adcm_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.ADCM,
