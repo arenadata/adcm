@@ -18,6 +18,7 @@ from . import serializers
 from . import filters
 
 
+# pylint: disable=too-many-ancestors
 class AuditOperationViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
     queryset = AuditLog.objects.select_related('audit_object', 'user').order_by(
         '-operation_time', '-pk'
@@ -27,6 +28,7 @@ class AuditOperationViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
     filterset_class = filters.AuditOperationListFilter
 
 
+# pylint: disable=too-many-ancestors
 class AuditLoginViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
     queryset = AuditSession.objects.select_related('user').order_by('-login_time', '-pk')
     model_class = AuditSession
