@@ -15,40 +15,34 @@ from rest_framework import serializers
 from audit.models import AuditLog, AuditSession
 
 
-class AuditLogSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
+class AuditLogSerializer(serializers.ModelSerializer):
     object_id = serializers.IntegerField(read_only=True, source='audit_object.object_id')
     object_type = serializers.CharField(read_only=True, source='audit_object.object_type')
     object_name = serializers.CharField(read_only=True, source='audit_object.object_name')
-    operation_type = serializers.CharField(read_only=True)
-    operation_name = serializers.CharField(read_only=True)
-    operation_result = serializers.CharField(read_only=True)
-    operation_time = serializers.DateTimeField(read_only=True)
-    user_id = serializers.IntegerField(read_only=True, source='user.id')
-    object_changes = serializers.JSONField(read_only=True)
 
     class Meta:
         model = AuditLog
+        fields = [
+            'id',
+            'object_id',
+            'object_type',
+            'object_name',
+            'operation_type',
+            'operation_name',
+            'operation_result',
+            'operation_time',
+            'user_id',
+            'object_changes',
+        ]
 
-    def create(self, validated_data):
-        pass
 
-    def update(self, instance, validated_data):
-        pass
-
-
-class AuditSessionSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    user_id = serializers.IntegerField(read_only=True)
-    login_result = serializers.CharField(read_only=True)
-    login_time = serializers.DateTimeField(read_only=True)
-    login_details = serializers.JSONField(read_only=True)
-
+class AuditSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AuditSession
-
-    def create(self, validated_data):
-        pass
-
-    def update(self, instance, validated_data):
-        pass
+        fields = [
+            'id',
+            'user_id',
+            'login_result',
+            'login_time',
+            'login_details',
+        ]
