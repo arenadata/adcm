@@ -13,13 +13,13 @@
 """conftest for audit tests"""
 
 from pathlib import Path
-from typing import NamedTuple, Optional
+from typing import Callable, NamedTuple, Optional
 
 import pytest
 
 from tests.functional.conftest import only_clean_adcm
 from tests.library.audit.checkers import AuditLogChecker
-from tests.library.audit.readers import YAMLReader, ParsedAuditLog
+from tests.library.audit.readers import ParsedAuditLog, YAMLReader
 
 # pylint: disable=redefined-outer-name
 
@@ -41,6 +41,12 @@ class ScenarioArg(NamedTuple):
 def audit_log_scenarios_reader() -> YAMLReader:
     """Create YAML reader aimed to scenarios dir"""
     return YAMLReader(AUDIT_LOG_SCENARIOS_DIR)
+
+
+@pytest.fixture()
+def parse_with_context(request, audit_log_scenarios_reader) -> Callable:
+    """Returns the function prepared to parse file from request.param with given context"""
+    return audit_log_scenarios_reader.prepare_parser_of(request.param)
 
 
 @pytest.fixture()

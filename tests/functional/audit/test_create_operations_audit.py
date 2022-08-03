@@ -15,7 +15,7 @@ Test audit operations with "operation_type == CREATE"
 """
 
 from pathlib import Path
-from typing import Optional, Callable, Dict
+from typing import Callable, Dict, Optional
 
 import allure
 import pytest
@@ -23,9 +23,7 @@ import requests
 from adcm_client.objects import ADCMClient
 
 from tests.functional.audit.conftest import BUNDLES_DIR, parametrize_audit_scenario_parsing
-
 from tests.library.audit.checkers import AuditLogChecker
-
 
 # pylint: disable=redefined-outer-name
 
@@ -161,9 +159,10 @@ def test_bundle_upload_load(audit_log_checker, post, bundle_archives, sdk_client
     audit_log_checker.check(sdk_client_fs.audit_operation_list())
 
 
-def test_rbac_create_operations(audit_log_scenarios_reader, rbac_create_data, post, sdk_client_fs):
+@pytest.mark.parametrize('parse_with_context', ['create_rbac_entities.yaml'], indirect=True)
+def test_rbac_create_operations(parse_with_context, rbac_create_data, post, sdk_client_fs):
     """Test audit logs for CREATE of RBAC objects"""
-    audit_checker = AuditLogChecker(audit_log_scenarios_reader.parse('create_rbac_entities.yaml', rbac_create_data))
+    audit_checker = AuditLogChecker(parse_with_context(rbac_create_data))
     with allure.step('Create user, try to create its duplicate and make it as an unauthorized user'):
         user_info = rbac_create_data.pop('user')
         _check_succeed(post(CreateOperation.USER, user_info))
@@ -181,6 +180,61 @@ def test_rbac_create_operations(audit_log_scenarios_reader, rbac_create_data, po
                 post(getattr(CreateOperation, object_type.upper()), create_data, headers=new_user_auth_header), 403
             )
     audit_checker.check(sdk_client_fs.audit_operation_list())
+
+
+@parametrize_audit_scenario_parsing('create_adcm_entities.yaml')  # pylint: disable-next=too-many-locals
+def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_client_fs):
+    """
+    Test audit logs for CREATE of ADCM objects:
+    - cluster
+    - provider
+    - host (from `host/` and from `provider/{id}/host/`)
+    - group config (on cluster, service and component)
+    """
+    new_user_creds = _make_auth_header(new_user_client)
+    cluster_bundle = sdk_client_fs.upload_from_fs(BUNDLES_DIR / 'create' / 'cluster')
+    provider_bundle = sdk_client_fs.upload_from_fs(BUNDLES_DIR / 'create' / 'provider')
+    with allure.step('Create cluster, try to create cluster from incorrect prototype and without permissions'):
+        cluster_proto_id = cluster_bundle.cluster_prototype().id
+        cluster_create_args = (CreateOperation.CLUSTER, {'prototype_id': cluster_proto_id, 'name': 'cluster'})
+        _check_succeed(post(*cluster_create_args))
+        _check_failed(post(CreateOperation.CLUSTER, {'prototype_id': 1000, 'name': 'cluster'}), 404)
+        _check_failed(post(*cluster_create_args, headers=new_user_creds), 403)
+    with allure.step('Create provider, try to create provider from incorrect prototype and without permissions'):
+        provider_proto_id = provider_bundle.provider_prototype().id
+        provider_create_args = (CreateOperation.PROVIDER, {'prototype_id': provider_proto_id, 'name': 'provider'})
+        _check_succeed(post(*provider_create_args))
+        _check_failed(post(CreateOperation.PROVIDER, {'prototype_id': 1000, 'name': 'provider'}), 404)
+        _check_failed(post(*provider_create_args, headers=new_user_creds), 403)
+
+        provider = sdk_client_fs.provider()
+    with allure.step('Create host from root and from provider'):
+        host_from_provider_args = {'data': {'fqdn': 'host-from-provider'}, 'path_fmt': {'provider_id': provider.id}}
+        _check_succeed(post(CreateOperation.HOST_FROM_PROVIDER, **host_from_provider_args))
+        host_prototype_id = provider.host().prototype_id
+        host_from_root_args = {
+            'data': {'fqdn': 'host-from-root', 'prototype_id': host_prototype_id, 'provider_id': provider.id}
+        }
+        _check_succeed(post(CreateOperation.HOST, **host_from_root_args))
+    with allure.step('Try to incorrectly create host from root and from provider'):
+        _check_failed(post(CreateOperation.HOST_FROM_PROVIDER, **host_from_provider_args), 409)
+        _check_failed(post(CreateOperation.HOST, **host_from_root_args), 409)
+    with allure.step('Try to create hosts without permissions'):
+        _check_failed(post(CreateOperation.HOST_FROM_PROVIDER, **host_from_provider_args, headers=new_user_creds), 403)
+        _check_failed(post(CreateOperation.HOST, **host_from_root_args, headers=new_user_creds), 403)
+    with allure.step(
+        'Create group config for cluster, service and component, '
+        'try to make their duplicates and create with wrong user'
+    ):
+        component = (service := (cluster := sdk_client_fs.cluster()).service_add(name='service')).component()
+        for obj in (cluster, service, component):
+            obj_type = obj.__class__.__name__.lower()
+            group_name = f'{obj_type}-group'
+            data = {'object_id': obj.id, 'object_type': obj_type, 'name': group_name}
+            _check_succeed(post(CreateOperation.GROUP_CONFIG, data))
+            _check_failed(post(CreateOperation.GROUP_CONFIG, data), 400)
+            _check_failed(post(CreateOperation.GROUP_CONFIG, data, headers=new_user_creds), 403)
+    audit_log_checker.check(sdk_client_fs.audit_operation_list())
 
 
 @allure.step('Expecting request to succeed')

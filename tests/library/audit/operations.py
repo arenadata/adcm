@@ -12,11 +12,10 @@
 
 """Defines basic entities like Operation and NamedOperation to work with audit log scenarios"""
 
-from dataclasses import dataclass, fields, field
-from typing import Optional, Dict, Union, NamedTuple, Collection, List, Literal, ClassVar
+from dataclasses import dataclass, field, fields
+from typing import ClassVar, Collection, Dict, List, Literal, NamedTuple, Optional, Union
 
-from adcm_client.audit import OperationType, AuditOperation, OperationResult, ObjectType
-
+from adcm_client.audit import AuditOperation, ObjectType, OperationResult, OperationType
 
 # types that can just be "created" and "deleted
 _create_delete_types = (
@@ -105,6 +104,12 @@ _NAMED_OPERATIONS: Dict[str, NamedOperation] = {
         # Actions
         NamedOperation('launch-action', '{name} action launched', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         NamedOperation('complete-action', '{name} action completed', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        # Group config
+        NamedOperation(
+            'create-group-config',
+            '{name} configuration group created',
+            (ObjectType.CLUSTER, ObjectType.SERVICE, ObjectType.COMPONENT),
+        ),
     )
 }
 
@@ -148,10 +153,17 @@ class Operation:
 
     def _detect_operation_name(self) -> str:
         """Detect the operation name"""
-        if self.object_type in _create_delete_types and self.operation_type in (
-            OperationType.CREATE,
-            OperationType.DELETE,
+        # creation of part (like group-config) is top priority
+        if (
+            self.object_type in _create_delete_types
+            and self.operation_type
+            in (
+                OperationType.CREATE,
+                OperationType.DELETE,
+            )
+            and not self.code
         ):
+            # code may be important for stuff like group config creation
             return f'{self.object_type.value.capitalize()} {self.operation_type.value.lower()}d'
 
         if not self.code or 'operation' not in self.code:
