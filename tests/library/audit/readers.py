@@ -89,6 +89,8 @@ class YAMLReader:
     def _read(self, filename: str, context: Dict[str, Union[str, int]]) -> dict:
         rendered_file_content = self._template_env.get_template(filename).render(**context)
         data = yaml.safe_load(rendered_file_content)
-        allure.attach(yaml.safe_dump(data), name='Audit Log scenario', attachment_type=allure.attachment_type.YAML)
         jsonschema.validate(data, _get_schema())
+        allure.attach(
+            json.dumps(data, indent=2), name='Audit Log scenario', attachment_type=allure.attachment_type.JSON
+        )
         return data

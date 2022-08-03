@@ -13,9 +13,13 @@
 """conftest for audit tests"""
 
 from pathlib import Path
-from typing import Callable, NamedTuple, Optional
+from typing import Callable, Dict, Literal, NamedTuple, Optional
 
+import allure
 import pytest
+import requests
+from adcm_client.base import ObjectNotFound
+from adcm_client.objects import ADCMClient
 
 from tests.functional.conftest import only_clean_adcm
 from tests.library.audit.checkers import AuditLogChecker
@@ -69,3 +73,156 @@ def parametrize_audit_scenario_parsing(scenario_name: str, context: Optional[dic
 def audit_log_checker(parsed_audit_log) -> AuditLogChecker:
     """Create audit log checker based on parsed audit log"""
     return AuditLogChecker(parsed_audit_log)
+
+
+# CREATE/DELETE utilities
+
+NEW_USER = {
+    'username': 'newuser',
+    'password': 'fnwqoevj',
+    'first_name': 'young',
+    'last_name': 'manager',
+    'email': 'does@notexi.st',
+}
+
+
+class CreateDeleteOperation:
+    """List of endpoints for convenience"""
+
+    # UPLOAD (create only)
+    LOAD = 'stack/load'
+    UPLOAD = 'stack/upload'
+    # BUNDLE (delete only)
+    BUNDLE = 'stack/bundle'
+    # CREATE CLUSTER/PROVIDER objects
+    CLUSTER = 'cluster'
+    PROVIDER = 'provider'
+    HOST = 'host'
+    HOST_FROM_PROVIDER = 'provider/{provider_id}/host'
+    # GROUP CONFIG
+    GROUP_CONFIG = 'group-config'
+    # RBAC
+    USER = 'rbac/user'
+    ROLE = 'rbac/role'
+    GROUP = 'rbac/group'
+    POLICY = 'rbac/policy'
+
+
+@pytest.fixture()
+def rbac_create_data(sdk_client_fs) -> Dict[str, dict]:
+    """Prepare data to create RBAC objects"""
+    business_role = sdk_client_fs.role(name='View ADCM settings')
+    adcm_user_role = sdk_client_fs.role(name='ADCM User')
+    return {
+        'user': {**NEW_USER},
+        'group': {'name': 'groupforU'},
+        'role': {
+            'name': 'newrole',
+            'description': 'Awesome role',
+            'display_name': 'New Role',
+            'child': [{'id': business_role.id}],
+        },
+        'policy': {
+            'name': 'newpolicy',
+            'description': 'Best policy ever',
+            'role': {'id': adcm_user_role.id},
+            'user': [{'id': sdk_client_fs.me().id}],
+            'group': [],
+            'object': [],
+        },
+    }
+
+
+# requesting utilities
+
+
+@pytest.fixture()
+def post(sdk_client_fs) -> Callable:
+    """
+    Prepare POST caller with all required credentials, so you only need to give path.
+    Body and stuff are optional.
+    """
+    base_url = sdk_client_fs.url
+    auth_header = make_auth_header(sdk_client_fs)
+
+    def _post(
+        path: str,
+        body: Optional[dict] = None,
+        headers: Optional[dict] = None,
+        path_fmt: Optional[dict] = None,
+        **kwargs,
+    ):
+        body = {} if body is None else body
+        headers = {**auth_header, **({} if headers is None else headers)}
+        path_fmt = {} if path_fmt is None else path_fmt
+        url = f'{base_url}/api/v1/{path.format(**path_fmt)}/'
+        with allure.step(f'Sending DELETE request to {url}'):
+            return requests.post(url, headers=headers, json=body, **kwargs)
+
+    return _post
+
+
+@pytest.fixture()
+def delete(sdk_client_fs) -> Callable:
+    """
+    Prepare DELETE caller with all required credentials.
+    Object ID can be passed via `suffixes`.
+    """
+    base_url = sdk_client_fs.url
+    auth_header = make_auth_header(sdk_client_fs)
+
+    def _delete(path: str, *suffixes, headers: Optional[dict] = None, path_fmt: Optional[dict] = None, **kwargs):
+        headers = {**auth_header, **({} if headers is None else headers)}
+        path_fmt = {} if path_fmt is None else path_fmt
+        url = f'{base_url}/api/v1/{path.format(**path_fmt)}/{"/".join(map(str,suffixes))}'
+        with allure.step(f'Sending DELETE request to {url}'):
+            return requests.delete(url, headers=headers, **kwargs)
+
+    return _delete
+
+
+@pytest.fixture()
+def new_user_client(sdk_client_fs) -> ADCMClient:
+    """Get or create new user"""
+    try:
+        user = sdk_client_fs.user(username=NEW_USER['username'])
+    except ObjectNotFound:
+        user = sdk_client_fs.user_create(**NEW_USER)
+    return ADCMClient(url=sdk_client_fs.url, user=user.username, password=NEW_USER['password'])
+
+
+@pytest.fixture()
+def unauthorized_creds(new_user_client) -> Dict[Literal['Authorization'], str]:
+    """Prepare authorization header for the new user (by default, no policies assigned)"""
+    return make_auth_header(new_user_client)
+
+
+@allure.step('Expecting request to succeed')
+def check_succeed(response: requests.Response):
+    """Check that request has succeeded"""
+    allowed_codes = (200, 201, 204)
+    assert (
+        code := response.status_code
+    ) in allowed_codes, (
+        f'Request failed with code: {code}\nBody: {response.json() if not code >= 500 else response.text}'
+    )
+
+
+def check_failed(response: requests.Response, exact_code: Optional[int] = None):
+    """Check that request has failed"""
+    with allure.step(f'Expecting request to fail with code {exact_code if exact_code else ">=400 and < 500"}'):
+        assert response.status_code < 500, 'Request should not failed with 500'
+        if exact_code:
+            assert (
+                response.status_code == exact_code
+            ), f'Request was expected to be failed with {exact_code}, not {response.status_code}'
+        else:
+            assert response.status_code >= 400, (
+                'Request was expected to be failed, '
+                f'but status code was {response.status_code}.\nBody: {response.json()}'
+            )
+
+
+def make_auth_header(client: ADCMClient) -> dict:
+    """Make authorization header based on API token from ADCM client"""
+    return {'Authorization': f'Token {client.api_token()}'}
