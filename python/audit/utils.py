@@ -678,8 +678,12 @@ def audit(func):
         operation_name: str
 
         error = None
-        view: View = args[0]
-        request: Request = args[1]
+        if len(args) == 2:
+            view: View = args[0]
+            request: Request = args[1]
+        else:
+            view: View = args[2]
+            request: Request = args[1]
 
         if request.method == "DELETE":
             try:
@@ -691,13 +695,15 @@ def audit(func):
 
         try:
             res = func(*args, **kwargs)
-            status_code = res.status_code
+            if res:
+                status_code = res.status_code
+            else:
+                status_code = HTTP_403_FORBIDDEN
         except (AdcmEx, AdwpEx) as exc:
             error = exc
             res = None
             status_code = exc.status_code
 
-        view: View = args[0]
         audit_operation, audit_object, operation_name = _get_audit_operation_and_object(
             view,
             res,
