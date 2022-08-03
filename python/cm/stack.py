@@ -412,6 +412,7 @@ def save_actions(proto, conf, bundle_hash):
         upg_name = conf['name']
         conf['display_name'] = f'Upgrade: {upg_name}'
         name = re.sub(r'\s+', '_', upg_name).strip().lower()
+        name = re.sub(r'\(|\)', '', name)
         action_name = f"{proto.name}_{proto.version}_{proto.edition}_upgrade_{name}"
         upgrade_action = save_action(proto, conf, bundle_hash, action_name)
         return upgrade_action

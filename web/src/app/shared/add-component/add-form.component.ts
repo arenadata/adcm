@@ -35,7 +35,7 @@ import { RbacFormDirective } from '@app/shared/add-component/rbac-form.directive
           <app-add-service #cc></app-add-service>
         </ng-container>
         <ng-container *ngSwitchCase="'host2cluster'">
-          <app-add-host2cluster (event)="message($event)" #cc></app-add-host2cluster>
+          <app-add-host2cluster (event)="message($event)" [clusterId]="model?.clusterId" #cc></app-add-host2cluster>
         </ng-container>
       </ng-container>
     </div>

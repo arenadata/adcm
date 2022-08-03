@@ -16,10 +16,10 @@ import { Bundle } from '@app/core/types';
 import { environment } from '@env/environment';
 import { select, Store } from '@ngrx/store';
 import { combineLatest, Observable } from 'rxjs';
-import { filter, map, mergeMap, switchMap } from 'rxjs/operators';
+import {filter, map, mergeMap, switchMap, tap} from 'rxjs/operators';
 import { ListResult } from '@app/models/list-result';
 
-export type StackInfo = 'cluster' | 'host' | 'provider' | 'service' | 'bundle';
+export type StackInfo = 'cluster' | 'host' | 'provider' | 'service' | 'bundle' | 'prototype';
 
 const UPLOAD_URL = `${environment.apiRoot}stack/upload/`,
   LOAD_URL = `${environment.apiRoot}stack/load/`;
@@ -33,7 +33,8 @@ export class StackService {
     return this.store.pipe(
       select(getStack),
       filter((a) => a && !!Object.keys(a).length),
-      switchMap((s) => this.api.get<ListResult<T>>(s[name], params).pipe(map((a) => a.results)))
+      switchMap((s) => this.api.get<ListResult<T>>(s[name], params).pipe(
+        map((a) => a.results)))
     );
   }
 

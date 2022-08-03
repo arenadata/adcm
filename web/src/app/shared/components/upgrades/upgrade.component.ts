@@ -10,17 +10,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
-import { ApiService } from '@app/core/api';
-import { EmmitRow } from '@app/core/types';
-import { concat, Observable, of } from 'rxjs';
-import { filter, map, switchMap } from 'rxjs/operators';
+import { ApiService } from '../../../core/api';
+import { EmmitRow, IActionParameter, IUIOptions } from '../../../core/types';
+import { Observable } from 'rxjs';
+import { filter } from 'rxjs/operators';
 import { EventHelper } from '@adwp-ui/widgets';
-
-import { BaseDirective } from '../directives';
-import { DialogComponent } from './dialog.component';
-import { IIssues } from '@app/models/issue';
-import { IssueHelper } from '@app/helpers/issue-helper';
+import { IIssues } from '../../../models/issue';
+import { IssueHelper } from '../../../helpers/issue-helper';
+import { IConfig } from "../../configuration/types";
 
 export interface UpgradeItem {
   upgradable: boolean;
@@ -28,22 +25,25 @@ export interface UpgradeItem {
   issue: IIssues;
 }
 
-export interface Upgrade {
-  id: number;
+export interface IUpgrade {
   bundle_id: number;
-  name: string;
+  config: IConfig;
   description: string;
   do: string;
-  upgradable: boolean;
-  from_edition: string[];
-  license: 'unaccepted' | 'absent';
+  from_edition: string[]
+  hostcomponentmap:IActionParameter[];
+  id: number;
+  license: string;
   license_url: string;
   max_strict: boolean;
   max_version: string;
   min_strict: boolean;
   min_version: string;
+  name: string;
   state_available: string;
   state_on_success: string;
+  ui_options: IUIOptions;
+  upgradable: boolean;
   url: string;
 }
 
@@ -62,17 +62,16 @@ export interface Upgrade {
     </button>
     <mat-menu #menu="matMenu" [overlapTrigger]="false" [xPosition]="xPosition" yPosition="below">
       <ng-template matMenuContent>
-        <button *ngFor="let item of list$ | async" mat-menu-item (click)="runUpgrade(item)">
+        <button *ngFor="let item of list$ | async" mat-menu-item [appUpgrades]="item" [clusterId]="pRow['id']">
           <span>{{ item.name || 'No name' }}</span>
         </button>
       </ng-template>
     </mat-menu>
   `
 })
-export class UpgradeComponent extends BaseDirective {
+export class UpgradeComponent {
   EventHelper = EventHelper;
-
-  list$: Observable<Upgrade[]>;
+  list$: Observable<IUpgrade[]>;
   pRow: UpgradeItem = { upgradable: false, upgrade: '', issue: null };
 
   @Input() xPosition = 'before';
@@ -86,51 +85,15 @@ export class UpgradeComponent extends BaseDirective {
   @Output()
   refresh: EventEmitter<EmmitRow> = new EventEmitter<EmmitRow>();
 
-  constructor(private api: ApiService, private dialog: MatDialog) {
-    super();
-  }
+  constructor(private api: ApiService) {}
 
   checkIssue() {
     return this.pRow.upgradable && !IssueHelper.isIssue(this.pRow.issue);
   }
 
-  runUpgrade(item: Upgrade) {
-    const license$ = item.license === 'unaccepted' ? this.api.put(`${item.license_url}accept/`, {}) : of();
-    const do$ = this.api.post<{ id: number }>(item.do, {});
-    this.fork(item)
-      .pipe(
-        switchMap(text =>
-          this.dialog
-            .open(DialogComponent, {
-              data: {
-                title: 'Are you sure you want to upgrade?',
-                text,
-                disabled: !item.upgradable,
-                controls: item.license === 'unaccepted' ? {
-                  label: 'Do you accept the license agreement?',
-                  buttons: ['Yes', 'No']
-                } : ['Yes', 'No']
-              }
-            })
-            .beforeClosed()
-            .pipe(
-              this.takeUntil(),
-              filter(yes => yes),
-              switchMap(() => concat(license$, do$))
-            )
-        )
-      )
-      .subscribe(row => this.refresh.emit({ cmd: 'refresh', row }));
-  }
-
-  fork(item: Upgrade) {
-    const flag = item.license === 'unaccepted';
-    return flag ? this.api.get<{ text: string }>(item.license_url).pipe(map(a => a.text)) : of(item.description);
-  }
-
   getUpgrades(upgrade: string): Observable<any> {
     return this.api.get(`${upgrade}?ordering=-name`).pipe(
-      filter((list: Upgrade[]) => !!list.length)
+      filter((list: IUpgrade[]) => !!list.length)
     );
   }
 }

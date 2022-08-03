@@ -83,3 +83,23 @@ pre-commit install
 ```
 
 After this you will see invocation of black and pylint on every commit.
+
+## Link ADWP_UI packages
+
+If you need to debug packages from ADWP_UI, you should do next:
+
+In ADWP_UI repository:
+```sh
+delete dist folder
+yarn run watch:widgets
+cd dist/widgets
+yarn link
+```
+
+In ADCM repository:
+```sh
+cd web
+sudo rm -rf ./node_modules OR rmdir -force ./node_modules(WIN)
+yarn link "@adwp-ui/widgets"
+yarn install
+```

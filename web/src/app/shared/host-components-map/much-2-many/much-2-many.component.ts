@@ -37,8 +37,8 @@ export class Much2ManyComponent implements AfterViewChecked {
   }
 
   isDisabled() {
-    if (this.model.actions) return !this.model.actions.length;
-    return this.model.disabled;
+    if (this.model?.actions) return !this.model.actions.length;
+    return this.model?.disabled;
   }
 
   isHostDisabled() {

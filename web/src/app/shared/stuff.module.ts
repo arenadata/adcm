@@ -16,6 +16,7 @@ import { RouterModule } from '@angular/router';
 import { ActionsComponent, CrumbsComponent, UpgradeComponent } from './components';
 import { ActionListComponent } from './components/actions/action-list/action-list.component';
 import { ActionsDirective } from './components/actions/actions.directive';
+import { UpgradesDirective } from './components/upgrades/upgrade.directive';
 import { TooltipDirective } from '@app/shared/components/tooltip';
 import { PopoverDirective } from '@app/directives/popover.directive';
 import {
@@ -40,6 +41,7 @@ import { ConcernListComponent } from '@app/components/concern/concern-list/conce
 import { ConcernListRefComponent } from '@app/components/concern/concern-list-ref/concern-list-ref.component';
 import { TooltipModule } from '@app/shared/components/tooltip/tooltip.module';
 import { HasSelectedPipe } from '@app/pipes/has-selected.pipe';
+import { ActionsButtonComponent } from "@app/components/actions-button/actions-button.component";
 
 @NgModule({
   declarations: [
@@ -53,6 +55,7 @@ import { HasSelectedPipe } from '@app/pipes/has-selected.pipe';
     InfinityScrollDirective,
     ActionsComponent,
     ActionsDirective,
+    UpgradesDirective,
     ActionListComponent,
     MenuItemComponent,
     PopoverDirective,
@@ -66,6 +69,7 @@ import { HasSelectedPipe } from '@app/pipes/has-selected.pipe';
     IsArrayPipe,
     HasSelectedPipe,
     IssuePathPipe,
+    ActionsButtonComponent,
   ],
   imports: [
     CommonModule,
@@ -85,6 +89,7 @@ import { HasSelectedPipe } from '@app/pipes/has-selected.pipe';
     InfinityScrollDirective,
     ActionsComponent,
     ActionsDirective,
+    UpgradesDirective,
     ActionListComponent,
     MenuItemComponent,
     PopoverDirective,
@@ -98,7 +103,8 @@ import { HasSelectedPipe } from '@app/pipes/has-selected.pipe';
     HasSelectedPipe,
     IssuePathPipe,
     ConcernListRefComponent,
-    TooltipModule
+    TooltipModule,
+    ActionsButtonComponent
   ],
   providers: [
     ConcernService,

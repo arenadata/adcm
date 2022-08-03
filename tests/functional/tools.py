@@ -140,7 +140,10 @@ def get_inventory_file(adcm_fs: ADCM, task_id: int) -> dict:
 
 
 def build_hc_for_hc_acl_action(
-    cluster: Cluster, add: Collection[Tuple[Component, Host]] = (), remove: Collection[Tuple[Component, Host]] = ()
+    cluster: Cluster,
+    add: Collection[Tuple[Component, Host]] = (),
+    remove: Collection[Tuple[Component, Host]] = (),
+    add_new_bundle_components: Collection[Tuple[int, Host]] = (),
 ) -> List[Dict[str, int]]:
     """
     Build a `hc` argument for a `hc_acl` action run based on cluster's hostcomponent and add/remove "directives".
@@ -151,6 +154,12 @@ def build_hc_for_hc_acl_action(
     hostcomponent.difference_update(to_remove)
     to_add = {(component.service_id, component.id, to_host.id) for component, to_host in add}
     return [
-        {'service_id': service_id, 'component_id': component_id, 'host_id': host_id}
-        for service_id, component_id, host_id in (hostcomponent | to_add)
+        *[
+            {'service_id': service_id, 'component_id': component_id, 'host_id': host_id}
+            for service_id, component_id, host_id in (hostcomponent | to_add)
+        ],
+        *[
+            {'component_prototype_id': component_proto_id, 'host_id': host.id}
+            for component_proto_id, host in add_new_bundle_components
+        ],
     ]
