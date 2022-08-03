@@ -10,22 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.mixins import ListModelMixin
+from rest_framework.viewsets import ModelViewSet
 
-from api.base_view import DetailView, GenericUIViewSet
 from api.utils import SuperuserOnlyMixin
 from audit.models import AuditLog, AuditSession
 from . import serializers
 from . import filters
 
 
-# pylint: disable=too-many-ancestors
-class AuditOperationListView(SuperuserOnlyMixin, ListModelMixin, GenericUIViewSet):
-    """
-    get:
-    List of all AuditLog entities
-    """
-
+class AuditOperationViewSet(SuperuserOnlyMixin, ModelViewSet):
     queryset = AuditLog.objects.select_related('audit_object', 'user').order_by(
         '-operation_time', '-pk'
     )
@@ -34,32 +27,8 @@ class AuditOperationListView(SuperuserOnlyMixin, ListModelMixin, GenericUIViewSe
     filterset_class = filters.AuditOperationListFilter
 
 
-class AuditOperationDetailView(SuperuserOnlyMixin, DetailView):
-    queryset = AuditLog.objects.select_related('audit_object', 'user').all()
-    model_class = AuditLog
-    serializer_class = serializers.AuditLogSerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'id'
-    error_code = 'AUDIT_OPERATION_NOT_FOUND'
-
-
-# pylint: disable=too-many-ancestors
-class AuditLoginListView(SuperuserOnlyMixin, ListModelMixin, GenericUIViewSet):
-    """
-    get:
-    List of all AuditSession entities
-    """
-
+class AuditLoginViewSet(SuperuserOnlyMixin, ModelViewSet):
     queryset = AuditSession.objects.select_related('user').order_by('-login_time', '-pk')
     model_class = AuditSession
     serializer_class = serializers.AuditSessionSerializer
     filterset_class = filters.AuditLoginListFilter
-
-
-class AuditLoginDetailView(SuperuserOnlyMixin, DetailView):
-    queryset = AuditSession.objects.select_related('user').all()
-    model_class = AuditSession
-    serializer_class = serializers.AuditSessionSerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'id'
-    error_code = 'AUDIT_LOGIN_NOT_FOUND'

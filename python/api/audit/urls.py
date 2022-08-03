@@ -10,40 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path, include
 
-from . import views
+from rest_framework.routers import SimpleRouter
+
+from .views import AuditOperationViewSet, AuditLoginViewSet
 
 
-urlpatterns = [
-    path(
-        'operation/',
-        include(
-            [
-                path(
-                    '',
-                    views.AuditOperationListView.as_view({'get': 'list'}),
-                    name='audit-operations',
-                ),
-                path(
-                    '<int:id>/',
-                    views.AuditOperationDetailView.as_view(),
-                    name='audit-operation-detail',
-                ),
-            ]
-        ),
-    ),
-    path(
-        'login/',
-        include(
-            [
-                path('', views.AuditLoginListView.as_view({'get': 'list'}), name='audit-logins'),
-                path(
-                    '<int:id>/',
-                    views.AuditLoginDetailView.as_view(),
-                    name='audit-login-detail',
-                ),
-            ]
-        ),
-    ),
-]
+router = SimpleRouter()
+router.register(r'operation', AuditOperationViewSet, basename='audit-operations')
+router.register(r'login', AuditLoginViewSet, basename='audit-logins')
+urlpatterns = router.urls

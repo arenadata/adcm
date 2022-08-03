@@ -58,12 +58,6 @@ ERRORS = {
     'FUNCTION_NOT_FOUND': ("function doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
     'CONCERNITEM_NOT_FOUND': ("concern item doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
     'GROUP_CONFIG_NOT_FOUND': ("group config doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
-    'AUDIT_OPERATION_NOT_FOUND': ("audit operation doesn't exist", rfs.HTTP_404_NOT_FOUND, ERR),
-    'AUDIT_LOGIN_NOT_FOUND': (
-        "audit login doesn't exist",
-        rfs.HTTP_404_NOT_FOUND,
-        ERR,
-    ),
     'TASK_GENERATOR_ERROR': ("task generator error", rfs.HTTP_409_CONFLICT, ERR),
     'OBJ_TYPE_ERROR': ("wrong object type", rfs.HTTP_409_CONFLICT, ERR),
     'SERVICE_CONFLICT': ("service already exists in specified cluster", rfs.HTTP_409_CONFLICT, ERR),

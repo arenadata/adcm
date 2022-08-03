@@ -29,8 +29,6 @@ class APIRoot(routers.APIRootView):
     permission_classes = (permissions.AllowAny,)
     api_root_dict = {
         'adcm': 'adcm',
-        'audit-operations': 'audit-operations',
-        'audit-logins': 'audit-logins',
         'cluster': 'cluster',
         'provider': 'provider',
         'host': 'host',
