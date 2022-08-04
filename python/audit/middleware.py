@@ -13,13 +13,14 @@ class AuditLoginMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        if request.path == '/api/v1/rbac/token/':
+            body = json.loads(request.body.decode('utf-8'))
+            username = body['username']
         response = self.get_response(request)
         if request.path == '/api/v1/rbac/token/':
             if request.user.is_authenticated:
                 create_audit_session(request.user, AuditSessionLoginResult.Success, None)
             else:
-                body = json.loads(request.body.decode('utf-8'))
-                username = body['username']
                 try:
                     user = User.objects.get(username=username)
 
