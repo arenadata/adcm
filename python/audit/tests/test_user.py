@@ -83,6 +83,25 @@ class TestUser(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
+    def test_delete(self):
+        self.client.delete(
+            path=reverse("rbac:user-detail", kwargs={"pk": self.no_rights_user.pk}),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.no_rights_user.pk
+        assert log.audit_object.object_name == self.no_rights_user.username
+        assert log.audit_object.object_type == AuditObjectType.User
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "User deleted"
+        assert log.operation_type == AuditLogOperationType.Delete
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
     def test_update_put(self):
         self.client.put(
             path=reverse("rbac:user-detail", kwargs={"pk": self.test_user.pk}),

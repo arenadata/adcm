@@ -92,9 +92,7 @@ class TestProvider(BaseTestCase):
             prototype=self.prototype,
         )
 
-        self.client.delete(
-            path=reverse("provider-details", kwargs={"provider_id": provider.pk})
-        )
+        self.client.delete(path=reverse("provider-details", kwargs={"provider_id": provider.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 

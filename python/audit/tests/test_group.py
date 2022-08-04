@@ -78,6 +78,25 @@ class TestGroup(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
+    def test_delete(self):
+        self.client.delete(
+            path=reverse("rbac:group-detail", kwargs={"pk": self.group.pk}),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.group.pk
+        assert log.audit_object.object_name == self.group.name
+        assert log.audit_object.object_type == AuditObjectType.Group
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Group deleted"
+        assert log.operation_type == AuditLogOperationType.Delete
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
     def test_update_put(self):
         self.client.put(
             path=reverse("rbac:group-detail", kwargs={"pk": self.group.pk}),

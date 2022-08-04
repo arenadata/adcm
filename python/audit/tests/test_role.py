@@ -91,6 +91,25 @@ class TestRole(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
+    def test_delete(self):
+        self.client.delete(
+            path=reverse("rbac:role-detail", kwargs={"pk": self.role.pk}),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.role.pk
+        assert log.audit_object.object_name == self.role.name
+        assert log.audit_object.object_type == AuditObjectType.Role
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Role deleted"
+        assert log.operation_type == AuditLogOperationType.Delete
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
     def test_update_put(self):
         self.client.put(
             path=reverse("rbac:role-detail", kwargs={"pk": self.role.pk}),

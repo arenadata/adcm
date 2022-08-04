@@ -519,12 +519,19 @@ def _get_audit_operation_and_object(
             audit_object = _get_audit_object_from_resp(res, AuditObjectType.Group)
 
         case ["rbac", "group", group_pk]:
+            if view.action == "destroy":
+                deleted_obj: Group
+                operation_type = AuditLogOperationType.Delete
+                obj = deleted_obj
+            else:
+                operation_type = AuditLogOperationType.Update
+                obj = Group.objects.get(pk=group_pk)
+
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Group.capitalize()} "
-                     f"{AuditLogOperationType.Update}d",
-                operation_type=AuditLogOperationType.Update,
+                     f"{operation_type}d",
+                operation_type=operation_type,
             )
-            obj = Group.objects.get(pk=group_pk)
             audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=group_pk,
                 object_name=obj.name,
@@ -540,12 +547,19 @@ def _get_audit_operation_and_object(
             audit_object = _get_audit_object_from_resp(res, AuditObjectType.Policy)
 
         case ["rbac", "policy", policy_pk]:
+            if view.action == "destroy":
+                deleted_obj: Policy
+                operation_type = AuditLogOperationType.Delete
+                obj = deleted_obj
+            else:
+                operation_type = AuditLogOperationType.Update
+                obj = Policy.objects.get(pk=policy_pk)
+
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Policy.capitalize()} "
-                     f"{AuditLogOperationType.Update}d",
-                operation_type=AuditLogOperationType.Update,
+                     f"{operation_type}d",
+                operation_type=operation_type,
             )
-            obj = Policy.objects.get(pk=policy_pk)
             audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=policy_pk,
                 object_name=obj.name,
@@ -561,12 +575,19 @@ def _get_audit_operation_and_object(
             audit_object = _get_audit_object_from_resp(res, AuditObjectType.Role)
 
         case ["rbac", "role", role_pk]:
+            if view.action == "destroy":
+                deleted_obj: Role
+                operation_type = AuditLogOperationType.Delete
+                obj = deleted_obj
+            else:
+                operation_type = AuditLogOperationType.Update
+                obj = Role.objects.get(pk=role_pk)
+
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Role.capitalize()} "
-                     f"{AuditLogOperationType.Update}d",
-                operation_type=AuditLogOperationType.Update,
+                     f"{operation_type}d",
+                operation_type=operation_type,
             )
-            obj = Role.objects.get(pk=role_pk)
             audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=role_pk,
                 object_name=obj.name,
@@ -589,12 +610,19 @@ def _get_audit_operation_and_object(
                 audit_object = None
 
         case ["rbac", "user", user_pk]:
+            if view.action == "destroy":
+                deleted_obj: User
+                operation_type = AuditLogOperationType.Delete
+                obj = deleted_obj
+            else:
+                operation_type = AuditLogOperationType.Update
+                obj = User.objects.get(pk=user_pk)
+
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.User.capitalize()} "
-                     f"{AuditLogOperationType.Update}d",
-                operation_type=AuditLogOperationType.Update,
+                     f"{operation_type}d",
+                operation_type=operation_type,
             )
-            obj = User.objects.get(pk=user_pk)
             audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=user_pk,
                 object_name=obj.username,

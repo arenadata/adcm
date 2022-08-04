@@ -149,6 +149,7 @@ class GroupViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-ma
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
+    @audit
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.built_in:
