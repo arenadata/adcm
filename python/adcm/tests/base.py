@@ -63,7 +63,7 @@ class BaseTestCase(TestCase):
         res: Response = self.client.post(
             path=reverse("rbac:token"),
             data={"username": self.test_user_username, "password": self.test_user_password},
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
         self.client.defaults["Authorization"] = f"Token {res.data['token']}"
 
@@ -74,7 +74,7 @@ class BaseTestCase(TestCase):
                 "username": self.no_rights_user_username,
                 "password": self.no_rights_user_password,
             },
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
         self.client.defaults["Authorization"] = f"Token {res.data['token']}"
 
