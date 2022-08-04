@@ -22,18 +22,26 @@ from cm.models import Action, HostProvider, MaintenanceModeType, Prototype
 from cm.stack import validate_name
 from cm.status_api import get_host_status
 from django.db import IntegrityError
-from rest_framework import serializers
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    ChoiceField,
+    IntegerField,
+    SerializerMethodField,
+)
+
+from adcm.serializers import EmptySerializer
 
 
-class HostSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    cluster_id = serializers.IntegerField(read_only=True)
-    prototype_id = serializers.IntegerField(help_text='id of host type')
-    provider_id = serializers.IntegerField()
-    fqdn = serializers.CharField(help_text='fully qualified domain name')
-    description = serializers.CharField(required=False, allow_blank=True)
-    state = serializers.CharField(read_only=True)
-    maintenance_mode = serializers.ChoiceField(choices=MaintenanceModeType.choices, read_only=True)
+class HostSerializer(EmptySerializer):
+    id = IntegerField(read_only=True)
+    cluster_id = IntegerField(read_only=True)
+    prototype_id = IntegerField(help_text='id of host type')
+    provider_id = IntegerField()
+    fqdn = CharField(help_text='fully qualified domain name')
+    description = CharField(required=False, allow_blank=True)
+    state = CharField(read_only=True)
+    maintenance_mode = ChoiceField(choices=MaintenanceModeType.choices, read_only=True)
     url = ObjectURL(read_only=True, view_name='host-details')
 
     @staticmethod
@@ -48,9 +56,6 @@ class HostSerializer(serializers.Serializer):
     def validate_fqdn(name):
         return validate_name(name, 'Host name')
 
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
     def create(self, validated_data):
         try:
             return add_host(
@@ -64,14 +69,14 @@ class HostSerializer(serializers.Serializer):
 
 
 class HostDetailSerializer(HostSerializer):
-    bundle_id = serializers.IntegerField(read_only=True)
-    status = serializers.SerializerMethodField()
+    bundle_id = IntegerField(read_only=True)
+    status = SerializerMethodField()
     config = CommonAPIURL(view_name='object-config')
     action = CommonAPIURL(view_name='object-action')
     prototype = hlink('host-type-details', 'prototype_id', 'prototype_id')
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
-    locked = serializers.BooleanField(read_only=True)
+    locked = BooleanField(read_only=True)
 
     @staticmethod
     def get_status(obj):
@@ -79,7 +84,7 @@ class HostDetailSerializer(HostSerializer):
 
 
 class HostUpdateSerializer(HostDetailSerializer):
-    maintenance_mode = serializers.ChoiceField(choices=MaintenanceModeType.choices)
+    maintenance_mode = ChoiceField(choices=MaintenanceModeType.choices)
 
     def update(self, instance, validated_data):
         instance.maintenance_mode = validated_data.get(
@@ -93,15 +98,15 @@ class HostUpdateSerializer(HostDetailSerializer):
 
 
 class ClusterHostSerializer(HostSerializer):
-    host_id = serializers.IntegerField(source='id')
-    prototype_id = serializers.IntegerField(read_only=True)
-    provider_id = serializers.IntegerField(read_only=True)
-    fqdn = serializers.CharField(read_only=True)
+    host_id = IntegerField(source='id')
+    prototype_id = IntegerField(read_only=True)
+    provider_id = IntegerField(read_only=True)
+    fqdn = CharField(read_only=True)
 
 
 class ProvideHostSerializer(HostSerializer):
-    prototype_id = serializers.IntegerField(read_only=True)
-    provider_id = serializers.IntegerField(read_only=True)
+    prototype_id = IntegerField(read_only=True)
+    provider_id = IntegerField(read_only=True)
 
     def create(self, validated_data):
         provider = check_obj(HostProvider, self.context.get('provider_id'))
@@ -114,16 +119,10 @@ class ProvideHostSerializer(HostSerializer):
             raise AdcmEx("HOST_CONFLICT", "duplicate host") from None
 
 
-class StatusSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    fqdn = serializers.CharField(read_only=True)
-    status = serializers.SerializerMethodField()
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
-    def create(self, validated_data):
-        pass  # Class must implement all abstract methods
+class StatusSerializer(EmptySerializer):
+    id = IntegerField(read_only=True)
+    fqdn = CharField(read_only=True)
+    status = SerializerMethodField()
 
     @staticmethod
     def get_status(obj):
@@ -131,14 +130,14 @@ class StatusSerializer(serializers.Serializer):
 
 
 class HostUISerializer(HostDetailSerializer):
-    actions = serializers.SerializerMethodField()
-    cluster_name = serializers.SerializerMethodField()
-    prototype_version = serializers.SerializerMethodField()
-    prototype_name = serializers.SerializerMethodField()
-    prototype_display_name = serializers.SerializerMethodField()
-    provider_name = serializers.SerializerMethodField()
+    actions = SerializerMethodField()
+    cluster_name = SerializerMethodField()
+    prototype_version = SerializerMethodField()
+    prototype_name = SerializerMethodField()
+    prototype_display_name = SerializerMethodField()
+    provider_name = SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
-    main_info = serializers.SerializerMethodField()
+    main_info = SerializerMethodField()
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)

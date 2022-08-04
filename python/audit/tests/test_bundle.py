@@ -38,6 +38,15 @@ class TestBundle(BaseTestCase):
         )
         Prototype.objects.create(bundle=self.bundle, type="cluster", name=bundle_name)
 
+    def check_load_failed(self, log: AuditLog):
+        assert not log.audit_object
+        assert log.operation_name == "Bundle loaded"
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == AuditLogOperationResult.Fail
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
     def load_bundle(self):
         return self.client.post(
             path=reverse("load-bundle"),
@@ -106,13 +115,17 @@ class TestBundle(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert not log.audit_object
-        assert log.operation_name == "Bundle loaded"
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Fail
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.check_load_failed(log)
+
+    def test_load_failed(self):
+        self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": "something wrong"},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_load_failed(log)
 
     def test_load_and_delete(self):
         res: Response = self.upload_bundle_and_check()

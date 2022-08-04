@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import cm.api
-import cm.job
 from api.action.serializers import ActionShort
 from api.component.serializers import ComponentDetailSerializer
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
@@ -28,11 +26,21 @@ from api.utils import (
     hlink,
 )
 from cm.adcm_config import get_main_info
+from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent
 from cm.status_api import get_cluster_status, get_hc_status
 from django.db import IntegrityError
-from rest_framework import serializers
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    IntegerField,
+    JSONField,
+    Serializer,
+    SerializerMethodField,
+)
+
+from adcm.serializers import EmptySerializer
 
 
 def get_cluster_id(obj):
@@ -42,13 +50,13 @@ def get_cluster_id(obj):
         return obj.obj_ref.cluster.id
 
 
-class ClusterSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    prototype_id = serializers.IntegerField(help_text='id of cluster type')
-    name = serializers.CharField(help_text='cluster name')
-    description = serializers.CharField(help_text='cluster description', required=False)
-    state = serializers.CharField(read_only=True)
-    before_upgrade = serializers.JSONField(read_only=True)
+class ClusterSerializer(Serializer):
+    id = IntegerField(read_only=True)
+    prototype_id = IntegerField(help_text='id of cluster type')
+    name = CharField(help_text='cluster name')
+    description = CharField(help_text='cluster description', required=False)
+    state = CharField(read_only=True)
+    before_upgrade = JSONField(read_only=True)
     url = hlink('cluster-details', 'id', 'cluster_id')
 
     @staticmethod
@@ -57,7 +65,7 @@ class ClusterSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         try:
-            return cm.api.add_cluster(
+            return add_cluster(
                 validated_data.get('prototype_id'),
                 validated_data.get('name'),
                 validated_data.get('description', ''),
@@ -77,14 +85,14 @@ class ClusterSerializer(serializers.Serializer):
 
 
 class ClusterDetailSerializer(ClusterSerializer):
-    bundle_id = serializers.IntegerField(read_only=True)
-    edition = serializers.CharField(read_only=True)
-    license = serializers.CharField(read_only=True)
+    bundle_id = IntegerField(read_only=True)
+    edition = CharField(read_only=True)
+    license = CharField(read_only=True)
     action = CommonAPIURL(view_name='object-action')
     service = ObjectURL(view_name='service')
     host = ObjectURL(view_name='host')
     hostcomponent = hlink('host-component', 'id', 'cluster_id')
-    status = serializers.SerializerMethodField()
+    status = SerializerMethodField()
     status_url = hlink('cluster-status', 'id', 'cluster_id')
     config = CommonAPIURL(view_name='object-config')
     serviceprototype = hlink('cluster-service-prototype', 'id', 'cluster_id')
@@ -94,7 +102,7 @@ class ClusterDetailSerializer(ClusterSerializer):
     prototype = hlink('cluster-type-details', 'prototype_id', 'prototype_id')
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
-    locked = serializers.BooleanField(read_only=True)
+    locked = BooleanField(read_only=True)
     group_config = GroupConfigsHyperlinkedIdentityField(view_name='group-config-list')
 
     @staticmethod
@@ -103,14 +111,14 @@ class ClusterDetailSerializer(ClusterSerializer):
 
 
 class ClusterUISerializer(ClusterDetailSerializer):
-    actions = serializers.SerializerMethodField()
-    prototype_version = serializers.SerializerMethodField()
-    prototype_name = serializers.SerializerMethodField()
-    prototype_display_name = serializers.SerializerMethodField()
-    upgradable = serializers.SerializerMethodField()
+    actions = SerializerMethodField()
+    prototype_version = SerializerMethodField()
+    prototype_name = SerializerMethodField()
+    prototype_display_name = SerializerMethodField()
+    upgradable = SerializerMethodField()
     get_upgradable = get_upgradable_func
     concerns = ConcernItemUISerializer(many=True, read_only=True)
-    main_info = serializers.SerializerMethodField()
+    main_info = SerializerMethodField()
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
@@ -136,17 +144,11 @@ class ClusterUISerializer(ClusterDetailSerializer):
         return get_main_info(obj)
 
 
-class StatusSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    component_id = serializers.IntegerField(read_only=True)
-    service_id = serializers.IntegerField(read_only=True)
-    state = serializers.CharField(read_only=True, required=False)
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
-    def create(self, validated_data):
-        pass  # Class must implement all abstract methods
+class StatusSerializer(EmptySerializer):
+    id = IntegerField(read_only=True)
+    component_id = IntegerField(read_only=True)
+    service_id = IntegerField(read_only=True)
+    state = CharField(read_only=True, required=False)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -162,7 +164,7 @@ class StatusSerializer(serializers.Serializer):
         return data
 
 
-class HostComponentSerializer(serializers.Serializer):
+class HostComponentSerializer(EmptySerializer):
     class MyUrlField(UrlField):
         def get_kwargs(self, obj):
             return {
@@ -170,21 +172,15 @@ class HostComponentSerializer(serializers.Serializer):
                 'hs_id': obj.id,
             }
 
-    id = serializers.IntegerField(read_only=True)
-    host_id = serializers.IntegerField(help_text='host id')
-    host = serializers.CharField(read_only=True)
-    service_id = serializers.IntegerField()
-    component = serializers.CharField(help_text='component name')
-    component_id = serializers.IntegerField(read_only=True, help_text='component id')
-    state = serializers.CharField(read_only=True, required=False)
+    id = IntegerField(read_only=True)
+    host_id = IntegerField(help_text='host id')
+    host = CharField(read_only=True)
+    service_id = IntegerField()
+    component = CharField(help_text='component name')
+    component_id = IntegerField(read_only=True, help_text='component id')
+    state = CharField(read_only=True, required=False)
     url = MyUrlField(read_only=True, view_name='host-comp-details')
     host_url = hlink('host-details', 'host_id', 'host_id')
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
-    def create(self, validated_data):
-        pass  # Class must implement all abstract methods
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -197,16 +193,10 @@ class HostComponentSerializer(serializers.Serializer):
         return data
 
 
-class HostComponentUISerializer(serializers.Serializer):
+class HostComponentUISerializer(EmptySerializer):
     hc = HostComponentSerializer(many=True, read_only=True)
-    host = serializers.SerializerMethodField()
-    component = serializers.SerializerMethodField()
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
-    def create(self, validated_data):
-        pass  # Class must implement all abstract methods
+    host = SerializerMethodField()
+    component = SerializerMethodField()
 
     def get_host(self, obj):
         hosts = Host.objects.filter(cluster=self.context.get('cluster'))
@@ -217,8 +207,8 @@ class HostComponentUISerializer(serializers.Serializer):
         return HCComponentSerializer(comps, many=True, context=self.context).data
 
 
-class HostComponentSaveSerializer(serializers.Serializer):
-    hc = serializers.JSONField()
+class HostComponentSaveSerializer(EmptySerializer):
+    hc = JSONField()
 
     @staticmethod
     def validate_hc(hc):
@@ -233,20 +223,17 @@ class HostComponentSaveSerializer(serializers.Serializer):
                     raise AdcmEx('INVALID_INPUT', msg.format(key))
         return hc
 
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
     def create(self, validated_data):
         hc = validated_data.get('hc')
-        return cm.api.add_hc(self.context.get('cluster'), hc)
+        return add_hc(self.context.get('cluster'), hc)
 
 
 class HCComponentSerializer(ComponentDetailSerializer):
-    service_id = serializers.IntegerField(read_only=True)
-    service_name = serializers.SerializerMethodField()
-    service_display_name = serializers.SerializerMethodField()
-    service_state = serializers.SerializerMethodField()
-    requires = serializers.SerializerMethodField()
+    service_id = IntegerField(read_only=True)
+    service_name = SerializerMethodField()
+    service_display_name = SerializerMethodField()
+    service_state = SerializerMethodField()
+    requires = SerializerMethodField()
 
     @staticmethod
     def get_service_state(obj):
@@ -311,21 +298,15 @@ class HCComponentSerializer(ComponentDetailSerializer):
         return out
 
 
-class BindSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    export_cluster_id = serializers.IntegerField(read_only=True, source='source_cluster_id')
-    export_cluster_name = serializers.CharField(read_only=True, source='source_cluster')
-    export_cluster_prototype_name = serializers.SerializerMethodField()
-    export_service_id = serializers.SerializerMethodField()
-    export_service_name = serializers.SerializerMethodField()
-    import_service_id = serializers.SerializerMethodField()
-    import_service_name = serializers.SerializerMethodField()
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
-    def create(self, validated_data):
-        pass  # Class must implement all abstract methods
+class BindSerializer(EmptySerializer):
+    id = IntegerField(read_only=True)
+    export_cluster_id = IntegerField(read_only=True, source='source_cluster_id')
+    export_cluster_name = CharField(read_only=True, source='source_cluster')
+    export_cluster_prototype_name = SerializerMethodField()
+    export_service_id = SerializerMethodField()
+    export_service_name = SerializerMethodField()
+    import_service_id = SerializerMethodField()
+    import_service_name = SerializerMethodField()
 
     @staticmethod
     def get_export_cluster_prototype_name(obj):
@@ -364,19 +345,16 @@ class ClusterBindSerializer(BindSerializer):
     url = MyUrlField(read_only=True, view_name='cluster-bind-details')
 
 
-class DoBindSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    export_cluster_id = serializers.IntegerField()
-    export_service_id = serializers.IntegerField(required=False)
-    export_cluster_name = serializers.CharField(read_only=True)
-    export_cluster_prototype_name = serializers.CharField(read_only=True)
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
+class DoBindSerializer(EmptySerializer):
+    id = IntegerField(read_only=True)
+    export_cluster_id = IntegerField()
+    export_service_id = IntegerField(required=False)
+    export_cluster_name = CharField(read_only=True)
+    export_cluster_prototype_name = CharField(read_only=True)
 
     def create(self, validated_data):
         export_cluster = check_obj(Cluster, validated_data.get('export_cluster_id'))
-        return cm.api.bind(
+        return bind(
             validated_data.get('cluster'),
             None,
             export_cluster,
@@ -384,14 +362,11 @@ class DoBindSerializer(serializers.Serializer):
         )
 
 
-class PostImportSerializer(serializers.Serializer):
-    bind = serializers.JSONField()
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
+class PostImportSerializer(EmptySerializer):
+    bind = JSONField()
 
     def create(self, validated_data):
-        bind = validated_data.get('bind')
+        bind_data = validated_data.get('bind')
         cluster = self.context.get('cluster')
         service = self.context.get('service')
-        return cm.api.multi_bind(cluster, service, bind)
+        return multi_bind(cluster, service, bind_data)

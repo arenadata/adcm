@@ -16,15 +16,26 @@ from api.serializers import UpgradeSerializer
 from api.utils import hlink
 from cm import config
 from cm.models import Bundle, ClusterObject, Prototype
-from rest_framework import serializers
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    DateTimeField,
+    FileField,
+    IntegerField,
+    JSONField,
+    ModelSerializer,
+    SerializerMethodField,
+)
+
+from adcm.serializers import EmptySerializer
 
 
-class LoadBundle(serializers.Serializer):
-    bundle_file = serializers.CharField()
+class LoadBundle(EmptySerializer):
+    bundle_file = CharField()
 
 
-class UploadBundle(serializers.Serializer):
-    file = serializers.FileField(help_text='bundle file for upload')
+class UploadBundle(EmptySerializer):
+    file = FileField(help_text='bundle file for upload')
 
     def create(self, validated_data):
         fd = self.context['request'].data['file']
@@ -35,17 +46,17 @@ class UploadBundle(serializers.Serializer):
         return Bundle()
 
 
-class BundleSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    version = serializers.CharField(read_only=True)
-    edition = serializers.CharField(read_only=True)
-    hash = serializers.CharField(read_only=True)
-    license = serializers.CharField(read_only=True)
-    license_path = serializers.CharField(read_only=True)
-    license_hash = serializers.CharField(read_only=True)
-    description = serializers.CharField(required=False)
-    date = serializers.DateTimeField(read_only=True)
+class BundleSerializer(EmptySerializer):
+    id = IntegerField(read_only=True)
+    name = CharField(read_only=True)
+    version = CharField(read_only=True)
+    edition = CharField(read_only=True)
+    hash = CharField(read_only=True)
+    license = CharField(read_only=True)
+    license_path = CharField(read_only=True)
+    license_hash = CharField(read_only=True)
+    description = CharField(required=False)
+    date = DateTimeField(read_only=True)
     url = hlink('bundle-details', 'id', 'bundle_id')
     license_url = hlink('bundle-license', 'id', 'bundle_id')
     update = hlink('bundle-update', 'id', 'bundle_id')
@@ -58,62 +69,63 @@ class BundleSerializer(serializers.Serializer):
         return data
 
 
-class LicenseSerializer(serializers.Serializer):
-    license = serializers.CharField(read_only=True)
-    text = serializers.CharField(read_only=True)
+class LicenseSerializer(EmptySerializer):
+    license = CharField(read_only=True)
+    text = CharField(read_only=True)
     accept = hlink('accept-license', 'id', 'bundle_id')
 
 
-class PrototypeSerializer(serializers.Serializer):
-    bundle_id = serializers.IntegerField(read_only=True)
-    id = serializers.IntegerField(read_only=True)
-    path = serializers.CharField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    display_name = serializers.CharField(required=False)
-    version = serializers.CharField(read_only=True)
-    bundle_edition = serializers.SerializerMethodField()
-    description = serializers.CharField(required=False)
-    type = serializers.CharField(read_only=True)
-    required = serializers.BooleanField(read_only=True)
+class PrototypeSerializer(EmptySerializer):
+    bundle_id = IntegerField(read_only=True)
+    id = IntegerField(read_only=True)
+    path = CharField(read_only=True)
+    name = CharField(read_only=True)
+    display_name = CharField(required=False)
+    version = CharField(read_only=True)
+    bundle_edition = SerializerMethodField()
+    description = CharField(required=False)
+    type = CharField(read_only=True)
+    required = BooleanField(read_only=True)
     url = hlink('prototype-details', 'id', 'prototype_id')
 
-    def get_bundle_edition(self, obj):
+    @staticmethod
+    def get_bundle_edition(obj):
         return obj.bundle.edition
 
 
-class PrototypeShort(serializers.ModelSerializer):
+class PrototypeShort(ModelSerializer):
     class Meta:
         model = Prototype
         fields = ('name',)
 
 
-class ExportSerializer(serializers.Serializer):
-    name = serializers.CharField(read_only=True)
+class ExportSerializer(EmptySerializer):
+    name = CharField(read_only=True)
 
 
-class ImportSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    name = serializers.CharField(read_only=True)
-    min_version = serializers.CharField(read_only=True)
-    max_version = serializers.CharField(read_only=True)
-    min_strict = serializers.BooleanField(required=False)
-    max_strict = serializers.BooleanField(required=False)
-    default = serializers.JSONField(read_only=True)
-    required = serializers.BooleanField(read_only=True)
-    multibind = serializers.BooleanField(read_only=True)
+class ImportSerializer(EmptySerializer):
+    id = IntegerField(read_only=True)
+    name = CharField(read_only=True)
+    min_version = CharField(read_only=True)
+    max_version = CharField(read_only=True)
+    min_strict = BooleanField(required=False)
+    max_strict = BooleanField(required=False)
+    default = JSONField(read_only=True)
+    required = BooleanField(read_only=True)
+    multibind = BooleanField(read_only=True)
 
 
 class ComponentTypeSerializer(PrototypeSerializer):
-    constraint = serializers.JSONField(required=False)
-    requires = serializers.JSONField(required=False)
-    bound_to = serializers.JSONField(required=False)
-    monitoring = serializers.CharField(read_only=True)
+    constraint = JSONField(required=False)
+    requires = JSONField(required=False)
+    bound_to = JSONField(required=False)
+    monitoring = CharField(read_only=True)
     url = hlink('component-type-details', 'id', 'prototype_id')
 
 
 class ServiceSerializer(PrototypeSerializer):
-    shared = serializers.BooleanField(read_only=True)
-    monitoring = serializers.CharField(read_only=True)
+    shared = BooleanField(read_only=True)
+    monitoring = CharField(read_only=True)
     url = hlink('service-type-details', 'id', 'prototype_id')
 
 
@@ -126,7 +138,7 @@ class ServiceDetailSerializer(ServiceSerializer):
 
 
 class BundleServiceUISerializer(ServiceSerializer):
-    selected = serializers.SerializerMethodField()
+    selected = SerializerMethodField()
 
     def get_selected(self, obj):
         cluster = self.context.get('cluster')
@@ -142,23 +154,25 @@ class AdcmTypeSerializer(PrototypeSerializer):
 
 
 class ClusterTypeSerializer(PrototypeSerializer):
-    license = serializers.SerializerMethodField()
+    license = SerializerMethodField()
     url = hlink('cluster-type-details', 'id', 'prototype_id')
 
-    def get_license(self, obj):
+    @staticmethod
+    def get_license(obj):
         return obj.bundle.license
 
 
 class HostTypeSerializer(PrototypeSerializer):
-    monitoring = serializers.CharField(read_only=True)
+    monitoring = CharField(read_only=True)
     url = hlink('host-type-details', 'id', 'prototype_id')
 
 
 class ProviderTypeSerializer(PrototypeSerializer):
-    license = serializers.SerializerMethodField()
+    license = SerializerMethodField()
     url = hlink('provider-type-details', 'id', 'prototype_id')
 
-    def get_license(self, obj):
+    @staticmethod
+    def get_license(obj):
         return obj.bundle.license
 
 

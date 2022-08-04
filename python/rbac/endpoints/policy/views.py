@@ -18,14 +18,26 @@ from rbac.models import Group, Policy, Role, RoleTypes, User
 from rbac.services.policy import policy_create, policy_update
 from rbac.utils import BaseRelatedSerializer
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import serializers, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.response import Response
-from rest_framework.validators import ValidationError
+from rest_framework.serializers import (
+    BooleanField,
+    HyperlinkedIdentityField,
+    JSONField,
+    ModelSerializer,
+    PrimaryKeyRelatedField,
+    RegexField,
+)
+from rest_framework.status import (
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_405_METHOD_NOT_ALLOWED,
+)
 from rest_framework.viewsets import ModelViewSet
 
 
-class ObjectField(serializers.JSONField):
+class ObjectField(JSONField):
     @staticmethod
     def schema_validate(value):
         schema = {
@@ -84,43 +96,25 @@ class ObjectField(serializers.JSONField):
 
 
 class PolicyRoleSerializer(BaseRelatedSerializer):
-    id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:role-detail')
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
-    def create(self, validated_data):
-        pass  # Class must implement all abstract methods
+    id = PrimaryKeyRelatedField(queryset=Role.objects.all())
+    url = HyperlinkedIdentityField(view_name='rbac:role-detail')
 
 
 class PolicyUserSerializer(BaseRelatedSerializer):
-    id = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:user-detail')
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
-    def create(self, validated_data):
-        pass  # Class must implement all abstract methods
+    id = PrimaryKeyRelatedField(queryset=User.objects.all())
+    url = HyperlinkedIdentityField(view_name='rbac:user-detail')
 
 
 class PolicyGroupSerializer(BaseRelatedSerializer):
-    id = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all())
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:group-detail')
-
-    def update(self, instance, validated_data):
-        pass  # Class must implement all abstract methods
-
-    def create(self, validated_data):
-        pass  # Class must implement all abstract methods
+    id = PrimaryKeyRelatedField(queryset=Group.objects.all())
+    url = HyperlinkedIdentityField(view_name='rbac:group-detail')
 
 
-class PolicySerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='rbac:policy-detail')
-    name = serializers.RegexField(r'^[^\n]*$', max_length=160)
+class PolicySerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    url = HyperlinkedIdentityField(view_name='rbac:policy-detail')
+    name = RegexField(r'^[^\n]*$', max_length=160)
     object = ObjectField(required=True)
-    built_in = serializers.BooleanField(read_only=True)
+    built_in = BooleanField(read_only=True)
     role = PolicyRoleSerializer()
     user = PolicyUserSerializer(many=True, required=False)
     group = PolicyGroupSerializer(many=True, required=False)
@@ -147,9 +141,7 @@ class PolicySerializer(FlexFieldsSerializerMixin, serializers.ModelSerializer):
     @staticmethod
     def validate_role(role):
         if role.type != RoleTypes.role:
-            raise serializers.ValidationError(
-                f'Role with type "{role.type}" could not be used in policy'
-            )
+            raise ValidationError(f'Role with type "{role.type}" could not be used in policy')
         return role
 
 
@@ -167,9 +159,9 @@ class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-m
         if serializer.is_valid(raise_exception=True):
             policy = policy_create(**serializer.validated_data)
 
-            return Response(data=self.get_serializer(policy).data, status=status.HTTP_201_CREATED)
+            return Response(data=self.get_serializer(policy).data, status=HTTP_201_CREATED)
         else:
-            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data=serializer.errors, status=HTTP_400_BAD_REQUEST)
 
     @audit
     def update(self, request, *args, **kwargs):
@@ -177,7 +169,7 @@ class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-m
         policy = self.get_object()
 
         if policy.built_in:
-            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+            return Response(status=HTTP_405_METHOD_NOT_ALLOWED)
 
         serializer = self.get_serializer(policy, data=request.data, partial=partial)
         if serializer.is_valid(raise_exception=True):
@@ -186,10 +178,10 @@ class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-m
 
             return Response(data=self.get_serializer(policy).data)
         else:
-            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data=serializer.errors, status=HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, *args, **kwargs):
         policy = self.get_object()
         if policy.built_in:
-            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+            return Response(status=HTTP_405_METHOD_NOT_ALLOWED)
         return super().destroy(request, *args, **kwargs)

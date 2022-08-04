@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import cm.status_api
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.cluster.serializers import BindSerializer
 from api.service.serializers import (
@@ -25,12 +24,15 @@ from api.service.serializers import (
 )
 from api.stack.serializers import ImportSerializer
 from api.utils import check_custom_perm, check_obj, create, get_object_for_user
+from audit.utils import audit
 from cm.api import delete_service, get_import, unbind
 from cm.models import Cluster, ClusterBind, ClusterObject, HostComponent, Prototype
+from cm.status_api import make_ui_service_status
 from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from rest_framework import permissions, status
+from rest_framework import permissions
 from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
 
 
 def check_service(user, kwargs):
@@ -103,13 +105,15 @@ class ServiceDetailView(PermissionListMixin, DetailView):
             queryset = queryset.filter(cluster=cluster)
         return queryset
 
+    @audit
     def delete(self, request, *args, **kwargs):
         """
         Remove service from cluster
         """
         instance = self.get_object()
         delete_service(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+
+        return Response(status=HTTP_204_NO_CONTENT)
 
 
 class ServiceImportView(GenericUIView):
@@ -129,6 +133,7 @@ class ServiceImportView(GenericUIView):
         cluster = service.cluster
         return Response(get_import(cluster, service))
 
+    @audit
     def post(self, request, **kwargs):
         service = check_service(request.user, kwargs)
         check_custom_perm(request.user, 'change_import_of', 'clusterobject', service)
@@ -137,8 +142,8 @@ class ServiceImportView(GenericUIView):
             data=request.data, context={'request': request, 'cluster': cluster, 'service': service}
         )
         if serializer.is_valid():
-            return Response(serializer.create(serializer.validated_data), status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.create(serializer.validated_data), status=HTTP_200_OK)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
 class ServiceBindView(GenericUIView):
@@ -159,6 +164,7 @@ class ServiceBindView(GenericUIView):
         serializer = self.get_serializer(binds, many=True)
         return Response(serializer.data)
 
+    @audit
     def post(self, request, **kwargs):
         """
         Bind two services
@@ -191,6 +197,7 @@ class ServiceBindDetailView(GenericUIView):
         serializer = self.get_serializer(bind)
         return Response(serializer.data)
 
+    @audit
     def delete(self, request, *args, **kwargs):
         """
         Unbind specified bind of service
@@ -198,7 +205,7 @@ class ServiceBindDetailView(GenericUIView):
         service, bind = self.get_obj(kwargs, kwargs['bind_id'])
         check_custom_perm(request.user, 'change_import_of', 'clusterobject', service)
         unbind(bind)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=HTTP_204_NO_CONTENT)
 
 
 class StatusList(GenericUIView):
@@ -213,7 +220,7 @@ class StatusList(GenericUIView):
         service = check_service(request.user, kwargs)
         if self._is_for_ui():
             host_components = self.get_queryset().filter(service=service)
-            return Response(cm.status_api.make_ui_service_status(service, host_components))
+            return Response(make_ui_service_status(service, host_components))
         else:
             serializer = self.get_serializer(service)
             return Response(serializer.data)
