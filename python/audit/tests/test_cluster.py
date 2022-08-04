@@ -40,7 +40,7 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestCluster(BaseTestCase):
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
 
     def setUp(self) -> None:
         super().setUp()
@@ -567,6 +567,36 @@ class TestCluster(BaseTestCase):
         assert log.audit_object.object_type == AuditObjectType.Component
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Component configuration updated"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def test_service_config_restore(self):
+        config = ObjectConfig.objects.create(current=2, previous=2)
+        ConfigLog.objects.create(obj_ref=config, config="{}")
+        self.service.config = config
+        self.service.save(update_fields=["config"])
+        self.client.patch(
+            path=reverse(
+                "config-history-version-restore",
+                kwargs={
+                    "cluster_id": self.cluster.pk,
+                    "service_id": self.service.pk,
+                    "version": 2,
+                },
+            ),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.service.pk
+        assert log.audit_object.object_name == self.service.name
+        assert log.audit_object.object_type == AuditObjectType.Service
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Service configuration updated"
         assert log.operation_type == AuditLogOperationType.Update
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)

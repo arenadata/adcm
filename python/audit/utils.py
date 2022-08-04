@@ -396,6 +396,19 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Component,
             )
 
+        case ["cluster", _, "service", service_pk, "config", "history", _, "restore"]:
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Service.capitalize()} "
+                     f"configuration {AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
+            )
+            obj = ClusterObject.objects.get(pk=service_pk)
+            audit_object, _ = AuditObject.objects.get_or_create(
+                object_id=service_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Service,
+            )
+
         case ["cluster", _, "host", host_pk, "config", "history"]:
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Host.capitalize()} "
