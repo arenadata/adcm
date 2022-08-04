@@ -97,6 +97,22 @@ class TestGroupConfig(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
+    def test_delete(self):
+        self.client.delete(path=reverse("group-config-detail", kwargs={"pk": self.group_config.pk}))
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.cluster.pk
+        assert log.audit_object.object_name == self.cluster.name
+        assert log.audit_object.object_type == AuditObjectType.Cluster
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == f"{self.group_config.name} configuration group deleted"
+        assert log.operation_type == AuditLogOperationType.Delete
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
     def test_update_put(self):
         self.client.put(
             path=f"/api/v1/group-config/{self.group_config.pk}/",

@@ -235,6 +235,7 @@ class GroupConfigViewSet(
 
         return Response(serializer.data)
 
+    @audit
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         check_config_perm(self.request.user, 'change', instance.object)

@@ -452,21 +452,29 @@ def _get_audit_operation_and_object(
         case ["group-config"] | ["group-config", _]:
             if view.action == "create":
                 operation_type = AuditLogOperationType.Create
-            else:
+            elif view.action in {"update", "partial_update"}:
                 operation_type = AuditLogOperationType.Update
+            else:
+                operation_type = AuditLogOperationType.Delete
 
             audit_operation = AuditOperation(
                 name=f"configuration group {operation_type}d",
                 operation_type=operation_type,
             )
             if res:
-                object_type = res.data.serializer.instance.object_type.name
+                if view.action == "destroy":
+                    deleted_obj: GroupConfig
+                    obj = deleted_obj
+                else:
+                    obj = res.data.serializer.instance
+
+                object_type = obj.object_type.name
                 audit_object, _ = AuditObject.objects.get_or_create(
-                    object_id=res.data.serializer.instance.object.id,
-                    object_name=res.data.serializer.instance.object.name,
+                    object_id=obj.object.id,
+                    object_name=obj.object.name,
                     object_type=object_type,
                 )
-                operation_name = f"{res.data.serializer.instance.name} {audit_operation.name}"
+                operation_name = f"{obj.name} {audit_operation.name}"
             else:
                 audit_object = None
                 operation_name = audit_operation.name
