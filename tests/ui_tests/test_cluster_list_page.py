@@ -1212,6 +1212,7 @@ class TestClusterConfigPage:
         _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
 
         with allure.step('Check that save button is active'):
+            cluster_config_page.config.get_config_row("numbers_test").click()
             assert not cluster_config_page.config.is_save_btn_disabled(), 'Save button should be active'
         cluster_config_page.config.clear_field_by_keys(params["filed_name"])
 
@@ -1473,13 +1474,13 @@ class TestClusterConfigPage:
                     else:
                         assert len(cluster_config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
 
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if group_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
         check_expectations()
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
 
 
 class TestClusterGroupConfigPage:
