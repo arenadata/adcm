@@ -162,19 +162,24 @@ class TestAuditLoginAPI:
     def failed_logins(self, sdk_client_fs, users) -> Tuple[dict, dict]:
         """Create required users and make failed logins"""
         user_does_not_exist = {'username': 'nosuchuser', 'password': 'klfjwoevzlxm02()#U)F('}
-        deactivated_user = {'username': 'ohno', 'password': 'imdonneeeee'}
-        user = sdk_client_fs.user_create(**deactivated_user)
-        user.update(is_active=False)
-        self._login(sdk_client_fs, **deactivated_user)
+        # return after https://tracker.yandex.ru/ADCM-2582
+        # deactivated_user = {'username': 'ohno', 'password': 'imdonneeeee'}
+        # user = sdk_client_fs.user_create(**deactivated_user)
+        # user.update(is_active=False)
+        # self._login(sdk_client_fs, **deactivated_user)
         for creds in users:
             self._login(sdk_client_fs, **{**creds, 'password': 'it is jut wrong'})
         self._login(sdk_client_fs, **user_does_not_exist)
-        return deactivated_user, user_does_not_exist
+        # return deactivated_user, user_does_not_exist
+        return user_does_not_exist, user_does_not_exist
 
     @pytest.mark.usefixtures('successful_logins')
     def test_audit_login_api_filtering(self, sdk_client_fs, users, failed_logins):
         """Test audit log list filtering: by operation result and username"""
-        self._check_login_list_filtering(sdk_client_fs, 'operation_result', LoginResult)
+        # return disabled after https://tracker.yandex.ru/ADCM-2582
+        self._check_login_list_filtering(
+            sdk_client_fs, 'operation_result', [lr for lr in LoginResult if lr != LoginResult.DISABLED]
+        )
         self._check_login_list_filtering(
             sdk_client_fs, 'username', [u['username'] for u in chain(users, failed_logins)]
         )
