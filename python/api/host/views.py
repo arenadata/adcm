@@ -229,6 +229,7 @@ class HostDetail(PermissionListMixin, DetailView):
         queryset = get_host_queryset(queryset, self.request.user, self.kwargs)
         return get_objects_for_user(**self.get_get_objects_for_user_kwargs(queryset))
 
+    @audit
     def delete(self, request, *args, **kwargs):
         """
         Delete host

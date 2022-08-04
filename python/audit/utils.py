@@ -601,6 +601,19 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.User,
             )
 
+        case ["host", host_pk]:
+            deleted_obj: Host
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Host.capitalize()} "
+                     f"{AuditLogOperationType.Delete}d",
+                operation_type=AuditLogOperationType.Delete,
+            )
+            audit_object, _ = AuditObject.objects.get_or_create(
+                object_id=host_pk,
+                object_name=deleted_obj.fqdn,
+                object_type=AuditObjectType.Host,
+            )
+
         case ["host"] | ["provider", _, "host"]:
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Host.capitalize()} "
