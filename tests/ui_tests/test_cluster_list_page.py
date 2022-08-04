@@ -1473,6 +1473,7 @@ class TestClusterConfigPage:
                             cluster_config_page.config.check_invalid_value_message(field_type)
                     else:
                         assert len(cluster_config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
+
         if group_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
         else:
@@ -1480,6 +1481,7 @@ class TestClusterConfigPage:
         cluster_config_page.config.click_on_advanced()
         check_expectations()
         cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+
 
 class TestClusterGroupConfigPage:
     """Tests for the cluster/{}/group_config page"""
