@@ -61,7 +61,8 @@ class TestCluster(BaseTestCase):
         )
         PrototypeExport.objects.create(prototype=self.service_prototype)
         self.service = ClusterObject.objects.create(
-            prototype=self.service_prototype, cluster=self.cluster
+            prototype=self.service_prototype,
+            cluster=self.cluster,
         )
 
         provider_prototype = Prototype.objects.create(bundle=self.bundle, type="provider")
@@ -439,6 +440,36 @@ class TestCluster(BaseTestCase):
         assert log.audit_object.object_type == AuditObjectType.Component
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Component configuration updated"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def test_update_service_config(self):
+        config = ObjectConfig.objects.create(current=2, previous=2)
+        ConfigLog.objects.create(obj_ref=config, config="{}")
+        self.service.config = config
+        self.service.save(update_fields=["config"])
+        self.client.post(
+            path=reverse(
+                "config-history",
+                kwargs={
+                    "cluster_id": self.cluster.pk,
+                    "service_id": self.service.pk,
+                },
+            ),
+            data={"config": {}},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.service.pk
+        assert log.audit_object.object_name == self.service.name
+        assert log.audit_object.object_type == AuditObjectType.Service
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Service configuration updated"
         assert log.operation_type == AuditLogOperationType.Update
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
