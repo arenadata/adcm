@@ -161,6 +161,7 @@ def test_change_config(sdk_client_fs: ADCMClient):
             assert host_config_before[key] == host_config_after[key]
 
 
+@pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3033")
 def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient):
     """Upgrade hostprovider from unsupported state"""
     with allure.step('Create hostprovider with unsupported state'):
