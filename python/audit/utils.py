@@ -601,7 +601,7 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.User,
             )
 
-        case ["host", host_pk]:
+        case ["host", host_pk] | ["provider", _, "host", host_pk]:
             deleted_obj: Host
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Host.capitalize()} "

@@ -71,6 +71,18 @@ class TestHost(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
+    def check_host_deleted(self, log: AuditLog) -> None:
+        assert log.audit_object.object_id == self.host.pk
+        assert log.audit_object.object_name == self.host.fqdn
+        assert log.audit_object.object_type == AuditObjectType.Host
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Host deleted"
+        assert log.operation_type == AuditLogOperationType.Delete
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
     def test_create(self):
         res: Response = self.client.post(
             path=reverse("host"),
@@ -109,16 +121,18 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == self.host.pk
-        assert log.audit_object.object_name == self.host.fqdn
-        assert log.audit_object.object_type == AuditObjectType.Host
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Host deleted"
-        assert log.operation_type == AuditLogOperationType.Delete
-        assert log.operation_result == AuditLogOperationResult.Success
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.check_host_deleted(log)
+
+    def test_delete_via_provider(self):
+        self.client.delete(
+            path=reverse(
+                "host-details", kwargs={"host_id": self.host.pk, "provider_id": self.provider.pk}
+            ),
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_deleted(log)
 
     def test_create_via_provider(self):
         res: Response = self.client.post(
