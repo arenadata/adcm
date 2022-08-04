@@ -69,7 +69,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ('login_time', models.DateTimeField(auto_now_add=True)),
-                ('login_details', models.JSONField(default=dict)),
+                ('login_details', models.JSONField(default=dict, null=True)),
                 (
                     'user',
                     models.ForeignKey(
