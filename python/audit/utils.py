@@ -311,17 +311,18 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
 
-            if res and res.data:
+            if res and res.data and res.data.get("export_service_id"):
                 service = ClusterObject.objects.get(pk=res.data["export_service_id"])
                 audit_operation.name = audit_operation.name.format(
                     service_display_name=_get_service_name(service),
                 )
-
-            audit_object, _ = AuditObject.objects.get_or_create(
-                object_id=cluster_pk,
-                object_name=obj.name,
-                object_type=AuditObjectType.Cluster,
-            )
+                audit_object, _ = AuditObject.objects.get_or_create(
+                    object_id=cluster_pk,
+                    object_name=obj.name,
+                    object_type=AuditObjectType.Cluster,
+                )
+            else:
+                audit_object = None
 
         case ["cluster", cluster_pk, "bind", _]:
             obj = Cluster.objects.get(pk=cluster_pk)
