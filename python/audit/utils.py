@@ -343,7 +343,10 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Cluster,
             )
 
-        case ["cluster", cluster_pk, "config", "history"]:
+        case (
+            ["cluster", cluster_pk, "config", "history"]
+            | ["cluster", cluster_pk, "config", "history", _, "restore"]
+        ):
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Cluster.capitalize()} "
                      f"configuration {AuditLogOperationType.Update}d",
