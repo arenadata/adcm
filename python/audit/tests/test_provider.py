@@ -30,8 +30,8 @@ class TestProvider(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        bundle = Bundle.objects.create()
-        self.prototype = Prototype.objects.create(bundle=bundle, type="provider")
+        self.bundle = Bundle.objects.create()
+        self.prototype = Prototype.objects.create(bundle=self.bundle, type="provider")
         self.name = "test_provider"
 
     def check_provider_updated(self, log: AuditLog, provider: HostProvider) -> None:
@@ -86,6 +86,29 @@ class TestProvider(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
+    def test_delete(self):
+        provider = HostProvider.objects.create(
+            name="test_provider",
+            prototype=self.prototype,
+        )
+
+        self.client.delete(
+            path=reverse("provider-details", kwargs={"provider_id": provider.pk})
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == provider.pk
+        assert log.audit_object.object_name == provider.name
+        assert log.audit_object.object_type == AuditObjectType.Provider
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Provider deleted"
+        assert log.operation_type == AuditLogOperationType.Delete
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
     def test_update_and_restore(self):
         config = ObjectConfig.objects.create(current=1, previous=1)
         provider = HostProvider.objects.create(
@@ -94,7 +117,7 @@ class TestProvider(BaseTestCase):
 
         ConfigLog.objects.create(obj_ref=config, config="{}")
         self.client.post(
-            path=f"/api/v1/provider/{provider.pk}/config/history/",
+            path=reverse("config-history", kwargs={"provider_id": provider.pk}),
             data={"config": {}},
             content_type="application/json",
         )
@@ -104,7 +127,10 @@ class TestProvider(BaseTestCase):
         self.check_provider_updated(log, provider)
 
         res: Response = self.client.patch(
-            path=f"/api/v1/provider/{provider.pk}/config/history/1/restore/",
+            path=reverse(
+                "config-history-version-restore",
+                kwargs={"provider_id": provider.pk, "version": 1},
+            ),
             content_type="application/json",
         )
 
