@@ -15,6 +15,7 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from audit.utils import make_audit_log
 from cm.config import Job
 from cm.job import start_task
 from cm.models import ADCM, Action, ConfigLog, TaskLog
@@ -46,11 +47,20 @@ class Command(BaseCommand):
         last_sync = TaskLog.objects.filter(
             action__name='run_ldap_sync', status__in=[Job.SUCCESS, Job.FAILED]
         ).last()
+        make_audit_log('sync', 'success', 'launched')
         if last_sync is None:
             log.debug("First ldap sync launched in %s", timezone.now())
-            start_task(action, adcm_object, {}, {}, [], [], False)
+            task = start_task(action, adcm_object, {}, {}, [], [], False)
+            if task:
+                make_audit_log('sync', 'success', 'completed')
+            else:
+                make_audit_log('sync', 'failed', 'completed')
             return
         new_rotate_time = last_sync.finish_date + timedelta(minutes=period - 1)
         if new_rotate_time <= timezone.now():
             log.debug("Ldap sync launched in %s", timezone.now())
-            start_task(action, adcm_object, {}, {}, [], [], False)
+            task = start_task(action, adcm_object, {}, {}, [], [], False)
+            if task:
+                make_audit_log('sync', 'success', 'completed')
+            else:
+                make_audit_log('sync', 'failed', 'completed')

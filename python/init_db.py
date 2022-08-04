@@ -82,6 +82,9 @@ def init():
     if not User.objects.filter(username='admin').exists():
         User.objects.create_superuser('admin', 'admin@example.com', 'admin', built_in=True)
     create_status_user()
+    if not User.objects.filter(username='system').exists():
+        User.objects.create_superuser('system', '', None, built_in=True)
+        log.info('Create system user')
     event = Event()
     abort_all(event)
     clear_temp_tables()
