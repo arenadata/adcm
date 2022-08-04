@@ -89,11 +89,12 @@ def _task_case(task_pk: str, action: str) -> Tuple[AuditOperation, AuditObject]:
 
 def _get_service_name(service: ClusterObject) -> str:
     if service.display_name:
-        name = service.display_name
-    else:
-        name = str(service)
+        return service.display_name
 
-    return name
+    if service.prototype.name:
+        return service.prototype.name
+
+    return str(service)
 
 
 # pylint: disable-next=too-many-statements,too-many-branches,too-many-locals
