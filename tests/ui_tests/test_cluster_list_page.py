@@ -1197,8 +1197,8 @@ class TestClusterConfigPage:
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
+        # ADCM-2793 cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
 
     # pylint: enable=too-many-locals
 
@@ -1479,7 +1479,7 @@ class TestClusterConfigPage:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
         check_expectations()
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        # ADCM-2793 cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
 
 
 class TestClusterGroupConfigPage:
@@ -1616,23 +1616,25 @@ class TestClusterGroupConfigPage:
                             config_item
                         ), f"Checkbox for field {field_type} should be disabled"
                     if config_group_customization and not is_read_only:
+                        """ ADCM-2793
                         if not cluster_config_page.group_config.is_customization_chbx_checked(config_item):
                             cluster_config_page.config.check_save_btn_state_and_save_conf(False)
                             cluster_config_page.group_config.click_on_customization_chbx(config_item)
                         cluster_config_page.config.check_save_btn_state_and_save_conf(True)
+                        """
                         assert cluster_config_page.group_config.is_customization_chbx_checked(
                             config_item
                         ), f"Config field {field_type} should be checked"
             if expected['alerts'] and (not is_read_only) and config_group_customization:
                 cluster_config_page.config.check_invalid_value_message(field_type)
 
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        # ADCM-2793 cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if is_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        # ADCM-2793 cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
 
     @pytest.mark.full()
@@ -1756,7 +1758,7 @@ class TestClusterGroupConfigPage:
                     else:
                         assert len(cluster_config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
 
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        # ADCM-2793 cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if group_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
             cluster_config_page.group_config.check_no_rows()
