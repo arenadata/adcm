@@ -122,6 +122,7 @@ class ClusterDetail(PermissionListMixin, DetailView):
         serializer = self.get_serializer(obj, data=request.data, partial=True)
         return update(serializer)
 
+    @audit
     def delete(self, request, *args, **kwargs):
         """
         Remove cluster

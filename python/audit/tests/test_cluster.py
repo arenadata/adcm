@@ -147,6 +147,19 @@ class TestCluster(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
+    def test_delete(self):
+        self.client.delete(path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}))
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            obj=self.cluster,
+            obj_type=AuditObjectType.Cluster,
+            operation_name="Cluster deleted",
+            operation_type=AuditLogOperationType.Delete,
+        )
+
     def test_update(self):
         self.client.patch(
             path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),

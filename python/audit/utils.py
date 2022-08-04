@@ -151,11 +151,18 @@ def _get_audit_operation_and_object(
             audit_object = _get_audit_object_from_resp(res, AuditObjectType.Cluster)
 
         case ["cluster", cluster_pk]:
+            if view.request.method == "DELETE":
+                deleted_obj: Cluster
+                operation_type = AuditLogOperationType.Delete
+                obj = deleted_obj
+            else:
+                operation_type = AuditLogOperationType.Update
+                obj = Cluster.objects.get(pk=cluster_pk)
+
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Cluster.capitalize()} {AuditLogOperationType.Update}d",
-                operation_type=AuditLogOperationType.Update,
+                name=f"{AuditObjectType.Cluster.capitalize()} {operation_type}d",
+                operation_type=operation_type,
             )
-            obj = Cluster.objects.get(pk=cluster_pk)
             audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=cluster_pk,
                 object_name=obj.name,
