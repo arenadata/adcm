@@ -121,6 +121,7 @@ class BundleDetail(DetailView):
     lookup_url_kwarg = 'bundle_id'
     error_code = 'BUNDLE_NOT_FOUND'
 
+    @audit
     def delete(self, request, *args, **kwargs):
         bundle = self.get_object()
         delete_bundle(bundle)

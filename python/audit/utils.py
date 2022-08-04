@@ -118,9 +118,21 @@ def _get_audit_operation_and_object(
             )
             audit_object = _get_audit_object_from_resp(res, AuditObjectType.Bundle)
 
+        case ["stack", "bundle", bundle_pk]:
+            deleted_obj: Bundle
+            audit_operation = AuditOperation(
+                name=f"{AuditObjectType.Bundle.capitalize()} {AuditLogOperationType.Delete}d",
+                operation_type=AuditLogOperationType.Delete,
+            )
+            audit_object, _ = AuditObject.objects.get_or_create(
+                object_id=bundle_pk,
+                object_name=deleted_obj.name,
+                object_type=AuditObjectType.Bundle,
+            )
+
         case ["stack", "bundle", bundle_pk, "update"]:
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Bundle.capitalize()} updated",
+                name=f"{AuditObjectType.Bundle.capitalize()} {AuditLogOperationType.Update}d",
                 operation_type=AuditLogOperationType.Update,
             )
             obj = Bundle.objects.get(pk=bundle_pk)
