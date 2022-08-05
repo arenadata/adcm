@@ -59,6 +59,7 @@ class TestBase(TestCase):
             data={"username": username, "password": password},
             content_type="application/json",
         )
+        self.tearDown()  # post on login endpoint creates new audit record
         self.client.defaults["Authorization"] = f"Token {res.data['token']}"
 
     # pylint: disable=too-many-arguments, too-many-locals
