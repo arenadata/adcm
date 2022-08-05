@@ -178,7 +178,7 @@ class TestAuditLoginAPI:
         """Test audit log list filtering: by operation result and username"""
         # return disabled after https://tracker.yandex.ru/ADCM-2582
         self._check_login_list_filtering(
-            sdk_client_fs, 'operation_result', [lr for lr in LoginResult if lr != LoginResult.DISABLED]
+            sdk_client_fs, 'login_result', [lr for lr in LoginResult if lr != LoginResult.DISABLED]
         )
         self._check_login_list_filtering(
             sdk_client_fs, 'username', [u['username'] for u in chain(users, failed_logins)]
