@@ -180,6 +180,7 @@ class PolicyViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-m
         else:
             return Response(data=serializer.errors, status=HTTP_400_BAD_REQUEST)
 
+    @audit
     def destroy(self, request, *args, **kwargs):
         policy = self.get_object()
         if policy.built_in:

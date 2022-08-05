@@ -36,6 +36,8 @@ class TestRole(BaseTestCase):
             type=RoleTypes.business,
         )
         self.role = Role.objects.create(name="test_role_2", built_in=False)
+        self.list_name = "rbac:role-list"
+        self.detail_name = "rbac:role-detail"
 
     def check_role_updated(self, log: AuditLog) -> None:
         assert log.audit_object.object_id == self.role.pk
@@ -51,7 +53,7 @@ class TestRole(BaseTestCase):
 
     def test_create(self):
         res: Response = self.client.post(
-            path=reverse("rbac:role-list"),
+            path=reverse(self.list_name),
             data={
                 "display_name": self.role_display_name,
                 "child": [{"id": self.child.pk}],
@@ -73,7 +75,7 @@ class TestRole(BaseTestCase):
         assert isinstance(log.object_changes, dict)
 
         self.client.post(
-            path=reverse("rbac:role-list"),
+            path=reverse(self.list_name),
             data={
                 "display_name": self.role_display_name,
                 "child": [{"id": self.child.pk}],
@@ -91,9 +93,28 @@ class TestRole(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
+    def test_delete(self):
+        self.client.delete(
+            path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.role.pk
+        assert log.audit_object.object_name == self.role.name
+        assert log.audit_object.object_type == AuditObjectType.Role
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Role deleted"
+        assert log.operation_type == AuditLogOperationType.Delete
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
     def test_update_put(self):
         self.client.put(
-            path=reverse("rbac:role-detail", kwargs={"pk": self.role.pk}),
+            path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
             data={
                 "display_name": "new_display_name",
                 "child": [{"id": self.child.pk}],
@@ -107,7 +128,7 @@ class TestRole(BaseTestCase):
 
     def test_update_patch(self):
         self.client.patch(
-            path=reverse("rbac:role-detail", kwargs={"pk": self.role.pk}),
+            path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
             data={
                 "display_name": "new_display_name",
                 "child": [{"id": self.child.pk}],

@@ -23,6 +23,8 @@ APPLICATION_JSON = "application/json"
 
 
 class BaseTestCase(TestCase):
+    # pylint: disable=too-many-instance-attributes
+
     def setUp(self) -> None:
         self.test_user_username = "test_user"
         self.test_user_password = "test_user_password"
@@ -31,6 +33,13 @@ class BaseTestCase(TestCase):
             username=self.test_user_username,
             password=self.test_user_password,
             is_superuser=True,
+        )
+
+        self.no_rights_user_username = "no_rights_user"
+        self.no_rights_user_password = "no_rights_user_password"
+        self.no_rights_user = User.objects.create_user(
+            username="no_rights_user",
+            password="no_rights_user_password",
         )
 
         self.client = Client(HTTP_USER_AGENT='Mozilla/5.0')
@@ -54,6 +63,20 @@ class BaseTestCase(TestCase):
         res: Response = self.client.post(
             path=reverse("rbac:token"),
             data={"username": self.test_user_username, "password": self.test_user_password},
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
         self.client.defaults["Authorization"] = f"Token {res.data['token']}"
+
+    def login_no_rights_user(self):
+        res: Response = self.client.post(
+            path=reverse("rbac:token"),
+            data={
+                "username": self.no_rights_user_username,
+                "password": self.no_rights_user_password,
+            },
+            content_type=APPLICATION_JSON,
+        )
+        self.client.defaults["Authorization"] = f"Token {res.data['token']}"
+
+    def logout(self):
+        self.client.post(path=reverse("rbac:logout"))

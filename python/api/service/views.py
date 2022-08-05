@@ -65,6 +65,7 @@ class ServiceListView(PermissionListMixin, PaginatedView):
             queryset = queryset.filter(cluster=cluster)
         return self.get_page(self.filter_queryset(queryset), request)
 
+    @audit
     def post(self, request, *args, **kwargs):
         """
         Add service to cluster

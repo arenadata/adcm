@@ -113,6 +113,7 @@ class ClusterDetail(PermissionListMixin, DetailView):
     lookup_url_kwarg = 'cluster_id'
     error_code = 'CLUSTER_NOT_FOUND'
 
+    @audit
     def patch(self, request, *args, **kwargs):
         """
         Edit cluster
@@ -121,6 +122,7 @@ class ClusterDetail(PermissionListMixin, DetailView):
         serializer = self.get_serializer(obj, data=request.data, partial=True)
         return update(serializer)
 
+    @audit
     def delete(self, request, *args, **kwargs):
         """
         Remove cluster
@@ -169,6 +171,7 @@ class ClusterImport(GenericUIView):
         res = cm.api.get_import(cluster)
         return Response(res)
 
+    @audit
     def post(self, request, *args, **kwargs):
         """
         Update bind for cluster
@@ -204,6 +207,7 @@ class ClusterBindList(GenericUIView):
         serializer = self.get_serializer(obj, many=True)
         return Response(serializer.data)
 
+    @audit
     def post(self, request, *args, **kwargs):
         """
         Bind two clusters
@@ -221,6 +225,10 @@ class ClusterBindDetail(GenericUIView):
     serializer_class = BindSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+    @staticmethod
+    def get_obj(kwargs, bind_id):
+        return ClusterBind.objects.get(pk=bind_id).source_service
+
     def get(self, request, *args, **kwargs):
         """
         Show specified bind of specified cluster
@@ -233,8 +241,8 @@ class ClusterBindDetail(GenericUIView):
         serializer = self.get_serializer(bind)
         return Response(serializer.data)
 
-    @staticmethod
-    def delete(request, *args, **kwargs):
+    @audit
+    def delete(self, request, *args, **kwargs):
         """
         Unbind specified bind of specified cluster
         """
@@ -358,6 +366,7 @@ class HostComponentList(GenericUIView):
             serializer = self.get_serializer(hc, many=True)
         return Response(serializer.data)
 
+    @audit
     def post(self, request, *args, **kwargs):
         """
         Create new mapping service:component <-> host in a specified cluster.

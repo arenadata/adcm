@@ -22,6 +22,7 @@ from audit.models import (
 from cm.models import Bundle, Prototype
 from django.urls import reverse
 from rest_framework.response import Response
+from rest_framework.status import HTTP_400_BAD_REQUEST
 
 from adcm.tests.base import BaseTestCase
 
@@ -127,6 +128,16 @@ class TestBundle(BaseTestCase):
 
         self.check_load_failed(log)
 
+        res: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle": "something wrong"},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(res.status_code, HTTP_400_BAD_REQUEST)
+        self.check_load_failed(log)
+
     def test_load_and_delete(self):
         res: Response = self.upload_bundle_and_check()
 
@@ -138,7 +149,7 @@ class TestBundle(BaseTestCase):
     def test_update(self):
         with patch("api.stack.views.update_bundle"):
             self.client.put(
-                path=f"/api/v1/stack/bundle/{self.bundle.pk}/update/",
+                path=reverse("bundle-update", kwargs={"bundle_id": self.bundle.pk}),
                 data={"name": "new_bundle_name"},
             )
 
@@ -156,7 +167,7 @@ class TestBundle(BaseTestCase):
         assert isinstance(log.object_changes, dict)
 
     def test_license_accepted(self):
-        self.client.put(path=f"/api/v1/stack/bundle/{self.bundle.pk}/license/accept/")
+        self.client.put(path=reverse("accept-license", kwargs={"bundle_id": self.bundle.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -166,6 +177,23 @@ class TestBundle(BaseTestCase):
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Bundle license accepted"
         assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def test_delete(self):
+        with patch("api.stack.views.delete_bundle"):
+            self.client.delete(path=reverse("bundle-details", kwargs={"bundle_id": self.bundle.pk}))
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == self.bundle.pk
+        assert log.audit_object.object_name == self.bundle.name
+        assert log.audit_object.object_type == AuditObjectType.Bundle
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Bundle deleted"
+        assert log.operation_type == AuditLogOperationType.Delete
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk

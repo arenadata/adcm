@@ -148,6 +148,7 @@ class RoleView(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-a
         else:
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
+    @audit
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.built_in:

@@ -74,6 +74,7 @@ class ProviderDetail(PermissionListMixin, DetailView):
     lookup_url_kwarg = 'provider_id'
     error_code = 'PROVIDER_NOT_FOUND'
 
+    @audit
     def delete(self, request, *args, **kwargs):
         """
         Remove host provider

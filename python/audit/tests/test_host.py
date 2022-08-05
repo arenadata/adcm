@@ -71,6 +71,18 @@ class TestHost(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
+    def check_host_deleted(self, log: AuditLog) -> None:
+        assert log.audit_object.object_id == self.host.pk
+        assert log.audit_object.object_name == self.host.fqdn
+        assert log.audit_object.object_type == AuditObjectType.Host
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Host deleted"
+        assert log.operation_type == AuditLogOperationType.Delete
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
     def test_create(self):
         res: Response = self.client.post(
             path=reverse("host"),
@@ -104,9 +116,27 @@ class TestHost(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
+    def test_delete(self):
+        self.client.delete(path=reverse("host-details", kwargs={"host_id": self.host.pk}))
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_deleted(log)
+
+    def test_delete_via_provider(self):
+        self.client.delete(
+            path=reverse(
+                "host-details", kwargs={"host_id": self.host.pk, "provider_id": self.provider.pk}
+            ),
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_deleted(log)
+
     def test_create_via_provider(self):
         res: Response = self.client.post(
-            path=f"/api/v1/provider/{self.provider.pk}/host/",
+            path=reverse("host", kwargs={"provider_id": self.provider.pk}),
             data={"fqdn": self.fqdn},
         )
 
@@ -116,7 +146,7 @@ class TestHost(BaseTestCase):
 
     def test_update_and_restore(self):
         self.client.post(
-            path=f"/api/v1/host/{self.host.pk}/config/history/",
+            path=reverse("config-history", kwargs={"host_id": self.host.pk}),
             data={"config": {}},
             content_type=APPLICATION_JSON,
         )
@@ -126,7 +156,10 @@ class TestHost(BaseTestCase):
         self.check_host_updated(log)
 
         res: Response = self.client.patch(
-            path=f"/api/v1/host/{self.host.pk}/config/history/1/restore/",
+            path=reverse(
+                "config-history-version-restore",
+                kwargs={"host_id": self.host.pk, "version": 1},
+            ),
             content_type=APPLICATION_JSON,
         )
 
@@ -137,7 +170,10 @@ class TestHost(BaseTestCase):
 
     def test_update_and_restore_via_provider(self):
         self.client.post(
-            path=f"/api/v1/provider/{self.provider.pk}/host/{self.host.pk}/config/history/",
+            path=reverse(
+                "config-history",
+                kwargs={"provider_id": self.provider.pk, "host_id": self.host.pk},
+            ),
             data={"config": {}},
             content_type=APPLICATION_JSON,
         )
@@ -147,8 +183,10 @@ class TestHost(BaseTestCase):
         self.check_host_updated(log)
 
         res: Response = self.client.patch(
-            path=f"/api/v1/provider/{self.provider.pk}/host/"
-            f"{self.host.pk}/config/history/1/restore/",
+            path=reverse(
+                "config-history-version-restore",
+                kwargs={"provider_id": self.provider.pk, "host_id": self.host.pk, "version": 1},
+            ),
             content_type=APPLICATION_JSON,
         )
 
