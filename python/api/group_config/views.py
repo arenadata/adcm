@@ -22,11 +22,13 @@ from api.group_config.serializers import (
 )
 from api.utils import permission_denied
 from audit.utils import audit
+from cm.errors import AdcmEx
 from cm.models import ConfigLog, GroupConfig, Host, ObjectConfig
 from django.contrib.contenttypes.models import ContentType
 from django_filters.rest_framework import CharFilter, FilterSet
 from guardian.mixins import PermissionListMixin
 from rest_framework import permissions, status, viewsets
+from rest_framework.exceptions import ValidationError
 from rest_framework.mixins import (
     CreateModelMixin,
     DestroyModelMixin,
@@ -206,7 +208,10 @@ class GroupConfigViewSet(
     @audit
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError as e:
+            raise AdcmEx('GROUP_CONFIG_DATA_ERROR') from e
 
         model = serializer.validated_data['object_type'].model_class()
         obj = model.obj.get(id=serializer.validated_data['object_id'])
