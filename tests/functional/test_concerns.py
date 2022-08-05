@@ -77,6 +77,7 @@ def test_action_should_not_be_run_while_hostprovider_has_an_issue(
             provider.action(name="install").run()
 
 
+@pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3033")
 def test_when_cluster_has_issue_than_upgrade_locked(sdk_client_fs: ADCMClient):
     """Test upgrade should not be run while cluster has an issue"""
     with allure.step("Create cluster and upload new one bundle"):
@@ -92,6 +93,7 @@ def test_when_cluster_has_issue_than_upgrade_locked(sdk_client_fs: ADCMClient):
         UPGRADE_ERROR.equal(e, "cluster ", " has blocking concerns ")
 
 
+@pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3033")
 def test_when_hostprovider_has_issue_than_upgrade_locked(sdk_client_fs: ADCMClient):
     """Test upgrade should not be run while hostprovider has an issue"""
     with allure.step("Create hostprovider"):
