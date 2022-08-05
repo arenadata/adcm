@@ -23,6 +23,7 @@ import requests
 from adcm_client.objects import ADCMClient
 
 from tests.functional.audit.conftest import BUNDLES_DIR, parametrize_audit_scenario_parsing
+from tests.functional.rbac.conftest import create_policy, BusinessRoles
 from tests.library.audit.checkers import AuditLogChecker
 
 # pylint: disable=redefined-outer-name
@@ -191,6 +192,7 @@ def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_clien
     - host (from `host/` and from `provider/{id}/host/`)
     - group config (on cluster, service and component)
     """
+    new_user = sdk_client_fs.user(id=new_user_client.me().id)
     new_user_creds = _make_auth_header(new_user_client)
     cluster_bundle = sdk_client_fs.upload_from_fs(BUNDLES_DIR / 'create' / 'cluster')
     provider_bundle = sdk_client_fs.upload_from_fs(BUNDLES_DIR / 'create' / 'provider')
@@ -220,6 +222,9 @@ def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_clien
         _check_failed(post(CreateOperation.HOST_FROM_PROVIDER, **host_from_provider_args), 409)
         _check_failed(post(CreateOperation.HOST, **host_from_root_args), 409)
     with allure.step('Try to create hosts without permissions'):
+        create_policy(  # need it to be able to create host from provider's context
+            sdk_client_fs, BusinessRoles.ViewProviderConfigurations, [provider], [new_user], []
+        )
         _check_failed(post(CreateOperation.HOST_FROM_PROVIDER, **host_from_provider_args, headers=new_user_creds), 403)
         _check_failed(post(CreateOperation.HOST, **host_from_root_args, headers=new_user_creds), 403)
     with allure.step(

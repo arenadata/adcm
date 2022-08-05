@@ -38,8 +38,8 @@ operations:
         type: provider
     result: fail
   - create:
-    what:
-      type: provider
+      what:
+        type: provider
     result: denied
   # host
   - create: &hfp

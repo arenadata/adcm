@@ -77,28 +77,18 @@ class AuditLogChecker:
         operations = convert_to_operations(
             self._raw_operations, self._operation_defaults.username, self._operation_defaults.result, self._user_map
         )
-        suitable_records = self.cut_to_start(operations[0], sorted_audit_records)
+        first_expected_operation = operations[0]
+        try:
+            suitable_records = self.cut_to_start(first_expected_operation, sorted_audit_records)
+        except AssertionError:
+            self._attach_all_operations_and_expected_one(sorted_audit_records, first_expected_operation)
+            raise
         last_processed_operation = None
         for expected_operation in operations:
             try:
                 suitable_records = self.check_next(expected_operation, suitable_records)
             except AssertionError:
-                allure.attach(
-                    '\n\n'.join(
-                        f'{ind}\n'
-                        + ',\n'.join(
-                            f'{f.name}={getattr(rec, f.name)}' for f in fields(Operation) if hasattr(rec, f.name)
-                        )
-                        for ind, rec in enumerate(sorted_audit_records)
-                    ),
-                    name='Audit records from API',
-                    attachment_type=allure.attachment_type.TEXT,
-                )
-                allure.attach(
-                    pprint.pformat(expected_operation),
-                    name='Not found operation',
-                    attachment_type=allure.attachment_type.JSON,
-                )
+                self._attach_all_operations_and_expected_one(sorted_audit_records, expected_operation)
                 if last_processed_operation:
                     allure.attach(
                         pprint.pformat(last_processed_operation),
@@ -113,7 +103,7 @@ class AuditLogChecker:
         self, client_: Optional[ADCMClient] = None, user_id_map_: Optional[Dict[str, int]] = None, **user_ids: int
     ) -> None:
         """
-        When there're custom users in the scenario, you should use this method to provide full user list.
+        When there are custom users in the scenario, you should use this method to provide full user list.
         It is used to match usernames with ids.
 
         Only one source is used in priority: client, user_id_map, user_ids.
@@ -143,6 +133,24 @@ class AuditLogChecker:
             self._user_map = {**user_ids}
             return
         raise RuntimeError('Either `client_`, `user_id_map_` or kwargs should be provided to populate user map')
+
+    def _attach_all_operations_and_expected_one(
+        self, audit_records: List[AuditOperation], expected_operation: Operation
+    ):
+        allure.attach(
+            '\n\n'.join(
+                f'{ind}\n'
+                + ',\n'.join(f'{f.name}={getattr(rec, f.name)}' for f in fields(Operation) if hasattr(rec, f.name))
+                for ind, rec in enumerate(audit_records)
+            ),
+            name='Audit records from API',
+            attachment_type=allure.attachment_type.TEXT,
+        )
+        allure.attach(
+            pprint.pformat(expected_operation),
+            name='Not found operation',
+            attachment_type=allure.attachment_type.JSON,
+        )
 
 
 def _get_records_from_first_matched(
