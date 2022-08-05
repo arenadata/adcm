@@ -1131,6 +1131,7 @@ class TestClusterConfigPage:
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
     # pylint: disable=too-many-locals
+    @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3037")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
@@ -1192,14 +1193,13 @@ class TestClusterConfigPage:
             if expected['alerts'] and not is_read_only:
                 cluster_config_page.config.check_invalid_value_message(field_type)
 
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if is_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
 
     # pylint: enable=too-many-locals
 
@@ -1212,6 +1212,7 @@ class TestClusterConfigPage:
         _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
 
         with allure.step('Check that save button is active'):
+            cluster_config_page.config.get_config_row("numbers_test").click()
             assert not cluster_config_page.config.is_save_btn_disabled(), 'Save button should be active'
         cluster_config_page.config.clear_field_by_keys(params["filed_name"])
 
@@ -1389,6 +1390,7 @@ class TestClusterConfigPage:
         with allure.step('Check that save button is disabled'):
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
+    @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3037")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
@@ -1473,13 +1475,13 @@ class TestClusterConfigPage:
                     else:
                         assert len(cluster_config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
 
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if group_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
         check_expectations()
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
 
 
 class TestClusterGroupConfigPage:
@@ -1548,6 +1550,7 @@ class TestClusterGroupConfigPage:
 
     # pylint: disable=too-many-locals
 
+    @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3037")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
@@ -1635,6 +1638,7 @@ class TestClusterGroupConfigPage:
         cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
 
+    @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3037")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
