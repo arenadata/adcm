@@ -23,6 +23,7 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
+from cm.logger import log
 from cm.models import (
     ADCM,
     Bundle,
@@ -954,6 +955,10 @@ def audit(func):
             error = exc
             res = None
             status_code = exc.status_code
+        except Exception as e:
+            log.warning('Unhandled exception in adit-decorated view')
+            log.exception(e)
+            raise e
 
         audit_operation, audit_object, operation_name = _get_audit_operation_and_object(
             view,
