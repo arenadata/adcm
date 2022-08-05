@@ -31,6 +31,8 @@ class TestGroup(BaseTestCase):
 
         self.name = "test_group"
         self.group = Group.objects.create(name="test_group_2")
+        self.list_name = "rbac:group-list"
+        self.detail_name = "rbac:group-detail"
 
     def check_group_updated(self, log: AuditLog) -> None:
         assert log.audit_object.object_id == self.group.pk
@@ -46,7 +48,7 @@ class TestGroup(BaseTestCase):
 
     def test_create(self):
         res: Response = self.client.post(
-            path=reverse("rbac:group-list"),
+            path=reverse(self.list_name),
             data={"name": self.name},
         )
 
@@ -64,7 +66,7 @@ class TestGroup(BaseTestCase):
         assert isinstance(log.object_changes, dict)
 
         self.client.post(
-            path=reverse("rbac:group-list"),
+            path=reverse(self.list_name),
             data={"name": self.name},
         )
 
@@ -80,7 +82,7 @@ class TestGroup(BaseTestCase):
 
     def test_delete(self):
         self.client.delete(
-            path=reverse("rbac:group-detail", kwargs={"pk": self.group.pk}),
+            path=reverse(self.detail_name, kwargs={"pk": self.group.pk}),
             content_type=APPLICATION_JSON,
         )
 
@@ -99,7 +101,7 @@ class TestGroup(BaseTestCase):
 
     def test_update_put(self):
         self.client.put(
-            path=reverse("rbac:group-detail", kwargs={"pk": self.group.pk}),
+            path=reverse(self.detail_name, kwargs={"pk": self.group.pk}),
             data={
                 "name": self.group.name,
                 "display_name": "new_display_name",
@@ -113,7 +115,7 @@ class TestGroup(BaseTestCase):
 
     def test_update_patch(self):
         self.client.patch(
-            path=reverse("rbac:group-detail", kwargs={"pk": self.group.pk}),
+            path=reverse(self.detail_name, kwargs={"pk": self.group.pk}),
             data={"display_name": "new_display_name"},
             content_type=APPLICATION_JSON,
         )

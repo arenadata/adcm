@@ -44,6 +44,8 @@ class TestPolicy(BaseTestCase):
             class_name="ObjectRole",
         )
         self.policy = Policy.objects.create(name="test_policy_2", built_in=False)
+        self.list_name = "rbac:policy-list"
+        self.detail_name = "rbac:policy-detail"
 
     def check_policy_updated(self, log: AuditLog) -> None:
         assert log.audit_object.object_id == self.policy.pk
@@ -59,7 +61,7 @@ class TestPolicy(BaseTestCase):
 
     def test_create(self):
         res: Response = self.client.post(
-            path=reverse("rbac:policy-list"),
+            path=reverse(self.list_name),
             data={
                 "name": self.name,
                 "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
@@ -84,7 +86,7 @@ class TestPolicy(BaseTestCase):
 
     def test_delete(self):
         self.client.delete(
-            path=reverse("rbac:policy-detail", kwargs={"pk": self.policy.pk}),
+            path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
             content_type=APPLICATION_JSON,
         )
 
@@ -103,7 +105,7 @@ class TestPolicy(BaseTestCase):
 
     def test_update_put(self):
         self.client.put(
-            path=reverse("rbac:policy-detail", kwargs={"pk": self.policy.pk}),
+            path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
             data={
                 "name": self.policy.name,
                 "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
@@ -120,7 +122,7 @@ class TestPolicy(BaseTestCase):
 
     def test_update_patch(self):
         self.client.patch(
-            path=reverse("rbac:policy-detail", kwargs={"pk": self.policy.pk}),
+            path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
             data={
                 "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
                 "role": {"id": self.role.pk},

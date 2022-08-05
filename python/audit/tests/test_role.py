@@ -36,6 +36,8 @@ class TestRole(BaseTestCase):
             type=RoleTypes.business,
         )
         self.role = Role.objects.create(name="test_role_2", built_in=False)
+        self.list_name = "rbac:role-list"
+        self.detail_name = "rbac:role-detail"
 
     def check_role_updated(self, log: AuditLog) -> None:
         assert log.audit_object.object_id == self.role.pk
@@ -51,7 +53,7 @@ class TestRole(BaseTestCase):
 
     def test_create(self):
         res: Response = self.client.post(
-            path=reverse("rbac:role-list"),
+            path=reverse(self.list_name),
             data={
                 "display_name": self.role_display_name,
                 "child": [{"id": self.child.pk}],
@@ -73,7 +75,7 @@ class TestRole(BaseTestCase):
         assert isinstance(log.object_changes, dict)
 
         self.client.post(
-            path=reverse("rbac:role-list"),
+            path=reverse(self.list_name),
             data={
                 "display_name": self.role_display_name,
                 "child": [{"id": self.child.pk}],
@@ -93,7 +95,7 @@ class TestRole(BaseTestCase):
 
     def test_delete(self):
         self.client.delete(
-            path=reverse("rbac:role-detail", kwargs={"pk": self.role.pk}),
+            path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
             content_type=APPLICATION_JSON,
         )
 
@@ -112,7 +114,7 @@ class TestRole(BaseTestCase):
 
     def test_update_put(self):
         self.client.put(
-            path=reverse("rbac:role-detail", kwargs={"pk": self.role.pk}),
+            path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
             data={
                 "display_name": "new_display_name",
                 "child": [{"id": self.child.pk}],
@@ -126,7 +128,7 @@ class TestRole(BaseTestCase):
 
     def test_update_patch(self):
         self.client.patch(
-            path=reverse("rbac:role-detail", kwargs={"pk": self.role.pk}),
+            path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
             data={
                 "display_name": "new_display_name",
                 "child": [{"id": self.child.pk}],

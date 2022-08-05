@@ -30,6 +30,8 @@ class TestUser(BaseTestCase):
         super().setUp()
 
         self.username = "test_username"
+        self.list_name = "rbac:user-list"
+        self.detail_name = "rbac:user-detail"
 
     def check_user_updated(self, log: AuditLog) -> None:
         assert log.audit_object.object_id == self.test_user.id
@@ -45,7 +47,7 @@ class TestUser(BaseTestCase):
 
     def test_create(self):
         res: Response = self.client.post(
-            path=reverse("rbac:user-list"),
+            path=reverse(self.list_name),
             data={
                 "username": self.username,
                 "password": "test_password",
@@ -66,7 +68,7 @@ class TestUser(BaseTestCase):
         assert isinstance(log.object_changes, dict)
 
         self.client.post(
-            path=reverse("rbac:user-list"),
+            path=reverse(self.list_name),
             data={
                 "username": self.username,
                 "password": "test_password",
@@ -85,7 +87,7 @@ class TestUser(BaseTestCase):
 
     def test_delete(self):
         self.client.delete(
-            path=reverse("rbac:user-detail", kwargs={"pk": self.no_rights_user.pk}),
+            path=reverse(self.detail_name, kwargs={"pk": self.no_rights_user.pk}),
             content_type=APPLICATION_JSON,
         )
 
@@ -104,7 +106,7 @@ class TestUser(BaseTestCase):
 
     def test_update_put(self):
         self.client.put(
-            path=reverse("rbac:user-detail", kwargs={"pk": self.test_user.pk}),
+            path=reverse(self.detail_name, kwargs={"pk": self.test_user.pk}),
             data={
                 "username": self.test_user_username,
                 "password": self.test_user_password,
@@ -119,7 +121,7 @@ class TestUser(BaseTestCase):
 
     def test_update_patch(self):
         self.client.patch(
-            path=reverse("rbac:user-detail", kwargs={"pk": self.test_user.pk}),
+            path=reverse(self.detail_name, kwargs={"pk": self.test_user.pk}),
             data={"first_name": "test_first_name"},
             content_type=APPLICATION_JSON,
         )
