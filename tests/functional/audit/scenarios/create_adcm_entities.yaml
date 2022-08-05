@@ -50,13 +50,13 @@ operations:
       what:
         type: host
         name: host-from-root
-  - <<: *hfp
+  - create: *hfp
     result: fail
-  - <<: *hfr
+  - create: *hfr
     result: fail
-  - <<: *hfp
+  - create: *hfp
     result: denied
-  - <<: *hfr
+  - create: *hfr
     result: denied
   # group configs
   - create: &clus-conf-gr
@@ -66,9 +66,9 @@ operations:
       how:
         operation: create-group-config
         name: cluster-group
-  - <<: *clus-conf-gr
+  - create: *clus-conf-gr
     result: fail
-  - <<: *clus-conf-gr
+  - create: *clus-conf-gr
     result: denied
   - create: &serv-conf-gr
       what:
@@ -77,9 +77,9 @@ operations:
       how:
         operation: create-group-config
         name: service-group
-  - <<: *serv-conf-gr
+  - create: *serv-conf-gr
     result: fail
-  - <<: *serv-conf-gr
+  - create: *serv-conf-gr
     result: denied
   - create: &comp-conf-gr
       what:
@@ -88,7 +88,7 @@ operations:
       how:
         operation: create-group-config
         name: component-group
-  - <<: *comp-conf-gr
+  - create: *comp-conf-gr
     result: fail
-  - <<: *comp-conf-gr
+  - create: *comp-conf-gr
     result: denied
