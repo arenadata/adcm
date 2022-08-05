@@ -179,6 +179,9 @@ upgrade_obj: &common_upgrade_object
     states: states_dict
     from_edition: any_or_list
     scripts: upgrade_task_list
+    masking: action_masking_or_none
+    on_fail: post_action
+    on_success: post_action
     venv: string
     ui_options: json
     config: config_obj
