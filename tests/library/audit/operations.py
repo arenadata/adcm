@@ -169,7 +169,7 @@ class Operation:
         if not self.code or 'operation' not in self.code:
             raise KeyError(
                 'There should be "how" section specifying operation for audit record described as\n'
-                f'"{self.operation_type.value} {self.object_type.value}: {self.operation_info}"'
+                f'"{self.operation_type.value} {self.object_type.value}"'
             )
 
         named_operation = _NAMED_OPERATIONS.get(self.code['operation'], None)
@@ -188,9 +188,14 @@ class Operation:
         but will not be presented in operation object (audit object reference == None).
         This funciton sets object-related fields to None based on the case.
         """
-        if self.operation_type == OperationType.CREATE and self.operation_result in (
-            OperationResult.FAIL,
-            OperationResult.DENIED,
+        if (
+            (
+                self.operation_type == OperationType.CREATE
+                and self.operation_result in (OperationResult.FAIL, OperationResult.DENIED)
+            )
+            # some operations don't have object, like Bundle upload,
+            # because no ADCM object is created on this operation
+            or (self.operation_name == _NAMED_OPERATIONS['upload'].naming_template)
         ):
             self.object_type = None
             self.object_name = None

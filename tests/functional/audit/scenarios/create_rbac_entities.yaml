@@ -14,6 +14,8 @@ settings:
   process-type: exact
   start-from-first: matched
 
+# restore denied within ADCM-3039
+
 operations:
   - create:
       what:
@@ -23,10 +25,10 @@ operations:
       what:
         type: 'user'
     result: fail
-  - create:
-      what:
-        type: 'user'
-    result: denied
+#  - create:
+#      what:
+#        type: 'user'
+#    result: denied
   - create:
       what:
         type: 'group'
@@ -35,10 +37,10 @@ operations:
       what:
         type: 'group'
     result: fail
-  - create:
-      what:
-        type: 'group'
-    result: denied
+#  - create:
+#      what:
+#        type: 'group'
+#    result: denied
   - create:
       what:
         type: 'role'
@@ -47,10 +49,10 @@ operations:
       what:
         type: 'role'
     result: fail
-  - create:
-      what:
-        type: 'role'
-    result: denied
+#  - create:
+#      what:
+#        type: 'role'
+#    result: denied
   - create:
       what:
         type: 'policy'
@@ -59,7 +61,7 @@ operations:
       what:
         type: 'policy'
     result: fail
-  - create:
-      what:
-        type: 'policy'
-    result: denied
+#  - create:
+#      what:
+#        type: 'policy'
+#    result: denied

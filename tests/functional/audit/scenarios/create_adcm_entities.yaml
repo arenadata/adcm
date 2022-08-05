@@ -14,6 +14,8 @@ settings:
   process-type: sequence
   start-from-first: matched
 
+# restore denied within ADCM-3039
+
 operations:
   # cluster
   - create:
@@ -24,10 +26,10 @@ operations:
       what:
         type: cluster
     result: fail
-  - create:
-      what:
-        type: cluster
-    result: denied
+#  - create:
+#      what:
+#        type: cluster
+#    result: denied
   # provider
   - create:
       what:
@@ -37,10 +39,10 @@ operations:
       what:
         type: provider
     result: fail
-  - create:
-      what:
-        type: provider
-    result: denied
+#  - create:
+#      what:
+#        type: provider
+#    result: denied
   # host
   - create: &hfp
       what:
@@ -54,10 +56,10 @@ operations:
     result: fail
   - create: *hfr
     result: fail
-  - create: *hfp
-    result: denied
-  - create: *hfr
-    result: denied
+#  - create: *hfp
+#    result: denied
+#  - create: *hfr
+#    result: denied
   # group configs
   - create: &clus-conf-gr
       what:
@@ -68,8 +70,8 @@ operations:
         name: cluster-group
   - create: *clus-conf-gr
     result: fail
-  - create: *clus-conf-gr
-    result: denied
+#  - create: *clus-conf-gr
+#    result: denied
   - create: &serv-conf-gr
       what:
         type: service
@@ -79,8 +81,8 @@ operations:
         name: service-group
   - create: *serv-conf-gr
     result: fail
-  - create: *serv-conf-gr
-    result: denied
+#  - create: *serv-conf-gr
+#    result: denied
   - create: &comp-conf-gr
       what:
         type: component
@@ -90,5 +92,5 @@ operations:
         name: component-group
   - create: *comp-conf-gr
     result: fail
-  - create: *comp-conf-gr
-    result: denied
+#  - create: *comp-conf-gr
+#    result: denied

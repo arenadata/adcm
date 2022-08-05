@@ -16,22 +16,24 @@ settings:
   # that makes no sense for this scenario
   start-from-first: matched
 
+# restore denied within ADCM-3039
+
 operations:
   # upload/load incorrect bundles
-  - &denied_upload
-    create:
-      what:
-        type: bundle
-      how: upload
-    result: denied
-    user: {{ username }}
-  - &denied_load
-    create:
-      what:
-        type: bundle
-      how: load
-    result: denied
-    user: {{ username }}
+#  - &denied_upload
+#    create:
+#      what:
+#        type: bundle
+#      how: upload
+#    result: denied
+#    user: {{ username }}
+#  - &denied_load
+#    create:
+#      what:
+#        type: bundle
+#      how: load
+#    result: denied
+#    user: {{ username }}
   - &upload_bundle
     create:
       what:
@@ -43,24 +45,32 @@ operations:
         type: bundle
       how: load
     result: fail
-  - <<: *denied_upload
-  - <<: *denied_load
+#  - <<: *denied_upload
+#  - <<: *denied_load
   - <<: *upload_bundle
   - <<: *load_bundle_fail
   # upload/load correct bundles
-  - <<: *denied_upload
-  - <<: *denied_load
+#  - <<: *denied_upload
+#  - <<: *denied_load
   - <<: *upload_bundle
-  - &load_bundle
-    <<: *load_bundle_fail
+  - create:
+      what:
+        type: bundle
+        name: cluster
+      how: load
     result: success
-  - <<: *denied_upload
-  - <<: *denied_load
+#  - <<: *denied_upload
+#  - <<: *denied_load
   - <<: *upload_bundle
-  - <<: *load_bundle
+  - create:
+      what:
+        type: bundle
+        name: provider  # it's the name of provider from bundle description
+      how: load
+    result: success
   # provide incorrect data for request
-  - <<: *denied_upload
-  - <<: *denied_load
+#  - <<: *denied_upload
+#  - <<: *denied_load
   - <<: *upload_bundle
     result: fail
   - <<: *load_bundle_fail
