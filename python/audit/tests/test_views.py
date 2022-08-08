@@ -28,6 +28,7 @@ from audit.models import (
 from rbac.models import User
 
 
+# pylint: disable=too-many-instance-attributes
 class TestBase(TestCase):
     def setUp(self) -> None:
         self.user_username = 'user_username'
@@ -106,7 +107,7 @@ class TestBase(TestCase):
             **(auditsession_kwargs or self.default_auditsession),
         }
 
-        for i in range(num):
+        for _ in range(num):
             ao = AuditObject.objects.create(**auditobject_kwargs)
             ret['audit_objects'].append(ao)
 
@@ -186,7 +187,7 @@ class TestBase(TestCase):
             for field in template_mutations['delete']:
                 del template[field]
             template = {**template, **template_mutations['merge']}
-            assert all([item[field] == template[field] for field in template]), label
+            assert all(item[field] == template[field] for field in template), label
 
 
 class TestViews(TestBase):
