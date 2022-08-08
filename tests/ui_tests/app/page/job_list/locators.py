@@ -37,12 +37,17 @@ class TaskListLocators:
             """Task List page row elements locators"""
 
             action_name = Locator(By.CSS_SELECTOR, "app-task-name a", "Action name in row")
+            # task (a.k.a. multi-job) have another element storing the name
+            task_action_name = Locator(By.CSS_SELECTOR, "app-task-name * span", "Action name in row")
             invoker_objects = Locator(By.CSS_SELECTOR, "app-task-objects a", "Object that invoked action in row")
             start_date = Locator(By.CSS_SELECTOR, "mat-cell.action_date:nth-child(4)", "Start date in row")
             finish_date = Locator(By.CSS_SELECTOR, "mat-cell.action_date:nth-child(5)", "Finish date in row")
             # span for done_all and mat-icon for running
             # but in both cases we can identify status by class
             status = Locator(By.CSS_SELECTOR, "app-task-status-column *", "Status span in row")
+
+            # when running (and cancel is allowed, then we should take another element to get status)
+            status_under_btn = Locator(By.CSS_SELECTOR, "app-task-status-column button * mat-icon", "Status in row")
 
             expand_task = Locator(By.XPATH, ".//mat-icon[contains(text(), 'expand_more')]", "Expand task button")
 

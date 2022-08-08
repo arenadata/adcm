@@ -30,6 +30,7 @@ class CommonPopupLocators:
     hide_btn_by_text = TemplateLocator(
         By.XPATH, "//div[./div/div[text()='{}']]/button", "Hide pop up button with text {}"
     )
+    verbose_chbx = Locator(By.XPATH, "//mat-checkbox[.//span[text()='Verbose']]", "Verbose checkbox")
 
 
 class HostCreationLocators:
@@ -37,8 +38,8 @@ class HostCreationLocators:
 
     block = Locator(By.CSS_SELECTOR, "mat-dialog-container", "Host creation popup block")
     fqdn_input = Locator(By.CSS_SELECTOR, "input[data-placeholder='Fully qualified domain name']", "Host FQDN input")
-    create_btn = Locator(By.XPATH, "//button[./span[contains(text(), 'Create')]]", "Create button")
-    cancel_btn = Locator(By.XPATH, "//button[./span[text()='Cancel']]", "Cancel button")
+    create_btn = Locator(By.XPATH, "//app-add-controls//button[./span[contains(text(), 'Create')]]", "Create button")
+    cancel_btn = Locator(By.XPATH, "//app-add-controls//button[./span[text()='Cancel']]", "Cancel button")
 
     class Provider:
         """Provider creation and selection section"""

@@ -38,11 +38,15 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
       if (state === 'DISABLED') {
         this.items.controls.forEach((control) => {
           control.disable({ emitEvent: false });
+          control.markAsUntouched();
         });
+        this.control.markAsUntouched();
       } else {
         this.items.controls.forEach((control) => {
           control.enable({ emitEvent: false });
+          control.markAsTouched();
         });
+        this.control.markAsTouched();
       }
     });
   }
@@ -54,6 +58,7 @@ export class BaseMapListDirective extends FieldDirective implements OnInit {
     }), {}) : null;
     if (value && this.asList) value = (value as Array<string>).length ? value : null;
     this.control.setValue(value);
+    this.control.markAsTouched();
   }
 
   reload() {

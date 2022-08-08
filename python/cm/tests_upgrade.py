@@ -355,7 +355,7 @@ class TestUpgrade(TestCase):
         co1 = ClusterObject.objects.get(cluster=cluster, prototype__name='hadoop')
 
         try:
-            r = cm.upgrade.do_upgrade(co1, upgrade, {})
+            r = cm.upgrade.do_upgrade(co1, upgrade, {}, {}, [])
             self.assertEqual(r, 'ok')
         except AdcmEx as e:
             self.assertEqual(e.code, 'UPGRADE_ERROR')
@@ -365,7 +365,7 @@ class TestUpgrade(TestCase):
         new_proto = Prototype.objects.get(type="service", name="hadoop", bundle=b2)
         self.assertEqual(co1.prototype.id, old_proto.id)
 
-        cm.upgrade.do_upgrade(cluster, upgrade, {})
+        cm.upgrade.do_upgrade(cluster, upgrade, {}, {}, [])
         co2 = ClusterObject.objects.get(cluster=cluster, prototype__name='hadoop')
         self.assertEqual(co1.id, co2.id)
         self.assertEqual(co2.prototype.id, new_proto.id)
@@ -400,7 +400,7 @@ class TestUpgrade(TestCase):
         new_comp_node.delete()
 
         upgrade = setup.cook_upgrade(b2)
-        cm.upgrade.do_upgrade(cluster, upgrade, {})
+        cm.upgrade.do_upgrade(cluster, upgrade, {}, {}, [])
         hc2 = HostComponent.objects.get(cluster=cluster, service=co, component=sc1)
         self.assertEqual(hc2.component.id, sc1.id)
         r = HostComponent.objects.filter(cluster=cluster, service=co, component=sc2)
@@ -448,7 +448,7 @@ class TestUpgrade(TestCase):
         h1 = Host.objects.get(provider=provider, fqdn='server01.inter.net')
 
         try:
-            r = cm.upgrade.do_upgrade(h1, upgrade, {})
+            r = cm.upgrade.do_upgrade(h1, upgrade, {}, {}, [])
             self.assertEqual(r, 'ok')
         except AdcmEx as e:
             self.assertEqual(e.code, 'UPGRADE_ERROR')
@@ -458,7 +458,7 @@ class TestUpgrade(TestCase):
         new_proto = Prototype.objects.get(type="host", name="DfHost", bundle=b2)
         self.assertEqual(h1.prototype.id, old_proto.id)
 
-        cm.upgrade.do_upgrade(provider, upgrade, {})
+        cm.upgrade.do_upgrade(provider, upgrade, {}, {}, [])
         h2 = Host.objects.get(provider=provider, fqdn='server01.inter.net')
         self.assertEqual(h1.id, h2.id)
         self.assertEqual(h2.prototype.id, new_proto.id)

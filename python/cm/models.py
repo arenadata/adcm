@@ -226,22 +226,6 @@ def get_default_from_edition():
     return ['community']
 
 
-class Upgrade(ADCMModel):
-    bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
-    name = models.CharField(max_length=160, blank=True)
-    description = models.TextField(blank=True)
-    min_version = models.CharField(max_length=80)
-    max_version = models.CharField(max_length=80)
-    from_edition = models.JSONField(default=get_default_from_edition)
-    min_strict = models.BooleanField(default=False)
-    max_strict = models.BooleanField(default=False)
-    state_available = models.JSONField(default=list)
-    state_on_success = models.CharField(max_length=64, blank=True)
-    action = models.OneToOneField('Action', on_delete=models.CASCADE, null=True)
-
-    __error_code__ = 'UPGRADE_NOT_FOUND'
-
-
 MONITORING_TYPE = (
     ('active', 'active'),
     ('passive', 'passive'),
@@ -534,8 +518,37 @@ class ADCMEntity(ADCMModel):
 
     def delete(self, using=None, keep_parents=False):
         super().delete(using, keep_parents)
-        if self.config is not None:
+        if self.config is not None and not isinstance(self, ServiceComponent):
             self.config.delete()
+
+
+class Upgrade(ADCMModel):
+    bundle = models.ForeignKey(Bundle, on_delete=models.CASCADE)
+    name = models.CharField(max_length=160, blank=True)
+    description = models.TextField(blank=True)
+    min_version = models.CharField(max_length=80)
+    max_version = models.CharField(max_length=80)
+    from_edition = models.JSONField(default=get_default_from_edition)
+    min_strict = models.BooleanField(default=False)
+    max_strict = models.BooleanField(default=False)
+    state_available = models.JSONField(default=list)
+    state_on_success = models.CharField(max_length=64, blank=True)
+    action = models.OneToOneField('Action', on_delete=models.CASCADE, null=True)
+
+    __error_code__ = 'UPGRADE_NOT_FOUND'
+
+    def allowed(self, obj: ADCMEntity) -> bool:
+        """Check if upgrade is allowed to be run on object"""
+        if self.state_available:
+            available = self.state_available
+            if obj.state in available:
+                return True
+            elif available == 'any':
+                return True
+            else:
+                return False
+        else:
+            return self.action.allowed(obj)
 
 
 class ADCM(ADCMEntity):
@@ -1306,6 +1319,7 @@ class TaskLog(ADCMModel):
     config = models.JSONField(null=True, default=None)
     attr = models.JSONField(default=dict)
     hostcomponentmap = models.JSONField(null=True, default=None)
+    post_upgrade_hc_map = models.JSONField(null=True, default=None)
     hosts = models.JSONField(null=True, default=None)
     verbose = models.BooleanField(default=False)
     start_date = models.DateTimeField()
@@ -1342,7 +1356,7 @@ class TaskLog(ADCMModel):
         self.save()
         lock.delete()
 
-    def cancel(self, event_queue: 'cm.status_api.Event' = None):
+    def cancel(self, event_queue: 'cm.status_api.Event' = None, obj_deletion=False):
         """
         Cancel running task process
         task status will be updated in separate process of task runner
@@ -1358,7 +1372,7 @@ class TaskLog(ADCMModel):
             Job.SUCCESS: ('TASK_IS_SUCCESS', f'task #{self.pk} is success'),
         }
         action = self.action
-        if action and not action.allow_to_terminate:
+        if action and not action.allow_to_terminate and not obj_deletion:
             raise AdcmEx(
                 'NOT_ALLOWED_TERMINATION',
                 f'not allowed termination task #{self.pk} for action #{action.pk}',
@@ -1376,6 +1390,12 @@ class TaskLog(ADCMModel):
             event_queue.send_state()
         os.kill(self.pid, signal.SIGTERM)
 
+    @staticmethod
+    def get_adcm_tasks_qs():
+        return TaskLog.objects.filter(
+            object_type=ContentType.objects.get(app_label='cm', model='adcm')
+        )
+
 
 class JobLog(ADCMModel):
     task = models.ForeignKey(TaskLog, on_delete=models.SET_NULL, null=True, default=None)
@@ -1389,6 +1409,10 @@ class JobLog(ADCMModel):
     finish_date = models.DateTimeField(db_index=True)
 
     __error_code__ = 'JOB_NOT_FOUND'
+
+    @staticmethod
+    def get_adcm_jobs_qs():
+        return JobLog.objects.filter(task__in=TaskLog.get_adcm_tasks_qs())
 
 
 class GroupCheckLog(ADCMModel):

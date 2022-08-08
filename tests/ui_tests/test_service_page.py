@@ -303,6 +303,7 @@ class TestServiceConfigPage:
         service_config_page.config.compare_versions(params["config_name_old"])
         service_config_page.config.check_config_fields_history_with_test_values()
 
+    @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3017")
     @pytest.mark.parametrize(
         "bundle_name", ["password_no_confirm_false_required_false", "password_no_confirm_true_required_false"]
     )
@@ -453,7 +454,6 @@ class TestServiceConfigPage:
         for item in CONFIG_ITEMS:
             service_config_page.config.check_text_in_tooltip(item, f"Test description {item}")
 
-    @pytest.mark.skip()
     @pytest.mark.full()
     def test_save_configuration_hell_on_service_config_page(self, app_fs, sdk_client_fs):
         """

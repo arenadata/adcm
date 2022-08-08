@@ -56,7 +56,7 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
   }
 
   ngOnInit(): void {
-    if (this.model.actions.length === 1) this.choose(this.model.actions[0]);
+    if (this.model?.actions?.length === 1) this.choose(this.model.actions[0]);
   }
 
   choose(action: IAction) {

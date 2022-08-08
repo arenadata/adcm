@@ -18,6 +18,7 @@
                      #groups="rbacGroups"
                      [handler]="groups.label"
                      [rbac-groups-as-options]="filter"
+                     [selectRowDisableCheck]="isDisabled"
                      [options]="groups.options$ | async | falseAsEmptyArray"
                      (filter)="updateFilter('search', $event)"
 

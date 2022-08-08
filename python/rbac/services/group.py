@@ -26,7 +26,8 @@ from rbac.utils import Empty, set_not_empty_attr
 def _update_users(group: models.Group, users: [Empty, List[dict]]) -> None:
     if users is Empty:
         return
-
+    if group.type == models.OriginType.LDAP:
+        raise AdwpEx('GROUP_UPDATE_ERROR', msg="You can\'t change users in LDAP group")
     group_users = {u.id: u for u in group.user_set.all()}
     new_users = [u['id'] for u in users]
 
@@ -52,13 +53,13 @@ def _update_users(group: models.Group, users: [Empty, List[dict]]) -> None:
 @transaction.atomic
 def create(
     *,
-    name: str,
+    name_to_display: str,
     description: str = None,
     user_set: List[dict] = None,
 ) -> models.Group:
     """Create Group"""
     try:
-        group = models.Group.objects.create(name=name, description=description)
+        group = models.Group.objects.create(name=name_to_display, description=description)
     except IntegrityError as exc:
         raise AdwpEx('GROUP_CREATE_ERROR', msg=f'Group creation failed with error {exc}') from exc
     _update_users(group, user_set or [])
@@ -70,12 +71,14 @@ def update(
     group: models.Group,
     *,
     partial: bool = False,
-    name: str = Empty,
+    name_to_display: str = Empty,
     description: str = Empty,
     user_set: List[dict] = Empty,
 ) -> models.Group:
     """Full or partial Group object update"""
-    set_not_empty_attr(group, partial, 'name', name)
+    if group.type == models.OriginType.LDAP:
+        raise AdwpEx('GROUP_UPDATE_ERROR', msg='You cannot change LDAP type group')
+    set_not_empty_attr(group, partial, 'name', name_to_display)
     set_not_empty_attr(group, partial, 'description', description, '')
     try:
         group.save()

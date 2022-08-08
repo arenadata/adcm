@@ -20,7 +20,7 @@ from api.component.serializers import ComponentDetailSerializer
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.host.serializers import HostSerializer
-from api.serializers import StringListSerializer
+from api.serializers import StringListSerializer, DoUpgradeSerializer
 from api.utils import (
     CommonAPIURL,
     ObjectURL,
@@ -38,8 +38,10 @@ from cm.models import (
     Host,
     Prototype,
     ServiceComponent,
+    Upgrade,
 )
 from cm.status_api import get_cluster_status, get_hc_status
+from cm.upgrade import do_upgrade
 
 
 def get_cluster_id(obj):
@@ -356,3 +358,14 @@ class PostImportSerializer(serializers.Serializer):
         cluster = self.context.get('cluster')
         service = self.context.get('service')
         return cm.api.multi_bind(cluster, service, bind)
+
+
+class DoClusterUpgradeSerializer(DoUpgradeSerializer):
+    hc = serializers.JSONField(required=False, default=list)
+
+    def create(self, validated_data):
+        upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')
+        config = validated_data.get('config', {})
+        attr = validated_data.get('attr', {})
+        hc = validated_data.get('hc', [])
+        return do_upgrade(validated_data.get('obj'), upgrade, config, attr, hc)
