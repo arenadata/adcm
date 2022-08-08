@@ -174,6 +174,7 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'guardian.backends.ObjectPermissionBackend',
+    'rbac.ldap.CustomLDAPBackend',
     'social_core.backends.google.GoogleOAuth2',
 )
 
@@ -267,6 +268,11 @@ LOGGING = {
         },
         'adwp': {
             'handlers': ['adwp_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django_auth_ldap': {
+            'handlers': ['file'],
             'level': 'DEBUG',
             'propagate': True,
         },

@@ -39,7 +39,7 @@ describe('ActionsComponent', () => {
   it('Func `calcWidth` when the width of the window is greater than the buttons width sum', () => {
     const arr = [40, 30, 60];
     const result = component.calcWidth(1200, arr);
-    expect(result).toEqual([arr.length, 130, false]);
+    expect(result).toEqual([arr?.length, 130, false]);
   });
 
   it('Func `calcWidth` when the width of the window is less than the buttons width sum', () => {

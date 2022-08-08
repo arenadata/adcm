@@ -18,8 +18,7 @@ from api.config.serializers import ConfigSerializerUI
 from api.utils import check_obj, hlink, UrlField
 from cm.adcm_config import ui_config, get_prototype_config, get_action_variant
 from cm.errors import raise_AdcmEx
-from cm.models import Upgrade, GroupConfig, Cluster, HostProvider, PrototypeConfig
-from cm.upgrade import do_upgrade
+from cm.models import GroupConfig, Cluster, HostProvider, PrototypeConfig
 
 
 class UpgradeSerializer(serializers.Serializer):
@@ -51,31 +50,43 @@ class UpgradeSerializer(serializers.Serializer):
 
         if 'cluster_id' in self.context:
             obj = check_obj(Cluster, self.context['cluster_id'])
-            proto = obj.prototype
         elif 'provider_id' in self.context:
             obj = check_obj(HostProvider, self.context['provider_id'])
-            proto = obj.prototype
         else:
             obj = None
-            proto = self.context['prototype']
 
         action_conf = PrototypeConfig.objects.filter(
             prototype=instance.action.prototype, action=instance.action
         ).order_by('id')
-        _, _, _, attr = get_prototype_config(proto, instance.action)
+        *_, attr = get_prototype_config(instance.action.prototype, instance.action)
         if obj:
             get_action_variant(obj, action_conf)
         conf = ConfigSerializerUI(action_conf, many=True, context=self.context, read_only=True)
         return {'attr': attr, 'config': conf.data}
 
 
-class UpgradeLinkSerializer(UpgradeSerializer):
+class ClusterUpgradeSerializer(UpgradeSerializer):
     class MyUrlField(UrlField):
         def get_kwargs(self, obj):
             return {'cluster_id': self.context['cluster_id'], 'upgrade_id': obj.id}
 
+    hostcomponentmap = serializers.SerializerMethodField()
     url = MyUrlField(read_only=True, view_name='cluster-upgrade-details')
     do = MyUrlField(read_only=True, view_name='do-cluster-upgrade')
+
+    def get_hostcomponentmap(self, instance):
+        if instance.action:
+            return instance.action.hostcomponentmap
+        return []
+
+
+class ProviderUpgradeSerializer(UpgradeSerializer):
+    class MyUrlField(UrlField):
+        def get_kwargs(self, obj):
+            return {'provider_id': self.context['provider_id'], 'upgrade_id': obj.id}
+
+    url = MyUrlField(read_only=True, view_name='provider-upgrade-details')
+    do = MyUrlField(read_only=True, view_name='do-provider-upgrade')
 
 
 class DoUpgradeSerializer(serializers.Serializer):
@@ -83,11 +94,7 @@ class DoUpgradeSerializer(serializers.Serializer):
     upgradable = serializers.BooleanField(read_only=True)
     config = serializers.JSONField(required=False, default=dict)
     task_id = serializers.IntegerField(read_only=True)
-
-    def create(self, validated_data):
-        upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')
-        config = validated_data.get('config')
-        return do_upgrade(validated_data.get('obj'), upgrade, config)
+    attr = serializers.JSONField(required=False, default=dict)
 
 
 class StringListSerializer(serializers.ListField):

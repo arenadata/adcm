@@ -31,3 +31,17 @@
   components:
     test_component:
       config: *config
+
+- type: service
+  version: 1.2
+  name: will_be_removed
+
+  config: &cfg
+    - name: param
+      type: string
+      default: pampam
+
+  components:
+    willbegone:
+      config: *cfg
+
