@@ -15,6 +15,7 @@ from random import randint
 
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import timezone as tz
 from audit.models import (
     AuditLog,
     AuditObject,
@@ -327,6 +328,19 @@ class TestViews(TestBase):
             create_kwargs={'user': self.user},
         )
 
+        # filter by today
+        today = str(tz.now().date())
+        not_today = '1999-01-01'
+        num_new_entities = 3
+        self._populate_audit_tables(num=num_new_entities)
+        self._populate_audit_tables(num=1, auditlog_kwargs={'operation_time': not_today})
+        response = self.client.get(
+            path=url_operations,
+            data={'operation_date': today},
+            content_type="application/json",
+        )
+        self._check_response(response, self.default_auditlog, expected_count=num_new_entities)
+
     def test_filters_logins(self):
         self._login_as(self.superuser_username, self.superuser_password)
         url_logins = reverse('audit:audit-logins-list')
@@ -354,3 +368,16 @@ class TestViews(TestBase):
             'auditsession_kwargs',
             create_kwargs={'login_time': date},
         )
+
+        # filter by today
+        today = str(tz.now().date())
+        not_today = '1999-01-01'
+        num_new_entities = 3
+        self._populate_audit_tables(num=num_new_entities)
+        self._populate_audit_tables(num=1, auditsession_kwargs={'login_time': not_today})
+        response = self.client.get(
+            path=url_logins,
+            data={'login_date': today},
+            content_type="application/json",
+        )
+        self._check_response(response, self.default_auditsession, expected_count=num_new_entities)
