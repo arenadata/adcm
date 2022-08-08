@@ -177,6 +177,16 @@ ERRORS = {
         rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),
+    'AUDIT_OPERATIONS_FORBIDDEN': (
+        'access to audit of operations is forbidden',
+        rfs.HTTP_403_FORBIDDEN,
+        ERR,
+    ),
+    'AUDIT_LOGINS_FORBIDDEN': (
+        'access to audit of logins is forbidden',
+        rfs.HTTP_403_FORBIDDEN,
+        ERR,
+    ),
 }
 
 
