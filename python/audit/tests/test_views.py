@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from copy import deepcopy
+from datetime import datetime
+from random import randint
 
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -94,9 +95,15 @@ class TestBase(TestCase):
             'audit_logins': [],
         }
 
-        auditobject_kwargs = auditobject_kwargs or deepcopy(self.default_auditobject)
-        auditlog_kwargs = auditlog_kwargs or deepcopy(self.default_auditlog)
-        auditsession_kwargs = auditsession_kwargs or deepcopy(self.default_auditsession)
+        auditobject_kwargs = {
+            **self.default_auditobject,
+            **(auditobject_kwargs or self.default_auditobject),
+        }
+        auditlog_kwargs = {**self.default_auditlog, **(auditlog_kwargs or self.default_auditlog)}
+        auditsession_kwargs = {
+            **self.default_auditsession,
+            **(auditsession_kwargs or self.default_auditsession),
+        }
 
         for i in range(num):
             ao = AuditObject.objects.create(**auditobject_kwargs)
@@ -111,6 +118,7 @@ class TestBase(TestCase):
             if operation_time is not None:
                 al.operation_time = operation_time
                 al.save()  # bypass auto_now_add=True
+                auditlog_kwargs['operation_time'] = operation_time
             ret['audit_operations'].append(al)
 
             if 'user' not in auditsession_kwargs:
@@ -120,19 +128,95 @@ class TestBase(TestCase):
             if login_time is not None:
                 as_.login_time = login_time
                 as_.save()  # bypass auto_now_add=True
+                auditsession_kwargs['login_time'] = login_time
             ret['audit_logins'].append(as_)
         return ret
 
+    @staticmethod
+    def _check_response(
+        resp,
+        template=None,
+        list_view=True,
+        expected_count=0,
+        expected_status_code=200,
+        should_fail=False,
+        label='',
+    ):
+        def _get_date_func(datetime_str):
+            return str(datetime.strptime(datetime_str, '%Y-%m-%dT%H:%M:%SZ').date())
+
+        # handle different field names (filters - json response / model creation - json response)
+        _item_field_mutation = {
+            'operation_time': _get_date_func,
+            'login_time': _get_date_func,
+        }
+        _template_field_mutation = {
+            'user': ('user_id', lambda x: x.pk),
+        }
+
+        assert resp.status_code == expected_status_code, label
+        resp_json = resp.json()
+        if should_fail:
+            assert 'results' not in resp_json, label
+            return
+
+        resp_json = resp.json()
+
+        if list_view:
+            items = resp_json['results']
+            assert resp_json['count'] == expected_count, label
+        else:
+            items = [resp_json]
+
+        for item in items:
+            template_mutations = {'delete': [], 'merge': {}}
+            for field in template:
+                if field in _item_field_mutation:
+                    item[field] = _item_field_mutation[field](item[field])
+                if field in _template_field_mutation:
+                    template_mutations['delete'].append(field)
+                    template_mutations['merge'].update(
+                        {
+                            _template_field_mutation[field][0]: _template_field_mutation[field][1](
+                                template[field]
+                            )
+                        }
+                    )
+            for field in template_mutations['delete']:
+                del template[field]
+            template = {**template, **template_mutations['merge']}
+            assert all([item[field] == template[field] for field in template]), label
+
 
 class TestViews(TestBase):
+    def _run_single_filter_test(
+        self, url_path, filter_kwargs, default_template, kwargs_name, create_kwargs=None
+    ):
+        num_filter_target = randint(5, 10)
+        num_others = num_filter_target - 3
+
+        populate_kwargs = {kwargs_name: create_kwargs or filter_kwargs, 'num': num_filter_target}
+        self._populate_audit_tables(**populate_kwargs)
+        self._populate_audit_tables(num=num_others)
+        response = self.client.get(
+            path=url_path,
+            data=filter_kwargs,
+            content_type="application/json",
+        )
+        self._check_response(
+            response,
+            template={**default_template, **(create_kwargs or filter_kwargs)},
+            expected_count=num_filter_target,
+        )
+        self.tearDown()
+
     def test_audit_visibility_regular_user(self):
         self._login_as(self.user_username, self.user_password)
         audit_entities = self._populate_audit_tables(num=3)
         response = self.client.get(
             path=reverse('audit:audit-operations-list'), content_type="application/json"
         )
-        assert response.status_code == 403
-        assert 'results' not in response.json()
+        self._check_response(response, expected_status_code=403, should_fail=True)
 
         response = self.client.get(
             path=reverse(
@@ -140,21 +224,18 @@ class TestViews(TestBase):
             ),
             content_type="application/json",
         )
-        assert response.status_code == 403
-        assert 'results' not in response.json()
+        self._check_response(response, expected_status_code=403, should_fail=True)
 
         response = self.client.get(
             path=reverse('audit:audit-logins-list'), content_type="application/json"
         )
-        assert response.status_code == 403
-        assert 'results' not in response.json()
+        self._check_response(response, expected_status_code=403, should_fail=True)
 
         response = self.client.get(
             path=reverse('audit:audit-logins-detail', args=(audit_entities['audit_logins'][0].pk,)),
             content_type="application/json",
         )
-        assert response.status_code == 403
-        assert 'results' not in response.json()
+        self._check_response(response, expected_status_code=403, should_fail=True)
 
     def test_audit_visibility_superuser(self):
         self._login_as(self.superuser_username, self.superuser_password)
@@ -162,13 +243,8 @@ class TestViews(TestBase):
         audit_entities = self._populate_audit_tables(num=num_entities)
         response = self.client.get(
             path=reverse('audit:audit-operations-list'), content_type="application/json"
-        ).json()
-        assert response['count'] == num_entities
-        assert response['results']
-        for item in response['results']:
-            assert all(
-                [item[field] == self.default_auditlog[field] for field in self.default_auditlog]
-            )
+        )
+        self._check_response(response, template=self.default_auditlog, expected_count=num_entities)
 
         response = self.client.get(
             path=reverse(
@@ -176,118 +252,80 @@ class TestViews(TestBase):
             ),
             content_type="application/json",
         )
-        assert response.status_code == 200
-        obj_json = response.json()
-        assert all(
-            [obj_json[field] == self.default_auditlog[field] for field in self.default_auditlog]
+        self._check_response(
+            response, template=self.default_auditlog, expected_count=num_entities, list_view=False
         )
 
         response = self.client.get(
             path=reverse('audit:audit-logins-list'), content_type="application/json"
-        ).json()
-        assert response['count'] == num_entities
-        assert response['results']
-        for item in response['results']:
-            assert all(
-                [
-                    item[field] == self.default_auditsession[field]
-                    for field in self.default_auditsession
-                ]
-            )
+        )
+        self._check_response(
+            response, template=self.default_auditsession, expected_count=num_entities
+        )
 
         response = self.client.get(
             path=reverse('audit:audit-logins-detail', args=(audit_entities['audit_logins'][0].pk,)),
             content_type="application/json",
         )
-        assert response.status_code == 200
-        obj_json = response.json()
-        assert all(
-            [
-                obj_json[field] == self.default_auditsession[field]
-                for field in self.default_auditsession
-            ]
+        self._check_response(
+            response,
+            template=self.default_auditsession,
+            expected_count=num_entities,
+            list_view=False,
         )
 
     def test_filters_operations(self):
         self._login_as(self.superuser_username, self.superuser_password)
-        self._populate_audit_tables(
-            object_type=AuditObjectType.Cluster,
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Success,
-            is_deleted=False,
-            login_result=AuditSessionLoginResult.Success,
-            user=self.superuser,
-            num=2,
+        url_operations = reverse('audit:audit-operations-list')
+
+        self._run_single_filter_test(
+            url_operations,
+            {'object_type': AuditObjectType.Bundle},
+            self.default_auditlog,
+            'auditobject_kwargs',
         )
+        self._run_single_filter_test(
+            url_operations,
+            {'object_name': 'new_object_name'},
+            self.default_auditlog,
+            'auditobject_kwargs',
+        )
+
+        self._run_single_filter_test(
+            url_operations,
+            {'operation_type': AuditLogOperationType.Update},
+            self.default_auditlog,
+            'auditlog_kwargs',
+        )
+        self._run_single_filter_test(
+            url_operations,
+            {'operation_name': 'new_operation_name'},
+            self.default_auditlog,
+            'auditlog_kwargs',
+        )
+        self._run_single_filter_test(
+            url_operations,
+            {'operation_result': AuditLogOperationResult.Fail},
+            self.default_auditlog,
+            'auditlog_kwargs',
+        )
+
         date = '2000-01-05'
-        operation_name = 'test_name'
-        object_name = 'test_obj_name'
-        self._populate_audit_tables(
-            object_type=AuditObjectType.Group,
-            operation_type=AuditLogOperationType.Update,
-            object_name=object_name,
-            operation_result=AuditLogOperationResult.Fail,
-            is_deleted=False,
-            operation_name=operation_name,
-            login_result=AuditSessionLoginResult.WrongPassword,
-            user=self.user,
-            date=date,
-            num=3,
+        self._run_single_filter_test(
+            url_operations,
+            {'operation_date': date},
+            self.default_auditlog,
+            'auditlog_kwargs',
+            create_kwargs={'operation_time': date},
         )
 
-        response = self.client.get(
-            path=reverse('audit:audit-operations-list'), content_type="application/json"
-        ).json()
-        assert response['count'] == 5
-
-        response = self.client.get(
-            path=reverse('audit:audit-operations-list'),
-            data={'object_type': 'cluster'},
-            content_type="application/json",
-        ).json()
-        assert response['count'] == 2
-
-        response = self.client.get(
-            path=reverse('audit:audit-operations-list'),
-            data={'object_name': object_name},
-            content_type="application/json",
-        ).json()
-        assert response['count'] == 3
-
-        response = self.client.get(
-            path=reverse('audit:audit-operations-list'),
-            data={'operation_type': 'update'},
-            content_type="application/json",
-        ).json()
-        assert response['count'] == 3
-
-        response = self.client.get(
-            path=reverse('audit:audit-operations-list'),
-            data={'operation_name': operation_name},
-            content_type="application/json",
-        ).json()
-        assert response['count'] == 3
-
-        response = self.client.get(
-            path=reverse('audit:audit-operations-list'),
-            data={'operation_result': 'fail'},
-            content_type="application/json",
-        ).json()
-        assert response['count'] == 3
-
-        response = self.client.get(
-            path=reverse('audit:audit-operations-list'),
-            data={'username': self.user_username},
-            content_type="application/json",
-        ).json()
-        assert response['count'] == 3
-
-        response = self.client.get(
-            path=reverse('audit:audit-operations-list'),
-            data={'operation_date': date},
-            content_type="application/json",
-        ).json()
-        assert response['count'] == 3
+        self._run_single_filter_test(
+            url_operations,
+            {'username': self.user_username},
+            self.default_auditlog,
+            'auditlog_kwargs',
+            create_kwargs={'user': self.user},
+        )
 
     def test_filters_logins(self):
         self._login_as(self.superuser_username, self.superuser_password)
