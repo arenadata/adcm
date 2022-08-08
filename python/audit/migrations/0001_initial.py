@@ -61,9 +61,9 @@ class Migration(migrations.Migration):
                     models.CharField(
                         choices=[
                             ('success', 'success'),
-                            ('wrong_password', 'wrong_password'),
-                            ('account_disabled', 'account_disabled'),
-                            ('user_not_found', 'user_not_found'),
+                            ('wrong password', 'wrong password'),
+                            ('account disabled', 'account disabled'),
+                            ('user not found', 'user not found'),
                         ],
                         max_length=64,
                     ),

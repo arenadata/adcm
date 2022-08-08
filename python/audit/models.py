@@ -44,9 +44,9 @@ class AuditLogOperationResult(models.TextChoices):
 
 class AuditSessionLoginResult(models.TextChoices):
     Success = "success", "success"
-    WrongPassword = "wrong_password", "wrong_password"
-    AccountDisabled = "account_disabled", "account_disabled"
-    UserNotFound = "user_not_found", "user_not_found"
+    WrongPassword = "wrong password", "wrong password"
+    AccountDisabled = "account disabled", "account disabled"
+    UserNotFound = "user not found", "user not found"
 
 
 class AuditObject(models.Model):
