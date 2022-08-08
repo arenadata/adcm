@@ -25,7 +25,6 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
-from cm.logger import log
 from cm.models import (
     ADCM,
     Bundle,
