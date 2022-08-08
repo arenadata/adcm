@@ -362,6 +362,18 @@ class TestViews(TestBase):
             'auditsession_kwargs',
         )
 
+        # test with None details
+        self._run_single_filter_test(
+            url_logins,
+            {'login_result': AuditSessionLoginResult.UserNotFound},
+            self.default_auditsession,
+            'auditsession_kwargs',
+            create_kwargs={
+                'login_details': None,
+                'login_result': AuditSessionLoginResult.UserNotFound,
+            },
+        )
+
         self._run_single_filter_test(
             url_logins,
             {'login_date': date},
