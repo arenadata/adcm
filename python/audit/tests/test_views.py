@@ -277,6 +277,7 @@ class TestViews(TestBase):
     def test_filters_operations(self):
         self._login_as(self.superuser_username, self.superuser_password)
         url_operations = reverse('audit:audit-operations-list')
+        date = '2000-01-05'
 
         self._run_single_filter_test(
             url_operations,
@@ -310,7 +311,6 @@ class TestViews(TestBase):
             'auditlog_kwargs',
         )
 
-        date = '2000-01-05'
         self._run_single_filter_test(
             url_operations,
             {'operation_date': date},
@@ -329,58 +329,28 @@ class TestViews(TestBase):
 
     def test_filters_logins(self):
         self._login_as(self.superuser_username, self.superuser_password)
-        wrong_date = '1990-01-01'
+        url_logins = reverse('audit:audit-logins-list')
         date = '2000-01-05'
 
-        num_user_wrong_password = 4
-        self._populate_audit_tables(
-            user=self.user,
-            login_result=AuditSessionLoginResult.WrongPassword,
-            login_details={'some_test': 'details'},
-            num=num_user_wrong_password,
+        self._run_single_filter_test(
+            url_logins,
+            {'username': self.user_username},
+            self.default_auditsession,
+            'auditsession_kwargs',
+            create_kwargs={'user': self.user},
         )
 
-        num_superuser_success = 7
-        audit_logins_superuser_success = self._populate_audit_tables(
-            user=self.superuser,
-            login_result=AuditSessionLoginResult.Success,
-            login_details={'some_test': 'details'},
-            num=num_superuser_success,
-        )['audit_logins']
+        self._run_single_filter_test(
+            url_logins,
+            {'login_result': AuditSessionLoginResult.UserNotFound},
+            self.default_auditsession,
+            'auditsession_kwargs',
+        )
 
-        response = self.client.get(
-            path=reverse('audit:audit-logins-list'),
-            content_type="application/json",
-        ).json()
-        assert response['count'] == num_user_wrong_password + num_superuser_success
-
-        response = self.client.get(
-            path=reverse('audit:audit-logins-list'),
-            data={'username': self.user_username},
-            content_type="application/json",
-        ).json()
-        assert response['count'] == num_user_wrong_password
-
-        response = self.client.get(
-            path=reverse('audit:audit-logins-list'),
-            data={'login_result': AuditSessionLoginResult.Success.value},
-            content_type="application/json",
-        ).json()
-        assert response['count'] == num_superuser_success
-
-        response = self.client.get(
-            path=reverse('audit:audit-logins-list'),
-            data={'login_date': wrong_date},
-            content_type="application/json",
-        ).json()
-        assert response['count'] == 0
-
-        AuditSession.objects.filter(
-            pk__in=[as_.pk for as_ in audit_logins_superuser_success]
-        ).update(login_time=date)
-        response = self.client.get(
-            path=reverse('audit:audit-logins-list'),
-            data={'login_date': date},
-            content_type="application/json",
-        ).json()
-        assert response['count'] == num_superuser_success
+        self._run_single_filter_test(
+            url_logins,
+            {'login_date': date},
+            self.default_auditsession,
+            'auditsession_kwargs',
+            create_kwargs={'login_time': date},
+        )
