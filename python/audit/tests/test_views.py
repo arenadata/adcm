@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import deepcopy
+
 from django.test import Client, TestCase
 from django.urls import reverse
 from audit.models import (
@@ -30,6 +32,23 @@ class TestBase(TestCase):
         self.user_password = 'user_password'
         self.superuser_username = 'superuser_username'
         self.superuser_password = 'superuser_password'
+
+        self.default_auditobject = {
+            'object_id': 0,
+            'object_name': 'test_object_name',
+            'object_type': AuditObjectType.Cluster,
+            'is_deleted': False,
+        }
+        self.default_auditlog = {
+            'operation_name': 'test_operation_name',
+            'operation_type': AuditLogOperationType.Create,
+            'operation_result': AuditLogOperationResult.Success,
+            'object_changes': {'test': {'object': 'changes'}},
+        }
+        self.default_auditsession = {
+            'login_result': AuditSessionLoginResult.Success,
+            'login_details': {'test': {'login': 'details'}},
+        }
 
         self.user = User.objects.create_user(
             **{
@@ -62,80 +81,58 @@ class TestBase(TestCase):
         self.tearDown()  # post on login endpoint creates new audit record
         self.client.defaults["Authorization"] = f"Token {res.data['token']}"
 
-    # pylint: disable=too-many-arguments, too-many-locals
     def _populate_audit_tables(
         self,
-        object_type: AuditObjectType = None,
-        operation_type: AuditLogOperationType = None,
-        operation_result: AuditLogOperationResult = None,
-        operation_name: str = None,
-        object_name: str = None,
-        is_deleted: bool = False,
-        user: User = None,
-        object_changes: dict = None,
-        date: str = None,
-        login_result: AuditSessionLoginResult = None,
-        login_details: dict = None,
+        auditlog_kwargs: dict = None,
+        auditobject_kwargs: dict = None,
+        auditsession_kwargs: dict = None,
         num: int = 100,
     ):
-        user = user or self.superuser
-        object_changes = object_changes or {
-            "current": {"attr_name": "email", "attr_value": "test@ma.il"},
-            "previous": {"attr_name": "email", "attr_value": "new@ma.il"},
-        }
-        login_details = login_details or {'username': 'test_username'}
-
         ret = {
             'audit_objects': [],
             'audit_operations': [],
             'audit_logins': [],
         }
 
+        auditobject_kwargs = auditobject_kwargs or deepcopy(self.default_auditobject)
+        auditlog_kwargs = auditlog_kwargs or deepcopy(self.default_auditlog)
+        auditsession_kwargs = auditsession_kwargs or deepcopy(self.default_auditsession)
+
         for i in range(num):
-            if all([object_type, operation_type, operation_result]):
-                ao = AuditObject.objects.create(
-                    object_id=i,
-                    object_name=object_name or f'obj_name_{i}',
-                    object_type=object_type,
-                    is_deleted=is_deleted,
-                )
-                ret['audit_objects'].append(ao)
-                al = AuditLog.objects.create(
-                    audit_object=ao,
-                    operation_name=operation_name or f'operation_name_{i}',
-                    operation_type=operation_type,
-                    operation_result=operation_result,
-                    user=user,
-                    object_changes=object_changes,
-                )
-                ret['audit_operations'].append(al)
-                if date:
-                    AuditLog.objects.filter(pk=al.pk).update(operation_time=date)
-            if login_result:
-                as_ = AuditSession.objects.create(
-                    user=user, login_result=login_result, login_details=login_details
-                )
-                ret['audit_logins'].append(as_)
+            ao = AuditObject.objects.create(**auditobject_kwargs)
+            ret['audit_objects'].append(ao)
+
+            if 'audit_object' not in auditlog_kwargs:
+                auditlog_kwargs.update({'audit_object': ao})
+            if 'user' not in auditlog_kwargs:
+                auditlog_kwargs.update({'user': self.superuser})
+            operation_time = auditlog_kwargs.pop('operation_time', None)
+            al = AuditLog.objects.create(**auditlog_kwargs)
+            if operation_time is not None:
+                al.operation_time = operation_time
+                al.save()  # bypass auto_now_add=True
+            ret['audit_operations'].append(al)
+
+            if 'user' not in auditsession_kwargs:
+                auditsession_kwargs.update({'user': self.superuser})
+            login_time = auditsession_kwargs.pop('login_time', None)
+            as_ = AuditSession.objects.create(**auditsession_kwargs)
+            if login_time is not None:
+                as_.login_time = login_time
+                as_.save()  # bypass auto_now_add=True
+            ret['audit_logins'].append(as_)
         return ret
 
 
 class TestViews(TestBase):
     def test_audit_visibility_regular_user(self):
         self._login_as(self.user_username, self.user_password)
-        audit_entities = self._populate_audit_tables(
-            object_type=AuditObjectType.Cluster,
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Success,
-            is_deleted=False,
-            login_result=AuditSessionLoginResult.Success,
-            user=self.superuser,
-            num=5,
-        )
+        audit_entities = self._populate_audit_tables(num=3)
         response = self.client.get(
             path=reverse('audit:audit-operations-list'), content_type="application/json"
-        ).json()
-        assert response['count'] == 0
-        assert not response['results']
+        )
+        assert response.status_code == 403
+        assert 'results' not in response.json()
 
         response = self.client.get(
             path=reverse(
@@ -143,40 +140,35 @@ class TestViews(TestBase):
             ),
             content_type="application/json",
         )
-        assert response.status_code == 404
-        response = response.json()
-        assert 'results' not in response
+        assert response.status_code == 403
+        assert 'results' not in response.json()
 
         response = self.client.get(
             path=reverse('audit:audit-logins-list'), content_type="application/json"
-        ).json()
-        assert response['count'] == 0
-        assert not response['results']
+        )
+        assert response.status_code == 403
+        assert 'results' not in response.json()
 
         response = self.client.get(
             path=reverse('audit:audit-logins-detail', args=(audit_entities['audit_logins'][0].pk,)),
             content_type="application/json",
         )
-        assert response.status_code == 404
-        response = response.json()
-        assert 'results' not in response
+        assert response.status_code == 403
+        assert 'results' not in response.json()
 
     def test_audit_visibility_superuser(self):
         self._login_as(self.superuser_username, self.superuser_password)
-        audit_entities = self._populate_audit_tables(
-            object_type=AuditObjectType.Cluster,
-            operation_type=AuditLogOperationType.Create,
-            operation_result=AuditLogOperationResult.Success,
-            is_deleted=False,
-            login_result=AuditSessionLoginResult.Success,
-            user=self.superuser,
-            num=2,
-        )
+        num_entities = 5
+        audit_entities = self._populate_audit_tables(num=num_entities)
         response = self.client.get(
             path=reverse('audit:audit-operations-list'), content_type="application/json"
         ).json()
-        assert response['count'] == 2
+        assert response['count'] == num_entities
         assert response['results']
+        for item in response['results']:
+            assert all(
+                [item[field] == self.default_auditlog[field] for field in self.default_auditlog]
+            )
 
         response = self.client.get(
             path=reverse(
@@ -185,20 +177,36 @@ class TestViews(TestBase):
             content_type="application/json",
         )
         assert response.status_code == 200
-        assert response.json()['user_id'] == self.superuser.pk
+        obj_json = response.json()
+        assert all(
+            [obj_json[field] == self.default_auditlog[field] for field in self.default_auditlog]
+        )
 
         response = self.client.get(
             path=reverse('audit:audit-logins-list'), content_type="application/json"
         ).json()
-        assert response['count'] == 2
+        assert response['count'] == num_entities
         assert response['results']
+        for item in response['results']:
+            assert all(
+                [
+                    item[field] == self.default_auditsession[field]
+                    for field in self.default_auditsession
+                ]
+            )
 
         response = self.client.get(
             path=reverse('audit:audit-logins-detail', args=(audit_entities['audit_logins'][0].pk,)),
             content_type="application/json",
         )
         assert response.status_code == 200
-        assert response.json()['user_id'] == self.superuser.pk
+        obj_json = response.json()
+        assert all(
+            [
+                obj_json[field] == self.default_auditsession[field]
+                for field in self.default_auditsession
+            ]
+        )
 
     def test_filters_operations(self):
         self._login_as(self.superuser_username, self.superuser_password)
