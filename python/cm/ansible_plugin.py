@@ -17,7 +17,6 @@ import json
 import os
 from collections import defaultdict
 
-import cm
 from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
 from ansible.utils.vars import merge_hash
@@ -25,6 +24,7 @@ from cm import config
 from cm.adcm_config import set_object_config
 from cm.api import add_hc, get_hc
 from cm.api_context import ctx
+from cm.errors import AdcmEx
 from cm.errors import raise_AdcmEx as err
 from cm.models import (
     Action,
@@ -128,7 +128,7 @@ class ContextActionModule(ActionBase):
     def _wrap_call(self, func, *args):
         try:
             func(*args)
-        except cm.errors.AdcmEx as e:
+        except AdcmEx as e:
             return {'failed': True, 'msg': e.msg}
         return {'changed': True}
 
