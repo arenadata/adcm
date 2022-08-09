@@ -21,11 +21,13 @@ from audit.models import (
 from cm.models import (
     Bundle,
     Cluster,
+    ClusterObject,
     ConfigLog,
     GroupConfig,
     Host,
     ObjectConfig,
     Prototype,
+    ServiceComponent,
 )
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
@@ -40,8 +42,8 @@ class TestGroupConfig(BaseTestCase):
 
         self.config = ObjectConfig.objects.create(current=1, previous=1)
         ConfigLog.objects.create(obj_ref=self.config, config="{}")
-        bundle = Bundle.objects.create()
-        prototype = Prototype.objects.create(bundle=bundle)
+        self.bundle = Bundle.objects.create()
+        prototype = Prototype.objects.create(bundle=self.bundle)
         self.cluster = Cluster.objects.create(
             prototype=prototype,
             config=self.config,
@@ -57,15 +59,22 @@ class TestGroupConfig(BaseTestCase):
         self.host = Host.objects.create(
             fqdn="test_host_fqdn", prototype=prototype, cluster=self.cluster
         )
+        self.created_operation_name = "test_group_config configuration group created"
 
-    def create_group_config(self) -> Response:
+    def create_group_config(
+        self,
+        name: str,
+        object_id: int,
+        object_type: str,
+        config_id: int,
+    ) -> Response:
         return self.client.post(
             path=reverse("group-config-list"),
             data={
-                "name": self.name,
-                "object_id": self.cluster.pk,
-                "object_type": "cluster",
-                "config_id": self.config.id,
+                "name": name,
+                "object_id": object_id,
+                "object_type": object_type,
+                "config_id": config_id,
             },
         )
 
@@ -81,8 +90,13 @@ class TestGroupConfig(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
-    def test_create(self):
-        self.create_group_config()
+    def test_create_for_cluster(self):
+        self.create_group_config(
+            name=self.name,
+            object_id=self.cluster.pk,
+            object_type=AuditObjectType.Cluster,
+            config_id=self.config.pk,
+        )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -90,7 +104,64 @@ class TestGroupConfig(BaseTestCase):
         assert log.audit_object.object_name == self.cluster.name
         assert log.audit_object.object_type == AuditObjectType.Cluster
         assert not log.audit_object.is_deleted
-        assert log.operation_name == "test_group_config configuration group created"
+        assert log.operation_name == self.created_operation_name
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def test_create_for_service(self):
+        prototype = Prototype.objects.create(bundle=self.bundle, type="service")
+        service = ClusterObject.objects.create(
+            prototype=prototype, cluster=self.cluster, config=self.config
+        )
+        self.create_group_config(
+            name=self.name,
+            object_id=service.pk,
+            object_type=AuditObjectType.Service,
+            config_id=self.config.pk,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == service.pk
+        assert log.audit_object.object_name == service.name
+        assert log.audit_object.object_type == AuditObjectType.Service
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == self.created_operation_name
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == AuditLogOperationResult.Success
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def test_create_for_component(self):
+        service_prototype = Prototype.objects.create(bundle=self.bundle, type="service")
+        service = ClusterObject.objects.create(
+            prototype=service_prototype, cluster=self.cluster, config=self.config
+        )
+        component_prototype = Prototype.objects.create(bundle=self.bundle, type="component")
+        component = ServiceComponent.objects.create(
+            prototype=component_prototype,
+            cluster=self.cluster,
+            service=service,
+            config=self.config,
+        )
+        self.create_group_config(
+            name=self.name,
+            object_id=component.pk,
+            object_type=AuditObjectType.Component,
+            config_id=self.config.pk,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert log.audit_object.object_id == component.pk
+        assert log.audit_object.object_name == component.name
+        assert log.audit_object.object_type == AuditObjectType.Component
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == self.created_operation_name
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
