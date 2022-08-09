@@ -14,7 +14,17 @@ from api.audit.filters import AuditLoginListFilter, AuditOperationListFilter
 from api.audit.serializers import AuditLogSerializer, AuditSessionSerializer
 from api.utils import SuperuserOnlyMixin
 from audit.models import AuditLog, AuditSession
+from rest_framework.permissions import AllowAny
+from rest_framework.routers import APIRootView
 from rest_framework.viewsets import ReadOnlyModelViewSet
+
+
+class AuditRoot(APIRootView):
+    permission_classes = (AllowAny,)
+    api_root_dict = {
+        'operations': 'audit-operations-list',
+        'logins': 'audit-logins-list',
+    }
 
 
 # pylint: disable=too-many-ancestors

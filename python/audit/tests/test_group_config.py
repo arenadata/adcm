@@ -59,6 +59,7 @@ class TestGroupConfig(BaseTestCase):
         self.host = Host.objects.create(
             fqdn="test_host_fqdn", prototype=prototype, cluster=self.cluster
         )
+        self.created_operation_name = "test_group_config configuration group created"
 
     def create_group_config(
         self,
@@ -103,7 +104,7 @@ class TestGroupConfig(BaseTestCase):
         assert log.audit_object.object_name == self.cluster.name
         assert log.audit_object.object_type == AuditObjectType.Cluster
         assert not log.audit_object.is_deleted
-        assert log.operation_name == "test_group_config configuration group created"
+        assert log.operation_name == self.created_operation_name
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
@@ -128,7 +129,7 @@ class TestGroupConfig(BaseTestCase):
         assert log.audit_object.object_name == service.name
         assert log.audit_object.object_type == AuditObjectType.Service
         assert not log.audit_object.is_deleted
-        assert log.operation_name == "test_group_config configuration group created"
+        assert log.operation_name == self.created_operation_name
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
@@ -160,7 +161,7 @@ class TestGroupConfig(BaseTestCase):
         assert log.audit_object.object_name == component.name
         assert log.audit_object.object_type == AuditObjectType.Component
         assert not log.audit_object.is_deleted
-        assert log.operation_name == "test_group_config configuration group created"
+        assert log.operation_name == self.created_operation_name
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
