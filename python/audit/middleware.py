@@ -26,7 +26,6 @@ class AuditLoginMiddleware:
 
         body = json.loads(request.body.decode('utf-8'))
         username = body['username']
-
         response = self.get_response(request)
 
         if request.user.is_authenticated:
@@ -44,5 +43,7 @@ class AuditLoginMiddleware:
                     result = AuditSessionLoginResult.WrongPassword
             except User.DoesNotExist:
                 result = AuditSessionLoginResult.UserNotFound
+
         AuditSession.objects.create(user=audit_user, login_result=result, login_details=details)
+
         return response

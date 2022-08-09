@@ -16,12 +16,9 @@ import json
 import os
 import subprocess
 from configparser import ConfigParser
-from typing import List, Tuple, Optional, Hashable, Any, Union
+from typing import Any, Hashable, List, Optional, Tuple, Union
 
-from django.db import transaction
-from django.utils import timezone
-
-from cm import api, inventory, adcm_config, variant, config, issue
+from cm import adcm_config, api, config, inventory, issue, variant
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx
 from cm.errors import raise_AdcmEx as err
@@ -30,9 +27,9 @@ from cm.inventory import get_obj_config, process_config_and_attr
 from cm.logger import log
 from cm.models import (
     ADCM,
-    ADCMEntity,
     Action,
     ActionType,
+    ADCMEntity,
     Cluster,
     ClusterObject,
     ConfigLog,
@@ -48,6 +45,8 @@ from cm.models import (
     get_object_cluster,
 )
 from cm.status_api import post_event
+from django.db import transaction
+from django.utils import timezone
 from rbac.roles import re_apply_policy_for_jobs
 
 

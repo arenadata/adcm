@@ -15,10 +15,9 @@
 import json
 import os
 
-from django.db import migrations, models
 import django.db.models.deletion
-
 from cm import config
+from django.db import migrations, models
 
 
 def get_body(job, name, type_log, format_log):

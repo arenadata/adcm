@@ -10,10 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.logger import log
 from cm.errors import AdcmEx
 from cm.errors import raise_AdcmEx as err
-from cm.models import Prototype, ClusterObject, ServiceComponent, HostComponent, Host, GroupConfig
+from cm.logger import log
+from cm.models import (
+    ClusterObject,
+    GroupConfig,
+    Host,
+    HostComponent,
+    Prototype,
+    ServiceComponent,
+)
 
 
 def get_cluster(obj):

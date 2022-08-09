@@ -12,11 +12,10 @@
 
 from uuid import uuid4
 
-from django.test import TestCase
-
 from cm import models
 from cm.errors import AdcmEx
 from cm.unit_tests import utils
+from django.test import TestCase
 
 
 class MessageTemplateTest(TestCase):

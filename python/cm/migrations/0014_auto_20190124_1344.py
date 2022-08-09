@@ -13,6 +13,7 @@
 # pylint: disable=line-too-long
 
 import datetime
+
 from django.db import migrations, models
 from django.utils.timezone import utc
 

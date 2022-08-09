@@ -13,11 +13,6 @@
 
 import json
 
-from django.core.exceptions import MultipleObjectsReturned
-from django.db import transaction
-from django.utils import timezone
-from version_utils import rpm
-
 import cm.issue
 import cm.status_api
 from cm.adcm_config import (
@@ -30,11 +25,13 @@ from cm.adcm_config import (
     save_obj_config,
 )
 from cm.api_context import ctx
-from cm.errors import AdcmEx, raise_AdcmEx as err
+from cm.errors import AdcmEx
+from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
     ADCM,
     ADCMEntity,
+    Bundle,
     Cluster,
     ClusterBind,
     ClusterObject,
@@ -45,15 +42,18 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
+    MaintenanceModeType,
     Prototype,
     PrototypeExport,
     PrototypeImport,
     ServiceComponent,
     TaskLog,
-    Bundle,
-    MaintenanceModeType,
 )
+from django.core.exceptions import MultipleObjectsReturned
+from django.db import transaction
+from django.utils import timezone
 from rbac.models import re_apply_object_policy
+from version_utils import rpm
 
 
 def check_license(bundle: Bundle) -> None:

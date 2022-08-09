@@ -12,10 +12,10 @@
 
 import time
 from unittest import skip
-from django.test import TestCase
 
 from cm import hierarchy
 from cm.unit_tests import utils
+from django.test import TestCase
 
 
 def generate_hierarchy():  # pylint: disable=too-many-locals,too-many-statements

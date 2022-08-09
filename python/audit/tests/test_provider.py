@@ -51,7 +51,7 @@ class TestProvider(BaseTestCase):
             path=reverse("provider"),
             data={
                 "name": self.name,
-                "prototype_id": self.prototype.id,
+                "prototype_id": self.prototype.pk,
             },
         )
 
