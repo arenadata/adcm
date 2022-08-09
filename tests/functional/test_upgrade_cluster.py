@@ -169,6 +169,7 @@ def test_upgrade_cluster_with_config_groups(sdk_client_fs):
         )
 
 
+@pytest.mark.xfail(reason="https://tracker.yandex.ru/ADCM-3033")
 def test_cannot_upgrade_with_state(sdk_client_fs: ADCMClient, old_bundle):
     """Test upgrade should not be available ant stater"""
     with allure.step('Create upgradable cluster with unsupported state'):

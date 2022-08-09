@@ -409,10 +409,12 @@ class CommonConfigMenuObj(BasePageObject):
         self.check_element_should_be_visible(self.locators.field_error(error_message))
 
     def is_save_btn_disabled(self):
+        self.find_and_click(self.locators.search_input)
         return self.find_element(self.locators.save_btn).get_attribute("disabled") == 'true'
 
     @allure.step("Check save button status")
     def check_save_btn_state_and_save_conf(self, expected_state: bool):
+        self.find_and_click(self.locators.search_input)
         assert (
             not (self.is_save_btn_disabled()) == expected_state
         ), f'Save button should{" not " if expected_state is True else " "}be disabled'
