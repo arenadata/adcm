@@ -10,17 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.test import Client, TestCase
-from django.urls import reverse
 from audit.models import (
     AuditLog,
-    AuditObject,
-    AuditSession,
-    AuditLogOperationType,
-    AuditObjectType,
     AuditLogOperationResult,
+    AuditLogOperationType,
+    AuditObject,
+    AuditObjectType,
+    AuditSession,
     AuditSessionLoginResult,
 )
+from django.test import Client, TestCase
+from django.urls import reverse
 from rbac.models import User
 
 

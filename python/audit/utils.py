@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=too-many-lines
 
 from functools import wraps
 from typing import Optional, Tuple
@@ -145,6 +146,15 @@ def _get_service_name(service: ClusterObject) -> str:
         return service.prototype.name
 
     return str(service)
+
+
+def _get_obj_type(obj_type: str) -> str:
+    if obj_type == "cluster object":
+        return "service"
+    elif obj_type == "service component":
+        return "component"
+
+    return obj_type
 
 
 # pylint: disable-next=too-many-statements,too-many-branches,too-many-locals
@@ -502,6 +512,7 @@ def _get_audit_operation_and_object(
                 object_type = ContentType.objects.get_for_model(
                     res.data.serializer.instance.obj_ref.object
                 ).name
+                object_type = _get_obj_type(object_type)
                 audit_object, _ = AuditObject.objects.get_or_create(
                     object_id=res.data.serializer.instance.id,
                     object_name=str(res.data.serializer.instance),
@@ -531,7 +542,7 @@ def _get_audit_operation_and_object(
                 else:
                     obj = res.data.serializer.instance
 
-                object_type = obj.object_type.name
+                object_type = _get_obj_type(obj.object_type.name)
                 audit_object, _ = AuditObject.objects.get_or_create(
                     object_id=obj.object.id,
                     object_name=obj.object.name,
@@ -549,11 +560,12 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
             if res:
+                object_type = _get_obj_type(config_group.object_type.name)
                 audit_operation.name = audit_operation.name.format(fqdn=res.data["fqdn"])
                 audit_object, _ = AuditObject.objects.get_or_create(
                     object_id=config_group.pk,
                     object_name=config_group.object.name,
-                    object_type=config_group.object_type.name,
+                    object_type=object_type,
                 )
             else:
                 audit_object = None
@@ -567,10 +579,11 @@ def _get_audit_operation_and_object(
                 name=f"{obj.fqdn} host removed from {config_group.name} configuration group",
                 operation_type=AuditLogOperationType.Update,
             )
+            object_type = _get_obj_type(config_group.object_type.name)
             audit_object, _ = AuditObject.objects.get_or_create(
                 object_id=config_group.pk,
                 object_name=config_group.object.name,
-                object_type=config_group.object_type.name,
+                object_type=object_type,
             )
 
         case ["rbac", "group"]:
