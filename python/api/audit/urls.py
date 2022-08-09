@@ -14,11 +14,11 @@
 from django.urls import path
 from rest_framework.routers import SimpleRouter
 
-from .views import AuditOperationViewSet, AuditLoginViewSet, AuditRoot
+from .views import AuditLogViewSet, AuditSessionViewSet, AuditRoot
 
 router = SimpleRouter()
-router.register(r'operation', AuditOperationViewSet, basename='audit-operations')
-router.register(r'login', AuditLoginViewSet, basename='audit-logins')
+router.register(r'operation', AuditLogViewSet, basename='audit-operations')
+router.register(r'login', AuditSessionViewSet, basename='audit-logins')
 urlpatterns = [
     path(r'', AuditRoot.as_view(), name='root'),
     *router.urls,
