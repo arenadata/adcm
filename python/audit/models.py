@@ -55,12 +55,6 @@ class AuditObject(models.Model):
     object_type = models.CharField(max_length=16, choices=AuditObjectType.choices)
     is_deleted = models.BooleanField(default=False)
 
-    def get_repr(self):
-        return (
-            f'<{self.__class__.__name__} #{self.pk}: {self.object_type} '
-            f'#{self.object_id} {self.object_name}, deleted: {self.is_deleted}>'
-        )
-
 
 class AuditLog(models.Model):
     audit_object = models.ForeignKey(AuditObject, on_delete=models.CASCADE, null=True)
