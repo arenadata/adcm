@@ -10,12 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from audit.models import AuditLog, AuditObjectType, AuditSession
 from django_filters import rest_framework as drf_filters
-from audit.models import (
-    AuditLog,
-    AuditSession,
-    AuditObjectType,
-)
 
 
 class AuditOperationListFilter(drf_filters.FilterSet):

@@ -11,8 +11,8 @@
 # limitations under the License.
 
 
-from rest_framework import serializers
 from audit.models import AuditLog, AuditSession
+from rest_framework import serializers
 
 
 class AuditLogSerializer(serializers.ModelSerializer):
