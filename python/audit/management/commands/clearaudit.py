@@ -21,6 +21,7 @@ from audit.utils import make_audit_log
 from cm.adcm_config import get_adcm_config
 from cm.logger import log_cron_task as log
 from django.core.management.base import BaseCommand
+from django.db.models.fields.related import ForeignKey
 from django.utils import timezone
 
 
@@ -46,8 +47,9 @@ class Command(BaseCommand):
     )
 
     archive_model_postfix_map = {
-        AuditLog._meta.object_name: 'operations',
-        AuditSession._meta.object_name: 'logins',
+        AuditLog: 'operations',
+        AuditSession: 'logins',
+        AuditObject: 'objects',
     }
 
     def handle(self, *args, **options):
@@ -60,59 +62,62 @@ class Command(BaseCommand):
             threshold_date = timezone.now() - timedelta(days=config['retention_period'])
             self.__log(f'Started. Threshold date: {threshold_date}')
 
+            # get delete candidates
             target_operations = AuditLog.objects.filter(operation_time__lt=threshold_date)
             target_logins = AuditSession.objects.filter(login_time__lt=threshold_date)
-            cleared = False
-            if target_operations or target_logins:
-                make_audit_log('audit', 'success', 'launched')
-
-            if config['data_archiving']:
-                self.__log(
-                    f'Target audit records will be archived to '
-                    f'`{os.path.join(self.archive_base_dir, self.archive_name)}`'
-                )
-                self.__archive(target_operations, target_logins)
-            else:
-                self.__log('Archiving is disabled')
-
-            if target_operations.exists():
-                self.__log(f'Deleting {target_operations.count()} AuditLog')
-                target_operations.delete()
-                cleared = True
-            if target_logins.exists():
-                self.__log(f'Deleting {target_logins.count()} AuditSession')
-                target_logins.delete()
-                cleared = True
-
             objects_pk_to_delete = set()
             for ao in AuditObject.objects.filter(is_deleted=True):
-                if not ao.auditlog_set.exists():
+                if not ao.auditlog_set.exclude(
+                    pk__in=target_operations.values_list('pk', flat=True)
+                ).exists():
                     objects_pk_to_delete.add(ao.pk)
             target_objects = AuditObject.objects.filter(pk__in=objects_pk_to_delete)
 
-            if target_objects.exists():
-                self.__log(f'Deleting {target_objects.count()} AuditObject')
-                target_objects.delete()
-                cleared = True
+            cleared = False
+            if any(qs.exists() for qs in (target_operations, target_logins, target_objects)):
+                make_audit_log('audit', 'success', 'launched')
+
+            if config['data_archiving']:
+                archive_path = os.path.join(self.archive_base_dir, self.archive_name)
+                self.__log(f'Target audit records will be archived to `{archive_path}`')
+                self.__archive(target_operations, target_logins, target_objects)
+            else:
+                self.__log('Archiving is disabled')
+
+            cleared = self.__delete(target_operations, target_logins, target_objects)
 
             self.__log('Finished.')
             if cleared:
                 make_audit_log('audit', 'success', 'completed')
+
         except Exception as e:  # pylint: disable=broad-except
             make_audit_log('audit', 'failed', 'completed')
-            self.__log('Error in auditlog rotation')
-            self.__log(e)
+            self.__log(e, 'exception')
 
     def __archive(self, *querysets):
         os.makedirs(self.archive_base_dir, exist_ok=True)
         os.makedirs(self.archive_tmp_dir, exist_ok=True)
 
+        qs_model_names = ", ".join([qs.model._meta.object_name for qs in querysets])
+        self.__log(f'Archiving {qs_model_names}')
+
         self.__extract_to_tmp_dir()
         csv_files = self.__prepare_csvs(*querysets, base_dir=self.archive_tmp_dir)
         if not csv_files:
             self.__log('No targets for archiving')
+        else:
+            csv_filenames = ', '.join([f'`{os.path.basename(filepath)}`' for filepath in csv_files])
+            self.__log(f'Files `{csv_filenames}` will be added to archive `{self.archive_name}`')
         self.__archive_tmp_dir()
-        self.__log(f'Files `{csv_files}` added to archive `{self.archive_name}`')
+
+    def __delete(self, *querysets):
+        was_deleted = False
+        for qs in querysets:
+            self.__log(f'Deleting {qs.count()} {qs.model._meta.object_name}')
+            if qs.exists():
+                qs.delete()
+                was_deleted = True
+        return was_deleted
 
     def __extract_to_tmp_dir(self):
         if not os.path.exists(self.tarfile_cfg['read']['name']):
@@ -139,15 +144,15 @@ class Command(BaseCommand):
             with open(tmp_cvf_name, 'wt', newline='', encoding=self.encoding) as csv_file:
                 writer = csv.writer(csv_file)
 
-                field_names = [f.name for f in qs.model._meta.get_fields()]
-                writer.writerow(field_names)  # header
+                fields = qs.model._meta.fields
+                writer.writerow([f.name for f in fields])  # header
 
                 for obj in qs:
                     row = [
-                        getattr(getattr(obj, fn), 'get_repr')()
-                        if hasattr(getattr(obj, fn), 'get_repr')
-                        else str(getattr(obj, fn))
-                        for fn in field_names
+                        str(getattr(obj, f.name))
+                        if not isinstance(f, ForeignKey)
+                        else str(getattr(obj, f.name).pk)
+                        for f in fields
                     ]
                     writer.writerow(row)
 
@@ -158,14 +163,19 @@ class Command(BaseCommand):
     def __get_csv_name(self, queryset, now, base_dir):
         tmp_cvf_name = os.path.join(
             base_dir,
-            f'audit_{now}_{self.archive_model_postfix_map[queryset.model._meta.object_name]}.csv',
+            f'audit_{now}_{self.archive_model_postfix_map[queryset.model]}.csv',
         )
         if os.path.exists(tmp_cvf_name):
             os.remove(tmp_cvf_name)
 
         return tmp_cvf_name
 
-    def __log(self, msg):
-        msg = 'Audit cleanup/archiving: ' + str(msg)
-        self.stdout.write(msg)
-        log.info(msg)
+    def __log(self, msg, method='info'):
+        prefix = 'Audit cleanup/archiving: '
+        if method in ('exc', 'exception'):
+            log.warning(f'{prefix}Error in auditlog rotation')
+            log.exception(msg)
+        else:
+            msg = 'Audit cleanup/archiving: ' + str(msg)
+            self.stdout.write(msg)
+            getattr(log, method)(msg)
