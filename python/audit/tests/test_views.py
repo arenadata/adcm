@@ -13,7 +13,6 @@
 from datetime import datetime
 from random import randint
 
-from django.utils import timezone as tz
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -25,6 +24,7 @@ from audit.models import (
 )
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import timezone as tz
 from rbac.models import User
 
 
