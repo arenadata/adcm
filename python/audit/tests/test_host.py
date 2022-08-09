@@ -87,8 +87,8 @@ class TestHost(BaseTestCase):
         res: Response = self.client.post(
             path=reverse("host"),
             data={
-                "prototype_id": self.host_prototype.id,
-                "provider_id": self.provider.id,
+                "prototype_id": self.host_prototype.pk,
+                "provider_id": self.provider.pk,
                 "fqdn": self.fqdn,
             },
         )

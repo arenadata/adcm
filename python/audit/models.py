@@ -12,8 +12,18 @@
 
 from dataclasses import dataclass
 
-from django.contrib.auth.models import User
+from cm.models import (
+    ADCM,
+    Bundle,
+    Cluster,
+    ClusterObject,
+    Host,
+    HostProvider,
+    ServiceComponent,
+)
+from django.contrib.auth.models import User as DjangoUser
 from django.db import models
+from rbac.models import Group, Policy, Role, User
 
 
 class AuditObjectType(models.TextChoices):
@@ -68,12 +78,12 @@ class AuditLog(models.Model):
     operation_type = models.CharField(max_length=16, choices=AuditLogOperationType.choices)
     operation_result = models.CharField(max_length=16, choices=AuditLogOperationResult.choices)
     operation_time = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(DjangoUser, on_delete=models.CASCADE)
     object_changes = models.JSONField(default=dict)
 
 
 class AuditSession(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    user = models.ForeignKey(DjangoUser, on_delete=models.CASCADE, null=True)
     login_result = models.CharField(max_length=64, choices=AuditSessionLoginResult.choices)
     login_time = models.DateTimeField(auto_now_add=True)
     login_details = models.JSONField(default=dict, null=True)
@@ -83,3 +93,18 @@ class AuditSession(models.Model):
 class AuditOperation:
     name: str
     operation_type: str
+
+
+AUDIT_OBJECT_TYPE_TO_MODEL_MAP = {
+    Cluster: AuditObjectType.Cluster,
+    ClusterObject: AuditObjectType.Service,
+    ServiceComponent: AuditObjectType.Component,
+    Host: AuditObjectType.Host,
+    HostProvider: AuditObjectType.Provider,
+    Bundle: AuditObjectType.Bundle,
+    ADCM: AuditObjectType.ADCM,
+    User: AuditObjectType.User,
+    Group: AuditObjectType.Group,
+    Role: AuditObjectType.Role,
+    Policy: AuditObjectType.Policy,
+}

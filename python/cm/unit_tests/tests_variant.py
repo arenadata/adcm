@@ -10,13 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.test import TestCase
-
-from cm.api import add_host, add_host_to_cluster, add_host_provider
-from cm.variant import get_variant, variant_host, var_host_solver, VARIANT_HOST_FUNC
+from cm.api import add_host, add_host_provider, add_host_to_cluster
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterObject, ServiceComponent, HostComponent
-from cm.models import Bundle, Prototype
+from cm.models import (
+    Bundle,
+    Cluster,
+    ClusterObject,
+    HostComponent,
+    Prototype,
+    ServiceComponent,
+)
+from cm.variant import VARIANT_HOST_FUNC, get_variant, var_host_solver, variant_host
+from django.test import TestCase
 
 
 def cook_cluster():

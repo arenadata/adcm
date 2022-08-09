@@ -977,9 +977,9 @@ def audit(func):
     return wrapped
 
 
-def mark_deleted_audit_object(instance):
+def mark_deleted_audit_object(instance, object_type: str):
     audit_objs = []
-    for audit_obj in AuditObject.objects.filter(object_id=instance.pk):
+    for audit_obj in AuditObject.objects.filter(object_id=instance.pk, object_type=object_type):
         audit_obj.is_deleted = True
         audit_objs.append(audit_obj)
 

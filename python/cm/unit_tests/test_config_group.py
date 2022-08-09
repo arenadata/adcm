@@ -11,11 +11,10 @@
 # limitations under the License.
 import copy
 
+from cm.models import ConfigLog, GroupConfig
+from cm.unit_tests import utils
 from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
-
-from cm.models import GroupConfig, ConfigLog
-from cm.unit_tests import utils
 
 
 class GroupConfigTest(TestCase):
