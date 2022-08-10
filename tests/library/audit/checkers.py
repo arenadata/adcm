@@ -12,9 +12,8 @@
 
 """Checkers are processors of audit log scenarios after they've been parsed"""
 
-import json
 import pprint
-from dataclasses import asdict, fields
+from dataclasses import fields
 from typing import Callable, Dict, List, Optional
 
 import allure
@@ -67,37 +66,32 @@ class AuditLogChecker:
         self._expected_logs = expected_logs
         self._operation_defaults = expected_logs.defaults
 
+    @allure.step('Check that audit records match the scenario')
     def check(self, audit_records: List[AuditOperation]):
         """
-        Check if given audit records matches the scenario
+        Check if given audit records matches the scenario.
+
+        Note that given audit records are sorted by `operation_time`.
         """
+        sorted_audit_records = sorted(audit_records, key=lambda rec: rec.operation_time)
         operations = convert_to_operations(
             self._raw_operations, self._operation_defaults.username, self._operation_defaults.result, self._user_map
         )
-        suitable_records = self.cut_to_start(operations[0], audit_records)
+        first_expected_operation = operations[0]
+        try:
+            suitable_records = self.cut_to_start(first_expected_operation, sorted_audit_records)
+        except AssertionError:
+            self._attach_all_operations_and_expected_one(sorted_audit_records, first_expected_operation)
+            raise
         last_processed_operation = None
         for expected_operation in operations:
             try:
                 suitable_records = self.check_next(expected_operation, suitable_records)
             except AssertionError:
-                allure.attach(
-                    pprint.pformat(
-                        [
-                            ',\n'.join(f'{f.name}: {getattr(rec, f.name)}' for f in fields(Operation))
-                            for rec in audit_records
-                        ]
-                    ),
-                    name='Audit records from API',
-                    attachment_type=allure.attachment_type.TEXT,
-                )
-                allure.attach(
-                    json.dumps(asdict(expected_operation), indent=2),
-                    name='Not found operation',
-                    attachment_type=allure.attachment_type.JSON,
-                )
+                self._attach_all_operations_and_expected_one(sorted_audit_records, expected_operation)
                 if last_processed_operation:
                     allure.attach(
-                        json.dumps(asdict(last_processed_operation), indent=2),
+                        pprint.pformat(last_processed_operation),
                         name='Last processed operation',
                         attachment_type=allure.attachment_type.JSON,
                     )
@@ -109,7 +103,7 @@ class AuditLogChecker:
         self, client_: Optional[ADCMClient] = None, user_id_map_: Optional[Dict[str, int]] = None, **user_ids: int
     ) -> None:
         """
-        When there're custom users in the scenario, you should use this method to provide full user list.
+        When there are custom users in the scenario, you should use this method to provide full user list.
         It is used to match usernames with ids.
 
         Only one source is used in priority: client, user_id_map, user_ids.
@@ -139,6 +133,24 @@ class AuditLogChecker:
             self._user_map = {**user_ids}
             return
         raise RuntimeError('Either `client_`, `user_id_map_` or kwargs should be provided to populate user map')
+
+    def _attach_all_operations_and_expected_one(
+        self, audit_records: List[AuditOperation], expected_operation: Operation
+    ):
+        allure.attach(
+            '\n\n'.join(
+                f'{ind}\n'
+                + ',\n'.join(f'{f.name}={getattr(rec, f.name)}' for f in fields(Operation) if hasattr(rec, f.name))
+                for ind, rec in enumerate(audit_records)
+            ),
+            name='Audit records from API',
+            attachment_type=allure.attachment_type.TEXT,
+        )
+        allure.attach(
+            pprint.pformat(expected_operation),
+            name='Not found operation',
+            attachment_type=allure.attachment_type.JSON,
+        )
 
 
 def _get_records_from_first_matched(

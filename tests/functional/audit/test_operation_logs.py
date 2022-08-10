@@ -17,11 +17,11 @@ from typing import Tuple
 import allure
 import pytest
 from adcm_client.base import NoSuchEndpointOrAccessIsDenied
-from adcm_client.objects import Host, Bundle, User, ADCMClient
+from adcm_client.objects import ADCMClient, Bundle, Host, User
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 
 from tests.functional.audit.conftest import BUNDLES_DIR, ScenarioArg
-from tests.functional.rbac.conftest import create_policy, BusinessRoles
+from tests.functional.rbac.conftest import BusinessRoles, create_policy
 
 # pylint: disable=redefined-outer-name
 

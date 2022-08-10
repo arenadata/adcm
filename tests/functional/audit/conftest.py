@@ -13,14 +13,17 @@
 """conftest for audit tests"""
 
 from pathlib import Path
-from typing import NamedTuple
+from typing import Callable, NamedTuple, Optional
 
 import pytest
 
+from tests.functional.conftest import only_clean_adcm
 from tests.library.audit.checkers import AuditLogChecker
-from tests.library.audit.readers import YAMLReader, ParsedAuditLog
+from tests.library.audit.readers import ParsedAuditLog, YAMLReader
 
 # pylint: disable=redefined-outer-name
+
+pytestmark = [only_clean_adcm]
 
 AUDIT_LOG_SCENARIOS_DIR = Path(__file__).parent / 'scenarios'
 
@@ -41,11 +44,25 @@ def audit_log_scenarios_reader() -> YAMLReader:
 
 
 @pytest.fixture()
+def parse_with_context(request, audit_log_scenarios_reader) -> Callable:
+    """Returns the function prepared to parse file from request.param with given context"""
+    return audit_log_scenarios_reader.prepare_parser_of(request.param)
+
+
+@pytest.fixture()
 def parsed_audit_log(request, audit_log_scenarios_reader) -> ParsedAuditLog:
     """Parse given file with given context"""
     if not request.param or not isinstance(request.param, ScenarioArg):
         raise ValueError(f'Param is required and it has to be {ScenarioArg.__class__.__name__}')
     return audit_log_scenarios_reader.parse(request.param.filename, request.param.context)
+
+
+def parametrize_audit_scenario_parsing(scenario_name: str, context: Optional[dict] = None):
+    """
+    Helper to use as decorator to provide scenario name and context for parametrizing "parsed_audit_log"
+    """
+    context = {} if context is None else context
+    return pytest.mark.parametrize('parsed_audit_log', [ScenarioArg(scenario_name, context)], indirect=True)
 
 
 @pytest.fixture()

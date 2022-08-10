@@ -19,6 +19,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Callable, Dict, Literal, NamedTuple, Optional, Union
 
+import allure
 import jsonschema
 import yaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
@@ -88,5 +89,6 @@ class YAMLReader:
     def _read(self, filename: str, context: Dict[str, Union[str, int]]) -> dict:
         rendered_file_content = self._template_env.get_template(filename).render(**context)
         data = yaml.safe_load(rendered_file_content)
+        allure.attach(yaml.safe_dump(data), name='Audit Log scenario', attachment_type=allure.attachment_type.YAML)
         jsonschema.validate(data, _get_schema())
         return data
