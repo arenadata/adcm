@@ -9,9 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=too-many-lines
 
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 from audit.models import (
     AuditLog,
@@ -95,18 +97,23 @@ class TestCluster(BaseTestCase):
         assert log.user.pk == user.pk
         assert isinstance(log.object_changes, dict)
 
-    def check_log(
+    def check_log(  # pylint: disable=too-many-arguments
         self,
         log: AuditLog,
         obj: Cluster | Host | HostComponent | ClusterObject | ServiceComponent,
         obj_type: AuditObjectType,
         operation_name: str,
         operation_type: AuditLogOperationType,
+        operation_result: AuditLogOperationResult = AuditLogOperationResult.Success,
+        user: Optional[User] = None,
     ) -> None:
         if isinstance(obj, Host):
             obj_name = obj.fqdn
         else:
             obj_name = obj.name
+
+        if user is None:
+            user = self.test_user
 
         assert log.audit_object.object_id == obj.pk
         assert log.audit_object.object_name == obj_name
@@ -114,9 +121,9 @@ class TestCluster(BaseTestCase):
         assert not log.audit_object.is_deleted
         assert log.operation_name == operation_name
         assert log.operation_type == operation_type
-        assert log.operation_result == AuditLogOperationResult.Success
+        assert log.operation_result == operation_result
         assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
+        assert log.user.pk == user.pk
         assert isinstance(log.object_changes, dict)
 
     def check_log_denied(
@@ -151,6 +158,40 @@ class TestCluster(BaseTestCase):
                 "name": name,
                 "prototype_id": prototype_id,
             },
+        )
+
+    def get_hc(self) -> HostComponent:
+        service_component_prototype = Prototype.objects.create(bundle=self.bundle, type="component")
+        service_component = ServiceComponent.objects.create(
+            cluster=self.cluster,
+            service=self.service,
+            prototype=service_component_prototype,
+        )
+        return HostComponent.objects.create(
+            cluster=self.cluster,
+            host=self.host,
+            service=self.service,
+            component=service_component,
+        )
+
+    def get_cluster_for_bind(self) -> Cluster:
+        bundle = Bundle.objects.create(name="test_bundle_2")
+        cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster")
+        PrototypeExport.objects.create(prototype=cluster_prototype)
+        PrototypeImport.objects.create(prototype=self.service_prototype)
+
+        return Cluster.objects.create(prototype=cluster_prototype, name="test_cluster_3")
+
+    def get_component(self) -> ServiceComponent:
+        config = ObjectConfig.objects.create(current=2, previous=2)
+        ConfigLog.objects.create(obj_ref=config, config="{}")
+        prototype = Prototype.objects.create(bundle=self.bundle, type="component")
+
+        return ServiceComponent.objects.create(
+            cluster=self.cluster,
+            service=self.service,
+            prototype=prototype,
+            config=config,
         )
 
     def test_create(self):
@@ -540,19 +581,31 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
+    def test_update_host_config_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=reverse(
+                    "config-history",
+                    kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
+                ),
+                data={"config": {}},
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log(
+            log=log,
+            obj=self.host,
+            obj_type=AuditObjectType.Host,
+            operation_name="Host configuration updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
+
     def test_update_hostcomponent(self):
-        service_component_prototype = Prototype.objects.create(bundle=self.bundle, type="component")
-        service_component = ServiceComponent.objects.create(
-            cluster=self.cluster,
-            service=self.service,
-            prototype=service_component_prototype,
-        )
-        hc = HostComponent.objects.create(
-            cluster=self.cluster,
-            host=self.host,
-            service=self.service,
-            component=service_component,
-        )
         self.host.cluster = self.cluster
         self.host.save(update_fields=["cluster"])
 
@@ -561,7 +614,7 @@ class TestCluster(BaseTestCase):
             data={
                 "hc": [
                     {
-                        "component_id": hc.pk,
+                        "component_id": self.get_hc().pk,
                         "host_id": self.host.pk,
                         "service_id": self.service.pk,
                     }
@@ -576,6 +629,34 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_type=AuditObjectType.Cluster,
+            operation_name="Host-Component map updated",
+            operation_type=AuditLogOperationType.Update,
+        )
+
+    def test_update_hostcomponent_denied(self):
+        self.host.cluster = self.cluster
+        self.host.save(update_fields=["cluster"])
+
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=reverse("host-component", kwargs={"cluster_id": self.cluster.pk}),
+                data={
+                    "hc": [
+                        {
+                            "component_id": self.get_hc().pk,
+                            "host_id": self.host.pk,
+                            "service_id": self.service.pk,
+                        }
+                    ]
+                },
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_404_NOT_FOUND
+        self.check_log_denied(
+            log=log,
             operation_name="Host-Component map updated",
             operation_type=AuditLogOperationType.Update,
         )
@@ -631,8 +712,33 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=cluster,
             obj_type=AuditObjectType.Cluster,
-            operation_name="test_service service added",
+            operation_name=f"{self.service.display_name} service added",
             operation_type=AuditLogOperationType.Update,
+        )
+
+    def test_add_service_denied(self):
+        cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_3")
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=reverse("service", kwargs={"cluster_id": cluster.pk}),
+                data={
+                    "service_id": self.service.pk,
+                    "prototype_id": self.service_prototype.pk,
+                },
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log(
+            log=log,
+            obj=cluster,
+            obj_type=AuditObjectType.Cluster,
+            operation_name=f"{self.service.display_name} service added",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
         )
 
     def test_delete_service(self):
@@ -654,13 +760,27 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
-    def test_bind_unbind_service(self):
-        bundle = Bundle.objects.create(name="test_bundle_2")
-        cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster")
-        cluster = Cluster.objects.create(prototype=cluster_prototype, name="test_cluster_3")
-        PrototypeExport.objects.create(prototype=cluster_prototype)
-        PrototypeImport.objects.create(prototype=self.service_prototype)
+    def test_delete_service_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.delete(
+                path=reverse(
+                    "service-details",
+                    kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
+                ),
+                content_type=APPLICATION_JSON,
+            )
 
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_404_NOT_FOUND
+        self.check_log_denied(
+            log=log,
+            operation_name=f"{self.service.display_name} service removed",
+            operation_type=AuditLogOperationType.Update,
+        )
+
+    def test_bind_unbind_service(self):
+        cluster = self.get_cluster_for_bind()
         self.client.post(
             path=reverse(
                 "service-bind",
@@ -676,7 +796,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_type=AuditObjectType.Service,
-            operation_name="Service bound to test_cluster_3/test_service",
+            operation_name=f"Service bound to {cluster.name}/{self.service.display_name}",
             operation_type=AuditLogOperationType.Update,
         )
 
@@ -699,20 +819,73 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_type=AuditObjectType.Service,
-            operation_name="test_cluster_3/test_service unbound",
+            operation_name=f"{cluster.name}/{self.service.display_name} unbound",
             operation_type=AuditLogOperationType.Update,
         )
 
-    def test_update_component_config(self):
-        config = ObjectConfig.objects.create(current=2, previous=2)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
-        prototype = Prototype.objects.create(bundle=self.bundle, type="component")
-        component = ServiceComponent.objects.create(
-            cluster=self.cluster,
-            service=self.service,
-            prototype=prototype,
-            config=config,
+    def test_bind_unbind_service_denied(self):
+        cluster = self.get_cluster_for_bind()
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=reverse(
+                    "service-bind",
+                    kwargs={"cluster_id": cluster.pk, "service_id": self.service.pk},
+                ),
+                data={"export_cluster_id": cluster.pk},
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_404_NOT_FOUND
+        self.check_log(
+            log=log,
+            obj=self.service,
+            obj_type=AuditObjectType.Service,
+            operation_name=f"Service bound to {cluster.name}/{self.service.display_name}",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
         )
+
+        self.client.post(
+            path=reverse(
+                "service-bind",
+                kwargs={"cluster_id": cluster.pk, "service_id": self.service.pk},
+            ),
+            data={"export_cluster_id": cluster.pk},
+            content_type=APPLICATION_JSON,
+        )
+        bind = ClusterBind.objects.first()
+
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.delete(
+                reverse(
+                    "service-bind-details",
+                    kwargs={
+                        "cluster_id": cluster.pk,
+                        "service_id": self.service.pk,
+                        "bind_id": bind.pk,
+                    },
+                ),
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_404_NOT_FOUND
+        self.check_log(
+            log=log,
+            obj=self.service,
+            obj_type=AuditObjectType.Service,
+            operation_name=f"{cluster.name}/{self.service.display_name} unbound",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
+
+    def test_update_component_config(self):
+        component = self.get_component()
         self.client.post(
             path=reverse(
                 "config-history",
@@ -734,6 +907,35 @@ class TestCluster(BaseTestCase):
             obj_type=AuditObjectType.Component,
             operation_name="Component configuration updated",
             operation_type=AuditLogOperationType.Update,
+        )
+
+    def test_update_component_config_denied(self):
+        component = self.get_component()
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=reverse(
+                    "config-history",
+                    kwargs={
+                        "cluster_id": self.cluster.pk,
+                        "service_id": self.service.pk,
+                        "component_id": component.pk,
+                    },
+                ),
+                data={"config": {}},
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log(
+            log=log,
+            obj=component,
+            obj_type=AuditObjectType.Component,
+            operation_name="Component configuration updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
         )
 
     def test_update_service_config(self):
@@ -763,6 +965,37 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
+    def test_update_service_config_denied(self):
+        config = ObjectConfig.objects.create(current=2, previous=2)
+        ConfigLog.objects.create(obj_ref=config, config="{}")
+        self.service.config = config
+        self.service.save(update_fields=["config"])
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=reverse(
+                    "config-history",
+                    kwargs={
+                        "cluster_id": self.cluster.pk,
+                        "service_id": self.service.pk,
+                    },
+                ),
+                data={"config": {}},
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log(
+            log=log,
+            obj=self.service,
+            obj_type=AuditObjectType.Service,
+            operation_name="Service configuration updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
+
     def test_service_import(self):
         self.client.post(
             path=reverse(
@@ -783,6 +1016,30 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
+    def test_service_import_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=reverse(
+                    "service-import",
+                    kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
+                ),
+                data={"bind": []},
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_404_NOT_FOUND
+        self.check_log(
+            log=log,
+            obj=self.service,
+            obj_type=AuditObjectType.Service,
+            operation_name="Service import updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
+
     def test_cluster_config_restore(self):
         self.client.patch(
             path=reverse(
@@ -795,6 +1052,29 @@ class TestCluster(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_cluster_update_config(log)
+
+    def test_cluster_config_restore_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.patch(
+                path=reverse(
+                    "config-history-version-restore",
+                    kwargs={"cluster_id": self.cluster.pk, "version": 1},
+                ),
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log(
+            log=log,
+            obj=self.cluster,
+            obj_type=AuditObjectType.Cluster,
+            operation_name="Cluster configuration updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
 
     def test_host_config_restore(self):
         self.client.patch(

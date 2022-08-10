@@ -40,6 +40,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model
 from django.views.generic.base import View
 from rbac.models import Group, Policy, Role, User
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import HTTP_403_FORBIDDEN, is_success
@@ -275,9 +276,18 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
 
+            service_display_name = None
             if res and res.data:
+                service_display_name = res.data["display_name"]
+
+            if "service_id" in view.request.data:
+                service = ClusterObject.objects.filter(pk=view.request.data["service_id"]).first()
+                if service:
+                    service_display_name = _get_service_name(service)
+
+            if service_display_name:
                 audit_operation.name = audit_operation.name.format(
-                    service_display_name=res.data["display_name"],
+                    service_display_name=service_display_name,
                 )
 
             obj = Cluster.objects.get(pk=cluster_pk)
@@ -287,16 +297,27 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Cluster,
             )
 
-        case ["cluster", cluster_pk, "service", _]:
+        case ["cluster", cluster_pk, "service", service_pk]:
             audit_operation = AuditOperation(
                 name="{service_display_name} service removed",
                 operation_type=AuditLogOperationType.Update,
             )
+
+            service_display_name = None
             if deleted_obj:
-                deleted_obj: ClusterObject
+                if isinstance(deleted_obj, ClusterObject):
+                    deleted_obj: ClusterObject
+                    service_display_name = deleted_obj.display_name
+                else:
+                    service = ClusterObject.objects.filter(pk=service_pk).first()
+                    if service:
+                        service_display_name = _get_service_name(service)
+
+            if service_display_name:
                 audit_operation.name = audit_operation.name.format(
-                    service_display_name=deleted_obj.display_name
+                    service_display_name=service_display_name,
                 )
+
             obj = Cluster.objects.get(pk=cluster_pk)
             audit_object = _get_or_create_audit_obj(
                 object_id=cluster_pk,
@@ -385,10 +406,12 @@ def _get_audit_operation_and_object(
 
             service = None
             if res and res.data and res.data.get("export_service_id"):
-                service = ClusterObject.objects.get(pk=res.data["export_service_id"])
+                service = ClusterObject.objects.filter(pk=res.data["export_service_id"]).first()
 
             if "export_service_id" in view.request.data:
-                service = ClusterObject.objects.get(pk=view.request.data["export_service_id"])
+                service = ClusterObject.objects.filter(
+                    pk=view.request.data["export_service_id"],
+                ).first()
 
             if service:
                 audit_operation.name = audit_operation.name.format(
@@ -954,7 +977,10 @@ def audit(func):
             try:
                 deleted_obj = view.get_object()
             except AssertionError:
-                deleted_obj = view.get_obj(kwargs, kwargs["bind_id"])
+                try:
+                    deleted_obj = view.get_obj(kwargs, kwargs["bind_id"])
+                except AdcmEx:
+                    deleted_obj = view.queryset[0]
             except AdcmEx:  # when denied returns 404 from PermissionListMixin
                 deleted_obj = view.queryset[0]
         else:
@@ -973,7 +999,13 @@ def audit(func):
             error = exc
             res = None
 
-            if getattr(exc, "msg", None) and "doesn't exist" in exc.msg:
+            if (
+                    getattr(exc, "msg", None)
+                    and (
+                        "doesn't exist" in exc.msg
+                        or "service is not installed in specified cluster" in exc.msg
+                    )
+            ):
                 _kwargs = None
                 if "cluster_id" in kwargs:
                     _kwargs = kwargs
@@ -987,6 +1019,10 @@ def audit(func):
                 status_code = exc.status_code
             else:  # when denied returns 404 from PermissionListMixin
                 status_code = HTTP_403_FORBIDDEN
+        except PermissionDenied as exc:
+            status_code = HTTP_403_FORBIDDEN
+            error = exc
+            res = None
 
         audit_operation, audit_object, operation_name = _get_audit_operation_and_object(
             view,
