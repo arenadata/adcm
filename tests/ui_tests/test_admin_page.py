@@ -239,7 +239,7 @@ class TestAdminSettingsPage:
             settings_page.config.reset_to_default(config_field_row)
             settings_page.config.assert_input_value_is(params['init_value'], params['field_display_name'])
 
-    # TODO add mark during ADCM-2967
+    @pytest.mark.ldap()
     def test_ldap_config(self, settings_page: AdminSettingsPage):
         """Test ldap"""
         params = {'test_action': "Test LDAP connection", 'connect_action': "Run LDAP sync", "test_value": "test"}
@@ -353,6 +353,7 @@ class TestAdminUsersPage:
         with allure.step('Check login was successful'):
             AdminIntroPage(users_page.driver, users_page.base_url).wait_page_is_opened(timeout=5)
 
+    @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
     def test_ldap_user_change_is_forbidden(self, users_page: AdminUsersPage, ldap_user_in_group):
         """Change ldap user"""
@@ -508,6 +509,7 @@ class TestAdminGroupsPage:
         with allure.step('Check that group has been deleted'):
             assert len(page.table.get_all_rows()) == 0, "There should be 0 groups"
 
+    @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
     def test_ldap_group_change_is_forbidden(self, app_fs, ldap_user_in_group):
         """Change ldap group"""
@@ -521,6 +523,7 @@ class TestAdminGroupsPage:
             ), f"Group {params['group_name']} should be in groups list"
         groups_page.check_ldap_group(params['group_name'])
 
+    @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
     def test_add_ldap_user_to_group(self, app_fs, ldap_user_in_group):
         """Add ldap user to group"""
