@@ -17,28 +17,12 @@ import { BaseDirective } from '@app/shared/directives';
 import { ActionParameters } from '../actions.directive';
 
 import { IMasterData, IValue, MasterService, whatShow } from './master.service';
+import {MatStepper} from "@angular/material/stepper";
 
 @Component({
   selector: 'app-master',
   templateUrl: './master.component.html',
-  styles: [
-    `
-      .action-button {
-        background: none !important;
-        margin: 6px 0;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.04) !important;
-        }
-      }
-
-      .controls-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-    `,
-  ],
+  styleUrls: ['./master.component.scss'],
   providers: [MasterService],
 })
 export class ActionMasterComponent extends BaseDirective implements DynamicComponent, OnInit {
@@ -85,5 +69,9 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
 
   cancel() {
     this.event.emit({ name: 'cancel' });
+  }
+
+  back(stepper: MatStepper) {
+    stepper.previous();
   }
 }

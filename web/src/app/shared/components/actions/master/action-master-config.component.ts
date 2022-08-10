@@ -22,6 +22,13 @@ import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.c
     </div>
     <app-config-fields #fields [model]="action?.config" [ngStyle]="{ display: 'inherit' }"></app-config-fields>
   `,
+  styles: [`
+    :host {
+      max-height: 400px;
+      overflow-y: auto;
+      display: block;
+    }
+  `]
 })
 export class ActionMasterConfigComponent {
   @Input() action: IAction;

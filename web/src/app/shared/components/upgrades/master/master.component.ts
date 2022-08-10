@@ -9,18 +9,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, ElementRef, EventEmitter, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, OnInit, ViewChild } from '@angular/core';
 import { DynamicComponent, DynamicEvent } from '@app/shared/directives/dynamic/dynamic.directive';
 import { BaseDirective } from '@app/shared/directives';
 import { IMasterData, IValue, MasterService, whatShow } from './master.service';
 import { IUpgrade } from "@app/shared/components";
 import { UpgradeParameters } from "@app/shared/components/upgrades/upgrade.directive";
+import { MatStepper } from "@angular/material/stepper";
 
 @Component({
   selector: 'app-master',
   templateUrl: './master.component.html',
   styleUrls: ['./master.component.scss'],
   providers: [MasterService],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UpgradeMasterComponent extends BaseDirective implements DynamicComponent, OnInit {
   event: EventEmitter<DynamicEvent> = new EventEmitter();
@@ -68,6 +70,10 @@ export class UpgradeMasterComponent extends BaseDirective implements DynamicComp
 
   cancel() {
     this.event.emit({ name: 'cancel' });
+  }
+
+  back(stepper: MatStepper) {
+    stepper.previous();
   }
 
   needMargin() {

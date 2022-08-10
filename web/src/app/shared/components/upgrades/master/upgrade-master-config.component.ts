@@ -22,6 +22,13 @@ import { IUpgrade } from "@app/shared/components";
     </div>
     <app-config-fields #fields [model]="upgrade?.config" [ngStyle]="{ display: 'inherit' }"></app-config-fields>
   `,
+  styles: [`
+    :host {
+      max-height: 400px;
+      overflow-y: auto;
+      display: block;
+    }
+  `]
 })
 export class UpgradeMasterConfigComponent {
   @Input() upgrade: IUpgrade;

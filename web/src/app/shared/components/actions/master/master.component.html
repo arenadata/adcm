@@ -40,15 +40,21 @@
       <ng-template matStepLabel>Host Components</ng-template>
       <app-service-host [tabIndex]="2" [cluster]="model.cluster" #hms [hideButton]="true"
         [actionParameters]="action.hostcomponentmap" [fixedButton]="false"></app-service-host>
-      <ng-container *ngTemplateOutlet="controls; context: { value: { config: wcs.fields, hostmap: hms } }">
+      <div class="controls">
+        <button mat-raised-button matStepperPrevious >Back</button>
+        <button mat-raised-button (click)="cancel()" color="primary">Cancel</button>
+        <button mat-raised-button matStepperNext color="primary">Next</button>
+      </div>
+    </mat-step>
+    <mat-step label="Done">
+      <ng-container *ngTemplateOutlet="controls; context: { value: { config: wcs.fields, hostmap: hms }, step: stepper }">
       </ng-container>
     </mat-step>
-    <mat-step label="Done"></mat-step>
   </mat-horizontal-stepper>
 
 </ng-template>
 
-<ng-template #controls let-value="value">
+<ng-template #controls let-value="value" let-step="step">
   <div class="controls-container">
 
     <mat-checkbox [(ngModel)]="verbose">Verbose</mat-checkbox>
@@ -59,6 +65,7 @@
         <span [style.flex]="1"></span>
       </ng-container>
 
+      <button *ngIf="step" mat-raised-button (click)="back(step)">Back</button>
       <button mat-raised-button (click)="cancel()" color="primary" tabindex="-1">Cancel</button>
       <button mat-raised-button #runBtn (click)="run(value)" color="accent" [disabled]="isDisabled(value)" tabindex="1">
         Run
