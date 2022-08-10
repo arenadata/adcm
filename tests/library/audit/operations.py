@@ -13,7 +13,7 @@
 """Defines basic entities like Operation and NamedOperation to work with audit log scenarios"""
 
 from dataclasses import dataclass, field, fields
-from typing import ClassVar, Collection, Dict, List, Literal, NamedTuple, Optional, Union
+from typing import ClassVar, Collection, Dict, List, Literal, NamedTuple, Optional, Union, Tuple
 
 from adcm_client.audit import AuditOperation, ObjectType, OperationResult, OperationType
 
@@ -63,7 +63,7 @@ _OBJECTS_WITH_ACTIONS_AND_CONFIGS = (
     ObjectType.HOST,
 )
 
-_NAMED_OPERATIONS: Dict[str, NamedOperation] = {
+_NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation] = {
     named_operation.name: named_operation
     for named_operation in (
         # bundle
@@ -104,14 +104,23 @@ _NAMED_OPERATIONS: Dict[str, NamedOperation] = {
         # Actions
         NamedOperation('launch-action', '{name} action launched', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         NamedOperation('complete-action', '{name} action completed', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+    )
+}
+_NAMED_OPERATIONS.update(
+    {
         # Group config
-        NamedOperation(
+        (OperationResult.SUCCESS, 'create-group-config'): NamedOperation(
             'create-group-config',
             '{name} configuration group created',
             (ObjectType.CLUSTER, ObjectType.SERVICE, ObjectType.COMPONENT),
         ),
-    )
-}
+        (OperationResult.FAIL, 'create-group-config'): NamedOperation(
+            'create-group-config',
+            'configuration group created',
+            (ObjectType.CLUSTER, ObjectType.SERVICE, ObjectType.COMPONENT),
+        ),
+    }
+)
 
 
 @dataclass()  # pylint:disable-next=too-many-instance-attributes
@@ -172,10 +181,13 @@ class Operation:
                 f'"{self.operation_type.value} {self.object_type.value}"'
             )
 
-        named_operation = _NAMED_OPERATIONS.get(self.code['operation'], None)
+        operation = self.code['operation']
+        named_operation = _NAMED_OPERATIONS.get(operation, None)
+        if named_operation is None:
+            named_operation = _NAMED_OPERATIONS.get((self.operation_result, operation), None)
         if not named_operation:
             raise KeyError(
-                f'Incorrect operation name: {self.code["operation"]}.\n'
+                f'Incorrect operation name: {operation}.\n'
                 'If operation name is correct, add it to `_NAMED_OPERATIONS`\n'
                 f'Registered names: {", ".join(_NAMED_OPERATIONS.keys())}\n'
             )
