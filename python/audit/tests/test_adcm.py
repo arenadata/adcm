@@ -20,8 +20,9 @@ from audit.models import (
     AuditObjectType,
 )
 from cm.models import ADCM, Bundle, ConfigLog, ObjectConfig, Prototype
+from rbac.models import User
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 
 from adcm.tests.base import BaseTestCase
 
@@ -36,16 +37,16 @@ class TestComponent(BaseTestCase):
         ConfigLog.objects.create(obj_ref=config, config="{}")
         self.adcm = ADCM.objects.create(prototype=prototype, name="ADCM", config=config)
 
-    def check_adcm_updated(self, log: AuditLog):
+    def check_adcm_updated(self, log: AuditLog, operation_result: str, user: User):
         assert log.audit_object.object_id == self.adcm.pk
         assert log.audit_object.object_name == self.adcm.name
         assert log.audit_object.object_type == AuditObjectType.ADCM
         assert not log.audit_object.is_deleted
         assert log.operation_name == "ADCM configuration updated"
         assert log.operation_type == AuditLogOperationType.Update
-        assert log.operation_result == AuditLogOperationResult.Success
+        assert log.operation_result == operation_result
         assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
+        assert log.user.pk == user.pk
         assert isinstance(log.object_changes, dict)
 
     def test_update_and_restore(self):
@@ -57,7 +58,9 @@ class TestComponent(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_adcm_updated(log)
+        self.check_adcm_updated(
+            log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user
+        )
 
         res: Response = self.client.patch(
             path=f"/api/v1/adcm/{self.adcm.pk}/config/history/1/restore/",
@@ -66,5 +69,22 @@ class TestComponent(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_200_OK)
-        self.check_adcm_updated(log)
+        assert res.status_code == HTTP_200_OK
+        self.check_adcm_updated(
+            log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user
+        )
+
+    def test_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=f"/api/v1/adcm/{self.adcm.pk}/config/history/",
+                data={"config": {}},
+                content_type="application/json",
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_adcm_updated(
+            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
+        )

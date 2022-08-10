@@ -936,6 +936,9 @@ def audit(func):
 
         try:
             res = func(*args, **kwargs)
+            if res is True:
+                return res
+
             if res:
                 status_code = res.status_code
             else:

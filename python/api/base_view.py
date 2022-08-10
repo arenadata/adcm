@@ -18,15 +18,12 @@ from cm.errors import AdcmEx
 from django.core.exceptions import FieldError, ObjectDoesNotExist
 from rest_framework import serializers
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import (
-    SAFE_METHODS,
-    DjangoModelPermissions,
-    DjangoObjectPermissions,
-)
+from rest_framework.permissions import SAFE_METHODS, DjangoModelPermissions
 from rest_framework.response import Response
 from rest_framework.utils.urls import replace_query_param
 from rest_framework.viewsets import ViewSetMixin
 
+from adcm.permissions import DjangoObjectPermissionsAudit
 from adcm.settings import REST_FRAMEWORK
 
 
@@ -48,7 +45,7 @@ class GenericUIView(GenericAPIView):
     (switched by query parameter view=interface)
     """
 
-    permission_classes = (DjangoObjectPermissions,)
+    permission_classes = (DjangoObjectPermissionsAudit,)
     serializer_class_post: serializers.Serializer = None
     serializer_class_put: serializers.Serializer = None
     serializer_class_patch: serializers.Serializer = None
