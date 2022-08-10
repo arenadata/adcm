@@ -11,31 +11,39 @@
 # limitations under the License.
 # pylint: disable=line-too-long,too-many-statements
 
+import hashlib
+import json
 import os
 import re
+import warnings
 from copy import deepcopy
 from typing import Any
-from version_utils import rpm
 
-import json
-import yaml
-import ruyaml
-import hashlib
-import warnings
-import yspec.checker
-from django.db import IntegrityError
-
-from rest_framework import status
-
-from cm.logger import log
-from cm.errors import raise_AdcmEx as err
-from cm import config
 import cm.checker
-
-from cm.adcm_config import proto_ref, check_config_type, type_is_complex, read_bundle_file
-from cm.models import StagePrototype, StageAction, StagePrototypeConfig
-from cm.models import StagePrototypeExport, StagePrototypeImport, StageUpgrade, StageSubAction
-
+import ruyaml
+import yaml
+import yspec.checker
+from cm import config
+from cm.adcm_config import (
+    check_config_type,
+    proto_ref,
+    read_bundle_file,
+    type_is_complex,
+)
+from cm.errors import raise_AdcmEx as err
+from cm.logger import log
+from cm.models import (
+    StageAction,
+    StagePrototype,
+    StagePrototypeConfig,
+    StagePrototypeExport,
+    StagePrototypeImport,
+    StageSubAction,
+    StageUpgrade,
+)
+from django.db import IntegrityError
+from rest_framework import status
+from version_utils import rpm
 
 NAME_REGEX = r'[0-9a-zA-Z_\.-]+'
 MAX_NAME_LENGTH = 256

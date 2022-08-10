@@ -11,11 +11,13 @@
 # limitations under the License.
 
 from datetime import datetime
+from pathlib import Path
 
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
+    AuditObject,
     AuditObjectType,
 )
 from cm.models import (
@@ -33,6 +35,7 @@ from cm.models import (
     PrototypeImport,
     ServiceComponent,
 )
+from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 
@@ -111,19 +114,23 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
-    def create_cluster(self):
+    def create_cluster(self, bundle_id: int, name: str, prototype_id: int):
         return self.client.post(
             path=reverse("cluster"),
             data={
-                "bundle_id": self.bundle.pk,
-                "display_name": f"{self.test_cluster_name}_display",
-                "name": self.test_cluster_name,
-                "prototype_id": self.cluster_prototype.pk,
+                "bundle_id": bundle_id,
+                "display_name": f"{name}_display",
+                "name": name,
+                "prototype_id": prototype_id,
             },
         )
 
     def test_create(self):
-        res: Response = self.create_cluster()
+        res: Response = self.create_cluster(
+            bundle_id=self.bundle.pk,
+            name=self.test_cluster_name,
+            prototype_id=self.cluster_prototype.pk,
+        )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -135,7 +142,11 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Create,
         )
 
-        self.create_cluster()
+        self.create_cluster(
+            bundle_id=self.bundle.pk,
+            name=self.test_cluster_name,
+            prototype_id=self.cluster_prototype.pk,
+        )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -146,6 +157,115 @@ class TestCluster(BaseTestCase):
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
+
+    def test_delete_two_clusters(self):
+        cluster_bundle_filename = "test_cluster_bundle.tar"
+        provider_bundle_filename = "test_provider_bundle.tar"
+
+        with open(
+            Path(settings.BASE_DIR, "python/audit/tests/files", cluster_bundle_filename),
+            encoding="utf-8",
+        ) as f:
+            self.client.post(
+                path=reverse("upload-bundle"),
+                data={"file": f},
+            )
+
+        cluster_bundle_res: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": cluster_bundle_filename},
+        )
+
+        with open(
+            Path(settings.BASE_DIR, "python/audit/tests/files", provider_bundle_filename),
+            encoding="utf-8",
+        ) as f:
+            self.client.post(
+                path=reverse("upload-bundle"),
+                data={"file": f},
+            )
+
+        provider_bundle_res: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": provider_bundle_filename},
+        )
+
+        cluster_prototype = Prototype.objects.create(
+            bundle_id=cluster_bundle_res.data["id"], type="cluster"
+        )
+        cluster_1_res: Response = self.create_cluster(
+            bundle_id=cluster_bundle_res.data["id"],
+            name="new_test_cluster_1",
+            prototype_id=cluster_prototype.pk,
+        )
+        self.create_cluster(
+            bundle_id=cluster_bundle_res.data["id"],
+            name="new_test_cluster_2",
+            prototype_id=cluster_prototype.pk,
+        )
+
+        provider_prototype = Prototype.objects.create(
+            bundle_id=provider_bundle_res.data["id"], type="provider"
+        )
+        provider_res: Response = self.client.post(
+            path=reverse("provider"),
+            data={
+                "name": "new_test_provider",
+                "prototype_id": provider_prototype.pk,
+            },
+        )
+
+        host_prototype = Prototype.objects.create(
+            bundle_id=provider_bundle_res.data["id"], type="host"
+        )
+        host_1_res: Response = self.client.post(
+            path=reverse("host"),
+            data={
+                "prototype_id": host_prototype.pk,
+                "provider_id": provider_res.data["id"],
+                "fqdn": "test_fqdn_1",
+            },
+        )
+        self.client.post(
+            path=reverse("host"),
+            data={
+                "prototype_id": host_prototype.pk,
+                "provider_id": provider_res.data["id"],
+                "fqdn": "test_fqdn_2",
+            },
+        )
+
+        self.client.post(
+            path=reverse("host", kwargs={"cluster_id": cluster_1_res.data["id"]}),
+            data={"host_id": host_1_res.data["id"]},
+            content_type=APPLICATION_JSON,
+        )
+
+        service_prototype = Prototype.objects.create(
+            bundle=self.bundle,
+            type="service",
+            display_name="new_test_service",
+        )
+        service = ClusterObject.objects.create(
+            prototype=service_prototype,
+            cluster_id=cluster_1_res.data["id"],
+        )
+        self.client.post(
+            path=reverse("service", kwargs={"cluster_id": cluster_1_res.data["id"]}),
+            data={
+                "service_id": service.pk,
+                "prototype_id": service_prototype.pk,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertFalse(AuditObject.objects.filter(is_deleted=True))
+
+        self.client.delete(
+            path=reverse("cluster-details", kwargs={"cluster_id": cluster_1_res.data["id"]})
+        )
+
+        self.assertEqual(AuditObject.objects.filter(is_deleted=True).count(), 1)
 
     def test_delete(self):
         self.client.delete(path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}))

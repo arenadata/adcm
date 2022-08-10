@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.test import TestCase
-
 import cm.api
 import cm.job
-from cm.models import Host, ClusterObject, ServiceComponent, Action
 from cm.errors import AdcmEx
+from cm.models import Action, ClusterObject, Host, ServiceComponent
 from cm.unit_tests.tests_upgrade import SetUp
+from django.test import TestCase
 
 
 class TestHC(TestCase):

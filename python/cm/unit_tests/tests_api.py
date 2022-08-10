@@ -13,13 +13,12 @@
 
 from unittest.mock import patch
 
-from django.test import TestCase
-from django.utils import timezone
-
 import cm.api as api_module
 import cm.hierarchy
 from cm import models
 from cm.unit_tests import utils
+from django.test import TestCase
+from django.utils import timezone
 
 
 class TestApi(TestCase):

@@ -11,15 +11,12 @@
 # limitations under the License.
 
 import functools
-from typing import Union, Tuple, List
-
-from django.db import transaction
-from version_utils import rpm
+from typing import List, Tuple, Union
 
 import cm.issue
 import cm.job
 import cm.status_api
-from cm.adcm_config import proto_ref, obj_ref, switch_config, make_object_config
+from cm.adcm_config import make_object_config, obj_ref, proto_ref, switch_config
 from cm.api import check_license, version_in
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
@@ -30,12 +27,14 @@ from cm.models import (
     Host,
     HostComponent,
     HostProvider,
+    MaintenanceModeType,
     Prototype,
     PrototypeImport,
     ServiceComponent,
     Upgrade,
-    MaintenanceModeType,
 )
+from django.db import transaction
+from version_utils import rpm
 
 
 def switch_object(obj: Union[Host, ClusterObject], new_prototype: Prototype) -> None:

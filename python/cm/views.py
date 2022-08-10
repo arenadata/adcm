@@ -12,16 +12,15 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.shortcuts import render, redirect
-from django.utils.http import urlencode
-from django.contrib.auth import login
 import social_django.views
-from social_core.exceptions import AuthForbidden
-from rest_framework.authtoken.models import Token
-
 from cm import config
 from cm.logger import log
 from cm.models import UserProfile
+from django.contrib.auth import login
+from django.shortcuts import redirect, render
+from django.utils.http import urlencode
+from rest_framework.authtoken.models import Token
+from social_core.exceptions import AuthForbidden
 
 
 def index(request):
