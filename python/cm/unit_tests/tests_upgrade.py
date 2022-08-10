@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.test import TestCase
-
 import cm.api
 import cm.job
 import cm.upgrade
@@ -20,16 +18,17 @@ from cm.errors import AdcmEx
 from cm.models import (
     Bundle,
     ClusterObject,
+    ConcernCause,
     ConfigLog,
     Host,
     HostComponent,
-    ConcernCause,
     Prototype,
     PrototypeConfig,
     ServiceComponent,
     Upgrade,
 )
 from cm.unit_tests import utils
+from django.test import TestCase
 
 
 class TestUpgradeVersion(TestCase):

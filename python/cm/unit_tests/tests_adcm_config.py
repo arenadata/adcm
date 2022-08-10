@@ -10,11 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import Mock, patch, call
-
-from django.test import TestCase
+from unittest.mock import Mock, call, patch
 
 import cm.adcm_config
+from django.test import TestCase
 
 
 class TestAdcmConfig(TestCase):

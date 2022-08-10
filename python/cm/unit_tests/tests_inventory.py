@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import patch, Mock
-
-from django.test import TestCase
-from django.utils import timezone
+from unittest.mock import Mock, patch
 
 import cm.inventory
 from cm import models
+from django.test import TestCase
+from django.utils import timezone
 
 
 class TestInventory(TestCase):

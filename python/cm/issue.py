@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.adcm_config import proto_ref, obj_ref, get_prototype_config
-from cm.errors import AdcmEx, raise_AdcmEx as err
+from cm.adcm_config import get_prototype_config, obj_ref, proto_ref
+from cm.errors import AdcmEx
+from cm.errors import raise_AdcmEx as err
 from cm.hierarchy import Tree
 from cm.logger import log
 from cm.models import (
@@ -25,11 +26,9 @@ from cm.models import (
     ConfigLog,
     Host,
     HostComponent,
-    MessageTemplate as MsgTpl,
-    PrototypeEnum,
-    Prototype,
-    PrototypeImport,
 )
+from cm.models import MessageTemplate as MsgTpl
+from cm.models import Prototype, PrototypeEnum, PrototypeImport
 
 
 def check_config(obj):  # pylint: disable=too-many-branches

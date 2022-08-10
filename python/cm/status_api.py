@@ -15,16 +15,15 @@ from collections import defaultdict
 from typing import Iterable
 
 import requests
-
 from cm.config import STATUS_SECRET_KEY
 from cm.logger import log
 from cm.models import (
     ADCMEntity,
-    ServiceComponent,
-    HostComponent,
-    ClusterObject,
     Cluster,
+    ClusterObject,
     Host,
+    HostComponent,
+    ServiceComponent,
 )
 
 API_URL = "http://localhost:8020/api/v1"

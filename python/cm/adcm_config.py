@@ -17,20 +17,17 @@ import json
 import os
 from collections import OrderedDict
 from collections.abc import Mapping
-from typing import Any, Tuple, Optional
-
-import yspec.checker
-from ansible.parsing.vault import VaultSecret, VaultAES256
-from django.conf import settings
-from django.db.utils import OperationalError
+from typing import Any, Optional, Tuple
 
 import cm.variant
+import yspec.checker
+from ansible.parsing.vault import VaultAES256, VaultSecret
 from cm import config
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
-    Action,
     ADCM,
+    Action,
     ADCMEntity,
     ConfigLog,
     GroupConfig,
@@ -38,7 +35,8 @@ from cm.models import (
     Prototype,
     PrototypeConfig,
 )
-
+from django.conf import settings
+from django.db.utils import OperationalError
 
 SECURE_PARAM_TYPES = ('password', 'secrettext')
 

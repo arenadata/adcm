@@ -13,17 +13,15 @@
 # pylint: disable=protected-access
 
 import os
-from unittest.mock import patch, Mock
-
-from django.test import TestCase
-from django.utils import timezone
+from unittest.mock import Mock, patch
 
 import cm
-from cm import config
 import cm.job as job_module
-from cm import models
+from cm import config, models
 from cm.logger import log
 from cm.unit_tests import utils
+from django.test import TestCase
+from django.utils import timezone
 
 
 class TestJob(TestCase):
