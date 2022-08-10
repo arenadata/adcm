@@ -469,6 +469,23 @@ class TestCluster(BaseTestCase):
 
         self.check_cluster_update_config(log)
 
+    def test_update_config_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
+                data={"config": {}},
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log_denied(
+            log=log,
+            operation_name="Cluster configuration updated",
+            operation_type=AuditLogOperationType.Update,
+        )
+
     def test_add_host(self):
         self.client.post(
             path=reverse("host", kwargs={"cluster_id": self.cluster.pk}),
@@ -482,6 +499,23 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_type=AuditObjectType.Cluster,
+            operation_name=f"{self.host.fqdn} added",
+            operation_type=AuditLogOperationType.Update,
+        )
+
+    def test_add_host_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=reverse("host", kwargs={"cluster_id": self.cluster.pk}),
+                data={"host_id": self.host.pk},
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_404_NOT_FOUND
+        self.check_log_denied(
+            log=log,
             operation_name=f"{self.host.fqdn} added",
             operation_type=AuditLogOperationType.Update,
         )
@@ -559,6 +593,23 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_type=AuditObjectType.Cluster,
+            operation_name="Cluster import updated",
+            operation_type=AuditLogOperationType.Update,
+        )
+
+    def test_import_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=reverse("cluster-import", kwargs={"cluster_id": self.cluster.pk}),
+                data={"bind": []},
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_404_NOT_FOUND
+        self.check_log_denied(
+            log=log,
             operation_name="Cluster import updated",
             operation_type=AuditLogOperationType.Update,
         )

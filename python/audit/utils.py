@@ -224,8 +224,18 @@ def _get_audit_operation_and_object(
                 name="{host_fqdn} added",
                 operation_type=AuditLogOperationType.Update,
             )
+
+            host_fqdn = None
             if res and res.data:
-                audit_operation.name = audit_operation.name.format(host_fqdn=res.data["fqdn"])
+                host_fqdn = res.data["fqdn"]
+
+            if "host_id" in view.request.data:
+                host = Host.objects.filter(pk=view.request.data["host_id"]).first()
+                if host:
+                    host_fqdn = host.fqdn
+
+            if host_fqdn:
+                audit_operation.name = audit_operation.name.format(host_fqdn=host_fqdn)
 
             obj = Cluster.objects.get(pk=cluster_pk)
             audit_object = _get_or_create_audit_obj(
@@ -923,9 +933,10 @@ def _get_audit_operation_and_object(
 
 
 def audit(func):
+    # pylint: disable=too-many-statements
     @wraps(func)
     def wrapped(*args, **kwargs):
-        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-branches,too-many-statements
 
         audit_operation: AuditOperation
         audit_object: AuditObject
@@ -963,8 +974,14 @@ def audit(func):
             res = None
 
             if getattr(exc, "msg", None) and "doesn't exist" in exc.msg:
+                _kwargs = None
                 if "cluster_id" in kwargs:
-                    deleted_obj = Cluster.objects.filter(pk=kwargs["cluster_id"]).first()
+                    _kwargs = kwargs
+                elif "cluster_id" in view.kwargs:
+                    _kwargs = view.kwargs
+
+                if _kwargs:
+                    deleted_obj = Cluster.objects.filter(pk=_kwargs["cluster_id"]).first()
 
             if not deleted_obj:
                 status_code = exc.status_code
