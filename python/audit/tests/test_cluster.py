@@ -12,7 +12,7 @@
 
 from datetime import datetime
 from pathlib import Path
-
+from rbac.models import User
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -38,7 +38,7 @@ from cm.models import (
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
-
+from rest_framework.status import HTTP_403_FORBIDDEN
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
@@ -81,6 +81,16 @@ class TestCluster(BaseTestCase):
             config=config,
         )
 
+    @staticmethod
+    def check_log_no_obj(log: AuditLog, operation_result: AuditLogOperationResult, user: User) -> None:
+        assert not log.audit_object
+        assert log.operation_name == "Cluster created"
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == operation_result
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == user.pk
+        assert isinstance(log.object_changes, dict)
+
     def check_log(
         self,
         log: AuditLog,
@@ -103,6 +113,18 @@ class TestCluster(BaseTestCase):
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
+    def check_log_denied(self, log: AuditLog, operation_name: str, operation_type: AuditLogOperationType) -> None:
+        assert log.audit_object.object_id == self.cluster.pk
+        assert log.audit_object.object_name == self.cluster.name
+        assert log.audit_object.object_type == AuditObjectType.Cluster
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == operation_name
+        assert log.operation_type == operation_type
+        assert log.operation_result == AuditLogOperationResult.Denied
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.no_rights_user.pk
         assert isinstance(log.object_changes, dict)
 
     def check_cluster_update_config(self, log: AuditLog) -> None:
@@ -150,13 +172,28 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert not log.audit_object
-        assert log.operation_name == "Cluster created"
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Fail
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.check_log_no_obj(
+            log=log,
+            operation_result=AuditLogOperationResult.Fail,
+            user=self.test_user,
+        )
+
+    def test_create_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.create_cluster(
+                bundle_id=self.bundle.pk,
+                name=self.test_cluster_name,
+                prototype_id=self.cluster_prototype.pk,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log_no_obj(
+            log=log,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
 
     def test_delete_two_clusters(self):
         cluster_bundle_filename = "test_cluster_bundle.tar"
@@ -276,6 +313,20 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_type=AuditObjectType.Cluster,
+            operation_name="Cluster deleted",
+            operation_type=AuditLogOperationType.Delete,
+        )
+
+    def test_delete_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.delete(
+                path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}))
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log_denied(
+            log=log,
             operation_name="Cluster deleted",
             operation_type=AuditLogOperationType.Delete,
         )
