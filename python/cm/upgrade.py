@@ -123,15 +123,8 @@ def check_upgrade_edition(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -
 def check_upgrade_state(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[bool, str]:
     if obj.locked:
         return False, 'object is locked'
-    if upgrade.state_available:
-        available = upgrade.state_available
-        if obj.state in available:
-            return True, ''
-        elif available == 'any':
-            return True, ''
-        else:
-            msg = '{} state "{}" is not in available states list: {}'
-            return False, msg.format(obj.prototype.type, obj.state, available)
+    if upgrade.allowed(obj):
+        return True, ''
     else:
         return False, 'no available states'
 
@@ -269,7 +262,8 @@ def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
         ok, _msg = check_upgrade_state(obj, upg)
         upg.upgradable = bool(ok)
         upg.license = upg.bundle.license
-        res.append(upg)
+        if upg.upgradable:
+            res.append(upg)
 
     cm.issue.update_hierarchy_issues(obj)
     if order:
