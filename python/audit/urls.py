@@ -11,7 +11,7 @@
 # limitations under the License.
 
 
-from api.audit.views import AuditLogViewSet, AuditSessionViewSet, AuditRoot
+from audit.views import AuditLogViewSet, AuditSessionViewSet, AuditRoot
 from django.urls import path
 from rest_framework.routers import SimpleRouter
 

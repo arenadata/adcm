@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.audit.filters import AuditLogListFilter, AuditSessionListFilter
-from api.audit.serializers import AuditLogSerializer, AuditSessionSerializer
+from audit.filters import AuditLogListFilter, AuditSessionListFilter
+from audit.serializers import AuditLogSerializer, AuditSessionSerializer
 from api.utils import SuperuserOnlyMixin
 from audit.models import AuditLog, AuditSession
 from rest_framework.permissions import AllowAny
