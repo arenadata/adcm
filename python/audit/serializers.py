@@ -15,7 +15,7 @@ from audit.models import AuditLog, AuditSession
 from rest_framework import serializers
 
 
-class AuditLogSerializer(serializers.ModelSerializer):
+class AuditLogSerializer(serializers.HyperlinkedModelSerializer):
     object_id = serializers.IntegerField(
         read_only=True, source='audit_object.object_id', allow_null=True
     )
@@ -25,7 +25,6 @@ class AuditLogSerializer(serializers.ModelSerializer):
     object_name = serializers.CharField(
         read_only=True, source='audit_object.object_name', allow_null=True
     )
-    url = serializers.HyperlinkedIdentityField(view_name='audit:audit-operations-detail')
 
     class Meta:
         model = AuditLog
@@ -42,11 +41,10 @@ class AuditLogSerializer(serializers.ModelSerializer):
             'object_changes',
             'url',
         ]
+        extra_kwargs = {'url': {'view_name': 'audit:audit-operations-detail'}}
 
 
-class AuditSessionSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='audit:audit-logins-detail')
-
+class AuditSessionSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = AuditSession
         fields = [
@@ -57,3 +55,6 @@ class AuditSessionSerializer(serializers.ModelSerializer):
             'login_details',
             'url',
         ]
+        extra_kwargs = {
+            'url': {'view_name': 'audit:audit-logins-detail'},
+        }
