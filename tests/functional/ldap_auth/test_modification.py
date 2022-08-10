@@ -31,7 +31,7 @@ from tests.library.errorcodes import USER_UPDATE_ERROR, GROUP_UPDATE_ERROR
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad')]
+pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad'), pytest.mark.ldap()]
 
 
 @pytest.fixture()
