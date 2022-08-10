@@ -21,7 +21,6 @@ from audit.utils import make_audit_log
 from cm.adcm_config import get_adcm_config
 from cm.logger import log_cron_task as log
 from django.core.management.base import BaseCommand
-from django.db.models.fields.related import ForeignKey
 from django.utils import timezone
 
 
@@ -144,16 +143,11 @@ class Command(BaseCommand):
             with open(tmp_cvf_name, 'wt', newline='', encoding=self.encoding) as csv_file:
                 writer = csv.writer(csv_file)
 
-                fields = qs.model._meta.fields
-                writer.writerow([f.name for f in fields])  # header
+                fields = [f.column for f in qs.model._meta.fields]
+                writer.writerow(fields)  # header
 
                 for obj in qs:
-                    row = [
-                        str(getattr(obj, f.name))
-                        if not isinstance(f, ForeignKey)
-                        else str(getattr(obj, f.name).pk)
-                        for f in fields
-                    ]
+                    row = [str(getattr(obj, f)) for f in fields]
                     writer.writerow(row)
 
             csv_files.append(tmp_cvf_name)
