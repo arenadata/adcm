@@ -367,31 +367,44 @@ def _get_audit_operation_and_object(
                      f"{obj.name}/{{service_display_name}}",
                 operation_type=AuditLogOperationType.Update,
             )
+            audit_object = _get_or_create_audit_obj(
+                object_id=cluster_pk,
+                object_name=obj.name,
+                object_type=AuditObjectType.Cluster,
+            )
 
+            service = None
             if res and res.data and res.data.get("export_service_id"):
                 service = ClusterObject.objects.get(pk=res.data["export_service_id"])
+
+            if "export_service_id" in view.request.data:
+                service = ClusterObject.objects.get(pk=view.request.data["export_service_id"])
+
+            if service:
                 audit_operation.name = audit_operation.name.format(
                     service_display_name=_get_service_name(service),
                 )
-                audit_object = _get_or_create_audit_obj(
-                    object_id=cluster_pk,
-                    object_name=obj.name,
-                    object_type=AuditObjectType.Cluster,
-                )
-            else:
-                audit_object = None
 
-        case ["cluster", cluster_pk, "bind", _]:
+        case ["cluster", cluster_pk, "bind", bind_pk]:
             obj = Cluster.objects.get(pk=cluster_pk)
             audit_operation = AuditOperation(
                 name=f"{obj.name}/{{service_display_name}} unbound",
                 operation_type=AuditLogOperationType.Update,
             )
 
+            service_display_name = None
             if deleted_obj:
-                deleted_obj: ClusterObject
+                if isinstance(deleted_obj, ClusterObject):
+                    deleted_obj: ClusterObject
+                    service_display_name = _get_service_name(deleted_obj)
+                else:
+                    bind = ClusterBind.objects.filter(pk=bind_pk).first()
+                    if bind and bind.source_service:
+                        service_display_name = _get_service_name(bind.source_service)
+
+            if service_display_name:
                 audit_operation.name = audit_operation.name.format(
-                    service_display_name=_get_service_name(deleted_obj),
+                    service_display_name=service_display_name,
                 )
 
             audit_object = _get_or_create_audit_obj(
@@ -919,10 +932,10 @@ def audit(func):
         operation_name: str
 
         error = None
-        if len(args) == 2:
+        if len(args) == 2:  # for audit view methods
             view: View = args[0]
             request: Request = args[1]
-        else:
+        else:  # for audit has_permissions method
             view: View = args[2]
             request: Request = args[1]
 
@@ -931,6 +944,8 @@ def audit(func):
                 deleted_obj = view.get_object()
             except AssertionError:
                 deleted_obj = view.get_obj(kwargs, kwargs["bind_id"])
+            except AdcmEx:  # when denied returns 404 from PermissionListMixin
+                deleted_obj = view.queryset[0]
         else:
             deleted_obj = None
 
@@ -946,7 +961,15 @@ def audit(func):
         except (AdcmEx, AdwpEx) as exc:
             error = exc
             res = None
-            status_code = exc.status_code
+
+            if getattr(exc, "msg", None) and "doesn't exist" in exc.msg:
+                if "cluster_id" in kwargs:
+                    deleted_obj = Cluster.objects.filter(pk=kwargs["cluster_id"]).first()
+
+            if not deleted_obj:
+                status_code = exc.status_code
+            else:  # when denied returns 404 from PermissionListMixin
+                status_code = HTTP_403_FORBIDDEN
 
         audit_operation, audit_object, operation_name = _get_audit_operation_and_object(
             view,
