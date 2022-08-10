@@ -35,6 +35,7 @@ def test_check_login_to_adcm(app_fs, adcm_credentials):
         intro_page.header.check_auth_page_elements()
 
 
+@pytest.mark.ldap()
 @including_https
 @pytest.mark.parametrize("configure_adcm_ldap_ad", [False, True], ids=["ssl-off", "ssl-on"], indirect=True)
 @pytest.mark.usefixtures("configure_adcm_ldap_ad")

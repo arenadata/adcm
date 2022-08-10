@@ -39,7 +39,7 @@ from tests.library.ldap_interactions import LDAPTestConfig, configure_adcm_for_l
 
 # pylint: disable=redefined-outer-name
 
-pytestmark = [only_clean_adcm]
+pytestmark = [only_clean_adcm, pytest.mark.ldap()]
 
 
 @pytest.fixture()
