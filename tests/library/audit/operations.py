@@ -104,6 +104,12 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         # Actions
         NamedOperation('launch-action', '{name} action launched', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         NamedOperation('complete-action', '{name} action completed', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        # Group config
+        NamedOperation(
+            'delete-group-config',
+            '{name} configuration group deleted',
+            (ObjectType.CLUSTER, ObjectType.SERVICE, ObjectType.COMPONENT),
+        ),
     )
 }
 _NAMED_OPERATIONS.update(
@@ -175,10 +181,14 @@ class Operation:
             # code may be important for stuff like group config creation
             return f'{self.object_type.value.capitalize()} {self.operation_type.value.lower()}d'
 
+        # special case, no need for "how" section here, I think
+        if self.object_type == ObjectType.BUNDLE and self.operation_type == OperationType.DELETE:
+            return 'Bundle deleted'
+
         if not self.code or 'operation' not in self.code:
             raise KeyError(
                 'There should be "how" section specifying operation for audit record described as\n'
-                f'"{self.operation_type.value} {self.object_type.value}"'
+                f'"{self.operation_type.value} {self.object_type.value} {self.object_name}"'
             )
 
         operation = self.code['operation']
