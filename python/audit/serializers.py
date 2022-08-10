@@ -25,6 +25,7 @@ class AuditLogSerializer(serializers.ModelSerializer):
     object_name = serializers.CharField(
         read_only=True, source='audit_object.object_name', allow_null=True
     )
+    url = serializers.HyperlinkedIdentityField(view_name='audit:audit-operations-detail')
 
     class Meta:
         model = AuditLog
@@ -39,10 +40,13 @@ class AuditLogSerializer(serializers.ModelSerializer):
             'operation_time',
             'user_id',
             'object_changes',
+            'url',
         ]
 
 
 class AuditSessionSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='audit:audit-logins-detail')
+
     class Meta:
         model = AuditSession
         fields = [
@@ -51,4 +55,5 @@ class AuditSessionSerializer(serializers.ModelSerializer):
             'login_result',
             'login_time',
             'login_details',
+            'url',
         ]
