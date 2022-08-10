@@ -21,6 +21,7 @@ from audit.models import (
 )
 from cm.models import Bundle, Prototype
 from django.urls import reverse
+from rbac.models import User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_400_BAD_REQUEST
 
@@ -39,13 +40,24 @@ class TestBundle(BaseTestCase):
         )
         Prototype.objects.create(bundle=self.bundle, type="cluster", name=bundle_name)
 
-    def check_load_failed(self, log: AuditLog):
+    @staticmethod
+    def check_upload(log: AuditLog, operation_result: AuditLogOperationResult, user: User):
+        assert not log.audit_object
+        assert log.operation_name == "Bundle uploaded"
+        assert log.operation_type == AuditLogOperationType.Create
+        assert log.operation_result == operation_result
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == user.pk
+        assert isinstance(log.object_changes, dict)
+
+    @staticmethod
+    def check_load(log: AuditLog, operation_result: AuditLogOperationResult, user: User):
         assert not log.audit_object
         assert log.operation_name == "Bundle loaded"
         assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Fail
+        assert log.operation_result == operation_result
         assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
+        assert log.user.pk == user.pk
         assert isinstance(log.object_changes, dict)
 
     def load_bundle(self):
@@ -85,13 +97,9 @@ class TestBundle(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.first()
 
-        assert not log.audit_object
-        assert log.operation_name == "Bundle uploaded"
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Success
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.check_upload(
+            log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user
+        )
 
     def test_upload_fail(self):
         with open(self.test_bundle_path, encoding="utf-8") as f:
@@ -102,13 +110,23 @@ class TestBundle(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.first()
 
-        assert not log.audit_object
-        assert log.operation_name == "Bundle uploaded"
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Fail
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.check_upload(
+            log=log, operation_result=AuditLogOperationResult.Fail, user=self.test_user
+        )
+
+    def test_upload_denied(self):
+        with open(self.test_bundle_path, encoding="utf-8") as f:
+            with self.no_rights_user_logged_in:
+                res: Response = self.client.post(
+                    path=reverse("upload-bundle"),
+                    data={"no_file": f},
+                )
+
+        log: AuditLog = AuditLog.objects.first()
+
+        self.check_upload(
+            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
+        )
 
     def test_load(self):
         self.upload_bundle_and_check()
@@ -116,7 +134,7 @@ class TestBundle(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_load_failed(log)
+        self.check_load(log=log, operation_result=AuditLogOperationResult.Fail, user=self.test_user)
 
     def test_load_failed(self):
         self.client.post(
@@ -126,7 +144,7 @@ class TestBundle(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_load_failed(log)
+        self.check_load(log=log, operation_result=AuditLogOperationResult.Fail, user=self.test_user)
 
         res: Response = self.client.post(
             path=reverse("load-bundle"),
@@ -136,7 +154,19 @@ class TestBundle(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(res.status_code, HTTP_400_BAD_REQUEST)
-        self.check_load_failed(log)
+        self.check_load(log=log, operation_result=AuditLogOperationResult.Fail, user=self.test_user)
+
+    def test_load_denied(self):
+        self.upload_bundle_and_check()
+
+        with self.no_rights_user_logged_in:
+            self.load_bundle()
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_load(
+            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
+        )
 
     def test_load_and_delete(self):
         res: Response = self.upload_bundle_and_check()
