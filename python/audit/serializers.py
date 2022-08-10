@@ -16,9 +16,15 @@ from rest_framework import serializers
 
 
 class AuditLogSerializer(serializers.ModelSerializer):
-    object_id = serializers.IntegerField(read_only=True, source='audit_object.object_id')
-    object_type = serializers.CharField(read_only=True, source='audit_object.object_type')
-    object_name = serializers.CharField(read_only=True, source='audit_object.object_name')
+    object_id = serializers.IntegerField(
+        read_only=True, source='audit_object.object_id', allow_null=True
+    )
+    object_type = serializers.CharField(
+        read_only=True, source='audit_object.object_type', allow_null=True
+    )
+    object_name = serializers.CharField(
+        read_only=True, source='audit_object.object_name', allow_null=True
+    )
 
     class Meta:
         model = AuditLog
