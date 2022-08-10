@@ -23,7 +23,7 @@ import requests
 from adcm_client.objects import ADCMClient
 
 from tests.functional.audit.conftest import BUNDLES_DIR, parametrize_audit_scenario_parsing
-from tests.functional.rbac.conftest import create_policy, BusinessRoles
+from tests.functional.rbac.conftest import BusinessRoles, create_policy
 from tests.library.audit.checkers import AuditLogChecker
 
 # pylint: disable=redefined-outer-name
@@ -242,29 +242,6 @@ def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_clien
             _check_failed(post(CreateOperation.GROUP_CONFIG, data), 400)
             _check_failed(post(CreateOperation.GROUP_CONFIG, data, headers=new_user_creds), 403)
     audit_log_checker.check(sdk_client_fs.audit_operation_list())
-
-
-@allure.step('Expecting request to succeed')
-def test_rbac_create_operations(audit_log_scenarios_reader, rbac_create_data, post, sdk_client_fs):
-    """Test audit logs for CREATE of RBAC objects"""
-    audit_checker = AuditLogChecker(audit_log_scenarios_reader.parse('create_rbac_entities.yaml', rbac_create_data))
-    with allure.step('Create user, try to create its duplicate and make it as an unauthorized user'):
-        user_info = rbac_create_data.pop('user')
-        _check_succeed(post(CreateOperation.USER, user_info))
-        new_user_auth_header = _make_auth_header(
-            ADCMClient(url=sdk_client_fs.url, user=user_info['username'], password=user_info['password'])
-        )
-        _check_failed(post(CreateOperation.USER, user_info))
-        _check_failed(post(CreateOperation.USER, user_info, headers=new_user_auth_header), 403)
-
-    for object_type, create_data in rbac_create_data.items():
-        with allure.step(f'Create {object_type}, try to create its duplicate and make it as an unauthorized user'):
-            _check_succeed(post(getattr(CreateOperation, object_type.upper()), create_data))
-            _check_failed(post(getattr(CreateOperation, object_type.upper()), create_data))
-            _check_failed(
-                post(getattr(CreateOperation, object_type.upper()), create_data, headers=new_user_auth_header), 403
-            )
-    audit_checker.check(sdk_client_fs.audit_operation_list())
 
 
 @allure.step('Expecting request to succeed')
