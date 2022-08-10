@@ -38,6 +38,8 @@ from tests.library.db import Query, QueryExecutioner
 AUDIT_DIR = '/adcm/data/audit/'
 ARCHIVE_NAME = 'audit_archive.tar.gz'
 
+DOOMED_CLUSTER_NAME = 'Doomed Cluster'
+
 # !===== Fixtures =====!
 
 
@@ -84,7 +86,7 @@ def operation_to_be_archived(sdk_client_fs: ADCMClient, adcm_db: QueryExecutione
         provider = sdk_client_fs.provider()
         hosts = [provider.host_create(f'host-{i}') for i in range(4)]
         bundle = sdk_client_fs.upload_from_fs(BUNDLES_DIR / 'adb')
-        doomed_cluster = bundle.cluster_create('Doomed Cluster')
+        doomed_cluster = bundle.cluster_create(DOOMED_CLUSTER_NAME)
         create_operation = sdk_client_fs.audit_operation(
             operation_type=OperationType.CREATE, object_name=doomed_cluster.name
         )
@@ -100,11 +102,11 @@ def operation_to_be_archived(sdk_client_fs: ADCMClient, adcm_db: QueryExecutione
         doomed_cluster.delete()
     new_date = datetime.utcnow() - timedelta(days=300)
     with allure.step(f'Change date of operations on already deleted cluster to {new_date}'):
-        doomed_cluster_operations = [
+        doomed_cluster_operations: List[AuditOperation] = [
             operation
             for operation in sdk_client_fs.audit_operation_list(object_type=ObjectType.CLUSTER)
             if operation.object_id == create_operation.object_id
-        ]
+        ] + list(sdk_client_fs.audit_operation_list(object_type=ObjectType.BUNDLE))
         set_operations_date(adcm_db, new_date, doomed_cluster_operations)
         assert len(doomed_cluster_operations) != 0, 'There should be at least 1 operation record'
     _ = [rec.reread() for rec in doomed_cluster_operations]
@@ -124,13 +126,16 @@ def test_basic_archiving_audit_logs(adcm_fs, sdk_client_fs, logins_to_be_archive
             {'audit_data_retention': {'retention_period': 100, 'data_archiving': True}}
         )
     clearaudit(adcm_fs)
-    archives = get_archive_files(adcm_fs)
+    archives = get_parsed_archive_files(adcm_fs)
     operations_expected_in_archive = tuple(map(AuditRecordConverter.to_archive_record, operation_to_be_archived))
     logins_expected_in_archive = tuple(map(AuditRecordConverter.to_archive_record, logins_to_be_archived))
     today = datetime.utcnow().date().strftime("%Y-%m-%d")
+    operations_filename = f'audit_{today}_operations.csv'
+    logins_filename = f'audit_{today}_logins.csv'
+    objects_filename = f'audit_{today}_objects.csv'
     _check_all_archives_are_presented(archives.keys())
     with allure.step('Check operations records in archive are correct'):
-        operations_records = archives[f'audit_{today}_operations.csv']
+        operations_records = archives[operations_filename]
         _check_records_are_correct(
             operations_records,
             operations_expected_in_archive,
@@ -138,11 +143,11 @@ def test_basic_archiving_audit_logs(adcm_fs, sdk_client_fs, logins_to_be_archive
         )
     with allure.step('Check login records in archive are correct'):
         _check_records_are_correct(
-            archives[f'audit_{today}_logins.csv'],
+            archives[logins_filename],
             logins_expected_in_archive,
             AuditRecordConverter.get_audit_logins_archive_headers(),
         )
-    # TODO add check of audit object
+    _check_audit_objects_records(archives[objects_filename])
     _check_old_audit_logs_are_removed(sdk_client_fs, operations_expected_in_archive, logins_expected_in_archive)
 
 
@@ -201,6 +206,25 @@ def _check_old_audit_logs_are_removed(
         raise AssertionError(f'Some login audit logs were not deleted: {found_operations}')
 
 
+@allure.step('Check that only "deleted" audit object without records is in objects file')
+def _check_audit_objects_records(records: List[Dict[str, Any]]):
+    assert len(records) == 1, 'There should be only 1 audit object in archive with deleted audit objects'
+    object_record = records[0]
+    assert (
+        actual := set(object_record.keys())
+    ) == AuditRecordConverter.get_audit_objects_archive_headers(), (
+        f'Incorrect headers in audit objects archive file: {", ".join(actual)}'
+    )
+    assert (
+        actual := object_record['object_type']
+    ) == ObjectType.CLUSTER.value, f'Object type should be cluster, not {actual}'
+    assert (
+        actual := object_record['object_name']
+    ) == DOOMED_CLUSTER_NAME, (
+        f'Incorrect object name in audit objects archive: {actual}.\nExpected: {DOOMED_CLUSTER_NAME}'
+    )
+
+
 # !===== Utilities =====!
 
 
@@ -216,7 +240,6 @@ class AuditRecordConverter:
             'operation_time',
             'object_changes',
             'user_id',
-            'object_id',
         ),
         AuditLogin: ('id', 'login_result', 'login_time', 'details', 'user_id'),
     }
@@ -232,13 +255,17 @@ class AuditRecordConverter:
         return set(cls._FIELDS[AuditLogin])
 
     @classmethod
+    def get_audit_objects_archive_headers(cls) -> Set[str]:
+        """Get headers that should be presented in audit objects archive"""
+        return {'id', 'object_id', 'object_name', 'object_type', 'is_deleted'}
+
+    @classmethod
     def to_archive_record(cls, record: Union[AuditOperation, AuditLogin]) -> dict:
         """Convert record to a dictionary in format how it should be extracted from audit records archive"""
         fields = cls._FIELDS.get(record.__class__, None)
         if fields is None:
             raise TypeError(f'`record` should be an instance of either {AuditOperation} or {AuditLogin}')
-        # object_id isn't in archive, there's audit_object_id
-        return {field: cls._convert(getattr(record, field)) for field in fields if field != 'object_id'}
+        return {field: cls._convert(getattr(record, field)) for field in fields}
 
     @classmethod
     def to_cef_record(cls, record: Union[AuditOperation, AuditLogin]) -> str:
@@ -254,7 +281,7 @@ class AuditRecordConverter:
         return val
 
 
-def get_archive_files(adcm: ADCM) -> Dict[str, List[Dict[str, Any]]]:
+def get_parsed_archive_files(adcm: ADCM) -> Dict[str, List[Dict[str, Any]]]:
     """
     Get audit archive files from ADCM and return them in dict format,
     where keys are names of files from archive and values are lists with dicts (parsed csv file values)
