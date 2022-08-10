@@ -36,6 +36,8 @@ from tests.functional.ldap_auth.utils import (
 UserInfo = dict
 GroupInfo = dict
 
+pytestmark = [pytest.mark.ldap()]
+
 
 @pytest.fixture()
 def two_ldap_groups_with_users(ldap_ad, ldap_basic_ous) -> Tuple[GroupInfo, UserInfo, GroupInfo, UserInfo]:
