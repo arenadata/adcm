@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Optional
+
 from django.contrib.auth.models import AnonymousUser, User
 
 from audit.models import AuditSession, AuditSessionLoginResult
@@ -20,9 +22,9 @@ class AuditLoginMiddleware:
         self.get_response = get_response
 
     @staticmethod
-    def _audit(user: User | AnonymousUser = None, username: str = None):
+    def _audit(user: Optional[User, AnonymousUser] = None, username: str = None):
         """Authentication audit"""
-        if user.is_authenticated:
+        if user is not None and user.is_authenticated:
             result = AuditSessionLoginResult.Success
             details = {}
         else:
@@ -42,11 +44,11 @@ class AuditLoginMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
 
-        if request.method == "POST" and request.path in [
+        if request.method == "POST" and request.path in {
             "/api/v1/rbac/token/",
             "/api/v1/token/",
             "/api/v1/auth/login/",
-        ]:
+        }:
             username = request.POST.get("username") or request.user.username
             self._audit(user=request.user, username=username)
 
