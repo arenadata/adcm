@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from datetime import datetime
+from typing import Optional
 
 from audit.models import (
     AuditLog,
@@ -28,6 +28,9 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from rbac.models import User
+from rest_framework.response import Response
+from rest_framework.status import HTTP_403_FORBIDDEN
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -51,16 +54,24 @@ class TestComponent(BaseTestCase):
             config=config,
         )
 
-    def check_component_update(self, log: AuditLog):
+    def check_log(
+        self,
+        log: AuditLog,
+        operation_result: AuditLogOperationResult = AuditLogOperationResult.Success,
+        user: Optional[User] = None,
+    ):
+        if user is None:
+            user = self.test_user
+
         assert log.audit_object.object_id == self.component.pk
         assert log.audit_object.object_name == self.component.name
         assert log.audit_object.object_type == AuditObjectType.Component
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Component configuration updated"
         assert log.operation_type == AuditLogOperationType.Update
-        assert log.operation_result == AuditLogOperationResult.Success
+        assert log.operation_result == operation_result
         assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
+        assert log.user.pk == user.pk
         assert isinstance(log.object_changes, dict)
 
     def test_update(self):
@@ -71,7 +82,23 @@ class TestComponent(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_component_update(log)
+        self.check_log(log)
+
+    def test_update_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.patch(
+                path=f"/api/v1/component/{self.component.pk}/config/history/1/restore/",
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log(
+            log=log,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
 
     def test_update_via_service(self):
         self.client.post(
@@ -83,7 +110,25 @@ class TestComponent(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_component_update(log)
+        self.check_log(log)
+
+    def test_update_via_service_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=f"/api/v1/service/{self.service.pk}/component/"
+                f"{self.component.pk}/config/history/",
+                data={"config": {}},
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log(
+            log=log,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
 
     def test_restore_via_service(self):
         self.client.patch(
@@ -94,4 +139,21 @@ class TestComponent(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_component_update(log)
+        self.check_log(log)
+
+    def test_restore_via_service_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.patch(
+                path=f"/api/v1/service/{self.service.pk}/component/"
+                f"{self.component.pk}/config/history/1/restore/",
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log(
+            log=log,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
