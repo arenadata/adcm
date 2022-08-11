@@ -22,6 +22,7 @@ from cm.models import Bundle, Cluster, ConfigLog, GroupConfig, ObjectConfig, Pro
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from rest_framework.response import Response
+from rest_framework.status import HTTP_403_FORBIDDEN
 
 from adcm.tests.base import BaseTestCase
 
@@ -42,7 +43,7 @@ class TestConfigLog(BaseTestCase):
             config_id=self.config.pk,
         )
 
-    def check_config_log(self, res: Response, log: AuditLog):
+    def check_log(self, res: Response, log: AuditLog) -> None:
         assert log.audit_object.object_id == res.data["id"]
         assert log.audit_object.object_name == str(ConfigLog.objects.get(pk=res.data["id"]))
         assert log.audit_object.object_type == AuditObjectType.Cluster
@@ -54,6 +55,15 @@ class TestConfigLog(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
+    def check_log_denied(self, log: AuditLog) -> None:
+        assert not log.audit_object
+        assert log.operation_name == "config log updated"
+        assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == AuditLogOperationResult.Denied
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.no_rights_user.pk
+        assert isinstance(log.object_changes, dict)
+
     def test_create(self):
         res: Response = self.client.post(
             path=reverse("config-log-list"),
@@ -62,7 +72,19 @@ class TestConfigLog(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_config_log(res, log)
+        self.check_log(res=res, log=log)
+
+    def test_create_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=reverse("config-log-list"),
+                data={"obj_ref": self.config.pk, "config": "{}"},
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log_denied(log=log)
 
     def test_create_via_group_config(self):
         res: Response = self.client.post(
@@ -73,4 +95,17 @@ class TestConfigLog(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_config_log(res, log)
+        self.check_log(res, log)
+
+    def test_create_via_group_config_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=f"/api/v1/group-config/{self.group_config.pk}/"
+                f"config/{self.config.pk}/config-log/",
+                data={"obj_ref": self.config.pk, "config": "{}"},
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log_denied(log=log)

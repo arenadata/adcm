@@ -19,8 +19,9 @@ from django.contrib.contenttypes.models import ContentType
 from guardian.mixins import PermissionListMixin
 from rest_framework import status
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin
-from rest_framework.permissions import DjangoObjectPermissions
 from rest_framework.response import Response
+
+from adcm.permissions import DjangoObjectPermissionsAudit
 
 
 class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
@@ -28,7 +29,7 @@ class ConfigLogViewSet(  # pylint: disable=too-many-ancestors
 ):
     queryset = ConfigLog.objects.all()
     serializer_class = ConfigLogSerializer
-    permission_classes = (DjangoObjectPermissions,)
+    permission_classes = (DjangoObjectPermissionsAudit,)
     serializer_class_ui = UIConfigLogSerializer
     permission_required = ['cm.view_configlog']
     filterset_fields = ('id', 'obj_ref')
