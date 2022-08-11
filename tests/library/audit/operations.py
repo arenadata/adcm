@@ -13,7 +13,7 @@
 """Defines basic entities like Operation and NamedOperation to work with audit log scenarios"""
 
 from dataclasses import dataclass, field, fields
-from typing import ClassVar, Collection, Dict, List, Literal, NamedTuple, Optional, Union, Tuple
+from typing import ClassVar, Collection, Dict, List, Literal, NamedTuple, Optional, Tuple, Union
 
 from adcm_client.audit import AuditOperation, ObjectType, OperationResult, OperationType
 
@@ -104,6 +104,9 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         # Actions
         NamedOperation('launch-action', '{name} action launched', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         NamedOperation('complete-action', '{name} action completed', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        # Background tasks
+        NamedOperation('launch-background-task', '"{name}" job launched', (ObjectType.ADCM,)),
+        NamedOperation('complete-background-task', '"{name}" job completed', (ObjectType.ADCM,)),
         # Group config
         NamedOperation(
             'delete-group-config',
@@ -218,6 +221,7 @@ class Operation:
             # some operations don't have object, like Bundle upload,
             # because no ADCM object is created on this operation
             or (self.operation_name == _NAMED_OPERATIONS['upload'].naming_template)
+            or (self.code.get('operation') in {'launch-background-task', 'complete-background-task'})
         ):
             self.object_type = None
             self.object_name = None
