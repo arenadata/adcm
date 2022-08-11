@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from datetime import datetime
-from random import randint
+from secrets import randbelow
 
 from audit.models import (
     AuditLog,
@@ -194,8 +194,8 @@ class TestViews(TestBase):
     def _run_single_filter_test(
         self, url_path, filter_kwargs, default_template, kwargs_name, create_kwargs=None
     ):
-        num_filter_target = randint(5, 10)
-        num_others = num_filter_target - 3
+        num_filter_target = randbelow(11) + 5
+        num_others = num_filter_target - randbelow(3) + 1
 
         populate_kwargs = {kwargs_name: create_kwargs or filter_kwargs, 'num': num_filter_target}
         self._populate_audit_tables(**populate_kwargs)
