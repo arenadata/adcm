@@ -591,6 +591,16 @@ class PageHeader(BasePageObject):
                 int(self.get_success_job_amount_from_header()) == expected_job_amount
             ), f"Should be {expected_job_amount} tasks in popup header"
 
+        wait_until_step_succeeds(_wait_job, period=1, timeout=90)
+
+    def wait_in_progress_job_amount_from_header(self, expected_job_amount: int):
+        """Wait for in progress job amount to be as expected"""
+
+        def _wait_job():
+            assert (
+                int(self.get_in_progress_job_amount_from_header()) == expected_job_amount
+            ), f"Should be {expected_job_amount} tasks in popup header"
+
         wait_until_step_succeeds(_wait_job, period=1, timeout=70)
 
     @allure.step('Open profile using account popup in header')

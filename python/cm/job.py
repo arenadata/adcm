@@ -15,6 +15,7 @@
 import json
 import os
 import subprocess
+import copy
 from configparser import ConfigParser
 from typing import List, Tuple, Optional, Hashable, Any, Union
 
@@ -24,7 +25,7 @@ from django.utils import timezone
 from cm import api, inventory, adcm_config, variant, config, issue
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx
-from cm.errors import raise_AdcmEx as err
+from cm.errors import raise_AdcmEx as err, AdcmEx
 from cm.hierarchy import Tree
 from cm.inventory import get_obj_config, process_config_and_attr
 from cm.logger import log
@@ -45,6 +46,7 @@ from cm.models import (
     ServiceComponent,
     SubAction,
     TaskLog,
+    Prototype,
     get_object_cluster,
 )
 from cm.status_api import post_event
@@ -106,9 +108,12 @@ def prepare_task(
     _, spec = check_action_config(action, obj, conf, attr)
     if conf and not spec:
         err("CONFIG_VALUE_ERROR", "Absent config in action prototype")
-    host_map = check_hostcomponentmap(cluster, action, hc)
     check_action_hosts(action, obj, cluster, hosts)
     old_hc = api.get_hc(cluster)
+    host_map, post_upgrade_hc = check_hostcomponentmap(cluster, action, hc)
+
+    if hasattr(action, 'upgrade') and not action.hostcomponentmap:
+        check_constraints_for_upgrade(cluster, action.upgrade, get_actual_hc(cluster))
 
     if not attr:
         attr = {}
@@ -116,9 +121,8 @@ def prepare_task(
     with transaction.atomic():  # pylint: disable=too-many-locals
         DummyData.objects.filter(id=1).update(date=timezone.now())
 
-        task = create_task(action, obj, conf, attr, old_hc, hosts, verbose)
-
-        if host_map:
+        task = create_task(action, obj, conf, attr, old_hc, hosts, verbose, post_upgrade_hc)
+        if host_map or (hasattr(action, 'upgrade') and host_map is not None):
             api.save_hc(cluster, host_map)
 
         if conf:
@@ -232,7 +236,7 @@ def cook_delta(  # pylint: disable=too-many-branches
         key = cook_comp_key(service.prototype.name, comp.prototype.name)
         add_to_dict(new, key, host.fqdn, host)
 
-    if not old:
+    if old is None:
         old = {}
         for hc in HostComponent.objects.filter(cluster=cluster):
             key = cook_comp_key(hc.service.prototype.name, hc.component.prototype.name)
@@ -262,23 +266,91 @@ def cook_delta(  # pylint: disable=too-many-branches
     return delta
 
 
-def check_hostcomponentmap(
-    cluster: Cluster, action: Action, hc: List[dict]
-) -> List[Tuple[ClusterObject, Host, ServiceComponent]]:
-    if not action.hostcomponentmap:
-        return []
+def check_hostcomponentmap(cluster: Cluster, action: Action, new_hc: List[dict]):
 
-    if not hc:
+    if not action.hostcomponentmap:
+        return None, []
+
+    if not new_hc:
         err('TASK_ERROR', 'hc is required')
 
     if not cluster:
         err('TASK_ERROR', 'Only cluster objects can have action with hostcomponentmap')
 
-    for host_comp in hc:
-        host = Host.obj.get(id=host_comp.get('host_id', 0))
-        issue.check_object_concern(host)
+    for host_comp in new_hc:
+        if not hasattr(action, 'upgrade'):
+            host = Host.obj.get(id=host_comp.get('host_id', 0))
+            issue.check_object_concern(host)
+    post_upgrade_hc, clear_hc = check_upgrade_hc(action, new_hc)
 
-    return api.check_hc(cluster, hc)
+    old_hc = get_old_hc(api.get_hc(cluster))
+    if not hasattr(action, 'upgrade'):
+        prepared_hc_list = api.check_hc(cluster, clear_hc)
+    else:
+        api.check_sub_key(clear_hc)
+        prepared_hc_list = api.make_host_comp_list(cluster, clear_hc)
+        check_constraints_for_upgrade(cluster, action.upgrade, prepared_hc_list)
+    cook_delta(cluster, prepared_hc_list, action.hostcomponentmap, old_hc)
+    return prepared_hc_list, post_upgrade_hc
+
+
+def check_constraints_for_upgrade(cluster, upgrade, host_comp_list):
+    try:
+
+        for service in ClusterObject.objects.filter(cluster=cluster):
+            try:
+                prototype = Prototype.objects.get(
+                    name=service.name, type='service', bundle=upgrade.bundle
+                )
+                issue.check_component_constraint(
+                    cluster,
+                    prototype,
+                    [i for i in host_comp_list if i[0] == service],
+                    cluster.prototype.bundle,
+                )
+            except Prototype.DoesNotExist:
+                pass
+        issue.check_component_requires(host_comp_list)
+        issue.check_bound_components(host_comp_list)
+        api.check_maintenance_mode(cluster, host_comp_list)
+    except AdcmEx as e:
+        if e.code == 'COMPONENT_CONSTRAINT_ERROR':
+            e.msg = (
+                f"Host-component map of upgraded cluster should satisfy "
+                f"constraints of new bundle. Now error is: {e.msg}"
+            )
+        err(e.code, e.msg)
+
+
+def check_upgrade_hc(action, new_hc):
+    post_upgrade_hc = []
+    clear_hc = copy.deepcopy(new_hc)
+    buff = 0
+    for host_comp in new_hc:
+        if "component_prototype_id" in host_comp:
+            if not hasattr(action, 'upgrade'):
+                err(
+                    'WRONG_ACTION_HC',
+                    'Hc map with components prototype available only in upgrade action',
+                )
+            proto = Prototype.obj.get(
+                type='component',
+                id=host_comp['component_prototype_id'],
+                bundle=action.upgrade.bundle,
+            )
+            for hc_acl in action.hostcomponentmap:
+                if proto.name == hc_acl['component']:
+                    buff += 1
+                    if hc_acl['action'] != 'add':
+                        err(
+                            'WRONG_ACTION_HC',
+                            'New components from bundle with upgrade you can only add, not remove',
+                        )
+            if buff == 0:
+                err('INVALID_INPUT', 'hc_acl doesn\'t allow actions with this component')
+            post_upgrade_hc.append(host_comp)
+            clear_hc.remove(host_comp)
+    return post_upgrade_hc, clear_hc
 
 
 def check_service_task(  # pylint: disable=inconsistent-return-statements
@@ -344,7 +416,7 @@ def get_adcm_config():
     return get_obj_config(adcm)
 
 
-def get_new_hc(cluster: Cluster):
+def get_actual_hc(cluster: Cluster):
     new_hc = []
     for hc in HostComponent.objects.filter(cluster=cluster):
         new_hc.append((hc.service, hc.host, hc.component))
@@ -379,7 +451,7 @@ def re_prepare_job(task: TaskLog, job: JobLog):
     if job.sub_action_id:
         sub_action = job.sub_action
     if action.hostcomponentmap:
-        new_hc = get_new_hc(cluster)
+        new_hc = get_actual_hc(cluster)
         old_hc = get_old_hc(task.hostcomponentmap)
         delta = cook_delta(cluster, new_hc, action.hostcomponentmap, old_hc)
     prepare_job(action, sub_action, job.pk, obj, conf, delta, hosts, task.verbose)
@@ -525,6 +597,7 @@ def create_task(
     hc: List[HostComponent],
     hosts: List[Host],
     verbose: bool,
+    post_upgrade_hc: List[dict],
 ) -> TaskLog:
     """Create task and jobs and lock objects for action"""
     task = TaskLog.objects.create(
@@ -534,6 +607,7 @@ def create_task(
         attr=attr,
         hostcomponentmap=hc,
         hosts=hosts,
+        post_upgrade_hc_map=post_upgrade_hc,
         verbose=verbose,
         start_date=timezone.now(),
         finish_date=timezone.now(),
@@ -556,8 +630,9 @@ def create_task(
             finish_date=timezone.now(),
             status=config.Job.CREATED,
         )
-        LogStorage.objects.create(job=job, name='ansible', type='stdout', format='txt')
-        LogStorage.objects.create(job=job, name='ansible', type='stderr', format='txt')
+        log_type = sub_action.script_type if sub_action else action.script_type
+        LogStorage.objects.create(job=job, name=log_type, type='stdout', format='txt')
+        LogStorage.objects.create(job=job, name=log_type, type='stderr', format='txt')
         set_job_status(job.pk, config.Job.CREATED, ctx.event)
         os.makedirs(os.path.join(config.RUN_DIR, f'{job.pk}', 'tmp'), exist_ok=True)
 

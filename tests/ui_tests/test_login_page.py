@@ -14,6 +14,7 @@
 
 import allure
 import pytest
+from adcm_pytest_plugin.params import including_https
 
 from tests.ui_tests.app.page.admin.page import AdminIntroPage
 from tests.ui_tests.app.page.login.page import LoginPage
@@ -31,6 +32,21 @@ def test_check_login_to_adcm(app_fs, adcm_credentials):
         intro_page.wait_page_is_opened()
         # investigate why profile marker can't be found
         # login_page.wait_config_loaded()
+        intro_page.header.check_auth_page_elements()
+
+
+@pytest.mark.ldap()
+@including_https
+@pytest.mark.parametrize("configure_adcm_ldap_ad", [False, True], ids=["ssl-off", "ssl-on"], indirect=True)
+@pytest.mark.usefixtures("configure_adcm_ldap_ad")
+def test_login_as_ldap_user(app_fs, ldap_user_in_group):
+    """Test successful LDAP user authentication"""
+    username, password = ldap_user_in_group["name"], ldap_user_in_group["password"]
+    login_page = LoginPage(app_fs.driver, app_fs.adcm.url).open()
+    login_page.login_user(username, password)
+    with allure.step("Check if LDAP user has been authorized"):
+        intro_page = AdminIntroPage(app_fs.driver, app_fs.adcm.url)
+        intro_page.wait_page_is_opened()
         intro_page.header.check_auth_page_elements()
 
 

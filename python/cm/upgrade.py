@@ -20,7 +20,7 @@ import cm.issue
 import cm.job
 import cm.status_api
 from cm.adcm_config import proto_ref, obj_ref, switch_config, make_object_config
-from cm.api import check_license, version_in
+from cm.api import check_license, version_in, add_components_to_service, add_service_to_cluster
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
@@ -50,14 +50,16 @@ def switch_object(obj: Union[Host, ClusterObject], new_prototype: Prototype) -> 
 def switch_services(upgrade: Upgrade, cluster: Cluster) -> None:
     """Upgrade services and component"""
 
-    for prototype in Prototype.objects.filter(bundle=upgrade.bundle, type='service'):
+    for service in ClusterObject.objects.filter(cluster=cluster):
         try:
-            co = ClusterObject.objects.get(cluster=cluster, prototype__name=prototype.name)
-            switch_object(co, prototype)
-            switch_components(cluster, co, prototype)
-        except ClusterObject.DoesNotExist:
-            # co.delete() ?!
-            pass
+            prototype = Prototype.objects.get(
+                bundle=upgrade.bundle, type='service', name=service.prototype.name
+            )
+            switch_object(service, prototype)
+            switch_components(cluster, service, prototype)
+        except Prototype.DoesNotExist:
+            service.delete()
+
     switch_hc(cluster, upgrade)
 
 
@@ -68,13 +70,10 @@ def switch_components(cluster: Cluster, co: ClusterObject, new_co_proto: Prototy
             new_sc_prototype = Prototype.objects.get(
                 parent=new_co_proto, type='component', name=sc.prototype.name
             )
-            old_sc_prototype = sc.prototype
-            sc.prototype = new_sc_prototype
-            sc.save()
-            switch_config(sc, new_sc_prototype, old_sc_prototype)
+            switch_object(sc, new_sc_prototype)
         except Prototype.DoesNotExist:
-            # sc.delete() ?!
-            pass
+            sc.delete()
+
     for sc_proto in Prototype.objects.filter(parent=new_co_proto, type='component'):
         kwargs = dict(cluster=cluster, service=co, prototype=sc_proto)
         if not ServiceComponent.objects.filter(**kwargs).exists():
@@ -124,15 +123,8 @@ def check_upgrade_edition(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -
 def check_upgrade_state(obj: Union[Cluster, HostProvider], upgrade: Upgrade) -> Tuple[bool, str]:
     if obj.locked:
         return False, 'object is locked'
-    if upgrade.state_available:
-        available = upgrade.state_available
-        if obj.state in available:
-            return True, ''
-        elif available == 'any':
-            return True, ''
-        else:
-            msg = '{} state "{}" is not in available states list: {}'
-            return False, msg.format(obj.prototype.type, obj.state, available)
+    if upgrade.allowed(obj):
+        return True, ''
     else:
         return False, 'no available states'
 
@@ -270,7 +262,8 @@ def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
         ok, _msg = check_upgrade_state(obj, upg)
         upg.upgradable = bool(ok)
         upg.license = upg.bundle.license
-        res.append(upg)
+        if upg.upgradable:
+            res.append(upg)
 
     cm.issue.update_hierarchy_issues(obj)
     if order:
@@ -284,7 +277,30 @@ def get_upgrade(obj: Union[Cluster, HostProvider], order=None) -> List[Upgrade]:
         return res
 
 
-def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade, config: dict) -> dict:
+def update_components_after_bundle_switch(cluster, upgrade):
+    if upgrade.action and upgrade.action.hostcomponentmap:
+        log.info('update component from %s after upgrade with hc_acl', cluster)
+        for hc_acl in upgrade.action.hostcomponentmap:
+            proto_service = Prototype.objects.filter(
+                type='service', bundle=upgrade.bundle, name=hc_acl['service']
+            ).first()
+            if not proto_service:
+                continue
+            try:
+                service = ClusterObject.objects.get(cluster=cluster, prototype=proto_service)
+                if not ServiceComponent.objects.filter(cluster=cluster, service=service).exists():
+                    add_components_to_service(cluster, service)
+            except ClusterObject.DoesNotExist:
+                add_service_to_cluster(cluster, proto_service)
+
+
+def do_upgrade(
+    obj: Union[Cluster, HostProvider],
+    upgrade: Upgrade,
+    config: dict,
+    attr: dict,
+    hc: list,
+) -> dict:
     old_proto = obj.prototype
     check_license(obj.prototype.bundle)
     check_license(upgrade.bundle)
@@ -301,7 +317,7 @@ def do_upgrade(obj: Union[Cluster, HostProvider], upgrade: Upgrade, config: dict
             obj.state = upgrade.state_on_success
             obj.save()
     else:
-        task = cm.job.start_task(upgrade.action, obj, config, {}, [], [], False)
+        task = cm.job.start_task(upgrade.action, obj, config, attr, hc, [], False)
         task_id = task.id
 
     obj.refresh_from_db()
@@ -334,7 +350,8 @@ def bundle_switch(obj: Union[Cluster, HostProvider], upgrade: Upgrade):
         elif obj.prototype.type == 'provider':
             switch_hosts(upgrade, obj)
         cm.issue.update_hierarchy_issues(obj)
-
+        if isinstance(obj, Cluster):
+            update_components_after_bundle_switch(obj, upgrade)
     log.info('upgrade %s OK to version %s', obj_ref(obj), obj.prototype.version)
     cm.status_api.post_event(
         'upgrade', obj.prototype.type, obj.id, 'version', str(obj.prototype.version)

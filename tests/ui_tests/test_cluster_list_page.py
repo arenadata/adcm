@@ -49,7 +49,6 @@ from tests.ui_tests.app.page.cluster.page import (
     ClusterHostPage,
     ClusterServicesPage,
     ClusterComponentsPage,
-    ComponentsHostRowInfo,
     ClusterStatusPage,
     ClusterGroupConfigConfig,
     ClusterGroupConfigHosts,
@@ -57,6 +56,7 @@ from tests.ui_tests.app.page.cluster.page import (
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.common.configuration.page import CONFIG_ITEMS
 from tests.ui_tests.app.page.common.group_config_list.page import GroupConfigRowInfo
+from tests.ui_tests.app.page.common.host_components.page import ComponentsHostRowInfo
 from tests.ui_tests.app.page.common.import_page.page import ImportItemInfo
 from tests.ui_tests.app.page.common.status.page import (
     SUCCESS_COLOR,
@@ -91,6 +91,7 @@ BUNDLE_COMMUNITY = "cluster_community"
 BUNDLE_ENTERPRISE = "cluster_enterprise"
 BUNDLE_IMPORT = "cluster_to_import"
 BUNDLE_UPGRADE = "upgradable_cluster"
+BUNDLE_UPGRADE_V2 = "upgradable_cluster_v2"
 BUNDLE_REQUIRED_FIELDS = "cluster_and_service_with_required_string"
 BUNDLE_DEFAULT_FIELDS = "cluster_and_service_with_default_string"
 BUNDLE_WITH_SERVICES = "cluster_with_services"
@@ -104,10 +105,11 @@ BUNDLE_WITH_REQUIRED_FIELDS = "cluster_required_fields"
 BUNDLE_WITH_DESCRIPTION_FIELDS = "cluster_with_all_config_params"
 BUNDLE_WITH_REQUIRED_IMPORT = "cluster_required_import"
 BUNDLE_WITH_REQUIRED_COMPONENT = "cluster_required_hostcomponent"
+DISCLAIMER_TEXT = "Are you really want to click me?"
 
 
 # pylint: disable=redefined-outer-name,unused-argument,too-many-lines,too-many-public-methods
-# pylint: disable=too-many-arguments,too-many-boolean-expressions,too-many-branches,too-many-nested-blocks
+# pylint: disable=too-many-arguments,too-many-boolean-expressions,too-many-branches,too-many-nested-blocks,too-many-locals
 
 pytestmark = pytest.mark.usefixtures("login_to_adcm_over_api")
 
@@ -250,6 +252,15 @@ def check_default_field_values_in_configs(
         cluster_config_page.config.assert_input_value_is(expected_value=expected_value, display_name=field_type)
 
 
+@allure.step("Check that cluster has been upgraded")
+def check_cluster_upgraded(app_fs, upgrade_cluster_name: str, state: str):
+    """Open cluster list page and check that cluster has been upgraded"""
+
+    cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+    row = cluster_page.get_row_by_cluster_name(upgrade_cluster_name)
+    assert cluster_page.get_cluster_state_from_row(row) == state, f"Cluster state should be {state}"
+
+
 # !===== Tests =====!
 
 
@@ -384,12 +395,61 @@ class TestClusterListPage:
         cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         row_with_upgrade = cluster_page.get_row_by_cluster_name(cluster_to_upgrade.name)
         cluster_page.run_upgrade_in_cluster_row(row=row_with_upgrade, upgrade_name=params["upgrade"])
-        with allure.step("Check that cluster has been upgraded"):
-            cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-            row = cluster_page.get_row_by_cluster_name(params["upgrade_cluster_name"])
-            assert (
-                cluster_page.get_cluster_state_from_row(row) == params["state"]
-            ), f"Cluster state should be {params['state']}"
+        check_cluster_upgraded(app_fs, params["upgrade_cluster_name"], params["state"])
+
+    @pytest.mark.parametrize(
+        ("upgrade_name", "config", "hc_acl", "is_new_host", "disclaimer_text"),
+        [
+            ("simple_upgrade", None, False, False, False),
+            ("upgrade_with_hc_acl", None, True, False, False),
+            ("upgrade_with_config", {"somestring2": "test"}, False, False, False),
+            ("upgrade_with_config_and_hc_acl", {"somestring2": "test"}, True, False, False),
+            ("upgrade_with_hc_acl_and_disclaimer", None, True, False, DISCLAIMER_TEXT),
+            ("upgrade_with_config_and_disclaimer", {"somestring2": "test"}, False, False, DISCLAIMER_TEXT),
+            ("upgrade_with_config_and_hc_acl_and_disclaimer", {"somestring2": "test"}, True, False, DISCLAIMER_TEXT),
+            # next steps are skipped until https://tracker.yandex.ru/ADCM-3001
+            # ("upgrade_with_hc_acl", None, True, True, False),
+            # ("upgrade_with_config_and_hc_acl", {"somestring2": "test"}, True, True, False),
+            # ("upgrade_with_hc_acl_and_disclaimer", None, True, True, DISCLAIMER_TEXT),
+            # ("upgrade_with_config_and_hc_acl_and_disclaimer", {"somestring2": "test"}, True, True, DISCLAIMER_TEXT),
+        ],
+    )
+    def test_run_upgrade_v2_on_cluster_list_page(
+        self,
+        upload_and_create_provider,
+        sdk_client_fs,
+        app_fs,
+        upgrade_name,
+        config,
+        hc_acl,
+        is_new_host,
+        disclaimer_text,
+    ):
+        """Test run upgrade new version from the /cluster page"""
+        params = {
+            "state": "upgraded",
+        }
+        with allure.step("Upload main cluster bundle"):
+            bundle = cluster_bundle(sdk_client_fs, BUNDLE_COMMUNITY)
+            cluster = bundle.cluster_create(name=CLUSTER_NAME)
+            if not is_new_host:
+                host = upload_and_create_provider.host_create(HOST_NAME)
+                cluster.host_add(host)
+        with allure.step("Upload cluster bundle to upgrade"):
+            cluster_bundle(sdk_client_fs, BUNDLE_UPGRADE_V2)
+        cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+        row_with_upgrade = cluster_page.get_row_by_cluster_name(CLUSTER_NAME)
+        cluster_page.run_upgrade_in_cluster_row(
+            row=row_with_upgrade,
+            upgrade_name=upgrade_name,
+            config=config,
+            hc_acl=hc_acl,
+            is_new_host=is_new_host,
+            disclaimer_text=disclaimer_text,
+        )
+        cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
+        cluster_page.header.wait_success_job_amount_from_header(1)
+        check_cluster_upgraded(app_fs, CLUSTER_NAME, params["state"])
 
 
 class TestClusterMainPage:
@@ -436,12 +496,7 @@ class TestClusterMainPage:
             cluster_to_upgrade = bundle.cluster_create(name=params["upgrade_cluster_name"])
         main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, cluster_to_upgrade.id).open()
         main_page.toolbar.run_upgrade(params["upgrade_cluster_name"], params["upgrade"])
-        with allure.step("Check that cluster has been upgraded"):
-            cluster_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
-            row = cluster_page.get_row_by_cluster_name(params["upgrade_cluster_name"])
-            assert (
-                cluster_page.get_cluster_state_from_row(row) == params["state"]
-            ), f"Cluster state should be {params['state']}"
+        check_cluster_upgraded(app_fs, params["upgrade_cluster_name"], params["state"])
 
     def test_check_cluster_run_action_on_cluster_page_by_toolbar(self, app_fs, create_community_cluster):
         """Test run action from the /cluster/{}/main page toolbar"""
@@ -1076,6 +1131,7 @@ class TestClusterConfigPage:
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
     # pylint: disable=too-many-locals
+    @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3037")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
@@ -1137,14 +1193,13 @@ class TestClusterConfigPage:
             if expected['alerts'] and not is_read_only:
                 cluster_config_page.config.check_invalid_value_message(field_type)
 
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if is_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
 
     # pylint: enable=too-many-locals
 
@@ -1157,6 +1212,7 @@ class TestClusterConfigPage:
         _, cluster_config_page = prepare_cluster_and_open_config_page(sdk_client_fs, path, app_fs)
 
         with allure.step('Check that save button is active'):
+            cluster_config_page.config.get_config_row("numbers_test").click()
             assert not cluster_config_page.config.is_save_btn_disabled(), 'Save button should be active'
         cluster_config_page.config.clear_field_by_keys(params["filed_name"])
 
@@ -1334,6 +1390,7 @@ class TestClusterConfigPage:
         with allure.step('Check that save button is disabled'):
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
+    @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3037")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
@@ -1418,13 +1475,13 @@ class TestClusterConfigPage:
                     else:
                         assert len(cluster_config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
 
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if group_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
         check_expectations()
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
 
 
 class TestClusterGroupConfigPage:
@@ -1493,6 +1550,7 @@ class TestClusterGroupConfigPage:
 
     # pylint: disable=too-many-locals
 
+    @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3037")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
@@ -1562,24 +1620,25 @@ class TestClusterGroupConfigPage:
                         ), f"Checkbox for field {field_type} should be disabled"
                     if config_group_customization and not is_read_only:
                         if not cluster_config_page.group_config.is_customization_chbx_checked(config_item):
+                            cluster_config_page.config.check_save_btn_state_and_save_conf(False)
                             cluster_config_page.group_config.click_on_customization_chbx(config_item)
+                        cluster_config_page.config.check_save_btn_state_and_save_conf(True)
                         assert cluster_config_page.group_config.is_customization_chbx_checked(
                             config_item
                         ), f"Config field {field_type} should be checked"
             if expected['alerts'] and (not is_read_only) and config_group_customization:
                 cluster_config_page.config.check_invalid_value_message(field_type)
 
-        # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
-        # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if is_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
-        # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
-        # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
 
+    @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3037")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
@@ -1701,8 +1760,7 @@ class TestClusterGroupConfigPage:
                     else:
                         assert len(cluster_config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
 
-        # skip next check until https://arenadata.atlassian.net/browse/ADCM-2769
-        # cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if group_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
             cluster_config_page.group_config.check_no_rows()

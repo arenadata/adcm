@@ -183,7 +183,7 @@ def check_roles(bundle):
             'module_name': 'rbac.roles',
             'class_name': 'ActionRole',
             'init_params': {
-                'action_id': 1,
+                'action_id': 3,
                 'app_name': 'cm',
                 'model': 'Cluster',
                 'filter': {
@@ -202,7 +202,7 @@ def check_roles(bundle):
             'module_name': 'rbac.roles',
             'class_name': 'ActionRole',
             'init_params': {
-                'action_id': 2,
+                'action_id': 4,
                 'app_name': 'cm',
                 'model': 'ClusterObject',
                 'filter': {
@@ -227,7 +227,7 @@ def check_roles(bundle):
             'module_name': 'rbac.roles',
             'class_name': 'ActionRole',
             'init_params': {
-                'action_id': 3,
+                'action_id': 5,
                 'app_name': 'cm',
                 'model': 'ServiceComponent',
                 'filter': {
@@ -252,7 +252,7 @@ def check_roles(bundle):
             'module_name': 'rbac.roles',
             'class_name': 'ActionRole',
             'init_params': {
-                'action_id': 4,
+                'action_id': 6,
                 'app_name': 'cm',
                 'model': 'ServiceComponent',
                 'filter': {
@@ -271,7 +271,7 @@ def check_roles(bundle):
             'module_name': 'rbac.roles',
             'class_name': 'ActionRole',
             'init_params': {
-                'action_id': 5,
+                'action_id': 7,
                 'app_name': 'cm',
                 'model': 'ClusterObject',
                 'filter': {
@@ -296,7 +296,7 @@ def check_roles(bundle):
             'module_name': 'rbac.roles',
             'class_name': 'ActionRole',
             'init_params': {
-                'action_id': 6,
+                'action_id': 8,
                 'app_name': 'cm',
                 'model': 'ServiceComponent',
                 'filter': {
@@ -321,7 +321,7 @@ def check_roles(bundle):
             'module_name': 'rbac.roles',
             'class_name': 'ActionRole',
             'init_params': {
-                'action_id': 7,
+                'action_id': 9,
                 'app_name': 'cm',
                 'model': 'ServiceComponent',
                 'filter': {

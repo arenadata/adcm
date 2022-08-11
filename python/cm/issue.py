@@ -127,14 +127,16 @@ def check_hc(cluster):
         for co in ClusterObject.objects.filter(cluster=cluster):
             for comp in Prototype.objects.filter(parent=co.prototype, type='component'):
                 const = comp.constraint
-                if len(const) == 2 and const[0] == 0 and (const[1] == '+' or const[1] == 'odd'):
+                if len(const) == 2 and const[0] == 0:
                     continue
                 log.debug('void host components for %s', proto_ref(co.prototype))
                 return False
 
     for service in ClusterObject.objects.filter(cluster=cluster):
         try:
-            check_component_constraint(service, [i for i in shc_list if i[0] == service])
+            check_component_constraint(
+                cluster, service.prototype, [i for i in shc_list if i[0] == service]
+            )
         except AdcmEx:
             return False
     try:
@@ -202,9 +204,9 @@ def get_obj_config(obj):
     return (cl.config, attr)
 
 
-def check_component_constraint(service, hc_in):
-    ref = f'in host component list for {obj_ref(service)}'
-    all_host = Host.objects.filter(cluster=service.cluster)
+def check_component_constraint(cluster, service_prototype, hc_in, old_bundle=None):
+    ref = f'in host component list for {service_prototype.type} {service_prototype.name}'
+    all_host = Host.objects.filter(cluster=cluster)
 
     def cc_err(msg):
         raise AdcmEx('COMPONENT_CONSTRAINT_ERROR', msg)
@@ -246,7 +248,17 @@ def check_component_constraint(service, hc_in):
         elif const[0] == 'odd':
             check_odd(count, const[0], comp)
 
-    for c in Prototype.objects.filter(parent=service.prototype, type='component'):
+    for c in Prototype.objects.filter(parent=service_prototype, type='component'):
+        if old_bundle:
+            try:
+                old_service_proto = Prototype.objects.get(
+                    name=service_prototype.name, type='service', bundle=old_bundle
+                )
+                Prototype.objects.get(
+                    parent=old_service_proto, bundle=old_bundle, type='component', name=c.name
+                )
+            except Prototype.DoesNotExist:
+                continue
         check(c, c.constraint)
 
 

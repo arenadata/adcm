@@ -46,6 +46,7 @@ const rawConfig: IConfig = {
       description: '',
       required: false,
       group_config: null,
+      custom_group: true,
     },
     {
       name: 'group',
@@ -59,6 +60,7 @@ const rawConfig: IConfig = {
       description: '',
       required: false,
       group_config: null,
+      custom_group: false,
     },
     {
       name: 'group',
@@ -72,6 +74,7 @@ const rawConfig: IConfig = {
       description: '',
       required: true,
       group_config: null,
+      custom_group: false,
     },
   ],
 };
@@ -159,7 +162,7 @@ describe('Configuration : ConfigComponent >> ', () => {
     fixture.detectChanges();
     component.rawConfig.next(rawConfig);
     component.cd.detectChanges();
-    component.tools.disabledSave = component.fields.form.invalid;
+    component.tools.disabledSave = !component.fields.form.untouched || component.fields.form.invalid;
     component.cd.detectChanges();
     const saveBtn = fixture.nativeElement.querySelector('app-tools div.control-buttons button.form_config_button_save');
     expect(saveBtn.disabled).toBeFalse();
@@ -168,6 +171,10 @@ describe('Configuration : ConfigComponent >> ', () => {
     component.cd.detectChanges();
 
     component.fields.form.get('group').get('field_in_group').setValue('string_not_valid');
+    component.fields.form.markAsTouched();
+    component.fields.form.get('group').markAsTouched();
+    component.fields.form.get('group').get('field_in_group').markAsTouched();
+    component.tools.disabledSave = !component.fields.form.untouched;
     component.cd.detectChanges();
 
     expect(saveBtn.disabled).toBeTruthy();
