@@ -1095,16 +1095,31 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
-    def test_component_config_restore(self):
-        component_prototype = Prototype.objects.create(bundle=self.bundle, type="component")
-        config = ObjectConfig.objects.create(current=2, previous=2)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
-        component = ServiceComponent.objects.create(
-            prototype=component_prototype,
-            cluster=self.cluster,
-            service=self.service,
-            config=config,
+    def test_host_config_restore_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.patch(
+                path=reverse(
+                    "config-history-version-restore",
+                    kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk, "version": 1},
+                ),
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log(
+            log=log,
+            obj=self.host,
+            obj_type=AuditObjectType.Host,
+            operation_name="Host configuration updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
         )
+
+    def test_component_config_restore(self):
+        component = self.get_component()
         self.client.patch(
             path=reverse(
                 "config-history-version-restore",
@@ -1126,6 +1141,35 @@ class TestCluster(BaseTestCase):
             obj_type=AuditObjectType.Component,
             operation_name="Component configuration updated",
             operation_type=AuditLogOperationType.Update,
+        )
+
+    def test_component_config_restore_denied(self):
+        component = self.get_component()
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.patch(
+                path=reverse(
+                    "config-history-version-restore",
+                    kwargs={
+                        "cluster_id": self.cluster.pk,
+                        "service_id": self.service.pk,
+                        "component_id": component.pk,
+                        "version": 2,
+                    },
+                ),
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log(
+            log=log,
+            obj=component,
+            obj_type=AuditObjectType.Component,
+            operation_name="Component configuration updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
         )
 
     def test_service_config_restore(self):
@@ -1153,4 +1197,35 @@ class TestCluster(BaseTestCase):
             obj_type=AuditObjectType.Service,
             operation_name="Service configuration updated",
             operation_type=AuditLogOperationType.Update,
+        )
+
+    def test_service_config_restore_denied(self):
+        config = ObjectConfig.objects.create(current=2, previous=2)
+        ConfigLog.objects.create(obj_ref=config, config="{}")
+        self.service.config = config
+        self.service.save(update_fields=["config"])
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.patch(
+                path=reverse(
+                    "config-history-version-restore",
+                    kwargs={
+                        "cluster_id": self.cluster.pk,
+                        "service_id": self.service.pk,
+                        "version": 2,
+                    },
+                ),
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log(
+            log=log,
+            obj=self.service,
+            obj_type=AuditObjectType.Service,
+            operation_name="Service configuration updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
         )
