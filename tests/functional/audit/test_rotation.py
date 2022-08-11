@@ -35,7 +35,8 @@ from tests.library.db import Query, QueryExecutioner
 
 # pylint: disable=redefined-outer-name
 
-AUDIT_DIR = '/adcm/data/audit/'
+DATA_DIR = '/adcm/data'
+AUDIT_DIR = f'{DATA_DIR}/audit/'
 ARCHIVE_NAME = 'audit_archive.tar.gz'
 
 DOOMED_CLUSTER_NAME = 'Doomed Cluster'
@@ -79,6 +80,7 @@ def logins_to_be_archived(
 def operation_to_be_archived(sdk_client_fs: ADCMClient, adcm_db: QueryExecutioner) -> List[AuditOperation]:
     """
     Create two clusters, work with them, then delete one.
+    Then create-delete another one to create "deleted" audit object with existing audit records.
 
     :returns: List of operations which dates were changed to the old ones.
     """
@@ -93,7 +95,7 @@ def operation_to_be_archived(sdk_client_fs: ADCMClient, adcm_db: QueryExecutione
         lucky_cluster = bundle.cluster_create('Lucky Cluster')
         for cluster in (doomed_cluster, lucky_cluster):
             cluster.config_set_diff({'just_string': random_string(12)})
-            component = cluster.service_add(name='adb')
+            component = cluster.service_add(name='adb').component()
             host_1 = cluster.host_add(hosts.pop())
             cluster.host_add(hosts.pop())
             cluster.hostcomponent_set((host_1, component))
@@ -101,6 +103,7 @@ def operation_to_be_archived(sdk_client_fs: ADCMClient, adcm_db: QueryExecutione
         doomed_cluster.service_delete(service)
         doomed_cluster.delete()
     new_date = datetime.utcnow() - timedelta(days=300)
+    bundle.cluster_create('temp cluster').delete()
     with allure.step(f'Change date of operations on already deleted cluster to {new_date}'):
         doomed_cluster_operations: List[AuditOperation] = [
             operation
@@ -117,7 +120,7 @@ def operation_to_be_archived(sdk_client_fs: ADCMClient, adcm_db: QueryExecutione
 
 
 @pytest.mark.usefixtures('generic_provider')
-def test_basic_archiving_audit_logs(adcm_fs, sdk_client_fs, logins_to_be_archived, operation_to_be_archived):
+def test_cleanup_with_archiving(adcm_fs, sdk_client_fs, logins_to_be_archived, operation_to_be_archived):
     """
     Test that audit logs are correctly archived
     """
@@ -149,6 +152,36 @@ def test_basic_archiving_audit_logs(adcm_fs, sdk_client_fs, logins_to_be_archive
         )
     _check_audit_objects_records(archives[objects_filename])
     _check_old_audit_logs_are_removed(sdk_client_fs, operations_expected_in_archive, logins_expected_in_archive)
+
+
+@pytest.mark.usefixtures('generic_provider')
+def test_just_cleanup_audit_logs(adcm_fs, sdk_client_fs, logins_to_be_archived, operation_to_be_archived):
+    """
+    Test that running cleanup without allowing data archiving doesn't lead to creating archive
+    and the same is when nothing to archive
+    """
+    with allure.step('Configure ADCM to clean logs after 100 days'):
+        sdk_client_fs.adcm().config_set_diff(
+            {'audit_data_retention': {'retention_period': 100, 'data_archiving': False}}
+        )
+    operations_to_be_deleted = {o.id for o in operation_to_be_archived}
+    operations_should_stay = {
+        o.id for o in sdk_client_fs.audit_operation_list(paging={'limit': 200}) if o.id not in operations_to_be_deleted
+    }
+    clearaudit(adcm_fs)
+    _check_old_audit_logs_are_removed(sdk_client_fs, operation_to_be_archived, logins_to_be_archived)
+    with allure.step('Check that wrong operations were not deleted'):
+        operations_left = {o.id for o in sdk_client_fs.audit_operation_list(paging={'limit': 200})}
+        assert all(
+            operation_id in operations_left for operation_id in operations_should_stay
+        ), 'More audit operation records were deleted that expected'
+    _check_archive_dir_does_not_exist(adcm_fs)
+    clearaudit(adcm_fs)
+    with allure.step('Configure ADCM to archive audit logs'):
+        sdk_client_fs.adcm().config_set_diff(
+            {'audit_data_retention': {'retention_period': 100, 'data_archiving': True}}
+        )
+    _check_archive_dir_does_not_exist(adcm_fs)  # because nothing to store
 
 
 # !===== Steps =====!
@@ -223,6 +256,12 @@ def _check_audit_objects_records(records: List[Dict[str, Any]]):
     ) == DOOMED_CLUSTER_NAME, (
         f'Incorrect object name in audit objects archive: {actual}.\nExpected: {DOOMED_CLUSTER_NAME}'
     )
+
+
+@allure.step('Check archive directory was not created')
+def _check_archive_dir_does_not_exist(adcm: ADCM):
+    files_in_data_dir = adcm.container.exec_run(['ls', DATA_DIR]).output.decode('utf-8').split()
+    assert AUDIT_DIR not in files_in_data_dir, 'Directory with archive file should not exist'
 
 
 # !===== Utilities =====!
