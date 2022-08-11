@@ -47,6 +47,7 @@ class AuditLoginMiddleware:
             "/api/v1/token/",
             "/api/v1/auth/login/",
         ]:
-            self._audit(user=request.user, username=request.POST["username"])
+            username = request.POST.get("username") or request.user.username
+            self._audit(user=request.user, username=username)
 
         return response

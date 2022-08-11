@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -e
+
 port=8040
 
 # shellcheck disable=SC2086,SC2155,SC2046

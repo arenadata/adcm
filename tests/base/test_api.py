@@ -408,7 +408,7 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         adh_bundle_id, cluster_proto = self.get_cluster_proto_id()
         response = self.api_post('/cluster/', {'name': self.cluster, 'prototype_id': cluster_proto})
         cluster_id = response.json()['id']
-        ssh_bundle_id, _, host_id = self.create_host(self.host)
+        ssh_bundle_id, provider_id, host_id = self.create_host(self.host)
 
         response = self.api_post('/cluster/' + str(cluster_id) + '/host/', {})
         self.assertEqual(response.status_code, 400, msg=response.text)
@@ -441,9 +441,11 @@ class TestAPI(ApiTestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, 201, msg=response.text)
         self.assertEqual(response.json()['cluster_id'], cluster_id2)
 
-        self.api_delete('/cluster/' + str(cluster_id) + '/')
-        self.api_delete('/cluster/' + str(cluster_id2) + '/')
-        self.api_delete('/host/' + str(host_id) + '/')
+        self.api_delete(f"/cluster/{cluster_id}/")
+        self.api_delete(f"/cluster/{cluster_id2}/")
+        self.api_delete(f"/host/{host_id}/")
+        self.api_delete(f"/provider/{provider_id}/")
+
         response = self.api_delete('/stack/bundle/' + str(adh_bundle_id) + '/')
         self.assertEqual(response.status_code, 204, msg=response.text)
         response = self.api_delete('/stack/bundle/' + str(ssh_bundle_id) + '/')
