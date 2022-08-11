@@ -14,7 +14,7 @@ from audit.models import AuditLog, AuditObjectType, AuditSession
 from django_filters import rest_framework as drf_filters
 
 
-class AuditOperationListFilter(drf_filters.FilterSet):
+class AuditLogListFilter(drf_filters.FilterSet):
     object_type = drf_filters.ChoiceFilter(
         field_name='audit_object__object_type', choices=AuditObjectType.choices, label='Object type'
     )
@@ -35,7 +35,7 @@ class AuditOperationListFilter(drf_filters.FilterSet):
         ]
 
 
-class AuditLoginListFilter(drf_filters.FilterSet):
+class AuditSessionListFilter(drf_filters.FilterSet):
     username = drf_filters.CharFilter(field_name='user__username', label='Username')
     login_date = drf_filters.DateFilter(
         field_name='login_time', lookup_expr='date', label='Login date'
