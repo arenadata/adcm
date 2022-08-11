@@ -547,7 +547,7 @@ def _get_audit_operation_and_object(
                 audit_object = None
                 operation_name = audit_operation.name
 
-        case ["group-config"] | ["group-config", _]:
+        case ["group-config"]:
             if view.action == "create":
                 operation_type = AuditLogOperationType.Create
             elif view.action in {"update", "partial_update"}:
@@ -577,22 +577,55 @@ def _get_audit_operation_and_object(
                 audit_object = None
                 operation_name = audit_operation.name
 
+        case ["group-config", group_config_pk]:
+            if view.action in {"update", "partial_update"}:
+                operation_type = AuditLogOperationType.Update
+            else:
+                operation_type = AuditLogOperationType.Delete
+
+            audit_operation = AuditOperation(
+                name=f"configuration group {operation_type}d",
+                operation_type=operation_type,
+            )
+            if res:
+                if view.action == "destroy":
+                    deleted_obj: GroupConfig
+                    obj = deleted_obj
+                else:
+                    obj = res.data.serializer.instance
+            else:
+                obj = GroupConfig.objects.filter(pk=group_config_pk).first()
+
+            if obj:
+                object_type = _get_obj_type(obj.object_type.name)
+                audit_object = _get_or_create_audit_obj(
+                    object_id=obj.object.id,
+                    object_name=obj.object.name,
+                    object_type=object_type,
+                )
+                operation_name = f"{obj.name} {audit_operation.name}"
+            else:
+                audit_object = None
+                operation_name = audit_operation.name
+
         case ["group-config", config_group_pk, "host"]:
             config_group = GroupConfig.objects.get(pk=config_group_pk)
             audit_operation = AuditOperation(
                 name=f"{{fqdn}} host added to {config_group.name} configuration group",
                 operation_type=AuditLogOperationType.Update,
             )
+            object_type = _get_obj_type(config_group.object_type.name)
+            audit_object = _get_or_create_audit_obj(
+                object_id=config_group.pk,
+                object_name=config_group.object.name,
+                object_type=object_type,
+            )
             if res:
-                object_type = _get_obj_type(config_group.object_type.name)
                 audit_operation.name = audit_operation.name.format(fqdn=res.data["fqdn"])
-                audit_object = _get_or_create_audit_obj(
-                    object_id=config_group.pk,
-                    object_name=config_group.object.name,
-                    object_type=object_type,
-                )
-            else:
-                audit_object = None
+            elif "id" in view.request.data:
+                host = Host.objects.filter(pk=view.request.data["id"]).first()
+                if host:
+                    audit_operation.name = audit_operation.name.format(fqdn=host.fqdn)
 
             operation_name = audit_operation.name
 
