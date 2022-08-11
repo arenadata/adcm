@@ -38,6 +38,7 @@ from cm.models import (
 )
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model
+from django.http.response import Http404
 from django.views.generic.base import View
 from rbac.models import Group, Policy, Role, User
 from rest_framework.exceptions import PermissionDenied
@@ -981,7 +982,7 @@ def audit(func):
                     deleted_obj = view.get_obj(kwargs, kwargs["bind_id"])
                 except AdcmEx:
                     deleted_obj = view.queryset[0]
-            except AdcmEx:  # when denied returns 404 from PermissionListMixin
+            except (AdcmEx, Http404):  # when denied returns 404 from PermissionListMixin
                 deleted_obj = view.queryset[0]
         else:
             deleted_obj = None
