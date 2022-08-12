@@ -10,8 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
-
 from django.contrib.auth.models import AnonymousUser, User
 
 from audit.models import AuditSession, AuditSessionLoginResult
@@ -22,7 +20,7 @@ class AuditLoginMiddleware:
         self.get_response = get_response
 
     @staticmethod
-    def _audit(user: Optional[User, AnonymousUser] = None, username: str = None):
+    def _audit(user: User | AnonymousUser | None = None, username: str = None):
         """Authentication audit"""
         if user is not None and user.is_authenticated:
             result = AuditSessionLoginResult.Success
