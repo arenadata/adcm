@@ -31,7 +31,7 @@
     <mat-step [stepControl]="wcs.fields.form">
       <ng-template matStepLabel>Configuration</ng-template>
       <app-action-master-config [action]="action" #wcs></app-action-master-config>
-      <div class="controls">
+      <div class="controls margin">
         <button mat-raised-button (click)="cancel()" color="primary">Cancel</button>
         <button mat-raised-button matStepperNext color="primary">Next</button>
       </div>
@@ -55,7 +55,7 @@
 </ng-template>
 
 <ng-template #controls let-value="value" let-step="step">
-  <div class="controls-container" [class.margin]="needMargin() || step">
+  <div class="controls-container margin">
 
     <mat-checkbox [(ngModel)]="verbose">Verbose</mat-checkbox>
 

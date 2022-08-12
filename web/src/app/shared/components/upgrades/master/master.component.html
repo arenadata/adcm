@@ -31,7 +31,7 @@
     <mat-step [stepControl]="wcs.fields.form">
       <ng-template matStepLabel>Configuration</ng-template>
       <app-upgrade-master-config [upgrade]="upgrade" #wcs></app-upgrade-master-config>
-      <div class="controls-container" [class.margin]="needMargin()">
+      <div class="controls-container margin">
         <mat-checkbox [(ngModel)]="verbose">Verbose</mat-checkbox>
         <div class="controls">
           <button mat-raised-button (click)="cancel()" color="primary">Cancel</button>
