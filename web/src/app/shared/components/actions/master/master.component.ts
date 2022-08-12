@@ -74,4 +74,8 @@ export class ActionMasterComponent extends BaseDirective implements DynamicCompo
   back(stepper: MatStepper) {
     stepper.previous();
   }
+
+  needMargin() {
+    return !(this?.action?.config?.config?.length > 0 && this?.action?.hostcomponentmap?.length > 0);
+  }
 }

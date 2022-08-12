@@ -55,7 +55,7 @@
 </ng-template>
 
 <ng-template #controls let-value="value" let-step="step">
-  <div class="controls-container">
+  <div class="controls-container" [class.margin]="needMargin() || step">
 
     <mat-checkbox [(ngModel)]="verbose">Verbose</mat-checkbox>
 
