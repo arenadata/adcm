@@ -54,24 +54,25 @@ def test_login_audit(
         logins = requests.get(
             f'{sdk_client_fs.url}/api/v1/audit/login', headers=make_auth_header(sdk_client_fs)
         ).json()['results']
-        assert len(logins) == 3, 'There should be exactly 3 records in login audit log'
+        # there may be admin/status login before ones made in test
+        assert len(logins) >= 3, 'There should be at least 3 records in login audit log'
         assert all(
             rec.keys() == expected_fields for rec in logins
         ), f'One of records have field not equal to: {", ".join(expected_fields)}'
     with allure.step('Check first successful login details'):
-        first_login = logins[-1]
+        first_login = logins[2]
         assert first_login['user_id'] == sdk_client_fs.me().id, f'First login id should be {sdk_client_fs.me().id}'
         assert first_login['login_details'] is None, 'First login should not have login details'
         assert first_login['login_result'] == 'success', 'Login should succeed'
     with allure.step('Check second login failed because of user does not exist'):
-        first_login = logins[-2]
+        first_login = logins[1]
         assert first_login['user_id'] is None, 'Login user_id should be None'
         assert first_login['login_details'] == {
             'username': not_existing_user
         }, f'Username in login details should be {not_existing_user}'
         assert first_login['login_result'] == 'user not found', 'Login should fail with "user not found" result'
     with allure.step('Check third login failed because of wrong password'):
-        first_login = logins[-3]
+        first_login = logins[0]
         assert first_login['user_id'] is None, 'Login user_id should be None'
         assert first_login['login_details'] == {
             'username': admin_username
