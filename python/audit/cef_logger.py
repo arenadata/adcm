@@ -16,6 +16,7 @@ import logging
 from collections import OrderedDict
 from typing import Optional, Tuple, Union
 
+from django.conf import settings
 from django.utils import timezone as tz
 
 from audit.apps import AuditConfig
@@ -31,17 +32,12 @@ TEMPLATE = (
 )
 
 
-def get_adcm_version():
-    with open("/adcm/config.json", encoding="utf-8") as f:
-        return json.loads(f.read())["version"]
-
-
 class CEFLogConstants:
     syslog_header: str = ""
     cef_version: str = "CEF: 0"
     device_vendor: str = "Arenadata Software"
     device_product: str = "Arenadata Cluster Manager"
-    adcm_version: str = get_adcm_version()
+    adcm_version: str = settings.ADCM_VERSION
     severity: int = 1
     operation_name_session: str = "User logged"
     extension_keys: Tuple[str] = ("actor", "act", "operation", "resource", "result", "timestamp")
