@@ -65,6 +65,14 @@ export class UpgradeMasterComponent extends BaseDirective implements DynamicComp
     return value && ((value.hostmap && value.hostmap.noValid) || (value.config && !value.config.form?.valid));
   }
 
+  hmStepValid(hostmap) {
+    return hostmap && hostmap?.noValid;
+  }
+
+  configStepValid(config) {
+    return config && !config?.form?.valid;
+  }
+
   run(value: IValue = {}) {
     const data: IMasterData = this.service.parseData(value);
 

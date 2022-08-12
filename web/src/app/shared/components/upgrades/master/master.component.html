@@ -35,7 +35,7 @@
         <mat-checkbox [(ngModel)]="verbose">Verbose</mat-checkbox>
         <div class="controls">
           <button mat-raised-button (click)="cancel()" color="primary">Cancel</button>
-          <button mat-raised-button matStepperNext color="primary">Next</button>
+          <button mat-raised-button matStepperNext color="primary" [disabled]="configStepValid(wcs.fields)">Next</button>
         </div>
       </div>
     </mat-step>
@@ -46,7 +46,7 @@
       <div class="controls">
         <button mat-raised-button matStepperPrevious >Back</button>
         <button mat-raised-button (click)="cancel()" color="primary">Cancel</button>
-        <button mat-raised-button matStepperNext color="primary">Next</button>
+        <button mat-raised-button matStepperNext color="primary" [disabled]="hmStepValid(hms)">Next</button>
       </div>
     </mat-step>
     <mat-step label="Done">
