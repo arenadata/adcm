@@ -287,6 +287,7 @@ LOGGING = {
         'audit': {
             'handlers': ['stdout_raw'],
             'level': 'DEBUG',
+            'propagate': True,
         },
     },
 }
