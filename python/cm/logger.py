@@ -32,9 +32,9 @@ log.addHandler(get_log_handler(config.LOG_FILE))
 
 
 log_cron_task = logging.getLogger('cron_task')
-log_cron_task.setLevel(logging.INFO)
+log_cron_task.setLevel(logging.DEBUG)
 handler_cron_task = logging.FileHandler(os.path.join(config.LOG_DIR, 'cron_task.log'), 'a', 'utf-8')
-handler_cron_task.setLevel(logging.INFO)
-fmt_cron = logging.Formatter("%(asctime)s - %(message)s")
+handler_cron_task.setLevel(logging.DEBUG)
+fmt_cron = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 handler_cron_task.setFormatter(fmt_cron)
 log_cron_task.addHandler(handler_cron_task)

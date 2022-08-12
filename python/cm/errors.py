@@ -149,6 +149,11 @@ ERRORS = {
         rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),
+    'GROUP_CONFIG_DATA_ERROR': (
+        "invalid data for creating group_config",
+        rfs.HTTP_400_BAD_REQUEST,
+        ERR,
+    ),
     'LOCK_ERROR': ("lock error", rfs.HTTP_409_CONFLICT, ERR),
     'GROUP_CONFIG_CHANGE_UNSELECTED_FIELD': (
         'you cannot change the value of an unselected field',
@@ -173,6 +178,16 @@ ERRORS = {
     'NO_LDAP_SETTINGS': (
         'disabled ldap settings',
         rfs.HTTP_400_BAD_REQUEST,
+        ERR,
+    ),
+    'AUDIT_OPERATIONS_FORBIDDEN': (
+        'access to audit of operations is forbidden',
+        rfs.HTTP_403_FORBIDDEN,
+        ERR,
+    ),
+    'AUDIT_LOGINS_FORBIDDEN': (
+        'access to audit of logins is forbidden',
+        rfs.HTTP_403_FORBIDDEN,
         ERR,
     ),
 }

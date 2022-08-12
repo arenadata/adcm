@@ -253,9 +253,11 @@ class AdcmFilterBackend(drf_filters.DjangoFilterBackend):
 
 
 class SuperuserOnlyMixin:
-    model_class = None
+    not_superuser_error_code = None
 
     def get_queryset(self, *args, **kwargs):
         if not self.request.user.is_superuser:
-            return self.model_class.objects.none()
+            if self.not_superuser_error_code:
+                raise AdcmEx(self.not_superuser_error_code)
+            return self.queryset.model.objects.none()
         return super().get_queryset(*args, **kwargs)

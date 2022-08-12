@@ -10,15 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+- type: cluster
+  name: cluster
+  version: 2.4
 
-from api.audit.views import AuditLoginViewSet, AuditOperationViewSet, AuditRoot
-from django.urls import path
-from rest_framework.routers import SimpleRouter
+  config: &config
+    - name: param
+        required: false
+        type: string
 
-router = SimpleRouter()
-router.register("operation", AuditOperationViewSet, basename="audit-operations")
-router.register("login", AuditLoginViewSet, basename="audit-logins")
-urlpatterns = [
-    path(r'', AuditRoot.as_view(), name='root'),
-    *router.urls,
-]
+- type: service
+  name: service
+
+  config: *config
+
+  components:
+    component:
+      config: *config

@@ -10,13 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.audit.filters import AuditLoginListFilter, AuditOperationListFilter
-from api.audit.serializers import AuditLogSerializer, AuditSessionSerializer
-from api.utils import SuperuserOnlyMixin
-from audit.models import AuditLog, AuditSession
 from rest_framework.permissions import AllowAny
 from rest_framework.routers import APIRootView
 from rest_framework.viewsets import ReadOnlyModelViewSet
+
+from api.utils import SuperuserOnlyMixin
+from audit.filters import AuditLogListFilter, AuditSessionListFilter
+from audit.models import AuditLog, AuditSession
+from audit.serializers import AuditLogSerializer, AuditSessionSerializer
 
 
 class AuditRoot(APIRootView):
@@ -28,18 +29,18 @@ class AuditRoot(APIRootView):
 
 
 # pylint: disable=too-many-ancestors
-class AuditOperationViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
+class AuditLogViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
+    not_superuser_error_code = 'AUDIT_OPERATIONS_FORBIDDEN'
     queryset = AuditLog.objects.select_related('audit_object', 'user').order_by(
         '-operation_time', '-pk'
     )
-    model_class = AuditLog
     serializer_class = AuditLogSerializer
-    filterset_class = AuditOperationListFilter
+    filterset_class = AuditLogListFilter
 
 
 # pylint: disable=too-many-ancestors
-class AuditLoginViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
+class AuditSessionViewSet(SuperuserOnlyMixin, ReadOnlyModelViewSet):
+    not_superuser_error_code = 'AUDIT_LOGINS_FORBIDDEN'
     queryset = AuditSession.objects.select_related('user').order_by('-login_time', '-pk')
-    model_class = AuditSession
     serializer_class = AuditSessionSerializer
-    filterset_class = AuditLoginListFilter
+    filterset_class = AuditSessionListFilter

@@ -9,3 +9,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+- type: provider
+name: provider
+version: 2.4
+
+  config: &config
+    - name: param
+        required: false
+        type: string
+
+- type: host
+  name: host
+  version: 3.4
+
+  config: *config

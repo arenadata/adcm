@@ -154,6 +154,7 @@
       "properties": {
         "type": {
           "type": "string",
+          "description": "It's type that will be in object_type field, but not always the created/deleted one (see group configs). In those cases should be read as OPERATION 'on' smt, event as it's a CREATE.",
           "enum": [
             "adcm",
             "bundle",

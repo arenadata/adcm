@@ -63,9 +63,6 @@ class User(AuthUser):
         max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
     )
 
-    def get_repr(self):
-        return f'<{self.__class__.__name__} #{self.pk} {self.username}>'
-
 
 class Group(AuthGroup):
     """
