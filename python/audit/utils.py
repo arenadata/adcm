@@ -1027,4 +1027,4 @@ def make_audit_log(operation_type, result, operation_status):
         operation_result=result,
         user=system_user,
     )
-    cef_log(audit_instance=auditlog, signature_id='background_task', empty_resource=True)
+    cef_log(audit_instance=auditlog, signature_id='Background operation', empty_resource=True)
