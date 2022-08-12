@@ -11,7 +11,6 @@
 # limitations under the License.
 
 
-import json
 import logging
 from collections import OrderedDict
 from typing import Optional, Tuple, Union
