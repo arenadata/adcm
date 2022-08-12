@@ -1016,7 +1016,13 @@ def audit(func):
                 except AdcmEx:
                     deleted_obj = view.queryset[0]
             except (AdcmEx, Http404):  # when denied returns 404 from PermissionListMixin
-                deleted_obj = view.queryset[0]
+                try:
+                    deleted_obj = view.queryset[0]
+                except TypeError:
+                    if "role" in request.path:
+                        deleted_obj = Role.objects.filter(pk=view.kwargs["pk"]).first()
+                    else:
+                        deleted_obj = None
         else:
             deleted_obj = None
 
