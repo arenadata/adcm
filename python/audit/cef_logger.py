@@ -32,7 +32,7 @@ TEMPLATE = (
 
 
 def get_adcm_version():
-    with open('/adcm/config.json') as f:
+    with open('/adcm/config.json', encoding='utf-8') as f:
         return json.loads(f.read())['version']
 
 
@@ -77,18 +77,17 @@ def cef_log(
             severity = 3
 
     else:
-        raise NotImplemented
+        raise NotImplementedError
 
-    audit_log.info(
-        TEMPLATE.format(
-            syslog_header=CEFLogConstants.syslog_header,
-            cef_version=CEFLogConstants.cef_version,
-            device_vendor=CEFLogConstants.device_vendor,
-            device_product=CEFLogConstants.device_product,
-            adcm_version=CEFLogConstants.adcm_version,
-            signature_id=signature_id,
-            name=operation_name,
-            severity=severity if severity is not None else CEFLogConstants.severity,
-            extension=' '.join([f'{k}={v}' for k, v in extension.items() if v is not None]),
-        )
+    msg = TEMPLATE.format(
+        syslog_header=CEFLogConstants.syslog_header,
+        cef_version=CEFLogConstants.cef_version,
+        device_vendor=CEFLogConstants.device_vendor,
+        device_product=CEFLogConstants.device_product,
+        adcm_version=CEFLogConstants.adcm_version,
+        signature_id=signature_id,
+        name=operation_name,
+        severity=severity if severity is not None else CEFLogConstants.severity,
+        extension=' '.join([f'{k}={v}' for k, v in extension.items() if v is not None]),
     )
+    audit_log.info(msg)
