@@ -1077,6 +1077,13 @@ def audit(func):
                 if "service_id" in kwargs:
                     deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
 
+            if (
+                    getattr(exc, "msg", None)
+                    and "django model doesn't has __error_code__ attribute" in exc.msg
+                    and "task_id" in kwargs
+            ):
+                deleted_obj = TaskLog.objects.filter(pk=kwargs["task_id"]).first()
+
             if not deleted_obj:
                 status_code = exc.status_code
             else:  # when denied returns 404 from PermissionListMixin
