@@ -889,9 +889,17 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
 
+            export_cluster_name = None
             if res and res.data:
+                export_cluster_name=res.data["export_cluster_name"]
+            elif "export_cluster_id" in view.request.data:
+                cluster = Cluster.objects.filter(pk=view.request.data["export_cluster_id"]).first()
+                if cluster:
+                    export_cluster_name = cluster.name
+
+            if export_cluster_name:
                 audit_operation.name = audit_operation.name.format(
-                    export_cluster_name=res.data["export_cluster_name"],
+                    export_cluster_name=export_cluster_name,
                 )
 
             audit_object = _get_or_create_audit_obj(
@@ -908,10 +916,16 @@ def _get_audit_operation_and_object(
             )
 
             if deleted_obj:
-                deleted_obj: Tuple[ClusterObject, ClusterBind]
-                audit_operation.name = audit_operation.name.format(
-                    export_cluster_name=deleted_obj[0].cluster.name,
-                )
+                if isinstance(deleted_obj, tuple):
+                    export_cluster_name = deleted_obj[0].cluster.name
+                else:
+                    deleted_obj: ClusterObject
+                    export_cluster_name = deleted_obj.cluster.name
+
+                if export_cluster_name:
+                    audit_operation.name = audit_operation.name.format(
+                        export_cluster_name=export_cluster_name,
+                    )
 
             audit_object = _get_or_create_audit_obj(
                 object_id=service_pk,
@@ -1059,6 +1073,9 @@ def audit(func):
                     deleted_obj = Host.objects.filter(pk=kwargs["host_id"]).first()
                 elif "provider_id" in view.kwargs:
                     deleted_obj = HostProvider.objects.filter(pk=view.kwargs["provider_id"]).first()
+
+                if "service_id" in kwargs:
+                    deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
 
             if not deleted_obj:
                 status_code = exc.status_code

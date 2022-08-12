@@ -30,6 +30,9 @@ from cm.models import (
     PrototypeExport,
     PrototypeImport,
 )
+from rbac.models import User
+from rest_framework.response import Response
+from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -48,17 +51,38 @@ class TestService(BaseTestCase):
             prototype=service_prototype, cluster=cluster, config=config
         )
 
-    def check_service_update(self, log: AuditLog):
-        assert log.audit_object.object_id == self.service.pk
-        assert log.audit_object.object_name == self.service.name
-        assert log.audit_object.object_type == AuditObjectType.Service
+    @staticmethod
+    def check_log(
+        log: AuditLog,
+        obj,
+        operation_name: str,
+        object_type: AuditObjectType,
+        operation_type: AuditLogOperationType,
+        operation_result: AuditLogOperationResult,
+        user: User,
+    ):
+        assert log.audit_object.object_id == obj.pk
+        assert log.audit_object.object_name == obj.name
+        assert log.audit_object.object_type == object_type
         assert not log.audit_object.is_deleted
-        assert log.operation_name == "Service configuration updated"
-        assert log.operation_type == AuditLogOperationType.Update
-        assert log.operation_result == AuditLogOperationResult.Success
+        assert log.operation_name == operation_name
+        assert log.operation_type == operation_type
+        assert log.operation_result == operation_result
         assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
+        assert log.user.pk == user.pk
         assert isinstance(log.object_changes, dict)
+
+    @staticmethod
+    def get_service_and_cluster() -> tuple[ClusterObject, Cluster]:
+        bundle = Bundle.objects.create(name="test_bundle_2")
+        cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster")
+        service_prototype = Prototype.objects.create(bundle=bundle, type="service")
+        cluster = Cluster.objects.create(prototype=cluster_prototype, name="test_cluster_2")
+        PrototypeExport.objects.create(prototype=cluster_prototype)
+        service = ClusterObject.objects.create(prototype=service_prototype, cluster=cluster)
+        PrototypeImport.objects.create(prototype=service_prototype)
+
+        return service, cluster
 
     def test_update(self):
         self.client.post(
@@ -69,7 +93,36 @@ class TestService(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_service_update(log)
+        self.check_log(
+            log=log,
+            obj=self.service,
+            object_type=AuditObjectType.Service,
+            operation_name="Service configuration updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
+        )
+
+    def test_update_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=f"/api/v1/service/{self.service.pk}/config/history/",
+                data={"config": {}},
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log(
+            log=log,
+            obj=self.service,
+            object_type=AuditObjectType.Service,
+            operation_name="Service configuration updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
 
     def test_restore(self):
         self.client.patch(
@@ -79,7 +132,35 @@ class TestService(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_service_update(log)
+        self.check_log(
+            log=log,
+            obj=self.service,
+            object_type=AuditObjectType.Service,
+            operation_name="Service configuration updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
+        )
+
+    def test_restore_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.patch(
+                path=f"/api/v1/service/{self.service.pk}/config/history/1/restore/",
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log(
+            log=log,
+            obj=self.service,
+            object_type=AuditObjectType.Service,
+            operation_name="Service configuration updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
 
     def test_delete(self):
         self.client.delete(
@@ -89,16 +170,35 @@ class TestService(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == self.service.cluster.pk
-        assert log.audit_object.object_name == self.service.cluster.name
-        assert log.audit_object.object_type == AuditObjectType.Cluster
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == f"{self.service.display_name} service removed"
-        assert log.operation_type == AuditLogOperationType.Update
-        assert log.operation_result == AuditLogOperationResult.Success
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.check_log(
+            log=log,
+            obj=self.service.cluster,
+            object_type=AuditObjectType.Cluster,
+            operation_name=f"{self.service.display_name} service removed",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
+        )
+
+    def test_delete_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.delete(
+                path=f"/api/v1/service/{self.service.pk}/",
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_404_NOT_FOUND
+        self.check_log(
+            log=log,
+            obj=self.service.cluster,
+            object_type=AuditObjectType.Cluster,
+            operation_name=f"{self.service.display_name} service removed",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
 
     def test_import(self):
         self.client.post(
@@ -109,26 +209,39 @@ class TestService(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == self.service.pk
-        assert log.audit_object.object_name == self.service.name
-        assert log.audit_object.object_type == AuditObjectType.Service
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Service import updated"
-        assert log.operation_type == AuditLogOperationType.Update
-        assert log.operation_result == AuditLogOperationResult.Success
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.check_log(
+            log=log,
+            obj=self.service,
+            object_type=AuditObjectType.Service,
+            operation_name="Service import updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
+        )
+
+    def test_import_denied(self):
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=f"/api/v1/service/{self.service.pk}/import/",
+                data={"bind": []},
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_404_NOT_FOUND
+        self.check_log(
+            log=log,
+            obj=self.service,
+            object_type=AuditObjectType.Service,
+            operation_name="Service import updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
 
     def test_bind_unbind(self):
-        bundle = Bundle.objects.create(name="test_bundle_2")
-        cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster")
-        service_prototype = Prototype.objects.create(bundle=bundle, type="service")
-        cluster = Cluster.objects.create(prototype=cluster_prototype, name="test_cluster_2")
-        PrototypeExport.objects.create(prototype=cluster_prototype)
-        service = ClusterObject.objects.create(prototype=service_prototype, cluster=cluster)
-        PrototypeImport.objects.create(prototype=service_prototype)
-
+        service, cluster = self.get_service_and_cluster()
         self.client.post(
             path=f"/api/v1/service/{service.pk}/bind/",
             data={"export_cluster_id": cluster.pk},
@@ -137,16 +250,15 @@ class TestService(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == service.pk
-        assert log.audit_object.object_name == service.name
-        assert log.audit_object.object_type == AuditObjectType.Service
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == 'Service bound to test_cluster_2/service #2 ""'
-        assert log.operation_type == AuditLogOperationType.Update
-        assert log.operation_result == AuditLogOperationResult.Success
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.check_log(
+            log=log,
+            obj=service,
+            object_type=AuditObjectType.Service,
+            operation_name='Service bound to test_cluster_2/service #2 ""',
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
+        )
 
         bind = ClusterBind.objects.first()
         self.client.delete(
@@ -156,13 +268,59 @@ class TestService(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == service.pk
-        assert log.audit_object.object_name == service.name
-        assert log.audit_object.object_type == AuditObjectType.Service
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == 'test_cluster_2/service #2 "" unbound'
-        assert log.operation_type == AuditLogOperationType.Update
-        assert log.operation_result == AuditLogOperationResult.Success
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.check_log(
+            log=log,
+            obj=service,
+            object_type=AuditObjectType.Service,
+            operation_name='test_cluster_2/service #2 "" unbound',
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
+        )
+
+    def test_bind_unbind_denied(self):
+        service, cluster = self.get_service_and_cluster()
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=f"/api/v1/service/{service.pk}/bind/",
+                data={"export_cluster_id": cluster.pk},
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_404_NOT_FOUND
+        self.check_log(
+            log=log,
+            obj=service,
+            object_type=AuditObjectType.Service,
+            operation_name='Service bound to test_cluster_2/service #2 ""',
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
+
+        self.client.post(
+            path=f"/api/v1/service/{service.pk}/bind/",
+            data={"export_cluster_id": cluster.pk},
+            content_type=APPLICATION_JSON,
+        )
+        bind = ClusterBind.objects.first()
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.delete(
+                path=f"/api/v1/service/{service.pk}/bind/{bind.pk}/",
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_404_NOT_FOUND
+        self.check_log(
+            log=log,
+            obj=service,
+            object_type=AuditObjectType.Service,
+            operation_name='test_cluster_2/service #2 "" unbound',
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
