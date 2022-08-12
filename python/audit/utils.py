@@ -1049,6 +1049,11 @@ def audit(func):
                 if _kwargs:
                     deleted_obj = Cluster.objects.filter(pk=_kwargs["cluster_id"]).first()
 
+                if "provider_id" in kwargs and "host_id" in kwargs:
+                    deleted_obj = Host.objects.filter(pk=kwargs["host_id"]).first()
+                elif "provider_id" in view.kwargs:
+                    deleted_obj = HostProvider.objects.filter(pk=view.kwargs["provider_id"]).first()
+
             if not deleted_obj:
                 status_code = exc.status_code
             else:  # when denied returns 404 from PermissionListMixin
