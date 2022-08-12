@@ -267,7 +267,7 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
 
-            if res and res.data:
+            if res and res.data and res.data.get("display_name"):
                 audit_operation.name = audit_operation.name.format(
                     service_display_name=res.data["display_name"],
                 )
@@ -703,7 +703,7 @@ def _get_audit_operation_and_object(
                      f"{AuditLogOperationType.Create}d",
                 operation_type=AuditLogOperationType.Create,
             )
-            if res:
+            if res and res.data and res.data.get("id"):
                 audit_object = _get_or_create_audit_obj(
                     object_id=res.data["id"],
                     object_name=res.data["fqdn"],
