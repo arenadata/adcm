@@ -48,13 +48,14 @@ class TestHost(BaseTestCase):
             provider=self.provider,
             config=config,
         )
+        self.host_created_str = "Host created"
 
     def check_host_created(self, log: AuditLog, res: Response) -> None:
         assert log.audit_object.object_id == res.data["id"]
         assert log.audit_object.object_name == self.fqdn
         assert log.audit_object.object_type == AuditObjectType.Host
         assert not log.audit_object.is_deleted
-        assert log.operation_name == "Host created"
+        assert log.operation_name == self.host_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
@@ -103,7 +104,7 @@ class TestHost(BaseTestCase):
 
     def check_denied(self, log: AuditLog) -> None:
         assert not log.audit_object
-        assert log.operation_name == "Host created"
+        assert log.operation_name == self.host_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Denied
         assert isinstance(log.operation_time, datetime)
@@ -136,7 +137,7 @@ class TestHost(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert not log.audit_object
-        assert log.operation_name == "Host created"
+        assert log.operation_name == self.host_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Fail
         assert isinstance(log.operation_time, datetime)

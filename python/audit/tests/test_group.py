@@ -34,6 +34,8 @@ class TestGroup(BaseTestCase):
         self.group = Group.objects.create(name="test_group_2")
         self.list_name = "rbac:group-list"
         self.detail_name = "rbac:group-detail"
+        self.group_created_str = "Group created"
+        self.group_updated_str = "Group updated"
 
     def check_log(
         self,
@@ -66,7 +68,7 @@ class TestGroup(BaseTestCase):
         assert log.audit_object.object_name == self.name
         assert log.audit_object.object_type == AuditObjectType.Group
         assert not log.audit_object.is_deleted
-        assert log.operation_name == "Group created"
+        assert log.operation_name == self.group_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
@@ -81,7 +83,7 @@ class TestGroup(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert not log.audit_object
-        assert log.operation_name == "Group created"
+        assert log.operation_name == self.group_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Fail
         assert isinstance(log.operation_time, datetime)
@@ -99,7 +101,7 @@ class TestGroup(BaseTestCase):
 
         assert res.status_code == HTTP_403_FORBIDDEN
         assert not log.audit_object
-        assert log.operation_name == "Group created"
+        assert log.operation_name == self.group_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Denied
         assert isinstance(log.operation_time, datetime)
@@ -154,7 +156,7 @@ class TestGroup(BaseTestCase):
 
         self.check_log(
             log=log,
-            operation_name="Group updated",
+            operation_name=self.group_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
@@ -176,7 +178,7 @@ class TestGroup(BaseTestCase):
         assert res.status_code == HTTP_403_FORBIDDEN
         self.check_log(
             log=log,
-            operation_name="Group updated",
+            operation_name=self.group_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
@@ -193,7 +195,7 @@ class TestGroup(BaseTestCase):
 
         self.check_log(
             log=log,
-            operation_name="Group updated",
+            operation_name=self.group_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
@@ -212,7 +214,7 @@ class TestGroup(BaseTestCase):
         assert res.status_code == HTTP_403_FORBIDDEN
         self.check_log(
             log=log,
-            operation_name="Group updated",
+            operation_name=self.group_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,

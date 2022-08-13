@@ -50,6 +50,7 @@ class TestService(BaseTestCase):
         self.service = ClusterObject.objects.create(
             prototype=service_prototype, cluster=cluster, config=config
         )
+        self.service_conf_updated_str = "Service configuration updated"
 
     @staticmethod
     def check_log(
@@ -97,7 +98,7 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             object_type=AuditObjectType.Service,
-            operation_name="Service configuration updated",
+            operation_name=self.service_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
@@ -118,7 +119,7 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             object_type=AuditObjectType.Service,
-            operation_name="Service configuration updated",
+            operation_name=self.service_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
@@ -136,7 +137,7 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             object_type=AuditObjectType.Service,
-            operation_name="Service configuration updated",
+            operation_name=self.service_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
@@ -156,7 +157,7 @@ class TestService(BaseTestCase):
             log=log,
             obj=self.service,
             object_type=AuditObjectType.Service,
-            operation_name="Service configuration updated",
+            operation_name=self.service_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,

@@ -24,7 +24,7 @@ from rbac.models import User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 
-from adcm.tests.base import BaseTestCase
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestComponent(BaseTestCase):
@@ -53,7 +53,7 @@ class TestComponent(BaseTestCase):
         self.client.post(
             path=f"/api/v1/adcm/{self.adcm.pk}/config/history/",
             data={"config": {}},
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -64,7 +64,7 @@ class TestComponent(BaseTestCase):
 
         res: Response = self.client.patch(
             path=f"/api/v1/adcm/{self.adcm.pk}/config/history/1/restore/",
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -79,7 +79,7 @@ class TestComponent(BaseTestCase):
             res: Response = self.client.post(
                 path=f"/api/v1/adcm/{self.adcm.pk}/config/history/",
                 data={"config": {}},
-                content_type="application/json",
+                content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

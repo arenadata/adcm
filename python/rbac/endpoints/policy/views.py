@@ -19,8 +19,6 @@ from rbac.services.policy import policy_create, policy_update
 from rbac.utils import BaseRelatedSerializer
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.exceptions import ValidationError
-
-# from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.response import Response
 from rest_framework.serializers import (
     BooleanField,

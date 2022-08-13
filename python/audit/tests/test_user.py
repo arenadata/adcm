@@ -34,6 +34,7 @@ class TestUser(BaseTestCase):
         self.username = "test_username"
         self.list_name = "rbac:user-list"
         self.detail_name = "rbac:user-detail"
+        self.user_created_str = "User created"
 
     def check_log(
         self, log: AuditLog, operation_result: AuditLogOperationResult, user: User
@@ -64,7 +65,7 @@ class TestUser(BaseTestCase):
         assert log.audit_object.object_name == self.username
         assert log.audit_object.object_type == AuditObjectType.User
         assert not log.audit_object.is_deleted
-        assert log.operation_name == "User created"
+        assert log.operation_name == self.user_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
@@ -82,7 +83,7 @@ class TestUser(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert not log.audit_object
-        assert log.operation_name == "User created"
+        assert log.operation_name == self.user_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Fail
         assert isinstance(log.operation_time, datetime)
@@ -103,7 +104,7 @@ class TestUser(BaseTestCase):
 
         assert res.status_code == HTTP_403_FORBIDDEN
         assert not log.audit_object
-        assert log.operation_name == "User created"
+        assert log.operation_name == self.user_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Denied
         assert isinstance(log.operation_time, datetime)

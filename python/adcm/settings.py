@@ -259,7 +259,7 @@ LOGGING = {
             'level': 'DEBUG',
             'formatter': 'adwp',
             'class': 'logging.StreamHandler',
-        }
+        },
     },
     'loggers': {
         'django': {

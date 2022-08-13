@@ -35,7 +35,7 @@ from rbac.models import User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_403_FORBIDDEN
 
-from adcm.tests.base import BaseTestCase
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestGroupConfig(BaseTestCase):
@@ -278,7 +278,7 @@ class TestGroupConfig(BaseTestCase):
                 "object_type": "cluster",
                 "config_id": self.config.id,
             },
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -303,7 +303,7 @@ class TestGroupConfig(BaseTestCase):
                     "object_type": "cluster",
                     "config_id": self.config.id,
                 },
-                content_type="application/json",
+                content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -328,7 +328,7 @@ class TestGroupConfig(BaseTestCase):
                 "object_type": "cluster",
                 "config_id": self.config.id,
             },
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -353,7 +353,7 @@ class TestGroupConfig(BaseTestCase):
                     "object_type": "cluster",
                     "config_id": self.config.id,
                 },
-                content_type="application/json",
+                content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()

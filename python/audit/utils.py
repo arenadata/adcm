@@ -1039,6 +1039,8 @@ def audit(func):
                         deleted_obj = Role.objects.filter(pk=view.kwargs["pk"]).first()
                     else:
                         deleted_obj = None
+            except KeyError:
+                deleted_obj = None
         else:
             deleted_obj = None
 

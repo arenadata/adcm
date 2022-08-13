@@ -24,7 +24,7 @@ from rbac.models import User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
-from adcm.tests.base import BaseTestCase
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestProvider(BaseTestCase):
@@ -34,6 +34,7 @@ class TestProvider(BaseTestCase):
         self.bundle = Bundle.objects.create()
         self.prototype = Prototype.objects.create(bundle=self.bundle, type="provider")
         self.name = "test_provider"
+        self.provider_created_str = "Provider created"
 
     @staticmethod
     def check_provider_updated(
@@ -68,7 +69,7 @@ class TestProvider(BaseTestCase):
         assert log.audit_object.object_name == self.name
         assert log.audit_object.object_type == AuditObjectType.Provider
         assert not log.audit_object.is_deleted
-        assert log.operation_name == "Provider created"
+        assert log.operation_name == self.provider_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
@@ -86,7 +87,7 @@ class TestProvider(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert not log.audit_object
-        assert log.operation_name == "Provider created"
+        assert log.operation_name == self.provider_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Fail
         assert isinstance(log.operation_time, datetime)
@@ -107,7 +108,7 @@ class TestProvider(BaseTestCase):
 
         assert res.status_code == HTTP_403_FORBIDDEN
         assert not log.audit_object
-        assert log.operation_name == "Provider created"
+        assert log.operation_name == self.provider_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Denied
         assert isinstance(log.operation_time, datetime)
@@ -170,7 +171,7 @@ class TestProvider(BaseTestCase):
         self.client.post(
             path=reverse("config-history", kwargs={"provider_id": provider.pk}),
             data={"config": {}},
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -187,7 +188,7 @@ class TestProvider(BaseTestCase):
                 "config-history-version-restore",
                 kwargs={"provider_id": provider.pk, "version": 1},
             ),
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -211,7 +212,7 @@ class TestProvider(BaseTestCase):
             res: Response = self.client.post(
                 path=reverse("config-history", kwargs={"provider_id": provider.pk}),
                 data={"config": {}},
-                content_type="application/json",
+                content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -230,7 +231,7 @@ class TestProvider(BaseTestCase):
                     "config-history-version-restore",
                     kwargs={"provider_id": provider.pk, "version": 1},
                 ),
-                content_type="application/json",
+                content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
