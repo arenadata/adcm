@@ -1031,6 +1031,8 @@ def audit(func):
                     deleted_obj = view.get_obj(kwargs, kwargs["bind_id"])
                 except AdcmEx:
                     deleted_obj = view.queryset[0]
+                except AttributeError:
+                    deleted_obj = None
             except (AdcmEx, Http404):  # when denied returns 404 from PermissionListMixin
                 try:
                     deleted_obj = view.queryset[0]
