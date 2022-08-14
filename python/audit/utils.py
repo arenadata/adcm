@@ -1009,7 +1009,7 @@ def audit(func):
     # pylint: disable=too-many-statements
     @wraps(func)
     def wrapped(*args, **kwargs):
-        # pylint: disable=too-many-branches,too-many-statements
+        # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 
         audit_operation: AuditOperation
         audit_object: AuditObject
@@ -1114,12 +1114,17 @@ def audit(func):
             else:
                 operation_result = AuditLogOperationResult.Fail
 
+            if isinstance(view.request.user, User):
+                user = view.request.user
+            else:
+                user = None
+
             AuditLog.objects.create(
                 audit_object=audit_object,
                 operation_name=operation_name,
                 operation_type=audit_operation.operation_type,
                 operation_result=operation_result,
-                user=view.request.user,
+                user=user,
                 object_changes=object_changes,
             )
 
