@@ -38,6 +38,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from django.contrib.auth.models import User as DjangoUser
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model
 from django.http.response import Http404
@@ -1114,7 +1115,7 @@ def audit(func):
             else:
                 operation_result = AuditLogOperationResult.Fail
 
-            if isinstance(view.request.user, User):
+            if isinstance(view.request.user, DjangoUser):
                 user = view.request.user
             else:
                 user = None
