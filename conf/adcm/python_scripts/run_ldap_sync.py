@@ -66,8 +66,10 @@ class SyncLDAP:
         return self._settings
 
     def sync(self):
-        self.sync_groups()
-        self.sync_users()
+        if self.sync_groups():
+            self.sync_users()
+        else:
+            sys.stdout.write("No groups found. Aborting sync users")
 
     def sync_groups(self):
         """Synchronize LDAP groups with group model and delete groups which is not found in LDAP"""
@@ -77,6 +79,7 @@ class SyncLDAP:
         ldap_groups = self.settings['GROUP_SEARCH'].execute(self.conn, {})
         self._sync_ldap_groups(ldap_groups)
         sys.stdout.write("Groups were synchronized\n")
+        return ldap_groups
 
     def sync_users(self):
         """Synchronize LDAP users with user model and delete users which is not found in LDAP"""
@@ -170,17 +173,17 @@ class SyncLDAP:
                     sys.stdout.write(f"Delete this user and deactivate his session: {user}\n")
                     user.delete()
                 else:
-                  user.save()
-                  ldap_usernames.add(username)
-                  for group in ldap_attributes.get('memberof', []):
-                      name = group.split(',')[0][3:]
-                      try:
-                          group = Group.objects.get(name=f'{name} [ldap]', built_in=False,
-                                                                       type=OriginType.LDAP)
-                          group.user_set.add(user)
-                          sys.stdout.write(f"Add user {user} to group {group}\n")
-                      except (IntegrityError, DataError) as e:
-                          sys.stdout.write("Error getting group %s: %s\n" % (name, e))
+                    user.save()
+                    ldap_usernames.add(username)
+                    for group in ldap_attributes.get('memberof', []):
+                        name = group.split(',')[0][3:]
+                        try:
+                            group = Group.objects.get(name=f'{name} [ldap]', built_in=False,
+                                                      type=OriginType.LDAP)
+                            group.user_set.add(user)
+                            sys.stdout.write(f"Add user {user} to group {group}\n")
+                        except (IntegrityError, DataError) as e:
+                            sys.stdout.write("Error getting group %s: %s\n" % (name, e))
 
         django_usernames = set(User.objects.filter(type=OriginType.LDAP).values_list('username', flat=True))
         for username in django_usernames - ldap_usernames:
