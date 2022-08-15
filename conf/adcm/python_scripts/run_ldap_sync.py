@@ -66,8 +66,9 @@ class SyncLDAP:
         return self._settings
 
     def sync(self):
-        if self.sync_groups():
-            self.sync_users()
+        ldap_groups = self.sync_groups()
+        if ldap_groups:
+            self.sync_users(ldap_groups)
         else:
             sys.stdout.write("No groups found. Aborting sync users")
 
@@ -81,13 +82,13 @@ class SyncLDAP:
         sys.stdout.write("Groups were synchronized\n")
         return ldap_groups
 
-    def sync_users(self):
+    def sync_users(self, ldap_groups):
         """Synchronize LDAP users with user model and delete users which is not found in LDAP"""
-        groups = Group.objects.filter(type=OriginType.LDAP).values_list('display_name', flat=True)
-        group_filter = '' if groups.count() <= 1 else '(|'
-        for group_name in groups:
-            group_filter += f'(memberOf=CN={group_name},{self.settings["GROUP_SEARCH"].base_dn})'
-        group_filter = group_filter if groups.count() <= 1 else group_filter+')'
+        group_filter = ""
+        for group_dn, group_attrs in ldap_groups:
+            group_filter += f"(memberOf={group_dn})"
+        if group_filter:
+            group_filter = f"(|{group_filter})"
         self.settings['USER_SEARCH'].filterstr = f'(&' \
                                                  f'(objectClass={self.settings["USER_OBJECT_CLASS"]})' \
                                                  f'{self.settings["USER_FILTER"]}' \
