@@ -26,7 +26,6 @@ audit_log = logging.getLogger(AuditConfig.name)
 
 
 class CEFLogConstants:
-    syslog_header: str = ""
     cef_version: str = "CEF: 0"
     device_vendor: str = "Arenadata Software"
     device_product: str = "Arenadata Cluster Manager"
