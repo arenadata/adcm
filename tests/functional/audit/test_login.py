@@ -31,7 +31,16 @@ def _rbac_token_login(client: ADCMClient, username: str, password: str) -> reque
 
 
 def _viewer_login(client: ADCMClient, username: str, password: str) -> requests.Response:
-    return requests.post(f'{client.url}/api/v1/auth/login/', data={'username': username, 'password': password})
+    url = f'{client.url}/api/v1/auth/login/'
+    with requests.session() as session:
+        page = session.get(url)
+        # don't want to get beautiful soup for this one
+        csrf_token = (
+            page.content.decode('utf-8')
+            .split('<input type="hidden" name="csrfmiddlewaretoken" value="')[-1]
+            .split('"', maxsplit=1)[0]
+        )
+        return session.post(url, headers={'X-CSRFToken': csrf_token}, data={'username': username, 'password': password})
 
 
 @pytest.mark.parametrize(
@@ -41,40 +50,45 @@ def test_login_audit(
     login: Callable[[ADCMClient, str, str], requests.Response], sdk_client_fs: ADCMClient, adcm_api_credentials: dict
 ):
     """Test audit of logins: results, details"""
+
+    def _get_last_login() -> dict:
+        return requests.get(f'{sdk_client_fs.url}/api/v1/audit/login', headers=make_auth_header(sdk_client_fs)).json()[
+            'results'
+        ][0]
+
+    admin_user_id = sdk_client_fs.me().id
     admin_username = adcm_api_credentials['user']
     not_existing_user = 'blahblah'
     expected_fields = {'id', 'user_id', 'login_result', 'login_time', 'login_details', 'url'}
     with allure.step('Correct login'):
         login(sdk_client_fs, admin_username, adcm_api_credentials['password'])
+    with allure.step('Check first successful login details'):
+        first_login = _get_last_login()
+        assert first_login['user_id'] == sdk_client_fs.me().id, f'First login id should be {sdk_client_fs.me().id}'
+        assert first_login['login_result'] == 'success', 'Login should succeed'
+        assert first_login['login_details'] == {}, 'First login should not have login details'
     with allure.step('Login as not existent user'):
         login(sdk_client_fs, not_existing_user, 'passwordiririri')
+    with allure.step('Check second login failed because of user does not exist'):
+        first_login = _get_last_login()
+        assert first_login['user_id'] is None, 'Login user_id should be None'
+        assert first_login['login_result'] == 'user not found', 'Login should fail with "user not found" result'
+        assert first_login['login_details'] == {
+            'username': not_existing_user
+        }, f'Username in login details should be {not_existing_user}'
     with allure.step('Incorrect password'):
         login(sdk_client_fs, admin_username, adcm_api_credentials['password'] + 'alkjfelwm')
+    with allure.step('Check third login failed because of wrong password'):
+        first_login = _get_last_login()
+        assert first_login['user_id'] is admin_user_id, f'Login user_id should be {admin_user_id}'
+        assert first_login['login_result'] == 'wrong password', 'Login should fail with "wrong password" result'
+        assert first_login['login_details'] == {
+            'username': admin_username
+        }, f'Username in login details should be {not_existing_user}'
     with allure.step('Check logs are correct'):
         logins = requests.get(
             f'{sdk_client_fs.url}/api/v1/audit/login', headers=make_auth_header(sdk_client_fs)
         ).json()['results']
-        # there may be admin/status login before ones made in test
-        assert len(logins) >= 3, 'There should be at least 3 records in login audit log'
         assert all(
             rec.keys() == expected_fields for rec in logins
         ), f'One of records have field not equal to: {", ".join(expected_fields)}'
-    with allure.step('Check first successful login details'):
-        first_login = logins[2]
-        assert first_login['user_id'] == sdk_client_fs.me().id, f'First login id should be {sdk_client_fs.me().id}'
-        assert first_login['login_details'] is None, 'First login should not have login details'
-        assert first_login['login_result'] == 'success', 'Login should succeed'
-    with allure.step('Check second login failed because of user does not exist'):
-        first_login = logins[1]
-        assert first_login['user_id'] is None, 'Login user_id should be None'
-        assert first_login['login_details'] == {
-            'username': not_existing_user
-        }, f'Username in login details should be {not_existing_user}'
-        assert first_login['login_result'] == 'user not found', 'Login should fail with "user not found" result'
-    with allure.step('Check third login failed because of wrong password'):
-        first_login = logins[0]
-        assert first_login['user_id'] is None, 'Login user_id should be None'
-        assert first_login['login_details'] == {
-            'username': admin_username
-        }, f'Username in login details should be {not_existing_user}'
-        assert first_login['login_result'] == 'wrong password', 'Login should fail with "wrong password" result'
