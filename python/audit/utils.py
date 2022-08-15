@@ -1094,7 +1094,10 @@ def audit(func):
             if not deleted_obj:
                 status_code = exc.status_code
             else:  # when denied returns 404 from PermissionListMixin
-                status_code = HTTP_403_FORBIDDEN
+                if "There is host" in exc.msg:
+                    status_code = error.status_code
+                else:
+                    status_code = HTTP_403_FORBIDDEN
         except PermissionDenied as exc:
             status_code = HTTP_403_FORBIDDEN
             error = exc
