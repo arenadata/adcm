@@ -821,13 +821,12 @@ def _get_audit_operation_and_object(
                 audit_object = None
 
         case ["provider", provider_pk]:
-            deleted_obj: HostProvider
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Provider.capitalize()} "
                      f"{AuditLogOperationType.Delete}d",
                 operation_type=AuditLogOperationType.Delete,
             )
-            if deleted_obj:
+            if isinstance(deleted_obj, HostProvider):
                 audit_object = _get_or_create_audit_obj(
                     object_id=provider_pk,
                     object_name=deleted_obj.name,
