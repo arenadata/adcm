@@ -13,7 +13,7 @@
 """Defines basic entities like Operation and NamedOperation to work with audit log scenarios"""
 
 from dataclasses import dataclass, field, fields
-from typing import ClassVar, Collection, Dict, List, Literal, NamedTuple, Optional, Union, Tuple
+from typing import ClassVar, Collection, Dict, List, Literal, NamedTuple, Optional, Tuple, Union
 
 from adcm_client.audit import AuditOperation, ObjectType, OperationResult, OperationType
 
@@ -112,6 +112,12 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         ),
     )
 }
+
+_failed_denied_config_group_creation = NamedOperation(
+    'create-group-config',
+    'configuration group created',
+    (ObjectType.CLUSTER, ObjectType.SERVICE, ObjectType.COMPONENT),
+)
 _NAMED_OPERATIONS.update(
     {
         # Group config
@@ -120,11 +126,8 @@ _NAMED_OPERATIONS.update(
             '{name} configuration group created',
             (ObjectType.CLUSTER, ObjectType.SERVICE, ObjectType.COMPONENT),
         ),
-        (OperationResult.FAIL, 'create-group-config'): NamedOperation(
-            'create-group-config',
-            'configuration group created',
-            (ObjectType.CLUSTER, ObjectType.SERVICE, ObjectType.COMPONENT),
-        ),
+        (OperationResult.FAIL, 'create-group-config'): _failed_denied_config_group_creation,
+        (OperationResult.DENIED, 'create-group-config'): _failed_denied_config_group_creation,
     }
 )
 
@@ -199,7 +202,8 @@ class Operation:
             raise KeyError(
                 f'Incorrect operation name: {operation}.\n'
                 'If operation name is correct, add it to `_NAMED_OPERATIONS`\n'
-                f'Registered names: {", ".join(_NAMED_OPERATIONS.keys())}\n'
+                'Registered names: '
+                ", ".join(k if isinstance(k, str) else str(k) for k in _NAMED_OPERATIONS.keys())
             )
 
         return named_operation.resolve(self.object_type, **self.code)
