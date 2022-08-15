@@ -84,7 +84,7 @@ class AuditLogChecker:
             self._attach_all_operations_and_expected_one(sorted_audit_records, first_expected_operation)
             raise
         last_processed_operation = None
-        for expected_operation in operations:
+        for i, expected_operation in enumerate(operations):
             try:
                 suitable_records = self.check_next(expected_operation, suitable_records)
             except AssertionError:
@@ -92,7 +92,7 @@ class AuditLogChecker:
                 if last_processed_operation:
                     allure.attach(
                         pprint.pformat(last_processed_operation),
-                        name='Last processed operation',
+                        name=f'Last processed operation #{i}',  # not i - 1, because it's "natural" position of item
                         attachment_type=allure.attachment_type.JSON,
                     )
                 raise

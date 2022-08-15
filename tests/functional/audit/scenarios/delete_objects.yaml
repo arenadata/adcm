@@ -14,88 +14,93 @@ settings:
   process-type: sequence
   start-from-first: matched
 
-# restore denied within ADCM-3039
-
 operations:
   # denied
-#  - delete: &cluster
-#      what:
-#        type: cluster
-#        name: cluster
-#    result: denied
-#  - delete: &provider
-#      what:
-#        type: provider
-#        name: provider
-#    result: denied
-#  - delete: &host-1
-#      what:
-#        type: host
-#        name: host-1
-#    result: denied
-#  - delete: &bundle
-#      what:
-#        type: bundle
-#    result: denied
-#  - delete: *bundle
-#    result: denied
-#  - delete: &user
-#      what:
-#        type: user
-#        name: newuser
-#    result: denied
-#  - delete: &group
-#      what:
-#        type: group
-#        name: groupforU
-#    result: denied
-#  - delete: &role
-#      what:
-#        type: role
-#        name: newrole
-#    result: denied
-#  - delete: &policy
-#      what:
-#        type: policy
-#        name: newpolicy
-#    result: denied
-#  - delete: &host-2
-#      what:
-#        type: host
-#        name: host-2
-#    result: denied
-#  - delete: &cluster-group
-#      <<: *cluster
-#      how:
-#        operation: create-group-config
-#        name: cluster-group
-#    result: denied
-#  - delete: &service-group
-#      what:
-#        type: service
-#        name: service
-#      how:
-#        operation: create-group-config
-#        name: service-group
-#    result: denied
-#  - delete: &component-group
-#      what:
-#        type: component
-#        name: component
-#      how:
-#        operation: create-group-config
-#        name: component-group
-#    result: denied
-  # failed
+  - delete: &cluster
+      what:
+        type: cluster
+        name: cluster
+    result: denied
+    username: {{ username }}
   - delete: &provider
       what:
         type: provider
         name: provider
-    result: fail
+    result: denied
+    username: {{ username }}
   - delete: &host-1
       what:
         type: host
         name: host-1
+    result: denied
+    username: {{ username }}
+  - delete: &bundle
+      what:
+        type: bundle
+    result: denied
+    username: {{ username }}
+  - delete: *bundle
+    result: denied
+    username: {{ username }}
+  - delete: &user
+      what:
+        type: user
+        name: newuser
+    result: denied
+    username: {{ username }}
+  - delete: &group
+      what:
+        type: group
+        name: groupforU
+    result: denied
+    username: {{ username }}
+  - delete: &role
+      what:
+        type: role
+        name: newrole
+    result: denied
+    username: {{ username }}
+  - delete: &policy
+      what:
+        type: policy
+        name: newpolicy
+    result: denied
+    username: {{ username }}
+  - delete: &host-2
+      what:
+        type: host
+        name: host-2
+    result: denied
+    username: {{ username }}
+  - delete: &cluster-group
+      <<: *cluster
+      how:
+        operation: delete-group-config
+        name: cluster-group
+    result: denied
+    username: {{ username }}
+  - delete: &service-group
+      what:
+        type: service
+        name: service
+      how:
+        operation: delete-group-config
+        name: service-group
+    result: denied
+    username: {{ username }}
+  - delete: &component-group
+      what:
+        type: component
+        name: component
+      how:
+        operation: delete-group-config
+        name: component-group
+    result: denied
+    username: {{ username }}
+  # failed
+  - delete: *provider
+    result: fail
+  - delete: *host-1
     result: fail
   - delete: &cluster_bundle
       what:
@@ -107,10 +112,7 @@ operations:
         type: bundle
         name: provider
     result: fail
-  - delete: &host-2
-      what:
-        type: host
-        name: host-2
+  - delete: *host-2
     result: fail
   - delete:
       what:
@@ -118,49 +120,16 @@ operations:
         name: {{ built_in_role }}
     result: fail
   # succeed
-  - delete: &cluster-group
-      what:
-        type: cluster
-        name: cluster
-      how:
-        operation: delete-group-config
-        name: cluster-group
-  - delete: &service-group
-      what:
-        type: service
-        name: service
-      how:
-        operation: delete-group-config
-        name: service-group
-  - delete: &component-group
-      what:
-        type: component
-        name: component
-      how:
-        operation: delete-group-config
-        name: component-group
-  - delete: &cluster
-      what:
-        type: cluster
-        name: cluster
+  - delete: *cluster-group
+  - delete: *service-group
+  - delete: *component-group
+  - delete: *cluster
   - delete: *host-2
   - delete: *host-1
   - delete: *provider
   - delete: *cluster_bundle
   - delete: *provider_bundle
-  - delete: &user
-      what:
-        type: user
-        name: newuser
-  - delete: &group
-      what:
-        type: group
-        name: groupforU
-  - delete: &role
-      what:
-        type: role
-        name: newrole
-  - delete: &policy
-      what:
-        type: policy
-        name: newpolicy
+  - delete: *user
+  - delete: *group
+  - delete: *role
+  - delete: *policy

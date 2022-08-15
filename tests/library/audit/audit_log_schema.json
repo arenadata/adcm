@@ -36,7 +36,7 @@
         "result": {
           "$ref": "#/definitions/operation-result"
         },
-        "user": {
+        "username": {
           "type": "string"
         }
       }
