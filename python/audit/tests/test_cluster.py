@@ -89,6 +89,7 @@ class TestCluster(BaseTestCase):
         self.host_conf_updated_str = "Host configuration updated"
         self.component_conf_updated_str = "Component configuration updated"
         self.service_conf_updated_str = "Service configuration updated"
+        self.cluster_deleted_str = "Cluster deleted"
 
     @staticmethod
     def check_log_no_obj(
@@ -365,7 +366,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_type=AuditObjectType.Cluster,
-            operation_name="Cluster deleted",
+            operation_name=self.cluster_deleted_str,
             operation_type=AuditLogOperationType.Delete,
         )
 
@@ -379,7 +380,7 @@ class TestCluster(BaseTestCase):
 
         assert res.status_code == HTTP_404_NOT_FOUND
         assert not log.audit_object
-        assert log.operation_name == "Cluster deleted"
+        assert log.operation_name == self.cluster_deleted_str
         assert log.operation_type == AuditLogOperationType.Delete
         assert log.operation_result == AuditLogOperationResult.Fail
         assert isinstance(log.operation_time, datetime)
@@ -404,7 +405,7 @@ class TestCluster(BaseTestCase):
         assert res.status_code == HTTP_403_FORBIDDEN
         self.check_log_denied(
             log=log,
-            operation_name="Cluster deleted",
+            operation_name=self.cluster_deleted_str,
             operation_type=AuditLogOperationType.Delete,
         )
 
@@ -419,7 +420,7 @@ class TestCluster(BaseTestCase):
         assert res.status_code == HTTP_404_NOT_FOUND
         self.check_log_denied(
             log=log,
-            operation_name="Cluster deleted",
+            operation_name=self.cluster_deleted_str,
             operation_type=AuditLogOperationType.Delete,
         )
 
