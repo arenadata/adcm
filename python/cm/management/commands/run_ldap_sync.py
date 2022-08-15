@@ -12,6 +12,7 @@
 
 from datetime import timedelta
 
+from audit.models import AuditLogOperationResult
 from audit.utils import make_audit_log
 from cm.config import Job
 from cm.job import start_task
@@ -46,20 +47,21 @@ class Command(BaseCommand):
         last_sync = TaskLog.objects.filter(
             action__name='run_ldap_sync', status__in=[Job.SUCCESS, Job.FAILED]
         ).last()
-        make_audit_log('sync', 'success', 'launched')
         if last_sync is None:
             log.debug("First ldap sync launched in %s", timezone.now())
+            make_audit_log('sync', AuditLogOperationResult.Success, 'launched')
             task = start_task(action, adcm_object, {}, {}, [], [], False)
             if task:
-                make_audit_log('sync', 'success', 'completed')
+                make_audit_log('sync', AuditLogOperationResult.Success, 'completed')
             else:
-                make_audit_log('sync', 'failed', 'completed')
+                make_audit_log('sync', AuditLogOperationResult.Fail, 'completed')
             return
         new_rotate_time = last_sync.finish_date + timedelta(minutes=period - 1)
         if new_rotate_time <= timezone.now():
             log.debug("Ldap sync launched in %s", timezone.now())
+            make_audit_log('sync', AuditLogOperationResult.Success, 'launched')
             task = start_task(action, adcm_object, {}, {}, [], [], False)
             if task:
-                make_audit_log('sync', 'success', 'completed')
+                make_audit_log('sync', AuditLogOperationResult.Success, 'completed')
             else:
-                make_audit_log('sync', 'failed', 'completed')
+                make_audit_log('sync', AuditLogOperationResult.Fail, 'completed')

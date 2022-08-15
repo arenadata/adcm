@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from subprocess import STDOUT, CalledProcessError, check_output
 
+from audit.models import AuditLogOperationResult
 from audit.utils import make_audit_log
 from cm import config
 from cm.logger import log_cron_task as log
@@ -178,14 +179,14 @@ class Command(BaseCommand):
                 if not self.__has_related_records(cl.obj_ref)
             )
             if target_configlog_ids or target_objectconfig_ids:
-                make_audit_log('config', 'success', 'launched')
+                make_audit_log('config', AuditLogOperationResult.Success, 'launched')
 
             with transaction.atomic():
                 DummyData.objects.filter(id=1).update(date=timezone.now())
                 ConfigLog.objects.filter(id__in=target_configlog_ids).delete()
                 ObjectConfig.objects.filter(id__in=target_objectconfig_ids).delete()
                 if target_configlog_ids or target_objectconfig_ids:
-                    make_audit_log('config', 'success', 'completed')
+                    make_audit_log('config', AuditLogOperationResult.Success, 'completed')
 
             self.__log(
                 f'Deleted {len(target_configlog_ids)} ConfigLogs and '
@@ -194,7 +195,7 @@ class Command(BaseCommand):
             )
 
         except Exception as e:  # pylint: disable=broad-except
-            make_audit_log('config', 'failed', 'completed')
+            make_audit_log('config', AuditLogOperationResult.Fail, 'completed')
             self.__log('Error in ConfigLog rotation', 'warning')
             self.__log(e, 'exception')
 
@@ -231,21 +232,20 @@ class Command(BaseCommand):
                 f'db - {threshold_date_db}, fs - {threshold_date_fs}',
                 'info',
             )
+            is_deleted = False
             if days_delta_db > 0:
                 target_tasklogs = TaskLog.objects.filter(
                     finish_date__lte=threshold_date_db, status__in=['success', 'failed']
                 )
                 if target_tasklogs:
-                    make_audit_log('task_db', 'success', 'launched')
+                    is_deleted = True
                     with transaction.atomic():
                         DummyData.objects.filter(id=1).update(date=timezone.now())
                         target_tasklogs.delete()
                         # valid as long as `on_delete=models.SET_NULL` in JobLog.task field
                         JobLog.objects.filter(task__isnull=True).delete()
-                        make_audit_log('task_db', 'success', 'completed')
 
                 self.__log('db JobLog rotated', 'info')
-            is_deleted = False
             if days_delta_fs > 0:  # pylint: disable=too-many-nested-blocks
                 for name in os.listdir(config.RUN_DIR):
                     if not name.startswith('.'):  # a line of code is used for development
@@ -261,12 +261,11 @@ class Command(BaseCommand):
                         except FileNotFoundError:
                             pass
                 if is_deleted:
-                    make_audit_log('task_fs', 'success', 'launched')
-                    make_audit_log('task_fs', 'success', 'completed')
+                    make_audit_log('task', AuditLogOperationResult.Success, 'launched')
+                    make_audit_log('task', AuditLogOperationResult.Success, 'completed')
                 self.__log('fs JobLog rotated', 'info')
         except Exception as e:  # pylint: disable=broad-except
-            make_audit_log('task_db', 'failed', 'completed')
-            make_audit_log('task_fs', 'failed', 'completed')
+            make_audit_log('task', AuditLogOperationResult.Fail, 'completed')
             self.__log('Error in JobLog rotation', 'warning')
             self.__log(e, 'exception')
 

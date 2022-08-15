@@ -60,17 +60,6 @@ def _get_audit_object_from_resp(res: Response, obj_type: str) -> Optional[AuditO
     return audit_object
 
 
-def _get_object_type_from_resp(audit_operation: AuditOperation, resp: Response) -> str:
-    if audit_operation.object_type == "config log":
-        object_type: str = ContentType.objects.get_for_model(
-            resp.data.serializer.instance.obj_ref.object
-        ).name
-    else:
-        object_type: str = resp.data.serializer.instance.object_type.name
-
-    return object_type
-
-
 def _task_case(task_pk: str, action: str) -> Tuple[AuditOperation, AuditObject]:
     if action == "cancel":
         action = f"{action}l"
@@ -990,13 +979,9 @@ def mark_deleted_audit_object(instance, object_type: str):
 
 def make_audit_log(operation_type, result, operation_status):
     operation_type_map = {
-        "task_db": {
+        "task": {
             "type": AuditLogOperationType.Delete,
-            "name": '"Task log cleanup in database on schedule" job',
-        },
-        "task_fs": {
-            "type": AuditLogOperationType.Delete,
-            "name": '"Task log cleanup in filesystem on schedule" job',
+            "name": '"Task log cleanup on schedule" job',
         },
         "config": {
             "type": AuditLogOperationType.Delete,
@@ -1008,18 +993,10 @@ def make_audit_log(operation_type, result, operation_status):
             "name": '"Audit log cleanup/archiving on schedule" job',
         },
     }
-    result = (
-        AuditLogOperationResult.Success if result == 'success' else AuditLogOperationResult.Fail
-    )
     operation_name = operation_type_map[operation_type]["name"] + ' ' + operation_status
-    audit_object = _get_or_create_audit_obj(
-        object_id=ADCM.objects.get().id,
-        object_name='ADCM',
-        object_type=AuditObjectType.ADCM,
-    )
     system_user = User.objects.get(username='system')
     AuditLog.objects.create(
-        audit_object=audit_object,
+        audit_object=None,
         operation_name=operation_name,
         operation_type=operation_type_map[operation_type]['type'],
         operation_result=result,
