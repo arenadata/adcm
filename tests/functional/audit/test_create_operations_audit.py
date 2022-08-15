@@ -111,8 +111,6 @@ def test_bundle_upload_load(audit_log_checker, post, bundle_archives, sdk_client
             with bundle_path.open('rb') as f:
                 check_failed(post(CreateOperation.UPLOAD, files={'file': f}, headers=unauthorized_user_creds), 403)
             with bundle_path.open('rb') as f:
-                check_failed(post(CreateOperation.UPLOAD, files={'file': f}, headers=unauthorized_user_creds), 403)
-            with bundle_path.open('rb') as f:
                 check_succeed(post(CreateOperation.UPLOAD, files={'file': f}))
             check_failed(
                 post(CreateOperation.LOAD, {'bundle_file': bundle_path.name}, headers=unauthorized_user_creds), 403
@@ -133,6 +131,7 @@ def test_bundle_upload_load(audit_log_checker, post, bundle_archives, sdk_client
         check_failed(post(CreateOperation.LOAD, {'bundle': 'somwthign'}, headers=unauthorized_user_creds), 403)
         check_failed(post(CreateOperation.UPLOAD, files={'wrongkey': 'sldkj'}))
         check_failed(post(CreateOperation.LOAD, {'bundle': 'somwthign'}))
+    audit_log_checker.set_user_map(sdk_client_fs)
     audit_log_checker.check(sdk_client_fs.audit_operation_list())
 
 
@@ -156,10 +155,11 @@ def test_rbac_create_operations(parse_with_context, rbac_create_data, post, sdk_
             check_failed(
                 post(getattr(CreateOperation, object_type.upper()), create_data, headers=new_user_auth_header), 403
             )
+    audit_checker.set_user_map(sdk_client_fs)
     audit_checker.check(sdk_client_fs.audit_operation_list())
 
 
-@parametrize_audit_scenario_parsing('create_adcm_entities.yaml')  # pylint: disable-next=too-many-locals
+@parametrize_audit_scenario_parsing('create_adcm_entities.yaml', NEW_USER)  # pylint: disable-next=too-many-locals
 def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_client_fs):
     """
     Test audit logs for CREATE of ADCM objects:
@@ -215,4 +215,5 @@ def test_create_adcm_objects(audit_log_checker, post, new_user_client, sdk_clien
             check_succeed(post(CreateOperation.GROUP_CONFIG, data))
             check_failed(post(CreateOperation.GROUP_CONFIG, data), 400)
             check_failed(post(CreateOperation.GROUP_CONFIG, data, headers=new_user_creds), 403)
+    audit_log_checker.set_user_map(sdk_client_fs)
     audit_log_checker.check(sdk_client_fs.audit_operation_list())
