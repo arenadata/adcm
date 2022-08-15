@@ -19,7 +19,15 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import Bundle, ConfigLog, Host, HostProvider, ObjectConfig, Prototype
+from cm.models import (
+    Bundle,
+    Cluster,
+    ConfigLog,
+    Host,
+    HostProvider,
+    ObjectConfig,
+    Prototype,
+)
 from django.urls import reverse
 from rbac.models import User
 from rest_framework.response import Response
@@ -32,9 +40,9 @@ class TestHost(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        bundle = Bundle.objects.create()
-        provider_prototype = Prototype.objects.create(bundle=bundle, type="provider")
-        self.host_prototype = Prototype.objects.create(bundle=bundle, type="host")
+        self.bundle = Bundle.objects.create()
+        provider_prototype = Prototype.objects.create(bundle=self.bundle, type="provider")
+        self.host_prototype = Prototype.objects.create(bundle=self.bundle, type="host")
         self.provider = HostProvider.objects.create(
             name="test_provider",
             prototype=provider_prototype,
@@ -180,6 +188,19 @@ class TestHost(BaseTestCase):
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
 
+    def test_delete_failed(self):
+        self.host.cluster = Cluster.objects.create(
+            prototype=Prototype.objects.create(bundle=self.bundle, type="cluster"),
+            name="test_cluster",
+        )
+        self.host.save(update_fields=["cluster"])
+
+        self.client.delete(path=reverse("host-details", kwargs={"host_id": self.host.pk}))
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_deleted(log=log, operation_result=AuditLogOperationResult.Fail)
+
     def test_delete_via_provider(self):
         self.client.delete(
             path=reverse(
@@ -206,6 +227,23 @@ class TestHost(BaseTestCase):
         self.check_host_deleted(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
+
+    def test_delete_via_provider_failed(self):
+        self.host.cluster = Cluster.objects.create(
+            prototype=Prototype.objects.create(bundle=self.bundle, type="cluster"),
+            name="test_cluster",
+        )
+        self.host.save(update_fields=["cluster"])
+
+        self.client.delete(
+            path=reverse(
+                "host-details", kwargs={"host_id": self.host.pk, "provider_id": self.provider.pk}
+            ),
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_host_deleted(log=log, operation_result=AuditLogOperationResult.Fail)
 
     def test_create_via_provider(self):
         res: Response = self.client.post(
