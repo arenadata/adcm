@@ -1050,6 +1050,8 @@ def audit(func):
             except PermissionDenied:
                 if "cluster_id" in kwargs:
                     deleted_obj = Cluster.objects.filter(pk=kwargs["cluster_id"]).first()
+                else:
+                    deleted_obj = None
         else:
             deleted_obj = None
 
