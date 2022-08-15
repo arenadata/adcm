@@ -24,12 +24,6 @@ from audit.models import AuditLog, AuditLogOperationResult, AuditSession
 
 audit_log = logging.getLogger(AuditConfig.name)
 
-TEMPLATE = (
-    "{syslog_header}"
-    "{cef_version}|{device_vendor}|{device_product}|"
-    "{adcm_version}|{signature_id}|{name}|{severity}|{extension}"
-)
-
 
 class CEFLogConstants:
     syslog_header: str = ""
@@ -74,15 +68,13 @@ def cef_log(
     else:
         raise NotImplementedError
 
-    msg = TEMPLATE.format(
-        syslog_header=CEFLogConstants.syslog_header,
-        cef_version=CEFLogConstants.cef_version,
-        device_vendor=CEFLogConstants.device_vendor,
-        device_product=CEFLogConstants.device_product,
-        adcm_version=CEFLogConstants.adcm_version,
-        signature_id=signature_id,
-        name=operation_name,
-        severity=severity if severity is not None else CEFLogConstants.severity,
-        extension=" ".join([f"{k}={v}" for k, v in extension.items() if v is not None]),
+    severity = severity if severity is not None else CEFLogConstants.severity
+    extension = " ".join([f"{k}={v}" for k, v in extension.items() if v is not None])
+
+    msg = (
+        f"{CEFLogConstants.cef_version}|{CEFLogConstants.device_vendor}|"
+        f"{CEFLogConstants.device_product}|{CEFLogConstants.adcm_version}|"
+        f"{signature_id}|{operation_name}|{severity}|{extension}"
     )
+
     audit_log.info(msg)
