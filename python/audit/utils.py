@@ -212,17 +212,20 @@ def _get_audit_operation_and_object(
                 obj = deleted_obj
             else:
                 operation_type = AuditLogOperationType.Update
-                obj = Cluster.objects.get(pk=cluster_pk)
+                obj = Cluster.objects.filter(pk=cluster_pk).first()
 
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Cluster.capitalize()} {operation_type}d",
                 operation_type=operation_type,
             )
-            audit_object = _get_or_create_audit_obj(
-                object_id=cluster_pk,
-                object_name=obj.name,
-                object_type=AuditObjectType.Cluster,
-            )
+            if obj:
+                audit_object = _get_or_create_audit_obj(
+                    object_id=cluster_pk,
+                    object_name=obj.name,
+                    object_type=AuditObjectType.Cluster,
+                )
+            else:
+                audit_object = None
 
         case ["cluster", cluster_pk, "host"]:
             audit_operation = AuditOperation(
@@ -1044,6 +1047,9 @@ def audit(func):
                         deleted_obj = None
             except KeyError:
                 deleted_obj = None
+            except PermissionDenied:
+                if "cluster_id" in kwargs:
+                    deleted_obj = Cluster.objects.filter(pk=kwargs["cluster_id"]).first()
         else:
             deleted_obj = None
 
