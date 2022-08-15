@@ -13,7 +13,7 @@
 
 import logging
 from collections import OrderedDict
-from typing import Optional, Tuple, Union
+from typing import Tuple, Union
 
 from django.conf import settings
 from django.utils import timezone as tz
@@ -30,7 +30,6 @@ class CEFLogConstants:
     device_vendor: str = "Arenadata Software"
     device_product: str = "Arenadata Cluster Manager"
     adcm_version: str = settings.ADCM_VERSION
-    severity: int = 1
     operation_name_session: str = "User logged"
     extension_keys: Tuple[str] = ("actor", "act", "operation", "resource", "result", "timestamp")
 
@@ -38,7 +37,7 @@ class CEFLogConstants:
 def cef_log(
     audit_instance: Union[AuditLog, AuditSession],
     signature_id: str,
-    severity: Optional[int] = None,
+    severity: int = 1,
     empty_resource: bool = False,
 ) -> None:
     extension = OrderedDict.fromkeys(CEFLogConstants.extension_keys, None)
@@ -67,7 +66,6 @@ def cef_log(
     else:
         raise NotImplementedError
 
-    severity = severity if severity is not None else CEFLogConstants.severity
     extension = " ".join([f"{k}={v}" for k, v in extension.items() if v is not None])
 
     msg = (
