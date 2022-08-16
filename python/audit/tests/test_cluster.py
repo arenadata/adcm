@@ -155,6 +155,15 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
+    def check_cluster_delete_failed_not_found(self, log: AuditLog):
+        assert not log.audit_object
+        assert log.operation_name == self.cluster_deleted_str
+        assert log.operation_type == AuditLogOperationType.Delete
+        assert log.operation_result == AuditLogOperationResult.Fail
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
+
     def create_cluster(self, bundle_id: int, name: str, prototype_id: int):
         return self.client.post(
             path=reverse("cluster"),
@@ -378,6 +387,15 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Delete,
         )
 
+        res: Response = self.client.delete(
+            path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_404_NOT_FOUND
+        self.check_cluster_delete_failed_not_found(log=log)
+
     def test_delete_failed(self):
         cluster_ids = ClusterObject.objects.all().values_list("pk", flat=True).order_by("-pk")
         res = self.client.delete(
@@ -387,13 +405,7 @@ class TestCluster(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert res.status_code == HTTP_404_NOT_FOUND
-        assert not log.audit_object
-        assert log.operation_name == self.cluster_deleted_str
-        assert log.operation_type == AuditLogOperationType.Delete
-        assert log.operation_result == AuditLogOperationResult.Fail
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.check_cluster_delete_failed_not_found(log=log)
 
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
