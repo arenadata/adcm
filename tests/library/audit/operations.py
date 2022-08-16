@@ -44,7 +44,8 @@ class NamedOperation(NamedTuple):
                 'Please check definition of an operation.'
             )
         try:
-            return self.naming_template.format(type_=object_type.value.capitalize(), **format_args)
+            type_ = object_type.value.capitalize() if object_type != ObjectType.ADCM else object_type.value.upper()
+            return self.naming_template.format(type_=type_, **format_args)
         except KeyError as e:
             raise KeyError(
                 f'It looks like you missed some keys required to format "{self.naming_template}" string\n'
@@ -79,7 +80,7 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         NamedOperation('set-hostcomponent', 'Host-component map updated', (ObjectType.CLUSTER,)),
         # configs
         NamedOperation(
-            'set-config',
+            'set-config',  # restore is the same
             '{type_} configuration updated',
             _OBJECTS_WITH_ACTIONS_AND_CONFIGS,
         ),
