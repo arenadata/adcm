@@ -247,8 +247,8 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
             )
 
     def test_schema(self):
-        response = self.api_get('/schema/')
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        response = self.client.get('/api/v1/schema/')
+        self.assertEqual(response.status_code, 200, msg=response.content)
 
     def test_docs(self):
         response = self.api_get('/docs/')
