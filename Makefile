@@ -65,7 +65,7 @@ pytest: ## Run functional tests
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
 	hub.adsw.io/library/functest:3.8.6.slim.buster-x64 /bin/sh -e \
 	./pytest.sh -m "ldap" \
-	--adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
+	--adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))' \
 	--ldap-conf ${LDAP_CONF_FILE}
 
 pytest_release: ## Run functional tests on release
