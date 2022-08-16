@@ -113,6 +113,8 @@ def restore_user(user):
         user.save()
     except IntegrityError as e:
         if "username" in str(e):
-            raise AdcmEx("USER_CONFLICT", "User with same username already exist, restore failed")
+            raise AdcmEx(
+                "USER_CONFLICT", "User with same username already exist, restore failed"
+            ) from e
         raise e
     return user
