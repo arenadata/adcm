@@ -251,10 +251,10 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, 200, msg=response.content)
 
     def test_docs(self):
-        response = self.api_get('/docs/')
-        self.assertEqual(response.status_code, 200, msg=response.text)
-        response = self.api_get('/docs/md/')
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        response = self.client.get('/api/v1/docs/')
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        response = self.client.get('/api/v1/docs/md/')
+        self.assertEqual(response.status_code, 200, msg=response.content)
 
     def test_cluster(self):  # pylint: disable=too-many-statements
         cluster = 'test_cluster'
