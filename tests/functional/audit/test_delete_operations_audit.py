@@ -141,7 +141,7 @@ def test_delete(
         for obj in (host_1, provider, *bundles, *rbac_objects):
             endpoint = _get_endpoint_by_object(obj)
             check_succeed(delete(endpoint, obj.id))
-    audit_checker.check(sdk_client_fs.audit_operation_list())
+    audit_checker.check(sdk_client_fs.audit_operation_list(paging={'limit': 300}))
 
 
 def _get_endpoint_by_object(obj) -> str:
