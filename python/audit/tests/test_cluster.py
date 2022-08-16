@@ -395,22 +395,6 @@ class TestCluster(BaseTestCase):
         assert log.user.pk == self.test_user.pk
         assert isinstance(log.object_changes, dict)
 
-    def test_delete_no_rights_failed(self):
-        self.add_no_rights_user_cluster_view_rights()
-        with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
-                path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
-            )
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        assert res.status_code == HTTP_403_FORBIDDEN
-        self.check_log_denied(
-            log=log,
-            operation_name=self.cluster_deleted_str,
-            operation_type=AuditLogOperationType.Delete,
-        )
-
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
             res: Response = self.client.delete(
