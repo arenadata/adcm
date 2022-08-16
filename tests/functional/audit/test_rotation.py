@@ -18,7 +18,7 @@ import json
 import tarfile
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Collection, Dict, List, Set, Union
+from typing import Any, Collection, Dict, List, OrderedDict, Set, Union
 
 import allure
 import pytest
@@ -149,9 +149,10 @@ def test_cleanup_with_archiving(adcm_fs, sdk_client_fs, logins_to_be_archived, o
             archives[logins_filename],
             logins_expected_in_archive,
             AuditRecordConverter.get_audit_logins_archive_headers(),
+            exclude_from_comparison=(),
         )
     _check_audit_objects_records(archives[objects_filename])
-    _check_old_audit_logs_are_removed(sdk_client_fs, operations_expected_in_archive, logins_expected_in_archive)
+    _check_old_audit_logs_are_removed(sdk_client_fs, operation_to_be_archived, logins_to_be_archived)
 
 
 @pytest.mark.usefixtures('generic_provider')
@@ -198,7 +199,10 @@ def _check_all_archives_are_presented(
 
 
 def _check_records_are_correct(
-    archive_records: List[Dict[str, Any]], expected_records: List[Dict[str, Any]], expected_headers: Set[str]
+    archive_records: List[Dict[str, Any]],
+    expected_records: List[Dict[str, Any]],
+    expected_headers: Set[str],
+    exclude_from_comparison: Collection[str] = ('audit_object_id',),
 ) -> None:
     """Actual records shouldn't be empty"""
     with allure.step('Check headers'):
@@ -209,11 +213,14 @@ def _check_records_are_correct(
         assert (actual := len(archive_records)) == (
             expected := len(expected_records)
         ), f'Incorrect amount of records.\nExpected: {expected}.\nFound: {actual}'
+        cleaned_archive_records = [
+            {k: v for k, v in rec.items() if k not in exclude_from_comparison} for rec in archive_records
+        ]
         for expected in expected_records:
-            if not any(actual_record == expected for actual_record in archive_records):
+            if not any(actual_record == expected for actual_record in cleaned_archive_records):
                 allure.attach(
                     json.dumps(archive_records, indent=2),
-                    'Records from archive',
+                    f'Records from archive (not compared fields: {", ".join(exclude_from_comparison)})',
                     attachment_type=allure.attachment_type.JSON,
                 )
                 raise AssertionError(f'None of records matched {expected}')
@@ -280,7 +287,7 @@ class AuditRecordConverter:
             'object_changes',
             'user_id',
         ),
-        AuditLogin: ('id', 'login_result', 'login_time', 'details', 'user_id'),
+        AuditLogin: ('id', 'login_result', 'login_time', 'login_details', 'user_id'),
     }
 
     @classmethod
@@ -304,7 +311,7 @@ class AuditRecordConverter:
         fields = cls._FIELDS.get(record.__class__, None)
         if fields is None:
             raise TypeError(f'`record` should be an instance of either {AuditOperation} or {AuditLogin}')
-        return {field: cls._convert(getattr(record, field)) for field in fields}
+        return {field: str(cls._convert(getattr(record, field))) for field in fields}
 
     @classmethod
     def to_cef_record(cls, record: Union[AuditOperation, AuditLogin]) -> str:
@@ -316,7 +323,14 @@ class AuditRecordConverter:
         if isinstance(val, Enum):
             return val.value
         if isinstance(val, datetime):
-            return val.strftime("%Y-%m-%d %H:%M:%S.%f%z")
+            date = val.strftime("%Y-%m-%d %H:%M:%S.%f%z")
+            # all of this to add ":" to timezone
+            if date[-5] in ('+', '-'):
+                date = f'{date[:-2]}:{date[-2:]}'
+            return date
+        if isinstance(val, OrderedDict):
+            # for correct cast to string
+            return dict(val)
         return val
 
 
@@ -335,7 +349,7 @@ def get_parsed_archive_files(adcm: ADCM) -> Dict[str, List[Dict[str, Any]]]:
         with tarfile.open(mode='r', fileobj=file_obj) as tar:
             for member in tar.getmembers():
                 lines = [line.decode('utf-8') for line in tar.extractfile(member.name).readlines()]
-                records_in_files[member.name] = list(csv.DictReader(lines[1:], fieldnames=lines[0].split(',')))
+                records_in_files[member.name] = list(csv.DictReader(lines[1:], fieldnames=lines[0].strip().split(',')))
         return records_in_files
 
 
