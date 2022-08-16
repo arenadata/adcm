@@ -43,6 +43,14 @@ class JobList(PermissionListMixin, PaginatedView):
     permission_classes = (permissions.DjangoModelPermissions,)
     permission_required = ['cm.view_joblog']
 
+    def get_queryset(self, *args, **kwargs):
+        if self.request.user.is_superuser:
+            exclude_pks = []
+        else:
+            exclude_pks = JobLog.get_adcm_jobs_qs().values_list('pk', flat=True)
+
+        return super().get_queryset(*args, **kwargs).exclude(pk__in=exclude_pks)
+
 
 class JobDetail(PermissionListMixin, GenericUIView):
     queryset = JobLog.objects.all()
@@ -165,6 +173,14 @@ class Task(PermissionListMixin, PaginatedView):
     serializer_class_ui = serializers.TaskSerializer
     filterset_fields = ('action_id', 'pid', 'status', 'start_date', 'finish_date')
     ordering_fields = ('status', 'start_date', 'finish_date')
+
+    def get_queryset(self, *args, **kwargs):
+        if self.request.user.is_superuser:
+            exclude_pks = []
+        else:
+            exclude_pks = TaskLog.get_adcm_tasks_qs().values_list('pk', flat=True)
+
+        return super().get_queryset(*args, **kwargs).exclude(pk__in=exclude_pks)
 
 
 class TaskDetail(PermissionListMixin, DetailView):

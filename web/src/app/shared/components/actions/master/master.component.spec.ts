@@ -94,7 +94,7 @@ describe('MasterComponent', () => {
     fixture.detectChanges();
     const compHost: HTMLElement = fixture.debugElement.nativeElement;
     // expect(compHost.querySelector('i').textContent).toBe("Let's choose first");
-    const buttonsLength = compHost.querySelector('mat-action-list').getElementsByTagName('button').length;
+    const buttonsLength = compHost.querySelector('mat-action-list').getElementsByTagName('button')?.length;
     expect(buttonsLength).toBeGreaterThan(1);
   });
 

@@ -16,7 +16,7 @@ import { MatMenu } from '@angular/material/menu';
 @Component({
   selector: 'app-menu-item',
   styleUrls: ['./menu-item.component.scss'],
-  template: ` <mat-menu #menu="matMenu" xPosition="before" yPosition="below" overlapTrigger="false">
+  template: ` <mat-menu #menu="matMenu" xPosition="after" yPosition="below" overlapTrigger="false">
     <div mat-menu-item disabled *ngIf="!items?.length; else list">
       <i>No actions</i>
     </div>
@@ -25,7 +25,7 @@ import { MatMenu } from '@angular/material/menu';
         <div *ngIf="!a.children; else branch" [matTooltip]="actionListItemTooltip(a.disabling_cause)">
           <button
             mat-menu-item
-            [disabled]="a.disabling_cause === 'maintenance_mode'"
+            [disabled]="a.disabling_cause === 'maintenance_mode' || a.disabling_cause === 'no_ldap_settings'"
             [appForTest]="'action_btn'"
             [appActions]="{ cluster: cluster, actions: [a] }">
             <span>{{ a.display_name }}</span>

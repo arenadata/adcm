@@ -1,4 +1,4 @@
-<ng-container *ngIf="model?.actions.length === 0">
+<ng-container *ngIf="model?.actions?.length === 0">
   <p>No data for the action!</p>
 </ng-container>
 
@@ -54,7 +54,7 @@
     <mat-checkbox [(ngModel)]="verbose">Verbose</mat-checkbox>
 
     <div class="controls">
-      <ng-container *ngIf="model.actions.length > 1">
+      <ng-container *ngIf="model.actions?.length > 1">
         <button mat-raised-button color="primary" (click)="action = null">Back</button>
         <span [style.flex]="1"></span>
       </ng-container>

@@ -18,3 +18,4 @@
 0       3       *       *       6       run-parts /etc/periodic/weekly
 0       5       1       *       *       run-parts /etc/periodic/monthly
 0       8       */1     *       *       python /adcm/python/manage.py logrotate --target all
+*/1     *       *       *       *       python /adcm/python/manage.py run_ldap_sync

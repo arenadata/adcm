@@ -303,6 +303,7 @@ class TestServiceConfigPage:
         service_config_page.config.compare_versions(params["config_name_old"])
         service_config_page.config.check_config_fields_history_with_test_values()
 
+    @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3017")
     @pytest.mark.parametrize(
         "bundle_name", ["password_no_confirm_false_required_false", "password_no_confirm_true_required_false"]
     )
@@ -503,7 +504,7 @@ class TestServiceConfigPage:
                 service_config_page.config.type_in_field_with_few_inputs(row=row, values=value)
         service_config_page.config.save_config(load_timeout=40)
         with allure.step('Ensure page is still opened'):
-            service_config_page.wait_page_is_opened(timeout=1)
+            service_config_page.wait_page_is_opened(timeout=15)
         with allure.step('Check that popup is not presented on page'):
             assert not service_config_page.is_popup_presented_on_page(), 'No popup should be shown after save'
 

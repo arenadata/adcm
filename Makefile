@@ -59,19 +59,23 @@ unittests: basetests test_image ## Run unittests
 
 pytest: ## Run functional tests
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster-x64
-	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
+	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host \
+	-v $(CURDIR)/:/adcm -w /adcm/ \
 	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
 	hub.adsw.io/library/functest:3.8.6.slim.buster-x64 /bin/sh -e \
-	./pytest.sh -m "not full and not extra_rbac" --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
+	./pytest.sh -m "not full and not extra_rbac and not ldap" \
+	--adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
 
 pytest_release: ## Run functional tests on release
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster.firefox-x64
-	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host -v $(CURDIR)/:/adcm -w /adcm/ \
+	docker run -i --rm --shm-size=4g -v /var/run/docker.sock:/var/run/docker.sock --network=host \
+	-v $(CURDIR)/:/adcm -v ${LDAP_CONF_FILE}:${LDAP_CONF_FILE} -w /adcm/ \
 	-e BUILD_TAG=${BUILD_TAG} -e ADCMPATH=/adcm/ -e PYTHONPATH=${PYTHONPATH}:python/ \
 	-e SELENOID_HOST="${SELENOID_HOST}" -e SELENOID_PORT="${SELENOID_PORT}" \
 	hub.adsw.io/library/functest:3.8.6.slim.buster.firefox-x64 /bin/sh -e \
-	./pytest.sh --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))'
+	./pytest.sh --adcm-image='hub.adsw.io/adcm/adcm:$(subst /,_,$(BRANCH_NAME))' \
+	--ldap-conf ${LDAP_CONF_FILE}
 
 ng_tests: ## Run Angular tests
 	docker pull hub.adsw.io/library/functest:3.8.6.slim.buster_node16-x64
