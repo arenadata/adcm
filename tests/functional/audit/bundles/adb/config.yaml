@@ -38,3 +38,14 @@
   components:
     one_component:
       config: *config
+
+- type: service
+  name: dummy
+  display_name: dummy
+  version: 5.4
+
+  config: *config
+
+  components:
+    one_component:
+      config: *config
