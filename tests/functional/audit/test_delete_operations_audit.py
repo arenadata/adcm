@@ -100,13 +100,16 @@ def grant_view_config_permissions_on_adcm_objects(sdk_client_fs, adcm_objects, n
     )
 
 
+@pytest.mark.xfail(reason='will no work until user deactivation https://tracker.yandex.ru/ADCM-2582')
 @pytest.mark.parametrize('parse_with_context', ['delete_objects.yaml'], indirect=True)
 @pytest.mark.usefixtures(
     'grant_view_config_permissions_on_adcm_objects'
 )  # pylint: disable-next=too-many-locals,too-many-arguments
-def test_delete(parse_with_context, sdk_client_fs, delete, unauthorized_creds, rbac_objects, bundles, adcm_objects):
+def test_delete(
+    parse_with_context, sdk_client_fs, delete, new_user_client, unauthorized_creds, rbac_objects, bundles, adcm_objects
+):
     """Test audit DELETE operations of: ADCM objects, group configs and RBAC objects"""
-    context = {}
+    context = {'username': new_user_client.me().username}
     cluster, provider, host_1, host_2 = adcm_objects
     from_provider = (Delete.HOST_FROM_PROVIDER, host_2.id)
     provider_path_fmt = {'path_fmt': {'provider_id': provider.id}}
@@ -129,6 +132,8 @@ def test_delete(parse_with_context, sdk_client_fs, delete, unauthorized_creds, r
         role = sdk_client_fs.role(built_in=True)
         context['built_in_role'] = role.name
         check_failed(delete(Delete.ROLE, role.id), 405)
+    audit_checker = AuditLogChecker(parse_with_context(context))
+    audit_checker.set_user_map(sdk_client_fs)
     with allure.step('Delete objects'):
         for group_config in (obj.group_config()[0] for obj in (cluster, service, component)):
             check_succeed(delete(Delete.GROUP_CONFIG, group_config.id))
@@ -137,8 +142,7 @@ def test_delete(parse_with_context, sdk_client_fs, delete, unauthorized_creds, r
         for obj in (host_1, provider, *bundles, *rbac_objects):
             endpoint = _get_endpoint_by_object(obj)
             check_succeed(delete(endpoint, obj.id))
-    audit_checker = AuditLogChecker(parse_with_context(context))
-    audit_checker.check(sdk_client_fs.audit_operation_list())
+    audit_checker.check(sdk_client_fs.audit_operation_list(paging={'limit': 300}))
 
 
 def _get_endpoint_by_object(obj) -> str:

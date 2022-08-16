@@ -39,7 +39,8 @@ from cm.models import (
 )
 from django.conf import settings
 from django.urls import reverse
-from rbac.models import User
+from rbac.models import Policy, Role, User
+from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
@@ -84,6 +85,11 @@ class TestCluster(BaseTestCase):
             provider=provider,
             config=config,
         )
+        self.cluster_conf_updated_str = "Cluster configuration updated"
+        self.host_conf_updated_str = "Host configuration updated"
+        self.component_conf_updated_str = "Component configuration updated"
+        self.service_conf_updated_str = "Service configuration updated"
+        self.cluster_deleted_str = "Cluster deleted"
 
     @staticmethod
     def check_log_no_obj(
@@ -145,7 +151,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_type=AuditObjectType.Cluster,
-            operation_name="Cluster configuration updated",
+            operation_name=self.cluster_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
         )
 
@@ -193,6 +199,14 @@ class TestCluster(BaseTestCase):
             prototype=prototype,
             config=config,
         )
+
+    def add_no_rights_user_cluster_view_rights(self) -> None:
+        init_roles()
+        role = Role.objects.get(name="View cluster configurations")
+        policy = Policy.objects.create(name="test_policy", role=role)
+        policy.user.add(self.no_rights_user)
+        policy.add_object(self.cluster)
+        policy.apply()
 
     def test_create(self):
         res: Response = self.create_cluster(
@@ -360,9 +374,26 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_type=AuditObjectType.Cluster,
-            operation_name="Cluster deleted",
+            operation_name=self.cluster_deleted_str,
             operation_type=AuditLogOperationType.Delete,
         )
+
+    def test_delete_failed(self):
+        cluster_ids = ClusterObject.objects.all().values_list("pk", flat=True).order_by("-pk")
+        res = self.client.delete(
+            path=reverse("cluster-details", kwargs={"cluster_id": cluster_ids[0] + 1})
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_404_NOT_FOUND
+        assert not log.audit_object
+        assert log.operation_name == self.cluster_deleted_str
+        assert log.operation_type == AuditLogOperationType.Delete
+        assert log.operation_result == AuditLogOperationResult.Fail
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == self.test_user.pk
+        assert isinstance(log.object_changes, dict)
 
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
@@ -375,7 +406,23 @@ class TestCluster(BaseTestCase):
         assert res.status_code == HTTP_404_NOT_FOUND
         self.check_log_denied(
             log=log,
-            operation_name="Cluster deleted",
+            operation_name=self.cluster_deleted_str,
+            operation_type=AuditLogOperationType.Delete,
+        )
+
+    def test_delete_no_rights_denied(self):
+        self.add_no_rights_user_cluster_view_rights()
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.delete(
+                path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
+        self.check_log_denied(
+            log=log,
+            operation_name=self.cluster_deleted_str,
             operation_type=AuditLogOperationType.Delete,
         )
 
@@ -523,7 +570,7 @@ class TestCluster(BaseTestCase):
         assert res.status_code == HTTP_403_FORBIDDEN
         self.check_log_denied(
             log=log,
-            operation_name="Cluster configuration updated",
+            operation_name=self.cluster_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
         )
 
@@ -577,7 +624,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.host,
             obj_type=AuditObjectType.Host,
-            operation_name="Host configuration updated",
+            operation_name=self.host_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
         )
 
@@ -599,7 +646,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.host,
             obj_type=AuditObjectType.Host,
-            operation_name="Host configuration updated",
+            operation_name=self.host_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
@@ -905,7 +952,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=component,
             obj_type=AuditObjectType.Component,
-            operation_name="Component configuration updated",
+            operation_name=self.component_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
         )
 
@@ -932,7 +979,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=component,
             obj_type=AuditObjectType.Component,
-            operation_name="Component configuration updated",
+            operation_name=self.component_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
@@ -961,7 +1008,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_type=AuditObjectType.Service,
-            operation_name="Service configuration updated",
+            operation_name=self.service_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
         )
 
@@ -990,7 +1037,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_type=AuditObjectType.Service,
-            operation_name="Service configuration updated",
+            operation_name=self.service_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
@@ -1070,7 +1117,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_type=AuditObjectType.Cluster,
-            operation_name="Cluster configuration updated",
+            operation_name=self.cluster_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
@@ -1091,7 +1138,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.host,
             obj_type=AuditObjectType.Host,
-            operation_name="Host configuration updated",
+            operation_name=self.host_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
         )
 
@@ -1112,7 +1159,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.host,
             obj_type=AuditObjectType.Host,
-            operation_name="Host configuration updated",
+            operation_name=self.host_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
@@ -1139,7 +1186,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=component,
             obj_type=AuditObjectType.Component,
-            operation_name="Component configuration updated",
+            operation_name=self.component_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
         )
 
@@ -1166,7 +1213,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=component,
             obj_type=AuditObjectType.Component,
-            operation_name="Component configuration updated",
+            operation_name=self.component_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
@@ -1195,7 +1242,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_type=AuditObjectType.Service,
-            operation_name="Service configuration updated",
+            operation_name=self.service_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
         )
 
@@ -1224,7 +1271,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.service,
             obj_type=AuditObjectType.Service,
-            operation_name="Service configuration updated",
+            operation_name=self.service_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,

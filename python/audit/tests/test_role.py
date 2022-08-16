@@ -39,6 +39,8 @@ class TestRole(BaseTestCase):
         self.role = Role.objects.create(name="test_role_2", built_in=False)
         self.list_name = "rbac:role-list"
         self.detail_name = "rbac:role-detail"
+        self.role_created_str = "Role created"
+        self.role_updated_str = "Role updated"
 
     def check_log(
         self,
@@ -59,6 +61,17 @@ class TestRole(BaseTestCase):
         assert log.user.pk == user.pk
         assert isinstance(log.object_changes, dict)
 
+    def check_log_update(
+        self, log: AuditLog, operation_result: AuditLogOperationResult, user: User
+    ) -> None:
+        return self.check_log(
+            log=log,
+            operation_name=self.role_updated_str,
+            operation_type=AuditLogOperationType.Update,
+            operation_result=operation_result,
+            user=user,
+        )
+
     def test_create(self):
         res: Response = self.client.post(
             path=reverse(self.list_name),
@@ -75,7 +88,7 @@ class TestRole(BaseTestCase):
         assert log.audit_object.object_name == self.role_display_name
         assert log.audit_object.object_type == AuditObjectType.Role
         assert not log.audit_object.is_deleted
-        assert log.operation_name == "Role created"
+        assert log.operation_name == self.role_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
@@ -94,7 +107,7 @@ class TestRole(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert not log.audit_object
-        assert log.operation_name == "Role created"
+        assert log.operation_name == self.role_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Fail
         assert isinstance(log.operation_time, datetime)
@@ -116,7 +129,7 @@ class TestRole(BaseTestCase):
 
         assert res.status_code == HTTP_403_FORBIDDEN
         assert not log.audit_object
-        assert log.operation_name == "Role created"
+        assert log.operation_name == self.role_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Denied
         assert isinstance(log.operation_time, datetime)
@@ -169,10 +182,8 @@ class TestRole(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_log(
+        self.check_log_update(
             log=log,
-            operation_name="Role updated",
-            operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
         )
@@ -191,10 +202,8 @@ class TestRole(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert res.status_code == HTTP_403_FORBIDDEN
-        self.check_log(
+        self.check_log_update(
             log=log,
-            operation_name="Role updated",
-            operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
         )
@@ -211,10 +220,8 @@ class TestRole(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_log(
+        self.check_log_update(
             log=log,
-            operation_name="Role updated",
-            operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
         )
@@ -233,10 +240,8 @@ class TestRole(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert res.status_code == HTTP_403_FORBIDDEN
-        self.check_log(
+        self.check_log_update(
             log=log,
-            operation_name="Role updated",
-            operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
         )

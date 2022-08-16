@@ -35,10 +35,11 @@ from rbac.models import User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_403_FORBIDDEN
 
-from adcm.tests.base import BaseTestCase
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestGroupConfig(BaseTestCase):
+    # pylint: disable=too-many-public-methods
     def setUp(self) -> None:
         super().setUp()
 
@@ -128,6 +129,19 @@ class TestGroupConfig(BaseTestCase):
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == self.no_rights_user.pk
         assert isinstance(log.object_changes, dict)
+
+    def check_log_updated(
+        self, log: AuditLog, operation_result: AuditLogOperationResult, user: User
+    ) -> None:
+        self.check_log(
+            log=log,
+            obj=self.cluster,
+            obj_type=AuditObjectType.Cluster,
+            operation_name=f"{self.group_config.name} configuration group updated",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=operation_result,
+            user=user,
+        )
 
     def test_create_for_cluster(self):
         self.create_group_config(
@@ -278,17 +292,13 @@ class TestGroupConfig(BaseTestCase):
                 "object_type": "cluster",
                 "config_id": self.config.id,
             },
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_log(
+        self.check_log_updated(
             log=log,
-            obj=self.cluster,
-            obj_type=AuditObjectType.Cluster,
-            operation_name=f"{self.group_config.name} configuration group updated",
-            operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
         )
@@ -303,18 +313,14 @@ class TestGroupConfig(BaseTestCase):
                     "object_type": "cluster",
                     "config_id": self.config.id,
                 },
-                content_type="application/json",
+                content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert res.status_code == HTTP_403_FORBIDDEN
-        self.check_log(
+        self.check_log_updated(
             log=log,
-            obj=self.cluster,
-            obj_type=AuditObjectType.Cluster,
-            operation_name=f"{self.group_config.name} configuration group updated",
-            operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
         )
@@ -328,17 +334,13 @@ class TestGroupConfig(BaseTestCase):
                 "object_type": "cluster",
                 "config_id": self.config.id,
             },
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_log(
+        self.check_log_updated(
             log=log,
-            obj=self.cluster,
-            obj_type=AuditObjectType.Cluster,
-            operation_name=f"{self.group_config.name} configuration group updated",
-            operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
         )
@@ -353,18 +355,14 @@ class TestGroupConfig(BaseTestCase):
                     "object_type": "cluster",
                     "config_id": self.config.id,
                 },
-                content_type="application/json",
+                content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert res.status_code == HTTP_403_FORBIDDEN
-        self.check_log(
+        self.check_log_updated(
             log=log,
-            obj=self.cluster,
-            obj_type=AuditObjectType.Cluster,
-            operation_name=f"{self.group_config.name} configuration group updated",
-            operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
         )

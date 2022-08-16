@@ -164,7 +164,7 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
         return role_class(**self.init_params)  # pylint: disable=E1134
 
     def filter(self):
-        """filter out objects sutable for role"""
+        """filter out objects suitable for role"""
         if self.__obj__ is None:
             self.__obj__ = self.get_role_obj()
         return self.__obj__.filter()
@@ -176,7 +176,7 @@ class Role(models.Model):  # pylint: disable=too-many-instance-attributes
         return self.__obj__.apply(policy, self, user, group, obj)
 
     def get_permissions(self, role: 'Role' = None):
-        """Recursively get permissions of role and all her childs"""
+        """Recursively get permissions of role and all her children"""
         if role is None:
             role = self
 

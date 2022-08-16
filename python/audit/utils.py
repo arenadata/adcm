@@ -38,6 +38,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
+from django.contrib.auth.models import User as DjangoUser
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model
 from django.http.response import Http404
@@ -211,17 +212,20 @@ def _get_audit_operation_and_object(
                 obj = deleted_obj
             else:
                 operation_type = AuditLogOperationType.Update
-                obj = Cluster.objects.get(pk=cluster_pk)
+                obj = Cluster.objects.filter(pk=cluster_pk).first()
 
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Cluster.capitalize()} {operation_type}d",
                 operation_type=operation_type,
             )
-            audit_object = _get_or_create_audit_obj(
-                object_id=cluster_pk,
-                object_name=obj.name,
-                object_type=AuditObjectType.Cluster,
-            )
+            if obj:
+                audit_object = _get_or_create_audit_obj(
+                    object_id=cluster_pk,
+                    object_name=obj.name,
+                    object_type=AuditObjectType.Cluster,
+                )
+            else:
+                audit_object = None
 
         case ["cluster", cluster_pk, "host"]:
             audit_operation = AuditOperation(
@@ -771,11 +775,22 @@ def _get_audit_operation_and_object(
                      f"{AuditLogOperationType.Delete}d",
                 operation_type=AuditLogOperationType.Delete,
             )
-            audit_object = _get_or_create_audit_obj(
-                object_id=host_pk,
-                object_name=deleted_obj.fqdn,
-                object_type=AuditObjectType.Host,
-            )
+            object_name = None
+            if isinstance(deleted_obj, Host):
+                object_name = deleted_obj.fqdn
+            else:
+                host = Host.objects.filter(pk=host_pk).first()
+                if host:
+                    object_name = host.fqdn
+
+            if object_name:
+                audit_object = _get_or_create_audit_obj(
+                    object_id=host_pk,
+                    object_name=object_name,
+                    object_type=AuditObjectType.Host,
+                )
+            else:
+                audit_object = None
 
         case ["host"] | ["provider", _, "host"]:
             audit_operation = AuditOperation(
@@ -817,17 +832,19 @@ def _get_audit_operation_and_object(
                 audit_object = None
 
         case ["provider", provider_pk]:
-            deleted_obj: HostProvider
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Provider.capitalize()} "
                      f"{AuditLogOperationType.Delete}d",
                 operation_type=AuditLogOperationType.Delete,
             )
-            audit_object = _get_or_create_audit_obj(
-                object_id=provider_pk,
-                object_name=deleted_obj.name,
-                object_type=AuditObjectType.Provider,
-            )
+            if isinstance(deleted_obj, HostProvider):
+                audit_object = _get_or_create_audit_obj(
+                    object_id=provider_pk,
+                    object_name=deleted_obj.name,
+                    object_type=AuditObjectType.Provider,
+                )
+            else:
+                audit_object = None
 
         case ["provider", provider_pk, "config", "history"]:
             obj = HostProvider.objects.get(pk=provider_pk)
@@ -1009,7 +1026,7 @@ def audit(func):
     # pylint: disable=too-many-statements
     @wraps(func)
     def wrapped(*args, **kwargs):
-        # pylint: disable=too-many-branches,too-many-statements
+        # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 
         audit_operation: AuditOperation
         audit_object: AuditObject
@@ -1031,6 +1048,8 @@ def audit(func):
                     deleted_obj = view.get_obj(kwargs, kwargs["bind_id"])
                 except AdcmEx:
                     deleted_obj = view.queryset[0]
+                except AttributeError:
+                    deleted_obj = None
             except (AdcmEx, Http404):  # when denied returns 404 from PermissionListMixin
                 try:
                     deleted_obj = view.queryset[0]
@@ -1039,6 +1058,13 @@ def audit(func):
                         deleted_obj = Role.objects.filter(pk=view.kwargs["pk"]).first()
                     else:
                         deleted_obj = None
+            except KeyError:
+                deleted_obj = None
+            except PermissionDenied:
+                if "cluster_id" in kwargs:
+                    deleted_obj = Cluster.objects.filter(pk=kwargs["cluster_id"]).first()
+                else:
+                    deleted_obj = None
         else:
             deleted_obj = None
 
@@ -1089,7 +1115,17 @@ def audit(func):
             if not deleted_obj:
                 status_code = exc.status_code
             else:  # when denied returns 404 from PermissionListMixin
-                status_code = HTTP_403_FORBIDDEN
+                if (
+                        getattr(exc, "msg", None)
+                        and (
+                            "There is host" in exc.msg
+                            or "belong to cluster" in exc.msg
+                            or "of bundle" in exc.msg
+                        )
+                ):
+                    status_code = error.status_code
+                else:
+                    status_code = HTTP_403_FORBIDDEN
         except PermissionDenied as exc:
             status_code = HTTP_403_FORBIDDEN
             error = exc
@@ -1110,12 +1146,17 @@ def audit(func):
             else:
                 operation_result = AuditLogOperationResult.Fail
 
+            if isinstance(view.request.user, DjangoUser):
+                user = view.request.user
+            else:
+                user = None
+
             AuditLog.objects.create(
                 audit_object=audit_object,
                 operation_name=operation_name,
                 operation_type=audit_operation.operation_type,
                 operation_result=operation_result,
-                user=view.request.user,
+                user=user,
                 object_changes=object_changes,
             )
 

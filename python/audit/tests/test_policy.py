@@ -28,6 +28,8 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestPolicy(BaseTestCase):
+    # pylint: disable=too-many-instance-attributes
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -47,6 +49,7 @@ class TestPolicy(BaseTestCase):
         self.policy = Policy.objects.create(name="test_policy_2", built_in=False)
         self.list_name = "rbac:policy-list"
         self.detail_name = "rbac:policy-detail"
+        self.policy_updated_str = "Policy updated"
 
     def check_log(
         self,
@@ -67,6 +70,17 @@ class TestPolicy(BaseTestCase):
         assert log.user.pk == user.pk
         assert isinstance(log.object_changes, dict)
 
+    def check_log_update(
+        self, log: AuditLog, operation_result: AuditLogOperationResult, user: User
+    ) -> None:
+        return self.check_log(
+            log=log,
+            operation_name=self.policy_updated_str,
+            operation_type=AuditLogOperationType.Update,
+            operation_result=operation_result,
+            user=user,
+        )
+
     def test_create(self):
         res: Response = self.client.post(
             path=reverse(self.list_name),
@@ -76,7 +90,7 @@ class TestPolicy(BaseTestCase):
                 "role": {"id": self.role.pk},
                 "user": [{"id": self.test_user.pk}],
             },
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -104,7 +118,7 @@ class TestPolicy(BaseTestCase):
                     "role": {"id": self.role.pk},
                     "user": [{"id": self.test_user.pk}],
                 },
-                content_type="application/json",
+                content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -167,12 +181,8 @@ class TestPolicy(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_log(
-            log=log,
-            operation_name="Policy updated",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
-            user=self.test_user,
+        self.check_log_update(
+            log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user
         )
 
     def test_update_put_denied(self):
@@ -194,12 +204,8 @@ class TestPolicy(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert res.status_code == HTTP_403_FORBIDDEN
-        self.check_log(
-            log=log,
-            operation_name="Policy updated",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
-            user=self.no_rights_user,
+        self.check_log_update(
+            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
 
     def test_update_patch(self):
@@ -216,12 +222,8 @@ class TestPolicy(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_log(
-            log=log,
-            operation_name="Policy updated",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
-            user=self.test_user,
+        self.check_log_update(
+            log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user
         )
 
     def test_update_patch_denied(self):
@@ -242,10 +244,6 @@ class TestPolicy(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert res.status_code == HTTP_403_FORBIDDEN
-        self.check_log(
-            log=log,
-            operation_name="Policy updated",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Denied,
-            user=self.no_rights_user,
+        self.check_log_update(
+            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )

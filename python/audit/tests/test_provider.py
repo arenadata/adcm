@@ -18,13 +18,13 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import Bundle, ConfigLog, HostProvider, ObjectConfig, Prototype
+from cm.models import Bundle, ConfigLog, Host, HostProvider, ObjectConfig, Prototype
 from django.urls import reverse
 from rbac.models import User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
-from adcm.tests.base import BaseTestCase
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestProvider(BaseTestCase):
@@ -34,6 +34,7 @@ class TestProvider(BaseTestCase):
         self.bundle = Bundle.objects.create()
         self.prototype = Prototype.objects.create(bundle=self.bundle, type="provider")
         self.name = "test_provider"
+        self.provider_created_str = "Provider created"
 
     @staticmethod
     def check_provider_updated(
@@ -48,6 +49,24 @@ class TestProvider(BaseTestCase):
         assert not log.audit_object.is_deleted
         assert log.operation_name == "Provider configuration updated"
         assert log.operation_type == AuditLogOperationType.Update
+        assert log.operation_result == operation_result
+        assert isinstance(log.operation_time, datetime)
+        assert log.user.pk == user.pk
+        assert isinstance(log.object_changes, dict)
+
+    @staticmethod
+    def check_provider_deleted(
+        log: AuditLog,
+        provider: HostProvider,
+        operation_result: AuditLogOperationResult,
+        user: User,
+    ) -> None:
+        assert log.audit_object.object_id == provider.pk
+        assert log.audit_object.object_name == provider.name
+        assert log.audit_object.object_type == AuditObjectType.Provider
+        assert not log.audit_object.is_deleted
+        assert log.operation_name == "Provider deleted"
+        assert log.operation_type == AuditLogOperationType.Delete
         assert log.operation_result == operation_result
         assert isinstance(log.operation_time, datetime)
         assert log.user.pk == user.pk
@@ -68,7 +87,7 @@ class TestProvider(BaseTestCase):
         assert log.audit_object.object_name == self.name
         assert log.audit_object.object_type == AuditObjectType.Provider
         assert not log.audit_object.is_deleted
-        assert log.operation_name == "Provider created"
+        assert log.operation_name == self.provider_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Success
         assert isinstance(log.operation_time, datetime)
@@ -86,7 +105,7 @@ class TestProvider(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert not log.audit_object
-        assert log.operation_name == "Provider created"
+        assert log.operation_name == self.provider_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Fail
         assert isinstance(log.operation_time, datetime)
@@ -107,7 +126,7 @@ class TestProvider(BaseTestCase):
 
         assert res.status_code == HTTP_403_FORBIDDEN
         assert not log.audit_object
-        assert log.operation_name == "Provider created"
+        assert log.operation_name == self.provider_created_str
         assert log.operation_type == AuditLogOperationType.Create
         assert log.operation_result == AuditLogOperationResult.Denied
         assert isinstance(log.operation_time, datetime)
@@ -124,16 +143,12 @@ class TestProvider(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == provider.pk
-        assert log.audit_object.object_name == provider.name
-        assert log.audit_object.object_type == AuditObjectType.Provider
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Provider deleted"
-        assert log.operation_type == AuditLogOperationType.Delete
-        assert log.operation_result == AuditLogOperationResult.Success
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.check_provider_deleted(
+            log=log,
+            provider=provider,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
+        )
 
     def test_delete_denied(self):
         provider = HostProvider.objects.create(
@@ -149,16 +164,35 @@ class TestProvider(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert res.status_code == HTTP_404_NOT_FOUND
-        assert log.audit_object.object_id == provider.pk
-        assert log.audit_object.object_name == provider.name
-        assert log.audit_object.object_type == AuditObjectType.Provider
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Provider deleted"
-        assert log.operation_type == AuditLogOperationType.Delete
-        assert log.operation_result == AuditLogOperationResult.Denied
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.no_rights_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.check_provider_deleted(
+            log=log,
+            provider=provider,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
+
+    def test_delete_failed(self):
+        provider = HostProvider.objects.create(
+            name="test_provider",
+            prototype=self.prototype,
+        )
+
+        Host.objects.create(
+            fqdn="test_fqdn",
+            prototype=Prototype.objects.create(bundle=self.bundle, type="host"),
+            provider=provider,
+        )
+
+        self.client.delete(path=reverse("provider-details", kwargs={"provider_id": provider.pk}))
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_provider_deleted(
+            log=log,
+            provider=provider,
+            operation_result=AuditLogOperationResult.Fail,
+            user=self.test_user,
+        )
 
     def test_update_and_restore(self):
         config = ObjectConfig.objects.create(current=1, previous=1)
@@ -170,7 +204,7 @@ class TestProvider(BaseTestCase):
         self.client.post(
             path=reverse("config-history", kwargs={"provider_id": provider.pk}),
             data={"config": {}},
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -187,7 +221,7 @@ class TestProvider(BaseTestCase):
                 "config-history-version-restore",
                 kwargs={"provider_id": provider.pk, "version": 1},
             ),
-            content_type="application/json",
+            content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -211,7 +245,7 @@ class TestProvider(BaseTestCase):
             res: Response = self.client.post(
                 path=reverse("config-history", kwargs={"provider_id": provider.pk}),
                 data={"config": {}},
-                content_type="application/json",
+                content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -230,7 +264,7 @@ class TestProvider(BaseTestCase):
                     "config-history-version-restore",
                     kwargs={"provider_id": provider.pk, "version": 1},
                 ),
-                content_type="application/json",
+                content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
