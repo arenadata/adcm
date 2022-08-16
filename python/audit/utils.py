@@ -775,11 +775,22 @@ def _get_audit_operation_and_object(
                      f"{AuditLogOperationType.Delete}d",
                 operation_type=AuditLogOperationType.Delete,
             )
-            audit_object = _get_or_create_audit_obj(
-                object_id=host_pk,
-                object_name=deleted_obj.fqdn,
-                object_type=AuditObjectType.Host,
-            )
+            object_name = None
+            if isinstance(deleted_obj, Host):
+                object_name = deleted_obj.fqdn
+            else:
+                host = Host.objects.filter(pk=host_pk).first()
+                if host:
+                    object_name = host.fqdn
+
+            if object_name:
+                audit_object = _get_or_create_audit_obj(
+                    object_id=host_pk,
+                    object_name=object_name,
+                    object_type=AuditObjectType.Host,
+                )
+            else:
+                audit_object = None
 
         case ["host"] | ["provider", _, "host"]:
             audit_operation = AuditOperation(
