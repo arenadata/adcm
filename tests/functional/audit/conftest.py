@@ -174,7 +174,7 @@ def delete(sdk_client_fs) -> Callable:
     def _delete(path: str, *suffixes, headers: Optional[dict] = None, path_fmt: Optional[dict] = None, **kwargs):
         headers = {**auth_header, **({} if headers is None else headers)}
         path_fmt = {} if path_fmt is None else path_fmt
-        url = f'{base_url}/api/v1/{path.format(**path_fmt)}/{"/".join(map(str,suffixes))}'
+        url = f'{base_url}/api/v1/{path.format(**path_fmt)}/{"/".join(map(str,suffixes))}/'
         with allure.step(f'Sending DELETE request to {url}'):
             return requests.delete(url, headers=headers, **kwargs)
 

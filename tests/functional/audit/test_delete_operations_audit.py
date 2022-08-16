@@ -100,6 +100,7 @@ def grant_view_config_permissions_on_adcm_objects(sdk_client_fs, adcm_objects, n
     )
 
 
+@pytest.mark.xfail(reason='will no work until user deactivation https://tracker.yandex.ru/ADCM-2582')
 @pytest.mark.parametrize('parse_with_context', ['delete_objects.yaml'], indirect=True)
 @pytest.mark.usefixtures(
     'grant_view_config_permissions_on_adcm_objects'
@@ -141,7 +142,7 @@ def test_delete(
         for obj in (host_1, provider, *bundles, *rbac_objects):
             endpoint = _get_endpoint_by_object(obj)
             check_succeed(delete(endpoint, obj.id))
-    audit_checker.check(sdk_client_fs.audit_operation_list())
+    audit_checker.check(sdk_client_fs.audit_operation_list(paging={'limit': 300}))
 
 
 def _get_endpoint_by_object(obj) -> str:
