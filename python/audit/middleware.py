@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 
 from django.contrib.auth.models import AnonymousUser, User
 
@@ -24,7 +25,7 @@ class AuditLoginMiddleware:
         """Authentication audit"""
         if user is not None and user.is_authenticated:
             result = AuditSessionLoginResult.Success
-            details = {}
+            details = {"username": user.username}
         else:
             details = {"username": username}
             try:
@@ -40,6 +41,11 @@ class AuditLoginMiddleware:
         AuditSession.objects.create(user=user, login_result=result, login_details=details)
 
     def __call__(self, request):
+        try:
+            username = json.loads(request.body.decode("utf-8")).get("username")
+        except json.JSONDecodeError:
+            username = ""
+
         response = self.get_response(request)
 
         if request.method == "POST" and request.path in {
@@ -47,7 +53,7 @@ class AuditLoginMiddleware:
             "/api/v1/token/",
             "/api/v1/auth/login/",
         }:
-            username = request.POST.get("username") or request.user.username
+            username = request.POST.get("username") or username or request.user.username
             self._audit(user=request.user, username=username)
 
         return response
