@@ -21,6 +21,7 @@ sys.path.append("/adcm/python/")
 import adcm.init_django  # pylint: disable=unused-import
 from rbac.models import User, Group, OriginType
 from rbac.ldap import _get_ldap_default_settings, configure_tls, is_tls
+from rbac.utils import restore_user
 from cm.errors import AdcmEx
 from cm.logger import log
 from django.db import DataError, IntegrityError
@@ -46,7 +47,8 @@ class SyncLDAP:
             configure_tls(is_tls(self.settings["SERVER_URI"]), os.environ.get(CERT_ENV_KEY, ''), conn)
             conn.simple_bind_s(self.settings["BIND_DN"], self.settings["BIND_PASSWORD"])
         except ldap.LDAPError as e:
-            sys.stdout.write(f"Can't connect to {self.settings['SERVER_URI']} with user: {self.settings['BIND_DN']}. Error: {e}\n")
+            sys.stdout.write(
+                f"Can't connect to {self.settings['SERVER_URI']} with user: {self.settings['BIND_DN']}. Error: {e}\n")
             raise
         return conn
 
@@ -84,7 +86,7 @@ class SyncLDAP:
         group_filter = '' if groups.count() <= 1 else '(|'
         for group_name in groups:
             group_filter += f'(memberOf=CN={group_name},{self.settings["GROUP_SEARCH"].base_dn})'
-        group_filter = group_filter if groups.count() <= 1 else group_filter+')'
+        group_filter = group_filter if groups.count() <= 1 else group_filter + ')'
         self.settings['USER_SEARCH'].filterstr = f'(&' \
                                                  f'(objectClass={self.settings["USER_OBJECT_CLASS"]})' \
                                                  f'{self.settings["USER_FILTER"]}' \
@@ -121,7 +123,7 @@ class SyncLDAP:
             sys.stdout.write(f"Delete this group: {group}\n")
             group.delete()
         msg = "Sync of groups ended successfully."
-        msg += f"Couldn\'t synchronize groups: {error_names}\n" if error_names else ""
+        msg += f"Couldn\'t synchronize groups: {error_names}" if error_names else ""
         log.debug(msg)
 
     def _sync_ldap_users(self, ldap_users):
@@ -137,25 +139,31 @@ class SyncLDAP:
 
             username = defaults["username"]
             kwargs = {
-                'username__iexact': username,
+                'username__istartswith': username,
                 'type': OriginType.LDAP,
                 'defaults': defaults,
             }
 
             try:
                 user, created = User.objects.get_or_create(**kwargs)
+                if user.username != username:
+                    try:
+                        user = restore_user(user)
+                        sys.stdout.write(f"Restore user {username}\n")
+                    except AdcmEx as e:
+                        sys.stdout.write(f"Restore failed with error: {e}\n")
             except (IntegrityError, DataError) as e:
                 error_names.append(username)
                 sys.stdout.write("Error creating user %s: %s\n" % (username, e))
                 continue
             else:
+                if created:
+                    sys.stdout.write("Create user: %s\n" % username)
+                    user.set_unusable_password()
                 updated = False
                 user.is_active = False
                 if not hex(int(ldap_attributes['useraccountcontrol'][0])).endswith('2'):
                     user.is_active = True
-                if created:
-                    sys.stdout.write("Create user: %s\n" % username)
-                    user.set_unusable_password()
                 else:
                     for name, attr in defaults.items():
                         current_attr = getattr(user, name, None)
@@ -165,33 +173,25 @@ class SyncLDAP:
                     if updated:
                         sys.stdout.write("Updated user: %s\n" % username)
 
-                # Remove condition after ADCM-2944
-                if not user.is_active:
-                    sys.stdout.write(f"Delete this user and deactivate his session: {user}\n")
-                    user.delete()
-                else:
-                  user.save()
-                  ldap_usernames.add(username)
-                  for group in ldap_attributes.get('memberof', []):
-                      name = group.split(',')[0][3:]
-                      try:
-                          group = Group.objects.get(name=f'{name} [ldap]', built_in=False,
-                                                                       type=OriginType.LDAP)
-                          group.user_set.add(user)
-                          sys.stdout.write(f"Add user {user} to group {group}\n")
-                      except (IntegrityError, DataError) as e:
-                          sys.stdout.write("Error getting group %s: %s\n" % (name, e))
+                user.save()
+                ldap_usernames.add(username)
+                for group in ldap_attributes.get('memberof', []):
+                    name = group.split(',')[0][3:]
+                    try:
+                        group = Group.objects.get(name=f'{name} [ldap]', built_in=False,
+                                                  type=OriginType.LDAP)
+                        group.user_set.add(user)
+                        sys.stdout.write(f"Add user {user} to group {group}\n")
+                    except (IntegrityError, DataError) as e:
+                        sys.stdout.write("Error getting group %s: %s\n" % (name, e))
 
         django_usernames = set(User.objects.filter(type=OriginType.LDAP).values_list('username', flat=True))
         for username in django_usernames - ldap_usernames:
             user = User.objects.get(username__iexact=username)
-            sys.stdout.write(f"Delete this user and deactivate his session: {user}\n")
+            sys.stdout.write(f"Deactivate user and drop his session: {user}\n")
             user.delete()
-            # Uncomment after ADCM-2944
-            # user.is_active = False
-            # user.save()
         msg = "Sync of users ended successfully."
-        msg += f"Couldn\'t synchronize users: {error_names}\n" if error_names else ""
+        msg += f"Couldn\'t synchronize users: {error_names}" if error_names else ""
         log.debug(msg)
 
 

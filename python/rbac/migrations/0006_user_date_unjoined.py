@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rbac', '0002_rm_default_policy'),
+        ("rbac", "0005_rbac_group_unique_display_name_type_constraint"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='date_unjoined',
+            model_name="user",
+            name="date_unjoined",
             field=models.DateTimeField(null=True),
         ),
     ]

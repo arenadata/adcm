@@ -17,6 +17,8 @@ from django.db.models import Model
 from django.utils import timezone as tz
 from rest_framework import serializers
 
+from cm.errors import AdcmEx
+
 
 class BaseRelatedSerializer(serializers.Serializer):
     def to_internal_value(self, data):
@@ -101,16 +103,16 @@ def delete_user(user):
 
 def restore_user(user):
     match = USER_RESTORE_USERNAME_PATTERN.match(user.username)
-    if not match or not match.group('original_username'):
-        raise RuntimeError  # TODO: replace with actual AdcmEx when this will be used
+    if not match or not match.group("original_username"):
+        raise AdcmEx("USER_CONFLICT", "Username didn't match pattern, restore failed")
 
-    user.username = match.group('original_username')
+    user.username = match.group("original_username")
     user.is_active = True
     user.date_unjoined = None
     try:
         user.save()
     except IntegrityError as e:
-        if 'username' in str(e):
-            raise e  # TODO: raise AdcmEx
+        if "username" in str(e):
+            raise AdcmEx("USER_CONFLICT", "User with same username already exist, restore failed")
         raise e
     return user
