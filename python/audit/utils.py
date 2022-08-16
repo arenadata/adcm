@@ -798,7 +798,7 @@ def _get_audit_operation_and_object(
                      f"{AuditLogOperationType.Create}d",
                 operation_type=AuditLogOperationType.Create,
             )
-            if res:
+            if res and res.data and res.data.get("id") and res.data.get("fqdn"):
                 audit_object = _get_or_create_audit_obj(
                     object_id=res.data["id"],
                     object_name=res.data["fqdn"],

@@ -31,7 +31,12 @@ from cm.models import (
 from django.urls import reverse
 from rbac.models import User
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+)
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -120,6 +125,10 @@ class TestHost(BaseTestCase):
         assert isinstance(log.object_changes, dict)
 
     def test_create(self):
+        res: Response = self.client.post(path=reverse("host"), data={})
+
+        assert res.status_code == HTTP_400_BAD_REQUEST
+
         res: Response = self.client.post(
             path=reverse("host"),
             data={
