@@ -1116,9 +1116,12 @@ def audit(func):
                 status_code = exc.status_code
             else:  # when denied returns 404 from PermissionListMixin
                 if (
-                        "There is host" in exc.msg
-                        or "belong to cluster" in exc.msg
-                        or "of bundle" in exc.msg
+                        getattr(exc, "msg")
+                        and (
+                            "There is host" in exc.msg
+                            or "belong to cluster" in exc.msg
+                            or "of bundle" in exc.msg
+                        )
                 ):
                     status_code = error.status_code
                 else:
