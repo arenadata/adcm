@@ -22,10 +22,12 @@ import string
 import unittest
 from uuid import uuid4
 
+from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
 from cm.models import ADCM, Prototype
 from init_db import init as init_adcm
+from rbac.upgrade.role import init_roles
 
 import requests
 
@@ -34,12 +36,16 @@ import requests
 
 
 class TestBase(TestCase):
+    files_dir = os.path.join(settings.BASE_DIR, 'python', 'cm', 'tests', 'files')
+
     token = None
     url = None
     debug = os.environ.get('BASE_DEBUG', False)
 
     def setUp(self) -> None:
         init_adcm()
+        init_roles()
+
         self.client = Client(HTTP_USER_AGENT='Mozilla/5.0')
         res = self.client.post(
             path=reverse("rbac:token"),
@@ -49,6 +55,8 @@ class TestBase(TestCase):
         self.client.defaults["Authorization"] = f"Token {res.data['token']}"
 
         self.client_unauthorized = Client(HTTP_USER_AGENT='Mozilla/5.0')
+
+        self.bundle_adh_name = 'adh.1.5.tar'
 
     def api(self, path, res, data=''):
         self.print_result(path, res, data)
@@ -120,18 +128,18 @@ class TestBase(TestCase):
             # print("HDR: {}".format(r.headers))
             print("")
 
-    def load_bundle(self, bundle_path):
-        return requests.post(
-            url=reverse("load-bundle"),
-            data={"bundle_file": bundle_path},
-        )
-
-    def upload_bundle(self, bundle_path):
-        with open(bundle_path, encoding="utf-8") as f:
-            self.client.post(
+    def load_bundle(self, bundle_name):
+        with open(os.path.join(self.files_dir, bundle_name), encoding="utf-8") as f:
+            response = self.client.post(
                 path=reverse("upload-bundle"),
                 data={"file": f},
             )
+            self.assertEqual(response.status_code, 201, msg=response.content)
+        response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": bundle_name},
+        )
+        self.assertEqual(response.status_code, 200, msg=response.content)
 
 
 class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
@@ -185,10 +193,10 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         return 0
 
     def get_cluster_proto_id(self):
-        response = self.api_get('/stack/cluster/')
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        response = self.client.get(reverse('cluster-type'))
+        self.assertEqual(response.status_code, 200, msg=response.content)
         for cluster in response.json():
-            return (cluster['bundle_id'], cluster['id'])
+            return cluster['bundle_id'], cluster['id']
 
     def get_host_proto_id(self):
         response = self.api_get('/stack/host/')
@@ -257,70 +265,70 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, 200, msg=response.content)
 
     def test_cluster(self):  # pylint: disable=too-many-statements
-        cluster = 'test_cluster'
-        response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        cluster_name = 'test_cluster'
+        cluster_url = reverse('cluster')
+        # response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
+        # self.assertEqual(response.status_code, 200, msg=response.text)
+        self.load_bundle(self.bundle_adh_name)
         bundle_id, proto_id = self.get_cluster_proto_id()
 
-        response = self.api_post('/cluster/', {})
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        response = self.client.post(cluster_url, {})
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['name'], ['This field is required.'])
 
-        response = self.api_post('/cluster/', {'name': ''})
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        response = self.client.post(cluster_url, {'name': ''})
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['name'], ['This field may not be blank.'])
 
-        response = self.api_post('/cluster/', {'name': cluster})
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        response = self.client.post(cluster_url, {'name': cluster_name})
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['prototype_id'], ['This field is required.'])
 
-        response = self.api_post('/cluster/', {'name': cluster, 'prototype_id': ''})
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        response = self.client.post(cluster_url, {'name': cluster_name, 'prototype_id': ''})
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['prototype_id'], ['A valid integer is required.'])
 
-        response = self.api_post('/cluster/', {'name': cluster, 'prototype_id': 'some-string'})
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        response = self.client.post(
+            cluster_url, {'name': cluster_name, 'prototype_id': 'some-string'}
+        )
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['prototype_id'], ['A valid integer is required.'])
 
-        response = self.api_post('/cluster/', {'name': cluster, 'prototype_id': 100500})
-        self.assertEqual(response.status_code, 404, msg=response.text)
+        response = self.client.post(cluster_url, {'name': cluster_name, 'prototype_id': 100500})
+        self.assertEqual(response.status_code, 404, msg=response.content)
         self.assertEqual(response.json()['code'], 'PROTOTYPE_NOT_FOUND')
 
-        response = self.api_post(
-            '/cluster/', {'name': cluster, 'prototype_id': proto_id, 'description': ''}
-        )
-        self.assertEqual(response.status_code, 400, msg=response.text)
-        self.assertEqual(response.json()['description'], ['This field may not be blank.'])
+        response = self.client.post(cluster_url, {'name': cluster_name, 'prototype_id': proto_id})
+        self.assertEqual(response.status_code, 201, msg=response.content)
 
-        response = self.api_post('/cluster/', {'name': cluster, 'prototype_id': proto_id})
-        self.assertEqual(response.status_code, 201, msg=response.text)
         cluster_id = response.json()['id']
+        this_cluster_url = reverse('cluster-details', kwargs={'cluster_id': cluster_id})
 
-        response = self.api_get('/cluster/' + str(cluster_id) + '/')
-        self.assertEqual(response.status_code, 200, msg=response.text)
-        self.assertEqual(response.json()['name'], cluster)
+        response = self.client.get(this_cluster_url)
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        self.assertEqual(response.json()['name'], cluster_name)
 
-        response = self.api_post('/cluster/', {'name': cluster, 'prototype_id': proto_id})
-        self.assertEqual(response.status_code, 409, msg=response.text)
+        response = self.client.post(cluster_url, {'name': cluster_name, 'prototype_id': proto_id})
+        self.assertEqual(response.status_code, 409, msg=response.content)
         self.assertEqual(response.json()['code'], 'CLUSTER_CONFLICT')
 
-        response = self.api_put('/cluster/' + str(cluster_id) + '/', {})
-        self.assertEqual(response.status_code, 405, msg=response.text)
+        response = self.client.put(this_cluster_url, {})
+        self.assertEqual(response.status_code, 405, msg=response.content)
         self.assertEqual(response.json()['detail'], 'Method "PUT" not allowed.')
 
-        response = self.api_delete('/cluster/' + str(cluster_id) + '/')
-        self.assertEqual(response.status_code, 204, msg=response.text)
+        response = self.client.delete(this_cluster_url)
+        self.assertEqual(response.status_code, 204, msg=response.content)
 
-        response = self.api_get('/cluster/' + str(cluster_id) + '/')
-        self.assertEqual(response.status_code, 404, msg=response.text)
+        response = self.client.get(this_cluster_url)
+        self.assertEqual(response.status_code, 404, msg=response.content)
         self.assertEqual(response.json()['code'], 'CLUSTER_NOT_FOUND')
 
-        response = self.api_delete('/cluster/' + str(cluster_id) + '/')
-        self.assertEqual(response.status_code, 404, msg=response.text)
+        response = self.client.delete(this_cluster_url)
+        self.assertEqual(response.status_code, 404, msg=response.content)
         self.assertEqual(response.json()['code'], 'CLUSTER_NOT_FOUND')
 
-        response = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
-        self.assertEqual(response.status_code, 204, msg=response.text)
+        response = self.client.delete(reverse('bundle-details', kwargs={'bundle_id': bundle_id}))
+        self.assertEqual(response.status_code, 204, msg=response.content)
 
     def test_cluster_patching(self):
         name = 'test_cluster'
