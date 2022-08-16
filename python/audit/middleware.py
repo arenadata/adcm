@@ -10,9 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.contrib.auth.models import AnonymousUser, User
-
 from audit.models import AuditSession, AuditSessionLoginResult
+from django.contrib.auth.models import AnonymousUser, User
 
 
 class AuditLoginMiddleware:
