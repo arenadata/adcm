@@ -42,7 +42,11 @@ from django.urls import reverse
 from rbac.models import Policy, Role, User
 from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
-from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
+from rest_framework.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+)
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -798,6 +802,26 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
+        )
+
+    def test_add_service_failed(self):
+        cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_3")
+        res: Response = self.client.post(
+            path=reverse("service", kwargs={"cluster_id": cluster.pk}),
+            data={"prototype_id": "some-string"},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_400_BAD_REQUEST
+        self.check_log(
+            log=log,
+            obj=cluster,
+            obj_type=AuditObjectType.Cluster,
+            operation_name="{service_display_name} service added",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
         )
 
     def test_delete_service(self):

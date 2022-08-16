@@ -284,7 +284,7 @@ def _get_audit_operation_and_object(
             )
 
             service_display_name = None
-            if res and res.data:
+            if res and res.data and res.data.get("display_name"):
                 service_display_name = res.data["display_name"]
 
             if "service_id" in view.request.data:
