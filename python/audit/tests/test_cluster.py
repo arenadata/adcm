@@ -200,6 +200,14 @@ class TestCluster(BaseTestCase):
             config=config,
         )
 
+    def add_no_rights_user_cluster_view_rights(self) -> None:
+        init_roles()
+        role = Role.objects.get(name="View cluster configurations")
+        policy = Policy.objects.create(name="test_policy", role=role)
+        policy.user.add(self.no_rights_user)
+        policy.add_object(self.cluster)
+        policy.apply()
+
     def test_create(self):
         res: Response = self.create_cluster(
             bundle_id=self.bundle.pk,
@@ -388,13 +396,7 @@ class TestCluster(BaseTestCase):
         assert isinstance(log.object_changes, dict)
 
     def test_delete_no_rights_failed(self):
-        init_roles()
-        role = Role.objects.get(name="View cluster configurations")
-        policy = Policy.objects.create(name="test_policy", role=role)
-        policy.user.add(self.no_rights_user)
-        policy.add_object(self.cluster)
-        policy.apply()
-
+        self.add_no_rights_user_cluster_view_rights()
         with self.no_rights_user_logged_in:
             res: Response = self.client.delete(
                 path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
@@ -418,6 +420,22 @@ class TestCluster(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         assert res.status_code == HTTP_404_NOT_FOUND
+        self.check_log_denied(
+            log=log,
+            operation_name=self.cluster_deleted_str,
+            operation_type=AuditLogOperationType.Delete,
+        )
+
+    def test_delete_no_rights_denied(self):
+        self.add_no_rights_user_cluster_view_rights()
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.delete(
+                path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_403_FORBIDDEN
         self.check_log_denied(
             log=log,
             operation_name=self.cluster_deleted_str,
