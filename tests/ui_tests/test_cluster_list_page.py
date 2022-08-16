@@ -1570,7 +1570,7 @@ class TestClusterGroupConfigPage:
         group_conf_page.group_config.create_few_groups(11)
         group_conf_page.table.check_pagination(second_page_item_amount=1)
 
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals, undefined-loop-variable, too-many-statements
 
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
