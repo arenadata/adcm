@@ -32,7 +32,6 @@
       <ng-template matStepLabel>Configuration</ng-template>
       <app-upgrade-master-config [upgrade]="upgrade" #wcs></app-upgrade-master-config>
       <div class="controls-container margin">
-        <mat-checkbox [(ngModel)]="verbose">Verbose</mat-checkbox>
         <div class="controls">
           <button mat-raised-button (click)="cancel()" color="primary">Cancel</button>
           <button mat-raised-button matStepperNext color="primary" [disabled]="configStepValid(wcs.fields)">Next</button>
@@ -43,7 +42,7 @@
       <ng-template matStepLabel>Host Components</ng-template>
       <app-service-host [tabIndex]="2" [cluster]="model.cluster" #hms [hideButton]="true"
         [actionParameters]="upgrade.hostcomponentmap" [fixedButton]="false"></app-service-host>
-      <div class="controls">
+      <div class="controls margin">
         <button mat-raised-button matStepperPrevious >Back</button>
         <button mat-raised-button (click)="cancel()" color="primary">Cancel</button>
         <button mat-raised-button matStepperNext color="primary" [disabled]="hmStepValid(hms)">Next</button>
@@ -58,7 +57,7 @@
 </ng-template>
 
 <ng-template #controls let-value="value" let-step="step">
-  <div class="controls-container" [class.margin]="needMargin() || step">
+  <div class="controls-container verbose" [class.margin]="needMargin() || step">
 
     <mat-checkbox [(ngModel)]="verbose">Verbose</mat-checkbox>
 

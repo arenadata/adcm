@@ -24,7 +24,7 @@ import { ConfigFieldsComponent } from '@app/shared/configuration/fields/fields.c
   `,
   styles: [`
     :host {
-      max-height: 400px;
+      max-height: 360px;
       overflow-y: auto;
       display: block;
     }

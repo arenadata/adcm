@@ -24,7 +24,7 @@ import { IUpgrade } from "@app/shared/components";
   `,
   styles: [`
     :host {
-      max-height: 400px;
+      max-height: 360px;
       overflow-y: auto;
       display: block;
     }

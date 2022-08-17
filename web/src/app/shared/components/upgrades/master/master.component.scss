@@ -1,3 +1,7 @@
+:host ::ng-deep .mat-horizontal-content-container {
+    height: 400px !important;
+}
+
 .action-button {
   background: none !important;
   margin: 6px 0;
@@ -9,8 +13,19 @@
 
 .controls-container {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
+
+  &.margin {
+    margin-top: 26px !important;
+  }
+
+  &.verbose {
+    justify-content: space-between !important;
+  }
+}
+
+.controls {
 
   &.margin {
     margin-top: 26px !important;
