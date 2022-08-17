@@ -28,6 +28,7 @@ from audit.models import (
 from cm.errors import AdcmEx
 from cm.models import (
     ADCM,
+    Action,
     Bundle,
     Cluster,
     ClusterBind,
@@ -61,17 +62,6 @@ def _get_audit_object_from_resp(res: Response, obj_type: str) -> Optional[AuditO
         audit_object = None
 
     return audit_object
-
-
-def _get_object_type_from_resp(audit_operation: AuditOperation, resp: Response) -> str:
-    if audit_operation.object_type == "config log":
-        object_type: str = ContentType.objects.get_for_model(
-            resp.data.serializer.instance.obj_ref.object
-        ).name
-    else:
-        object_type: str = resp.data.serializer.instance.object_type.name
-
-    return object_type
 
 
 def _task_case(task_pk: str, action: str) -> Tuple[AuditOperation, AuditObject]:
@@ -123,7 +113,7 @@ def _get_obj_type(obj_type: str) -> str:
     return obj_type
 
 
-def _get_or_create_audit_obj(object_id: int, object_name: str, object_type: str) -> AuditObject:
+def _get_or_create_audit_obj(object_id: str, object_name: str, object_type: str) -> AuditObject:
     audit_object = AuditObject.objects.filter(
         object_id=object_id,
         object_type=object_type,
@@ -1009,6 +999,28 @@ def _get_audit_operation_and_object(
                 object_name=obj.name,
                 object_type=AuditObjectType.ADCM,
             )
+
+        case ["adcm", adcm_pk, "action", action_pk, "run"]:
+            audit_operation = AuditOperation(
+                name="{action_display_name} action launched",
+                operation_type=AuditLogOperationType.Update,
+            )
+
+            action = Action.objects.filter(pk=action_pk).first()
+            if action:
+                audit_operation.name = audit_operation.name.format(
+                    action_display_name=action.display_name
+                )
+
+            adcm = ADCM.objects.filter(pk=adcm_pk).first()
+            if adcm:
+                audit_object = _get_or_create_audit_obj(
+                    object_id=adcm_pk,
+                    object_name=adcm.name,
+                    object_type=AuditObjectType.ADCM,
+                )
+            else:
+                audit_object = None
 
         case ["task", task_pk, action] | ["task", task_pk, action]:
             audit_operation, audit_object = _task_case(task_pk, action)
