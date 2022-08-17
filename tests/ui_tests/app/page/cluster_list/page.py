@@ -222,6 +222,9 @@ class ClusterListPage(BasePageObject):
             self.find_child(
                 self.find_elements(ClusterComponentsLocators.host_row)[0], ClusterComponentsLocators.Row.name
             ).click()
+            if self.is_element_displayed(ActionDialog.next_btn):
+                self.find_and_click(ActionDialog.next_btn)
+
         self.find_and_click(ActionDialog.run)
         self.wait_element_hide(ActionDialog.body)
 
