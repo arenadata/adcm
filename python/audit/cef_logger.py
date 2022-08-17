@@ -45,7 +45,7 @@ def cef_log(
 
     if isinstance(audit_instance, AuditSession):
         operation_name = CEFLogConstants.operation_name_session
-        if audit_instance.user:
+        if audit_instance.user is not None:
             extension["actor"] = audit_instance.user.username
         else:
             extension["actor"] = audit_instance.login_details.get("username", "<undefined>")
