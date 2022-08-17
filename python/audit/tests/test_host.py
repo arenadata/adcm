@@ -67,6 +67,7 @@ class TestHost(BaseTestCase):
             config=config,
         )
         self.host_created_str = "Host created"
+        self.action_display_name = "test_host_action"
 
     def check_host_created(self, log: AuditLog, res: Response) -> None:
         self.assertEqual(log.audit_object.object_id, res.data["id"])
@@ -129,12 +130,12 @@ class TestHost(BaseTestCase):
         self.assertEqual(log.user.pk, self.no_rights_user.pk)
         self.assertIsInstance(log.object_changes, dict)
 
-    def check_action_log(self, log: AuditLog, operation_name: str) -> None:
+    def check_action_log(self, log: AuditLog) -> None:
         self.assertEqual(log.audit_object.object_id, self.host.pk)
         self.assertEqual(log.audit_object.object_name, self.host.fqdn)
         self.assertEqual(log.audit_object.object_type, AuditObjectType.Host)
         self.assertFalse(log.audit_object.is_deleted)
-        self.assertEqual(log.operation_name, operation_name)
+        self.assertEqual(log.operation_name, f"{self.action_display_name} action launched")
         self.assertEqual(log.operation_type, AuditLogOperationType.Update)
         self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
         self.assertIsInstance(log.operation_time, datetime)
@@ -410,7 +411,7 @@ class TestHost(BaseTestCase):
 
     def test_action_launch(self):
         action = Action.objects.create(
-            display_name="test_component_action",
+            display_name=self.action_display_name,
             prototype=self.host_prototype,
             type="job",
             state_available="any",
@@ -422,7 +423,7 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_action_log(log=log, operation_name=f"{action.display_name} action launched")
+        self.check_action_log(log=log)
 
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
@@ -438,4 +439,24 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_action_log(log=log, operation_name=f"{action.display_name} action launched")
+        self.check_action_log(log=log)
+
+        self.host.cluster = Cluster.objects.create(
+            prototype=Prototype.objects.create(bundle=self.bundle, type="cluster"),
+            name="test_cluster",
+        )
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "run-task",
+                    kwargs={
+                        "cluster_id": self.host.cluster.pk,
+                        "host_id": self.host.pk,
+                        "action_id": action.pk,
+                    },
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_action_log(log=log)

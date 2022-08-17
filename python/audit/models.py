@@ -109,4 +109,5 @@ PATH_STR_TO_OBJ_CLASS_MAP = {
     "component": ServiceComponent,
     "provider": HostProvider,
     "host": Host,
+    "cluster": Cluster,
 }

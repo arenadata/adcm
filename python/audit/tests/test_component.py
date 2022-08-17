@@ -43,18 +43,21 @@ class TestComponent(BaseTestCase):
 
         bundle = Bundle.objects.create()
         cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster")
-        cluster = Cluster.objects.create(prototype=cluster_prototype, name="test_cluster")
+        self.cluster = Cluster.objects.create(prototype=cluster_prototype, name="test_cluster")
         service_prototype = Prototype.objects.create(bundle=bundle, type="service")
-        self.service = ClusterObject.objects.create(prototype=service_prototype, cluster=cluster)
+        self.service = ClusterObject.objects.create(
+            prototype=service_prototype, cluster=self.cluster
+        )
         self.component_prototype = Prototype.objects.create(bundle=bundle, type="component")
         config = ObjectConfig.objects.create(current=1, previous=1)
         ConfigLog.objects.create(obj_ref=config, config="{}")
         self.component = ServiceComponent.objects.create(
             prototype=self.component_prototype,
-            cluster=cluster,
+            cluster=self.cluster,
             service=self.service,
             config=config,
         )
+        self.action_display_name = "test_component_action"
 
     def check_log(
         self,
@@ -73,6 +76,17 @@ class TestComponent(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.Update)
         self.assertEqual(log.operation_result, operation_result)
         self.assertEqual(log.user.pk, user.pk)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertIsInstance(log.object_changes, dict)
+
+    def check_action_log(self, log: AuditLog) -> None:
+        self.assertEqual(log.audit_object.object_id, self.component.pk)
+        self.assertEqual(log.audit_object.object_name, self.component.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Component)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, f"{self.action_display_name} action launched")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertIsInstance(log.object_changes, dict)
 
@@ -184,11 +198,26 @@ class TestComponent(BaseTestCase):
 
     def test_action_launch(self):
         action = Action.objects.create(
-            display_name="test_component_action",
+            display_name=self.action_display_name,
             prototype=self.component_prototype,
             type="job",
             state_available="any",
         )
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "run-task",
+                    kwargs={
+                        "component_id": self.component.pk,
+                        "action_id": action.pk,
+                    },
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_action_log(log=log)
+
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
@@ -203,12 +232,21 @@ class TestComponent(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(log.audit_object.object_id, self.component.pk)
-        self.assertEqual(log.audit_object.object_name, self.component.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Component)
-        self.assertFalse(log.audit_object.is_deleted)
-        self.assertEqual(log.operation_name, f"{action.display_name} action launched")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
-        self.assertIsInstance(log.operation_time, datetime)
-        self.assertIsInstance(log.object_changes, dict)
+        self.check_action_log(log=log)
+
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "run-task",
+                    kwargs={
+                        "cluster_id": self.cluster.pk,
+                        "service_id": self.service.pk,
+                        "component_id": self.component.pk,
+                        "action_id": action.pk,
+                    },
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_action_log(log=log)

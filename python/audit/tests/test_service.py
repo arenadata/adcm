@@ -49,14 +49,15 @@ class TestService(BaseTestCase):
 
         bundle = Bundle.objects.create()
         self.cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster")
-        cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster")
+        self.cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster")
         service_prototype = Prototype.objects.create(bundle=bundle, type="service")
         config = ObjectConfig.objects.create(current=1, previous=1)
         ConfigLog.objects.create(obj_ref=config, config="{}")
         self.service = ClusterObject.objects.create(
-            prototype=service_prototype, cluster=cluster, config=config
+            prototype=service_prototype, cluster=self.cluster, config=config
         )
         self.service_conf_updated_str = "Service configuration updated"
+        self.action_display_name = "test_service_action"
         self.action = Action.objects.create(
             display_name="test_service_action",
             prototype=service_prototype,
@@ -84,6 +85,17 @@ class TestService(BaseTestCase):
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
         self.assertIsInstance(log.object_changes, dict)
+
+    def check_action_log(self, log: AuditLog) -> None:
+        self.check_log(
+            log=log,
+            obj=self.service,
+            object_type=AuditObjectType.Service,
+            operation_name=f"{self.action_display_name} action launched",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
+        )
 
     @staticmethod
     def get_service_and_cluster() -> tuple[ClusterObject, Cluster]:
@@ -358,12 +370,20 @@ class TestService(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_log(
-            log=log,
-            obj=self.service,
-            object_type=AuditObjectType.Service,
-            operation_name=f"{self.action.display_name} action launched",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
-            user=self.test_user,
-        )
+        self.check_action_log(log=log)
+
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "run-task",
+                    kwargs={
+                        "cluster_id": self.cluster.pk,
+                        "service_id": self.service.pk,
+                        "action_id": self.action.pk,
+                    },
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_action_log(log=log)
