@@ -18,6 +18,7 @@ from typing import Optional, Tuple
 
 from adwp_base.errors import AdwpEx
 from audit.models import (
+    AUDIT_OBJECT_TYPE_TO_MODEL_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
@@ -1227,4 +1228,30 @@ def make_audit_log(operation_type, result, operation_status):
         operation_type=operation_type_map[operation_type]['type'],
         operation_result=result,
         user=system_user,
+    )
+
+
+def audit_finish_task(obj, action_display_name: str, status: str) -> None:
+    obj_type = AUDIT_OBJECT_TYPE_TO_MODEL_MAP[obj.__class__]
+    if obj_type == AuditObjectType.Host:
+        obj_name = obj.fqdn
+    else:
+        obj_name = obj.name
+
+    audit_object = _get_or_create_audit_obj(
+        object_id=obj.pk,
+        object_name=obj_name,
+        object_type=obj_type,
+    )
+    if status == "success":
+        operation_result = AuditLogOperationResult.Success
+    else:
+        operation_result = AuditLogOperationResult.Fail
+
+    AuditLog.objects.create(
+        audit_object=audit_object,
+        operation_name=f"{action_display_name} action completed",
+        operation_type=AuditLogOperationType.Update,
+        operation_result=operation_result,
+        object_changes={},
     )

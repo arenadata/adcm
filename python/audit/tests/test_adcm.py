@@ -20,7 +20,9 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectConfig, Prototype
+from cm.job import finish_task
+from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectConfig, Prototype, TaskLog
+from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from rbac.models import User
 from rest_framework.response import Response
@@ -40,20 +42,40 @@ class TestComponent(BaseTestCase):
             obj_ref=config, config="{}", attr={"ldap_integration": {"active": True}}
         )
         self.adcm = ADCM.objects.create(prototype=self.prototype, name="ADCM", config=config)
+        self.action = Action.objects.create(
+            display_name="test_adcm_action",
+            prototype=self.prototype,
+            type="job",
+            state_available="any",
+        )
+        self.task = TaskLog.objects.create(
+            object_id=self.adcm.pk,
+            object_type=ContentType.objects.get(app_label="cm", model="adcm"),
+            start_date=datetime.now(),
+            finish_date=datetime.now(),
+            action=self.action,
+        )
 
     def check_adcm_updated(
-        self, log: AuditLog, operation_name: str, operation_result: str, user: User
+        self, log: AuditLog, operation_name: str, operation_result: str, user: User | None = None
     ):
-        assert log.audit_object.object_id == self.adcm.pk
-        assert log.audit_object.object_name == self.adcm.name
-        assert log.audit_object.object_type == AuditObjectType.ADCM
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == operation_name
-        assert log.operation_type == AuditLogOperationType.Update
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        if log.audit_object:
+            self.assertEqual(log.audit_object.object_id, self.adcm.pk)
+            self.assertEqual(log.audit_object.object_name, self.adcm.name)
+            self.assertEqual(log.audit_object.object_type, AuditObjectType.ADCM)
+            self.assertFalse(log.audit_object.is_deleted)
+        else:
+            self.assertFalse(log.audit_object)
+
+        self.assertEqual(log.operation_name, operation_name)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+
+        if log.user:
+            self.assertEqual(log.user.pk, user.pk)
+
+        self.assertIsInstance(log.object_changes, dict)
 
     def test_update_and_restore(self):
         self.client.post(
@@ -81,7 +103,7 @@ class TestComponent(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_200_OK
+        self.assertEqual(res.status_code, HTTP_200_OK)
         self.check_adcm_updated(
             log=log,
             operation_name="ADCM configuration updated",
@@ -99,7 +121,7 @@ class TestComponent(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_adcm_updated(
             log=log,
             operation_name="ADCM configuration updated",
@@ -107,24 +129,55 @@ class TestComponent(BaseTestCase):
             user=self.no_rights_user,
         )
 
-    def test_action(self):
-        action = Action.objects.create(
-            display_name="test_adcm_action",
-            prototype=self.prototype,
-            type="job",
-            state_available="any",
-        )
-
+    def test_action_launch(self):
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
-                path=reverse("run-task", kwargs={"adcm_id": self.adcm.pk, "action_id": action.pk})
+                path=reverse(
+                    "run-task", kwargs={"adcm_id": self.adcm.pk, "action_id": self.action.pk}
+                )
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_adcm_updated(
             log=log,
-            operation_name=f"{action.display_name} action launched",
+            operation_name=f"{self.action.display_name} action launched",
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
+        )
+
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse("run-task", kwargs={"adcm_id": 999, "action_id": self.action.pk})
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_adcm_updated(
+            log=log,
+            operation_name=f"{self.action.display_name} action launched",
+            operation_result=AuditLogOperationResult.Fail,
+            user=self.test_user,
+        )
+
+    def test_action_finish_success(self):
+        finish_task(task=self.task, job=None, status="success")
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_adcm_updated(
+            log=log,
+            operation_name=f"{self.action.display_name} action completed",
+            operation_result=AuditLogOperationResult.Success,
+        )
+
+    def test_action_finish_fail(self):
+        finish_task(task=self.task, job=None, status="fail")
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_adcm_updated(
+            log=log,
+            operation_name=f"{self.action.display_name} action completed",
+            operation_result=AuditLogOperationResult.Fail,
         )
