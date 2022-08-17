@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from datetime import datetime
+from unittest.mock import patch
 
 from audit.models import (
     AuditLog,
@@ -20,6 +20,7 @@ from audit.models import (
     AuditObjectType,
 )
 from cm.models import (
+    Action,
     Bundle,
     Cluster,
     ClusterBind,
@@ -30,9 +31,14 @@ from cm.models import (
     PrototypeExport,
     PrototypeImport,
 )
+from django.urls import reverse
 from rbac.models import User
 from rest_framework.response import Response
-from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
+from rest_framework.status import (
+    HTTP_201_CREATED,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+)
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -51,9 +57,15 @@ class TestService(BaseTestCase):
             prototype=service_prototype, cluster=cluster, config=config
         )
         self.service_conf_updated_str = "Service configuration updated"
+        self.action = Action.objects.create(
+            display_name="test_service_action",
+            prototype=service_prototype,
+            type="job",
+            state_available="any",
+        )
 
-    @staticmethod
-    def check_log(
+    def check_log(  # pylint: disable=too-many-arguments
+        self,
         log: AuditLog,
         obj,
         operation_name: str,
@@ -62,16 +74,16 @@ class TestService(BaseTestCase):
         operation_result: AuditLogOperationResult,
         user: User,
     ):
-        assert log.audit_object.object_id == obj.pk
-        assert log.audit_object.object_name == obj.name
-        assert log.audit_object.object_type == object_type
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == operation_name
-        assert log.operation_type == operation_type
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, obj.pk)
+        self.assertEqual(log.audit_object.object_name, obj.name)
+        self.assertEqual(log.audit_object.object_type, object_type)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, operation_name)
+        self.assertEqual(log.operation_type, operation_type)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertIsInstance(log.object_changes, dict)
 
     @staticmethod
     def get_service_and_cluster() -> tuple[ClusterObject, Cluster]:
@@ -87,7 +99,7 @@ class TestService(BaseTestCase):
 
     def test_update(self):
         self.client.post(
-            path=f"/api/v1/service/{self.service.pk}/config/history/",
+            path=reverse("config-history", kwargs={"service_id": self.service.pk}),
             data={"config": {}},
             content_type=APPLICATION_JSON,
         )
@@ -107,14 +119,14 @@ class TestService(BaseTestCase):
     def test_update_denied(self):
         with self.no_rights_user_logged_in:
             res: Response = self.client.post(
-                path=f"/api/v1/service/{self.service.pk}/config/history/",
+                path=reverse("config-history", kwargs={"service_id": self.service.pk}),
                 data={"config": {}},
                 content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.service,
@@ -127,7 +139,10 @@ class TestService(BaseTestCase):
 
     def test_restore(self):
         self.client.patch(
-            path=f"/api/v1/service/{self.service.pk}/config/history/1/restore/",
+            path=reverse(
+                "config-history-version-restore",
+                kwargs={"service_id": self.service.pk, "version": 1},
+            ),
             content_type=APPLICATION_JSON,
         )
 
@@ -146,13 +161,16 @@ class TestService(BaseTestCase):
     def test_restore_denied(self):
         with self.no_rights_user_logged_in:
             res: Response = self.client.patch(
-                path=f"/api/v1/service/{self.service.pk}/config/history/1/restore/",
+                path=reverse(
+                    "config-history-version-restore",
+                    kwargs={"service_id": self.service.pk, "version": 1},
+                ),
                 content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.service,
@@ -165,7 +183,7 @@ class TestService(BaseTestCase):
 
     def test_delete(self):
         self.client.delete(
-            path=f"/api/v1/service/{self.service.pk}/",
+            path=reverse("service-details", kwargs={"service_id": self.service.pk}),
             content_type=APPLICATION_JSON,
         )
 
@@ -184,13 +202,13 @@ class TestService(BaseTestCase):
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
             res: Response = self.client.delete(
-                path=f"/api/v1/service/{self.service.pk}/",
+                path=reverse("service-details", kwargs={"service_id": self.service.pk}),
                 content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             obj=self.service.cluster,
@@ -203,7 +221,7 @@ class TestService(BaseTestCase):
 
     def test_import(self):
         self.client.post(
-            path=f"/api/v1/service/{self.service.pk}/import/",
+            path=reverse("service-import", kwargs={"service_id": self.service.pk}),
             data={"bind": []},
             content_type=APPLICATION_JSON,
         )
@@ -223,14 +241,14 @@ class TestService(BaseTestCase):
     def test_import_denied(self):
         with self.no_rights_user_logged_in:
             res: Response = self.client.post(
-                path=f"/api/v1/service/{self.service.pk}/import/",
+                path=reverse("service-import", kwargs={"service_id": self.service.pk}),
                 data={"bind": []},
                 content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             obj=self.service,
@@ -244,7 +262,7 @@ class TestService(BaseTestCase):
     def test_bind_unbind(self):
         service, cluster = self.get_service_and_cluster()
         self.client.post(
-            path=f"/api/v1/service/{service.pk}/bind/",
+            path=reverse("service-bind", kwargs={"service_id": service.pk}),
             data={"export_cluster_id": cluster.pk},
             content_type=APPLICATION_JSON,
         )
@@ -263,7 +281,9 @@ class TestService(BaseTestCase):
 
         bind = ClusterBind.objects.first()
         self.client.delete(
-            path=f"/api/v1/service/{service.pk}/bind/{bind.pk}/",
+            path=reverse(
+                "service-bind-details", kwargs={"service_id": service.pk, "bind_id": bind.pk}
+            ),
             content_type=APPLICATION_JSON,
         )
 
@@ -283,14 +303,14 @@ class TestService(BaseTestCase):
         service, cluster = self.get_service_and_cluster()
         with self.no_rights_user_logged_in:
             res: Response = self.client.post(
-                path=f"/api/v1/service/{service.pk}/bind/",
+                path=reverse("service-bind", kwargs={"service_id": service.pk}),
                 data={"export_cluster_id": cluster.pk},
                 content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             obj=service,
@@ -302,20 +322,22 @@ class TestService(BaseTestCase):
         )
 
         self.client.post(
-            path=f"/api/v1/service/{service.pk}/bind/",
+            path=reverse("service-bind", kwargs={"service_id": service.pk}),
             data={"export_cluster_id": cluster.pk},
             content_type=APPLICATION_JSON,
         )
         bind = ClusterBind.objects.first()
         with self.no_rights_user_logged_in:
             res: Response = self.client.delete(
-                path=f"/api/v1/service/{service.pk}/bind/{bind.pk}/",
+                path=reverse(
+                    "service-bind-details", kwargs={"service_id": service.pk, "bind_id": bind.pk}
+                ),
                 content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             obj=service,
@@ -324,4 +346,24 @@ class TestService(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
+        )
+
+    def test_action_launch(self):
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "run-task", kwargs={"service_id": self.service.pk, "action_id": self.action.pk}
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            obj=self.service,
+            object_type=AuditObjectType.Service,
+            operation_name=f"{self.action.display_name} action launched",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
         )

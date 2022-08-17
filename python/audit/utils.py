@@ -1001,7 +1001,11 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.ADCM,
             )
 
-        case ["adcm", adcm_pk, "action", action_pk, "run"]:
+        case [obj_type, adcm_pk, "action", action_pk, "run"]:
+            obj_type_to_class_map = {
+                "adcm": ADCM,
+                "service": ClusterObject,
+            }
             audit_operation = AuditOperation(
                 name="{action_display_name} action launched",
                 operation_type=AuditLogOperationType.Update,
@@ -1013,12 +1017,16 @@ def _get_audit_operation_and_object(
                     action_display_name=action.display_name
                 )
 
-            adcm = ADCM.objects.filter(pk=adcm_pk).first()
-            if adcm:
+            obj = obj_type_to_class_map[obj_type].objects.filter(pk=adcm_pk).first()
+            if obj:
+                if isinstance(obj, Host):
+                    obj_name = obj.fqdn
+                else:
+                    obj_name = obj.name
                 audit_object = _get_or_create_audit_obj(
                     object_id=adcm_pk,
-                    object_name=adcm.name,
-                    object_type=AuditObjectType.ADCM,
+                    object_name=obj_name,
+                    object_type=AUDIT_OBJECT_TYPE_TO_MODEL_MAP[obj_type_to_class_map[obj_type]],
                 )
             else:
                 audit_object = None
