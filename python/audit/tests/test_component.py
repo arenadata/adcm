@@ -58,6 +58,7 @@ class TestComponent(BaseTestCase):
             config=config,
         )
         self.action_display_name = "test_component_action"
+        self.api_create_str = "api.action.views.create"
 
     def check_log(
         self,
@@ -203,7 +204,7 @@ class TestComponent(BaseTestCase):
             type="job",
             state_available="any",
         )
-        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+        with patch(self.api_create_str, return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
                     "run-task",
@@ -218,7 +219,7 @@ class TestComponent(BaseTestCase):
 
         self.check_action_log(log=log)
 
-        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+        with patch(self.api_create_str, return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
                     "run-task",
@@ -234,7 +235,7 @@ class TestComponent(BaseTestCase):
 
         self.check_action_log(log=log)
 
-        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+        with patch(self.api_create_str, return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
                     "run-task",

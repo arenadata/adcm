@@ -55,6 +55,7 @@ class TestComponent(BaseTestCase):
             finish_date=datetime.now(),
             action=self.action,
         )
+        self.adcm_conf_updated_str = "ADCM configuration updated"
 
     def check_adcm_updated(
         self, log: AuditLog, operation_name: str, operation_result: str, user: User | None = None
@@ -88,7 +89,7 @@ class TestComponent(BaseTestCase):
 
         self.check_adcm_updated(
             log=log,
-            operation_name="ADCM configuration updated",
+            operation_name=self.adcm_conf_updated_str,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
         )
@@ -106,7 +107,7 @@ class TestComponent(BaseTestCase):
         self.assertEqual(res.status_code, HTTP_200_OK)
         self.check_adcm_updated(
             log=log,
-            operation_name="ADCM configuration updated",
+            operation_name=self.adcm_conf_updated_str,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
         )
@@ -124,7 +125,7 @@ class TestComponent(BaseTestCase):
         self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_adcm_updated(
             log=log,
-            operation_name="ADCM configuration updated",
+            operation_name=self.adcm_conf_updated_str,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
         )
