@@ -167,7 +167,7 @@ class Command(BaseCommand):
     def __log(self, msg, method='info'):
         prefix = 'Audit cleanup/archiving: '
         if method in ('exc', 'exception'):
-            log.warning(f'{prefix}Error in auditlog rotation')
+            log.warning('%sError in auditlog rotation', prefix)
             log.exception(msg)
         else:
             msg = 'Audit cleanup/archiving: ' + str(msg)

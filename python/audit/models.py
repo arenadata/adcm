@@ -72,7 +72,7 @@ class AuditLog(models.Model):
     operation_type = models.CharField(max_length=16, choices=AuditLogOperationType.choices)
     operation_result = models.CharField(max_length=16, choices=AuditLogOperationResult.choices)
     operation_time = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(DjangoUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(DjangoUser, on_delete=models.CASCADE, null=True)
     object_changes = models.JSONField(default=dict)
 
 

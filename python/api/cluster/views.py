@@ -95,6 +95,7 @@ class ClusterList(PermissionListMixin, PaginatedView):
     @audit
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
+
         return create(serializer)
 
 

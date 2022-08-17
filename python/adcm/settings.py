@@ -255,10 +255,15 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'data/log/adwp.log'),
         },
+        'stdout': {
+            'level': 'DEBUG',
+            'formatter': 'adwp',
+            'class': 'logging.StreamHandler',
+        },
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['file', 'stdout'],
             'level': 'DEBUG',
             'propagate': True,
         },
