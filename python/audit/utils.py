@@ -1001,10 +1001,14 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.ADCM,
             )
 
-        case [obj_type, adcm_pk, "action", action_pk, "run"]:
+        case (
+            [obj_type, adcm_pk, "action", action_pk, "run"]
+            | [_, _, obj_type, adcm_pk, "action", action_pk, "run"]
+        ):
             obj_type_to_class_map = {
                 "adcm": ADCM,
                 "service": ClusterObject,
+                "component": ServiceComponent,
             }
             audit_operation = AuditOperation(
                 name="{action_display_name} action launched",

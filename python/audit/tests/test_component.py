@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from datetime import datetime
-from typing import Optional
+from unittest.mock import patch
 
 from audit.models import (
     AuditLog,
@@ -20,6 +20,7 @@ from audit.models import (
     AuditObjectType,
 )
 from cm.models import (
+    Action,
     Bundle,
     Cluster,
     ClusterObject,
@@ -28,9 +29,10 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django.urls import reverse
 from rbac.models import User
 from rest_framework.response import Response
-from rest_framework.status import HTTP_403_FORBIDDEN
+from rest_framework.status import HTTP_201_CREATED, HTTP_403_FORBIDDEN
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -44,11 +46,11 @@ class TestComponent(BaseTestCase):
         cluster = Cluster.objects.create(prototype=cluster_prototype, name="test_cluster")
         service_prototype = Prototype.objects.create(bundle=bundle, type="service")
         self.service = ClusterObject.objects.create(prototype=service_prototype, cluster=cluster)
-        component_prototype = Prototype.objects.create(bundle=bundle, type="component")
+        self.component_prototype = Prototype.objects.create(bundle=bundle, type="component")
         config = ObjectConfig.objects.create(current=1, previous=1)
         ConfigLog.objects.create(obj_ref=config, config="{}")
         self.component = ServiceComponent.objects.create(
-            prototype=component_prototype,
+            prototype=self.component_prototype,
             cluster=cluster,
             service=self.service,
             config=config,
@@ -58,25 +60,28 @@ class TestComponent(BaseTestCase):
         self,
         log: AuditLog,
         operation_result: AuditLogOperationResult = AuditLogOperationResult.Success,
-        user: Optional[User] = None,
+        user: User | None = None,
     ):
         if user is None:
             user = self.test_user
 
-        assert log.audit_object.object_id == self.component.pk
-        assert log.audit_object.object_name == self.component.name
-        assert log.audit_object.object_type == AuditObjectType.Component
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Component configuration updated"
-        assert log.operation_type == AuditLogOperationType.Update
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, self.component.pk)
+        self.assertEqual(log.audit_object.object_name, self.component.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Component)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, "Component configuration updated")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertIsInstance(log.object_changes, dict)
 
     def test_update(self):
         self.client.patch(
-            path=f"/api/v1/component/{self.component.pk}/config/history/1/restore/",
+            path=reverse(
+                "config-history-version-restore",
+                kwargs={"component_id": self.component.pk, "version": 1},
+            ),
             content_type=APPLICATION_JSON,
         )
 
@@ -87,13 +92,16 @@ class TestComponent(BaseTestCase):
     def test_update_denied(self):
         with self.no_rights_user_logged_in:
             res: Response = self.client.patch(
-                path=f"/api/v1/component/{self.component.pk}/config/history/1/restore/",
+                path=reverse(
+                    "config-history-version-restore",
+                    kwargs={"component_id": self.component.pk, "version": 1},
+                ),
                 content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             operation_result=AuditLogOperationResult.Denied,
@@ -102,8 +110,10 @@ class TestComponent(BaseTestCase):
 
     def test_update_via_service(self):
         self.client.post(
-            path=f"/api/v1/service/{self.service.pk}/component/"
-            f"{self.component.pk}/config/history/",
+            path=reverse(
+                "config-history",
+                kwargs={"service_id": self.service.pk, "component_id": self.component.pk},
+            ),
             data={"config": {}},
             content_type=APPLICATION_JSON,
         )
@@ -115,15 +125,17 @@ class TestComponent(BaseTestCase):
     def test_update_via_service_denied(self):
         with self.no_rights_user_logged_in:
             res: Response = self.client.post(
-                path=f"/api/v1/service/{self.service.pk}/component/"
-                f"{self.component.pk}/config/history/",
+                path=reverse(
+                    "config-history",
+                    kwargs={"service_id": self.service.pk, "component_id": self.component.pk},
+                ),
                 data={"config": {}},
                 content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             operation_result=AuditLogOperationResult.Denied,
@@ -132,8 +144,14 @@ class TestComponent(BaseTestCase):
 
     def test_restore_via_service(self):
         self.client.patch(
-            path=f"/api/v1/service/{self.service.pk}/component/"
-            f"{self.component.pk}/config/history/1/restore/",
+            path=reverse(
+                "config-history-version-restore",
+                kwargs={
+                    "service_id": self.service.pk,
+                    "component_id": self.component.pk,
+                    "version": 1,
+                },
+            ),
             content_type=APPLICATION_JSON,
         )
 
@@ -144,16 +162,53 @@ class TestComponent(BaseTestCase):
     def test_restore_via_service_denied(self):
         with self.no_rights_user_logged_in:
             res: Response = self.client.patch(
-                path=f"/api/v1/service/{self.service.pk}/component/"
-                f"{self.component.pk}/config/history/1/restore/",
+                path=reverse(
+                    "config-history-version-restore",
+                    kwargs={
+                        "service_id": self.service.pk,
+                        "component_id": self.component.pk,
+                        "version": 1,
+                    },
+                ),
                 content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
         )
+
+    def test_action_launch(self):
+        action = Action.objects.create(
+            display_name="test_component_action",
+            prototype=self.component_prototype,
+            type="job",
+            state_available="any",
+        )
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "run-task",
+                    kwargs={
+                        "service_id": self.service.pk,
+                        "component_id": self.component.pk,
+                        "action_id": action.pk,
+                    },
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(log.audit_object.object_id, self.component.pk)
+        self.assertEqual(log.audit_object.object_name, self.component.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Component)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, f"{action.display_name} action launched")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertIsInstance(log.object_changes, dict)
