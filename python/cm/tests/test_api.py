@@ -171,8 +171,8 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
     #     self.token = response.json()['token']
 
     def get_service_proto_id(self):
-        response = self.api_get('/stack/service/')
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        response = self.client.get(reverse('service-type'))
+        self.assertEqual(response.status_code, 200, msg=response.content)
         for service in response.json():
             if service['name'] == self.service:
                 return service['id']
@@ -576,28 +576,29 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.json()['code'], 'BUNDLE_CONFLICT')
 
     def test_service(self):
-        response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        self.load_bundle(self.bundle_adh_name)
         service_id = self.get_service_proto_id()
+        service_url = reverse('service-type')
+        this_service_url = reverse('service-type-details', kwargs={'prototype_id': service_id})
 
-        response = self.api_post('/stack/service/', {})
-        self.assertEqual(response.status_code, 405, msg=response.text)
+        response = self.client.post(service_url, {})
+        self.assertEqual(response.status_code, 405, msg=response.content)
 
-        response = self.api_get('/stack/service/' + str(service_id) + '/')
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        response = self.client.get(this_service_url)
+        self.assertEqual(response.status_code, 200, msg=response.content)
 
-        response = self.api_put('/stack/service/' + str(service_id) + '/', {})
-        self.assertEqual(response.status_code, 405, msg=response.text)
+        response = self.client.put(this_service_url, {}, content_type="application/json")
+        self.assertEqual(response.status_code, 405, msg=response.content)
 
-        response = self.api_delete('/stack/service/' + str(service_id) + '/')
-        self.assertEqual(response.status_code, 405, msg=response.text)
+        response = self.client.delete(this_service_url)
+        self.assertEqual(response.status_code, 405, msg=response.content)
 
-        response = self.api_get('/stack/service/' + str(service_id) + '/')
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        response = self.client.get(this_service_url)
+        self.assertEqual(response.status_code, 200, msg=response.content)
         bundle_id = response.json()['bundle_id']
 
-        response = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
-        self.assertEqual(response.status_code, 204, msg=response.text)
+        response = self.client.delete(reverse('bundle-details', kwargs={'bundle_id': bundle_id}))
+        self.assertEqual(response.status_code, 204, msg=response.content)
 
     def test_cluster_service(self):
         response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
