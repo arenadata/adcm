@@ -18,7 +18,6 @@ from guardian.mixins import PermissionListMixin
 from rbac import models
 from rbac.services import user as user_services
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -33,6 +32,7 @@ from rest_framework.serializers import (
 from rest_framework.status import HTTP_405_METHOD_NOT_ALLOWED
 from rest_framework.viewsets import ModelViewSet
 
+from adcm.permissions import DjangoModelPermissionsAudit
 from adcm.serializers import EmptySerializer
 
 
@@ -118,7 +118,7 @@ class UserViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
 
     queryset = models.User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (DjangoModelPermissions,)
+    permission_classes = (DjangoModelPermissionsAudit,)
     permission_required = ['rbac.view_user']
     filterset_fields = (
         'id',

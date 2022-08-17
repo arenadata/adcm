@@ -256,7 +256,7 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'data/log/adwp.log'),
         },
-        'stdout_raw': {
+        'stdout': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'stream': sys.stdout,
@@ -264,7 +264,7 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['file', 'stdout'],
             'level': 'DEBUG',
             'propagate': True,
         },
@@ -285,7 +285,7 @@ LOGGING = {
             'propagate': True,
         },
         'audit': {
-            'handlers': ['stdout_raw'],
+            'handlers': ['stdout'],
             'level': 'DEBUG',
             'propagate': True,
         },

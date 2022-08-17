@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from pathlib import Path
-
+from contextlib import contextmanager
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -67,7 +67,10 @@ class BaseTestCase(TestCase):
         )
         self.client.defaults["Authorization"] = f"Token {res.data['token']}"
 
-    def login_no_rights_user(self):
+    @property
+    @contextmanager
+    def no_rights_user_logged_in(self):
+        self.client.post(path=reverse("rbac:logout"))
         res: Response = self.client.post(
             path=reverse("rbac:token"),
             data={
@@ -78,5 +81,6 @@ class BaseTestCase(TestCase):
         )
         self.client.defaults["Authorization"] = f"Token {res.data['token']}"
 
-    def logout(self):
-        self.client.post(path=reverse("rbac:logout"))
+        yield
+
+        self.login()

@@ -16,11 +16,10 @@ from adwp_base.errors import AdwpEx
 from audit.utils import audit
 from django_filters.rest_framework import CharFilter, DjangoFilterBackend, FilterSet
 from guardian.mixins import PermissionListMixin
-from rbac import models
+from rbac.models import Group, User
 from rbac.services import group as group_services
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.filters import OrderingFilter
-from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -33,31 +32,26 @@ from rest_framework.serializers import (
 from rest_framework.status import HTTP_405_METHOD_NOT_ALLOWED
 from rest_framework.viewsets import ModelViewSet
 
+from adcm.permissions import DjangoModelPermissionsAudit
 from adcm.serializers import EmptySerializer
 
 
 class UserSerializer(EmptySerializer):
-    """Simple User serializer"""
-
     id = IntegerField()
     url = HyperlinkedIdentityField(view_name='rbac:user-detail')
 
 
 class UserGroupSerializer(EmptySerializer):
-    """Simple Group serializer"""
-
     id = IntegerField()
     url = HyperlinkedIdentityField(view_name='rbac:group-detail')
 
 
 class ExpandedUserSerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    """Expanded User serializer"""
-
     group = UserGroupSerializer(many=True, source='groups')
     url = HyperlinkedIdentityField(view_name='rbac:user-detail')
 
     class Meta:
-        model = models.User
+        model = User
         fields = (
             'id',
             'username',
@@ -105,7 +99,7 @@ class GroupFilterSet(FilterSet):
     name = CharFilter(field_name='display_name', label='name')
 
     class Meta:
-        model = models.Group
+        model = Group
         fields = ('id', 'type')
 
 
@@ -122,19 +116,20 @@ class GroupOrderingFilter(OrderingFilter):
             if field == '-name':
                 fix_ordering.append('-display_name')
                 continue
+
             if field == 'name':
                 fix_ordering.append('display_name')
                 continue
+
             fix_ordering.append(field)
+
         return queryset.order_by(*fix_ordering)
 
 
 class GroupViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
-    """Group view set"""
-
-    queryset = models.Group.objects.all()
+    queryset = Group.objects.all()
     serializer_class = GroupSerializer
-    permission_classes = (DjangoModelPermissions,)
+    permission_classes = (DjangoModelPermissionsAudit,)
     permission_required = ['rbac.view_group']
     filter_backends = (DjangoFilterBackend, GroupOrderingFilter)
     filterset_class = GroupFilterSet
@@ -158,4 +153,5 @@ class GroupViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-ma
                 msg='Built-in group could not be deleted',
                 http_code=HTTP_405_METHOD_NOT_ALLOWED,
             )
+
         return super().destroy(request, args, kwargs)

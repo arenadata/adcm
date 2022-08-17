@@ -22,7 +22,6 @@ from rbac.utils import BaseRelatedSerializer
 from rest_flex_fields import is_expanded
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.decorators import action
-from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.response import Response
 from rest_framework.serializers import (
     HyperlinkedIdentityField,
@@ -38,6 +37,8 @@ from rest_framework.status import (
     HTTP_405_METHOD_NOT_ALLOWED,
 )
 from rest_framework.viewsets import ModelViewSet
+
+from adcm.permissions import DjangoModelPermissionsAudit
 
 
 class RoleChildSerializer(BaseRelatedSerializer):
@@ -105,7 +106,7 @@ class RoleFilter(filters.FilterSet):
 class RoleView(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
 
     serializer_class = RoleSerializer
-    permission_classes = (DjangoModelPermissions,)
+    permission_classes = (DjangoModelPermissionsAudit,)
     permission_required = ['rbac.view_role']
     filterset_class = RoleFilter
     ordering_fields = ('id', 'name', 'display_name', 'built_in', 'type')
