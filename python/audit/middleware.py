@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
+from json.decoder import JSONDecodeError
 
 from django.contrib.auth.models import AnonymousUser, User
 
@@ -41,19 +42,22 @@ class AuditLoginMiddleware:
         AuditSession.objects.create(user=user, login_result=result, login_details=details)
 
     def __call__(self, request):
-        try:
-            username = json.loads(request.body.decode("utf-8")).get("username")
-        except json.JSONDecodeError:
-            username = ""
-
-        response = self.get_response(request)
 
         if request.method == "POST" and request.path in {
             "/api/v1/rbac/token/",
             "/api/v1/token/",
             "/api/v1/auth/login/",
         }:
+
+            try:
+                username = json.loads(request.body.decode("utf-8")).get("username")
+            except JSONDecodeError:
+                username = ""
+
+            response = self.get_response(request)
+
             username = request.POST.get("username") or username or request.user.username
             self._audit(user=request.user, username=username)
+            return response
 
-        return response
+        return self.get_response(request)
