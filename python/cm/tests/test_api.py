@@ -601,63 +601,65 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, 204, msg=response.content)
 
     def test_cluster_service(self):
-        response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        self.load_bundle(self.bundle_adh_name)
 
         service_proto_id = self.get_service_proto_id()
         bundle_id, cluster_proto_id = self.get_cluster_proto_id()
 
         cluster = 'test_cluster'
-        response = self.api_post('/cluster/', {'name': cluster, 'prototype_id': cluster_proto_id})
-        self.assertEqual(response.status_code, 201, msg=response.text)
-        cluster_id = response.json()['id']
-
-        response = self.api_post(
-            '/cluster/' + str(cluster_id) + '/service/',
-            {
-                'prototype_id': 'some-string',
-            },
+        cluster_url = reverse('cluster')
+        response = self.client.post(
+            cluster_url, {'name': cluster, 'prototype_id': cluster_proto_id}
         )
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        self.assertEqual(response.status_code, 201, msg=response.content)
+        cluster_id = response.json()['id']
+        this_service_url = reverse('service', kwargs={'cluster_id': cluster_id})
+
+        response = self.client.post(
+            this_service_url,
+            {'prototype_id': 'some-string'},
+        )
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['prototype_id'], ['A valid integer is required.'])
 
-        response = self.api_post(
-            '/cluster/' + str(cluster_id) + '/service/',
+        response = self.client.post(
+            this_service_url,
             {
                 'prototype_id': -service_proto_id,
             },
         )
-        self.assertEqual(response.status_code, 404, msg=response.text)
+        self.assertEqual(response.status_code, 404, msg=response.content)
         self.assertEqual(response.json()['code'], 'PROTOTYPE_NOT_FOUND')
 
-        response = self.api_post(
-            '/cluster/' + str(cluster_id) + '/service/',
+        response = self.client.post(
+            this_service_url,
             {
                 'prototype_id': service_proto_id,
             },
         )
-        self.assertEqual(response.status_code, 201, msg=response.text)
+        self.assertEqual(response.status_code, 201, msg=response.content)
         service_id = response.json()['id']
 
-        response = self.api_post(
-            '/cluster/' + str(cluster_id) + '/service/',
+        response = self.client.post(
+            this_service_url,
             {
                 'prototype_id': service_proto_id,
             },
         )
-        self.assertEqual(response.status_code, 409, msg=response.text)
+        self.assertEqual(response.status_code, 409, msg=response.content)
         self.assertEqual(response.json()['code'], 'SERVICE_CONFLICT')
 
-        response = self.api_delete(
-            '/cluster/' + str(cluster_id) + '/service/' + str(service_id) + '/'
+        this_service_from_cluster_url = reverse(
+            'service-details', kwargs={'cluster_id': cluster_id, 'service_id': service_id}
         )
-        self.assertEqual(response.status_code, 204, msg=response.text)
+        response = self.client.delete(this_service_from_cluster_url)
+        self.assertEqual(response.status_code, 204, msg=response.content)
 
-        response = self.api_delete('/cluster/' + str(cluster_id) + '/')
-        self.assertEqual(response.status_code, 204, msg=response.text)
+        response = self.client.delete(reverse('cluster-details', kwargs={'cluster_id': cluster_id}))
+        self.assertEqual(response.status_code, 204, msg=response.content)
 
-        response = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
-        self.assertEqual(response.status_code, 204, msg=response.text)
+        response = self.client.delete(reverse('bundle-details', kwargs={'bundle_id': bundle_id}))
+        self.assertEqual(response.status_code, 204, msg=response.content)
 
     def test_hostcomponent(self):  # pylint: disable=too-many-statements,too-many-locals
         response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
