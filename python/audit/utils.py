@@ -19,6 +19,7 @@ from typing import Optional, Tuple
 from adwp_base.errors import AdwpEx
 from audit.models import (
     AUDIT_OBJECT_TYPE_TO_MODEL_MAP,
+    PATH_STR_TO_OBJ_CLASS_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
@@ -39,6 +40,7 @@ from cm.models import (
     HostProvider,
     ServiceComponent,
     TaskLog,
+    Upgrade,
 )
 from django.contrib.auth.models import User as DjangoUser
 from django.contrib.contenttypes.models import ContentType
@@ -988,28 +990,23 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Component,
             )
 
-        case ["adcm", adcm_pk, "config", "history"]:
+        case ["adcm", obj_pk, "config", "history"]:
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.ADCM.upper()} "
                      f"configuration {AuditLogOperationType.Update}d",
                 operation_type=AuditLogOperationType.Update,
             )
-            obj = ADCM.objects.get(pk=adcm_pk)
+            obj = ADCM.objects.get(pk=obj_pk)
             audit_object = _get_or_create_audit_obj(
-                object_id=adcm_pk,
+                object_id=obj_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.ADCM,
             )
 
         case (
-            [obj_type, adcm_pk, "action", action_pk, "run"]
-            | [_, _, obj_type, adcm_pk, "action", action_pk, "run"]
+            [obj_type, obj_pk, "action", action_pk, "run"]
+            | [_, _, obj_type, obj_pk, "action", action_pk, "run"]
         ):
-            obj_type_to_class_map = {
-                "adcm": ADCM,
-                "service": ClusterObject,
-                "component": ServiceComponent,
-            }
             audit_operation = AuditOperation(
                 name="{action_display_name} action launched",
                 operation_type=AuditLogOperationType.Update,
@@ -1021,16 +1018,36 @@ def _get_audit_operation_and_object(
                     action_display_name=action.display_name
                 )
 
-            obj = obj_type_to_class_map[obj_type].objects.filter(pk=adcm_pk).first()
+            obj = PATH_STR_TO_OBJ_CLASS_MAP[obj_type].objects.filter(pk=obj_pk).first()
             if obj:
                 if isinstance(obj, Host):
                     obj_name = obj.fqdn
                 else:
                     obj_name = obj.name
                 audit_object = _get_or_create_audit_obj(
-                    object_id=adcm_pk,
+                    object_id=obj_pk,
                     object_name=obj_name,
-                    object_type=AUDIT_OBJECT_TYPE_TO_MODEL_MAP[obj_type_to_class_map[obj_type]],
+                    object_type=AUDIT_OBJECT_TYPE_TO_MODEL_MAP[PATH_STR_TO_OBJ_CLASS_MAP[obj_type]],
+                )
+            else:
+                audit_object = None
+
+        case [obj_type, obj_pk, "upgrade", upgrade_pk, "do"]:
+            upgrade = Upgrade.objects.filter(pk=upgrade_pk).first()
+            if not (upgrade and upgrade.action):
+                return None, None, None
+
+            audit_operation = AuditOperation(
+                name=f"{upgrade.action.display_name} action launched",
+                operation_type=AuditLogOperationType.Update,
+            )
+
+            obj = PATH_STR_TO_OBJ_CLASS_MAP[obj_type].objects.filter(pk=obj_pk).first()
+            if obj:
+                audit_object = _get_or_create_audit_obj(
+                    object_id=obj_pk,
+                    object_name=obj.name,
+                    object_type=AUDIT_OBJECT_TYPE_TO_MODEL_MAP[PATH_STR_TO_OBJ_CLASS_MAP[obj_type]],
                 )
             else:
                 audit_object = None

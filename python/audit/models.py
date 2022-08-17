@@ -102,3 +102,10 @@ AUDIT_OBJECT_TYPE_TO_MODEL_MAP = {
     Role: AuditObjectType.Role,
     Policy: AuditObjectType.Policy,
 }
+
+PATH_STR_TO_OBJ_CLASS_MAP = {
+    "adcm": ADCM,
+    "service": ClusterObject,
+    "component": ServiceComponent,
+    "provider": HostProvider,
+}
