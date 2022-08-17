@@ -1261,7 +1261,10 @@ def make_audit_log(operation_type, result, operation_status):
 
 
 def audit_finish_task(obj, action_display_name: str, status: str) -> None:
-    obj_type = AUDIT_OBJECT_TYPE_TO_MODEL_MAP[obj.__class__]
+    obj_type = AUDIT_OBJECT_TYPE_TO_MODEL_MAP.get(obj.__class__)
+    if not obj_type:
+        return
+
     if obj_type == AuditObjectType.Host:
         obj_name = obj.fqdn
     else:

@@ -53,12 +53,11 @@ from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm/python')
+import adcm.init_django  # pylint: disable=unused-import
 import cm.api
 from cm.ansible_plugin import get_object_id_from_context
 from cm.errors import AdcmEx
 from cm.logger import log
-
-import adcm.init_django  # pylint: disable=unused-import
 
 
 class ActionModule(ActionBase):

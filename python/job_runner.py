@@ -17,6 +17,7 @@ import json
 import os
 import subprocess
 import sys
+import adcm.init_django  # pylint: disable=unused-import
 
 import cm.job
 from cm import config
@@ -26,8 +27,6 @@ from cm.logger import log
 from cm.models import JobLog, LogStorage
 from cm.status_api import Event
 from cm.upgrade import bundle_switch
-
-import adcm.init_django  # DO NOT DELETE !!!
 
 
 def open_file(root, tag, job_id):

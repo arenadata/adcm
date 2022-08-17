@@ -14,6 +14,7 @@
 import datetime
 import os
 import sqlite3
+import adcm.init_django  # pylint: disable=unused-import
 
 from cm import config
 from cm.logger import log
@@ -21,7 +22,6 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.migrations.executor import MigrationExecutor
 
-import adcm.init_django  # pylint: disable=unused-import
 from adcm.settings import DATABASES
 
 

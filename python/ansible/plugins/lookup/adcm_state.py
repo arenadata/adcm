@@ -26,6 +26,7 @@ except ImportError:
 import sys
 
 sys.path.append('/adcm/python')
+import adcm.init_django  # pylint: disable=unused-import
 from cm.ansible_plugin import (
     set_cluster_state,
     set_host_state,
@@ -35,7 +36,6 @@ from cm.ansible_plugin import (
 )
 from cm.logger import log
 
-import adcm.init_django  # pylint: disable=unused-import
 
 DOCUMENTATION = """
     lookup: file
