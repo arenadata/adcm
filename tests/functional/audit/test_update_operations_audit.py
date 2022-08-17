@@ -17,13 +17,13 @@ Test config update/restore audit operations
 from functools import partial
 from operator import attrgetter, itemgetter
 from random import randint
-from typing import Optional, Tuple, Union
+from typing import Callable, Literal, Optional, Tuple, Union
 
 import allure
 import pytest
 import requests
 from adcm_client.audit import OperationResult
-from adcm_client.objects import ADCM, ADCMClient, Cluster, Component, Host, Provider, Service
+from adcm_client.objects import ADCM, ADCMClient, Cluster, Component, GroupConfig, Host, Provider, Service
 from adcm_pytest_plugin.utils import random_string
 
 from tests.functional.audit.conftest import (
@@ -45,6 +45,10 @@ ObjectWithConfig = Union[ADCM, ClusterRelatedObject, ProviderRelatedObject]
 CONFIG_HISTORY_SUFFIX = 'config/history/'
 SERVICE_NAME = 'service_for_updates'
 COMPONENT_NAME = 'component_for_updates'
+FQDN = 'host-0'
+
+expect_400 = partial(check_failed, exact_code=400)
+expect_403 = partial(check_failed, exact_code=403)
 
 
 @pytest.fixture()
@@ -78,6 +82,17 @@ def grant_view_config_permissions_on_adcm_objects(sdk_client_fs, basic_objects, 
         use_all_objects=True,
     )
     create_policy(sdk_client_fs, BR.ViewADCMSettings, [sdk_client_fs.adcm()], users=[user], groups=[])
+
+
+@pytest.fixture()
+def group_configs(basic_objects) -> Tuple[GroupConfig, GroupConfig, GroupConfig]:
+    """Create group configs for cluster, service and component"""
+    cluster, service, component, *_ = basic_objects
+    return (
+        cluster.group_config_create('cluster-group'),
+        service.group_config_create('service-group'),
+        component.group_config_create('component-group'),
+    )
 
 
 @parametrize_audit_scenario_parsing('update_restore_config.yaml', NEW_USER)
@@ -120,6 +135,81 @@ def test_update_config(basic_objects, audit_log_checker, sdk_client_fs, unauthor
     audit_log_checker.check(operations_to_check)
 
 
+@parametrize_audit_scenario_parsing('update_config_of_group_config.yaml', NEW_USER)
+@pytest.mark.usefixtures(
+    'grant_view_config_permissions_on_adcm_objects', 'basic_objects'
+)  # pylint: disable-next=too-many-locals
+def test_update_config_of_group_config(group_configs, audit_log_checker, sdk_client_fs, unauthorized_creds):
+    """
+    Test audit of group config info/configuration UPDATE operations.
+    """
+    admin_creds = make_auth_header(sdk_client_fs)
+    for group_config in group_configs:
+        drop_object_id = lambda b: {**b, 'object_id': 'hello there'}  # pylint: disable=unnecessary-lambda-assignment
+        with allure.step(f'Update group config info of {group_config.object_type}'):
+            for result, credentials, check_response, change_body in (
+                (OperationResult.SUCCESS, admin_creds, check_succeed, lambda b: {**b, 'description': 'Changed'}),
+                (OperationResult.FAIL, admin_creds, expect_400, drop_object_id),
+                (OperationResult.DENIED, unauthorized_creds, expect_403, drop_object_id),
+            ):
+                update_via = partial(
+                    update_group_config_info, sdk_client_fs, group_config, body_mutator=change_body, headers=credentials
+                )
+                with allure.step(f'Change group config info with result: {result.value}'):
+                    check_response(update_via(method='PUT'))
+                    check_response(update_via(method='PATCH'))
+
+        default_config = group_config.config(full=True)['config']
+        default_attr = group_config.config(full=True)['attr']
+        correct_config = {
+            'config': {**default_config, 'param_1': random_string(4)},
+            'attr': {**default_attr, 'group_keys': {**default_attr['group_keys'], 'param_1': True}},
+        }
+        incorrect_config = {'config': {**default_config, 'param_1': random_string(4)}, 'attr': {**default_attr}}
+
+        with allure.step(
+            f'Update config of group config of {group_config.object_type} with result: {OperationResult.SUCCESS}'
+        ):
+            check_succeed(update_group_config(group_config, correct_config, headers=admin_creds))
+        with allure.step(f'Change group config via of {group_config.object_type} with result: {OperationResult.FAIL}'):
+            expect_400(update_group_config(group_config, incorrect_config, headers=admin_creds))
+        with allure.step(
+            f'Change group config via of {group_config.object_type} with result: {OperationResult.DENIED}'
+        ):
+            expect_403(update_group_config(group_config, incorrect_config, headers=unauthorized_creds))
+    audit_log_checker.set_user_map(sdk_client_fs)
+    audit_log_checker.check(sdk_client_fs.audit_operation_list())
+
+
+@parametrize_audit_scenario_parsing(
+    'add_delete_host_group_config.yaml', {'username': NEW_USER['username'], 'host': FQDN}
+)
+@pytest.mark.usefixtures('grant_view_config_permissions_on_adcm_objects')  # pylint: disable-next=too-many-arguments
+def test_add_remove_hosts_from_group_config(
+    group_configs, basic_objects, audit_log_checker, sdk_client_fs, post, delete, unauthorized_creds
+):
+    """
+    Test audit of host manipulations with group configs: addition/deletion.
+    """
+    cluster, _, component, _, host = basic_objects
+    cluster.hostcomponent_set((cluster.host_add(host), component))
+    host.reread()
+
+    for group_config in group_configs:
+        group_hosts_path = f'group-config/{group_config.id}/host'
+        with allure.step(f'Successfully add host to {group_config.object_type} group config'):
+            check_succeed(post(group_hosts_path, {'id': host.id}))
+        with allure.step(f'Fail to add host to {group_config.object_type} group config'):
+            expect_400(post(group_hosts_path, {'id': 4030}))
+        with allure.step(f'Denied add/delete host requests to/from {group_config.object_type} group config'):
+            expect_403(post(group_hosts_path, {'id': 403}, headers=unauthorized_creds))
+            expect_403(delete(group_hosts_path, host.id, headers=unauthorized_creds))
+        with allure.step(f'Successfully remove host from {group_config.object_type} group config'):
+            check_succeed(delete(group_hosts_path, host.id))
+    audit_log_checker.set_user_map(sdk_client_fs)
+    audit_log_checker.check(sdk_client_fs.audit_operation_list(paging={'limit': 100}))
+
+
 # !===== STEPS =====!
 
 
@@ -134,8 +224,8 @@ def _check_object_config_update(
     with allure.step(f'Update config of {get_object_represent(object_with_config)}'):
         for result, check_response, get_config, credentials in (
             (OperationResult.SUCCESS, check_succeed, get_correct_config, admin_credentials),
-            (OperationResult.FAIL, partial(check_failed, exact_code=400), get_incorrect_config, admin_credentials),
-            (OperationResult.DENIED, partial(check_failed, exact_code=403), get_incorrect_config, unauthorized_creds),
+            (OperationResult.FAIL, expect_400, get_incorrect_config, admin_credentials),
+            (OperationResult.DENIED, expect_403, get_incorrect_config, unauthorized_creds),
         ):
             with allure.step(f'Run config update that will have result {result.value}'):
                 with allure.step('config-log'):
@@ -178,8 +268,8 @@ def _check_object_config_restore(
     admin_credentials = make_auth_header(client)
     with allure.step(f'Restore config of {get_object_represent(object_with_config)}'):
         for result, check_response, get_config, credentials in (
-            (OperationResult.FAIL, partial(check_failed, exact_code=400), get_incorrect_attrs, admin_credentials),
-            (OperationResult.DENIED, partial(check_failed, exact_code=403), get_incorrect_attrs, unauthorized_creds),
+            (OperationResult.FAIL, expect_400, get_incorrect_attrs, admin_credentials),
+            (OperationResult.DENIED, expect_403, get_incorrect_attrs, unauthorized_creds),
             (OperationResult.SUCCESS, check_succeed, get_correct_attrs, admin_credentials),
         ):
             with allure.step(f'Run config restore that will have result {result.value}'):
@@ -224,6 +314,28 @@ def restore_config_from_url(url: str, attr: Optional[dict], **patch_kwargs):
     body = {'description': f'Restored config {random_string(4)}', 'attr': attr}
     with allure.step(f'Restore config via PATCH {url} with data: {body}'):
         return requests.patch(url, json=body, **patch_kwargs)
+
+
+def update_group_config_info(
+    client: ADCMClient,
+    group_config: GroupConfig,
+    method: Literal['PUT', 'PATCH'],
+    body_mutator: Callable[[dict], dict],
+    **request_kwargs,
+):
+    """Update group config info with changed by `body_mutator` data"""
+    url = f'{client.url}/api/v1/group-config/{group_config.id}/'
+    body = body_mutator(requests.get(url, headers=make_auth_header(client)).json())
+    with allure.step(f'Update group config info via {method} {url} with data: {body}'):
+        return getattr(requests, method.lower())(url, json=body, **request_kwargs)
+
+
+def update_group_config(group_config: GroupConfig, config: dict, **post_kwargs):
+    """update group config configuration"""
+    url = f'{group_config.config(full=True)["url"].rsplit("/", maxsplit=2)[0]}/'
+    body = {'description': f'New group config {random_string(4)}', **config}
+    with allure.step(f'Update configuration of config group via POST {url} with data: {body}'):
+        return requests.post(url, json=body, **post_kwargs)
 
 
 # !===== UTILS =====!

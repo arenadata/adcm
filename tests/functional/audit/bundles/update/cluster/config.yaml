@@ -13,6 +13,7 @@
 - type: cluster
   name: cluster_for_updates
   version: 1.2
+  config_group_customization: true
 
   config: &config
     - &param
@@ -27,9 +28,11 @@
 - type: service
   name: service_for_updates
   version: 1.1
+  config_group_customization: true
 
   config: *config
 
   components:
     component_for_updates:
+      config_group_customization: true
       config: *config
