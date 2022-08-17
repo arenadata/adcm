@@ -528,7 +528,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         cluster_id = response.json()['id']
         this_cluster_host_url = reverse('host', kwargs={'cluster_id': cluster_id})
 
-        ssh_bundle_id, _, host_id = self.create_host(self.host)
+        ssh_bundle_id, _, host_id = self.create_host(host)
 
         response = self.client.post(this_cluster_host_url, {})
         self.assertEqual(response.status_code, 400, msg=response.content)
