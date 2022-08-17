@@ -58,6 +58,7 @@ class TestBase(TestCase):
         self.client_unauthorized = Client(HTTP_USER_AGENT='Mozilla/5.0')
 
         self.bundle_adh_name = 'adh.1.5.tar'
+        self.bundle_ssh_name = 'ssh.1.0.tar'
 
     def api(self, path, res, data=''):
         self.print_result(path, res, data)
@@ -202,14 +203,14 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
             return cluster['bundle_id'], cluster['id']
 
     def get_host_proto_id(self):
-        response = self.api_get('/stack/host/')
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        response = self.client.get(reverse('host-type'))
+        self.assertEqual(response.status_code, 200, msg=response.content)
         for host in response.json():
             return (host['bundle_id'], host['id'])
 
     def get_host_provider_proto_id(self):
-        response = self.api_get('/stack/provider/')
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        response = self.client.get(reverse('provider-type'))
+        self.assertEqual(response.status_code, 200, msg=response.content)
         for provider in response.json():
             return (provider['bundle_id'], provider['id'])
 
@@ -395,74 +396,78 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
 
     def test_host(self):  # pylint: disable=too-many-statements
         host = 'test.server.net'
+        host_url = reverse('host')
 
-        response = self.api_post('/stack/load/', {'bundle_file': self.ssh_bundle})
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        self.load_bundle(self.bundle_ssh_name)
+        ssh_bundle_id, host_proto = self.get_host_proto_id()
 
-        response = self.api_post('/host/', {})
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        response = self.client.post(host_url, {})
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['fqdn'], ['This field is required.'])
 
-        ssh_bundle_id, host_proto = self.get_host_proto_id()
-        response = self.api_post(
-            '/host/', {'fqdn': host, 'prototype_id': host_proto, 'provider_id': 0}
+        response = self.client.post(
+            host_url, {'fqdn': host, 'prototype_id': host_proto, 'provider_id': 0}
         )
-        self.assertEqual(response.status_code, 404, msg=response.text)
+        self.assertEqual(response.status_code, 404, msg=response.content)
         self.assertEqual(response.json()['code'], 'PROVIDER_NOT_FOUND')
 
         _, provider_proto = self.get_host_provider_proto_id()
-        response = self.api_post('/provider/', {'name': 'DF1', 'prototype_id': provider_proto})
-        self.assertEqual(response.status_code, 201, msg=response.text)
+        response = self.client.post(
+            reverse('provider'), {'name': 'DF1', 'prototype_id': provider_proto}
+        )
+        self.assertEqual(response.status_code, 201, msg=response.content)
         provider_id = response.json()['id']
 
-        response = self.api_post(
-            '/host/', {'fqdn': host, 'prototype_id': 42, 'provider_id': provider_id}
+        response = self.client.post(
+            host_url, {'fqdn': host, 'prototype_id': 42, 'provider_id': provider_id}
         )
-        self.assertEqual(response.status_code, 404, msg=response.text)
+        self.assertEqual(response.status_code, 404, msg=response.content)
         self.assertEqual(response.json()['code'], 'PROTOTYPE_NOT_FOUND')
 
-        response = self.api_post('/host/', {'fqdn': host, 'provider_id': provider_id})
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        response = self.client.post(host_url, {'fqdn': host, 'provider_id': provider_id})
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['prototype_id'], ['This field is required.'])
 
-        response = self.api_post('/host/', {'fqdn': host, 'prototype_id': host_proto})
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        response = self.client.post(host_url, {'fqdn': host, 'prototype_id': host_proto})
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['provider_id'], ['This field is required.'])
 
-        response = self.api_post(
-            '/host/',
+        response = self.client.post(
+            host_url,
             {
                 'fqdn': 'x' + 'deadbeef' * 32,  # 257 chars
                 'prototype_id': host_proto,
                 'provider_id': provider_id,
             },
         )
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['desc'], 'Host name is too long. Max length is 256')
 
-        response = self.api_post(
-            '/host/',
+        response = self.client.post(
+            host_url,
             {
                 'fqdn': 'x' + string.punctuation,
                 'prototype_id': host_proto,
                 'provider_id': provider_id,
             },
         )
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['code'], 'WRONG_NAME')
 
-        response = self.api_post(
-            '/host/', {'fqdn': host, 'prototype_id': host_proto, 'provider_id': provider_id}
+        response = self.client.post(
+            host_url, {'fqdn': host, 'prototype_id': host_proto, 'provider_id': provider_id}
         )
-        self.assertEqual(response.status_code, 201, msg=response.text)
+        self.assertEqual(response.status_code, 201, msg=response.content)
         host_id = response.json()['id']
 
-        response = self.api_get('/host/' + str(host_id) + '/')
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        this_host_url = reverse('host-details', kwargs={'host_id': host_id})
+
+        response = self.client.get(this_host_url)
+        self.assertEqual(response.status_code, 200, msg=response.content)
         self.assertEqual(response.json()['fqdn'], host)
 
-        response = self.api_put('/host/' + str(host_id) + '/', {})
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        response = self.client.put(this_host_url, {}, content_type="application/json")
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(
             response.json(),
             {
@@ -473,25 +478,38 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
             },
         )
 
-        response = self.api_post(
-            '/host/', {'fqdn': host, 'prototype_id': host_proto, 'provider_id': provider_id}
+        response = self.client.post(
+            host_url, {'fqdn': host, 'prototype_id': host_proto, 'provider_id': provider_id}
         )
-        self.assertEqual(response.status_code, 409, msg=response.text)
+        self.assertEqual(response.status_code, 409, msg=response.content)
         self.assertEqual(response.json()['code'], 'HOST_CONFLICT')
 
-        response = self.api_delete('/host/' + str(host_id) + '/')
-        self.assertEqual(response.status_code, 204, msg=response.text)
+        response = self.client.delete(this_host_url)
+        self.assertEqual(response.status_code, 204, msg=response.content)
 
-        response = self.api_get('/host/' + str(host_id) + '/')
-        self.assertEqual(response.status_code, 404, msg=response.text)
+        response = self.client.get(this_host_url)
+        self.assertEqual(response.status_code, 404, msg=response.content)
         self.assertEqual(response.json()['code'], 'HOST_NOT_FOUND')
 
-        response = self.api_delete('/host/' + str(host_id) + '/')
-        self.assertEqual(response.status_code, 404, msg=response.text)
+        response = self.client.delete(this_host_url)
+        self.assertEqual(response.status_code, 404, msg=response.content)
         self.assertEqual(response.json()['code'], 'HOST_NOT_FOUND')
 
-        response = self.api_delete('/stack/bundle/' + str(ssh_bundle_id) + '/')
-        self.assertEqual(response.status_code, 204, msg=response.text)
+        response = self.client.delete(
+            reverse('bundle-details', kwargs={'bundle_id': ssh_bundle_id})
+        )
+        self.assertEqual(response.status_code, 409, msg=response.content)
+        self.assertEqual(response.json()['code'], 'BUNDLE_CONFLICT')
+
+        response = self.client.delete(
+            reverse('provider-details', kwargs={'provider_id': provider_id})
+        )
+        self.assertEqual(response.status_code, 204, msg=response.content)
+
+        response = self.client.delete(
+            reverse('bundle-details', kwargs={'bundle_id': ssh_bundle_id})
+        )
+        self.assertEqual(response.status_code, 204, msg=response.content)
 
     def test_cluster_host(self):
         response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
