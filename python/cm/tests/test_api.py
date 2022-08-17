@@ -22,6 +22,7 @@ import string
 import unittest
 from uuid import uuid4
 
+from django.db import transaction
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -130,15 +131,17 @@ class TestBase(TestCase):
 
     def load_bundle(self, bundle_name):
         with open(os.path.join(self.files_dir, bundle_name), encoding="utf-8") as f:
-            response = self.client.post(
-                path=reverse("upload-bundle"),
-                data={"file": f},
-            )
+            with transaction.atomic():
+                response = self.client.post(
+                    path=reverse("upload-bundle"),
+                    data={"file": f},
+                )
             self.assertEqual(response.status_code, 201, msg=response.content)
-        response = self.client.post(
-            path=reverse("load-bundle"),
-            data={"bundle_file": bundle_name},
-        )
+        with transaction.atomic():
+            response = self.client.post(
+                path=reverse("load-bundle"),
+                data={"bundle_file": bundle_name},
+            )
         self.assertEqual(response.status_code, 200, msg=response.content)
 
 
@@ -332,44 +335,63 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
 
     def test_cluster_patching(self):
         name = 'test_cluster'
-        response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        cluster_url = reverse('cluster')
+
+        self.load_bundle(self.bundle_adh_name)
         bundle_id, proto_id = self.get_cluster_proto_id()
 
-        response = self.api_post('/cluster/', {'name': name, 'prototype_id': proto_id})
-        self.assertEqual(response.status_code, 201, msg=response.text)
+        with transaction.atomic():
+            response = self.client.post(cluster_url, {'name': name, 'prototype_id': proto_id})
+        self.assertEqual(response.status_code, 201, msg=response.content)
+
         cluster_id = response.json()['id']
+        first_cluster_url = reverse('cluster-details', kwargs={'cluster_id': cluster_id})
 
         patched_name = 'patched_cluster'
-        response = self.api_patch('/cluster/' + str(cluster_id) + '/', {'name': patched_name})
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        with transaction.atomic():
+            response = self.client.patch(
+                first_cluster_url, {'name': patched_name}, content_type="application/json"
+            )
+        self.assertEqual(response.status_code, 200, msg=response.content)
         self.assertEqual(response.json()['name'], patched_name)
 
         description = 'cluster_description'
-        response = self.api_patch(
-            '/cluster/' + str(cluster_id) + '/', {'name': patched_name, 'description': description}
-        )
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        with transaction.atomic():
+            response = self.client.patch(
+                first_cluster_url,
+                {'name': patched_name, 'description': description},
+                content_type="application/json",
+            )
+        self.assertEqual(response.status_code, 200, msg=response.content)
         self.assertEqual(response.json()['description'], description)
 
-        response = self.api_post('/cluster/', {'name': name, 'prototype_id': proto_id})
-        self.assertEqual(response.status_code, 201, msg=response.text)
-        second_cluster_id = response.json()['id']
+        with transaction.atomic():
+            response = self.client.post(cluster_url, {'name': name, 'prototype_id': proto_id})
+        self.assertEqual(response.status_code, 201, msg=response.content)
 
-        response = self.api_patch(
-            '/cluster/' + str(second_cluster_id) + '/', {'name': patched_name}
-        )
-        self.assertEqual(response.status_code, 409, msg=response.text)
+        second_cluster_id = response.json()['id']
+        second_cluster_url = reverse('cluster-details', kwargs={'cluster_id': second_cluster_id})
+
+        with transaction.atomic():
+            response = self.client.patch(
+                second_cluster_url, {'name': patched_name}, content_type="application/json"
+            )
+        self.assertEqual(response.status_code, 409, msg=response.content)
         self.assertEqual(response.json()['code'], 'CLUSTER_CONFLICT')
 
-        response = self.api_delete('/cluster/' + str(cluster_id) + '/')
-        self.assertEqual(response.status_code, 204, msg=response.text)
+        with transaction.atomic():
+            response = self.client.delete(first_cluster_url)
+        self.assertEqual(response.status_code, 204, msg=response.content)
 
-        response = self.api_delete('/cluster/' + str(second_cluster_id) + '/')
-        self.assertEqual(response.status_code, 204, msg=response.text)
+        with transaction.atomic():
+            response = self.client.delete(second_cluster_url)
+        self.assertEqual(response.status_code, 204, msg=response.content)
 
-        response = self.api_delete('/stack/bundle/' + str(bundle_id) + '/')
-        self.assertEqual(response.status_code, 204, msg=response.text)
+        with transaction.atomic():
+            response = self.client.delete(
+                reverse('bundle-details', kwargs={'bundle_id': bundle_id})
+            )
+        self.assertEqual(response.status_code, 204, msg=response.content)
 
     def test_host(self):  # pylint: disable=too-many-statements
         host = 'test.server.net'
