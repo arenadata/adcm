@@ -11,18 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import adcm.init_django  # pylint: disable=unused-import
-
 import datetime
-import sqlite3
 import os
+import sqlite3
 
+from cm import config
+from cm.logger import log
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DEFAULT_DB_ALIAS, connections
 from django.db.migrations.executor import MigrationExecutor
 
-from cm.logger import log
-from cm import config
+import adcm.init_django  # pylint: disable=unused-import
 from adcm.settings import DATABASES
 
 

@@ -62,18 +62,18 @@ EXAMPLES = r'''
 RETURN = r'''
 '''
 
-import sys
 import base64
+import sys
 from binascii import Error
 
 from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm/python')
-import adcm.init_django  # pylint: disable=unused-import
-
-from cm.job import log_custom
 from cm.errors import AdcmEx
+from cm.job import log_custom
 from cm.logger import log
+
+import adcm.init_django  # pylint: disable=unused-import
 
 
 class ActionModule(ActionBase):

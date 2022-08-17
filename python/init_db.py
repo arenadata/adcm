@@ -15,7 +15,6 @@ import json
 import random
 import string
 from itertools import chain
-import adcm.init_django  # pylint: disable=unused-import
 
 from cm import issue
 from cm.bundle import load_adcm
@@ -23,16 +22,18 @@ from cm.config import SECRETS_FILE
 from cm.job import abort_all
 from cm.logger import log
 from cm.models import (
-    DummyData,
     CheckLog,
-    GroupCheckLog,
     Cluster,
-    HostProvider,
-    ConcernType,
     ConcernItem,
+    ConcernType,
+    DummyData,
+    GroupCheckLog,
+    HostProvider,
 )
 from cm.status_api import Event
 from rbac.models import User
+
+import adcm.init_django  # pylint: disable=unused-import
 
 
 def random_string(strlen=10):

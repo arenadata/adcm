@@ -20,14 +20,14 @@ import subprocess
 import sys
 import time
 
+import cm.job
+from cm import config
+from cm.logger import log
+from cm.models import JobLog, LogStorage, TaskLog
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
 import adcm.init_django  # DO NOT DELETE !!!
-from cm import config
-import cm.job
-from cm.logger import log
-from cm.models import TaskLog, JobLog, LogStorage
 
 TASK_ID = 0
 

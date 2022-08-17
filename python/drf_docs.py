@@ -11,8 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import adcm.init_django  # pylint: disable=unused-import
 import api.urls
+
+import adcm.init_django  # pylint: disable=unused-import
 
 
 def fix_ordering(field, view):

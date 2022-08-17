@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
 from contextlib import contextmanager
+from pathlib import Path
+
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
-from rest_framework.response import Response
-
 from rbac.models import Role, User
+from rest_framework.response import Response
 
 APPLICATION_JSON = "application/json"
 

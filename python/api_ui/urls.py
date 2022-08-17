@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.urls import path, include
 from api_ui import views
+from django.urls import include, path
 
 urlpatterns = [
     path('', views.APIRoot.as_view()),
