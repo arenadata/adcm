@@ -23,8 +23,9 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.db import transaction
-from django.test import Client, TestCase
+from django.test import TestCase
 from django.urls import reverse
+from rest_framework.test import APIClient
 
 import requests
 
@@ -43,7 +44,7 @@ class TestBase(TestCase):
         init_adcm()
         init_roles()
 
-        self.client = Client(HTTP_USER_AGENT='Mozilla/5.0')
+        self.client = APIClient(HTTP_USER_AGENT='Mozilla/5.0')
         res = self.client.post(
             path=reverse("rbac:token"),
             data={"username": "admin", "password": "admin"},
@@ -51,7 +52,7 @@ class TestBase(TestCase):
         )
         self.client.defaults["Authorization"] = f"Token {res.data['token']}"
 
-        self.client_unauthorized = Client(HTTP_USER_AGENT='Mozilla/5.0')
+        self.client_unauthorized = APIClient(HTTP_USER_AGENT='Mozilla/5.0')
 
         self.bundle_adh_name = 'adh.1.5.tar'
         self.bundle_ssh_name = 'ssh.1.0.tar'
@@ -287,10 +288,13 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, 404, msg=response.content)
         self.assertEqual(response.json()['code'], 'PROTOTYPE_NOT_FOUND')
 
-        # TODO: figure out how to pass blank descr in client's data and get error like in api
-        #  response = self.api_post('/cluster/', {'name': cluster, 'prototype_id': proto_id, 'description': ''})
-        #  self.assertEqual(response.status_code, 400, msg=response.text)
-        #  self.assertEqual(response.json()['description'], ['This field may not be blank.'])
+        response = self.client.post(
+            cluster_url,
+            {'name': cluster_name, 'prototype_id': proto_id, 'description': ''},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400, msg=response.content)
+        self.assertEqual(response.json()['description'], ['This field may not be blank.'])
 
         response = self.client.post(cluster_url, {'name': cluster_name, 'prototype_id': proto_id})
         self.assertEqual(response.status_code, 201, msg=response.content)
@@ -340,18 +344,14 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
 
         patched_name = 'patched_cluster'
         with transaction.atomic():
-            response = self.client.patch(
-                first_cluster_url, {'name': patched_name}, content_type="application/json"
-            )
+            response = self.client.patch(first_cluster_url, {'name': patched_name}, format="json")
         self.assertEqual(response.status_code, 200, msg=response.content)
         self.assertEqual(response.json()['name'], patched_name)
 
         description = 'cluster_description'
         with transaction.atomic():
             response = self.client.patch(
-                first_cluster_url,
-                {'name': patched_name, 'description': description},
-                content_type="application/json",
+                first_cluster_url, {'name': patched_name, 'description': description}, format="json"
             )
         self.assertEqual(response.status_code, 200, msg=response.content)
         self.assertEqual(response.json()['description'], description)
@@ -364,9 +364,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         second_cluster_url = reverse('cluster-details', kwargs={'cluster_id': second_cluster_id})
 
         with transaction.atomic():
-            response = self.client.patch(
-                second_cluster_url, {'name': patched_name}, content_type="application/json"
-            )
+            response = self.client.patch(second_cluster_url, {'name': patched_name}, format="json")
         self.assertEqual(response.status_code, 409, msg=response.content)
         self.assertEqual(response.json()['code'], 'CLUSTER_CONFLICT')
 
@@ -933,7 +931,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
                 },
             ),
             {'description': 'New config'},
-            content_type="application/json",
+            format="json",
         )
         self.assertEqual(response.status_code, 200, msg=response.content)
         response = self.client.get(
