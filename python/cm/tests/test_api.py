@@ -897,28 +897,26 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['desc'], "config should not be just one int or float")
 
-        # TODO: AssertionError: 400 != 201 : b'{"config":["Value must be valid JSON."]}'
-        # config['zoo.cfg']['autopurge.purgeInterval'] = 42
-        # config['zoo.cfg']['port'] = 80
-        # response = self.client.post(
-        #     config_history_url,
-        #     {'config': config}
-        # )
-        # self.assertEqual(response.status_code, 201, msg=response.content)
-        # id2 = response.json()['id']
-        #
-        # response = self.client.get(
-        #     reverse('config-history-version',
-        #             kwargs={
-        #                 'cluster_id': cluster_id,
-        #                 'service_id': service_id,
-        #                 'object_type': 'service',
-        #                 'version': id2
-        #             })
-        # )
-        # self.assertEqual(response.status_code, 200, msg=response.content)
-        # config = response.json()['config']
-        # self.assertEqual(config['zoo.cfg']['autopurge.purgeInterval'], 42)
+        config['zoo.cfg']['autopurge.purgeInterval'] = 42
+        config['zoo.cfg']['port'] = 80
+        response = self.client.post(config_history_url, {'config': config}, format='json')
+        self.assertEqual(response.status_code, 201, msg=response.content)
+        id2 = response.json()['id']
+
+        response = self.client.get(
+            reverse(
+                'config-history-version',
+                kwargs={
+                    'cluster_id': cluster_id,
+                    'service_id': service_id,
+                    'object_type': 'service',
+                    'version': id2,
+                },
+            )
+        )
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        config = response.json()['config']
+        self.assertEqual(config['zoo.cfg']['autopurge.purgeInterval'], 42)
 
         response = self.client.patch(
             reverse(
@@ -948,23 +946,24 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         config = response.json()['config']
         self.assertEqual(config['zoo.cfg']['autopurge.purgeInterval'], 24)
 
-        # TODO: depends on first todo
-        # response = self.client.get(
-        #     reverse('config-previous',
-        #             kwargs={
-        #                 'cluster_id': cluster_id,
-        #                 'service_id': service_id,
-        #                 'object_type': 'service',
-        #                 'version': 'previous'
-        #             })
-        # )
-        # self.assertEqual(response.status_code, 200, msg=response.content)
-        # config = response.json()['config']
-        # self.assertEqual(config['zoo.cfg']['autopurge.purgeInterval'], 42)
-        #
-        # response = self.client.get(config_history_url)
-        # self.assertEqual(response.status_code, 200, msg=response.content)
-        # self.assertEqual(len(response.json()), 2)
+        response = self.client.get(
+            reverse(
+                'config-previous',
+                kwargs={
+                    'cluster_id': cluster_id,
+                    'service_id': service_id,
+                    'object_type': 'service',
+                    'version': 'previous',
+                },
+            )
+        )
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        config = response.json()['config']
+        self.assertEqual(config['zoo.cfg']['autopurge.purgeInterval'], 42)
+
+        response = self.client.get(config_history_url)
+        self.assertEqual(response.status_code, 200, msg=response.content)
+        self.assertEqual(len(response.json()), 2)
 
         self.client.delete(reverse('cluster-details', kwargs={'cluster_id': cluster_id}))
         self.client.delete(reverse('bundle-details', kwargs={'bundle_id': adh_bundle_id}))
