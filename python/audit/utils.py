@@ -625,7 +625,7 @@ def _get_audit_operation_and_object(
         case ["group-config", config_group_pk, "host"]:
             config_group = GroupConfig.objects.get(pk=config_group_pk)
             audit_operation = AuditOperation(
-                name=f"{{fqdn}} host added to {config_group.name} configuration group",
+                name=f"host added to {config_group.name} configuration group",
                 operation_type=AuditLogOperationType.Update,
             )
             object_type = _get_obj_type(config_group.object_type.name)
@@ -644,7 +644,7 @@ def _get_audit_operation_and_object(
                     fqdn = host.fqdn
 
             if fqdn:
-                audit_operation.name = audit_operation.name.format(fqdn=fqdn)
+                audit_operation.name = f"{fqdn} {audit_operation.name}"
 
             operation_name = audit_operation.name
 
