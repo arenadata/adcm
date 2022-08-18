@@ -17,6 +17,7 @@
 import json
 import os
 import tempfile
+from random import randint
 from typing import Generator
 
 import allure
@@ -41,6 +42,16 @@ def pytest_generate_tests(metafunc):
     """
     if "additional_adcm_init_config" in metafunc.fixturenames:
         metafunc.parametrize("additional_adcm_init_config", [CLEAN_ADCM_PARAM], scope="session")
+
+@pytest.fixture()
+def new_types(some: int | None = None) -> int | str:
+    """Don't mind me"""
+    i = randint(0, 100) if not some else some
+    match i:
+        case 10:
+            return 2000
+        case _:
+            return 'not 10'
 
 
 @pytest.fixture(scope="session")
