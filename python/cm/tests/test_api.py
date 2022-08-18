@@ -19,21 +19,17 @@
 import json
 import os
 import string
-import unittest
 from uuid import uuid4
 
-from django.db import transaction
 from django.conf import settings
+from django.db import transaction
 from django.test import Client, TestCase
 from django.urls import reverse
-from cm.models import ADCM, Prototype
-from init_db import init as init_adcm
-from rbac.upgrade.role import init_roles
 
 import requests
 
-
-# class TestBase(TestCase):
+from init_db import init as init_adcm
+from rbac.upgrade.role import init_roles
 
 
 class TestBase(TestCase):
@@ -156,19 +152,6 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
     component = 'ZOOKEEPER_SERVER'
     adh_bundle = 'adh.1.5.tar'
     ssh_bundle = 'ssh.1.0.tar'
-
-    # def setUp(self):
-    #     if self.token is not None:
-    #         return
-    #     token_url = reverse('rbac:token')
-    #     response = requests.post(
-    #         self.url + '/rbac/token/',
-    #         data=json.dumps({'username': 'admin', 'password': 'admin'}),
-    #         headers={'Content-Type': 'application/json'},
-    #     )
-    #     self.print_result(token_url, response)
-    #     self.assertEqual(response.status_code, 200, msg=response.text)
-    #     self.token = response.json()['token']
 
     def get_service_proto_id(self):
         response = self.client.get(reverse('service-type'))
