@@ -87,7 +87,6 @@ linters: test_image ## Run linters
 			/venv.sh run default pip install -U -r requirements.txt -r requirements-test.txt && \
 			/venv.sh run default pylint --rcfile pyproject.toml --recursive y python && \
 			/linters.sh -b ./tests -f ../tests pylint && \
-			/linters.sh -f ./tests black && \
 			/linters.sh -f ./tests/functional flake8_pytest_style && \
 			/linters.sh -f ./tests/ui_tests flake8_pytest_style"
 
