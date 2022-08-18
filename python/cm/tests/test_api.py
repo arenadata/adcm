@@ -552,7 +552,6 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         response = self.client.delete(reverse('bundle-details', kwargs={'bundle_id': bundle_id}))
         self.assertEqual(response.status_code, 204, msg=response.content)
 
-    # TODO: unskip
     def test_hostcomponent(self):  # pylint: disable=too-many-statements,too-many-locals
         self.load_bundle(self.bundle_adh_name)
         self.load_bundle(self.bundle_ssh_name)
