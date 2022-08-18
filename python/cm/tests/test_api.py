@@ -173,8 +173,10 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         return 0
 
     def get_component_id(self, cluster_id, service_id, component_name):
-        response = self.api_get(f'/cluster/{cluster_id}/service/{service_id}/component/')
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        response = self.client.get(
+            reverse('component', kwargs={'cluster_id': cluster_id, 'service_id': service_id})
+        )
+        self.assertEqual(response.status_code, 200, msg=response.content)
         for comp in response.json():
             if comp['name'] == component_name:
                 return comp['id']
@@ -648,69 +650,77 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, 204, msg=response.content)
 
     # TODO: unskip
-    def SKIP_test_hostcomponent(self):  # pylint: disable=too-many-statements,too-many-locals
-        response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
-        self.assertEqual(response.status_code, 200, msg=response.text)
-        response = self.api_post('/stack/load/', {'bundle_file': self.ssh_bundle})
-        self.assertEqual(response.status_code, 200, msg=response.text)
+    def test_hostcomponent(self):  # pylint: disable=too-many-statements,too-many-locals
+        self.load_bundle(self.bundle_adh_name)
+        self.load_bundle(self.bundle_ssh_name)
 
         adh_bundle_id, cluster_proto = self.get_cluster_proto_id()
         ssh_bundle_id, _, host_id = self.create_host(self.host)
         service_proto_id = self.get_service_proto_id()
-        response = self.api_post('/cluster/', {'name': self.cluster, 'prototype_id': cluster_proto})
+        response = self.client.post(
+            reverse('cluster'), {'name': self.cluster, 'prototype_id': cluster_proto}
+        )
         cluster_id = response.json()['id']
 
-        response = self.api_post(
-            '/cluster/' + str(cluster_id) + '/service/', {'prototype_id': service_proto_id}
+        response = self.client.post(
+            reverse('service', kwargs={'cluster_id': cluster_id}),
+            {'prototype_id': service_proto_id},
         )
-        self.assertEqual(response.status_code, 201, msg=response.text)
+        self.assertEqual(response.status_code, 201, msg=response.content)
         service_id = response.json()['id']
 
-        hc_url = '/cluster/' + str(cluster_id) + '/hostcomponent/'
-        response = self.api_post(hc_url, {'hc': {}})
-        self.assertEqual(response.status_code, 400, msg=response.text)
-        self.assertEqual(response.json()['code'], "INVALID_INPUT")
-        self.assertEqual(response.json()['desc'], "hc field is required")
+        hc_url = reverse('host-component', kwargs={'cluster_id': cluster_id})
+        response = self.client.post(hc_url, {'hc': {}}, format='json')
+        self.assertEqual(response.status_code, 400, msg=response.content)
+        self.assertEqual(response.json()['code'], 'INVALID_INPUT')
+        self.assertEqual(response.json()['desc'], 'hc field is required')
 
         comp_id = self.get_component_id(cluster_id, service_id, self.component)
-        response = self.api_post(
-            # TODO: figure out how to pass "hc" param in client's data
+        response = self.client.post(
             hc_url,
-            {'hc': [{'service_id': service_id, 'host_id': 100500, 'component_id': comp_id}]},
+            {"hc": [{"service_id": service_id, "host_id": 100500, "component_id": comp_id}]},
+            format='json',
         )
-        self.assertEqual(response.status_code, 404, msg=response.text)
+        self.assertEqual(response.status_code, 404, msg=response.content)
         self.assertEqual(response.json()['code'], "HOST_NOT_FOUND")
 
-        response = self.api_post(
-            hc_url, {'hc': [{'service_id': service_id, 'host_id': host_id, 'component_id': 100500}]}
+        response = self.client.post(
+            hc_url,
+            {'hc': [{'service_id': service_id, 'host_id': host_id, 'component_id': 100500}]},
+            format='json',
         )
-        self.assertEqual(response.status_code, 404, msg=response.text)
+        self.assertEqual(response.status_code, 404, msg=response.content)
         self.assertEqual(response.json()['code'], "COMPONENT_NOT_FOUND")
 
-        response = self.api_post(
+        response = self.client.post(
             hc_url,
             {'hc': [{'service_id': service_id, 'host_id': host_id, 'component_id': comp_id}]},
+            format='json',
         )
-        self.assertEqual(response.status_code, 409, msg=response.text)
+        self.assertEqual(response.status_code, 409, msg=response.content)
         self.assertEqual(response.json()['code'], "FOREIGN_HOST")
 
-        response = self.api_post('/cluster/' + str(cluster_id) + '/host/', {'host_id': host_id})
-        self.assertEqual(response.status_code, 201, msg=response.text)
+        response = self.client.post(
+            reverse('host', kwargs={'cluster_id': cluster_id}), {'host_id': host_id}, format='json'
+        )
+        self.assertEqual(response.status_code, 201, msg=response.content)
 
-        response = self.api_post(hc_url, {'hc': {'host_id': host_id, 'component_id': comp_id}})
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        response = self.client.post(
+            hc_url, {'hc': {'host_id': host_id, 'component_id': comp_id}}, format='json'
+        )
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['code'], "INVALID_INPUT")
         self.assertEqual(response.json()['desc'], "hc field should be a list")
 
-        response = self.api_post(hc_url, {'hc': [{'component_id': comp_id}]})
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        response = self.client.post(hc_url, {'hc': [{'component_id': comp_id}]}, format='json')
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['code'], "INVALID_INPUT")
 
-        response = self.api_post(hc_url, {'hc': [{'host_id': host_id}]})
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        response = self.client.post(hc_url, {'hc': [{'host_id': host_id}]}, format='json')
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['code'], "INVALID_INPUT")
 
-        response = self.api_post(
+        response = self.client.post(
             hc_url,
             {
                 'hc': [
@@ -718,124 +728,75 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
                     {'service_id': service_id, 'host_id': 1, 'component_id': comp_id},
                 ]
             },
+            format='json',
         )
-        self.assertEqual(response.status_code, 400, msg=response.text)
+        self.assertEqual(response.status_code, 400, msg=response.content)
         self.assertEqual(response.json()['code'], "INVALID_INPUT")
         self.assertEqual(response.json()['desc'][0:9], "duplicate")
 
-        response = self.api_post(
+        response = self.client.post(
             hc_url,
             {'hc': [{'service_id': service_id, 'host_id': host_id, 'component_id': comp_id}]},
+            format='json',
         )
-        self.assertEqual(response.status_code, 201, msg=response.text)
+        self.assertEqual(response.status_code, 201, msg=response.content)
         hs_id = response.json()[0]['id']
 
-        response = self.api_get(hc_url + str(hs_id) + '/')
-        self.assertEqual(response.status_code, 200, msg=response.text)
+        response = self.client.get(hc_url + str(hs_id) + '/')
+        self.assertEqual(response.status_code, 200, msg=response.content)
 
         zclient_id = self.get_component_id(cluster_id, service_id, 'ZOOKEEPER_CLIENT')
-        response = self.api_post(
+        response = self.client.post(
             hc_url,
             {'hc': [{'service_id': service_id, 'host_id': host_id, 'component_id': zclient_id}]},
+            format='json',
         )
-        self.assertEqual(response.status_code, 201, msg=response.text)
+        self.assertEqual(response.status_code, 201, msg=response.content)
 
-        response = self.api_post('/cluster/', {'name': 'qwe', 'prototype_id': cluster_proto})
+        response = self.client.post(
+            reverse('cluster'), {'name': 'qwe', 'prototype_id': cluster_proto}, format='json'
+        )
         cluster_id2 = response.json()['id']
 
-        response = self.api_post(
-            '/cluster/' + str(cluster_id2) + '/hostcomponent/',
+        response = self.client.post(
+            reverse('host-component', kwargs={'cluster_id': cluster_id2}),
             {'hc': [{'service_id': service_id, 'host_id': host_id, 'component_id': comp_id}]},
+            format='json',
         )
-        self.assertEqual(response.status_code, 404, msg=response.text)
+        self.assertEqual(response.status_code, 404, msg=response.content)
         self.assertEqual(response.json()['code'], "CLUSTER_SERVICE_NOT_FOUND")
 
-        response = self.api_post(
-            '/cluster/' + str(cluster_id2) + '/service/', {'prototype_id': service_proto_id}
+        response = self.client.post(
+            reverse('service', kwargs={'cluster_id': cluster_id2}),
+            {'prototype_id': service_proto_id},
+            format='json',
         )
         service_id2 = response.json()['id']
-        self.assertEqual(response.status_code, 201, msg=response.text)
+        self.assertEqual(response.status_code, 201, msg=response.content)
         comp_id2 = self.get_component_id(cluster_id2, service_id2, self.component)
-        response = self.api_post(
-            '/cluster/' + str(cluster_id2) + '/hostcomponent/',
+        response = self.client.post(
+            reverse('host-component', kwargs={'cluster_id': cluster_id2}),
             {'hc': [{'service_id': service_id2, 'host_id': host_id, 'component_id': comp_id2}]},
+            format='json',
         )
-        self.assertEqual(response.status_code, 409, msg=response.text)
+        self.assertEqual(response.status_code, 409, msg=response.content)
         self.assertEqual(response.json()['code'], "FOREIGN_HOST")
 
-        response = self.api_delete(hc_url + str(hs_id) + '/')
-        self.assertEqual(response.status_code, 405, msg=response.text)
+        response = self.client.delete(hc_url + str(hs_id) + '/')
+        self.assertEqual(response.status_code, 405, msg=response.content)
 
-        self.api_delete('/cluster/' + str(cluster_id) + '/')
-        self.api_delete('/cluster/' + str(cluster_id2) + '/')
-        self.api_delete('/host/' + str(host_id) + '/')
-        response = self.api_delete('/stack/bundle/' + str(adh_bundle_id) + '/')
-        self.assertEqual(response.status_code, 204, msg=response.text)
-        response = self.api_delete('/stack/bundle/' + str(ssh_bundle_id) + '/')
-        self.assertEqual(response.status_code, 204, msg=response.text)
-
-    # def test_task(self):
-    #     response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
-    #     self.assertEqual(response.status_code, 200, msg=response.text)
-    #     response = self.api_post('/stack/load/', {'bundle_file': self.ssh_bundle})
-    #     self.assertEqual(response.status_code, 200, msg=response.text)
-    #
-    #     ssh_bundle_id, provider_id, host_id = self.create_host(self.host)
-    #     config = {'config': {'entry': 'some value'}}
-    #     response = self.api_post(f'/provider/{provider_id}/config/history/', config)
-    #     self.assertEqual(response.status_code, 201, msg=response.text)
-    #
-    #     adh_bundle_id, cluster_proto = self.get_cluster_proto_id()
-    #     service_id = self.get_service_proto_id()
-    #     action_id = self.get_action_id(service_id, 'start')
-    #     response = self.api_post('/cluster/', {'name': self.cluster, 'prototype_id': cluster_proto})
-    #     cluster_id = response.json()['id']
-    #
-    #     response = self.api_post(f'/cluster/{cluster_id}/host/', {'host_id': host_id})
-    #     self.assertEqual(response.status_code, 201, msg=response.text)
-    #
-    #     response = self.api_post(f'/cluster/{cluster_id}/service/', {'prototype_id': service_id})
-    #     self.assertEqual(response.status_code, 201, msg=response.text)
-    #     service_id = response.json()['id']
-    #
-    #     comp_id = self.get_component_id(cluster_id, service_id, self.component)
-    #     response = self.api_post(
-    #         f'/cluster/{cluster_id}/hostcomponent/',
-    #         {'hc': [{'service_id': service_id, 'host_id': host_id, 'component_id': comp_id}]},
-    #     )
-    #     self.assertEqual(response.status_code, 201, msg=response.text)
-    #
-    #     response = self.api_post(f'/cluster/{cluster_id}/action/{action_id}/run/', {})
-    #     self.assertEqual(response.status_code, 409, msg=response.text)
-    #     self.assertEqual(response.json()['code'], 'TASK_ERROR')
-    #     self.assertEqual(response.json()['desc'], 'object has issues')
-    #
-    #     response = self.api_post(f'/cluster/{cluster_id}/config/history/', {'config': {'required': 42}})
-    #     self.assertEqual(response.status_code, 201, msg=response.text)
-    #
-    #     response = self.api_post(f'/cluster/{cluster_id}/action/{action_id}/run/', {})
-    #     self.assertEqual(response.status_code, 201, msg=response.text)
-    #     task_id = response.json()['id']
-    #     job_id = task_id
-    #
-    #     response = self.api_get('/task/' + str(task_id) + '/')
-    #     self.assertEqual(response.status_code, 200, msg=response.text)
-    #
-    #     response = self.api_get('/job/' + str(job_id) + '/')
-    #     self.assertEqual(response.status_code, 200, msg=response.text)
-    #
-    #     response = self.api_delete('/job/' + str(job_id) + '/')
-    #     self.assertEqual(response.status_code, 405, msg=response.text)
-    #
-    #     response = self.api_get('/job/' + str(job_id) + '/log/' + str(3))
-    #     self.assertEqual(response.status_code, 404, msg=response.text)
-    #     self.assertEqual(response.json()['code'], 'LOG_NOT_FOUND')
-    #
-    #     time.sleep(2)
-    #     self.api_delete('/cluster/' + str(cluster_id) + '/')
-    #     self.api_delete('/host/' + str(host_id) + '/')
-    #     response = self.api_delete('/stack/bundle/' + str(adh_bundle_id) + '/')
-    #     response = self.api_delete('/stack/bundle/' + str(ssh_bundle_id) + '/')
+        self.client.delete(reverse('cluster-details', kwargs={'cluster_id': cluster_id}))
+        self.client.delete(reverse('cluster-details', kwargs={'cluster_id': cluster_id2}))
+        self.client.delete(reverse('host-details', kwargs={'host_id': host_id}))
+        response = self.client.delete(
+            reverse('bundle-details', kwargs={'bundle_id': adh_bundle_id})
+        )
+        self.assertEqual(response.status_code, 204, msg=response.content)
+        response = self.client.delete(
+            reverse('bundle-details', kwargs={'bundle_id': ssh_bundle_id})
+        )
+        self.assertEqual(response.status_code, 409, msg=response.content)
+        self.assertEqual(response.json()['code'], 'BUNDLE_CONFLICT')
 
     def test_config(self):  # pylint: disable=too-many-statements
         self.load_bundle(self.bundle_adh_name)
