@@ -11,6 +11,7 @@
 # limitations under the License.
 
 """Common fixtures for the functional tests"""
+from random import randint
 
 import pytest
 
@@ -35,3 +36,14 @@ def pytest_generate_tests(metafunc):
             values = CLEAN_AND_DIRTY_PARAMS
 
         metafunc.parametrize("additional_adcm_init_config", values, scope="session")
+
+
+@pytest.fixture()
+def new_types(some: int | None = None) -> int | str:
+    """Don't mind me"""
+    i = randint(0, 100) if not some else some
+    match i:
+        case 10:
+            return 2000
+        case _:
+            return 'not 10'
