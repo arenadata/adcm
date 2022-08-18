@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,9 +13,6 @@
 # Since this module is beyond QA responsibility we will not fix docstrings here
 # pylint: disable=missing-function-docstring, missing-class-docstring
 
-"""Unit-like API tests"""
-
-import json
 import os
 import string
 from uuid import uuid4
@@ -27,18 +23,12 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-import requests
-
 from init_db import init as init_adcm
 from rbac.upgrade.role import init_roles
 
 
 class TestBase(TestCase):
     files_dir = os.path.join(settings.BASE_DIR, 'python', 'cm', 'tests', 'files')
-
-    token = None
-    url = None
-    debug = os.environ.get('BASE_DEBUG', False)
 
     def setUp(self) -> None:
         init_adcm()
@@ -57,76 +47,6 @@ class TestBase(TestCase):
         self.bundle_adh_name = 'adh.1.5.tar'
         self.bundle_ssh_name = 'ssh.1.0.tar'
 
-    def api(self, path, res, data=''):
-        self.print_result(path, res, data)
-        return res
-
-    @property
-    def token_hdr(self):
-        return {'Authorization': 'Token ' + self.token}
-
-    def api_get(self, path):
-        # return self.client.get(path, content_type="application/json").json()
-        return self.api(path, requests.get(self.url + path, headers=self.token_hdr))
-
-    def api_delete(self, path):
-        # return self.client.delete(path, content_type="application/json").json()
-        return self.api(path, requests.delete(self.url + path, headers=self.token_hdr))
-
-    def api_post(self, path, data):
-        # return self.client.post(path, data=data, content_type="application/json").json()
-        return self.api(
-            path,
-            requests.post(
-                self.url + path,
-                data=json.dumps(data),
-                headers={
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Token ' + self.token,
-                },
-            ),
-            data,
-        )
-
-    def api_put(self, path, data):
-        # return self.client.put(path, data=data, content_type="application/json").json()
-        return self.api(
-            path,
-            requests.put(
-                self.url + path,
-                data=json.dumps(data),
-                headers={
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Token ' + self.token,
-                },
-            ),
-            data,
-        )
-
-    def api_patch(self, path, data):
-        # return self.client.patch(path, data=data, content_type="application/json").json()
-        return self.api(
-            path,
-            requests.patch(
-                self.url + path,
-                data=json.dumps(data),
-                headers={
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Token ' + self.token,
-                },
-            ),
-            data,
-        )
-
-    def print_result(self, path, response, data=''):
-        if self.debug:
-            print(f"IN:  {path}")
-            if data:
-                print(f"DATA:{data}")
-            print(f"OUT: {response.status_code} {response.text}")
-            # print("HDR: {}".format(r.headers))
-            print("")
-
     def load_bundle(self, bundle_name):
         with open(os.path.join(self.files_dir, bundle_name), encoding="utf-8") as f:
             with transaction.atomic():
@@ -144,15 +64,10 @@ class TestBase(TestCase):
 
 
 class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
-    token = None
-    url = 'http://localhost:8000/api/v1'
     cluster = 'adh42'
     host = 'test.host.net'
     service = 'ZOOKEEPER'
-    service_id = 1
     component = 'ZOOKEEPER_SERVER'
-    adh_bundle = 'adh.1.5.tar'
-    ssh_bundle = 'ssh.1.0.tar'
 
     def get_service_proto_id(self):
         response = self.client.get(reverse('service-type'))
@@ -160,16 +75,6 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         for service in response.json():
             if service['name'] == self.service:
                 return service['id']
-        return 0
-
-    def get_action_id(self, service_id, action_name):
-        response = self.api_get(
-            '/stack/service/' + str(service_id) + '/action/'
-        )  # reverse('service-actions', kwargs={'prototype_id': 1})
-        self.assertEqual(response.status_code, 200, msg=response.text)
-        for action in response.json():
-            if action['name'] == action_name:
-                return action['id']
         return 0
 
     def get_component_id(self, cluster_id, service_id, component_name):
@@ -214,7 +119,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         )
         self.assertEqual(response.status_code, 201, msg=response.content)
         host_id = response.json()['id']
-        return (ssh_bundle_id, provider_id, host_id)
+        return ssh_bundle_id, provider_id, host_id
 
     def test_access(self):
         api = [reverse('cluster'), reverse('host'), reverse('job'), reverse('task')]
@@ -259,8 +164,6 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
     def test_cluster(self):  # pylint: disable=too-many-statements
         cluster_name = 'test_cluster'
         cluster_url = reverse('cluster')
-        # response = self.api_post('/stack/load/', {'bundle_file': self.adh_bundle})
-        # self.assertEqual(response.status_code, 200, msg=response.text)
         self.load_bundle(self.bundle_adh_name)
         bundle_id, proto_id = self.get_cluster_proto_id()
 
