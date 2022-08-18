@@ -264,7 +264,7 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['file', 'stdout'],
+            'handlers': ['file'],
             'level': 'DEBUG',
             'propagate': True,
         },
