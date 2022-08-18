@@ -30,7 +30,15 @@ export class RbacGroupFormComponent extends RbacFormDirective<RbacGroupModel> {
 
   ngOnInit() {
     super.ngOnInit();
+    this._checkType();
     this.form.markAllAsTouched();
   }
 
+  _checkType() {
+    if (this.value.type === 'ldap') {
+      this.form.controls.name.disable();
+      this.form.controls.description.disable();
+      this.form.controls.user.disable();
+    }
+  }
 }

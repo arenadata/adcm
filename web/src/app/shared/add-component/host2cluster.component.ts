@@ -9,16 +9,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { MatSelectionList, MatSelectionListChange } from '@angular/material/list';
 import { MatPaginator, PageEvent } from '@angular/material/paginator';
 import { openClose } from '@app/core/animations';
 import { Host } from '@app/core/types';
-
 import { BaseFormDirective } from './base-form.directive';
 import { HostComponent } from './host.component';
 import { DisplayMode } from './provider.component';
+import { ICluster } from "@app/models/cluster";
+import { tap } from "rxjs/operators";
 
 @Component({
   selector: 'app-add-host2cluster',
@@ -67,6 +68,7 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
   showForm = false;
   Count = 0;
   displayMode: DisplayMode = DisplayMode.default;
+  @Input() clusterId: number;
   @Output() event = new EventEmitter();
   @ViewChild('form') hostForm: HostComponent;
   @ViewChild('listHosts') listHosts: MatSelectionList;
@@ -76,11 +78,18 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
   selected: { [key: number]: boolean } = {};
 
   get disabled() {
-    return !Object.keys(this.selected).length;
+    return !Object.keys(this.selected)?.length;
   }
 
   ngOnInit() {
-    this.getAvailableHosts();
+    if (!this.service.Cluster) {
+      const cluster$ = this.service['api'].getOne<ICluster>('cluster', this.clusterId);
+      cluster$.pipe(
+        tap((cluster: ICluster) => (this.service['cluster'].Cluster = cluster))
+      ).subscribe(() => this.getAvailableHosts());
+    } else {
+      this.getAvailableHosts();
+    }
   }
 
   getAvailableHosts(pageIndex = 0, pageSize = 10) {
@@ -92,7 +101,7 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
         this.showForm = !r.count;
         this.displayMode = r.count > 0 ? 2 : 1;
         this.list = r.results;
-        if (this.listHosts?.options.length) this.allCbx.checked = false;
+        if (this.listHosts?.options?.length) this.allCbx.checked = false;
       });
   }
 
@@ -114,8 +123,8 @@ export class Host2clusterComponent extends BaseFormDirective implements OnInit, 
 
   save() {
     if (this.hostForm.form.valid) {
-      const host = this.hostForm.form.value;
-      host.cluster_id = this.service.Cluster.id;
+      const host = this.hostForm?.form?.value;
+      host.cluster_id = this.service?.Cluster?.id || this.clusterId;
       this.service
         .addHost(host)
         .pipe(this.takeUntil())

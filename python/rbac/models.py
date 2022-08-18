@@ -13,19 +13,21 @@
 """RBAC models"""
 
 import importlib
+import re
 
 from adwp_base.errors import raise_AdwpEx as err
 from django.contrib.auth.models import User as AuthUser, Group as AuthGroup, Permission
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.db.models.signals import pre_save
 from django.db.transaction import atomic
+from django.dispatch import receiver
+from django.utils import timezone
 from guardian.models import UserObjectPermission, GroupObjectPermission
 from rest_framework.exceptions import ValidationError
 
-from cm.models import Bundle, ProductCategory, HostComponent
-
-from .utils import delete_user
+from cm.models import Bundle, ProductCategory, HostComponent, DummyData
 
 
 class ObjectType(models.TextChoices):
@@ -43,6 +45,11 @@ def validate_object_type(value):
         raise ValidationError('Not a valid object type.')
 
 
+class OriginType(models.TextChoices):
+    Local = 'local', 'local'
+    LDAP = 'ldap', 'ldap'
+
+
 class User(AuthUser):
     """
     Beware the Multi-table inheritance
@@ -51,10 +58,9 @@ class User(AuthUser):
 
     profile = models.JSONField(default=str)
     built_in = models.BooleanField(default=False, null=False)
-    date_unjoined = models.DateTimeField(null=True)
-
-    def delete(self, using=None, keep_parents=False):
-        delete_user(self)
+    type = models.CharField(
+        max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
+    )
 
 
 class Group(AuthGroup):
@@ -65,6 +71,37 @@ class Group(AuthGroup):
 
     description = models.CharField(max_length=255, null=True)
     built_in = models.BooleanField(default=False, null=False)
+    type = models.CharField(
+        max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
+    )
+    # works as `name` field because `name` field now contains name and type
+    # to bypass unique constraint on `AuthGroup` base table
+    display_name = models.CharField(max_length=150, null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['display_name', 'type'], name='unique_display_name_type'
+            ),
+        ]
+
+    def name_to_display(self):
+        return self.display_name
+
+
+BASE_GROUP_NAME_PATTERN = re.compile(
+    rf'(?P<base_name>.*?)(?: \[(?:{"|".join(OriginType.values)})\]|$)'
+)
+
+
+@receiver(pre_save, sender=Group)
+def handle_name_type_display_name(sender, instance, **kwargs):
+    match = BASE_GROUP_NAME_PATTERN.match(instance.name)
+    if match and match.group('base_name'):
+        instance.name = f'{match.group("base_name")} [{instance.type}]'
+        instance.display_name = match.group("base_name")
+    else:
+        raise RuntimeError(f'Check regex. Data: `{instance.name}`')
 
 
 class RoleTypes(models.TextChoices):
@@ -203,21 +240,23 @@ class Policy(models.Model):
     group_object_perm = models.ManyToManyField(GroupObjectPermission, blank=True)
 
     def remove_permissions(self):
-        for pp in self.model_perm.all():
-            if pp.policy_set.count() <= 1:
-                if pp.user:
-                    pp.user.user_permissions.remove(pp.permission)
-                if pp.group:
-                    pp.group.permissions.remove(pp.permission)
-            pp.policy_set.remove(self)
+        with atomic():
+            DummyData.objects.filter(id=1).update(date=timezone.now())
+            for pp in self.model_perm.all():
+                if pp.policy_set.count() <= 1:
+                    if pp.user:
+                        pp.user.user_permissions.remove(pp.permission)
+                    if pp.group:
+                        pp.group.permissions.remove(pp.permission)
+                pp.policy_set.remove(self)
 
-        for uop in self.user_object_perm.all():
-            if uop.policy_set.count() <= 1:
-                uop.delete()
+            for uop in self.user_object_perm.all():
+                if uop.policy_set.count() <= 1:
+                    uop.delete()
 
-        for gop in self.group_object_perm.all():
-            if gop.policy_set.count() <= 1:
-                gop.delete()
+            for gop in self.group_object_perm.all():
+                if gop.policy_set.count() <= 1:
+                    gop.delete()
 
     def add_object(self, obj):
         po = PolicyObject(object=obj)

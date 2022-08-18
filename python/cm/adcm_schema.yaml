@@ -8,7 +8,7 @@ root:
 #                             O B J E C T S
 ###############################################################################
 # There are a number of object types: cluster, provider, host and service
-# All of them has the same struture but with small difference
+# All of them has the same structure but with small difference
 
 object:
   match: dict_key_selection
@@ -55,7 +55,7 @@ cluster_object:
   <<: *common_object
   items:
     <<: *common_object_items
-    upgrade: upgrade_list
+    upgrade: cluster_upgrade_list
     import: import_dict
     export: export
     config_group_customization: boolean
@@ -70,14 +70,14 @@ provider_object:
   <<: *common_object
   items:
     <<: *common_object_items
-    upgrade: upgrade_list
+    upgrade: provider_upgrade_list
     config_group_customization: boolean
 
 adcm_object:
   <<: *common_object
   items:
     <<: *common_object_items
-    upgrade: upgrade_list
+    upgrade: provider_upgrade_list
 
 export:
   match: one_of
@@ -162,20 +162,26 @@ version_rule:
     - float
 
 # Upgrade Block
-upgrade_list:
+cluster_upgrade_list:
   match: list
-  item: upgrade_obj
+  item: cluster_upgrade_obj
 
-upgrade_obj:
+provider_upgrade_list:
+  match: list
+  item: provider_upgrade_obj
+
+upgrade_obj: &common_upgrade_object
   match: dict
-  items:
+  items: &common_upgrade_object_items
     name: version_rule
     description: string
     versions: version_dict
     states: states_dict
     from_edition: any_or_list
     scripts: upgrade_task_list
-    hc_acl: action_hc_acl_list
+    masking: action_masking_or_none
+    on_fail: post_action
+    on_success: post_action
     venv: string
     ui_options: json
     config: config_obj
@@ -183,6 +189,17 @@ upgrade_obj:
   required_items:
     - name
     - versions
+
+provider_upgrade_obj:
+  <<: *common_upgrade_object
+  items:
+    <<: *common_upgrade_object_items
+
+cluster_upgrade_obj:
+  <<: *common_upgrade_object
+  items:
+    <<: *common_upgrade_object_items
+    hc_acl: action_hc_acl_list
 
 upgrade_task_list:
   match: list
@@ -755,6 +772,7 @@ action_hc_acl_dict:
   required_items:
     - component
     - action
+    - service
 
 hc_acl_action:
   match: set
@@ -766,6 +784,7 @@ action_script_type:
   match: set
   variants:
     - ansible
+    - python
 
 action_states_dict:
   match: dict
