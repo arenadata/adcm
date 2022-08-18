@@ -6,7 +6,6 @@ from django.utils import timezone
 
 from audit.models import AuditLog, AuditLogOperationType, AuditLogOperationResult
 from cm.models import (
-    Action,
     ADCM,
     Bundle,
     Cluster,
