@@ -18,17 +18,10 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import (
-    ADCM,
-    Bundle,
-    Cluster,
-    ConfigLog,
-    GroupConfig,
-    ObjectConfig,
-    Prototype,
-)
+from cm.models import Bundle, Cluster, ConfigLog, GroupConfig, ObjectConfig, Prototype
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
+from rbac.models import User
 from rest_framework.response import Response
 from rest_framework.status import HTTP_403_FORBIDDEN
 
@@ -51,25 +44,18 @@ class TestConfigLog(BaseTestCase):
             config_id=self.config.pk,
         )
 
-    def check_log(self, log: AuditLog) -> None:
+    def check_log(
+        self, log: AuditLog, operation_result: AuditLogOperationResult, user: User
+    ) -> None:
         self.assertEqual(log.audit_object.object_id, self.cluster.pk)
         self.assertEqual(log.audit_object.object_name, self.cluster.name)
         self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, "Cluster config log updated")
         self.assertEqual(log.operation_type, AuditLogOperationType.Update)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
-        self.assertIsInstance(log.object_changes, dict)
-
-    def check_log_denied(self, log: AuditLog) -> None:
-        self.assertFalse(log.audit_object)
-        self.assertEqual(log.operation_name, "config log updated")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
-        self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.no_rights_user.pk)
+        self.assertEqual(log.user.pk, user.pk)
         self.assertIsInstance(log.object_changes, dict)
 
     def test_create(self):
@@ -80,25 +66,23 @@ class TestConfigLog(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_log(log=log)
+        self.check_log(
+            log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user
+        )
 
     def test_create_denied(self):
-        bundle = Bundle.objects.create(name="new_test_bundle")
-        prototype = Prototype.objects.create(bundle=bundle, type="adcm")
-        config = ObjectConfig.objects.create(current=1, previous=0)
-        ConfigLog.objects.create(obj_ref=config, config="{}")
-        ADCM.objects.create(prototype=prototype, name="ADCM", config=config)
-
         with self.no_rights_user_logged_in:
             res: Response = self.client.post(
                 path=reverse("config-log-list"),
-                data={"obj_ref": config.pk, "config": "{}"},
+                data={"obj_ref": self.config.pk, "config": "{}"},
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
-        self.check_log_denied(log=log)
+        self.check_log(
+            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
+        )
 
     def test_create_via_group_config(self):
         self.client.post(
@@ -109,7 +93,9 @@ class TestConfigLog(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_log(log=log)
+        self.check_log(
+            log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user
+        )
 
     def test_create_via_group_config_denied(self):
         with self.no_rights_user_logged_in:
@@ -122,4 +108,6 @@ class TestConfigLog(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
-        self.check_log_denied(log=log)
+        self.check_log(
+            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
+        )

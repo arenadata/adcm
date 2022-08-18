@@ -38,6 +38,7 @@ from cm.models import (
     GroupConfig,
     Host,
     HostProvider,
+    ObjectConfig,
     ServiceComponent,
     TaskLog,
     Upgrade,
@@ -531,18 +532,22 @@ def _get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
 
+            config = None
             if res:
-                object_type = ContentType.objects.get_for_model(
-                    res.data.serializer.instance.obj_ref.object
-                ).name
+                config = res.data.serializer.instance.obj_ref
+            elif view.request.data.get("obj_ref"):
+                config = ObjectConfig.objects.filter(pk=view.request.data["obj_ref"]).first()
+
+            if config:
+                object_type = ContentType.objects.get_for_model(config.object).name
                 object_type = _get_obj_type(object_type)
                 if object_type == "host":
-                    object_name = res.data.serializer.instance.obj_ref.object.fqdn
+                    object_name = config.object.fqdn
                 else:
-                    object_name = res.data.serializer.instance.obj_ref.object.name
+                    object_name = config.object.name
 
                 audit_object = _get_or_create_audit_obj(
-                    object_id=res.data.serializer.instance.obj_ref.object.pk,
+                    object_id=config.object.pk,
                     object_name=object_name,
                     object_type=object_type,
                 )
@@ -629,12 +634,17 @@ def _get_audit_operation_and_object(
                 object_name=config_group.object.name,
                 object_type=object_type,
             )
+
+            fqdn = None
             if res:
-                audit_operation.name = audit_operation.name.format(fqdn=res.data["fqdn"])
+                fqdn = res.data["fqdn"]
             elif "id" in view.request.data:
                 host = Host.objects.filter(pk=view.request.data["id"]).first()
                 if host:
-                    audit_operation.name = audit_operation.name.format(fqdn=host.fqdn)
+                    fqdn = host.fqdn
+
+            if fqdn:
+                audit_operation.name = audit_operation.name.format(fqdn=fqdn)
 
             operation_name = audit_operation.name
 
