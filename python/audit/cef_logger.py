@@ -32,6 +32,7 @@ class CEFLogConstants:
     adcm_version: str = settings.ADCM_VERSION
     operation_name_session: str = "User logged"
     extension_keys: Tuple[str] = ("actor", "act", "operation", "resource", "result", "timestamp")
+    undefined = "<undefined>"
 
 
 def cef_log(
@@ -48,13 +49,18 @@ def cef_log(
         if audit_instance.user is not None:
             extension["actor"] = audit_instance.user.username
         else:
-            extension["actor"] = audit_instance.login_details.get("username", "<undefined>")
+            extension["actor"] = audit_instance.login_details.get(
+                "username", CEFLogConstants.undefined
+            )
         extension["operation"] = operation_name
         extension["result"] = audit_instance.login_result
 
     elif isinstance(audit_instance, AuditLog):
         operation_name = audit_instance.operation_name
-        extension["actor"] = audit_instance.user.username
+        if audit_instance.user is not None:
+            extension["actor"] = audit_instance.user.username
+        else:
+            extension["actor"] = CEFLogConstants.undefined
         extension["act"] = audit_instance.operation_type
         extension["operation"] = operation_name
         if not empty_resource and audit_instance.audit_object:
