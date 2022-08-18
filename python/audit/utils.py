@@ -536,12 +536,22 @@ def _get_audit_operation_and_object(
                     res.data.serializer.instance.obj_ref.object
                 ).name
                 object_type = _get_obj_type(object_type)
+                if object_type == "host":
+                    object_name = res.data.serializer.instance.obj_ref.object.fqdn
+                else:
+                    object_name = res.data.serializer.instance.obj_ref.object.name
+
                 audit_object = _get_or_create_audit_obj(
-                    object_id=res.data.serializer.instance.id,
-                    object_name=str(res.data.serializer.instance),
+                    object_id=res.data.serializer.instance.obj_ref.object.pk,
+                    object_name=object_name,
                     object_type=object_type,
                 )
-                operation_name = f"{object_type.capitalize()} {audit_operation.name}"
+                if object_type == "adcm":
+                    object_type = "ADCM"
+                else:
+                    object_type = object_type.capitalize()
+
+                operation_name = f"{object_type} {audit_operation.name}"
             else:
                 audit_object = None
                 operation_name = audit_operation.name
@@ -990,15 +1000,18 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Component,
             )
 
-        case ["adcm", obj_pk, "config", "history"]:
+        case (
+            ["adcm", adcm_pk, "config", "history"]
+            | ["adcm", adcm_pk, "config", "history", _, "restore"]
+        ):
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.ADCM.upper()} "
                      f"configuration {AuditLogOperationType.Update}d",
                 operation_type=AuditLogOperationType.Update,
             )
-            obj = ADCM.objects.get(pk=obj_pk)
+            obj = ADCM.objects.get(pk=adcm_pk)
             audit_object = _get_or_create_audit_obj(
-                object_id=obj_pk,
+                object_id=adcm_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.ADCM,
             )

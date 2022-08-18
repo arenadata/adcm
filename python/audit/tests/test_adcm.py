@@ -102,11 +102,12 @@ class TestComponent(BaseTestCase):
             content_type=APPLICATION_JSON,
         )
 
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+        new_log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
+        self.assertNotEqual(new_log.pk, log.pk)
         self.assertEqual(res.status_code, HTTP_200_OK)
         self.check_adcm_updated(
-            log=log,
+            log=new_log,
             operation_name=self.adcm_conf_updated_str,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
