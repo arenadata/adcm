@@ -17,6 +17,7 @@ from functools import wraps
 from typing import Optional, Tuple
 
 from adwp_base.errors import AdwpEx
+from audit.cef_logger import cef_log
 from audit.models import (
     AUDIT_OBJECT_TYPE_TO_MODEL_MAP,
     PATH_STR_TO_OBJ_CLASS_MAP,
@@ -990,15 +991,15 @@ def _get_audit_operation_and_object(
                 object_type=AuditObjectType.Component,
             )
 
-        case ["adcm", obj_pk, "config", "history"]:
+        case ["adcm", adcm_pk, "config", "history"]:
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.ADCM.upper()} "
                      f"configuration {AuditLogOperationType.Update}d",
                 operation_type=AuditLogOperationType.Update,
             )
-            obj = ADCM.objects.get(pk=obj_pk)
+            obj = ADCM.objects.get(pk=adcm_pk)
             audit_object = _get_or_create_audit_obj(
-                object_id=obj_pk,
+                object_id=adcm_pk,
                 object_name=obj.name,
                 object_type=AuditObjectType.ADCM,
             )
@@ -1195,7 +1196,7 @@ def audit(func):
             else:
                 user = None
 
-            AuditLog.objects.create(
+            auditlog = AuditLog.objects.create(
                 audit_object=audit_object,
                 operation_name=operation_name,
                 operation_type=audit_operation.operation_type,
@@ -1203,6 +1204,7 @@ def audit(func):
                 user=user,
                 object_changes=object_changes,
             )
+            cef_log(audit_instance=auditlog, signature_id=request.path)
 
         if error:
             raise error
@@ -1251,13 +1253,14 @@ def make_audit_log(operation_type, result, operation_status):
         object_type=AuditObjectType.ADCM,
     )
     system_user = User.objects.get(username='system')
-    AuditLog.objects.create(
+    auditlog = AuditLog.objects.create(
         audit_object=audit_object,
         operation_name=operation_name,
         operation_type=operation_type_map[operation_type]['type'],
         operation_result=result,
         user=system_user,
     )
+    cef_log(audit_instance=auditlog, signature_id='Background operation', empty_resource=True)
 
 
 def audit_finish_task(obj, action_display_name: str, status: str) -> None:
