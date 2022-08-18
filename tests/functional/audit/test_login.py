@@ -66,7 +66,7 @@ def test_login_audit(
         first_login = _get_last_login()
         assert first_login['user_id'] == sdk_client_fs.me().id, f'First login id should be {sdk_client_fs.me().id}'
         assert first_login['login_result'] == 'success', 'Login should succeed'
-        assert first_login['login_details'] == {}, 'First login should not have login details'
+        assert first_login['login_details'] == {'username': admin_username}, 'First login should have login details'
     with allure.step('Login as not existent user'):
         login(sdk_client_fs, not_existing_user, 'passwordiririri')
     with allure.step('Check second login failed because of user does not exist'):
