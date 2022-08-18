@@ -43,6 +43,7 @@ def pytest_generate_tests(metafunc):
     if "additional_adcm_init_config" in metafunc.fixturenames:
         metafunc.parametrize("additional_adcm_init_config", [CLEAN_ADCM_PARAM], scope="session")
 
+
 @pytest.fixture()
 def new_types(some: int | None = None) -> int | str:
     """Don't mind me"""
