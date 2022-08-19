@@ -528,8 +528,13 @@ def _get_audit_operation_and_object(
             )
 
         case ["config-log"] | ["group-config", _, "config", _, "config-log"]:
+            if "group-config" in path:
+                audit_operation_name = f"configuration group {AuditLogOperationType.Update}d"
+            else:
+                audit_operation_name = f"configuration {AuditLogOperationType.Update}d"
+
             audit_operation = AuditOperation(
-                name=f"config log {AuditLogOperationType.Update}d",
+                name=audit_operation_name,
                 operation_type=AuditLogOperationType.Update,
             )
 

@@ -45,13 +45,17 @@ class TestConfigLog(BaseTestCase):
         )
 
     def check_log(
-        self, log: AuditLog, operation_result: AuditLogOperationResult, user: User
+        self,
+        log: AuditLog,
+        operation_name: str,
+        operation_result: AuditLogOperationResult,
+        user: User,
     ) -> None:
         self.assertEqual(log.audit_object.object_id, self.cluster.pk)
         self.assertEqual(log.audit_object.object_name, self.cluster.name)
         self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
         self.assertFalse(log.audit_object.is_deleted)
-        self.assertEqual(log.operation_name, "Cluster config log updated")
+        self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, AuditLogOperationType.Update)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
@@ -67,7 +71,10 @@ class TestConfigLog(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_log(
-            log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user
+            log=log,
+            operation_name="Cluster configuration updated",
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
         )
 
     def test_create_denied(self):
@@ -81,7 +88,10 @@ class TestConfigLog(BaseTestCase):
 
         self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
-            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
+            log=log,
+            operation_name="Cluster configuration updated",
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
         )
 
     def test_create_via_group_config(self):
@@ -94,7 +104,10 @@ class TestConfigLog(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_log(
-            log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user
+            log=log,
+            operation_name="Cluster configuration group updated",
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
         )
 
     def test_create_via_group_config_denied(self):
@@ -109,5 +122,8 @@ class TestConfigLog(BaseTestCase):
 
         self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
-            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
+            log=log,
+            operation_name="Cluster configuration group updated",
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
         )
