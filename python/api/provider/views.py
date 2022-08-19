@@ -136,13 +136,12 @@ class DoProviderUpgrade(GenericUIView):
     serializer_class = api.serializers.DoUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+    @audit
     def post(self, request, *args, **kwargs):
-        """
-        Do upgrade specified host provider
-        """
         provider = get_object_for_user(
             request.user, 'cm.view_hostprovider', HostProvider, id=kwargs['provider_id']
         )
         check_custom_perm(request.user, 'do_upgrade_of', 'hostprovider', provider)
         serializer = self.get_serializer(data=request.data)
+
         return create(serializer, upgrade_id=int(kwargs['upgrade_id']), obj=provider)

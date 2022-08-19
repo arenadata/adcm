@@ -12,6 +12,7 @@
 
 from datetime import datetime
 from typing import Optional
+from unittest.mock import patch
 
 from audit.models import (
     AuditLog,
@@ -20,6 +21,7 @@ from audit.models import (
     AuditObjectType,
 )
 from cm.models import (
+    Action,
     Bundle,
     Cluster,
     ConfigLog,
@@ -33,6 +35,7 @@ from rbac.models import User
 from rest_framework.response import Response
 from rest_framework.status import (
     HTTP_200_OK,
+    HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
@@ -42,6 +45,8 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestHost(BaseTestCase):
+    # pylint: disable=too-many-public-methods
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -62,18 +67,19 @@ class TestHost(BaseTestCase):
             config=config,
         )
         self.host_created_str = "Host created"
+        self.action_display_name = "test_host_action"
 
     def check_host_created(self, log: AuditLog, res: Response) -> None:
-        assert log.audit_object.object_id == res.data["id"]
-        assert log.audit_object.object_name == self.fqdn
-        assert log.audit_object.object_type == AuditObjectType.Host
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == self.host_created_str
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Success
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, res.data["id"])
+        self.assertEqual(log.audit_object.object_name, self.fqdn)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Host)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, self.host_created_str)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertIsInstance(log.object_changes, dict)
 
     def check_host_updated(
         self,
@@ -84,16 +90,16 @@ class TestHost(BaseTestCase):
         if user is None:
             user = self.test_user
 
-        assert log.audit_object.object_id == self.host.pk
-        assert log.audit_object.object_name == self.host.fqdn
-        assert log.audit_object.object_type == AuditObjectType.Host
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Host configuration updated"
-        assert log.operation_type == AuditLogOperationType.Update
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, self.host.pk)
+        self.assertEqual(log.audit_object.object_name, self.host.fqdn)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Host)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, "Host configuration updated")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertIsInstance(log.object_changes, dict)
 
     def check_host_deleted(
         self,
@@ -104,30 +110,41 @@ class TestHost(BaseTestCase):
         if user is None:
             user = self.test_user
 
-        assert log.audit_object.object_id == self.host.pk
-        assert log.audit_object.object_name == self.host.fqdn
-        assert log.audit_object.object_type == AuditObjectType.Host
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Host deleted"
-        assert log.operation_type == AuditLogOperationType.Delete
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, self.host.pk)
+        self.assertEqual(log.audit_object.object_name, self.host.fqdn)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Host)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, "Host deleted")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Delete)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertIsInstance(log.object_changes, dict)
 
     def check_denied(self, log: AuditLog) -> None:
-        assert not log.audit_object
-        assert log.operation_name == self.host_created_str
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Denied
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.no_rights_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, self.host_created_str)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.no_rights_user.pk)
+        self.assertIsInstance(log.object_changes, dict)
+
+    def check_action_log(self, log: AuditLog) -> None:
+        self.assertEqual(log.audit_object.object_id, self.host.pk)
+        self.assertEqual(log.audit_object.object_name, self.host.fqdn)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Host)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, f"{self.action_display_name} action launched")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertIsInstance(log.object_changes, dict)
 
     def test_create(self):
         res: Response = self.client.post(path=reverse("host"), data={})
 
-        assert res.status_code == HTTP_400_BAD_REQUEST
+        self.assertEqual(res.status_code, HTTP_400_BAD_REQUEST)
 
         res: Response = self.client.post(
             path=reverse("host"),
@@ -153,13 +170,13 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert not log.audit_object
-        assert log.operation_name == self.host_created_str
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Fail
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, self.host_created_str)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertIsInstance(log.object_changes, dict)
 
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
@@ -174,7 +191,7 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_denied(log=log)
 
     def test_delete(self):
@@ -192,7 +209,7 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_host_deleted(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
@@ -232,7 +249,7 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_host_deleted(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
@@ -273,7 +290,7 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_denied(log=log)
 
     def test_update_and_restore(self):
@@ -310,7 +327,7 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_host_updated(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
@@ -326,7 +343,7 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_host_updated(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
@@ -371,7 +388,7 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_host_updated(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
@@ -387,7 +404,59 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_host_updated(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
+
+    def test_action_launch(self):
+        action = Action.objects.create(
+            display_name=self.action_display_name,
+            prototype=self.host_prototype,
+            type="job",
+            state_available="any",
+        )
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse("run-task", kwargs={"host_id": self.host.pk, "action_id": action.pk})
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_action_log(log=log)
+
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "run-task",
+                    kwargs={
+                        "provider_id": self.provider.pk,
+                        "host_id": self.host.pk,
+                        "action_id": action.pk,
+                    },
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_action_log(log=log)
+
+        self.host.cluster = Cluster.objects.create(
+            prototype=Prototype.objects.create(bundle=self.bundle, type="cluster"),
+            name="test_cluster",
+        )
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "run-task",
+                    kwargs={
+                        "cluster_id": self.host.cluster.pk,
+                        "host_id": self.host.pk,
+                        "action_id": action.pk,
+                    },
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_action_log(log=log)

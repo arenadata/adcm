@@ -50,6 +50,7 @@ result:
 '''
 
 import sys
+
 from ansible.errors import AnsibleError
 from ansible.plugins.action import ActionBase
 

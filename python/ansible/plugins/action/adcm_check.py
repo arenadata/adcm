@@ -97,6 +97,7 @@ result:
 '''
 
 import sys
+
 from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm/python')

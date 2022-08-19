@@ -17,16 +17,16 @@ import json
 import os
 import subprocess
 import sys
+import adcm.init_django  # pylint: disable=unused-import
 
-import adcm.init_django  # DO NOT DELETE !!!
+import cm.job
 from cm import config
 from cm.ansible_plugin import finish_check
-import cm.job
+from cm.errors import AdcmEx
 from cm.logger import log
-from cm.models import LogStorage, JobLog
+from cm.models import JobLog, LogStorage
 from cm.status_api import Event
 from cm.upgrade import bundle_switch
-from cm.errors import AdcmEx
 
 
 def open_file(root, tag, job_id):

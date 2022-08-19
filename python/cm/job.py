@@ -18,6 +18,7 @@ import subprocess
 from configparser import ConfigParser
 from typing import Any, Hashable, List, Optional, Tuple, Union
 
+from audit.utils import audit_finish_task
 from cm import adcm_config, api, config, inventory, issue, variant
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx
@@ -656,18 +657,23 @@ def set_before_upgrade_state(action: Action, obj: Union[Cluster, HostProvider]) 
         obj.save()
 
 
-def finish_task(task: TaskLog, job: JobLog, status: str):
+def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
     action = task.action
     obj = task.task_object
     state, multi_state_set, multi_state_unset = get_state(action, job, status)
+
     with transaction.atomic():
         DummyData.objects.filter(id=1).update(date=timezone.now())
         if hasattr(action, 'upgrade'):
             set_before_upgrade_state(action, obj)
+
         set_action_state(action, task, obj, state, multi_state_set, multi_state_unset)
         restore_hc(task, action, status)
         task.unlock_affected()
         set_task_status(task, status, ctx.event)
+
+    audit_finish_task(obj=obj, action_display_name=action.display_name, status=status)
+
     ctx.event.send_state()
 
 

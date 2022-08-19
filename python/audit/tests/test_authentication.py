@@ -10,11 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from audit.models import AuditSession, AuditSessionLoginResult
+from cm.models import ADCM, Bundle, ConfigLog, ObjectConfig, Prototype
 from django.test import TestCase
 from django.urls import reverse
-
-from audit.models import AuditSession, AuditSessionLoginResult
-from cm.models import Bundle, Prototype, ADCM, ObjectConfig, ConfigLog
 from rbac.models import User
 
 

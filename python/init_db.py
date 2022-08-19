@@ -17,19 +17,19 @@ import string
 from itertools import chain
 import adcm.init_django  # pylint: disable=unused-import
 
-from cm import issue
+from cm.issue import update_hierarchy_issues
 from cm.bundle import load_adcm
 from cm.config import SECRETS_FILE
 from cm.job import abort_all
 from cm.logger import log
 from cm.models import (
-    DummyData,
     CheckLog,
-    GroupCheckLog,
     Cluster,
-    HostProvider,
-    ConcernType,
     ConcernItem,
+    ConcernType,
+    DummyData,
+    GroupCheckLog,
+    HostProvider,
 )
 from cm.status_api import Event
 from rbac.models import User
@@ -74,7 +74,7 @@ def recheck_issues():
     ConcernItem.objects.filter(type=ConcernType.Issue).delete()
     for model in chain([Cluster, HostProvider]):
         for obj in model.objects.all():
-            issue.update_hierarchy_issues(obj)
+            update_hierarchy_issues(obj)
 
 
 def init():

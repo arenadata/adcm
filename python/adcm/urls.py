@@ -24,13 +24,12 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
-from django.urls import path
-from django.conf.urls import include
-
 import api.urls
 import api_ui.urls
-import cm.views
 import cm.adcm_config
+import cm.views
+from django.conf.urls import include
+from django.urls import path
 
 urlpatterns = [
     path('cm/', cm.views.index),

@@ -307,6 +307,7 @@ class DoClusterUpgrade(GenericUIView):
     serializer_class = DoUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+    @audit
     def post(self, request, *args, **kwargs):
         """
         Do upgrade specified cluster

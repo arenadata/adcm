@@ -14,6 +14,7 @@
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from unittest.mock import patch
 
 from audit.models import (
     AuditLog,
@@ -23,6 +24,7 @@ from audit.models import (
     AuditObjectType,
 )
 from cm.models import (
+    Action,
     Bundle,
     Cluster,
     ClusterBind,
@@ -36,6 +38,7 @@ from cm.models import (
     PrototypeExport,
     PrototypeImport,
     ServiceComponent,
+    Upgrade,
 )
 from django.conf import settings
 from django.urls import reverse
@@ -43,6 +46,7 @@ from rbac.models import Policy, Role, User
 from rbac.upgrade.role import init_roles
 from rest_framework.response import Response
 from rest_framework.status import (
+    HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
@@ -94,18 +98,18 @@ class TestCluster(BaseTestCase):
         self.component_conf_updated_str = "Component configuration updated"
         self.service_conf_updated_str = "Service configuration updated"
         self.cluster_deleted_str = "Cluster deleted"
+        self.action_display_name = "test_cluster_action"
 
-    @staticmethod
     def check_log_no_obj(
-        log: AuditLog, operation_result: AuditLogOperationResult, user: User
+        self, log: AuditLog, operation_result: AuditLogOperationResult, user: User
     ) -> None:
-        assert not log.audit_object
-        assert log.operation_name == "Cluster created"
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, "Cluster created")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertIsInstance(log.object_changes, dict)
 
     def check_log(  # pylint: disable=too-many-arguments
         self,
@@ -125,30 +129,30 @@ class TestCluster(BaseTestCase):
         if user is None:
             user = self.test_user
 
-        assert log.audit_object.object_id == obj.pk
-        assert log.audit_object.object_name == obj_name
-        assert log.audit_object.object_type == obj_type
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == operation_name
-        assert log.operation_type == operation_type
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, obj.pk)
+        self.assertEqual(log.audit_object.object_name, obj_name)
+        self.assertEqual(log.audit_object.object_type, obj_type)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, operation_name)
+        self.assertEqual(log.operation_type, operation_type)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertIsInstance(log.object_changes, dict)
 
     def check_log_denied(
         self, log: AuditLog, operation_name: str, operation_type: AuditLogOperationType
     ) -> None:
-        assert log.audit_object.object_id == self.cluster.pk
-        assert log.audit_object.object_name == self.cluster.name
-        assert log.audit_object.object_type == AuditObjectType.Cluster
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == operation_name
-        assert log.operation_type == operation_type
-        assert log.operation_result == AuditLogOperationResult.Denied
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.no_rights_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, self.cluster.pk)
+        self.assertEqual(log.audit_object.object_name, self.cluster.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, operation_name)
+        self.assertEqual(log.operation_type, operation_type)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.no_rights_user.pk)
+        self.assertIsInstance(log.object_changes, dict)
 
     def check_cluster_update_config(self, log: AuditLog) -> None:
         self.check_log(
@@ -160,13 +164,24 @@ class TestCluster(BaseTestCase):
         )
 
     def check_cluster_delete_failed_not_found(self, log: AuditLog):
-        assert not log.audit_object
-        assert log.operation_name == self.cluster_deleted_str
-        assert log.operation_type == AuditLogOperationType.Delete
-        assert log.operation_result == AuditLogOperationResult.Fail
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, self.cluster_deleted_str)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Delete)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertIsInstance(log.object_changes, dict)
+
+    def check_action_log(self, log: AuditLog) -> None:
+        self.assertEqual(log.audit_object.object_id, self.cluster.pk)
+        self.assertEqual(log.audit_object.object_name, self.cluster.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, f"{self.action_display_name} action launched")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertIsInstance(log.object_changes, dict)
 
     def create_cluster(self, bundle_id: int, name: str, prototype_id: int):
         return self.client.post(
@@ -262,7 +277,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log_no_obj(
             log=log,
             operation_result=AuditLogOperationResult.Denied,
@@ -397,7 +412,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_cluster_delete_failed_not_found(log=log)
 
     def test_delete_failed(self):
@@ -408,7 +423,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_cluster_delete_failed_not_found(log=log)
 
     def test_delete_denied(self):
@@ -419,7 +434,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name=self.cluster_deleted_str,
@@ -435,7 +450,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log_denied(
             log=log,
             operation_name=self.cluster_deleted_str,
@@ -469,7 +484,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name="Cluster updated",
@@ -527,7 +542,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name=f"Cluster bound to {self.cluster.name}/{self.service.display_name}",
@@ -555,7 +570,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name=f"{self.cluster.name}/{self.service.display_name} unbound",
@@ -583,7 +598,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log_denied(
             log=log,
             operation_name=self.cluster_conf_updated_str,
@@ -617,7 +632,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name=f"{self.host.fqdn} added",
@@ -657,7 +672,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.host,
@@ -717,7 +732,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name="Host-Component map updated",
@@ -751,7 +766,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name="Cluster import updated",
@@ -793,7 +808,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=cluster,
@@ -814,7 +829,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_400_BAD_REQUEST
+        self.assertEqual(res.status_code, HTTP_400_BAD_REQUEST)
         self.check_log(
             log=log,
             obj=cluster,
@@ -855,7 +870,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name=f"{self.service.display_name} service removed",
@@ -920,7 +935,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             obj=self.service,
@@ -956,7 +971,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             obj=self.service,
@@ -1010,7 +1025,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=component,
@@ -1068,7 +1083,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.service,
@@ -1112,7 +1127,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             obj=self.service,
@@ -1148,7 +1163,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.cluster,
@@ -1190,7 +1205,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.host,
@@ -1244,7 +1259,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=component,
@@ -1302,7 +1317,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.service,
@@ -1312,3 +1327,48 @@ class TestCluster(BaseTestCase):
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
         )
+
+    def test_action_launch(self):
+        action = Action.objects.create(
+            display_name=self.action_display_name,
+            prototype=self.cluster_prototype,
+            type="job",
+            state_available="any",
+        )
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "run-task", kwargs={"cluster_id": self.cluster.pk, "action_id": action.pk}
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_action_log(log=log)
+
+    def test_do_upgrade(self):
+        action = Action.objects.create(
+            display_name=self.action_display_name,
+            prototype=self.cluster_prototype,
+            type="job",
+            state_available="any",
+        )
+        upgrade = Upgrade.objects.create(
+            name="test_upgrade",
+            bundle=self.bundle,
+            action=action,
+            min_version="1",
+            max_version="99",
+        )
+
+        with patch("api.cluster.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "do-cluster-upgrade",
+                    kwargs={"cluster_id": self.cluster.pk, "upgrade_id": upgrade.pk},
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_action_log(log=log)
