@@ -140,11 +140,26 @@ class Command(BaseCommand):
                 continue
 
             tmp_cvf_name = self.__get_csv_name(qs, now, base_dir)
-            with open(tmp_cvf_name, 'wt', newline='', encoding=self.encoding) as csv_file:
+            exists = os.path.exists(tmp_cvf_name)
+            mode = 'at' if exists else 'wt'
+            with open(tmp_cvf_name, mode, newline='', encoding=self.encoding) as csv_file:
                 writer = csv.writer(csv_file)
 
                 fields = [f.column for f in qs.model._meta.fields]
-                writer.writerow(fields)  # header
+                if not exists:
+                    writer.writerow(fields)  # header
+                else:
+                    with open(tmp_cvf_name, 'rt', encoding=self.encoding) as csv_file:
+                        exist_fields = csv_file.readline().strip().split(',')
+                    if set(exist_fields) != set(fields):
+                        self.__log(
+                            f"Fields of {qs.model._meta.object_name} was changed, "
+                            f"can\'t append to existing file",
+                            "warning",
+                        )
+                        continue
+                    else:
+                        fields = exist_fields
 
                 for obj in qs:
                     row = [str(getattr(obj, f)) for f in fields]
@@ -159,8 +174,6 @@ class Command(BaseCommand):
             base_dir,
             f'audit_{now}_{self.archive_model_postfix_map[queryset.model]}.csv',
         )
-        if os.path.exists(tmp_cvf_name):
-            os.remove(tmp_cvf_name)
 
         return tmp_cvf_name
 
@@ -170,6 +183,6 @@ class Command(BaseCommand):
             log.warning('%sError in auditlog rotation', prefix)
             log.exception(msg)
         else:
-            msg = 'Audit cleanup/archiving: ' + str(msg)
+            msg = prefix + str(msg)
             self.stdout.write(msg)
             getattr(log, method)(msg)
