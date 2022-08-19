@@ -11,8 +11,27 @@
 # limitations under the License.
 
 import pytest
+from adwp_base.errors import AdwpEx
 
 from rbac.models import Role
+from rbac.roles import ModelRole
+
+
+@pytest.mark.django_db
+def test_role_class():
+    r = Role(module_name='qwe')
+    with pytest.raises(AdwpEx) as e:
+        r.get_role_obj()
+    assert e.value.error_code == 'ROLE_MODULE_ERROR'
+
+    r = Role(module_name='rbac', class_name='qwe')
+    with pytest.raises(AdwpEx) as e:
+        r.get_role_obj()
+    assert e.value.error_code == 'ROLE_CLASS_ERROR'
+
+    r = Role(module_name='rbac.roles', class_name='ModelRole')
+    obj = r.get_role_obj()
+    assert isinstance(obj, ModelRole)
 
 
 # pylint: disable=protected-access
