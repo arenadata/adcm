@@ -14,8 +14,8 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from rbac.models import Policy, Role, User
 from init_db import init as init_adcm
+from rbac.models import Policy, Role, User
 from rbac.upgrade.role import init_roles
 
 
