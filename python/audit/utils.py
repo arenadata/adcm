@@ -1188,7 +1188,7 @@ def make_audit_log(operation_type, result, operation_status):
     }
     operation_name = operation_type_map[operation_type]["name"] + " " + operation_status
     system_user = User.objects.get(username="system")
-    AuditLog.objects.create(
+    auditlog = AuditLog.objects.create(
         audit_object=None,
         operation_name=operation_name,
         operation_type=operation_type_map[operation_type]["type"],
