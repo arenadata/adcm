@@ -28,6 +28,14 @@ _create_delete_types = (
     ObjectType.ROLE,
 )
 
+# types that are just "updated"
+_simple_update_types = (
+    ObjectType.USER,
+    ObjectType.GROUP,
+    ObjectType.POLICY,
+    ObjectType.ROLE,
+)
+
 
 class NamedOperation(NamedTuple):
     """Operation with specific name (not just created/deleted)"""
@@ -183,6 +191,9 @@ class Operation:
         ):
             # code may be important for stuff like group config creation
             return f'{self.object_type.value.capitalize()} {self.operation_type.value.lower()}d'
+
+        if self.object_type in _simple_update_types and self.operation_type == OperationType.UPDATE:
+            return f'{self.object_type.value.capitalize()} updated'
 
         # special case, no need for "how" section here, I think
         if self.object_type == ObjectType.BUNDLE and self.operation_type == OperationType.DELETE:

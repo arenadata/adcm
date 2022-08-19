@@ -11,7 +11,7 @@
 # limitations under the License.
 
 """conftest for audit tests"""
-
+from collections import OrderedDict
 from pathlib import Path
 from typing import Callable, Dict, Literal, NamedTuple, Optional
 
@@ -22,6 +22,7 @@ from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCMClient
 
 from tests.functional.conftest import only_clean_adcm
+from tests.functional.rbac.conftest import BusinessRoles
 from tests.library.audit.checkers import AuditLogChecker
 from tests.library.audit.readers import ParsedAuditLog, YAMLReader
 
@@ -109,28 +110,30 @@ class CreateDeleteOperation:
 
 
 @pytest.fixture()
-def rbac_create_data(sdk_client_fs) -> Dict[str, dict]:
+def rbac_create_data(sdk_client_fs) -> OrderedDict[str, dict]:
     """Prepare data to create RBAC objects"""
-    business_role = sdk_client_fs.role(name='View ADCM settings')
+    business_role = sdk_client_fs.role(name=BusinessRoles.ViewADCMSettings.value.role_name)
     adcm_user_role = sdk_client_fs.role(name='ADCM User')
-    return {
-        'user': {**NEW_USER},
-        'group': {'name': 'groupforU'},
-        'role': {
-            'name': 'newrole',
-            'description': 'Awesome role',
-            'display_name': 'New Role',
-            'child': [{'id': business_role.id}],
-        },
-        'policy': {
-            'name': 'newpolicy',
-            'description': 'Best policy ever',
-            'role': {'id': adcm_user_role.id},
-            'user': [{'id': sdk_client_fs.me().id}],
-            'group': [],
-            'object': [],
-        },
-    }
+    return OrderedDict(
+        {
+            'user': {**NEW_USER},
+            'group': {'name': 'groupforU'},
+            'role': {
+                'name': 'newrole',
+                'description': 'Awesome role',
+                'display_name': 'New Role',
+                'child': [{'id': business_role.id}],
+            },
+            'policy': {
+                'name': 'newpolicy',
+                'description': 'Best policy ever',
+                'role': {'id': adcm_user_role.id},
+                'user': [{'id': sdk_client_fs.me().id}],
+                'group': [],
+                'object': [],
+            },
+        }
+    )
 
 
 # requesting utilities
