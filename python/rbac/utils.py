@@ -24,7 +24,7 @@ class BaseRelatedSerializer(serializers.Serializer):
         try:
             return data["id"]
         except KeyError as e:
-            raise AdcmEx("INVALID_DATA", f"Field {e} is required")
+            raise AdcmEx("INVALID_DATA", f"Field {e} is required") from e
 
 
 def update_m2m_field(m2m, instances) -> None:
