@@ -158,8 +158,7 @@ class Command(BaseCommand):
                             "warning",
                         )
                         continue
-                    else:
-                        fields = exist_fields
+                    fields = exist_fields
 
                 for obj in qs:
                     row = [str(getattr(obj, f)) for f in fields]
