@@ -43,7 +43,8 @@ from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestGroupConfig(BaseTestCase):
-    # pylint: disable=too-many-public-methods
+    # pylint: disable=too-many-public-methods,too-many-instance-attributes
+
     def setUp(self) -> None:
         super().setUp()
 
@@ -66,7 +67,8 @@ class TestGroupConfig(BaseTestCase):
         self.host = Host.objects.create(
             fqdn="test_host_fqdn", prototype=prototype, cluster=self.cluster
         )
-        self.created_operation_name = "test_group_config configuration group created"
+        self.conf_group_created_str = "configuration group created"
+        self.created_operation_name = f"{self.name} {self.conf_group_created_str}"
 
     def create_group_config(
         self,
@@ -189,7 +191,7 @@ class TestGroupConfig(BaseTestCase):
         self.assertEqual(res.status_code, HTTP_400_BAD_REQUEST)
         self.check_log_no_obj(
             log=log,
-            operation_name="configuration group created",
+            operation_name=self.conf_group_created_str,
             operation_type=AuditLogOperationType.Create,
             operation_result=AuditLogOperationResult.Fail,
             user=self.test_user,
@@ -209,7 +211,7 @@ class TestGroupConfig(BaseTestCase):
         self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log_no_obj(
             log=log,
-            operation_name="configuration group created",
+            operation_name=self.conf_group_created_str,
             operation_type=AuditLogOperationType.Create,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
@@ -251,7 +253,7 @@ class TestGroupConfig(BaseTestCase):
         self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log_no_obj(
             log=log,
-            operation_name="configuration group created",
+            operation_name=self.conf_group_created_str,
             operation_type=AuditLogOperationType.Create,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
@@ -293,7 +295,7 @@ class TestGroupConfig(BaseTestCase):
         self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log_no_obj(
             log=log,
-            operation_name="configuration group created",
+            operation_name=self.conf_group_created_str,
             operation_type=AuditLogOperationType.Create,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
