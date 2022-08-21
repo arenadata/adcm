@@ -174,6 +174,27 @@ class TestGroupConfig(BaseTestCase):
             user=self.test_user,
         )
 
+    def test_create_for_cluster_failed(self):
+        res: Response = self.client.post(
+            path=reverse("group-config-list"),
+            data={
+                "name": self.name,
+                "object_type": AuditObjectType.Cluster,
+                "config_id": self.config.pk,
+            },
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(res.status_code, HTTP_400_BAD_REQUEST)
+        self.check_log_no_obj(
+            log=log,
+            operation_name="configuration group created",
+            operation_type=AuditLogOperationType.Create,
+            operation_result=AuditLogOperationResult.Fail,
+            user=self.test_user,
+        )
+
     def test_create_for_cluster_denied(self):
         with self.no_rights_user_logged_in:
             res: Response = self.create_group_config(
