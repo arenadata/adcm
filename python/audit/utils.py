@@ -33,7 +33,7 @@ from django.db.models import Model
 from django.http.response import Http404
 from django.views.generic.base import View
 from rbac.models import Role, User
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.request import Request
 from rest_framework.status import HTTP_403_FORBIDDEN, is_success
 
@@ -109,7 +109,7 @@ def audit(func):
                 status_code = res.status_code
             else:
                 status_code = HTTP_403_FORBIDDEN
-        except (AdcmEx, AdwpEx) as exc:
+        except (AdcmEx, AdwpEx, ValidationError) as exc:
             error = exc
             res = None
 

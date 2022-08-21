@@ -33,7 +33,11 @@ from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from rbac.models import User
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED, HTTP_403_FORBIDDEN
+from rest_framework.status import (
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+)
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -110,25 +114,32 @@ class TestGroupConfig(BaseTestCase):
         operation_result: AuditLogOperationResult,
         user: User,
     ) -> None:
-        assert log.audit_object.object_id == obj.pk
-        assert log.audit_object.object_name == obj.name
-        assert log.audit_object.object_type == obj_type
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == operation_name
-        assert log.operation_type == operation_type
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, obj.pk)
+        self.assertEqual(log.audit_object.object_name, obj.name)
+        self.assertEqual(log.audit_object.object_type, obj_type)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, operation_name)
+        self.assertEqual(log.operation_type, operation_type)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertIsInstance(log.object_changes, dict)
 
-    def check_log_denied(self, log: AuditLog) -> None:
-        assert not log.audit_object
-        assert log.operation_name == "configuration group created"
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Denied
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.no_rights_user.pk
-        assert isinstance(log.object_changes, dict)
+    def check_log_no_obj(
+        self,
+        log: AuditLog,
+        operation_name: str,
+        operation_type: AuditLogOperationType,
+        operation_result: AuditLogOperationResult,
+        user: User,
+    ) -> None:
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, operation_name)
+        self.assertEqual(log.operation_type, operation_type)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertIsInstance(log.object_changes, dict)
 
     def check_log_updated(
         self, log: AuditLog, operation_result: AuditLogOperationResult, user: User
@@ -174,8 +185,14 @@ class TestGroupConfig(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
-        self.check_log_denied(log=log)
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.check_log_no_obj(
+            log=log,
+            operation_name="configuration group created",
+            operation_type=AuditLogOperationType.Create,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
 
     def test_create_for_service(self):
         service = self.get_service()
@@ -210,8 +227,14 @@ class TestGroupConfig(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
-        self.check_log_denied(log=log)
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.check_log_no_obj(
+            log=log,
+            operation_name="configuration group created",
+            operation_type=AuditLogOperationType.Create,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
 
     def test_create_for_component(self):
         component = self.get_component()
@@ -246,8 +269,14 @@ class TestGroupConfig(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
-        self.check_log_denied(log=log)
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.check_log_no_obj(
+            log=log,
+            operation_name="configuration group created",
+            operation_type=AuditLogOperationType.Create,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
 
     def test_delete(self):
         self.client.delete(path=reverse("group-config-detail", kwargs={"pk": self.group_config.pk}))
@@ -272,7 +301,7 @@ class TestGroupConfig(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.cluster,
@@ -318,7 +347,7 @@ class TestGroupConfig(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log_updated(
             log=log,
             operation_result=AuditLogOperationResult.Denied,
@@ -360,7 +389,7 @@ class TestGroupConfig(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log_updated(
             log=log,
             operation_result=AuditLogOperationResult.Denied,
@@ -403,6 +432,26 @@ class TestGroupConfig(BaseTestCase):
             user=self.test_user,
         )
 
+    def test_add_host_failed(self):
+        host_ids = Host.objects.all().values_list("pk", flat=True).order_by("-pk")
+        res: Response = self.client.post(
+            path=f"/api/v1/group-config/{self.group_config.pk}/host/",
+            data={"id": host_ids[0] + 1},
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(res.status_code, HTTP_400_BAD_REQUEST)
+        self.check_log(
+            log=log,
+            obj=self.cluster,
+            obj_type=AuditObjectType.Cluster,
+            operation_name=f"host added to {self.group_config.name} configuration group",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
+            user=self.test_user,
+        )
+
     def test_add_remove_host_denied(self):
         with self.no_rights_user_logged_in:
             res: Response = self.client.post(
@@ -412,7 +461,7 @@ class TestGroupConfig(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.cluster,
@@ -429,7 +478,7 @@ class TestGroupConfig(BaseTestCase):
             data={"id": self.host.id},
         )
 
-        assert res.status_code == HTTP_201_CREATED
+        self.assertEqual(res.status_code, HTTP_201_CREATED)
 
         with self.no_rights_user_logged_in:
             res: Response = self.client.delete(
@@ -438,7 +487,7 @@ class TestGroupConfig(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.cluster,
