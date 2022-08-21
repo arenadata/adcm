@@ -45,7 +45,10 @@ from tests.ui_tests.app.page.admin.page import (
     AdminPoliciesPage,
     AdminPolicyInfo,
 )
-from tests.ui_tests.app.page.cluster.page import ClusterConfigPage
+from tests.ui_tests.app.page.cluster.page import (
+    ClusterConfigPage,
+    ClusterComponentsPage,
+)
 from tests.ui_tests.app.page.cluster_list.page import ClusterListPage
 from tests.ui_tests.app.page.component.page import ComponentConfigPage
 from tests.ui_tests.app.page.host.page import HostConfigPage
@@ -949,9 +952,14 @@ class TestAdminPolicyPage:
             assert task_info.invoker_objects == cluster.name, "Wrong cluster name"
             job_list_page.click_on_action_name_in_row(job_rows[0])
             JobPageStdout(app_fs.driver, app_fs.adcm.url, 1).wait_page_is_opened()
+        with allure.step("Check forbidden page hint"):
+            cluster_hc_page = ClusterComponentsPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
+            assert (
+                cluster_hc_page.get_info_popup_text()
+                == "[ FORBIDDEN ] You do not have permission to perform this action"
+            ), "There are no permission hint"
 
     # pylint: enable=too-many-locals
-
     @pytest.mark.usefixtures("login_to_adcm_over_api")
     def test_policy_with_maintenance_mode(self, sdk_client_fs, app_fs, another_user, create_cluster_with_component):
         """Test create a group on /admin/policies"""

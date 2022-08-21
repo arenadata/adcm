@@ -270,18 +270,21 @@ class AdminUsersPage(GeneralAdminPage):
         ):
             if value:
                 self.send_text_to_element(locator, value)
-        with allure.step(f"Select group {group} in popup"):
-            self.find_and_click(popup_locators.select_groups)
-            self.wait_element_visible(popup_locators.group_item)
-            available_groups = self.find_elements(popup_locators.group_item)
-            for available_group in available_groups:
-                if available_group.text == group:
-                    self.scroll_to(available_group)
-                    self.hover_element(available_group)
-                    available_group.click()
-                    break
-            else:
-                raise AssertionError(f"There are no group {group} in select group popup")
+        if group:
+            with allure.step(f"Select group {group} in popup"):
+                self.find_and_click(popup_locators.select_groups)
+                self.wait_element_visible(popup_locators.group_item)
+                available_groups = self.find_elements(popup_locators.group_item)
+                for available_group in available_groups:
+                    if available_group.text == group:
+                        self.scroll_to(available_group)
+                        self.hover_element(available_group)
+                        available_group.click()
+                        self.find_and_click(popup_locators.block, is_js=True)
+                        break
+                else:
+                    raise AssertionError(f"There are no group {group} in select group popup")
+
         self.scroll_to(AdminUsersLocators.AddUserPopup.save_btn).click()
         self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
 
