@@ -52,7 +52,7 @@ class NamedOperation(NamedTuple):
                 'Please check definition of an operation.'
             )
         try:
-            return self.naming_template.format(type_=object_type.value.capitalize(), **format_args)
+            return self.naming_template.format(type_=object_type.value.capitalize(), **format_args).strip()
         except KeyError as e:
             raise KeyError(
                 f'It looks like you missed some keys required to format "{self.naming_template}" string\n'
@@ -81,7 +81,7 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         NamedOperation('change-description', 'Bundle updated', (ObjectType.BUNDLE,)),
         # cluster
         NamedOperation('add-service', '{name} service added', (ObjectType.CLUSTER,)),
-        NamedOperation('delete-service', '{name} service deleted', (ObjectType.CLUSTER,)),
+        NamedOperation('remove-service', '{name} service removed', (ObjectType.CLUSTER,)),
         NamedOperation('add-host', '{name} host added', (ObjectType.CLUSTER,)),
         NamedOperation('remove-host', '{name} host removed', (ObjectType.CLUSTER,)),
         NamedOperation('set-hostcomponent', 'Host-Component map updated', (ObjectType.CLUSTER,)),
@@ -109,6 +109,11 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
             '{type_} updated',
             (ObjectType.USER, ObjectType.GROUP, ObjectType.ROLE, ObjectType.POLICY),
         ),
+        # Imports / Binds
+        NamedOperation('change-imports', '{type_} import updated', (ObjectType.CLUSTER, ObjectType.SERVICE)),
+        # ! note that name in (un-)bind operations is like "<Export cluster name>/<Export service display name>"
+        NamedOperation('bind', '{type_} bound to {name}', (ObjectType.CLUSTER, ObjectType.SERVICE)),
+        NamedOperation('unbind', '{name} unbound', (ObjectType.CLUSTER, ObjectType.SERVICE)),
         # Actions
         NamedOperation('launch-action', '{name} action launched', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         NamedOperation('complete-action', '{name} action completed', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
