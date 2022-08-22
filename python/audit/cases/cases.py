@@ -553,6 +553,9 @@ def get_audit_operation_and_object(
                 else:
                     object_type = object_type.capitalize()
 
+                if "group-config" in path and getattr(config, "name", None):
+                    object_type = config.name
+
                 operation_name = f"{object_type} {audit_operation.name}"
             else:
                 audit_object = None

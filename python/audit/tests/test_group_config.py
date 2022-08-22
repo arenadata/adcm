@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from datetime import datetime
+from pathlib import Path
 
 from audit.models import (
     AuditLog,
@@ -29,11 +30,13 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from rbac.models import User
 from rest_framework.response import Response
 from rest_framework.status import (
+    HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
@@ -48,7 +51,7 @@ class TestGroupConfig(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.config = ObjectConfig.objects.create(current=1, previous=1)
+        self.config = ObjectConfig.objects.create(current=1, previous=0)
         ConfigLog.objects.create(obj_ref=self.config, config="{}")
         self.bundle = Bundle.objects.create()
         prototype = Prototype.objects.create(bundle=self.bundle)
@@ -521,3 +524,82 @@ class TestGroupConfig(BaseTestCase):
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
         )
+
+
+class TestGroupConfigOperationName(BaseTestCase):
+    def test_group_config_operation_name(self):
+        test_bundle_filename = "group-config.tar"
+        test_bundle_path = Path(
+            settings.BASE_DIR,
+            "python/audit/tests/files",
+            test_bundle_filename,
+        )
+        with open(test_bundle_path, encoding="utf-8") as f:
+            res: Response = self.client.post(
+                path=reverse("upload-bundle"),
+                data={"file": f},
+            )
+
+        self.assertEqual(res.status_code, HTTP_201_CREATED)
+
+        res: Response = self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": test_bundle_filename},
+        )
+        bundle_id = res.data["id"]
+        prototype_id = Prototype.objects.get(bundle_id=1, type="cluster").pk
+
+        self.assertEqual(res.status_code, HTTP_200_OK)
+
+        res: Response = self.client.post(
+            path=reverse("cluster"),
+            data={
+                "prototype_id": prototype_id,
+                "name": "Magnificent Zambezi",
+                "display_name": "cluster_for_updates",
+                "bundle_id": bundle_id,
+            },
+        )
+        cluster_id = res.data["id"]
+        cluster = Cluster.objects.get(pk=cluster_id)
+
+        self.assertEqual(res.status_code, HTTP_201_CREATED)
+
+        res: Response = self.client.post(
+            path=reverse("group-config-list"),
+            data={"name": "groupname", "object_type": "cluster", "object_id": cluster_id},
+        )
+        group_config_id = res.data["id"]
+        config_id = res.data["config_id"]
+        group_config = GroupConfig.objects.get(pk=group_config_id)
+
+        self.assertEqual(res.status_code, HTTP_201_CREATED)
+
+        res: Response = self.client.post(
+            path=f"/api/v1/group-config/{group_config_id}/config/{config_id}/config-log/",
+            data={
+                "config": {"param_1": "aaa", "param_2": None, "param_3": None},
+                "attr": {
+                    "group_keys": {"param_1": True, "param_2": False, "param_3": False},
+                    "custom_group_keys": {"param_1": True, "param_2": True, "param_3": True},
+                },
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(res.status_code, HTTP_201_CREATED)
+        self.assertEqual(log.audit_object.object_id, cluster_id)
+        self.assertEqual(log.audit_object.object_name, cluster.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(
+            log.operation_name,
+            f"{group_config.name} configuration group {AuditLogOperationType.Update}d",
+        )
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.object_changes, {})
