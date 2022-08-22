@@ -8,6 +8,8 @@
   </button>
 </div>
 
+<app-filter [filterList]="userFilters"></app-filter>
+
 <adwp-list
   [columns]="listColumns"
   [dataSource]="data$ | async"

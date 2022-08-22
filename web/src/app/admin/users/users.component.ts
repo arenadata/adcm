@@ -23,6 +23,7 @@ import { ADD_SERVICE_PROVIDER } from '../../shared/add-component/add-service-mod
 import { AddButtonComponent, BaseFormDirective } from '../../shared/add-component';
 import { RbacUserService } from '../../services/rbac-user.service';
 import { RbacUserFormComponent } from '../../components/rbac/user-form/rbac-user-form.component';
+import { IFilter } from "../../shared/configuration/tools/filter/filter.component";
 
 const groupNameMapper = (user: RbacUserModel) => {
   return user.group.map((group) => group.name).join(', ');
@@ -70,6 +71,23 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
   ] as IColumns<RbacUserModel>;
 
   type: TypeName = 'user';
+
+  userFilters: IFilter[] = [
+    {
+      id: 1, name: 'Status', display_name: 'Status', filter_field: 'is_active',
+      options: [
+        {id: 1, name: 'Active', display_name: 'Active', value: true},
+        {id: 2, name: 'Inactive', display_name: 'Inactive', value: false},
+      ]
+    },
+    {
+      id: 2, name: 'Type', display_name: 'Type', filter_field: 'type',
+      options: [
+        {id: 1, name: 'Local', display_name: 'Local', value: 'local'},
+        {id: 2, name: 'Ldap', display_name: 'Ldap', value: 'ldap'},
+      ]
+    }
+  ]
 
   component: Type<BaseFormDirective> = RbacUserFormComponent;
 
