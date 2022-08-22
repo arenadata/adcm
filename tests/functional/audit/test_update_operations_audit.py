@@ -145,7 +145,8 @@ def test_update_config_of_group_config(group_configs, audit_log_checker, sdk_cli
     """
     admin_creds = make_auth_header(sdk_client_fs)
     for group_config in group_configs:
-        drop_object_id = lambda b: {**b, 'object_id': 'hello there'}  # pylint: disable=unnecessary-lambda-assignment
+        # pylint: disable-next=unnecessary-lambda-assignment
+        drop_object_id = lambda b: {**b, 'object_id': 'hello there'}  # noqa: E731
         with allure.step(f'Update group config info of {group_config.object_type}'):
             for result, credentials, check_response, change_body in (
                 (OperationResult.SUCCESS, admin_creds, check_succeed, lambda b: {**b, 'description': 'Changed'}),
