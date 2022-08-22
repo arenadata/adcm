@@ -25,12 +25,12 @@ from rbac.tests.test_base import BaseTestCase
 
 
 class PolicyTest(BaseTestCase):
-    """Tests for `cm.issue.create_issues()`"""
+    """Tests for applying policy with different combination of roles and object"""
 
     def setUp(self) -> None:
         super().setUp()
         self.user = User.objects.create(username="user", is_active=True, is_superuser=False)
-        self.cluster = Cluster.objects.create(name=f"Cluster_1", prototype=self.clp)
+        self.cluster = Cluster.objects.create(name="Cluster_1", prototype=self.clp)
         self.service_1 = ClusterObject.objects.create(cluster=self.cluster, prototype=self.sp_1)
         self.service_2 = ClusterObject.objects.create(cluster=self.cluster, prototype=self.sp_2)
         self.component_11 = ServiceComponent.objects.create(
@@ -102,7 +102,7 @@ class PolicyTest(BaseTestCase):
 
     def test_object_policy(self):
         user = self.user
-        cluster2 = Cluster.objects.create(name=f"Cluster_2", prototype=self.clp)
+        cluster2 = Cluster.objects.create(name="Cluster_2", prototype=self.clp)
         p = Policy.objects.create(name="MyPolicy", role=self.object_role_view_perm_cluster())
         p.user.add(user)
 
@@ -116,7 +116,7 @@ class PolicyTest(BaseTestCase):
         self.assertFalse(user.has_perm("cm.view_cluster", cluster2))
 
     def test_object_policy_remove_user(self):
-        cluster2 = Cluster.objects.create(name=f"Cluster_2", prototype=self.clp)
+        cluster2 = Cluster.objects.create(name="Cluster_2", prototype=self.clp)
         user = self.user
 
         p = Policy.objects.create(name="MyPolicy", role=self.object_role())
@@ -137,7 +137,7 @@ class PolicyTest(BaseTestCase):
 
     def test_object_policy4group(self):
         user = self.user
-        cluster2 = Cluster.objects.create(name=f"Cluster_2", prototype=self.clp)
+        cluster2 = Cluster.objects.create(name="Cluster_2", prototype=self.clp)
         group = Group.objects.create(name="group")
         group.user_set.add(user)
 
