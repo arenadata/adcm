@@ -514,23 +514,15 @@ def get_audit_operation_and_object(
                 object_type=AuditObjectType.Host,
             )
 
-        case ["config-log"] | ["group-config", _, "config", _, "config-log"]:
-            if "group-config" in path:
-                audit_operation_name = f"configuration group {AuditLogOperationType.Update}d"
-            else:
-                audit_operation_name = f"configuration {AuditLogOperationType.Update}d"
-
+        case ["config-log"]:
             audit_operation = AuditOperation(
-                name=audit_operation_name,
+                name=f"configuration {AuditLogOperationType.Update}d",
                 operation_type=AuditLogOperationType.Update,
             )
 
             config = None
             if res:
                 config = res.data.serializer.instance.obj_ref
-                group_config = getattr(config, "group_config", None)
-                if group_config:
-                    config = group_config
             elif view.request.data.get("obj_ref"):
                 config = ObjectConfig.objects.filter(pk=view.request.data["obj_ref"]).first()
 
@@ -553,7 +545,44 @@ def get_audit_operation_and_object(
                 else:
                     object_type = object_type.capitalize()
 
-                if "group-config" in path and getattr(config, "name", None):
+                operation_name = f"{object_type} {audit_operation.name}"
+            else:
+                audit_object = None
+                operation_name = audit_operation.name
+
+        case ["group-config", group_config_pk, "config", _, "config-log"]:
+            audit_operation = AuditOperation(
+                name=f"configuration group {AuditLogOperationType.Update}d",
+                operation_type=AuditLogOperationType.Update,
+            )
+
+            config = None
+            if res:
+                config = res.data.serializer.instance.obj_ref
+                if getattr(config, "group_config", None):
+                    config = config.group_config
+            elif view.request.data.get("obj_ref"):
+                config = ObjectConfig.objects.filter(pk=view.request.data["obj_ref"]).first()
+
+            if not config:
+                config = GroupConfig.objects.filter(pk=group_config_pk).first()
+
+            if config:
+                object_type = ContentType.objects.get_for_model(config.object).name
+                object_type = _get_obj_type(object_type)
+
+                if object_type == "host":
+                    object_name = config.object.fqdn
+                else:
+                    object_name = config.object.name
+
+                audit_object = get_or_create_audit_obj(
+                    object_id=config.object.pk,
+                    object_name=object_name,
+                    object_type=object_type,
+                )
+                object_type = object_type.capitalize()
+                if isinstance(config, GroupConfig):
                     object_type = config.name
 
                 operation_name = f"{object_type} {audit_operation.name}"

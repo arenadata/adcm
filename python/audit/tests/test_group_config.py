@@ -527,7 +527,30 @@ class TestGroupConfig(BaseTestCase):
 
 
 class TestGroupConfigOperationName(BaseTestCase):
-    def test_group_config_operation_name(self):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.cluster = None
+        self.config_id = None
+        self.group_config_id = None
+        self.group_config = None
+
+    def check_log(self, log: AuditLog, operation_result: AuditLogOperationResult, user: User):
+        self.assertEqual(log.audit_object.object_id, self.cluster.pk)
+        self.assertEqual(log.audit_object.object_name, self.cluster.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(
+            log.operation_name,
+            f"{self.group_config.name} configuration group {AuditLogOperationType.Update}d",
+        )
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.object_changes, {})
+
+    def create_cluster_from_bundle(self):
         test_bundle_filename = "group-config.tar"
         test_bundle_path = Path(
             settings.BASE_DIR,
@@ -561,7 +584,7 @@ class TestGroupConfigOperationName(BaseTestCase):
             },
         )
         cluster_id = res.data["id"]
-        cluster = Cluster.objects.get(pk=cluster_id)
+        self.cluster = Cluster.objects.get(pk=cluster_id)
 
         self.assertEqual(res.status_code, HTTP_201_CREATED)
 
@@ -569,14 +592,16 @@ class TestGroupConfigOperationName(BaseTestCase):
             path=reverse("group-config-list"),
             data={"name": "groupname", "object_type": "cluster", "object_id": cluster_id},
         )
-        group_config_id = res.data["id"]
-        config_id = res.data["config_id"]
-        group_config = GroupConfig.objects.get(pk=group_config_id)
+        self.group_config_id = res.data["id"]
+        self.config_id = res.data["config_id"]
+        self.group_config = GroupConfig.objects.get(pk=self.group_config_id)
 
         self.assertEqual(res.status_code, HTTP_201_CREATED)
 
+    def test_group_config_operation_name(self):
+        self.create_cluster_from_bundle()
         res: Response = self.client.post(
-            path=f"/api/v1/group-config/{group_config_id}/config/{config_id}/config-log/",
+            path=f"/api/v1/group-config/{self.group_config_id}/config/{self.config_id}/config-log/",
             data={
                 "config": {"param_1": "aaa", "param_2": None, "param_3": None},
                 "attr": {
@@ -590,16 +615,48 @@ class TestGroupConfigOperationName(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(res.status_code, HTTP_201_CREATED)
-        self.assertEqual(log.audit_object.object_id, cluster_id)
-        self.assertEqual(log.audit_object.object_name, cluster.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
-        self.assertFalse(log.audit_object.is_deleted)
-        self.assertEqual(
-            log.operation_name,
-            f"{group_config.name} configuration group {AuditLogOperationType.Update}d",
+        self.check_log(
+            log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user
         )
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
-        self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
-        self.assertEqual(log.object_changes, {})
+
+    def test_group_config_operation_name_denied(self):
+        self.create_cluster_from_bundle()
+        with self.no_rights_user_logged_in:
+            res: Response = self.client.post(
+                path=f"/api/v1/group-config/{self.group_config_id}"
+                f"/config/{self.config_id}/config-log/",
+                data={
+                    "config": {"param_1": "aaa", "param_2": None, "param_3": None},
+                    "attr": {
+                        "group_keys": {"param_1": True, "param_2": False, "param_3": False},
+                        "custom_group_keys": {"param_1": True, "param_2": True, "param_3": True},
+                    },
+                },
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.check_log(
+            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
+        )
+
+    def test_group_config_operation_name_failed(self):
+        self.create_cluster_from_bundle()
+        res: Response = self.client.post(
+            path=f"/api/v1/group-config/{self.group_config_id}/config/{self.config_id}/config-log/",
+            data={
+                "config": {"param_1": "wrong", "param_2": None, "param_3": None},
+                "attr": {
+                    "group_keys": {"param_1": False, "param_2": False, "param_3": False},
+                    "custom_group_keys": {"param_1": True, "param_2": True, "param_3": True},
+                },
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(res.status_code, HTTP_400_BAD_REQUEST)
+        self.check_log(log=log, operation_result=AuditLogOperationResult.Fail, user=self.test_user)
