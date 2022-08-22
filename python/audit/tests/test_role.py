@@ -21,7 +21,7 @@ from audit.models import (
 from django.urls import reverse
 from rbac.models import Role, RoleTypes, User
 from rest_framework.response import Response
-from rest_framework.status import HTTP_403_FORBIDDEN
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
@@ -50,16 +50,16 @@ class TestRole(BaseTestCase):
         operation_result: AuditLogOperationResult,
         user: User,
     ) -> None:
-        assert log.audit_object.object_id == self.role.pk
-        assert log.audit_object.object_name == self.role.name
-        assert log.audit_object.object_type == AuditObjectType.Role
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == operation_name
-        assert log.operation_type == operation_type
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, self.role.pk)
+        self.assertEqual(log.audit_object.object_name, self.role.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Role)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, operation_name)
+        self.assertEqual(log.operation_type, operation_type)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.object_changes, {})
 
     def check_log_update(
         self, log: AuditLog, operation_result: AuditLogOperationResult, user: User
@@ -84,16 +84,16 @@ class TestRole(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == res.data["id"]
-        assert log.audit_object.object_name == self.role_display_name
-        assert log.audit_object.object_type == AuditObjectType.Role
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == self.role_created_str
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Success
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, res.data["id"])
+        self.assertEqual(log.audit_object.object_name, self.role_display_name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Role)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, self.role_created_str)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.object_changes, {})
 
         self.client.post(
             path=reverse(self.list_name),
@@ -106,13 +106,13 @@ class TestRole(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert not log.audit_object
-        assert log.operation_name == self.role_created_str
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Fail
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, self.role_created_str)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.object_changes, {})
 
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
@@ -127,14 +127,14 @@ class TestRole(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
-        assert not log.audit_object
-        assert log.operation_name == self.role_created_str
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Denied
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.no_rights_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, self.role_created_str)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.no_rights_user.pk)
+        self.assertEqual(log.object_changes, {})
 
     def test_delete(self):
         self.client.delete(
@@ -244,4 +244,23 @@ class TestRole(BaseTestCase):
             log=log,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
+        )
+
+    def test_update_patch_failed(self):
+        res: Response = self.client.patch(
+            path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
+            data={
+                "display_name": "new_display_name",
+                "child": [{"id": -1}],
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        assert res.status_code == HTTP_400_BAD_REQUEST
+        self.check_log_update(
+            log=log,
+            operation_result=AuditLogOperationResult.Fail,
+            user=self.test_user,
         )

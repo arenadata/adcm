@@ -35,7 +35,7 @@ from django.views.generic.base import View
 from rbac.models import Role, User
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.request import Request
-from rest_framework.status import HTTP_403_FORBIDDEN, is_success
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, is_success
 
 
 def _get_view_and_request(args) -> tuple[View, Request]:
@@ -154,6 +154,10 @@ def audit(func):
                     status_code = HTTP_403_FORBIDDEN
         except PermissionDenied as exc:
             status_code = HTTP_403_FORBIDDEN
+            error = exc
+            res = None
+        except KeyError as exc:
+            status_code = HTTP_400_BAD_REQUEST
             error = exc
             res = None
 
