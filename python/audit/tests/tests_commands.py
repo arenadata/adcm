@@ -1,10 +1,6 @@
 from datetime import datetime, timedelta
 
-from django.core.management import call_command
-from django.test import TestCase
-from django.utils import timezone
-
-from audit.models import AuditLog, AuditLogOperationType, AuditLogOperationResult
+from audit.models import AuditLog, AuditLogOperationResult, AuditLogOperationType
 from cm.models import (
     ADCM,
     Bundle,
@@ -15,6 +11,9 @@ from cm.models import (
     Prototype,
     TaskLog,
 )
+from django.core.management import call_command
+from django.test import TestCase
+from django.utils import timezone
 from rbac.models import User
 
 

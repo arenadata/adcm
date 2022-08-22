@@ -16,7 +16,7 @@ from datetime import timedelta
 from shutil import rmtree
 from tarfile import TarFile
 
-from audit.models import AuditLog, AuditObject, AuditSession, AuditLogOperationResult
+from audit.models import AuditLog, AuditLogOperationResult, AuditObject, AuditSession
 from audit.utils import make_audit_log
 from cm.adcm_config import get_adcm_config
 from cm.logger import log_cron_task as log
@@ -167,7 +167,7 @@ class Command(BaseCommand):
     def __log(self, msg, method="info"):
         prefix = "Audit cleanup/archiving: "
         if method in ("exc", "exception"):
-            log.warning(f"{prefix}Error in auditlog rotation")
+            log.warning("%sError in auditlog rotation", prefix)
             log.exception(msg)
         else:
             msg = "Audit cleanup/archiving: " + str(msg)

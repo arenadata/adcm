@@ -33,7 +33,7 @@ class CEFLogConstants:
     undefined = "<undefined>"
 
 
-def cef_log(
+def cef_logger(
     audit_instance: Union[AuditLog, AuditSession],
     signature_id: str,
     severity: int = 1,
