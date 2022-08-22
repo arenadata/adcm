@@ -163,7 +163,7 @@ def post(sdk_client_fs) -> Callable:
         headers = {**auth_header, **({} if headers is None else headers)}
         path_fmt = {} if path_fmt is None else path_fmt
         url = f'{base_url}/api/v1/{path.format(**path_fmt)}/'
-        with allure.step(f'Sending DELETE request to {url}'):
+        with allure.step(f'Sending POST request to {url} with body: {body}'):
             return requests.post(url, headers=headers, json=body, **kwargs)
 
     return _post
