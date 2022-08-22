@@ -47,13 +47,13 @@ operations:
       what: &service
         type: service
         name: service_for_updates
-      how:
+      how: &add-host-service
         <<: *add-host
         name: service-group
   - update: &service-update-no-host
       what: *service
       how:
-        <<: *add-host
+        <<: *add-host-service
         host: ""  # not existing host
     result: fail
   - update: *service-update-no-host
@@ -72,13 +72,13 @@ operations:
       what: &component
         type: component
         name: component_for_updates
-      how:
+      how: &add-host-component
         <<: *add-host
         name: component-group
   - update: &component-update-no-host
       what: *component
       how:
-        <<: *add-host
+        <<: *add-host-component
         host: ""  # not existing host
     result: fail
   - update: *component-update-no-host
