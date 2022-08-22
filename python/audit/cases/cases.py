@@ -528,12 +528,16 @@ def get_audit_operation_and_object(
             config = None
             if res:
                 config = res.data.serializer.instance.obj_ref
+                group_config = getattr(config, "group_config", None)
+                if group_config:
+                    config = group_config
             elif view.request.data.get("obj_ref"):
                 config = ObjectConfig.objects.filter(pk=view.request.data["obj_ref"]).first()
 
             if config:
                 object_type = ContentType.objects.get_for_model(config.object).name
                 object_type = _get_obj_type(object_type)
+
                 if object_type == "host":
                     object_name = config.object.fqdn
                 else:
