@@ -206,38 +206,26 @@ def mark_deleted_audit_object(instance, object_type: str):
 
 def make_audit_log(operation_type, result, operation_status):
     operation_type_map = {
-        "task_db": {
+        "task": {
             "type": AuditLogOperationType.Delete,
-            "name": '"Task log cleanup in database on schedule" job',
-        },
-        "task_fs": {
-            "type": AuditLogOperationType.Delete,
-            "name": '"Task log cleanup in filesystem on schedule" job',
+            "name": "\"Task log cleanup on schedule\" job",
         },
         "config": {
             "type": AuditLogOperationType.Delete,
-            "name": '"Objects configurations cleanup on schedule" job',
+            "name": "\"Objects configurations cleanup on schedule\" job",
         },
-        "sync": {"type": AuditLogOperationType.Update, "name": '"User sync on schedule" job'},
+        "sync": {"type": AuditLogOperationType.Update, "name": "\"User sync on schedule\" job"},
         "audit": {
             "type": AuditLogOperationType.Delete,
-            "name": '"Audit log cleanup/archiving on schedule" job',
+            "name": "\"Audit log cleanup/archiving on schedule\" job",
         },
     }
-    result = (
-        AuditLogOperationResult.Success if result == 'success' else AuditLogOperationResult.Fail
-    )
-    operation_name = operation_type_map[operation_type]["name"] + ' ' + operation_status
-    audit_object = get_or_create_audit_obj(
-        object_id=ADCM.objects.get().id,
-        object_name='ADCM',
-        object_type=AuditObjectType.ADCM,
-    )
-    system_user = User.objects.get(username='system')
-    audit_log = AuditLog.objects.create(
-        audit_object=audit_object,
+    operation_name = operation_type_map[operation_type]["name"] + " " + operation_status
+    system_user = User.objects.get(username="system")
+    auditlog = AuditLog.objects.create(
+        audit_object=None,
         operation_name=operation_name,
-        operation_type=operation_type_map[operation_type]['type'],
+        operation_type=operation_type_map[operation_type]["type"],
         operation_result=result,
         user=system_user,
     )
