@@ -54,15 +54,20 @@ class TestPolicy(BaseTestCase):
     def check_log(
         self,
         log: AuditLog,
+        obj: Policy | None,
         operation_name: str,
         operation_type: AuditLogOperationType,
         operation_result: AuditLogOperationResult,
         user: User,
     ) -> None:
-        self.assertEqual(log.audit_object.object_id, self.policy.pk)
-        self.assertEqual(log.audit_object.object_name, self.policy.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Policy)
-        self.assertFalse(log.audit_object.is_deleted)
+        if obj:
+            self.assertEqual(log.audit_object.object_id, obj.pk)
+            self.assertEqual(log.audit_object.object_name, obj.name)
+            self.assertEqual(log.audit_object.object_type, AuditObjectType.Policy)
+            self.assertFalse(log.audit_object.is_deleted)
+        else:
+            self.assertFalse(log.audit_object)
+
         self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, operation_type)
         self.assertEqual(log.operation_result, operation_result)
@@ -71,10 +76,11 @@ class TestPolicy(BaseTestCase):
         self.assertEqual(log.object_changes, {})
 
     def check_log_update(
-        self, log: AuditLog, operation_result: AuditLogOperationResult, user: User
+        self, log: AuditLog, obj: Policy, operation_result: AuditLogOperationResult, user: User
     ) -> None:
         return self.check_log(
             log=log,
+            obj=obj,
             operation_name=self.policy_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=operation_result,
@@ -94,17 +100,16 @@ class TestPolicy(BaseTestCase):
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+        policy = Policy.objects.get(pk=res.data["id"])
 
-        self.assertEqual(log.audit_object.object_id, res.data["id"])
-        self.assertEqual(log.audit_object.object_name, self.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Policy)
-        self.assertFalse(log.audit_object.is_deleted)
-        self.assertEqual(log.operation_name, "Policy created")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
-        self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
-        self.assertEqual(log.object_changes, {})
+        self.check_log(
+            log=log,
+            obj=policy,
+            operation_name="Policy created",
+            operation_type=AuditLogOperationType.Create,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
+        )
 
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
@@ -124,13 +129,14 @@ class TestPolicy(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
-        self.assertFalse(log.audit_object)
-        self.assertEqual(log.operation_name, "Policy created")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
-        self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.no_rights_user.pk)
-        self.assertEqual(log.object_changes, {})
+        self.check_log(
+            log=log,
+            obj=None,
+            operation_name="Policy created",
+            operation_type=AuditLogOperationType.Create,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
+        )
 
     def test_delete(self):
         self.client.delete(
@@ -142,6 +148,7 @@ class TestPolicy(BaseTestCase):
 
         self.check_log(
             log=log,
+            obj=self.policy,
             operation_name="Policy deleted",
             operation_type=AuditLogOperationType.Delete,
             operation_result=AuditLogOperationResult.Success,
@@ -160,6 +167,7 @@ class TestPolicy(BaseTestCase):
         assert res.status_code == HTTP_403_FORBIDDEN
         self.check_log(
             log=log,
+            obj=self.policy,
             operation_name="Policy deleted",
             operation_type=AuditLogOperationType.Delete,
             operation_result=AuditLogOperationResult.Denied,
@@ -182,7 +190,10 @@ class TestPolicy(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_log_update(
-            log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user
+            log=log,
+            obj=self.policy,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
         )
 
     def test_update_put_denied(self):
@@ -205,7 +216,10 @@ class TestPolicy(BaseTestCase):
 
         assert res.status_code == HTTP_403_FORBIDDEN
         self.check_log_update(
-            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
+            log=log,
+            obj=self.policy,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
         )
 
     def test_update_patch(self):
@@ -223,7 +237,10 @@ class TestPolicy(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_log_update(
-            log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user
+            log=log,
+            obj=self.policy,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
         )
 
     def test_update_patch_denied(self):
@@ -245,7 +262,10 @@ class TestPolicy(BaseTestCase):
 
         assert res.status_code == HTTP_403_FORBIDDEN
         self.check_log_update(
-            log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
+            log=log,
+            obj=self.policy,
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
         )
 
     def test_update_patch_failed(self):
@@ -268,5 +288,8 @@ class TestPolicy(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_log_update(
-            log=log, operation_result=AuditLogOperationResult.Fail, user=self.test_user
+            log=log,
+            obj=self.policy,
+            operation_result=AuditLogOperationResult.Fail,
+            user=self.test_user,
         )
