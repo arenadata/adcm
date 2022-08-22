@@ -125,7 +125,7 @@ class TestGroupConfig(BaseTestCase):
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def check_log_no_obj(
         self,
@@ -141,7 +141,7 @@ class TestGroupConfig(BaseTestCase):
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def check_log_updated(
         self, log: AuditLog, operation_result: AuditLogOperationResult, user: User

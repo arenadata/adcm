@@ -109,7 +109,7 @@ class TestCluster(BaseTestCase):
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def check_log(  # pylint: disable=too-many-arguments
         self,
@@ -138,7 +138,7 @@ class TestCluster(BaseTestCase):
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def check_log_denied(
         self, log: AuditLog, operation_name: str, operation_type: AuditLogOperationType
@@ -152,7 +152,7 @@ class TestCluster(BaseTestCase):
         self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.no_rights_user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def check_cluster_update_config(self, log: AuditLog) -> None:
         self.check_log(
@@ -170,7 +170,7 @@ class TestCluster(BaseTestCase):
         self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.test_user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def check_action_log(self, log: AuditLog) -> None:
         self.assertEqual(log.audit_object.object_id, self.cluster.pk)
@@ -181,7 +181,7 @@ class TestCluster(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.Update)
         self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def create_cluster(self, bundle_id: int, name: str, prototype_id: int):
         return self.client.post(

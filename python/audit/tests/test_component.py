@@ -78,7 +78,7 @@ class TestComponent(BaseTestCase):
         self.assertEqual(log.operation_result, operation_result)
         self.assertEqual(log.user.pk, user.pk)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def check_action_log(self, log: AuditLog) -> None:
         self.assertEqual(log.audit_object.object_id, self.component.pk)
@@ -89,7 +89,7 @@ class TestComponent(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.Update)
         self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def test_update(self):
         self.client.patch(

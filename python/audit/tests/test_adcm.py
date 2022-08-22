@@ -76,7 +76,7 @@ class TestComponent(BaseTestCase):
         if log.user:
             self.assertEqual(log.user.pk, user.pk)
 
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def test_update_and_restore(self):
         self.client.post(
