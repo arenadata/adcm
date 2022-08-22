@@ -12,20 +12,20 @@
 
 import json
 
-from django.test import TestCase
+from adwp_base.errors import AdwpEx
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-
-from adwp_base.errors import AdwpEx
+from django.test import TestCase
 
 from cm.models import (
     ProductCategory,
     Action,
     ActionType,
+    Bundle,
     Cluster,
     ClusterObject,
+    Prototype,
     ServiceComponent,
-    Bundle,
 )
 from init_db import init as init_adcm
 from rbac.models import Role, RoleTypes
@@ -72,6 +72,82 @@ class RoleModelTest(TestCase):
         self.assertTrue(role.built_in)
         self.assertEqual(role.parametrized_by_type, [])
 
+    def test_object_filter(self):
+        r = Role(
+            name="view",
+            module_name="rbac.roles",
+            class_name="ObjectRole",
+            init_params={
+                "app_name": "cm",
+                "model": "Bundle",
+                "filter": {"name": "Hadoop"},
+            },
+        )
+        r.save()
+
+        b1 = Bundle(name="Hadoop", version="1.0")
+        b1.save()
+        b2 = Bundle(name="Zookeper", version="1.0")
+        b2.save()
+        b3 = Bundle(name="Hadoop", version="2.0")
+        b3.save()
+
+        self.assertEqual([b1, b3], list(r.filter()))
+
+    def test_object_filter_error(self):
+        r1 = Role(
+            name="view",
+            display_name="view",
+            module_name="rbac.roles",
+            class_name="ObjectRole",
+            init_params={"app_name": "cm", "model": "qwe"},
+        )
+        r1.save()
+        with self.assertRaises(AdwpEx) as e:
+            r1.filter()
+            self.assertEqual(e.exception.error_code, "ROLE_FILTER_ERROR")
+
+        r2 = Role(
+            name="add",
+            display_name="add",
+            module_name="rbac.roles",
+            class_name="ObjectRole",
+            init_params={"app_name": "qwe", "model": "qwe"},
+        )
+        r2.save()
+        with self.assertRaises(AdwpEx) as e:
+            r1.filter()
+            self.assertEqual(e.exception.error_code, "ROLE_FILTER_ERROR")
+
+    def test_object_complex_filter(self):
+        r = Role(
+            name="view",
+            module_name="rbac.roles",
+            class_name="ObjectRole",
+            init_params={
+                "app_name": "cm",
+                "model": "Action",
+                "filter": {
+                    "name": "start",
+                    "prototype__type": "cluster",
+                    "prototype__name": "Kafka",
+                    "prototype__bundle__name": "Hadoop",
+                },
+            },
+        )
+        r.save()
+
+        b1 = Bundle(name="Hadoop", version="1.0")
+        b1.save()
+        p1 = Prototype(bundle=b1, type="cluster", name="Kafka", version="1.0")
+        p1.save()
+        a1 = Action(prototype=p1, name="start")
+        a1.save()
+        a2 = Action(prototype=p1, name="stop")
+        a2.save()
+
+        self.assertEqual([a1], list(r.filter()))
+
 
 class RoleFunctionalTest(BaseTestCase):
     longMessage = False
@@ -86,7 +162,7 @@ class RoleFunctionalTest(BaseTestCase):
             visible=True,
         )
         Bundle.objects.filter(id=self.bundle_1.id).update(
-            name="sample_bundle_1",
+            name="sample_bundle",
             version="1.0",
             hash="47b820a6d66a90b02b42017269904ab2c954bceb",
             edition="community",

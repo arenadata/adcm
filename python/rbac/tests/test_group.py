@@ -23,48 +23,7 @@ class BaseTestCase(TestCase):
             Group.objects.create()
 
     def test_group_creation_deletion(self):
-        data = [
-            (
-                {
-                    "name": "test_group_name",
-                    "description": "test_group_description",
-                    "type": OriginType.Local,
-                },
-                {
-                    "name": f"test_group_name [{OriginType.Local.value}]",
-                    "description": "test_group_description",
-                    "type": OriginType.Local,
-                    "display_name": "test_group_name",
-                },
-            ),
-            (
-                {
-                    "name": "test_group_name_2",
-                },
-                {
-                    "name": f"test_group_name_2 [{OriginType.Local.value}]",
-                    "description": None,
-                    "type": OriginType.Local,
-                    "display_name": "test_group_name_2",
-                },
-            ),
-            (
-                {
-                    "name": "test_group_name3",
-                    "description": "test_group_description3",
-                    "type": OriginType.LDAP,
-                },
-                {
-                    "name": f"test_group_name3 [{OriginType.LDAP.value}]",
-                    "description": "test_group_description3",
-                    "type": OriginType.LDAP,
-                    "display_name": "test_group_name3",
-                    "built_in": False,
-                },
-            ),
-        ]
-
-        for create_args, expected in data:
+        for create_args, expected in self.data:
             g = Group.objects.create(**create_args)
             g_pk = g.pk
             basse_g_pk = g.group_ptr_id
@@ -118,3 +77,44 @@ class BaseTestCase(TestCase):
         self.assertEqual(g.type, OriginType.LDAP.value)
         self.assertEqual(g.name, ag.name, f"{name} [{OriginType.LDAP.value}]")
         self.assertEqual(g.display_name, name)
+
+    data = [
+        (
+            {
+                "name": "test_group_name",
+                "description": "test_group_description",
+                "type": OriginType.Local,
+            },
+            {
+                "name": f"test_group_name [{OriginType.Local.value}]",
+                "description": "test_group_description",
+                "type": OriginType.Local,
+                "display_name": "test_group_name",
+            },
+        ),
+        (
+            {
+                "name": "test_group_name_2",
+            },
+            {
+                "name": f"test_group_name_2 [{OriginType.Local.value}]",
+                "description": None,
+                "type": OriginType.Local,
+                "display_name": "test_group_name_2",
+            },
+        ),
+        (
+            {
+                "name": "test_group_name3",
+                "description": "test_group_description3",
+                "type": OriginType.LDAP,
+            },
+            {
+                "name": f"test_group_name3 [{OriginType.LDAP.value}]",
+                "description": "test_group_description3",
+                "type": OriginType.LDAP,
+                "display_name": "test_group_name3",
+                "built_in": False,
+            },
+        ),
+    ]
