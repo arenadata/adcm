@@ -27,7 +27,7 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
-from cm.models import ADCM, Cluster, ClusterObject, Host, HostProvider, TaskLog
+from cm.models import Cluster, ClusterObject, Host, HostProvider, TaskLog
 from django.contrib.auth.models import User as DjangoUser
 from django.db.models import Model
 from django.http.response import Http404
@@ -222,7 +222,7 @@ def make_audit_log(operation_type, result, operation_status):
     }
     operation_name = operation_type_map[operation_type]["name"] + " " + operation_status
     system_user = User.objects.get(username="system")
-    auditlog = AuditLog.objects.create(
+    audit_log = AuditLog.objects.create(
         audit_object=None,
         operation_name=operation_name,
         operation_type=operation_type_map[operation_type]["type"],
