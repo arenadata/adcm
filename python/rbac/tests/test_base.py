@@ -18,11 +18,7 @@ from cm.models import Bundle, Prototype
 from rbac.models import Role
 
 
-def cook_perm(
-    codename,
-    model,
-    app="cm",
-):
+def cook_perm(codename, model, app="cm"):
     content, _ = ContentType.objects.get_or_create(app_label=app, model=model)
     perm, _ = Permission.objects.get_or_create(codename=f"{codename}_{model}", content_type=content)
     return perm
@@ -44,6 +40,7 @@ class BaseTestCase(TestCase):  # pylint: disable=too-many-instance-attributes
     def setUp(self) -> None:
         super().setUp()
         self.create_bundles_and_prototypes()
+        self.create_permissions()
 
     def create_bundles_and_prototypes(self):
         self.bundle_1 = Bundle.objects.create(name="cluster_bundle", version="1.0")
@@ -102,6 +99,9 @@ class BaseTestCase(TestCase):  # pylint: disable=too-many-instance-attributes
             display_name="Component 2 from Service 2",
             parent=self.sp_2,
         )
+        self.bundle_2 = Bundle.objects.create(name="provider_bundle", version="1.0")
+        self.pp = Prototype.objects.create(bundle=self.bundle_2, type="provider", name="provider")
+        self.hp = Prototype.objects.create(bundle=self.bundle_2, type="host", name="host")
 
     def create_permissions(self):
         self.add_host_perm = cook_perm("add", "host")

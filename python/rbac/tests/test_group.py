@@ -40,19 +40,8 @@ class BaseTestCase(TestCase):
 
             g.delete()
 
-            try:
-                Group.objects.get(pk=g_pk)
-            except Group.DoesNotExist:
-                pass
-            else:
-                self.fail(f"Group #{g_pk} is not deleted")
-
-            try:
-                AuthGroup.objects.get(pk=basse_g_pk)
-            except AuthGroup.DoesNotExist:
-                pass
-            else:
-                self.fail(f"AuthGroup #{basse_g_pk} is not deleted")
+            self.assertFalse(Group.objects.filter(pk=g_pk).first())
+            self.assertFalse(AuthGroup.objects.filter(pk=basse_g_pk).first())
 
     def test_group_name_type_mutation(self):
         """test for pre_save signal"""

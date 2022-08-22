@@ -12,7 +12,6 @@
 
 from cm import api
 from cm.models import (
-    Bundle,
     Cluster,
     ClusterObject,
     Host,
@@ -24,7 +23,7 @@ from rbac.models import Group, Policy, User
 from rbac.tests.test_base import BaseTestCase
 
 
-class PolicyTest(BaseTestCase):
+class PolicyTest(BaseTestCase):  # pylint: disable=too-many-instance-attributes
     """Tests for applying policy with different combination of roles and object"""
 
     def setUp(self) -> None:
@@ -42,13 +41,9 @@ class PolicyTest(BaseTestCase):
         self.component_21 = ServiceComponent.objects.create(
             cluster=self.cluster, service=self.service_2, prototype=self.cop_21
         )
-        self.create_permissions()
 
     def get_hosts_and_provider(self):
-        bundle_2, _ = Bundle.objects.get_or_create(name="provider_bundle", version="1.0")
-        pp, _ = Prototype.objects.get_or_create(bundle=bundle_2, type="provider", name="provider")
-        self.hp, _ = Prototype.objects.get_or_create(bundle=bundle_2, type="host", name="host")
-        provider, _ = HostProvider.objects.get_or_create(name="provider", prototype=pp)
+        provider, _ = HostProvider.objects.get_or_create(name="provider", prototype=self.pp)
         host1 = Host.objects.create(prototype=self.hp, provider=provider, fqdn="host_1")
         host2 = Host.objects.create(prototype=self.hp, provider=provider, fqdn="host_2")
         return provider, host1, host2
@@ -261,7 +256,6 @@ class PolicyTest(BaseTestCase):
         self.assertTrue(user.has_perm("cm.change_config_of_host", host2))
         self.assertFalse(user.has_perm("cm.change_config_of_host", host3))
 
-    # pylint: disable=too-many-arguments
     def test_parent_policy4host_in_service(self):
         user = self.user
         _, host1, host2 = self.get_hosts_and_provider()
@@ -306,7 +300,6 @@ class PolicyTest(BaseTestCase):
         self.assertTrue(user.has_perm("cm.change_config_of_host", host1))
         self.assertFalse(user.has_perm("cm.change_config_of_host", host2))
 
-    # pylint: disable=too-many-arguments
     def test_parent_policy4host_in_component(self):
         user = self.user
         provider, host1, host2 = self.get_hosts_and_provider()
@@ -458,7 +451,6 @@ class PolicyTest(BaseTestCase):
         self.assertTrue(user.has_perm("cm.change_config_of_host", host1))
         self.assertTrue(user.has_perm("cm.change_config_of_host", host2))
 
-    # pylint: disable=too-many-arguments
     def test_add_hc(self):
         user = self.user
         _, host1, host2 = self.get_hosts_and_provider()

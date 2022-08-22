@@ -50,8 +50,9 @@ class RoleModelTest(TestCase):
         obj = r.get_role_obj()
         self.assertTrue(isinstance(obj, ModelRole))
 
-    # pylint: disable=protected-access
     def test_max_length(self):
+        # pylint: disable=protected-access
+
         role = Role.objects.create(name="name", class_name="class", module_name="module")
         name_max_length = role._meta.get_field("name").max_length
         self.assertEqual(name_max_length, 160)
@@ -238,7 +239,7 @@ class RoleFunctionalTest(BaseTestCase):
         ]
         Action.objects.bulk_create(actions)
 
-    def test_cook_roles(self):  # pylint: disable=redefined-outer-name
+    def test_cook_roles(self):
         prepare_action_roles(self.bundle_1)
         self.check_roles()
         self.check_permission()
