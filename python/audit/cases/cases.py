@@ -43,11 +43,11 @@ from rbac.models import Group, Policy, Role, User
 from rest_framework.response import Response
 
 
-def _get_audit_object_from_resp(res: Response, obj_type: str) -> Optional[AuditObject]:
-    if res and res.data and res.data.get("id") and res.data.get("name"):
+def _get_audit_object_from_resp(response: Response, obj_type: str) -> Optional[AuditObject]:
+    if response and response.data and response.data.get("id") and response.data.get("name"):
         audit_object = get_or_create_audit_obj(
-            object_id=res.data["id"],
-            object_name=res.data["name"],
+            object_id=response.data["id"],
+            object_name=response.data["name"],
             object_type=obj_type,
         )
     else:
@@ -123,7 +123,7 @@ def get_or_create_audit_obj(object_id: str, object_name: str, object_type: str) 
 
 # pylint: disable-next=too-many-statements,too-many-branches,too-many-locals
 def get_audit_operation_and_object(
-        view: View, res: Response, deleted_obj: Model
+        view: View, response: Response, deleted_obj: Model
 ) -> Tuple[Optional[AuditOperation], Optional[AuditObject], Optional[str]]:
     operation_name = None
     path = view.request.path.replace("/api/v1/", "")[:-1].split("/")
@@ -141,7 +141,10 @@ def get_audit_operation_and_object(
                 name=f"{AuditObjectType.Bundle.capitalize()} loaded",
                 operation_type=AuditLogOperationType.Create,
             )
-            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Bundle)
+            audit_object = _get_audit_object_from_resp(
+                response=response,
+                obj_type=AuditObjectType.Bundle,
+            )
 
         case ["stack", "bundle", bundle_pk]:
             deleted_obj: Bundle
@@ -185,7 +188,10 @@ def get_audit_operation_and_object(
                 f"{AuditLogOperationType.Create}d",
                 operation_type=AuditLogOperationType.Create,
             )
-            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Cluster)
+            audit_object = _get_audit_object_from_resp(
+                response=response,
+                obj_type=AuditObjectType.Cluster,
+            )
 
         case ["cluster", cluster_pk]:
             if view.request.method == "DELETE":
@@ -216,8 +222,8 @@ def get_audit_operation_and_object(
             )
 
             host_fqdn = None
-            if res and res.data:
-                host_fqdn = res.data["fqdn"]
+            if response and response.data:
+                host_fqdn = response.data["fqdn"]
 
             if "host_id" in view.request.data:
                 host = Host.objects.filter(pk=view.request.data["host_id"]).first()
@@ -266,8 +272,8 @@ def get_audit_operation_and_object(
             )
 
             service_display_name = None
-            if res and res.data and res.data.get("display_name"):
-                service_display_name = res.data["display_name"]
+            if response and response.data and response.data.get("display_name"):
+                service_display_name = response.data["display_name"]
 
             if "service_id" in view.request.data:
                 service = ClusterObject.objects.filter(pk=view.request.data["service_id"]).first()
@@ -394,8 +400,10 @@ def get_audit_operation_and_object(
             )
 
             service = None
-            if res and res.data and res.data.get("export_service_id"):
-                service = ClusterObject.objects.filter(pk=res.data["export_service_id"]).first()
+            if response and response.data and response.data.get("export_service_id"):
+                service = ClusterObject.objects.filter(
+                    pk=response.data["export_service_id"],
+                ).first()
 
             if "export_service_id" in view.request.data:
                 service = ClusterObject.objects.filter(
@@ -414,7 +422,7 @@ def get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
 
-            service_display_name = None
+            service_display_name = ""
             if deleted_obj:
                 if isinstance(deleted_obj, ClusterObject):
                     deleted_obj: ClusterObject
@@ -424,10 +432,9 @@ def get_audit_operation_and_object(
                     if bind and bind.source_service:
                         service_display_name = _get_service_name(bind.source_service)
 
-            if service_display_name:
-                audit_operation.name = audit_operation.name.format(
-                    service_display_name=service_display_name,
-                )
+            audit_operation.name = audit_operation.name.format(
+                service_display_name=service_display_name,
+            )
 
             audit_object = get_or_create_audit_obj(
                 object_id=cluster_pk,
@@ -521,8 +528,8 @@ def get_audit_operation_and_object(
             )
 
             config = None
-            if res:
-                config = res.data.serializer.instance.obj_ref
+            if response:
+                config = response.data.serializer.instance.obj_ref
             elif view.request.data.get("obj_ref"):
                 config = ObjectConfig.objects.filter(pk=view.request.data["obj_ref"]).first()
 
@@ -557,8 +564,8 @@ def get_audit_operation_and_object(
             )
 
             config = None
-            if res:
-                config = res.data.serializer.instance.obj_ref
+            if response:
+                config = response.data.serializer.instance.obj_ref
                 if getattr(config, "group_config", None):
                     config = config.group_config
             elif view.request.data.get("obj_ref"):
@@ -602,12 +609,12 @@ def get_audit_operation_and_object(
                 name=f"configuration group {operation_type}d",
                 operation_type=operation_type,
             )
-            if res:
+            if response:
                 if view.action == "destroy":
                     deleted_obj: GroupConfig
                     obj = deleted_obj
                 else:
-                    obj = res.data.serializer.instance
+                    obj = response.data.serializer.instance
 
                 object_type = _get_obj_type(obj.object_type.name)
                 audit_object = get_or_create_audit_obj(
@@ -630,12 +637,12 @@ def get_audit_operation_and_object(
                 name=f"configuration group {operation_type}d",
                 operation_type=operation_type,
             )
-            if res:
+            if response:
                 if view.action == "destroy":
                     deleted_obj: GroupConfig
                     obj = deleted_obj
                 else:
-                    obj = res.data.serializer.instance
+                    obj = response.data.serializer.instance
             else:
                 obj = GroupConfig.objects.filter(pk=group_config_pk).first()
 
@@ -665,8 +672,8 @@ def get_audit_operation_and_object(
             )
 
             fqdn = None
-            if res:
-                fqdn = res.data["fqdn"]
+            if response:
+                fqdn = response.data["fqdn"]
             elif "id" in view.request.data:
                 host = Host.objects.filter(pk=view.request.data["id"]).first()
                 if host:
@@ -697,7 +704,10 @@ def get_audit_operation_and_object(
                 f"{AuditLogOperationType.Create}d",
                 operation_type=AuditLogOperationType.Create,
             )
-            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Group)
+            audit_object = _get_audit_object_from_resp(
+                response=response,
+                obj_type=AuditObjectType.Group,
+            )
 
         case ["rbac", "group", group_pk]:
             if view.action == "destroy":
@@ -725,7 +735,10 @@ def get_audit_operation_and_object(
                 f"{AuditLogOperationType.Create}d",
                 operation_type=AuditLogOperationType.Create,
             )
-            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Policy)
+            audit_object = _get_audit_object_from_resp(
+                response=response,
+                obj_type=AuditObjectType.Policy,
+            )
 
         case ["rbac", "policy", policy_pk]:
             if view.action == "destroy":
@@ -753,7 +766,10 @@ def get_audit_operation_and_object(
                      f"{AuditLogOperationType.Create}d",
                 operation_type=AuditLogOperationType.Create,
             )
-            audit_object = _get_audit_object_from_resp(res, AuditObjectType.Role)
+            audit_object = _get_audit_object_from_resp(
+                response=response,
+                obj_type=AuditObjectType.Role,
+            )
 
         case ["rbac", "role", role_pk]:
             if view.action == "destroy":
@@ -781,10 +797,10 @@ def get_audit_operation_and_object(
                      f"{AuditLogOperationType.Create}d",
                 operation_type=AuditLogOperationType.Create,
             )
-            if res:
+            if response:
                 audit_object = get_or_create_audit_obj(
-                    object_id=res.data["id"],
-                    object_name=res.data["username"],
+                    object_id=response.data["id"],
+                    object_name=response.data["username"],
                     object_type=AuditObjectType.User,
                 )
             else:
@@ -840,10 +856,10 @@ def get_audit_operation_and_object(
                      f"{AuditLogOperationType.Create}d",
                 operation_type=AuditLogOperationType.Create,
             )
-            if res and res.data and res.data.get("id") and res.data.get("fqdn"):
+            if response and response.data and response.data.get("id") and response.data.get("fqdn"):
                 audit_object = get_or_create_audit_obj(
-                    object_id=res.data["id"],
-                    object_name=res.data["fqdn"],
+                    object_id=response.data["id"],
+                    object_name=response.data["fqdn"],
                     object_type=AuditObjectType.Host,
                 )
             else:
@@ -868,8 +884,11 @@ def get_audit_operation_and_object(
                 f"{AuditLogOperationType.Create}d",
                 operation_type=AuditLogOperationType.Create,
             )
-            if res:
-                audit_object = _get_audit_object_from_resp(res, AuditObjectType.Provider)
+            if response:
+                audit_object = _get_audit_object_from_resp(
+                    response=response,
+                    obj_type=AuditObjectType.Provider,
+                )
             else:
                 audit_object = None
 
@@ -951,8 +970,8 @@ def get_audit_operation_and_object(
             )
 
             export_cluster_name = None
-            if res and res.data:
-                export_cluster_name=res.data["export_cluster_name"]
+            if response and response.data:
+                export_cluster_name=response.data["export_cluster_name"]
             elif "export_cluster_id" in view.request.data:
                 cluster = Cluster.objects.filter(pk=view.request.data["export_cluster_id"]).first()
                 if cluster:
@@ -976,6 +995,7 @@ def get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
 
+            export_cluster_name = ""
             if deleted_obj:
                 if isinstance(deleted_obj, tuple):
                     export_cluster_name = deleted_obj[0].cluster.name
@@ -983,10 +1003,9 @@ def get_audit_operation_and_object(
                     deleted_obj: ClusterObject
                     export_cluster_name = deleted_obj.cluster.name
 
-                if export_cluster_name:
-                    audit_operation.name = audit_operation.name.format(
-                        export_cluster_name=export_cluster_name,
-                    )
+            audit_operation.name = audit_operation.name.format(
+                export_cluster_name=export_cluster_name,
+            )
 
             audit_object = get_or_create_audit_obj(
                 object_id=service_pk,

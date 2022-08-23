@@ -57,14 +57,14 @@ class TestGroup(BaseTestCase):
         assert isinstance(log.object_changes, dict)
 
     def test_create(self):
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=reverse(self.list_name),
             data={"name": self.name},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == res.data["id"]
+        assert log.audit_object.object_id == response.data["id"]
         assert log.audit_object.object_name == self.name
         assert log.audit_object.object_type == AuditObjectType.Group
         assert not log.audit_object.is_deleted
@@ -92,14 +92,14 @@ class TestGroup(BaseTestCase):
 
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse(self.list_name),
                 data={"name": self.name},
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        assert response.status_code == HTTP_403_FORBIDDEN
         assert not log.audit_object
         assert log.operation_name == self.group_created_str
         assert log.operation_type == AuditLogOperationType.Create
@@ -126,14 +126,14 @@ class TestGroup(BaseTestCase):
 
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 path=reverse(self.detail_name, kwargs={"pk": self.group.pk}),
                 content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        assert response.status_code == HTTP_403_FORBIDDEN
         self.check_log(
             log=log,
             operation_name="Group deleted",
@@ -164,7 +164,7 @@ class TestGroup(BaseTestCase):
 
     def test_update_put_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.put(
+            response: Response = self.client.put(
                 path=reverse(self.detail_name, kwargs={"pk": self.group.pk}),
                 data={
                     "name": self.group.name,
@@ -175,7 +175,7 @@ class TestGroup(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        assert response.status_code == HTTP_403_FORBIDDEN
         self.check_log(
             log=log,
             operation_name=self.group_updated_str,
@@ -203,7 +203,7 @@ class TestGroup(BaseTestCase):
 
     def test_update_patch_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=reverse(self.detail_name, kwargs={"pk": self.group.pk}),
                 data={"display_name": "new_display_name"},
                 content_type=APPLICATION_JSON,
@@ -211,7 +211,7 @@ class TestGroup(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        assert response.status_code == HTTP_403_FORBIDDEN
         self.check_log(
             log=log,
             operation_name=self.group_updated_str,

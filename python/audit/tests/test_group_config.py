@@ -180,7 +180,7 @@ class TestGroupConfig(BaseTestCase):
         )
 
     def test_create_for_cluster_failed(self):
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=reverse("group-config-list"),
             data={
                 "name": self.name,
@@ -191,7 +191,7 @@ class TestGroupConfig(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.check_log_no_obj(
             log=log,
             operation_name=self.conf_group_created_str,
@@ -202,7 +202,7 @@ class TestGroupConfig(BaseTestCase):
 
     def test_create_for_cluster_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.create_group_config(
+            response: Response = self.create_group_config(
                 name=self.name,
                 object_id=self.cluster.pk,
                 object_type=AuditObjectType.Cluster,
@@ -211,7 +211,7 @@ class TestGroupConfig(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_no_obj(
             log=log,
             operation_name=self.conf_group_created_str,
@@ -244,7 +244,7 @@ class TestGroupConfig(BaseTestCase):
     def test_create_for_service_denied(self):
         service = self.get_service()
         with self.no_rights_user_logged_in:
-            res: Response = self.create_group_config(
+            response: Response = self.create_group_config(
                 name=self.name,
                 object_id=service.pk,
                 object_type=AuditObjectType.Service,
@@ -253,7 +253,7 @@ class TestGroupConfig(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_no_obj(
             log=log,
             operation_name=self.conf_group_created_str,
@@ -286,7 +286,7 @@ class TestGroupConfig(BaseTestCase):
     def test_create_for_component_denied(self):
         component = self.get_component()
         with self.no_rights_user_logged_in:
-            res: Response = self.create_group_config(
+            response: Response = self.create_group_config(
                 name=self.name,
                 object_id=component.pk,
                 object_type=AuditObjectType.Component,
@@ -295,7 +295,7 @@ class TestGroupConfig(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_no_obj(
             log=log,
             operation_name=self.conf_group_created_str,
@@ -321,13 +321,13 @@ class TestGroupConfig(BaseTestCase):
 
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 path=reverse("group-config-detail", kwargs={"pk": self.group_config.pk})
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.cluster,
@@ -360,7 +360,7 @@ class TestGroupConfig(BaseTestCase):
 
     def test_update_put_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.put(
+            response: Response = self.client.put(
                 path=f"/api/v1/group-config/{self.group_config.pk}/",
                 data={
                     "name": self.group_config.name,
@@ -373,7 +373,7 @@ class TestGroupConfig(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_updated(
             log=log,
             operation_result=AuditLogOperationResult.Denied,
@@ -402,7 +402,7 @@ class TestGroupConfig(BaseTestCase):
 
     def test_update_patch_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=f"/api/v1/group-config/{self.group_config.pk}/",
                 data={
                     "name": self.group_config.name,
@@ -415,7 +415,7 @@ class TestGroupConfig(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_updated(
             log=log,
             operation_result=AuditLogOperationResult.Denied,
@@ -460,14 +460,14 @@ class TestGroupConfig(BaseTestCase):
 
     def test_add_host_failed(self):
         host_ids = Host.objects.all().values_list("pk", flat=True).order_by("-pk")
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=f"/api/v1/group-config/{self.group_config.pk}/host/",
             data={"id": host_ids[0] + 1},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.check_log(
             log=log,
             obj=self.cluster,
@@ -480,14 +480,14 @@ class TestGroupConfig(BaseTestCase):
 
     def test_add_remove_host_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=f"/api/v1/group-config/{self.group_config.pk}/host/",
                 data={"id": self.host.id},
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.cluster,
@@ -499,21 +499,21 @@ class TestGroupConfig(BaseTestCase):
             user=self.no_rights_user,
         )
 
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=f"/api/v1/group-config/{self.group_config.pk}/host/",
             data={"id": self.host.id},
         )
 
-        self.assertEqual(res.status_code, HTTP_201_CREATED)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
 
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 path=f"/api/v1/group-config/{self.group_config.pk}/host/{self.host.id}/",
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.cluster,
@@ -558,23 +558,23 @@ class TestGroupConfigOperationName(BaseTestCase):
             test_bundle_filename,
         )
         with open(test_bundle_path, encoding="utf-8") as f:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("upload-bundle"),
                 data={"file": f},
             )
 
-        self.assertEqual(res.status_code, HTTP_201_CREATED)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=reverse("load-bundle"),
             data={"bundle_file": test_bundle_filename},
         )
-        bundle_id = res.data["id"]
+        bundle_id = response.data["id"]
         prototype_id = Prototype.objects.get(bundle_id=1, type="cluster").pk
 
-        self.assertEqual(res.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=reverse("cluster"),
             data={
                 "prototype_id": prototype_id,
@@ -583,24 +583,24 @@ class TestGroupConfigOperationName(BaseTestCase):
                 "bundle_id": bundle_id,
             },
         )
-        cluster_id = res.data["id"]
+        cluster_id = response.data["id"]
         self.cluster = Cluster.objects.get(pk=cluster_id)
 
-        self.assertEqual(res.status_code, HTTP_201_CREATED)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=reverse("group-config-list"),
             data={"name": "groupname", "object_type": "cluster", "object_id": cluster_id},
         )
-        self.group_config_id = res.data["id"]
-        self.config_id = res.data["config_id"]
+        self.group_config_id = response.data["id"]
+        self.config_id = response.data["config_id"]
         self.group_config = GroupConfig.objects.get(pk=self.group_config_id)
 
-        self.assertEqual(res.status_code, HTTP_201_CREATED)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def test_group_config_operation_name(self):
         self.create_cluster_from_bundle()
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=f"/api/v1/group-config/{self.group_config_id}/config/{self.config_id}/config-log/",
             data={
                 "config": {"param_1": "aaa", "param_2": None, "param_3": None},
@@ -614,7 +614,7 @@ class TestGroupConfigOperationName(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_201_CREATED)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
         self.check_log(
             log=log, operation_result=AuditLogOperationResult.Success, user=self.test_user
         )
@@ -622,7 +622,7 @@ class TestGroupConfigOperationName(BaseTestCase):
     def test_group_config_operation_name_denied(self):
         self.create_cluster_from_bundle()
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=f"/api/v1/group-config/{self.group_config_id}"
                 f"/config/{self.config_id}/config-log/",
                 data={
@@ -637,14 +637,14 @@ class TestGroupConfigOperationName(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
 
     def test_group_config_operation_name_failed(self):
         self.create_cluster_from_bundle()
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=f"/api/v1/group-config/{self.group_config_id}/config/{self.config_id}/config-log/",
             data={
                 "config": {"param_1": "wrong", "param_2": None, "param_3": None},
@@ -658,5 +658,5 @@ class TestGroupConfigOperationName(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.check_log(log=log, operation_result=AuditLogOperationResult.Fail, user=self.test_user)
