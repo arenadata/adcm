@@ -529,6 +529,26 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
+        res: Response = self.client.delete(
+            path=reverse(
+                "cluster-bind-details",
+                kwargs={"cluster_id": self.cluster.pk, "bind_id": bind.pk},
+            ),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
+        self.check_log(
+            log=log,
+            obj=self.cluster,
+            obj_type=AuditObjectType.Cluster,
+            operation_name=f"{self.cluster.name}/ unbound",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
+        )
+
     def test_bind_unbind_denied(self):
         with self.no_rights_user_logged_in:
             res: Response = self.client.post(
@@ -900,7 +920,7 @@ class TestCluster(BaseTestCase):
 
         bind = ClusterBind.objects.first()
         self.client.delete(
-            reverse(
+            path=reverse(
                 "service-bind-details",
                 kwargs={
                     "cluster_id": cluster.pk,
@@ -919,6 +939,30 @@ class TestCluster(BaseTestCase):
             obj_type=AuditObjectType.Service,
             operation_name=f"{cluster.name}/{self.service.display_name} unbound",
             operation_type=AuditLogOperationType.Update,
+        )
+
+        res: Response = self.client.delete(
+            path=reverse(
+                "service-bind-details",
+                kwargs={
+                    "cluster_id": cluster.pk,
+                    "service_id": self.service.pk,
+                    "bind_id": bind.pk,
+                },
+            ),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
+        self.check_log(
+            log=log,
+            obj=self.service,
+            obj_type=AuditObjectType.Service,
+            operation_name=f"{cluster.name}/{self.service.display_name} unbound",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
         )
 
     def test_bind_unbind_service_denied(self):

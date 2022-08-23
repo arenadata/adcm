@@ -311,6 +311,26 @@ class TestService(BaseTestCase):
             user=self.test_user,
         )
 
+        res: Response = self.client.delete(
+            path=reverse(
+                "service-bind-details", kwargs={"service_id": service.pk, "bind_id": bind.pk}
+            ),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
+        self.check_log(
+            log=log,
+            obj=service,
+            object_type=AuditObjectType.Service,
+            operation_name=f"/{str(service)} unbound",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
+            user=self.test_user,
+        )
+
     def test_bind_unbind_denied(self):
         service, cluster = self.get_service_and_cluster()
         with self.no_rights_user_logged_in:

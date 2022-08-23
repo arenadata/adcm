@@ -414,7 +414,7 @@ def get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
 
-            service_display_name = None
+            service_display_name = ""
             if deleted_obj:
                 if isinstance(deleted_obj, ClusterObject):
                     deleted_obj: ClusterObject
@@ -424,10 +424,9 @@ def get_audit_operation_and_object(
                     if bind and bind.source_service:
                         service_display_name = _get_service_name(bind.source_service)
 
-            if service_display_name:
-                audit_operation.name = audit_operation.name.format(
-                    service_display_name=service_display_name,
-                )
+            audit_operation.name = audit_operation.name.format(
+                service_display_name=service_display_name,
+            )
 
             audit_object = get_or_create_audit_obj(
                 object_id=cluster_pk,
@@ -976,6 +975,7 @@ def get_audit_operation_and_object(
                 operation_type=AuditLogOperationType.Update,
             )
 
+            export_cluster_name = ""
             if deleted_obj:
                 if isinstance(deleted_obj, tuple):
                     export_cluster_name = deleted_obj[0].cluster.name
@@ -983,10 +983,9 @@ def get_audit_operation_and_object(
                     deleted_obj: ClusterObject
                     export_cluster_name = deleted_obj.cluster.name
 
-                if export_cluster_name:
-                    audit_operation.name = audit_operation.name.format(
-                        export_cluster_name=export_cluster_name,
-                    )
+            audit_operation.name = audit_operation.name.format(
+                export_cluster_name=export_cluster_name,
+            )
 
             audit_object = get_or_create_audit_obj(
                 object_id=service_pk,
