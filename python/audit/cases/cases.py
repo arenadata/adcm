@@ -936,6 +936,29 @@ def get_audit_operation_and_object(
                 object_type=AuditObjectType.Host,
             )
 
+        case ["service"]:
+            cluster = None
+            audit_operation = AuditOperation(
+                name="service added",
+                operation_type=AuditLogOperationType.Update,
+            )
+
+            if response.data:
+                if response.data.get("cluster_id"):
+                    cluster = Cluster.objects.filter(pk=response.data["cluster_id"]).first()
+
+                if response.data.get("display_name"):
+                    audit_operation.name = f"{response.data['display_name']} {audit_operation.name}"
+
+            if cluster:
+                audit_object = get_or_create_audit_obj(
+                    object_id=cluster.pk,
+                    object_name=cluster.name,
+                    object_type=AuditObjectType.Cluster,
+                )
+            else:
+                audit_object = None
+
         case ["service", _]:
             deleted_obj: ClusterObject
             audit_operation = AuditOperation(
