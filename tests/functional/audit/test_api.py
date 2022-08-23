@@ -147,17 +147,23 @@ class TestAuditLogsAPI:
             ('operation_name', ('Bundle uploaded', 'ADCM configuration updated')),
             ('object_type', ObjectType),
             ('object_name', ('Test Cluster', 'simple_user')),
-            ('username', ('admin',)),
         ):
             self._check_audit_operations_filter(sdk_client_fs, field_name, filters)
+        admin_id = sdk_client_fs.me().id
+        self._check_audit_operations_filter(
+            sdk_client_fs,
+            'username',
+            ['admin'],
+            check_field_in_records=lambda _1, _2, logs: all(o.user_id == admin_id for o in logs),
+        )
 
     def _check_audit_operations_filter(
-        self, client: ADCMClient, field_name: str, filters: Union[Enum, Collection[str]]
+        self, client: ADCMClient, field_name: str, filters: Union[Enum, Collection[str]], **kwargs
     ) -> None:
         endpoint = f'{client.url}/api/v1/audit/operation/'
         client_func = client.audit_operation_list
         token = client.api_token()
-        _check_audit_logs(endpoint, client_func, token, field_name, filters)
+        _check_audit_logs(endpoint, client_func, token, field_name, filters, **kwargs)
 
 
 class TestAuditLoginAPI:
@@ -190,7 +196,7 @@ class TestAuditLoginAPI:
         for creds in users:
             self._login(sdk_client_fs, **{**creds, 'password': 'it is jut wrong'})
         self._login(sdk_client_fs, **user_does_not_exist)
-        # return deactivated_user, user_does_not_exist
+        # it was return deactivated_user, user_does_not_exist
         return user_does_not_exist, user_does_not_exist
 
     @pytest.mark.usefixtures('successful_logins', 'failed_logins')
