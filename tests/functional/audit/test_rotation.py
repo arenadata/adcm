@@ -22,16 +22,16 @@ from typing import Any, Collection, Dict, List, OrderedDict, Set, Union
 
 import allure
 import pytest
-from adcm_client.audit import AuditLogin, AuditLoginList, AuditOperation, AuditOperationList, ObjectType, OperationType
+from adcm_client.audit import AuditLogin, AuditOperation, ObjectType, OperationType
 from adcm_client.objects import ADCMClient
 from adcm_client.wrappers.api import ADCMApiError
 from adcm_pytest_plugin.docker_utils import ADCM, get_file_from_container
 from adcm_pytest_plugin.steps.commands import clearaudit
 from adcm_pytest_plugin.utils import random_string
 
-from tests.functional.audit.conftest import BUNDLES_DIR
+from tests.functional.audit.conftest import BUNDLES_DIR, set_logins_date, set_operations_date
 from tests.library.assertions import sets_are_equal
-from tests.library.db import Query, QueryExecutioner
+from tests.library.db import QueryExecutioner
 
 # pylint: disable=redefined-outer-name
 
@@ -351,30 +351,3 @@ def get_parsed_archive_files(adcm: ADCM) -> Dict[str, List[Dict[str, Any]]]:
                 lines = [line.decode('utf-8') for line in tar.extractfile(member.name).readlines()]
                 records_in_files[member.name] = list(csv.DictReader(lines[1:], fieldnames=lines[0].strip().split(',')))
         return records_in_files
-
-
-def format_date_for_db(date: datetime) -> str:
-    """Format date to the SQLite datetime format"""
-    return date.strftime("%Y-%m-%d %H:%M:%S.%f")
-
-
-def set_operations_date(
-    adcm_db: QueryExecutioner, new_date: datetime, operation_records: Union[AuditOperationList, List[AuditOperation]]
-):
-    """Set date for given operation audit records directly in ADCM database"""
-    adcm_db.exec(
-        Query('audit_auditlog')
-        .update([('operation_time', format_date_for_db(new_date))])
-        .where(id=tuple(map(lambda o: o.id, operation_records)))
-    )
-
-
-def set_logins_date(
-    adcm_db: QueryExecutioner, new_date: datetime, login_records: Union[AuditLoginList, List[AuditLogin]]
-):
-    """Set date for given login audit records directly in ADCM database"""
-    adcm_db.exec(
-        Query('audit_auditsession')
-        .update([('login_time', format_date_for_db(new_date))])
-        .where(id=tuple(map(lambda o: o.id, login_records)))
-    )
