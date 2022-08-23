@@ -263,7 +263,10 @@ def check_cluster_upgraded(app_fs, upgrade_cluster_name: str, state: str):
 
 @allure.step("Check save button and save config")
 def _check_save_in_configs(cluster_config_page, field_type, expected_state):
-    """Check save button and save config"""
+    """
+    Check save button and save config.
+    It is a workaround for each type of field because it won't work other way on ui with selenium.
+    """
 
     config_row = cluster_config_page.config.get_config_row(field_type)
     if field_type == 'list':
