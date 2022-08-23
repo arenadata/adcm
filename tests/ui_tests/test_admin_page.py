@@ -388,7 +388,8 @@ class TestAdminUsersPage:
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
     def test_add_ldap_group_to_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
         """Check that user can't add ldap group to usual user"""
-        users_page.header.wait_success_job_amount_from_header(1)
+        with allure.step("Wait ldap integration ends"):
+            users_page.header.wait_success_job_amount_from_header(1)
         users_page.check_user_group_change_is_disabled(user.username, "adcm_users")
 
     @pytest.mark.ldap()
