@@ -172,10 +172,10 @@ def test_update_config_of_group_config(group_configs, audit_log_checker, sdk_cli
             f'Update config of group config of {group_config.object_type} with result: {OperationResult.SUCCESS}'
         ):
             check_succeed(update_group_config(group_config, correct_config, headers=admin_creds))
-        with allure.step(f'Change group config via of {group_config.object_type} with result: {OperationResult.FAIL}'):
+        with allure.step(f'Change group config of {group_config.object_type} with result: {OperationResult.FAIL}'):
             expect_400(update_group_config(group_config, incorrect_config, headers=admin_creds))
         with allure.step(
-            f'Change group config via of {group_config.object_type} with result: {OperationResult.DENIED}'
+            f'Change group config of {group_config.object_type} with result: {OperationResult.DENIED}'
         ):
             expect_403(update_group_config(group_config, incorrect_config, headers=unauthorized_creds))
     audit_log_checker.set_user_map(sdk_client_fs)
