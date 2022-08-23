@@ -27,7 +27,8 @@ import { MatMenu } from '@angular/material/menu';
             mat-menu-item
             [disabled]="a.disabling_cause === 'maintenance_mode' || a.disabling_cause === 'no_ldap_settings'"
             [appForTest]="'action_btn'"
-            [appActions]="{ cluster: cluster, actions: [a] }">
+            [appActions]="{ cluster: cluster, actions: [a] }"
+            >
             <span>{{ a.display_name }}</span>
           </button>
         </div>
@@ -47,9 +48,13 @@ export class MenuItemComponent {
   @ViewChild('menu', { static: true }) menu: MatMenu;
 
   actionListItemTooltip(value: string | null): string | null {
-    if (value === 'maintenance_mode') {
-      return 'The Action is not available. One or more hosts in “Maintenance mode”';
+    switch(value) {
+      case 'maintenance_mode':
+        return 'The Action is not available. One or more hosts in “Maintenance mode”';
+      case 'no_ldap_settings':
+        return 'The Action is not available. You need to fill in the LDAP integration settings.';
+      default:
+        return null;
     }
-    return null;
   }
 }

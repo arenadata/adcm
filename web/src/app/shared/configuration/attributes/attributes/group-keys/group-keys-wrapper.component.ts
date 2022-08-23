@@ -90,10 +90,12 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
     });
 
     if (!enabled) {
-      this.groupControl.disable();
-      this.parameterControl().disable();
+      Promise.resolve().then(() => {
+        this.groupControl.disable();
+        this.parameterControl().disable();
 
-      this.tooltipText = text;
+        this.tooltipText = text;
+      });
     } else {
       Promise.resolve().then(() => {
         this.groupControl.enable();
@@ -102,6 +104,7 @@ export class GroupKeysWrapperComponent extends BaseDirective implements Attribut
         } else {
           this.parameterControl().disable();
         }
+        this.disableIfReadOnly();
       })
 
       this.tooltipText = this.wrapperOptions.tooltipText;

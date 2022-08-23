@@ -124,7 +124,7 @@ def run_task(task_id, args=None):
             log.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
 
             continue
-
+        task.refresh_from_db()
         re_prepare_job(task, job)
         job.start_date = timezone.now()
         job.save()

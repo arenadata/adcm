@@ -93,7 +93,7 @@ export class AttributeService {
       for (const [key, value] of this._attributes.entries()) {
         json = {
           ...json,
-          [key]: value.form.value
+          [key]: value.form.getRawValue()
         };
       }
     }

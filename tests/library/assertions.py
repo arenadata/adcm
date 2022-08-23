@@ -147,7 +147,14 @@ def dicts_are_not_equal(first: dict, second: dict, message: Union[str, Callable]
     raise AssertionError(message)
 
 
-def expect_api_error(operation_name: str, operation: Callable, *args, err_: Optional[ADCMError] = None, **kwargs):
+def expect_api_error(
+    operation_name: str,
+    operation: Callable,
+    *args,
+    err_: Optional[ADCMError] = None,
+    err_args_: Optional[list] = None,
+    **kwargs,
+):
     """
     Perform "operation" and expect it to raise an API error.
 
@@ -158,7 +165,7 @@ def expect_api_error(operation_name: str, operation: Callable, *args, err_: Opti
             operation(*args, **kwargs)
         except (ErrorMessage, ADCMApiError) as e:
             if err_:
-                err_.equal(e)
+                err_.equal(e, *(err_args_ or []))
         else:
             raise AssertionError('An API error should be raised')
 

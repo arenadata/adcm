@@ -278,15 +278,15 @@ def re_check_actions():
         hc = act.hostcomponentmap
         ref = f'in hc_acl of action "{act.name}" of {proto_ref(act.prototype)}'
         for item in hc:
-            sp = StagePrototype.objects.filter(type='service', name=item['service'])
+            sp = StagePrototype.objects.filter(type='service', name=item['service']).first()
             if not sp:
                 msg = 'Unknown service "{}" {}'
                 err('INVALID_ACTION_DEFINITION', msg.format(item['service'], ref))
             if not StagePrototype.objects.filter(
-                parent=sp[0], type='component', name=item['component']
+                parent=sp, type='component', name=item['component']
             ):
                 msg = 'Unknown component "{}" of service "{}" {}'
-                err('INVALID_ACTION_DEFINITION', msg.format(item['component'], sp[0].name, ref))
+                err('INVALID_ACTION_DEFINITION', msg.format(item['component'], sp.name, ref))
 
 
 def check_component_requires(comp):

@@ -26,7 +26,7 @@ from tests.functional.ldap_auth.conftest import BASE_BUNDLES_DIR
 from tests.functional.ldap_auth.utils import get_ldap_user_from_adcm, get_ldap_group_from_adcm
 from tests.functional.rbac.conftest import is_denied, BusinessRoles, create_policy, is_allowed, delete_policy
 
-pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad')]
+pytestmark = [only_clean_adcm, pytest.mark.usefixtures('configure_adcm_ldap_ad'), pytest.mark.ldap()]
 
 
 # pylint: disable=redefined-outer-name
