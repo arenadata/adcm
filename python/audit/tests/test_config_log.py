@@ -79,14 +79,14 @@ class TestConfigLog(BaseTestCase):
 
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("config-log-list"),
                 data={"obj_ref": self.config.pk, "config": "{}"},
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             operation_name="Cluster configuration updated",
@@ -112,7 +112,7 @@ class TestConfigLog(BaseTestCase):
 
     def test_create_via_group_config_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=f"/api/v1/group-config/{self.group_config.pk}/"
                 f"config/{self.config.pk}/config-log/",
                 data={"obj_ref": self.config.pk, "config": "{}"},
@@ -120,7 +120,7 @@ class TestConfigLog(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             operation_name="Cluster configuration group updated",

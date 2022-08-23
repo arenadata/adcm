@@ -88,7 +88,7 @@ class TestPolicy(BaseTestCase):
         )
 
     def test_create(self):
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=reverse(self.list_name),
             data={
                 "name": self.name,
@@ -100,7 +100,7 @@ class TestPolicy(BaseTestCase):
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-        policy = Policy.objects.get(pk=res.data["id"])
+        policy = Policy.objects.get(pk=response.data["id"])
 
         self.check_log(
             log=log,
@@ -113,7 +113,7 @@ class TestPolicy(BaseTestCase):
 
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse(self.list_name),
                 data={
                     "name": self.name,
@@ -128,7 +128,7 @@ class TestPolicy(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=None,
@@ -157,14 +157,14 @@ class TestPolicy(BaseTestCase):
 
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
                 content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        assert response.status_code == HTTP_403_FORBIDDEN
         self.check_log(
             log=log,
             obj=self.policy,
@@ -198,7 +198,7 @@ class TestPolicy(BaseTestCase):
 
     def test_update_put_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.put(
+            response: Response = self.client.put(
                 path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
                 data={
                     "name": self.policy.name,
@@ -214,7 +214,7 @@ class TestPolicy(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        assert response.status_code == HTTP_403_FORBIDDEN
         self.check_log_update(
             log=log,
             obj=self.policy,
@@ -245,7 +245,7 @@ class TestPolicy(BaseTestCase):
 
     def test_update_patch_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
                 data={
                     "object": [
@@ -260,7 +260,7 @@ class TestPolicy(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        assert response.status_code == HTTP_403_FORBIDDEN
         self.check_log_update(
             log=log,
             obj=self.policy,
