@@ -10,13 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import api.serializers
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.provider.serializers import (
+    DoProviderUpgradeSerializer,
     ProviderDetailSerializer,
     ProviderSerializer,
     ProviderUISerializer,
-    DoProviderUpgradeSerializer,
 )
 from api.serializers import ProviderUpgradeSerializer
 from api.utils import (
