@@ -130,7 +130,7 @@ class TestService(BaseTestCase):
 
     def test_update_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("config-history", kwargs={"service_id": self.service.pk}),
                 data={"config": {}},
                 content_type=APPLICATION_JSON,
@@ -138,7 +138,7 @@ class TestService(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.service,
@@ -172,7 +172,7 @@ class TestService(BaseTestCase):
 
     def test_restore_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
                     kwargs={"service_id": self.service.pk, "version": 1},
@@ -182,7 +182,7 @@ class TestService(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.service,
@@ -213,14 +213,14 @@ class TestService(BaseTestCase):
 
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 path=reverse("service-details", kwargs={"service_id": self.service.pk}),
                 content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             obj=self.service.cluster,
@@ -252,7 +252,7 @@ class TestService(BaseTestCase):
 
     def test_import_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("service-import", kwargs={"service_id": self.service.pk}),
                 data={"bind": []},
                 content_type=APPLICATION_JSON,
@@ -260,7 +260,7 @@ class TestService(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             obj=self.service,
@@ -311,10 +311,30 @@ class TestService(BaseTestCase):
             user=self.test_user,
         )
 
+        response: Response = self.client.delete(
+            path=reverse(
+                "service-bind-details", kwargs={"service_id": service.pk, "bind_id": bind.pk}
+            ),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_log(
+            log=log,
+            obj=service,
+            object_type=AuditObjectType.Service,
+            operation_name=f"/{str(service)} unbound",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
+            user=self.test_user,
+        )
+
     def test_bind_unbind_denied(self):
         service, cluster = self.get_service_and_cluster()
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("service-bind", kwargs={"service_id": service.pk}),
                 data={"export_cluster_id": cluster.pk},
                 content_type=APPLICATION_JSON,
@@ -322,7 +342,7 @@ class TestService(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             obj=service,
@@ -340,7 +360,7 @@ class TestService(BaseTestCase):
         )
         bind = ClusterBind.objects.first()
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 path=reverse(
                     "service-bind-details", kwargs={"service_id": service.pk, "bind_id": bind.pk}
                 ),
@@ -349,7 +369,7 @@ class TestService(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             obj=service,

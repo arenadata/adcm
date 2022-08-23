@@ -106,7 +106,7 @@ class TestComponent(BaseTestCase):
 
     def test_update_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
                     kwargs={"component_id": self.component.pk, "version": 1},
@@ -116,7 +116,7 @@ class TestComponent(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             operation_result=AuditLogOperationResult.Denied,
@@ -139,7 +139,7 @@ class TestComponent(BaseTestCase):
 
     def test_update_via_service_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse(
                     "config-history",
                     kwargs={"service_id": self.service.pk, "component_id": self.component.pk},
@@ -150,7 +150,7 @@ class TestComponent(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             operation_result=AuditLogOperationResult.Denied,
@@ -176,7 +176,7 @@ class TestComponent(BaseTestCase):
 
     def test_restore_via_service_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
                     kwargs={
@@ -190,7 +190,7 @@ class TestComponent(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             operation_result=AuditLogOperationResult.Denied,

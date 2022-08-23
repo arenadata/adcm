@@ -50,13 +50,18 @@ def _get_view_and_request(args) -> tuple[View, Request]:
 
 
 def _get_deleted_obj(view: View, request: Request, kwargs) -> Model | None:
+    # pylint: disable=too-many-branches
+
     try:
         deleted_obj = view.get_object()
     except AssertionError:
         try:
             deleted_obj = view.get_obj(kwargs, kwargs["bind_id"])
         except AdcmEx:
-            deleted_obj = view.queryset[0]
+            try:
+                deleted_obj = view.queryset[0]
+            except IndexError:
+                deleted_obj = None
         except AttributeError:
             deleted_obj = None
     except (AdcmEx, Http404):  # when denied returns 404 from PermissionListMixin

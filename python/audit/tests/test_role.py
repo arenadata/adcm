@@ -79,7 +79,7 @@ class TestRole(BaseTestCase):
         )
 
     def test_create(self):
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=reverse(self.list_name),
             data={
                 "display_name": self.role_display_name,
@@ -89,7 +89,7 @@ class TestRole(BaseTestCase):
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-        role = Role.objects.get(pk=res.data["id"])
+        role = Role.objects.get(pk=response.data["id"])
 
         self.check_log(
             log=log,
@@ -122,7 +122,7 @@ class TestRole(BaseTestCase):
 
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse(self.list_name),
                 data={
                     "display_name": self.role_display_name,
@@ -133,7 +133,7 @@ class TestRole(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=None,
@@ -162,14 +162,14 @@ class TestRole(BaseTestCase):
 
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
                 content_type=APPLICATION_JSON,
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        assert response.status_code == HTTP_403_FORBIDDEN
         self.check_log(
             log=log,
             obj=self.role,
@@ -200,7 +200,7 @@ class TestRole(BaseTestCase):
 
     def test_update_put_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.put(
+            response: Response = self.client.put(
                 path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
                 data={
                     "display_name": "new_display_name",
@@ -211,7 +211,7 @@ class TestRole(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        assert response.status_code == HTTP_403_FORBIDDEN
         self.check_log_update(
             log=log,
             obj=self.role,
@@ -240,7 +240,7 @@ class TestRole(BaseTestCase):
 
     def test_update_patch_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
                 data={
                     "display_name": "new_display_name",
@@ -251,7 +251,7 @@ class TestRole(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        assert response.status_code == HTTP_403_FORBIDDEN
         self.check_log_update(
             log=log,
             obj=self.role,
@@ -260,7 +260,7 @@ class TestRole(BaseTestCase):
         )
 
     def test_update_patch_failed(self):
-        res: Response = self.client.patch(
+        response: Response = self.client.patch(
             path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
             data={
                 "display_name": "new_display_name",
@@ -271,7 +271,7 @@ class TestRole(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_400_BAD_REQUEST
+        assert response.status_code == HTTP_400_BAD_REQUEST
         self.check_log_update(
             log=log,
             obj=self.role,

@@ -228,7 +228,11 @@ class ClusterBindDetail(GenericUIView):
 
     @staticmethod
     def get_obj(kwargs, bind_id):
-        return ClusterBind.objects.get(pk=bind_id).source_service
+        bind = ClusterBind.objects.filter(pk=bind_id).first()
+        if bind:
+            return bind.source_service
+
+        return None
 
     def get(self, request, *args, **kwargs):
         """
