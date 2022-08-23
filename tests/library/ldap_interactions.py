@@ -13,8 +13,9 @@
 """Simple working with LDAP for tests purposes"""
 
 import uuid
+import warnings
 from pathlib import Path
-from typing import NamedTuple, List, Optional, Tuple
+from typing import List, NamedTuple, Optional, Tuple
 from zlib import crc32
 
 import allure
@@ -189,7 +190,9 @@ class LDAPEntityManager:
             for dn in entities:  # pylint: disable=invalid-name
                 self.conn.delete(dn)
         else:
-            raise RuntimeError(f'Not all entities in test OU were deleted: {entities}')
+            # error was leading to tests re-run that can make more "dead" objects
+            warnings.warn(f'Not all entities in test OU were deleted: {entities}')
+            return
         self._created_records = []
         self.test_dn = None
 
