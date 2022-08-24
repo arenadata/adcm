@@ -25,7 +25,7 @@ from cm.errors import AdcmEx
 from cm.logger import log
 from django.db import DataError, IntegrityError
 
-CERT_ENV_KEY = 'LDAPTLS_CACERT'
+CERT_ENV_KEY = "LDAPTLS_CACERT"
 
 
 class SyncLDAP:
@@ -43,7 +43,7 @@ class SyncLDAP:
             ldap.set_option(ldap.OPT_REFERRALS, 0)
             conn = ldap.initialize(self.settings["SERVER_URI"])
             conn.protocol_version = ldap.VERSION3
-            configure_tls(is_tls(self.settings["SERVER_URI"]), os.environ.get(CERT_ENV_KEY, ''), conn)
+            configure_tls(is_tls(self.settings["SERVER_URI"]), os.environ.get(CERT_ENV_KEY, ""), conn)
             conn.simple_bind_s(self.settings["BIND_DN"], self.settings["BIND_PASSWORD"])
         except ldap.LDAPError as e:
             sys.stdout.write(f"Can't connect to {self.settings['SERVER_URI']} with user: {self.settings['BIND_DN']}. Error: {e}\n")
@@ -66,30 +66,34 @@ class SyncLDAP:
         return self._settings
 
     def sync(self):
-        self.sync_groups()
-        self.sync_users()
+        ldap_groups = self.sync_groups()
+        if ldap_groups:
+            self.sync_users(ldap_groups)
+        else:
+            sys.stdout.write("No groups found. Aborting sync users")
 
     def sync_groups(self):
         """Synchronize LDAP groups with group model and delete groups which is not found in LDAP"""
-        self.settings['GROUP_SEARCH'].filterstr = f'(&' \
-                                                  f'(objectClass={self.settings["GROUP_OBJECT_CLASS"]})' \
-                                                  f'{self.settings["GROUP_FILTER"]})'
-        ldap_groups = self.settings['GROUP_SEARCH'].execute(self.conn, {})
+        self.settings["GROUP_SEARCH"].filterstr = f"(&" \
+                                                  f"(objectClass={self.settings['GROUP_OBJECT_CLASS']})" \
+                                                  f"{self.settings['GROUP_FILTER']})"
+        ldap_groups = self.settings["GROUP_SEARCH"].execute(self.conn, {})
         self._sync_ldap_groups(ldap_groups)
         sys.stdout.write("Groups were synchronized\n")
+        return ldap_groups
 
-    def sync_users(self):
+    def sync_users(self, ldap_groups):
         """Synchronize LDAP users with user model and delete users which is not found in LDAP"""
-        groups = Group.objects.filter(type=OriginType.LDAP).values_list('display_name', flat=True)
-        group_filter = '' if groups.count() <= 1 else '(|'
-        for group_name in groups:
-            group_filter += f'(memberOf=CN={group_name},{self.settings["GROUP_SEARCH"].base_dn})'
-        group_filter = group_filter if groups.count() <= 1 else group_filter+')'
-        self.settings['USER_SEARCH'].filterstr = f'(&' \
-                                                 f'(objectClass={self.settings["USER_OBJECT_CLASS"]})' \
-                                                 f'{self.settings["USER_FILTER"]}' \
-                                                 f'{group_filter})'
-        ldap_users = self.settings['USER_SEARCH'].execute(self.conn, {'user': '*'}, True)
+        group_filter = ""
+        for group_dn, group_attrs in ldap_groups:
+            group_filter += f"(memberOf={group_dn})"
+        if group_filter:
+            group_filter = f"(|{group_filter})"
+        self.settings["USER_SEARCH"].filterstr = f"(&" \
+                                                 f"(objectClass={self.settings['USER_OBJECT_CLASS']})" \
+                                                 f"{self.settings['USER_FILTER']}" \
+                                                 f"{group_filter})"
+        ldap_users = self.settings["USER_SEARCH"].execute(self.conn, {"user": "*"}, True)
         self._sync_ldap_users(ldap_users)
         sys.stdout.write("Users were synchronized\n")
 
@@ -100,11 +104,11 @@ class SyncLDAP:
             try:
                 name = ldap_attributes[self.settings["GROUP_TYPE"].name_attr][0]
             except KeyError:
-                name = ''
+                name = ""
 
             try:
                 group, created = Group.objects.get_or_create(
-                    name=f'{name} [ldap]', built_in=False, type=OriginType.LDAP
+                    name=f"{name} [ldap]", built_in=False, type=OriginType.LDAP
                 )
                 group.user_set.clear()
                 new_groups.add(name)
@@ -115,9 +119,9 @@ class SyncLDAP:
             else:
                 if created:
                     sys.stdout.write("Create new group: %s\n" % name)
-        django_groups = set(Group.objects.filter(type=OriginType.LDAP).values_list('display_name', flat=True))
+        django_groups = set(Group.objects.filter(type=OriginType.LDAP).values_list("display_name", flat=True))
         for groupname in django_groups - new_groups:
-            group = Group.objects.get(name__iexact=f'{groupname} [ldap]')
+            group = Group.objects.get(name__iexact=f"{groupname} [ldap]")
             sys.stdout.write(f"Delete this group: {group}\n")
             group.delete()
         msg = "Sync of groups ended successfully."
@@ -129,17 +133,17 @@ class SyncLDAP:
         error_names = []
         for cname, ldap_attributes in ldap_users:
             defaults = {}
-            for field, ldap_name in self.settings['USER_ATTR_MAP'].items():
+            for field, ldap_name in self.settings["USER_ATTR_MAP"].items():
                 try:
                     defaults[field] = ldap_attributes[ldap_name][0]
                 except KeyError:
-                    defaults[field] = ''
+                    defaults[field] = ""
 
             username = defaults["username"]
             kwargs = {
-                'username__iexact': username,
-                'type': OriginType.LDAP,
-                'defaults': defaults,
+                "username__iexact": username,
+                "type": OriginType.LDAP,
+                "defaults": defaults,
             }
 
             try:
@@ -151,7 +155,7 @@ class SyncLDAP:
             else:
                 updated = False
                 user.is_active = False
-                if not hex(int(ldap_attributes['useraccountcontrol'][0])).endswith('2'):
+                if not hex(int(ldap_attributes["useraccountcontrol"][0])).endswith("2"):
                     user.is_active = True
                 if created:
                     sys.stdout.write("Create user: %s\n" % username)
@@ -170,19 +174,19 @@ class SyncLDAP:
                     sys.stdout.write(f"Delete this user and deactivate his session: {user}\n")
                     user.delete()
                 else:
-                  user.save()
-                  ldap_usernames.add(username)
-                  for group in ldap_attributes.get('memberof', []):
-                      name = group.split(',')[0][3:]
-                      try:
-                          group = Group.objects.get(name=f'{name} [ldap]', built_in=False,
-                                                                       type=OriginType.LDAP)
-                          group.user_set.add(user)
-                          sys.stdout.write(f"Add user {user} to group {group}\n")
-                      except (IntegrityError, DataError) as e:
-                          sys.stdout.write("Error getting group %s: %s\n" % (name, e))
+                    user.save()
+                    ldap_usernames.add(username)
+                    for group in ldap_attributes.get("memberof", []):
+                        name = group.split(",")[0][3:]
+                        try:
+                            group = Group.objects.get(name=f"{name} [ldap]", built_in=False,
+                                                      type=OriginType.LDAP)
+                            group.user_set.add(user)
+                            sys.stdout.write(f"Add user {user} to group {group}\n")
+                        except (IntegrityError, DataError) as e:
+                            sys.stdout.write("Error getting group %s: %s\n" % (name, e))
 
-        django_usernames = set(User.objects.filter(type=OriginType.LDAP).values_list('username', flat=True))
+        django_usernames = set(User.objects.filter(type=OriginType.LDAP).values_list("username", flat=True))
         for username in django_usernames - ldap_usernames:
             user = User.objects.get(username__iexact=username)
             sys.stdout.write(f"Delete this user and deactivate his session: {user}\n")
@@ -195,7 +199,7 @@ class SyncLDAP:
         log.debug(msg)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sync_ldap = SyncLDAP()
     sync_ldap.sync()
     sync_ldap.unbind()
