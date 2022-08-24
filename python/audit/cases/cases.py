@@ -405,7 +405,7 @@ def get_audit_operation_and_object(
                     pk=response.data["export_service_id"],
                 ).first()
 
-            if "export_service_id" in view.request.data:
+            if view.request.data.get("export_service_id"):
                 service = ClusterObject.objects.filter(
                     pk=view.request.data["export_service_id"],
                 ).first()
@@ -413,6 +413,10 @@ def get_audit_operation_and_object(
             if service:
                 audit_operation.name = audit_operation.name.format(
                     service_display_name=_get_service_name(service),
+                )
+            else:
+                audit_operation.name = audit_operation.name.format(
+                    service_display_name="",
                 )
 
         case ["cluster", cluster_pk, "bind", bind_pk]:
