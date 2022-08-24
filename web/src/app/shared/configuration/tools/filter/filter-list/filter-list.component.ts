@@ -40,6 +40,6 @@ export class FilterListComponent {
   constructor() {}
 
   onClick(filter) {
-    this.toggleFilter.emit(filter.id);
+    this.toggleFilter.emit(filter);
   }
 }
