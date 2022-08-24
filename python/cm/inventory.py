@@ -14,6 +14,8 @@ import json
 import os
 from itertools import chain
 
+from django.contrib.contenttypes.models import ContentType
+
 from cm import config
 from cm.adcm_config import get_prototype_config, process_config
 from cm.logger import log
@@ -33,7 +35,6 @@ from cm.models import (
     ServiceComponent,
     get_object_cluster,
 )
-from django.contrib.contenttypes.models import ContentType
 
 
 def process_config_and_attr(obj, conf, attr=None, spec=None):

@@ -12,8 +12,9 @@
 
 from unittest.mock import Mock, call, patch
 
-import cm.adcm_config
 from django.test import TestCase
+
+import cm.adcm_config
 
 
 class TestAdcmConfig(TestCase):

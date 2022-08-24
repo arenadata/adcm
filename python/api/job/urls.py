@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.urls import include, path
+
 from api.job.views import (
     JobDetail,
     JobList,
@@ -18,7 +20,6 @@ from api.job.views import (
     LogStorageView,
     download_log_file,
 )
-from django.urls import include, path
 
 # fmt: off
 urlpatterns = [

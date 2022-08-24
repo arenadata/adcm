@@ -13,6 +13,12 @@
 """RBAC Role classes"""
 
 from adwp_base.errors import raise_AdwpEx as err
+from django.apps import apps
+from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
+from django.utils import timezone
+from guardian.models import GroupObjectPermission, UserObjectPermission
+
 from cm.models import (
     Action,
     ClusterObject,
@@ -25,11 +31,6 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from django.apps import apps
-from django.contrib.contenttypes.models import ContentType
-from django.db import transaction
-from django.utils import timezone
-from guardian.models import GroupObjectPermission, UserObjectPermission
 from rbac.models import (
     Group,
     Permission,

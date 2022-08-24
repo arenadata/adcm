@@ -13,11 +13,8 @@
 """Group view sets"""
 
 from adwp_base.errors import AdwpEx
-from audit.utils import audit
 from django_filters.rest_framework import CharFilter, DjangoFilterBackend, FilterSet
 from guardian.mixins import PermissionListMixin
-from rbac.models import Group, User
-from rbac.services import group as group_services
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.filters import OrderingFilter
 from rest_framework.serializers import (
@@ -34,6 +31,9 @@ from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import DjangoModelPermissionsAudit
 from adcm.serializers import EmptySerializer
+from audit.utils import audit
+from rbac.models import Group, User
+from rbac.services import group as group_services
 
 
 class UserSerializer(EmptySerializer):

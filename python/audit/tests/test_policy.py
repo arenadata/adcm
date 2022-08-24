@@ -12,6 +12,11 @@
 
 from datetime import datetime
 
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import HTTP_403_FORBIDDEN
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -19,12 +24,7 @@ from audit.models import (
     AuditObjectType,
 )
 from cm.models import Bundle, Cluster, Prototype
-from django.urls import reverse
 from rbac.models import Policy, Role, RoleTypes, User
-from rest_framework.response import Response
-from rest_framework.status import HTTP_403_FORBIDDEN
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestPolicy(BaseTestCase):

@@ -13,6 +13,12 @@
 import os
 import re
 
+from django.http import HttpResponse
+from guardian.mixins import PermissionListMixin
+from rest_framework import permissions, status
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.job.serializers import (
     JobListSerializer,
@@ -29,12 +35,7 @@ from cm import config
 from cm.errors import AdcmEx
 from cm.job import cancel_task, get_log, restart_task
 from cm.models import JobLog, LogStorage, TaskLog
-from django.http import HttpResponse
-from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from rest_framework import permissions, status
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
 
 
 class JobList(PermissionListMixin, PaginatedView):

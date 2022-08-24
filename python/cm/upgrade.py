@@ -13,11 +13,19 @@
 import functools
 from typing import List, Tuple, Union
 
+from django.db import transaction
+from version_utils import rpm
+
 import cm.issue
 import cm.job
 import cm.status_api
 from cm.adcm_config import make_object_config, obj_ref, proto_ref, switch_config
-from cm.api import check_license, version_in, add_components_to_service, add_service_to_cluster
+from cm.api import (
+    add_components_to_service,
+    add_service_to_cluster,
+    check_license,
+    version_in,
+)
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
 from cm.models import (
@@ -33,8 +41,6 @@ from cm.models import (
     ServiceComponent,
     Upgrade,
 )
-from django.db import transaction
-from version_utils import rpm
 
 
 def switch_object(obj: Union[Host, ClusterObject], new_prototype: Prototype) -> None:

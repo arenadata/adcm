@@ -12,13 +12,14 @@
 
 # pylint: disable=redefined-builtin
 
+from rest_framework import serializers
+from rest_framework.reverse import reverse
+
 import cm.adcm_config
 import cm.job
 from api.config.serializers import ConfigSerializerUI
 from api.utils import get_api_url_kwargs
 from cm.models import PrototypeConfig, SubAction
-from rest_framework import serializers
-from rest_framework.reverse import reverse
 
 
 class ActionDetailURL(serializers.HyperlinkedIdentityField):

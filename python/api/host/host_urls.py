@@ -11,8 +11,9 @@
 # limitations under the License.
 
 
-from api.host.views import HostDetail, StatusList
 from django.urls import include, path
+
+from api.host.views import HostDetail, StatusList
 
 urlpatterns = [
     path(

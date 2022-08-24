@@ -14,8 +14,9 @@
 
 import django.contrib.auth.models
 import django.db.models.deletion
-import rbac.models
 from django.db import connection, migrations, models
+
+import rbac.models
 
 
 def upgrade_users(apps, schema_editor):

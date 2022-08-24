@@ -10,12 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.action.serializers import StackActionDetailSerializer
-from api.config.serializers import ConfigSerializer
-from api.serializers import UpgradeSerializer
-from api.utils import hlink
-from cm import config
-from cm.models import Bundle, ClusterObject, Prototype
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -28,6 +22,12 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
+from api.action.serializers import StackActionDetailSerializer
+from api.config.serializers import ConfigSerializer
+from api.serializers import UpgradeSerializer
+from api.utils import hlink
+from cm import config
+from cm.models import Bundle, ClusterObject, Prototype
 
 
 class LoadBundle(EmptySerializer):

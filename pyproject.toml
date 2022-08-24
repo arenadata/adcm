@@ -1,7 +1,7 @@
 [tool.black]
 line-length = 100
 skip-string-normalization = true
-target-version = ['py39']
+target-version = ['py310']
 include = '\.py$'
 exclude = '''
 (
@@ -21,7 +21,7 @@ exclude = '''
 profile = "black"
 src_paths = ["python"]
 skip_glob = ["python/ansible/plugins"]
-skip = [".gitignore", ".dockerignore", "python/init_db.py", "python/task_runner.py", "python/backupdb.py", "python/job_runner.py", "python/drf_docs.py"]
+skip = ["python/init_db.py", "python/task_runner.py", "python/backupdb.py", "python/job_runner.py", "python/drf_docs.py"]
 
 [tool.pylint.main]
 # Analyse import fallback blocks. This can be used to support both Python 2 and 3
