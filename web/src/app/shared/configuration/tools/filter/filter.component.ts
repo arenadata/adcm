@@ -10,9 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { FormControl } from '@angular/forms';
+import { FormControl, FormGroup } from '@angular/forms';
 import { BaseDirective } from "../../../directives";
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 export interface IFilter {
   id: number,
@@ -39,30 +38,39 @@ export interface IFilterOption {
         <filter-list #list [filters]="availableFilters" (toggleFilter)="toggleFilters($event)"></filter-list>
       </div>
 
-      <ng-container *ngIf="filterList.length > 0">
-        <ng-container *ngFor="let filter of filters">
-          <mat-form-field class="filter-field">
-            <mat-select placeholder="{{ filter.display_name }}" [(value)]="selectedValue"
-                        (selectionChange)="emitItemChanges($event)">
-              <mat-option *ngFor="let p of filter.options" [value]="p.id">{{ p.display_name }}</mat-option>
-            </mat-select>
-            <button mat-button *ngIf="selectedValue" matSuffix mat-icon-button aria-label="Clear"
-                    (click)="clear($event)">
-              <mat-icon>close</mat-icon>
-            </button>
-          </mat-form-field>
+      <form [formGroup]="filterForm">
+        <ng-container *ngIf="filterList.length > 0">
+          <ng-container *ngFor="let filter of filters">
+            <mat-form-field class="filter-field">
+              <mat-select placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}"
+                          (selectionChange)="applyFilters()">
+                <mat-option *ngFor="let p of filter.options" [value]="p.name">{{ p.display_name }}</mat-option>
+              </mat-select>
+              <button mat-button matSuffix mat-icon-button aria-label="Clear"
+                      *ngIf="this.filterForm?.getRawValue()[filter.filter_field]"
+                      (click)="clear(filter.filter_field, $event)">
+                <mat-icon>refresh</mat-icon>
+              </button>
+              <button mat-button matSuffix mat-icon-button aria-label="Remove"
+                      (click)="removeFilter(filter, $event)">
+                <mat-icon>close</mat-icon>
+              </button>
+            </mat-form-field>
+          </ng-container>
         </ng-container>
-      </ng-container>
+      </form>
     </div>
   `,
   styleUrls: ['./filter.component.scss'],
 })
 export class FilterComponent extends BaseDirective implements OnInit, OnDestroy {
-  filter = new FormControl();
+  filterForm = new FormGroup({});
   availableFilters: any[];
   activeFilters: number[] = [];
-  selectedValue: any;
+  preFilteredData: any;
+  backupData: any;
   @Input() filterList: IFilter[] = [];
+  @Input() data: any;
 
   get filters() {
     return this.filterList.filter((filter) => (this.activeFilters?.includes(filter.id)));
@@ -73,30 +81,57 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
   }
 
   ngOnInit() {
-  this.availableFilters = this.filterList.map((filter: IFilter) => ({id: filter.id, display_name: filter.display_name}));
+    this.availableFilters = this.filterList.map((filter: IFilter) => ({
+      id: filter.id,
+      name: filter.name,
+      display_name: filter.display_name,
+      filter_field: filter.filter_field,
+    }));
 
-    this.filter.valueChanges
-      .pipe(
-        this.takeUntil(),
-        debounceTime(300),
-        distinctUntilChanged())
-      .subscribe((value) => console.log(value));
+    this.data.subscribe((values: any) => {
+      this.preFilteredData = values?.results;
+      if (!this.backupData) this.backupData = values;
+    });
   }
 
-  clear(event: any) {
-    this.selectedValue = undefined;
-    event.stopPropagation();
+  clear(filter, event: any) {
+    this.filterForm.get(filter).setValue(undefined);
+    this.data.next(this.backupData);
   }
 
-  emitItemChanges(event: any) {
-    console.log(event);
+  removeFilter(filter, event) {
+    this.toggleFilters(filter);
+    this.applyFilters();
+    event.preventDefault();
   }
 
-  toggleFilters(id) {
-    if (this.activeFilters.includes(id)) {
-      this.activeFilters = this.activeFilters.filter((f) => f !== id);
+  applyFilters() {
+    const filters = this.filterForm.value;
+    Object.keys(filters).forEach((f) => {
+      if (filters[f] === '' || filters[f] === undefined) {
+        delete filters[f];
+      }
+    });
+    const data = this.backupData?.results?.filter(function (item) {
+      for (let key in filters) {
+        if (item[key] === undefined || item[key] !== filters[key]) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    this.data.next({...this.backupData, count: data.length, results: data});
+  }
+
+  toggleFilters(filter) {
+    if (this.activeFilters.includes(filter.id)) {
+      this.activeFilters = this.activeFilters.filter((f) => f !== filter.id);
+      this.filterForm.removeControl(filter.filter_field);
     } else {
-      this.activeFilters.push(id);
+      this.activeFilters.push(filter.id);
+      this.filterForm.addControl(filter.filter_field, new FormControl(''))
     }
   }
 }
