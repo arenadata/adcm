@@ -107,7 +107,7 @@ class Command(BaseCommand):
             self.__log("No targets for archiving")
         else:
             csv_filenames = ", ".join([f"`{os.path.basename(filepath)}`" for filepath in csv_files])
-            self.__log(f"Files `{csv_filenames}` will be added to archive `{self.archive_name}`")
+            self.__log(f"Files {csv_filenames} will be added to archive `{self.archive_name}`")
         self.__archive_tmp_dir()
 
     def __delete(self, *querysets):
