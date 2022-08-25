@@ -90,7 +90,7 @@ class AuditOperation:
     operation_type: str
 
 
-AUDIT_OBJECT_TYPE_TO_MODEL_MAP = {
+MODEL_TO_AUDIT_OBJECT_TYPE_MAP = {
     Cluster: AuditObjectType.Cluster,
     ClusterObject: AuditObjectType.Service,
     ServiceComponent: AuditObjectType.Component,
@@ -103,6 +103,8 @@ AUDIT_OBJECT_TYPE_TO_MODEL_MAP = {
     Role: AuditObjectType.Role,
     Policy: AuditObjectType.Policy,
 }
+
+AUDIT_OBJECT_TYPE_TO_MODEL_MAP = {v: k for k, v in MODEL_TO_AUDIT_OBJECT_TYPE_MAP.items()}
 
 PATH_STR_TO_OBJ_CLASS_MAP = {
     "adcm": ADCM,

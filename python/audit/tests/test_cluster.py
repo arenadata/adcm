@@ -814,6 +814,28 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
+    def test_add_service_via_data(self):
+        cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_3")
+        self.client.post(
+            path=reverse("service"),
+            data={
+                "cluster_id": cluster.pk,
+                "service_id": self.service.pk,
+                "prototype_id": self.service_prototype.pk,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            obj=cluster,
+            obj_type=AuditObjectType.Cluster,
+            operation_name=f"{self.service.display_name} service added",
+            operation_type=AuditLogOperationType.Update,
+        )
+
     def test_add_service_denied(self):
         cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_3")
         with self.no_rights_user_logged_in:

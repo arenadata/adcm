@@ -92,6 +92,17 @@ class TestComponent(BaseTestCase):
         self.assertEqual(log.object_changes, {})
 
     def test_update(self):
+        self.client.post(
+            path=reverse("config-history", kwargs={"component_id": self.component.pk}),
+            data={"config": {}},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(log=log)
+
+    def test_restore(self):
         self.client.patch(
             path=reverse(
                 "config-history-version-restore",
@@ -104,7 +115,7 @@ class TestComponent(BaseTestCase):
 
         self.check_log(log)
 
-    def test_update_denied(self):
+    def test_restore_denied(self):
         with self.no_rights_user_logged_in:
             response: Response = self.client.patch(
                 path=reverse(

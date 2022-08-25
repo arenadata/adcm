@@ -13,7 +13,7 @@
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
-from audit.models import AUDIT_OBJECT_TYPE_TO_MODEL_MAP
+from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP
 from audit.utils import mark_deleted_audit_object
 from cm.models import (
     ADCM,
@@ -34,4 +34,4 @@ from cm.models import (
 @receiver(post_delete, sender=Bundle)
 @receiver(post_delete, sender=ADCM)
 def mark_deleted_audit_object_handler(sender, instance, **kwargs):
-    mark_deleted_audit_object(instance=instance, object_type=AUDIT_OBJECT_TYPE_TO_MODEL_MAP[sender])
+    mark_deleted_audit_object(instance=instance, object_type=MODEL_TO_AUDIT_OBJECT_TYPE_MAP[sender])

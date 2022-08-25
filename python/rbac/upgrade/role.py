@@ -302,7 +302,7 @@ def init_roles():
     """
     Init or upgrade roles and permissions in DB
     To run upgrade call
-    manage.py upgarderole
+    manage.py upgraderole
     """
     role_data = get_role_spec(api_settings.ROLE_SPEC, api_settings.ROLE_SCHEMA)
     check_roles_child(role_data)
