@@ -27,12 +27,12 @@ from api.cluster.serializers import (
     ClusterSerializer,
     ClusterUISerializer,
     DoBindSerializer,
+    DoClusterUpgradeSerializer,
     HostComponentSaveSerializer,
     HostComponentSerializer,
     HostComponentUISerializer,
     PostImportSerializer,
     StatusSerializer,
-    DoClusterUpgradeSerializer,
 )
 from api.serializers import ClusterUpgradeSerializer
 from api.stack.serializers import (

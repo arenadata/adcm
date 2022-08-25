@@ -12,10 +12,10 @@
 
 # pylint: disable=too-many-arguments
 
+import copy
 import json
 import os
 import subprocess
-import copy
 from configparser import ConfigParser
 from typing import Any, Hashable, List, Optional, Tuple, Union
 
@@ -26,7 +26,8 @@ from audit.utils import audit_finish_task
 from cm import adcm_config, api, config, inventory, issue, variant
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx
-from cm.errors import raise_AdcmEx as err, AdcmEx
+from cm.errors import AdcmEx
+from cm.errors import raise_AdcmEx as err
 from cm.hierarchy import Tree
 from cm.inventory import get_obj_config, process_config_and_attr
 from cm.logger import log
@@ -44,10 +45,10 @@ from cm.models import (
     HostProvider,
     JobLog,
     LogStorage,
+    Prototype,
     ServiceComponent,
     SubAction,
     TaskLog,
-    Prototype,
     get_object_cluster,
 )
 from cm.status_api import post_event
