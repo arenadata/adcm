@@ -152,7 +152,7 @@ class Command(BaseCommand):
                 if set(header) != set(qs_fields):
                     self.__log(
                         f"Fields of {qs.model._meta.object_name} was changed, "
-                        f"can\'t append to existing file. No archiving will be made",
+                        f"can't append to existing file. No archiving will be made",
                         "warning",
                     )
                     continue
