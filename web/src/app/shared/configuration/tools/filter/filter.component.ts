@@ -44,7 +44,7 @@ export interface IFilterOption {
             <mat-form-field class="filter-field">
               <mat-select placeholder="{{ filter.display_name }}" formControlName="{{ filter.filter_field }}"
                           (selectionChange)="applyFilters()">
-                <mat-option *ngFor="let p of filter.options" [value]="p.name">{{ p.display_name }}</mat-option>
+                <mat-option *ngFor="let p of filter.options" [value]="p.value">{{ p.display_name }}</mat-option>
               </mat-select>
               <button mat-button matSuffix mat-icon-button aria-label="Clear"
                       *ngIf="this.filterForm?.getRawValue()[filter.filter_field]"
@@ -97,6 +97,8 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
   clear(filter, event: any) {
     this.filterForm.get(filter).setValue(undefined);
     this.data.next(this.backupData);
+    event.preventDefault();
+    event.stopPropagation();
   }
 
   removeFilter(filter, event) {
