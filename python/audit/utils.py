@@ -11,14 +11,14 @@
 # limitations under the License.
 # pylint: disable=too-many-lines
 
-
 from functools import wraps
 
 from adwp_base.errors import AdwpEx
-from audit.cases.cases import get_audit_operation_and_object, get_or_create_audit_obj
+from audit.cases.cases import get_audit_operation_and_object
+from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
 from audit.models import (
-    AUDIT_OBJECT_TYPE_TO_MODEL_MAP,
+    MODEL_TO_AUDIT_OBJECT_TYPE_MAP,
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
@@ -242,7 +242,7 @@ def make_audit_log(operation_type, result, operation_status):
 
 
 def audit_finish_task(obj, action_display_name: str, status: str) -> None:
-    obj_type = AUDIT_OBJECT_TYPE_TO_MODEL_MAP.get(obj.__class__)
+    obj_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP.get(obj.__class__)
     if not obj_type:
         return
 

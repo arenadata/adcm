@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from audit.models import AUDIT_OBJECT_TYPE_TO_MODEL_MAP
+from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP
 from audit.utils import mark_deleted_audit_object
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
@@ -24,4 +24,4 @@ from rest_framework.authtoken.models import Token
 @receiver(post_delete, sender=Role)
 @receiver(post_delete, sender=Token)
 def mark_deleted_audit_object_handler(sender, instance, **kwargs):
-    mark_deleted_audit_object(instance, object_type=AUDIT_OBJECT_TYPE_TO_MODEL_MAP[sender])
+    mark_deleted_audit_object(instance, object_type=MODEL_TO_AUDIT_OBJECT_TYPE_MAP[sender])

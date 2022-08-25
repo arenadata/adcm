@@ -664,6 +664,10 @@ class Host(ADCMEntity):
         return self.prototype.monitoring
 
     @property
+    def name(self):
+        return self.fqdn
+
+    @property
     def display_name(self):
         return self.fqdn
 
