@@ -177,11 +177,6 @@ ERRORS = {
         rfs.HTTP_400_BAD_REQUEST,
         ERR,
     ),
-    "INVALID_DATA": (
-        "invalid data",
-        rfs.HTTP_400_BAD_REQUEST,
-        ERR,
-    ),
 }
 
 

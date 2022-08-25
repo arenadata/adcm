@@ -58,4 +58,4 @@ class TestPolicy(TestBase):
             url, data={**data_valid, **{"role": {}}}, content_type="application/json"
         )
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()["code"], "INVALID_DATA")
+        self.assertEqual(response.json()["role"], ["This field may not be empty."])

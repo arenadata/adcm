@@ -15,16 +15,13 @@ from typing import Type, Tuple, Any
 from django.db.models import Model
 from rest_framework import serializers
 
-from cm.errors import AdcmEx
-
 
 class BaseRelatedSerializer(serializers.Serializer):
     def to_internal_value(self, data):
         data = super().to_internal_value(data)
-        try:
-            return data["id"]
-        except KeyError as e:
-            raise AdcmEx("INVALID_DATA", f"Field {e} is required") from e
+        if "id" not in data:
+            raise serializers.ValidationError(f"This field may not be empty.")
+        return data["id"]
 
 
 def update_m2m_field(m2m, instances) -> None:
