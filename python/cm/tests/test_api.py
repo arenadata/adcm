@@ -19,15 +19,15 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.db import transaction
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APIClient
 
 from init_db import init as init_adcm
 from rbac.upgrade.role import init_roles
 
 
+# pylint: disable=too-many-instance-attributes
 class TestBase(TestCase):
     files_dir = os.path.join(settings.BASE_DIR, "python", "cm", "tests", "files")
 
@@ -35,15 +35,15 @@ class TestBase(TestCase):
         init_adcm()
         init_roles()
 
-        self.client = APIClient(HTTP_USER_AGENT="Mozilla/5.0")
+        self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
         response = self.client.post(
             path=reverse("rbac:token"),
             data={"username": "admin", "password": "admin"},
-            format="json",
+            content_type="application/json",
         )
         self.client.defaults["Authorization"] = f"Token {response.data['token']}"
 
-        self.client_unauthorized = APIClient(HTTP_USER_AGENT="Mozilla/5.0")
+        self.client_unauthorized = Client(HTTP_USER_AGENT="Mozilla/5.0")
 
         self.bundle_adh_name = "adh.1.5.tar"
         self.bundle_ssh_name = "ssh.1.0.tar"
@@ -75,6 +75,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         for service in response.json():
             if service["name"] == self.service:
                 return service["id"]
+        raise RuntimeError
 
     def get_component_id(self, cluster_id, service_id, component_name):
         response = self.client.get(
@@ -84,6 +85,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         for comp in response.json():
             if comp["name"] == component_name:
                 return comp["id"]
+        raise RuntimeError
 
     def get_cluster_proto_id(self):
         response = self.client.get(reverse("cluster-type"))
@@ -194,7 +196,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         response = self.client.post(
             cluster_url,
             {"name": cluster_name, "prototype_id": proto_id, "description": ""},
-            format="json",
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["description"], ["This field may not be blank."])
@@ -247,14 +249,18 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
 
         patched_name = "patched_cluster"
         with transaction.atomic():
-            response = self.client.patch(first_cluster_url, {"name": patched_name}, format="json")
+            response = self.client.patch(
+                first_cluster_url, {"name": patched_name}, content_type="application/json"
+            )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["name"], patched_name)
 
         description = "cluster_description"
         with transaction.atomic():
             response = self.client.patch(
-                first_cluster_url, {"name": patched_name, "description": description}, format="json"
+                first_cluster_url,
+                {"name": patched_name, "description": description},
+                content_type="application/json",
             )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["description"], description)
@@ -267,7 +273,9 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         second_cluster_url = reverse("cluster-details", kwargs={"cluster_id": second_cluster_id})
 
         with transaction.atomic():
-            response = self.client.patch(second_cluster_url, {"name": patched_name}, format="json")
+            response = self.client.patch(
+                second_cluster_url, {"name": patched_name}, content_type="application/json"
+            )
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
 
@@ -570,7 +578,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         service_id = response.json()["id"]
 
         hc_url = reverse("host-component", kwargs={"cluster_id": cluster_id})
-        response = self.client.post(hc_url, {"hc": {}}, format="json")
+        response = self.client.post(hc_url, {"hc": {}}, content_type="application/json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["code"], "INVALID_INPUT")
         self.assertEqual(response.json()["desc"], "hc field is required")
@@ -579,7 +587,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         response = self.client.post(
             hc_url,
             {"hc": [{"service_id": service_id, "host_id": 100500, "component_id": comp_id}]},
-            format="json",
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.json()["code"], "HOST_NOT_FOUND")
@@ -587,7 +595,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         response = self.client.post(
             hc_url,
             {"hc": [{"service_id": service_id, "host_id": host_id, "component_id": 100500}]},
-            format="json",
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.json()["code"], "COMPONENT_NOT_FOUND")
@@ -595,28 +603,36 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         response = self.client.post(
             hc_url,
             {"hc": [{"service_id": service_id, "host_id": host_id, "component_id": comp_id}]},
-            format="json",
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "FOREIGN_HOST")
 
         response = self.client.post(
-            reverse("host", kwargs={"cluster_id": cluster_id}), {"host_id": host_id}, format="json"
+            reverse("host", kwargs={"cluster_id": cluster_id}),
+            {"host_id": host_id},
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         response = self.client.post(
-            hc_url, {"hc": {"host_id": host_id, "component_id": comp_id}}, format="json"
+            hc_url,
+            {"hc": {"host_id": host_id, "component_id": comp_id}},
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["code"], "INVALID_INPUT")
         self.assertEqual(response.json()["desc"], "hc field should be a list")
 
-        response = self.client.post(hc_url, {"hc": [{"component_id": comp_id}]}, format="json")
+        response = self.client.post(
+            hc_url, {"hc": [{"component_id": comp_id}]}, content_type="application/json"
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["code"], "INVALID_INPUT")
 
-        response = self.client.post(hc_url, {"hc": [{"host_id": host_id}]}, format="json")
+        response = self.client.post(
+            hc_url, {"hc": [{"host_id": host_id}]}, content_type="application/json"
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["code"], "INVALID_INPUT")
 
@@ -628,7 +644,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
                     {"service_id": service_id, "host_id": 1, "component_id": comp_id},
                 ]
             },
-            format="json",
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.json()["code"], "INVALID_INPUT")
@@ -637,7 +653,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         response = self.client.post(
             hc_url,
             {"hc": [{"service_id": service_id, "host_id": host_id, "component_id": comp_id}]},
-            format="json",
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         hs_id = response.json()[0]["id"]
@@ -649,19 +665,21 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         response = self.client.post(
             hc_url,
             {"hc": [{"service_id": service_id, "host_id": host_id, "component_id": zclient_id}]},
-            format="json",
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         response = self.client.post(
-            reverse("cluster"), {"name": "qwe", "prototype_id": cluster_proto}, format="json"
+            reverse("cluster"),
+            {"name": "qwe", "prototype_id": cluster_proto},
+            content_type="application/json",
         )
         cluster_id2 = response.json()["id"]
 
         response = self.client.post(
             reverse("host-component", kwargs={"cluster_id": cluster_id2}),
             {"hc": [{"service_id": service_id, "host_id": host_id, "component_id": comp_id}]},
-            format="json",
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(response.json()["code"], "CLUSTER_SERVICE_NOT_FOUND")
@@ -669,7 +687,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         response = self.client.post(
             reverse("service", kwargs={"cluster_id": cluster_id2}),
             {"prototype_id": service_proto_id},
-            format="json",
+            content_type="application/json",
         )
         service_id2 = response.json()["id"]
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -677,7 +695,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         response = self.client.post(
             reverse("host-component", kwargs={"cluster_id": cluster_id2}),
             {"hc": [{"service_id": service_id2, "host_id": host_id, "component_id": comp_id2}]},
-            format="json",
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "FOREIGN_HOST")
@@ -760,7 +778,9 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
 
         config["zoo.cfg"]["autopurge.purgeInterval"] = 42
         config["zoo.cfg"]["port"] = 80
-        response = self.client.post(config_history_url, {"config": config}, format="json")
+        response = self.client.post(
+            config_history_url, {"config": config}, content_type="application/json"
+        )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         id2 = response.json()["id"]
 
@@ -790,7 +810,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
                 },
             ),
             {"description": "New config"},
-            format="json",
+            content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self.client.get(
