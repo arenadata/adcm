@@ -12,6 +12,11 @@
 
 from itertools import compress
 
+from django.contrib.contenttypes.models import ContentType
+from guardian.mixins import PermissionListMixin
+from rest_framework import permissions
+from rest_framework.response import Response
+
 from api.action.serializers import (
     ActionDetailSerializer,
     ActionSerializer,
@@ -38,11 +43,7 @@ from cm.models import (
     TaskLog,
     get_model_by_type,
 )
-from django.contrib.contenttypes.models import ContentType
-from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from rest_framework import permissions
-from rest_framework.response import Response
 
 
 def get_object_type_id(**kwargs):

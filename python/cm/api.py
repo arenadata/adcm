@@ -13,6 +13,11 @@
 
 import json
 
+from django.core.exceptions import MultipleObjectsReturned
+from django.db import transaction
+from django.utils import timezone
+from version_utils import rpm
+
 import cm.issue
 import cm.status_api
 from cm.adcm_config import (
@@ -49,11 +54,7 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from django.core.exceptions import MultipleObjectsReturned
-from django.db import transaction
-from django.utils import timezone
 from rbac.models import re_apply_object_policy
-from version_utils import rpm
 
 
 def check_license(bundle: Bundle) -> None:

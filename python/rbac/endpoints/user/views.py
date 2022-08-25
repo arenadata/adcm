@@ -13,10 +13,7 @@
 """User view sets"""
 
 from adwp_base.errors import AdwpEx
-from audit.utils import audit
 from guardian.mixins import PermissionListMixin
-from rbac import models
-from rbac.services import user as user_services
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.serializers import (
     BooleanField,
@@ -34,6 +31,9 @@ from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import DjangoModelPermissionsAudit
 from adcm.serializers import EmptySerializer
+from audit.utils import audit
+from rbac import models
+from rbac.services import user as user_services
 
 
 class PasswordField(CharField):

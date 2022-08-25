@@ -14,6 +14,7 @@
 
 from adwp_base.errors import AdwpEx
 from django.core.management.base import BaseCommand, CommandError
+
 from rbac.upgrade.role import init_roles
 
 

@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.job.views import Task, TaskCancel, TaskDetail, TaskReStart
 from django.urls import include, path
+
+from api.job.views import Task, TaskCancel, TaskDetail, TaskReStart
 
 urlpatterns = [
     path('', Task.as_view(), name='task'),

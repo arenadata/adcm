@@ -15,11 +15,11 @@ import json
 import random
 import string
 from itertools import chain
-import adcm.init_django  # pylint: disable=unused-import
 
-from cm.issue import update_hierarchy_issues
+import adcm.init_django  # pylint: disable=unused-import
 from cm.bundle import load_adcm
 from cm.config import SECRETS_FILE
+from cm.issue import update_hierarchy_issues
 from cm.job import abort_all
 from cm.logger import log
 from cm.models import (

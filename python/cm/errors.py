@@ -11,9 +11,10 @@
 # limitations under the License.
 
 import rest_framework.status as rfs
-from cm.logger import log
 from rest_framework.exceptions import APIException
 from rest_framework.views import exception_handler
+
+from cm.logger import log
 
 WARN = 'warning'
 ERR = 'error'

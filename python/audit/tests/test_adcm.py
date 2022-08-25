@@ -14,6 +14,12 @@
 from datetime import datetime
 from unittest.mock import patch
 
+from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -22,13 +28,7 @@ from audit.models import (
 )
 from cm.job import finish_task
 from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectConfig, Prototype, TaskLog
-from django.contrib.contenttypes.models import ContentType
-from django.urls import reverse
 from rbac.models import User
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestComponent(BaseTestCase):

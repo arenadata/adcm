@@ -14,14 +14,15 @@
 from typing import List
 
 from adwp_base.errors import AdwpEx
-from cm.models import ADCMEntity, DummyData
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from django.db.transaction import atomic
 from django.utils import timezone
+from rest_framework import status
+
+from cm.models import ADCMEntity, DummyData
 from rbac.models import Group, Policy, PolicyObject, Role, User
 from rbac.utils import update_m2m_field
-from rest_framework import status
 
 
 def _get_policy_object(obj: ADCMEntity) -> PolicyObject:

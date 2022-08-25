@@ -12,6 +12,7 @@
 
 
 from django_filters import rest_framework as drf_filters
+
 from cm.models import Prototype
 
 

@@ -10,6 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from guardian.mixins import PermissionListMixin
+from rest_framework import permissions
+from rest_framework.response import Response
+
 from api.base_view import GenericUIView
 from api.config.serializers import (
     ConfigHistorySerializer,
@@ -23,10 +27,7 @@ from audit.utils import audit
 from cm.adcm_config import ui_config
 from cm.errors import AdcmEx
 from cm.models import ConfigLog, ObjectConfig, get_model_by_type
-from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from rest_framework import permissions
-from rest_framework.response import Response
 
 
 def get_config_version(queryset, objconf, version):
