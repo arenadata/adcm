@@ -508,7 +508,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_type=AuditObjectType.Cluster,
-            operation_name=f"Cluster bound to {cluster.name}",
+            operation_name=f"Cluster bound to {self.cluster.name}/",
             operation_type=AuditLogOperationType.Update,
         )
 
@@ -526,7 +526,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_type=AuditObjectType.Cluster,
-            operation_name=f"{cluster.name}/ unbound",
+            operation_name=f"{self.cluster.name}/ unbound",
             operation_type=AuditLogOperationType.Update,
         )
 

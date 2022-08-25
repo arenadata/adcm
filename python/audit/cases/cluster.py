@@ -21,10 +21,10 @@ CONFIGURATION_STR = "configuration "
 
 # pylint: disable-next=too-many-locals,too-many-branches,too-many-statements
 def cluster_case(
-        path: list[str, ...],
-        view: View,
-        response: Response,
-        deleted_obj: Model,
+    path: list[str, ...],
+    view: View,
+    response: Response,
+    deleted_obj: Model,
 ) -> tuple[AuditOperation, AuditObject | None]:
     audit_operation = None
     audit_object = None
@@ -101,7 +101,7 @@ def cluster_case(
                 obj_type=AuditObjectType.Cluster,
                 operation_type=AuditLogOperationType.Update,
                 obj_pk=cluster_pk,
-                operation_aux_str="import "
+                operation_aux_str="import ",
             )
 
         case ["cluster", cluster_pk, "service"]:
@@ -164,7 +164,7 @@ def cluster_case(
             service = ClusterObject.objects.get(pk=service_pk)
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Service.capitalize()} bound to "
-                     f"{cluster.name}/{get_service_name(service)}",
+                f"{cluster.name}/{get_service_name(service)}",
                 operation_type=AuditLogOperationType.Update,
             )
             audit_object = get_or_create_audit_obj(
@@ -199,21 +199,28 @@ def cluster_case(
                 operation_aux_str=CONFIGURATION_STR,
             )
 
-        case (
-            ["cluster", _, "service", service_pk, "import"]
-            | ["service", service_pk, "import"]
-        ):
+        case (["cluster", _, "service", service_pk, "import"] | ["service", service_pk, "import"]):
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.Service,
                 operation_type=AuditLogOperationType.Update,
                 obj_pk=service_pk,
-                operation_aux_str="import "
+                operation_aux_str="import ",
             )
 
         case (
             ["cluster", _, "service", _, "component", component_pk, "config", "history"]
-            | ["cluster", _, "service", _, "component", component_pk, "config", "history",
-               _, "restore"]
+            | [
+                "cluster",
+                _,
+                "service",
+                _,
+                "component",
+                component_pk,
+                "config",
+                "history",
+                _,
+                "restore",
+            ]
             | ["service", _, "component", component_pk, "config", "history"]
             | ["service", _, "component", component_pk, "config", "history", _, "restore"]
             | ["component", component_pk, "config", "history"]
@@ -230,7 +237,7 @@ def cluster_case(
             obj = Cluster.objects.get(pk=cluster_pk)
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Cluster.capitalize()} bound to "
-                     f"{obj.name}/{{service_display_name}}",
+                f"{obj.name}/{{service_display_name}}",
                 operation_type=AuditLogOperationType.Update,
             )
             audit_object = get_or_create_audit_obj(
@@ -245,15 +252,18 @@ def cluster_case(
                     pk=response.data["export_service_id"],
                 ).first()
 
-            if "export_service_id" in view.request.data:
+            if view.request.data.get("export_service_id"):
                 service = ClusterObject.objects.filter(
                     pk=view.request.data["export_service_id"],
                 ).first()
 
+            service_display_name = ""
             if service:
-                audit_operation.name = audit_operation.name.format(
-                    service_display_name=get_service_name(service),
-                )
+                service_display_name = get_service_name(service)
+
+            audit_operation.name = audit_operation.name.format(
+                service_display_name=service_display_name,
+            )
 
         case ["cluster", cluster_pk, "bind", bind_pk]:
             obj = Cluster.objects.get(pk=cluster_pk)
