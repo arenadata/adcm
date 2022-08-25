@@ -20,7 +20,7 @@ class BaseRelatedSerializer(serializers.Serializer):
     def to_internal_value(self, data):
         data = super().to_internal_value(data)
         if "id" not in data:
-            raise serializers.ValidationError(f"This field may not be empty.")
+            raise serializers.ValidationError("This field may not be empty.")
         return data["id"]
 
 
