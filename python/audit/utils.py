@@ -150,10 +150,11 @@ def audit(func):
             if not deleted_obj:
                 status_code = exc.status_code
             else:  # when denied returns 404 from PermissionListMixin
-                if getattr(exc, "msg", None) and (
+                if getattr(exc, "msg", None) and (  # pylint: disable=too-many-boolean-expressions
                     "There is host" in exc.msg
                     or "belong to cluster" in exc.msg
                     or "of bundle" in exc.msg
+                    or ("host doesn't exist" in exc.msg and not isinstance(deleted_obj, Host))
                 ):
                     status_code = error.status_code
                 else:

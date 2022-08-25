@@ -416,9 +416,9 @@ class TestCluster(BaseTestCase):
         self.check_cluster_delete_failed_not_found(log=log)
 
     def test_delete_failed(self):
-        cluster_ids = ClusterObject.objects.all().values_list("pk", flat=True).order_by("-pk")
+        cluster_pks = ClusterObject.objects.all().values_list("pk", flat=True).order_by("-pk")
         res = self.client.delete(
-            path=reverse("cluster-details", kwargs={"cluster_id": cluster_ids[0] + 1})
+            path=reverse("cluster-details", kwargs={"cluster_id": cluster_pks[0] + 1})
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -638,7 +638,7 @@ class TestCluster(BaseTestCase):
             log=log,
             obj=self.cluster,
             obj_type=AuditObjectType.Cluster,
-            operation_name=f"{self.host.fqdn} added",
+            operation_name=f"{self.host.fqdn} host added",
             operation_type=AuditLogOperationType.Update,
         )
 
@@ -655,7 +655,7 @@ class TestCluster(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
-            operation_name=f"{self.host.fqdn} added",
+            operation_name=f"{self.host.fqdn} host added",
             operation_type=AuditLogOperationType.Update,
         )
 

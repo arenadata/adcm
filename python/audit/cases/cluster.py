@@ -61,7 +61,7 @@ def cluster_case(
 
         case ["cluster", cluster_pk, "host"]:
             audit_operation = AuditOperation(
-                name="{host_fqdn} added",
+                name="{host_fqdn} host added",
                 operation_type=AuditLogOperationType.Update,
             )
 
@@ -83,6 +83,28 @@ def cluster_case(
                 object_name=obj.name,
                 object_type=AuditObjectType.Cluster,
             )
+
+        case ["cluster", cluster_pk, "host", host_pk]:
+            deleted_obj: Host
+            audit_operation = AuditOperation(
+                name="host removed",
+                operation_type=AuditLogOperationType.Update,
+            )
+            if not isinstance(deleted_obj, Host):
+                deleted_obj = Host.objects.filter(pk=host_pk).first()
+
+            if deleted_obj:
+                audit_operation.name = f"{deleted_obj.fqdn} {audit_operation.name}"
+
+            obj = Cluster.objects.filter(pk=cluster_pk).first()
+            if obj:
+                audit_object = get_or_create_audit_obj(
+                    object_id=cluster_pk,
+                    object_name=obj.name,
+                    object_type=AuditObjectType.Cluster,
+                )
+            else:
+                audit_object = None
 
         case ["cluster", cluster_pk, "hostcomponent"]:
             audit_operation = AuditOperation(
