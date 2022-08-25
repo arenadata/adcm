@@ -16,6 +16,7 @@ from api.serializers import UpgradeSerializer
 from api.utils import hlink
 from cm import config
 from cm.models import Bundle, ClusterObject, Prototype
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -90,7 +91,10 @@ class PrototypeSerializer(EmptySerializer):
 
     @staticmethod
     def get_bundle_edition(obj):
-        return obj.bundle.edition
+        try:
+            return obj.bundle.edition
+        except ObjectDoesNotExist:
+            return None
 
 
 class PrototypeShort(ModelSerializer):
@@ -159,7 +163,10 @@ class ClusterTypeSerializer(PrototypeSerializer):
 
     @staticmethod
     def get_license(obj):
-        return obj.bundle.license
+        try:
+            return obj.bundle.license
+        except ObjectDoesNotExist:
+            return None
 
 
 class HostTypeSerializer(PrototypeSerializer):
