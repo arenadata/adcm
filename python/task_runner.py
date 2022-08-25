@@ -18,14 +18,15 @@ import signal
 import subprocess
 import sys
 import time
-import adcm.init_django  # pylint: disable=unused-import
 
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
+
+import adcm.init_django  # pylint: disable=unused-import
 from cm.config import CODE_DIR, LOG_DIR, RUN_DIR, Job
 from cm.job import finish_task, re_prepare_job
 from cm.logger import log
 from cm.models import JobLog, LogStorage, TaskLog
-from django.core.exceptions import ObjectDoesNotExist
-from django.utils import timezone
 
 TASK_ID = 0
 
