@@ -18,6 +18,9 @@ import subprocess
 from configparser import ConfigParser
 from typing import Any, Hashable, List, Optional, Tuple, Union
 
+from django.db import transaction
+from django.utils import timezone
+
 from audit.utils import audit_finish_task
 from cm import adcm_config, api, config, inventory, issue, variant
 from cm.adcm_config import process_file_type
@@ -46,8 +49,6 @@ from cm.models import (
     get_object_cluster,
 )
 from cm.status_api import post_event
-from django.db import transaction
-from django.utils import timezone
 from rbac.roles import re_apply_policy_for_jobs
 
 

@@ -1,3 +1,7 @@
+from django.db.models import Model
+from django.views import View
+from rest_framework.response import Response
+
 from audit.cases.common import (
     get_or_create_audit_obj,
     get_service_name,
@@ -11,9 +15,6 @@ from audit.models import (
     AuditOperation,
 )
 from cm.models import Cluster, ClusterBind, ClusterObject, Host
-from django.db.models import Model
-from django.views import View
-from rest_framework.response import Response
 
 CONFIGURATION_STR = "configuration "
 

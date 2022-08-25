@@ -13,6 +13,7 @@
 """RBAC UI root URLs"""
 
 from django.urls import include, path
+
 from rbac.endpoints_ui.root import RBACUIRoot
 
 urlpatterns = [

@@ -12,10 +12,11 @@
 
 from unittest.mock import Mock, patch
 
-import cm.inventory
-from cm import models
 from django.test import TestCase
 from django.utils import timezone
+
+import cm.inventory
+from cm import models
 
 
 class TestInventory(TestCase):

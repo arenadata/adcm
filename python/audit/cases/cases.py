@@ -12,6 +12,10 @@
 
 from typing import Optional, Tuple
 
+from django.db.models import Model
+from django.views import View
+from rest_framework.response import Response
+
 from audit.cases.adcm import adcm_case
 from audit.cases.cluster import cluster_case
 from audit.cases.common import action_case, task_case, upgrade_case
@@ -21,9 +25,6 @@ from audit.cases.rbac import rbac_case
 from audit.cases.service import service_case
 from audit.cases.stack import stack_case
 from audit.models import AuditObject, AuditOperation
-from django.db.models import Model
-from django.views import View
-from rest_framework.response import Response
 
 
 def get_audit_operation_and_object(

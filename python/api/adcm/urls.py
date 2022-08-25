@@ -11,8 +11,9 @@
 # limitations under the License.
 
 
-from api.adcm.views import AdcmDetail, AdcmList
 from django.urls import include, path
+
+from api.adcm.views import AdcmDetail, AdcmList
 
 urlpatterns = [
     path('', AdcmList.as_view(), name='adcm'),

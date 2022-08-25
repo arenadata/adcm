@@ -12,6 +12,7 @@
 
 import pytest
 from django.contrib.auth.models import Group as AuthGroup
+
 from rbac.models import Group, OriginType
 
 

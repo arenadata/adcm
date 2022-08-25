@@ -21,6 +21,9 @@ from typing import Any, Optional, Tuple
 
 import yspec.checker
 from ansible.parsing.vault import VaultAES256, VaultSecret
+from django.conf import settings
+from django.db.utils import OperationalError
+
 from cm import config
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
@@ -35,8 +38,6 @@ from cm.models import (
     PrototypeConfig,
 )
 from cm.variant import get_variant, process_variant
-from django.conf import settings
-from django.db.utils import OperationalError
 
 SECURE_PARAM_TYPES = ('password', 'secrettext')
 

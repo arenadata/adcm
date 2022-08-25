@@ -12,9 +12,10 @@
 import json
 from json.decoder import JSONDecodeError
 
+from django.contrib.auth.models import AnonymousUser, User
+
 from audit.cef_logger import cef_logger
 from audit.models import AuditSession, AuditSessionLoginResult
-from django.contrib.auth.models import AnonymousUser, User
 
 
 class AuditLoginMiddleware:

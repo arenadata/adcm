@@ -17,8 +17,12 @@ import os.path
 import shutil
 import tarfile
 
+from django.db import IntegrityError, transaction
+from version_utils import rpm
+
 import cm.stack
 import cm.status_api
+from adcm.settings import ADCM_VERSION
 from cm import config
 from cm.adcm_config import init_object_config, proto_ref, switch_config
 from cm.errors import raise_AdcmEx as err
@@ -44,12 +48,8 @@ from cm.models import (
     SubAction,
     Upgrade,
 )
-from django.db import IntegrityError, transaction
 from rbac.models import Role
 from rbac.upgrade.role import prepare_action_roles
-from version_utils import rpm
-
-from adcm.settings import ADCM_VERSION
 
 STAGE = (
     StagePrototype,

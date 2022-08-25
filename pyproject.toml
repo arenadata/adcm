@@ -17,6 +17,13 @@ exclude = '''
 )
 '''
 
+[tool.isort]
+profile = "black"
+src_paths = ["python"]
+skip_glob = ["python/ansible/plugins"]
+skip = ["python/init_db.py", "python/task_runner.py", "python/backupdb.py", "python/job_runner.py", "python/drf_docs.py"]
+
+
 [tool.pylint.main]
 # Analyse import fallback blocks. This can be used to support both Python 2 and 3
 # compatible code, which means that the block might have code that exists only in

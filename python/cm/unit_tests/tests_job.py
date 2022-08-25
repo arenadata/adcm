@@ -15,13 +15,14 @@
 import os
 from unittest.mock import Mock, patch
 
+from django.test import TestCase
+from django.utils import timezone
+
 import cm
 import cm.job as job_module
 from cm import config, models
 from cm.logger import log
 from cm.unit_tests import utils
-from django.test import TestCase
-from django.utils import timezone
 
 
 class TestJob(TestCase):

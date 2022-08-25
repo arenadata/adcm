@@ -17,9 +17,10 @@ from typing import List
 from adwp_base.errors import AdwpEx
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
+from rest_framework import status
+
 from rbac import models
 from rbac.utils import Empty, set_not_empty_attr
-from rest_framework import status
 
 
 def _update_users(group: models.Group, users: [Empty, List[dict]]) -> None:

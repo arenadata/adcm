@@ -13,6 +13,9 @@
 import functools
 from typing import List, Tuple, Union
 
+from django.db import transaction
+from version_utils import rpm
+
 import cm.issue
 import cm.job
 import cm.status_api
@@ -33,8 +36,6 @@ from cm.models import (
     ServiceComponent,
     Upgrade,
 )
-from django.db import transaction
-from version_utils import rpm
 
 
 def switch_object(obj: Union[Host, ClusterObject], new_prototype: Prototype) -> None:

@@ -1,4 +1,7 @@
 import pytest
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
+
 from cm.models import (
     Bundle,
     Cluster,
@@ -8,8 +11,6 @@ from cm.models import (
     Prototype,
     ServiceComponent,
 )
-from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.models import ContentType
 from rbac.models import Group, Role, User
 
 

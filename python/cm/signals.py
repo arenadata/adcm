@@ -10,6 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
+
 from audit.models import MODEL_TO_AUDIT_OBJECT_TYPE_MAP
 from audit.utils import mark_deleted_audit_object
 from cm.models import (
@@ -21,8 +24,6 @@ from cm.models import (
     HostProvider,
     ServiceComponent,
 )
-from django.db.models.signals import post_delete
-from django.dispatch import receiver
 
 
 @receiver(post_delete, sender=Cluster)

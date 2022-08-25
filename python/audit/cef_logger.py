@@ -15,10 +15,11 @@ import logging
 from collections import OrderedDict
 from typing import Tuple, Union
 
-from audit.apps import AuditConfig
-from audit.models import AuditLog, AuditLogOperationResult, AuditSession
 from django.conf import settings
 from django.utils import timezone as tz
+
+from audit.apps import AuditConfig
+from audit.models import AuditLog, AuditLogOperationResult, AuditSession
 
 audit_log = logging.getLogger(AuditConfig.name)
 

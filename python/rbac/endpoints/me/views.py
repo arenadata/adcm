@@ -12,10 +12,11 @@
 
 """User view sets"""
 
-from rbac import models
-from rbac.services import user as user_services
 from rest_framework import serializers
 from rest_framework.generics import RetrieveUpdateAPIView
+
+from rbac import models
+from rbac.services import user as user_services
 
 
 class PasswordField(serializers.CharField):

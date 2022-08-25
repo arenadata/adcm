@@ -1,3 +1,5 @@
+from rest_framework.response import Response
+
 from audit.models import (
     AUDIT_OBJECT_TYPE_TO_MODEL_MAP,
     MODEL_TO_AUDIT_OBJECT_TYPE_MAP,
@@ -8,7 +10,6 @@ from audit.models import (
     AuditOperation,
 )
 from cm.models import Action, ClusterObject, Host, TaskLog, Upgrade
-from rest_framework.response import Response
 
 
 def _get_audit_operation(
@@ -142,10 +143,13 @@ def obj_pk_case(
         operation_type=operation_type,
         operation_aux_str=operation_aux_str,
     )
-    obj = AUDIT_OBJECT_TYPE_TO_MODEL_MAP[obj_type].objects.get(pk=obj_pk)
+    obj = AUDIT_OBJECT_TYPE_TO_MODEL_MAP[obj_type].objects.filter(pk=obj_pk).first()
+    if obj:
+        obj_name = obj_name or obj.name
+
     audit_object = get_or_create_audit_obj(
         object_id=obj_pk,
-        object_name=obj_name or obj.name,
+        object_name=obj_name,
         object_type=obj_type,
     )
 

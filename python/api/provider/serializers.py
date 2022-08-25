@@ -10,6 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.db import IntegrityError
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    IntegerField,
+    JSONField,
+    SerializerMethodField,
+)
+
+from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
@@ -26,16 +36,6 @@ from cm.adcm_config import get_main_info
 from cm.api import add_host_provider
 from cm.errors import AdcmEx
 from cm.models import Action, Prototype
-from django.db import IntegrityError
-from rest_framework.serializers import (
-    BooleanField,
-    CharField,
-    IntegerField,
-    JSONField,
-    SerializerMethodField,
-)
-
-from adcm.serializers import EmptySerializer
 
 
 class ProviderSerializer(EmptySerializer):

@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.cluster import views
 from django.urls import include, path
+
+from api.cluster import views
 
 # fmt: off
 urlpatterns = [

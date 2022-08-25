@@ -1,3 +1,6 @@
+from django.db.models import Model
+from rest_framework.response import Response
+
 from audit.cases.common import get_or_create_audit_obj, obj_pk_case, response_case
 from audit.models import (
     AuditLogOperationType,
@@ -6,8 +9,6 @@ from audit.models import (
     AuditOperation,
 )
 from cm.models import Host, HostProvider
-from django.db.models import Model
-from rest_framework.response import Response
 
 
 def host_and_provider_case(

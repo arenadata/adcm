@@ -1,10 +1,11 @@
-from audit.cases.common import get_or_create_audit_obj
-from audit.models import AuditLogOperationType, AuditObject, AuditOperation
-from cm.models import GroupConfig, Host, ObjectConfig
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Model
 from django.views import View
 from rest_framework.response import Response
+
+from audit.cases.common import get_or_create_audit_obj
+from audit.models import AuditLogOperationType, AuditObject, AuditOperation
+from cm.models import GroupConfig, Host, ObjectConfig
 
 
 def _get_obj_type(obj_type: str) -> str:

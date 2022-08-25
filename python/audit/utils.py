@@ -14,6 +14,14 @@
 from functools import wraps
 
 from adwp_base.errors import AdwpEx
+from django.contrib.auth.models import User as DjangoUser
+from django.db.models import Model
+from django.http.response import Http404
+from django.views.generic.base import View
+from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.request import Request
+from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, is_success
+
 from audit.cases.cases import get_audit_operation_and_object
 from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
@@ -28,14 +36,7 @@ from audit.models import (
 )
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, HostProvider, TaskLog
-from django.contrib.auth.models import User as DjangoUser
-from django.db.models import Model
-from django.http.response import Http404
-from django.views.generic.base import View
 from rbac.models import Role, User
-from rest_framework.exceptions import PermissionDenied, ValidationError
-from rest_framework.request import Request
-from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, is_success
 
 
 def _get_view_and_request(args) -> tuple[View, Request]:

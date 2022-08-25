@@ -1,3 +1,6 @@
+from django.db.models import Model
+from rest_framework.response import Response
+
 from audit.cases.common import obj_pk_case, response_case
 from audit.models import (
     AuditLogOperationType,
@@ -6,8 +9,6 @@ from audit.models import (
     AuditOperation,
 )
 from cm.models import Bundle
-from django.db.models import Model
-from rest_framework.response import Response
 
 
 def stack_case(

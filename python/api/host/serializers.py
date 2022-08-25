@@ -10,6 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.db import IntegrityError
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    ChoiceField,
+    IntegerField,
+    SerializerMethodField,
+)
+
+from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.serializers import StringListSerializer
@@ -21,16 +31,6 @@ from cm.issue import update_hierarchy_issues, update_issue_after_deleting
 from cm.models import Action, HostProvider, MaintenanceModeType, Prototype
 from cm.stack import validate_name
 from cm.status_api import get_host_status
-from django.db import IntegrityError
-from rest_framework.serializers import (
-    BooleanField,
-    CharField,
-    ChoiceField,
-    IntegerField,
-    SerializerMethodField,
-)
-
-from adcm.serializers import EmptySerializer
 
 
 class HostSerializer(EmptySerializer):

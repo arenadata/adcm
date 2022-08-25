@@ -1,3 +1,7 @@
+from django.db.models import Model
+from django.views import View
+from rest_framework.response import Response
+
 from audit.cases.common import get_or_create_audit_obj, get_service_name
 from audit.models import (
     AuditLogOperationType,
@@ -6,9 +10,6 @@ from audit.models import (
     AuditOperation,
 )
 from cm.models import Cluster, ClusterObject
-from django.db.models import Model
-from django.views import View
-from rest_framework.response import Response
 
 
 def service_case(

@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.test import TestCase
+
 import cm.api
 import cm.job
 import cm.upgrade
@@ -28,7 +30,6 @@ from cm.models import (
     Upgrade,
 )
 from cm.unit_tests import utils
-from django.test import TestCase
 
 
 class TestUpgradeVersion(TestCase):

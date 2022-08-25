@@ -1,5 +1,9 @@
 from dataclasses import dataclass
 
+from django.db.models import Model
+from django.views import View
+from rest_framework.response import Response
+
 from audit.cases.common import get_audit_object_from_resp, get_or_create_audit_obj
 from audit.models import (
     AUDIT_OBJECT_TYPE_TO_MODEL_MAP,
@@ -8,9 +12,6 @@ from audit.models import (
     AuditObjectType,
     AuditOperation,
 )
-from django.db.models import Model
-from django.views import View
-from rest_framework.response import Response
 
 
 @dataclass
