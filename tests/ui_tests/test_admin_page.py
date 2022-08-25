@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, unused-argument
 
 """UI tests for /admin page"""
 
@@ -70,14 +70,12 @@ HOST_NAME = 'test-host'
 
 
 @pytest.fixture()
-# pylint: disable-next=unused-argument
 def users_page(app_fs: ADCMTest) -> AdminUsersPage:
     """Get Admin Users Page"""
     return AdminUsersPage(app_fs.driver, app_fs.adcm.url).open()
 
 
 @pytest.fixture()
-# pylint: disable-next=unused-argument
 def settings_page(app_fs: ADCMTest) -> AdminSettingsPage:
     """Get Admin Settings Page"""
     return AdminSettingsPage(app_fs.driver, app_fs.adcm.url).open()
@@ -241,7 +239,7 @@ class TestAdminSettingsPage:
             settings_page.config.reset_to_default(config_field_row)
             settings_page.config.assert_input_value_is(params['init_value'], params['field_display_name'])
 
-    # TODO add mark during ADCM-2967
+    @pytest.mark.ldap()
     def test_ldap_config(self, settings_page: AdminSettingsPage):
         """Test ldap"""
         params = {'test_action': "Test LDAP connection", 'connect_action': "Run LDAP sync", "test_value": "test"}
@@ -354,6 +352,18 @@ class TestAdminUsersPage:
         login_page.login_user(**params)
         with allure.step('Check login was successful'):
             AdminIntroPage(users_page.driver, users_page.base_url).wait_page_is_opened(timeout=5)
+
+    @pytest.mark.ldap()
+    @pytest.mark.usefixtures("configure_adcm_ldap_ad")
+    def test_ldap_user_change_is_forbidden(self, users_page: AdminUsersPage, ldap_user_in_group):
+        """Change ldap user"""
+
+        users_page.header.wait_success_job_amount_from_header(1)
+        with allure.step(f'Check user {ldap_user_in_group["name"]} is listed in users list'):
+            assert users_page.is_user_presented(
+                ldap_user_in_group['name']
+            ), f'User {ldap_user_in_group["name"]} was not created'
+        users_page.check_ldap_user(ldap_user_in_group["name"])
 
 
 @pytest.mark.usefixtures("login_to_adcm_over_api")
@@ -498,6 +508,35 @@ class TestAdminGroupsPage:
         page.click_delete_button()
         with allure.step('Check that group has been deleted'):
             assert len(page.table.get_all_rows()) == 0, "There should be 0 groups"
+
+    @pytest.mark.ldap()
+    @pytest.mark.usefixtures("configure_adcm_ldap_ad")
+    def test_ldap_group_change_is_forbidden(self, app_fs, ldap_user_in_group):
+        """Change ldap group"""
+
+        params = {'group_name': 'adcm_users'}
+        groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
+        groups_page.header.wait_success_job_amount_from_header(1)
+        with allure.step(f"Check group {params['group_name']} is listed in groups list"):
+            assert (
+                groups_page.get_all_groups()[0].name == params['group_name']
+            ), f"Group {params['group_name']} should be in groups list"
+        groups_page.check_ldap_group(params['group_name'])
+
+    @pytest.mark.ldap()
+    @pytest.mark.usefixtures("configure_adcm_ldap_ad")
+    def test_add_ldap_user_to_group(self, app_fs, ldap_user_in_group):
+        """Add ldap user to group"""
+
+        params = {'group_name': 'Test_group'}
+        groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
+        groups_page.create_custom_group(name=params['group_name'], description=None, users=None)
+        groups_page.header.wait_success_job_amount_from_header(1)
+        groups_page.update_group(name=params['group_name'], users=ldap_user_in_group["name"])
+        with allure.step(f"Check group {params['group_name']} has user {ldap_user_in_group['name']}"):
+            assert (
+                ldap_user_in_group["name"] in groups_page.get_group_by_name(params['group_name']).text
+            ), f"Group {params['group_name']} should have user {ldap_user_in_group['name']}"
 
 
 class TestAdminPolicyPage:

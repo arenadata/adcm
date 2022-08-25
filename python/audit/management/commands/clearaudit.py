@@ -16,7 +16,7 @@ from datetime import timedelta
 from shutil import rmtree
 from tarfile import TarFile
 
-from audit.models import AuditLog, AuditObject, AuditSession
+from audit.models import AuditLog, AuditLogOperationResult, AuditObject, AuditSession
 from audit.utils import make_audit_log
 from cm.adcm_config import get_adcm_config
 from cm.logger import log_cron_task as log
@@ -74,7 +74,7 @@ class Command(BaseCommand):
 
             cleared = False
             if any(qs.exists() for qs in (target_operations, target_logins, target_objects)):
-                make_audit_log("audit", "success", "launched")
+                make_audit_log("audit", AuditLogOperationResult.Success, "launched")
 
             if config["data_archiving"]:
                 archive_path = os.path.join(self.archive_base_dir, self.archive_name)
@@ -87,10 +87,10 @@ class Command(BaseCommand):
 
             self.__log("Finished.")
             if cleared:
-                make_audit_log("audit", "success", "completed")
+                make_audit_log("audit", AuditLogOperationResult.Success, "completed")
 
         except Exception as e:  # pylint: disable=broad-except
-            make_audit_log("audit", "failed", "completed")
+            make_audit_log("audit", AuditLogOperationResult.Fail, "completed")
             self.__log(e, "exception")
 
     def __archive(self, *querysets):

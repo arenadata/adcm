@@ -69,8 +69,8 @@ class TestHost(BaseTestCase):
         self.host_created_str = "Host created"
         self.action_display_name = "test_host_action"
 
-    def check_host_created(self, log: AuditLog, res: Response) -> None:
-        self.assertEqual(log.audit_object.object_id, res.data["id"])
+    def check_host_created(self, log: AuditLog, response: Response) -> None:
+        self.assertEqual(log.audit_object.object_id, response.data["id"])
         self.assertEqual(log.audit_object.object_name, self.fqdn)
         self.assertEqual(log.audit_object.object_type, AuditObjectType.Host)
         self.assertFalse(log.audit_object.is_deleted)
@@ -79,7 +79,7 @@ class TestHost(BaseTestCase):
         self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.test_user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def check_host_updated(
         self,
@@ -99,7 +99,7 @@ class TestHost(BaseTestCase):
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def check_host_deleted(
         self,
@@ -119,7 +119,7 @@ class TestHost(BaseTestCase):
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def check_denied(self, log: AuditLog) -> None:
         self.assertFalse(log.audit_object)
@@ -128,7 +128,7 @@ class TestHost(BaseTestCase):
         self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.no_rights_user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def check_action_log(self, log: AuditLog) -> None:
         self.assertEqual(log.audit_object.object_id, self.host.pk)
@@ -139,14 +139,14 @@ class TestHost(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.Update)
         self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def test_create(self):
-        res: Response = self.client.post(path=reverse("host"), data={})
+        response: Response = self.client.post(path=reverse("host"), data={})
 
-        self.assertEqual(res.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=reverse("host"),
             data={
                 "prototype_id": self.host_prototype.pk,
@@ -157,7 +157,7 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_host_created(log, res)
+        self.check_host_created(log=log, response=response)
 
         self.client.post(
             path=reverse("host"),
@@ -176,11 +176,11 @@ class TestHost(BaseTestCase):
         self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.test_user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("host"),
                 data={
                     "prototype_id": self.host_prototype.pk,
@@ -191,7 +191,7 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_denied(log=log)
 
     def test_delete(self):
@@ -203,13 +203,13 @@ class TestHost(BaseTestCase):
 
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 path=reverse("host-details", kwargs={"host_id": self.host.pk})
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_host_deleted(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
@@ -240,7 +240,7 @@ class TestHost(BaseTestCase):
 
     def test_delete_via_provider_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 path=reverse(
                     "host-details",
                     kwargs={"host_id": self.host.pk, "provider_id": self.provider.pk},
@@ -249,7 +249,7 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_host_deleted(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
@@ -272,25 +272,25 @@ class TestHost(BaseTestCase):
         self.check_host_deleted(log=log, operation_result=AuditLogOperationResult.Fail)
 
     def test_create_via_provider(self):
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=reverse("host", kwargs={"provider_id": self.provider.pk}),
             data={"fqdn": self.fqdn},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_host_created(log, res)
+        self.check_host_created(log, response)
 
     def test_create_via_provider_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("host", kwargs={"provider_id": self.provider.pk}),
                 data={"fqdn": self.fqdn},
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_denied(log=log)
 
     def test_update_and_restore(self):
@@ -304,7 +304,7 @@ class TestHost(BaseTestCase):
 
         self.check_host_updated(log=log)
 
-        res: Response = self.client.patch(
+        response: Response = self.client.patch(
             path=reverse(
                 "config-history-version-restore",
                 kwargs={"host_id": self.host.pk, "version": 1},
@@ -314,12 +314,12 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_host_updated(log=log)
 
     def test_update_and_restore_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("config-history", kwargs={"host_id": self.host.pk}),
                 data={"config": {}},
                 content_type=APPLICATION_JSON,
@@ -327,13 +327,13 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_host_updated(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
 
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
                     kwargs={"host_id": self.host.pk, "version": 1},
@@ -343,7 +343,7 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_host_updated(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
@@ -362,7 +362,7 @@ class TestHost(BaseTestCase):
 
         self.check_host_updated(log=log)
 
-        res: Response = self.client.patch(
+        response: Response = self.client.patch(
             path=reverse(
                 "config-history-version-restore",
                 kwargs={"provider_id": self.provider.pk, "host_id": self.host.pk, "version": 1},
@@ -372,12 +372,12 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_host_updated(log=log)
 
     def test_update_and_restore_via_provider_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse(
                     "config-history",
                     kwargs={"provider_id": self.provider.pk, "host_id": self.host.pk},
@@ -388,13 +388,13 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_host_updated(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
 
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
                     kwargs={"provider_id": self.provider.pk, "host_id": self.host.pk, "version": 1},
@@ -404,7 +404,7 @@ class TestHost(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_host_updated(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )

@@ -16,10 +16,11 @@ import { keyChannelStrim } from '@app/core/services';
 import { EventMessage, IEMObject, SocketState } from '@app/core/store';
 import { IActionParameter } from '@app/core/types';
 import { Store } from '@ngrx/store';
-
 import { SocketListenerDirective } from '@app/shared/directives';
 import { getSelected, TakeService } from '../take.service';
 import { CompTile, HostTile, IRawHosComponent, Post, StatePost, Tile } from '../types';
+import { ApiService } from "@app/core/api";
+import { Observable } from "rxjs";
 
 @Component({
   selector: 'app-service-host',
@@ -39,7 +40,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   form = new FormGroup({});
 
   @Input()
-  cluster: { id: number; hostcomponent: string };
+  cluster: { id: number; hostcomponent: string | IRawHosComponent };
 
   /**
    * fixed position buttons for the scrolling
@@ -79,7 +80,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
     this.sourceMap.set('compo', v);
   }
 
-  constructor(public service: TakeService, private channel: ChannelService, socket: Store<SocketState>) {
+  constructor(public service: TakeService, private channel: ChannelService, socket: Store<SocketState>, private api: ApiService) {
     super(socket);
   }
 
@@ -97,11 +98,15 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
       .subscribe((e) => (this.scrollEventData = e));
   }
 
+  getClusterInfo(): Observable<any> {
+    return this.api.get(`api/v1/cluster/${this.cluster.id}/hostcomponent/`);
+  }
+
   socketListener(m: EventMessage) {
-    const isCurrent = (type: string, id: number) => type === 'cluster' && id === this.cluster.id;
+    const isCurrent = (type: string, id: number) => type === 'cluster' && id === this.cluster?.id;
     if (
       (m.event === 'change_hostcomponentmap' || m.event === 'change_state') &&
-      isCurrent(m.object.type, m.object.id) &&
+      isCurrent(m.object.type, m.object?.id) &&
       !this.saveFlag
     ) {
       this.reset().load();
@@ -126,16 +131,16 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
 
   add(io: IEMObject) {
     const { id, type, details } = io;
-    if (details.type === 'cluster' && +details.value === this.cluster.id) {
+    if (details.type === 'cluster' && +details.value === this.cluster?.id && typeof this.cluster.hostcomponent === 'string') {
       this.service
-        .load(this.cluster.hostcomponent)
+        .load(this.cluster.hostcomponent as string)
         .pipe(this.takeUntil())
         .subscribe((raw: IRawHosComponent) => {
           if (type === 'host')
             this.Hosts = [
               ...this.Hosts,
               ...this.service.fillHost(
-                raw.host.map((h) => new HostTile(h)).filter((h) => h.id === id),
+                raw.host.map((h) => new HostTile(h)).filter((h) => h?.id === id),
                 this.actionParameters
               ),
             ];
@@ -143,10 +148,22 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
             this.Components = [
               ...this.Components,
               ...this.service.fillComponent(
-                raw.component.filter((a) => a.service_id === id && this.Components.every((b) => b.id !== a.id)),
+                raw.component.filter((a) => a.service_id === id && this.Components.every((b) => b?.id !== a?.id)),
                 this.actionParameters
               ),
             ];
+        });
+    } else if (typeof this.cluster.hostcomponent !== 'string') {
+      this.getClusterInfo()
+        .pipe(this.takeUntil())
+        .subscribe((res) => {
+          this.Hosts = [
+            ...this.Hosts,
+            ...this.service.fillHost(
+              res.host.map((h) => new HostTile(h)).filter((h) => h?.id === id),
+              this.actionParameters
+            ),
+          ];
         });
     }
   }
@@ -155,7 +172,7 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
   remove(io: IEMObject) {
     if (io.type === 'host') {
       const { id } = io;
-      this.Hosts = this.Hosts.filter((a) => a.id !== id);
+      this.Hosts = this.Hosts.filter((a) => a?.id !== id);
     }
   }
 
@@ -164,10 +181,14 @@ export class ServiceHostComponent extends SocketListenerDirective implements OnI
       if (this.initFlag) return;
       this.initFlag = true;
 
-      this.service
-        .load(this.cluster.hostcomponent)
-        .pipe(this.takeUntil())
-        .subscribe((raw: IRawHosComponent) => this.init(raw));
+      if (typeof this.cluster.hostcomponent === 'string' ) {
+        this.service
+          .load(this.cluster.hostcomponent)
+          .pipe(this.takeUntil())
+          .subscribe((raw: IRawHosComponent) => this.init(raw));
+      } else {
+        this.init(this.cluster.hostcomponent);
+      }
     }
   }
 

@@ -12,7 +12,7 @@
 import json
 from json.decoder import JSONDecodeError
 
-from audit.cef_logger import cef_log
+from audit.cef_logger import cef_logger
 from audit.models import AuditSession, AuditSessionLoginResult
 from django.contrib.auth.models import AnonymousUser, User
 
@@ -42,7 +42,7 @@ class AuditLoginMiddleware:
         auditsession = AuditSession.objects.create(
             user=user, login_result=result, login_details=details
         )
-        cef_log(audit_instance=auditsession, signature_id=request_path)
+        cef_logger(audit_instance=auditsession, signature_id=request_path)
 
     def __call__(self, request):
 

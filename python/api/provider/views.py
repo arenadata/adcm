@@ -10,14 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import api.serializers
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.provider.serializers import (
+    DoProviderUpgradeSerializer,
     ProviderDetailSerializer,
     ProviderSerializer,
     ProviderUISerializer,
-    UpgradeProviderSerializer,
 )
+from api.serializers import ProviderUpgradeSerializer
 from api.utils import (
     AdcmFilterBackend,
     AdcmOrderingFilter,
@@ -86,7 +86,7 @@ class ProviderDetail(PermissionListMixin, DetailView):
 
 class ProviderUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = UpgradeProviderSerializer
+    serializer_class = ProviderUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
     filter_backends = (AdcmFilterBackend, AdcmOrderingFilter)
 
@@ -111,7 +111,7 @@ class ProviderUpgrade(GenericUIView):
 
 class ProviderUpgradeDetail(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = UpgradeProviderSerializer
+    serializer_class = ProviderUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -133,7 +133,7 @@ class ProviderUpgradeDetail(GenericUIView):
 
 class DoProviderUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.DoUpgradeSerializer
+    serializer_class = DoProviderUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     @audit

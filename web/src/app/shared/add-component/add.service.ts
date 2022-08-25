@@ -162,7 +162,7 @@ export class AddService implements IAddService {
   }
 
   getProtoServiceForCurrentCluster() {
-    return this.api.get<StackBase[]>(this.cluster.Cluster.serviceprototype).pipe(
+    return this.api.get<StackBase[]>(this.cluster.Cluster?.serviceprototype).pipe(
       map((a: ServicePrototype[]) =>
         a
           .filter((b) => !b.selected)
@@ -179,7 +179,7 @@ export class AddService implements IAddService {
   }
 
   getHostListForCurrentCluster() {
-    return this.api.get<Host[]>(this.cluster.Cluster.host).pipe(
+    return this.api.get<Host[]>(this.cluster.Cluster?.host).pipe(
       map((hosts) =>
         hosts
           .map((host) => ({

@@ -67,7 +67,7 @@ class TestProvider(BaseTestCase):
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def check_provider_deleted(
         self,
@@ -85,7 +85,7 @@ class TestProvider(BaseTestCase):
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def check_action_log(self, log: AuditLog, provider: HostProvider, operation_name: str) -> None:
         self.assertEqual(log.audit_object.object_id, provider.pk)
@@ -96,10 +96,10 @@ class TestProvider(BaseTestCase):
         self.assertEqual(log.operation_type, AuditLogOperationType.Update)
         self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
         self.assertIsInstance(log.operation_time, datetime)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def test_create(self):
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=reverse("provider"),
             data={
                 "name": self.name,
@@ -109,7 +109,7 @@ class TestProvider(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(log.audit_object.object_id, res.data["id"])
+        self.assertEqual(log.audit_object.object_id, response.data["id"])
         self.assertEqual(log.audit_object.object_name, self.name)
         self.assertEqual(log.audit_object.object_type, AuditObjectType.Provider)
         self.assertFalse(log.audit_object.is_deleted)
@@ -118,7 +118,7 @@ class TestProvider(BaseTestCase):
         self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.test_user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
         self.client.post(
             path=reverse("provider"),
@@ -136,11 +136,11 @@ class TestProvider(BaseTestCase):
         self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.test_user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("provider"),
                 data={
                     "name": self.name,
@@ -150,14 +150,14 @@ class TestProvider(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.assertFalse(log.audit_object)
         self.assertEqual(log.operation_name, self.provider_created_str)
         self.assertEqual(log.operation_type, AuditLogOperationType.Create)
         self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, self.no_rights_user.pk)
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def test_delete(self):
         provider = HostProvider.objects.create(
@@ -181,13 +181,13 @@ class TestProvider(BaseTestCase):
             prototype=self.prototype,
         )
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 path=reverse("provider-details", kwargs={"provider_id": provider.pk})
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_provider_deleted(
             log=log,
             provider=provider,
@@ -239,7 +239,7 @@ class TestProvider(BaseTestCase):
             user=self.test_user,
         )
 
-        res: Response = self.client.patch(
+        response: Response = self.client.patch(
             path=reverse(
                 "config-history-version-restore",
                 kwargs={"provider_id": provider.pk, "version": 1},
@@ -249,7 +249,7 @@ class TestProvider(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_provider_updated(
             log=log,
             provider=provider,
@@ -265,7 +265,7 @@ class TestProvider(BaseTestCase):
 
         ConfigLog.objects.create(obj_ref=config, config="{}")
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("config-history", kwargs={"provider_id": provider.pk}),
                 data={"config": {}},
                 content_type=APPLICATION_JSON,
@@ -273,7 +273,7 @@ class TestProvider(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_provider_updated(
             log=log,
             provider=provider,
@@ -282,7 +282,7 @@ class TestProvider(BaseTestCase):
         )
 
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
                     kwargs={"provider_id": provider.pk, "version": 1},
@@ -292,7 +292,7 @@ class TestProvider(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_provider_updated(
             log=log,
             provider=provider,

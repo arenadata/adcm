@@ -76,7 +76,7 @@ class TestComponent(BaseTestCase):
         if log.user:
             self.assertEqual(log.user.pk, user.pk)
 
-        self.assertIsInstance(log.object_changes, dict)
+        self.assertEqual(log.object_changes, {})
 
     def test_update_and_restore(self):
         self.client.post(
@@ -94,7 +94,7 @@ class TestComponent(BaseTestCase):
             user=self.test_user,
         )
 
-        res: Response = self.client.patch(
+        response: Response = self.client.patch(
             path=reverse(
                 "config-history-version-restore",
                 kwargs={"adcm_id": self.adcm.pk, "version": 1},
@@ -102,11 +102,12 @@ class TestComponent(BaseTestCase):
             content_type=APPLICATION_JSON,
         )
 
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+        new_log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_200_OK)
+        self.assertNotEqual(new_log.pk, log.pk)
+        self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_adcm_updated(
-            log=log,
+            log=new_log,
             operation_name=self.adcm_conf_updated_str,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
@@ -114,7 +115,7 @@ class TestComponent(BaseTestCase):
 
     def test_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("config-history", kwargs={"adcm_id": self.adcm.pk}),
                 data={"config": {}},
                 content_type=APPLICATION_JSON,
@@ -122,7 +123,7 @@ class TestComponent(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_adcm_updated(
             log=log,
             operation_name=self.adcm_conf_updated_str,
