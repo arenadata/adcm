@@ -11,8 +11,9 @@
 # limitations under the License.
 
 
-from api.component.views import ComponentDetailView, ComponentListView, StatusList
 from django.urls import include, path
+
+from api.component.views import ComponentDetailView, ComponentListView, StatusList
 
 urlpatterns = [
     path('', ComponentListView.as_view(), name='component'),

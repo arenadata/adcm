@@ -16,8 +16,9 @@ from pathlib import Path
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
-from rbac.models import Role, User
 from rest_framework.response import Response
+
+from rbac.models import Role, User
 
 APPLICATION_JSON = "application/json"
 

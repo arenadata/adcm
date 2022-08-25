@@ -13,6 +13,10 @@
 from datetime import datetime
 from secrets import randbelow
 
+from django.test import Client, TestCase
+from django.urls import reverse
+from django.utils import timezone as tz
+
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -22,9 +26,6 @@ from audit.models import (
     AuditSession,
     AuditSessionLoginResult,
 )
-from django.test import Client, TestCase
-from django.urls import reverse
-from django.utils import timezone as tz
 from rbac.models import User
 
 

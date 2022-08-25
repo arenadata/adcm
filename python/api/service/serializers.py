@@ -12,6 +12,10 @@
 
 # pylint: disable=redefined-builtin
 
+from django.db.utils import IntegrityError
+from rest_framework import serializers
+from rest_framework.reverse import reverse
+
 from api.action.serializers import ActionShort
 from api.cluster.serializers import BindSerializer
 from api.component.serializers import ComponentUISerializer
@@ -24,9 +28,6 @@ from cm.adcm_config import get_main_info
 from cm.api import add_service_to_cluster, bind, multi_bind
 from cm.errors import AdcmEx
 from cm.models import Action, Cluster, Prototype, ServiceComponent
-from django.db.utils import IntegrityError
-from rest_framework import serializers
-from rest_framework.reverse import reverse
 
 
 class ServiceSerializer(serializers.Serializer):

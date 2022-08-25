@@ -17,16 +17,17 @@ import json
 import os
 import subprocess
 import sys
-from django.db import transaction
-import adcm.init_django  # pylint: disable=unused-import
 
+from django.db import transaction
+
+import adcm.init_django  # pylint: disable=unused-import
 import cm.job
 from cm import config
 from cm.ansible_plugin import finish_check
 from cm.api import get_hc, save_hc
 from cm.errors import AdcmEx
 from cm.logger import log
-from cm.models import LogStorage, JobLog, Prototype, ServiceComponent
+from cm.models import JobLog, LogStorage, Prototype, ServiceComponent
 from cm.status_api import Event, post_event
 from cm.upgrade import bundle_switch
 

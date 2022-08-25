@@ -10,12 +10,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.db import IntegrityError
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    IntegerField,
+    JSONField,
+    Serializer,
+    SerializerMethodField,
+)
+
+from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
 from api.component.serializers import ComponentDetailSerializer
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
 from api.host.serializers import HostSerializer
-from api.serializers import StringListSerializer, DoUpgradeSerializer
+from api.serializers import DoUpgradeSerializer, StringListSerializer
 from api.utils import (
     CommonAPIURL,
     ObjectURL,
@@ -31,17 +42,6 @@ from cm.errors import AdcmEx
 from cm.models import Action, Cluster, Host, Prototype, ServiceComponent, Upgrade
 from cm.status_api import get_cluster_status, get_hc_status
 from cm.upgrade import do_upgrade
-from django.db import IntegrityError
-from rest_framework.serializers import (
-    BooleanField,
-    CharField,
-    IntegerField,
-    JSONField,
-    Serializer,
-    SerializerMethodField,
-)
-
-from adcm.serializers import EmptySerializer
 
 
 def get_cluster_id(obj):

@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cm.unit_tests import utils
 from django.test import TestCase
+
+from cm.unit_tests import utils
 
 plausible_action_variants = {
     'unlimited': {

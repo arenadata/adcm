@@ -13,14 +13,15 @@
 from __future__ import unicode_literals
 
 import social_django.views
-from cm import config
-from cm.logger import log
-from cm.models import UserProfile
 from django.contrib.auth import login
 from django.shortcuts import redirect, render
 from django.utils.http import urlencode
 from rest_framework.authtoken.models import Token
 from social_core.exceptions import AuthForbidden
+
+from cm import config
+from cm.logger import log
+from cm.models import UserProfile
 
 
 def index(request):

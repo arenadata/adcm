@@ -11,12 +11,7 @@
 # limitations under the License.
 
 import jsonschema
-from audit.utils import audit
-from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 from guardian.mixins import PermissionListMixin
-from rbac.models import Group, Policy, Role, RoleTypes, User
-from rbac.services.policy import policy_create, policy_update
-from rbac.utils import BaseRelatedSerializer
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -36,6 +31,11 @@ from rest_framework.status import (
 from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import DjangoModelPermissionsAudit
+from audit.utils import audit
+from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
+from rbac.models import Group, Policy, Role, RoleTypes, User
+from rbac.services.policy import policy_create, policy_update
+from rbac.utils import BaseRelatedSerializer
 
 
 class ObjectField(JSONField):

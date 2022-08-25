@@ -10,15 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from audit.utils import audit
-from cm.models import ProductCategory
 from django.db.models import Prefetch, Q
 from django_filters import rest_framework as filters
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
-from rbac.models import Role, RoleTypes
-from rbac.services.role import role_create, role_update
-from rbac.utils import BaseRelatedSerializer
 from rest_flex_fields import is_expanded
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.decorators import action
@@ -39,6 +34,11 @@ from rest_framework.status import (
 from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import DjangoModelPermissionsAudit
+from audit.utils import audit
+from cm.models import ProductCategory
+from rbac.models import Role, RoleTypes
+from rbac.services.role import role_create, role_update
+from rbac.utils import BaseRelatedSerializer
 
 
 class RoleChildSerializer(BaseRelatedSerializer):

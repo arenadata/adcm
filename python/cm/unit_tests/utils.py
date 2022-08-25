@@ -12,8 +12,9 @@
 
 from uuid import uuid4
 
-from cm import models
 from django.utils import timezone
+
+from cm import models
 
 
 def _gen_name(prefix: str, name='name'):
