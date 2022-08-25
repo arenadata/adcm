@@ -10,9 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
-from rest_framework.test import APIClient
 
 from init_db import init as init_adcm
 from rbac.models import Policy, Role, User
@@ -24,11 +23,11 @@ class TestBase(TestCase):
         init_adcm()
         init_roles()
 
-        self.client = APIClient(HTTP_USER_AGENT="Mozilla/5.0")
+        self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
         res = self.client.post(
             path=reverse("rbac:token"),
             data={"username": "admin", "password": "admin"},
-            format="json",
+            content_type="application/json",
         )
         self.client.defaults["Authorization"] = f"Token {res.data['token']}"
         self.admin = User.objects.get(username="admin")
@@ -52,9 +51,11 @@ class TestPolicy(TestBase):
                 "id": self.role.pk,
             },
         }
-        response = self.client.patch(url, data=data_valid, format="json")
+        response = self.client.patch(url, data=data_valid, content_type="application/json")
         self.assertEqual(response.status_code, 200)
 
-        response = self.client.patch(url, data={**data_valid, **{"role": {}}}, format="json")
+        response = self.client.patch(
+            url, data={**data_valid, **{"role": {}}}, content_type="application/json"
+        )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["code"], "INVALID_DATA")
