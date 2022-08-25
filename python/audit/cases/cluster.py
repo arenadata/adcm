@@ -15,6 +15,8 @@ from django.db.models import Model
 from django.views import View
 from rest_framework.response import Response
 
+CONFIGURATION_STR = "configuration "
+
 
 # pylint: disable-next=too-many-locals,too-many-branches,too-many-statements
 def cluster_case(
@@ -193,7 +195,7 @@ def cluster_case(
                 obj_type=AuditObjectType.Service,
                 operation_type=AuditLogOperationType.Update,
                 obj_pk=service_pk,
-                operation_aux_str="configuration "
+                operation_aux_str=CONFIGURATION_STR,
             )
 
         case (
@@ -220,7 +222,7 @@ def cluster_case(
                 obj_type=AuditObjectType.Component,
                 operation_type=AuditLogOperationType.Update,
                 obj_pk=component_pk,
-                operation_aux_str="configuration "
+                operation_aux_str=CONFIGURATION_STR,
             )
 
         case ["cluster", cluster_pk, "bind"]:
@@ -287,7 +289,7 @@ def cluster_case(
                 obj_type=AuditObjectType.Cluster,
                 operation_type=AuditLogOperationType.Update,
                 obj_pk=cluster_pk,
-                operation_aux_str="configuration "
+                operation_aux_str=CONFIGURATION_STR,
             )
 
         case (
@@ -301,7 +303,7 @@ def cluster_case(
                 obj_type=AuditObjectType.Host,
                 operation_type=AuditLogOperationType.Update,
                 obj_pk=host_pk,
-                operation_aux_str="configuration "
+                operation_aux_str=CONFIGURATION_STR,
             )
 
     return audit_operation, audit_object

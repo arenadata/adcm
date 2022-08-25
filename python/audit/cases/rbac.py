@@ -35,7 +35,7 @@ def _rbac_case(
 
         audit_object = get_or_create_audit_obj(
             object_id=data.obj_pk,
-            object_name=obj.name if not obj_type == AuditObjectType.User else obj.username,
+            object_name=obj.name if obj_type != AuditObjectType.User else obj.username,
             object_type=obj_type,
         )
     else:

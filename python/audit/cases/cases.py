@@ -27,7 +27,7 @@ from rest_framework.response import Response
 
 
 def get_audit_operation_and_object(
-        view: View, response: Response, deleted_obj: Model
+    view: View, response: Response, deleted_obj: Model
 ) -> Tuple[Optional[AuditOperation], Optional[AuditObject], Optional[str]]:
     operation_name = None
     path = view.request.path.replace("/api/v1/", "")[:-1].split("/")
@@ -44,11 +44,11 @@ def get_audit_operation_and_object(
             deleted_obj=deleted_obj,
         )
     elif (
-            "cluster" in path  # pylint: disable=too-many-boolean-expressions
-            or "component" in path
-            or ("host" in path and "config" in path)
-            or ("service" in path and "import" in path)
-            or ("service" in path and "config" in path)
+        "cluster" in path  # pylint: disable=too-many-boolean-expressions
+        or "component" in path
+        or ("host" in path and "config" in path)
+        or ("service" in path and "import" in path)
+        or ("service" in path and "config" in path)
     ):
         audit_operation, audit_object = cluster_case(
             path=path,
