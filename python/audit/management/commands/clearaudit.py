@@ -181,11 +181,11 @@ class Command(BaseCommand):
         return header
 
     def __log(self, msg, method="info"):
-        prefix = "Audit cleanup/archiving: "
+        prefix = "Audit cleanup/archiving:"
         if method in ("exc", "exception"):
-            log.warning("%sError in auditlog rotation", prefix)
+            log.warning("%s Error in auditlog rotation", prefix)
             log.exception(msg)
         else:
-            msg = prefix + str(msg)
+            msg = f"{prefix} {msg}"
             self.stdout.write(msg)
             getattr(log, method)(msg)
