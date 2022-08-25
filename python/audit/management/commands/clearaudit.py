@@ -13,6 +13,7 @@
 import csv
 import os
 from datetime import timedelta
+from pathlib import Path
 from shutil import rmtree
 from tarfile import TarFile
 
@@ -139,42 +140,43 @@ class Command(BaseCommand):
             if not qs.exists():
                 continue
 
-            tmp_cvf_name = self.__get_csv_name(qs, now, base_dir)
-            exists = os.path.exists(tmp_cvf_name)
-            mode = "at" if exists else "wt"
+            tmp_cvf_name = os.path.join(
+                base_dir,
+                f"audit_{now}_{self.archive_model_postfix_map[qs.model]}.csv",
+            )
+            header = self.__get_csv_header(tmp_cvf_name)
+            qs_fields = [f.column for f in qs.model._meta.fields]
+            if header:
+                if set(header) != set(qs_fields):
+                    self.__log(
+                        f"Fields of {qs.model._meta.object_name} was changed, "
+                        f"can\'t append to existing file. No archiving will be made",
+                        "warning",
+                    )
+                    continue
+                qs_fields = header
+
+            mode = "at" if header else "wt"
             with open(tmp_cvf_name, mode, newline="", encoding=self.encoding) as csv_file:
                 writer = csv.writer(csv_file)
 
-                fields = [f.column for f in qs.model._meta.fields]
-                if not exists:
-                    writer.writerow(fields)  # header
-                else:
-                    with open(tmp_cvf_name, "rt", encoding=self.encoding) as csv_file:
-                        exist_fields = csv_file.readline().strip().split(",")
-                    if set(exist_fields) != set(fields):
-                        self.__log(
-                            f"Fields of {qs.model._meta.object_name} was changed, "
-                            f"can\'t append to existing file",
-                            "warning",
-                        )
-                        continue
-                    fields = exist_fields
+                if header is None:
+                    writer.writerow(qs_fields)  # header
 
                 for obj in qs:
-                    row = [str(getattr(obj, f)) for f in fields]
+                    row = [str(getattr(obj, f)) for f in qs_fields]
                     writer.writerow(row)
 
             csv_files.append(tmp_cvf_name)
 
         return csv_files
 
-    def __get_csv_name(self, queryset, now, base_dir):
-        tmp_cvf_name = os.path.join(
-            base_dir,
-            f"audit_{now}_{self.archive_model_postfix_map[queryset.model]}.csv",
-        )
-
-        return tmp_cvf_name
+    def __get_csv_header(self, path):
+        header = None
+        if Path(path).is_file():
+            with open(path, "rt", encoding=self.encoding) as csv_file:
+                header = csv_file.readline().strip().split(",")
+        return header
 
     def __log(self, msg, method="info"):
         prefix = "Audit cleanup/archiving: "
