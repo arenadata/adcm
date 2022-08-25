@@ -54,45 +54,47 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            _, config = get_adcm_config(self.config_key)
-            if config["retention_period"] <= 0:
-                self.__log("Disabled")
-                return
-
-            threshold_date = timezone.now() - timedelta(days=config["retention_period"])
-            self.__log(f"Started. Threshold date: {threshold_date}")
-
-            # get delete candidates
-            target_operations = AuditLog.objects.filter(operation_time__lt=threshold_date)
-            target_logins = AuditSession.objects.filter(login_time__lt=threshold_date)
-            objects_pk_to_delete = set()
-            for ao in AuditObject.objects.filter(is_deleted=True):
-                if not ao.auditlog_set.exclude(
-                    pk__in=target_operations.values_list("pk", flat=True)
-                ).exists():
-                    objects_pk_to_delete.add(ao.pk)
-            target_objects = AuditObject.objects.filter(pk__in=objects_pk_to_delete)
-
-            cleared = False
-            if any(qs.exists() for qs in (target_operations, target_logins, target_objects)):
-                make_audit_log("audit", AuditLogOperationResult.Success, "launched")
-
-            if config["data_archiving"]:
-                archive_path = os.path.join(self.archive_base_dir, self.archive_name)
-                self.__log(f"Target audit records will be archived to `{archive_path}`")
-                self.__archive(target_operations, target_logins, target_objects)
-            else:
-                self.__log("Archiving is disabled")
-
-            cleared = self.__delete(target_operations, target_logins, target_objects)
-
-            self.__log("Finished.")
-            if cleared:
-                make_audit_log("audit", AuditLogOperationResult.Success, "completed")
-
+            self.__handle()
         except Exception as e:  # pylint: disable=broad-except
             make_audit_log("audit", AuditLogOperationResult.Fail, "completed")
             self.__log(e, "exception")
+
+    def __handle(self):
+        _, config = get_adcm_config(self.config_key)
+        if config["retention_period"] <= 0:
+            self.__log("Disabled")
+            return
+
+        threshold_date = timezone.now() - timedelta(days=config["retention_period"])
+        self.__log(f"Started. Threshold date: {threshold_date}")
+
+        # get delete candidates
+        target_operations = AuditLog.objects.filter(operation_time__lt=threshold_date)
+        target_logins = AuditSession.objects.filter(login_time__lt=threshold_date)
+        objects_pk_to_delete = set()
+        for ao in AuditObject.objects.filter(is_deleted=True):
+            if not ao.auditlog_set.exclude(
+                pk__in=target_operations.values_list("pk", flat=True)
+            ).exists():
+                objects_pk_to_delete.add(ao.pk)
+        target_objects = AuditObject.objects.filter(pk__in=objects_pk_to_delete)
+
+        cleared = False
+        if any(qs.exists() for qs in (target_operations, target_logins, target_objects)):
+            make_audit_log("audit", AuditLogOperationResult.Success, "launched")
+
+        if config["data_archiving"]:
+            archive_path = os.path.join(self.archive_base_dir, self.archive_name)
+            self.__log(f"Target audit records will be archived to `{archive_path}`")
+            self.__archive(target_operations, target_logins, target_objects)
+        else:
+            self.__log("Archiving is disabled")
+
+        cleared = self.__delete(target_operations, target_logins, target_objects)
+
+        self.__log("Finished.")
+        if cleared:
+            make_audit_log("audit", AuditLogOperationResult.Success, "completed")
 
     def __archive(self, *querysets):
         os.makedirs(self.archive_base_dir, exist_ok=True)
