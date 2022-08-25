@@ -13,16 +13,18 @@ def _get_obj_type(obj_type: str) -> str:
         return "service"
     elif obj_type == "service component":
         return "component"
+    elif obj_type == "host provider":
+        return "provider"
 
     return obj_type
 
 
 # pylint: disable-next=too-many-locals,too-many-branches,too-many-statements
 def config_case(
-        path: list[str, ...],
-        view: View,
-        response: Response,
-        deleted_obj: Model,
+    path: list[str, ...],
+    view: View,
+    response: Response,
+    deleted_obj: Model,
 ) -> tuple[AuditOperation, AuditObject | None, str | None]:
     audit_operation = None
     audit_object = None
