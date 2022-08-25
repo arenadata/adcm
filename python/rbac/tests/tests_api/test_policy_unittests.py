@@ -24,12 +24,12 @@ class TestBase(TestCase):
         init_roles()
 
         self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
-        res = self.client.post(
+        response = self.client.post(
             path=reverse("rbac:token"),
             data={"username": "admin", "password": "admin"},
             content_type="application/json",
         )
-        self.client.defaults["Authorization"] = f"Token {res.data['token']}"
+        self.client.defaults["Authorization"] = f"Token {response.data['token']}"
         self.admin = User.objects.get(username="admin")
 
         self.role = Role.objects.create(
