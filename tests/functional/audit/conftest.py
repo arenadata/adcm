@@ -12,18 +12,23 @@
 
 """conftest for audit tests"""
 
+from collections import OrderedDict
+from datetime import datetime
 from pathlib import Path
-from typing import Callable, Dict, Literal, NamedTuple, Optional
+from typing import Callable, Dict, List, Literal, NamedTuple, Optional, Union
 
 import allure
 import pytest
 import requests
+from adcm_client.audit import AuditLogin, AuditLoginList, AuditOperation, AuditOperationList
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCMClient
 
 from tests.functional.conftest import only_clean_adcm
+from tests.functional.rbac.conftest import BusinessRoles
 from tests.library.audit.checkers import AuditLogChecker
 from tests.library.audit.readers import ParsedAuditLog, YAMLReader
+from tests.library.db import Query, QueryExecutioner
 
 # pylint: disable=redefined-outer-name
 
@@ -109,28 +114,30 @@ class CreateDeleteOperation:
 
 
 @pytest.fixture()
-def rbac_create_data(sdk_client_fs) -> Dict[str, dict]:
+def rbac_create_data(sdk_client_fs) -> OrderedDict[str, dict]:
     """Prepare data to create RBAC objects"""
-    business_role = sdk_client_fs.role(name='View ADCM settings')
+    business_role = sdk_client_fs.role(name=BusinessRoles.ViewADCMSettings.value.role_name)
     adcm_user_role = sdk_client_fs.role(name='ADCM User')
-    return {
-        'user': {**NEW_USER},
-        'group': {'name': 'groupforU'},
-        'role': {
-            'name': 'newrole',
-            'description': 'Awesome role',
-            'display_name': 'New Role',
-            'child': [{'id': business_role.id}],
-        },
-        'policy': {
-            'name': 'newpolicy',
-            'description': 'Best policy ever',
-            'role': {'id': adcm_user_role.id},
-            'user': [{'id': sdk_client_fs.me().id}],
-            'group': [],
-            'object': [],
-        },
-    }
+    return OrderedDict(
+        {
+            'user': {**NEW_USER},
+            'group': {'name': 'groupforU'},
+            'role': {
+                'name': 'newrole',
+                'description': 'Awesome role',
+                'display_name': 'New Role',
+                'child': [{'id': business_role.id}],
+            },
+            'policy': {
+                'name': 'newpolicy',
+                'description': 'Best policy ever',
+                'role': {'id': adcm_user_role.id},
+                'user': [{'id': sdk_client_fs.me().id}],
+                'group': [],
+                'object': [],
+            },
+        }
+    )
 
 
 # requesting utilities
@@ -226,3 +233,33 @@ def check_failed(response: requests.Response, exact_code: Optional[int] = None):
 def make_auth_header(client: ADCMClient) -> dict:
     """Make authorization header based on API token from ADCM client"""
     return {'Authorization': f'Token {client.api_token()}'}
+
+
+# !===== DB manipulations =====!
+
+
+def format_date_for_db(date: datetime) -> str:
+    """Format date to the SQLite datetime format"""
+    return date.strftime("%Y-%m-%d %H:%M:%S.%f")
+
+
+def set_operations_date(
+    adcm_db: QueryExecutioner, new_date: datetime, operation_records: Union[AuditOperationList, List[AuditOperation]]
+):
+    """Set date for given operation audit records directly in ADCM database"""
+    adcm_db.exec(
+        Query('audit_auditlog')
+        .update([('operation_time', format_date_for_db(new_date))])
+        .where(id=tuple(map(lambda o: o.id, operation_records)))
+    )
+
+
+def set_logins_date(
+    adcm_db: QueryExecutioner, new_date: datetime, login_records: Union[AuditLoginList, List[AuditLogin]]
+):
+    """Set date for given login audit records directly in ADCM database"""
+    adcm_db.exec(
+        Query('audit_auditsession')
+        .update([('login_time', format_date_for_db(new_date))])
+        .where(id=tuple(map(lambda o: o.id, login_records)))
+    )

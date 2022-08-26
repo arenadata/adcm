@@ -10,6 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from guardian.mixins import PermissionListMixin
+from rest_framework import permissions
+from rest_framework.response import Response
+from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
+
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.cluster.serializers import BindSerializer
 from api.service.serializers import (
@@ -28,11 +33,7 @@ from audit.utils import audit
 from cm.api import delete_service, get_import, unbind
 from cm.models import Cluster, ClusterBind, ClusterObject, HostComponent, Prototype
 from cm.status_api import make_ui_service_status
-from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from rest_framework import permissions
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST
 
 
 def check_service(user, kwargs):

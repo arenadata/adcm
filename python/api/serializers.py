@@ -10,12 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.config.serializers import ConfigSerializerUI
-from api.utils import UrlField, check_obj, hlink
-from cm.adcm_config import get_action_variant, get_prototype_config, ui_config
-from cm.errors import raise_AdcmEx
-from cm.models import Cluster, GroupConfig, HostProvider, PrototypeConfig, Upgrade
-from cm.upgrade import do_upgrade
 from rest_framework.reverse import reverse
 from rest_framework.serializers import (
     BooleanField,
@@ -30,6 +24,11 @@ from rest_framework.serializers import (
 from rest_framework_extensions.settings import extensions_api_settings
 
 from adcm.serializers import EmptySerializer
+from api.config.serializers import ConfigSerializerUI
+from api.utils import UrlField, check_obj, hlink
+from cm.adcm_config import get_action_variant, get_prototype_config, ui_config
+from cm.errors import raise_AdcmEx
+from cm.models import Cluster, GroupConfig, HostProvider, PrototypeConfig
 
 
 class UpgradeSerializer(EmptySerializer):
@@ -62,31 +61,43 @@ class UpgradeSerializer(EmptySerializer):
 
         if 'cluster_id' in self.context:
             obj = check_obj(Cluster, self.context['cluster_id'])
-            proto = obj.prototype
         elif 'provider_id' in self.context:
             obj = check_obj(HostProvider, self.context['provider_id'])
-            proto = obj.prototype
         else:
             obj = None
-            proto = self.context['prototype']
 
         action_conf = PrototypeConfig.objects.filter(
             prototype=instance.action.prototype, action=instance.action
         ).order_by('id')
-        _, _, _, attr = get_prototype_config(proto, instance.action)
+        *_, attr = get_prototype_config(instance.action.prototype, instance.action)
         if obj:
             get_action_variant(obj, action_conf)
         conf = ConfigSerializerUI(action_conf, many=True, context=self.context, read_only=True)
         return {'attr': attr, 'config': conf.data}
 
 
-class UpgradeLinkSerializer(UpgradeSerializer):
+class ClusterUpgradeSerializer(UpgradeSerializer):
     class MyUrlField(UrlField):
         def get_kwargs(self, obj):
             return {'cluster_id': self.context['cluster_id'], 'upgrade_id': obj.id}
 
+    hostcomponentmap = SerializerMethodField()
     url = MyUrlField(read_only=True, view_name='cluster-upgrade-details')
     do = MyUrlField(read_only=True, view_name='do-cluster-upgrade')
+
+    def get_hostcomponentmap(self, instance):
+        if instance.action:
+            return instance.action.hostcomponentmap
+        return []
+
+
+class ProviderUpgradeSerializer(UpgradeSerializer):
+    class MyUrlField(UrlField):
+        def get_kwargs(self, obj):
+            return {'provider_id': self.context['provider_id'], 'upgrade_id': obj.id}
+
+    url = MyUrlField(read_only=True, view_name='provider-upgrade-details')
+    do = MyUrlField(read_only=True, view_name='do-provider-upgrade')
 
 
 class DoUpgradeSerializer(EmptySerializer):
@@ -94,11 +105,7 @@ class DoUpgradeSerializer(EmptySerializer):
     upgradable = BooleanField(read_only=True)
     config = JSONField(required=False, default=dict)
     task_id = IntegerField(read_only=True)
-
-    def create(self, validated_data):
-        upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')
-        config = validated_data.get('config')
-        return do_upgrade(validated_data.get('obj'), upgrade, config)
+    attr = JSONField(required=False, default=dict)
 
 
 class StringListSerializer(ListField):

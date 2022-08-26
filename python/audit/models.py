@@ -12,6 +12,9 @@
 
 from dataclasses import dataclass
 
+from django.contrib.auth.models import User as DjangoUser
+from django.db import models
+
 from cm.models import (
     ADCM,
     Bundle,
@@ -21,8 +24,6 @@ from cm.models import (
     HostProvider,
     ServiceComponent,
 )
-from django.contrib.auth.models import User as DjangoUser
-from django.db import models
 from rbac.models import Group, Policy, Role, User
 
 
@@ -89,7 +90,7 @@ class AuditOperation:
     operation_type: str
 
 
-AUDIT_OBJECT_TYPE_TO_MODEL_MAP = {
+MODEL_TO_AUDIT_OBJECT_TYPE_MAP = {
     Cluster: AuditObjectType.Cluster,
     ClusterObject: AuditObjectType.Service,
     ServiceComponent: AuditObjectType.Component,
@@ -101,4 +102,15 @@ AUDIT_OBJECT_TYPE_TO_MODEL_MAP = {
     Group: AuditObjectType.Group,
     Role: AuditObjectType.Role,
     Policy: AuditObjectType.Policy,
+}
+
+AUDIT_OBJECT_TYPE_TO_MODEL_MAP = {v: k for k, v in MODEL_TO_AUDIT_OBJECT_TYPE_MAP.items()}
+
+PATH_STR_TO_OBJ_CLASS_MAP = {
+    "adcm": ADCM,
+    "service": ClusterObject,
+    "component": ServiceComponent,
+    "provider": HostProvider,
+    "host": Host,
+    "cluster": Cluster,
 }

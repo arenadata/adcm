@@ -1,4 +1,4 @@
-from rest_framework.permissions import DjangoObjectPermissions, DjangoModelPermissions
+from rest_framework.permissions import DjangoModelPermissions, DjangoObjectPermissions
 
 from audit.utils import audit
 

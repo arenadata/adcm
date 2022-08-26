@@ -28,11 +28,9 @@ from selenium.webdriver.remote.webdriver import WebElement
 
 from tests.ui_tests.app.page.common.base_page import BasePageObject
 from tests.ui_tests.app.page.common.common_locators import (
-    ObjectPageLocators,
-)
-from tests.ui_tests.app.page.common.common_locators import (
     ObjectPageMenuLocators,
     CommonLocators,
+    ObjectPageLocators,
 )
 from tests.ui_tests.app.page.common.configuration.fields import ConfigFieldsManipulator
 from tests.ui_tests.app.page.common.configuration.locators import CommonConfigMenu
@@ -98,6 +96,7 @@ class CommonConfigMenuObj(BasePageObject):
     def save_config(self, load_timeout: int = 5):
         """Save current configuration"""
 
+        self.find_and_click(self.locators.search_input)
         self.find_and_click(self.locators.save_btn)
         self.wait_element_hide(self.locators.loading_text, timeout=load_timeout)
 
@@ -292,6 +291,12 @@ class CommonConfigMenuObj(BasePageObject):
             self.find_children(field_row, self.locators.ConfigRow.input)[id].click()
             self.find_children(field_row, self.locators.ConfigRow.input)[id].send_keys(value)
 
+    @allure.step('Click item button in config row')
+    def click_add_item_btn_in_row(self, row: Union[WebElement, str]):
+        """Click item button in config row"""
+        field_row = row if isinstance(row, WebElement) else self.get_config_row(display_name=row)
+        self.find_child(field_row, self.locators.ConfigRow.add_item_btn).click()
+
     @allure.step('Select option "{option}" in option field')
     def select_option(self, row: Union[WebElement, str], option: str):
         """For config type option select item from dropdown"""
@@ -410,10 +415,12 @@ class CommonConfigMenuObj(BasePageObject):
         self.check_element_should_be_visible(self.locators.field_error(error_message))
 
     def is_save_btn_disabled(self):
+        self.find_and_click(self.locators.search_input)
         return self.find_element(self.locators.save_btn).get_attribute("disabled") == 'true'
 
     @allure.step("Check save button status")
     def check_save_btn_state_and_save_conf(self, expected_state: bool):
+        self.find_and_click(self.locators.search_input)
         assert (
             not (self.is_save_btn_disabled()) == expected_state
         ), f'Save button should{" not " if expected_state is True else " "}be disabled'

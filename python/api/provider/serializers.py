@@ -10,10 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.db import IntegrityError
+from rest_framework.serializers import (
+    BooleanField,
+    CharField,
+    IntegerField,
+    JSONField,
+    SerializerMethodField,
+)
+
+from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
-from api.serializers import StringListSerializer, UpgradeSerializer, UrlField
+from api.serializers import DoUpgradeSerializer, StringListSerializer
 from api.utils import (
     CommonAPIURL,
     ObjectURL,
@@ -25,17 +35,8 @@ from api.utils import (
 from cm.adcm_config import get_main_info
 from cm.api import add_host_provider
 from cm.errors import AdcmEx
-from cm.models import Action, Prototype
-from django.db import IntegrityError
-from rest_framework.serializers import (
-    BooleanField,
-    CharField,
-    IntegerField,
-    JSONField,
-    SerializerMethodField,
-)
-
-from adcm.serializers import EmptySerializer
+from cm.models import Action, Prototype, Upgrade
+from cm.upgrade import do_upgrade
 
 
 class ProviderSerializer(EmptySerializer):
@@ -114,10 +115,9 @@ class ProviderUISerializer(ProviderDetailSerializer):
         return get_main_info(obj)
 
 
-class UpgradeProviderSerializer(UpgradeSerializer):
-    class MyUrlField(UrlField):
-        def get_kwargs(self, obj):
-            return {'provider_id': self.context['provider_id'], 'upgrade_id': obj.id}
-
-    url = MyUrlField(read_only=True, view_name='provider-upgrade-details')
-    do = MyUrlField(read_only=True, view_name='do-provider-upgrade')
+class DoProviderUpgradeSerializer(DoUpgradeSerializer):
+    def create(self, validated_data):
+        upgrade = check_obj(Upgrade, validated_data.get('upgrade_id'), 'UPGRADE_NOT_FOUND')
+        config = validated_data.get('config', {})
+        attr = validated_data.get('attr', {})
+        return do_upgrade(validated_data.get('obj'), upgrade, config, attr, [])

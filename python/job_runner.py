@@ -18,15 +18,18 @@ import os
 import subprocess
 import sys
 
-import adcm.init_django  # DO NOT DELETE !!!
+from django.db import transaction
+
+import adcm.init_django  # pylint: disable=unused-import
+import cm.job
 from cm import config
 from cm.ansible_plugin import finish_check
-import cm.job
-from cm.logger import log
-from cm.models import LogStorage, JobLog
-from cm.status_api import Event
-from cm.upgrade import bundle_switch
+from cm.api import get_hc, save_hc
 from cm.errors import AdcmEx
+from cm.logger import log
+from cm.models import JobLog, LogStorage, Prototype, ServiceComponent
+from cm.status_api import Event, post_event
+from cm.upgrade import bundle_switch
 
 
 def open_file(root, tag, job_id):
@@ -84,7 +87,7 @@ def env_configuration(job_config):
 def post_log(job_id, log_type, log_name):
     l1 = LogStorage.objects.filter(job__id=job_id, type=log_type, name=log_name).first()
     if l1:
-        cm.status_api.post_event(
+        post_event(
             'add_job_log',
             'job',
             job_id,
@@ -129,7 +132,7 @@ def start_subprocess(job_id, cmd, conf, out_file, err_file):
 
 
 def run_ansible(job_id):
-    log.debug("job_runner.py called as: %s", sys.argv)
+    log.debug("job_runner.py starts to run ansible job %s", job_id)
     conf = read_config(job_id)
     playbook = conf['job']['playbook']
     out_file, err_file = process_err_out_file(job_id, 'ansible')
@@ -161,7 +164,9 @@ def run_upgrade(job):
     cm.job.set_job_status(job.id, config.Job.RUNNING, event)
     out_file, err_file = process_err_out_file(job.id, 'internal')
     try:
-        bundle_switch(job.task.task_object, job.action.upgrade)
+        with transaction.atomic():
+            bundle_switch(job.task.task_object, job.action.upgrade)
+            switch_hc(job.task, job.action)
     except AdcmEx as e:
         err_file.write(e.msg)
         cm.job.set_job_status(job.id, config.Job.FAILED, event)
@@ -185,7 +190,29 @@ def run_python(job):
     sys.exit(ret)
 
 
+def switch_hc(task, action):
+    cluster = task.task_object
+    old_hc = get_hc(cluster)
+    new_hc = []
+    for hc in [*task.post_upgrade_hc_map, *old_hc]:
+        if hc not in new_hc:
+            new_hc.append(hc)
+    task.hostcomponentmap = old_hc
+    task.post_upgrade_hc_map = None
+    task.save()
+    for hc in new_hc:
+        if "component_prototype_id" in hc:
+            proto = Prototype.objects.get(type='component', id=hc.pop('component_prototype_id'))
+            comp = ServiceComponent.objects.get(cluster=cluster, prototype=proto)
+            hc['component_id'] = comp.id
+            hc['service_id'] = comp.service.id
+    host_map, _ = cm.job.check_hostcomponentmap(cluster, action, new_hc)
+    if host_map is not None:
+        save_hc(cluster, host_map)
+
+
 def main(job_id):
+    log.debug("job_runner.py called as: %s", sys.argv)
     job = JobLog.objects.get(id=job_id)
     job_type = job.sub_action.script_type if job.sub_action else job.action.script_type
     if job_type == 'internal':

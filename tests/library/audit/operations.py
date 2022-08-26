@@ -28,6 +28,14 @@ _create_delete_types = (
     ObjectType.ROLE,
 )
 
+# types that are just "updated"
+_simple_update_types = (
+    ObjectType.USER,
+    ObjectType.GROUP,
+    ObjectType.POLICY,
+    ObjectType.ROLE,
+)
+
 
 class NamedOperation(NamedTuple):
     """Operation with specific name (not just created/deleted)"""
@@ -93,6 +101,9 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         # Actions
         NamedOperation('launch-action', '{name} action launched', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         NamedOperation('complete-action', '{name} action completed', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        # Background tasks
+        NamedOperation('launch-background-task', '"{name}" job launched', (ObjectType.ADCM,)),
+        NamedOperation('complete-background-task', '"{name}" job completed', (ObjectType.ADCM,)),
         # Group config
         NamedOperation(
             'add-host-to-group-config',
@@ -188,6 +199,9 @@ class Operation:
             # code may be important for stuff like group config creation
             return f'{self.object_type.value.capitalize()} {self.operation_type.value.lower()}d'
 
+        if self.object_type in _simple_update_types and self.operation_type == OperationType.UPDATE:
+            return f'{self.object_type.value.capitalize()} updated'
+
         # special case, no need for "how" section here, I think
         if self.object_type == ObjectType.BUNDLE and self.operation_type == OperationType.DELETE:
             return 'Bundle deleted'
@@ -226,6 +240,7 @@ class Operation:
             # some operations don't have object, like Bundle upload,
             # because no ADCM object is created on this operation
             or (self.operation_name == _NAMED_OPERATIONS['upload'].naming_template)
+            or (self.code.get('operation') in {'launch-background-task', 'complete-background-task'})
         ):
             self.object_type = None
             self.object_name = None

@@ -12,6 +12,10 @@
 
 from itertools import chain
 
+from guardian.mixins import PermissionListMixin
+from rest_framework import permissions, status
+from rest_framework.response import Response
+
 import cm.api
 import cm.bundle
 import cm.job
@@ -23,13 +27,14 @@ from api.cluster.serializers import (
     ClusterSerializer,
     ClusterUISerializer,
     DoBindSerializer,
+    DoClusterUpgradeSerializer,
     HostComponentSaveSerializer,
     HostComponentSerializer,
     HostComponentUISerializer,
     PostImportSerializer,
     StatusSerializer,
 )
-from api.serializers import DoUpgradeSerializer, UpgradeLinkSerializer
+from api.serializers import ClusterUpgradeSerializer
 from api.stack.serializers import (
     BundleServiceUISerializer,
     ImportSerializer,
@@ -55,10 +60,7 @@ from cm.models import (
 )
 from cm.status_api import make_ui_cluster_status
 from cm.upgrade import get_upgrade
-from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from rest_framework import permissions, status
-from rest_framework.response import Response
 
 
 def get_obj_conf(cluster_id, service_id):
@@ -228,7 +230,11 @@ class ClusterBindDetail(GenericUIView):
 
     @staticmethod
     def get_obj(kwargs, bind_id):
-        return ClusterBind.objects.get(pk=bind_id).source_service
+        bind = ClusterBind.objects.filter(pk=bind_id).first()
+        if bind:
+            return bind.source_service
+
+        return None
 
     def get(self, request, *args, **kwargs):
         """
@@ -258,7 +264,7 @@ class ClusterBindDetail(GenericUIView):
 
 class ClusterUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = UpgradeLinkSerializer
+    serializer_class = ClusterUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_ordering(self):
@@ -282,7 +288,7 @@ class ClusterUpgrade(GenericUIView):
 
 class ClusterUpgradeDetail(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = UpgradeLinkSerializer
+    serializer_class = ClusterUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -304,9 +310,10 @@ class ClusterUpgradeDetail(GenericUIView):
 
 class DoClusterUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = DoUpgradeSerializer
+    serializer_class = DoClusterUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+    @audit
     def post(self, request, *args, **kwargs):
         """
         Do upgrade specified cluster
@@ -356,7 +363,11 @@ class HostComponentList(GenericUIView):
         check_custom_perm(
             request.user, 'view_host_components_of', 'cluster', cluster, 'view_hostcomponent'
         )
-        hc = self.get_queryset().filter(cluster=cluster)
+        hc = (
+            self.get_queryset()
+            .prefetch_related('service', 'component', 'host')
+            .filter(cluster=cluster)
+        )
         if self._is_for_ui():
             ui_hc = HostComponent()
             ui_hc.hc = hc

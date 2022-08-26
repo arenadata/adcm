@@ -12,10 +12,11 @@
 
 from unittest.mock import patch
 
+from django.test import TestCase
+
 from cm import issue, models
 from cm.hierarchy import Tree
 from cm.unit_tests import utils
-from django.test import TestCase
 
 mock_issue_check_map = {
     models.ConcernCause.Config: lambda x: False,

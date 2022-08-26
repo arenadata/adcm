@@ -19,10 +19,14 @@ import warnings
 from copy import deepcopy
 from typing import Any
 
-import cm.checker
 import ruyaml
 import yaml
 import yspec.checker
+from django.db import IntegrityError
+from rest_framework import status
+from version_utils import rpm
+
+import cm.checker
 from cm import config
 from cm.adcm_config import (
     check_config_type,
@@ -41,9 +45,6 @@ from cm.models import (
     StageSubAction,
     StageUpgrade,
 )
-from django.db import IntegrityError
-from rest_framework import status
-from version_utils import rpm
 
 NAME_REGEX = r'[0-9a-zA-Z_\.-]+'
 MAX_NAME_LENGTH = 256
@@ -417,10 +418,11 @@ UNSET = 'unset'
 def save_actions(proto, conf, bundle_hash):
     if in_dict(conf, 'versions'):
         conf['type'] = 'task'
-        upg_name = conf['name']
-        conf['display_name'] = f'Upgrade: {upg_name}'
-        name = re.sub(r'\s+', '_', upg_name).strip().lower()
-        action_name = f"{proto.name}_{proto.version}_{proto.edition}_upgrade_{name}"
+        upgrade_name = conf['name']
+        conf['display_name'] = f'Upgrade: {upgrade_name}'
+        action_name = f"{proto.name}_{proto.version}_{proto.edition}_upgrade_{upgrade_name}"
+        action_name = re.sub(r'\s+', '_', action_name).strip().lower()
+        action_name = re.sub(r'\(|\)', '', action_name)
         upgrade_action = save_action(proto, conf, bundle_hash, action_name)
         return upgrade_action
     if not in_dict(conf, 'actions'):

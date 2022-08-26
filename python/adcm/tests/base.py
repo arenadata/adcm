@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
 from contextlib import contextmanager
+from pathlib import Path
+
 from django.conf import settings
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -60,18 +61,18 @@ class BaseTestCase(TestCase):
         )
 
     def login(self):
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=reverse("rbac:token"),
             data={"username": self.test_user_username, "password": self.test_user_password},
             content_type=APPLICATION_JSON,
         )
-        self.client.defaults["Authorization"] = f"Token {res.data['token']}"
+        self.client.defaults["Authorization"] = f"Token {response.data['token']}"
 
     @property
     @contextmanager
     def no_rights_user_logged_in(self):
         self.client.post(path=reverse("rbac:logout"))
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=reverse("rbac:token"),
             data={
                 "username": self.no_rights_user_username,
@@ -79,7 +80,7 @@ class BaseTestCase(TestCase):
             },
             content_type=APPLICATION_JSON,
         )
-        self.client.defaults["Authorization"] = f"Token {res.data['token']}"
+        self.client.defaults["Authorization"] = f"Token {response.data['token']}"
 
         yield
 

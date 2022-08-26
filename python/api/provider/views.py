@@ -10,14 +10,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import api.serializers
+from guardian.mixins import PermissionListMixin
+from rest_framework import permissions, status
+from rest_framework.response import Response
+
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.provider.serializers import (
+    DoProviderUpgradeSerializer,
     ProviderDetailSerializer,
     ProviderSerializer,
     ProviderUISerializer,
-    UpgradeProviderSerializer,
 )
+from api.serializers import ProviderUpgradeSerializer
 from api.utils import (
     AdcmFilterBackend,
     AdcmOrderingFilter,
@@ -30,10 +34,7 @@ from audit.utils import audit
 from cm.api import delete_host_provider
 from cm.models import HostProvider, Upgrade
 from cm.upgrade import get_upgrade
-from guardian.mixins import PermissionListMixin
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from rest_framework import permissions, status
-from rest_framework.response import Response
 
 
 class ProviderList(PermissionListMixin, PaginatedView):
@@ -86,7 +87,7 @@ class ProviderDetail(PermissionListMixin, DetailView):
 
 class ProviderUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = UpgradeProviderSerializer
+    serializer_class = ProviderUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
     filter_backends = (AdcmFilterBackend, AdcmOrderingFilter)
 
@@ -111,7 +112,7 @@ class ProviderUpgrade(GenericUIView):
 
 class ProviderUpgradeDetail(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = UpgradeProviderSerializer
+    serializer_class = ProviderUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
@@ -133,16 +134,15 @@ class ProviderUpgradeDetail(GenericUIView):
 
 class DoProviderUpgrade(GenericUIView):
     queryset = Upgrade.objects.all()
-    serializer_class = api.serializers.DoUpgradeSerializer
+    serializer_class = DoProviderUpgradeSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+    @audit
     def post(self, request, *args, **kwargs):
-        """
-        Do upgrade specified host provider
-        """
         provider = get_object_for_user(
             request.user, 'cm.view_hostprovider', HostProvider, id=kwargs['provider_id']
         )
         check_custom_perm(request.user, 'do_upgrade_of', 'hostprovider', provider)
         serializer = self.get_serializer(data=request.data)
+
         return create(serializer, upgrade_id=int(kwargs['upgrade_id']), obj=provider)

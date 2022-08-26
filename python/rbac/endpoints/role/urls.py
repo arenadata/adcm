@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rbac.endpoints.role.views import RoleView
 from rest_framework.routers import DefaultRouter
+
+from rbac.endpoints.role.views import RoleView
 
 router = DefaultRouter()
 router.register(r'', RoleView, basename='role')

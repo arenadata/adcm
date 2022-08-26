@@ -16,26 +16,21 @@
 
 import datetime
 import itertools
-
-from typing import Collection, Tuple, List, Optional, Set
+from typing import Collection, List, Optional, Set, Tuple
 
 import allure
 import pytest
-from adcm_client.objects import ADCM, ADCMClient, Cluster, Service, Component, Provider, Host, Task
+from adcm_client.objects import ADCM, ADCMClient, Cluster, Component, Host, Provider, Service, Task
 from adcm_pytest_plugin.steps.commands import logrotate
 from adcm_pytest_plugin.utils import get_data_dir, random_string
 from docker.models.containers import Container
 
 from tests.functional.conftest import only_clean_adcm
 from tests.library.assertions import does_not_intersect, is_superset_of
-from tests.library.db import QueryExecutioner, Query
+from tests.library.db import set_configs_date, set_job_directories_date, set_jobs_date, set_tasks_date
 
 pytestmark = [only_clean_adcm]
 
-CONFIG_LOG_TABLE = 'cm_configlog'
-JOB_LOG_TABLE = 'cm_joblog'
-TASK_LOG_TABLE = 'cm_tasklog'
-LOG_STORAGE_TABLE = 'cm_logstorage'
 
 SIMPLE_ACTION = 'simple'
 MULTIJOB_ACTION = 'multi'
@@ -226,7 +221,7 @@ def test_config_rotation(sdk_client_fs, adcm_fs, adcm_db, separated_configs, obj
     all_configs, not_bonded_configs = separated_configs
 
     set_rotation_info_in_adcm_config(sdk_client_fs.adcm(), config_in_db=1)
-    set_config_date(adcm_db, ten_days_ago)
+    set_configs_date(adcm_db, ten_days_ago)
     logrotate(adcm_fs)
 
     check_config_logs_are_presented(sdk_client_fs, all_configs)
@@ -246,8 +241,8 @@ def test_remove_only_expired_config_logs(sdk_client_fs, adcm_fs, adcm_db, separa
     not_so_old_configs = [c for i, c in enumerate(not_bonded_configs) if i % 2 != 0]
 
     set_rotation_info_in_adcm_config(sdk_client_fs.adcm(), config_in_db=5)
-    set_config_date(adcm_db, ten_days_ago)
-    set_config_date(adcm_db, five_days_ago, not_so_old_configs)
+    set_configs_date(adcm_db, ten_days_ago)
+    set_configs_date(adcm_db, five_days_ago, not_so_old_configs)
     logrotate(adcm_fs)
 
     check_config_logs_are_presented(sdk_client_fs, (*bonded_configs, *not_so_old_configs))
@@ -265,7 +260,7 @@ def test_logrotate_command_target_job(sdk_client_fs, adcm_fs, adcm_db, simple_ta
     job_ids = [t.id for t in simple_tasks]
 
     set_rotation_info_in_adcm_config(sdk_client_fs.adcm(), 1, 1, 1)
-    set_config_date(adcm_db, ten_days_ago)
+    set_configs_date(adcm_db, ten_days_ago)
     _set_tasks_jobs_date(adcm_fs, adcm_db, ten_days_ago, job_ids, job_ids)
     logrotate(adcm_fs, target='job')
 
@@ -285,7 +280,7 @@ def test_logrotate_command_target_config(sdk_client_fs, adcm_fs, adcm_db, simple
     ten_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=10)
 
     set_rotation_info_in_adcm_config(sdk_client_fs.adcm(), 1, 1, 1)
-    set_config_date(adcm_db, ten_days_ago)
+    set_configs_date(adcm_db, ten_days_ago)
     _set_tasks_jobs_date(adcm_fs, adcm_db, ten_days_ago, job_ids, job_ids)
     logrotate(adcm_fs, target='config')
 
@@ -309,7 +304,7 @@ def test_old_adcm_config_removal(sdk_client_fs, adcm_fs, adcm_db):
 
     set_rotation_info_in_adcm_config(adcm, config_in_db=1)
     adcm_history = [ch['id'] for ch in sorted(adcm.config_history(full=True), key=lambda c: c['date'])]
-    set_config_date(adcm_db, ten_days_ago, adcm_history)
+    set_configs_date(adcm_db, ten_days_ago, adcm_history)
     logrotate(adcm_fs)
 
     check_config_logs_are_presented(sdk_client_fs, adcm_history[-2:])
@@ -366,42 +361,6 @@ def set_rotation_info_in_adcm_config(
         config['config_rotation'] = {'config_rotation_in_db': config_in_db}
     with allure.step("Change ADCM config's rotation settings"):
         return adcm.config_set_diff(config)
-
-
-def set_config_date(adcm_db: QueryExecutioner, date: datetime.datetime, ids: Collection[int] = ()):
-    """Set given date to all config logs or given configs directly in ADCM database"""
-    query = Query(CONFIG_LOG_TABLE).update([('date', date)])
-    if ids:
-        query.where(id=ids)
-    adcm_db.exec(query)
-
-
-def set_jobs_date(adcm_db: QueryExecutioner, date: datetime.datetime, ids: Collection[int] = ()):
-    """Set given date to start_date and finish_date of all jobs or given jobs directly in ADCM database"""
-    query = Query(JOB_LOG_TABLE).update([('start_date', date), ('finish_date', date)])
-    if ids:
-        query.where(id=ids)
-    adcm_db.exec(query)
-
-
-def set_tasks_date(adcm_db: QueryExecutioner, date: datetime.datetime, ids: Collection[int] = ()):
-    """Set given date to start_date and finish_date of all tasks or given tasks directly in ADCM database"""
-    query = Query(TASK_LOG_TABLE).update([('start_date', date), ('finish_date', date)])
-    if ids:
-        query.where(id=ids)
-    adcm_db.exec(query)
-
-
-def set_job_directories_date(container: Container, date: datetime.datetime, ids: Collection[int]):
-    """Set given date as last modified date for each directory in /adcm/data/run that are presented in ids"""
-    strdate = date.strftime("%Y%m%d%H%M")
-    for id_ in ids:
-        exit_code, output = container.exec_run(['touch', '-t', strdate, f'/adcm/data/run/{id_}/'])
-        if exit_code != 0:
-            raise ValueError(
-                f"Failed to set modification date ('{strdate}') to job dir with id {id_}.\n'"
-                f"f'Output:\n{output.decode('utf-8')}"
-            )
 
 
 # !===== Checks =====!

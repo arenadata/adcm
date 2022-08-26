@@ -13,6 +13,7 @@
 """RBAC root URLs"""
 
 from django.urls import include, path
+
 from rbac.endpoints.logout import LogOut
 from rbac.endpoints.root import RBACRoot
 from rbac.endpoints.token import GetAuthToken
