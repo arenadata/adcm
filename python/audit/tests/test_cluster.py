@@ -491,7 +491,46 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
-    def test_bind_unbind(self):
+    def test_bind_unbind_cluster_to_cluster(self):
+        cluster = self.get_cluster_for_bind()
+        self.client.post(
+            path=reverse("cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
+            data={
+                "export_cluster_id": cluster.pk,
+                "export_service_id": None,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            obj=self.cluster,
+            obj_type=AuditObjectType.Cluster,
+            operation_name=f"Cluster bound to {self.cluster.name}/",
+            operation_type=AuditLogOperationType.Update,
+        )
+
+        bind = ClusterBind.objects.first()
+        self.client.delete(
+            path=reverse(
+                "cluster-bind-details", kwargs={"cluster_id": self.cluster.pk, "bind_id": bind.pk}
+            ),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            obj=self.cluster,
+            obj_type=AuditObjectType.Cluster,
+            operation_name=f"{self.cluster.name}/ unbound",
+            operation_type=AuditLogOperationType.Update,
+        )
+
+    def test_bind_unbind_service_to_cluster(self):
         self.client.post(
             path=reverse("cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
             data={
@@ -919,7 +958,7 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
-    def test_bind_unbind_service(self):
+    def test_bind_unbind_cluster_to_service(self):
         cluster = self.get_cluster_for_bind()
         self.client.post(
             path=reverse(
@@ -987,7 +1026,7 @@ class TestCluster(BaseTestCase):
             operation_result=AuditLogOperationResult.Fail,
         )
 
-    def test_bind_unbind_service_denied(self):
+    def test_bind_unbind_cluster_to_service_denied(self):
         cluster = self.get_cluster_for_bind()
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(

@@ -349,7 +349,7 @@ class ClusterBindSerializer(BindSerializer):
 class DoBindSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     export_cluster_id = IntegerField()
-    export_service_id = IntegerField(required=False)
+    export_service_id = IntegerField(required=False, allow_null=True)
     export_cluster_name = CharField(read_only=True)
     export_cluster_prototype_name = CharField(read_only=True)
 
