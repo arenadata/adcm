@@ -22,6 +22,7 @@ from audit.utils import make_audit_log
 from cm.adcm_config import get_adcm_config
 from cm.logger import log_cron_task as log
 from django.core.management.base import BaseCommand
+from django.db.models import Count, Q
 from django.utils import timezone
 
 
@@ -71,13 +72,9 @@ class Command(BaseCommand):
         # get delete candidates
         target_operations = AuditLog.objects.filter(operation_time__lt=threshold_date)
         target_logins = AuditSession.objects.filter(login_time__lt=threshold_date)
-        objects_pk_to_delete = set()
-        for ao in AuditObject.objects.filter(is_deleted=True):
-            if not ao.auditlog_set.exclude(
-                pk__in=target_operations.values_list("pk", flat=True)
-            ).exists():
-                objects_pk_to_delete.add(ao.pk)
-        target_objects = AuditObject.objects.filter(pk__in=objects_pk_to_delete)
+        target_objects = AuditObject.objects.annotate(
+            not_deleted_auditlogs_count=Count('auditlog', filter=~Q(auditlog__in=target_operations))
+        ).filter(not_deleted_auditlogs_count__lte=0)
 
         cleared = False
         if any(qs.exists() for qs in (target_operations, target_logins, target_objects)):
