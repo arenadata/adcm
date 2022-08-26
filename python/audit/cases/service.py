@@ -29,7 +29,7 @@ def service_case(
                 operation_type=AuditLogOperationType.Update,
             )
 
-            if response.data:
+            if response and response.data:
                 if response.data.get("cluster_id"):
                     cluster = Cluster.objects.filter(pk=response.data["cluster_id"]).first()
 

@@ -50,17 +50,17 @@ class TestService(BaseTestCase):
         bundle = Bundle.objects.create()
         self.cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster")
         self.cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster")
-        service_prototype = Prototype.objects.create(bundle=bundle, type="service")
+        self.service_prototype = Prototype.objects.create(bundle=bundle, type="service")
         config = ObjectConfig.objects.create(current=1, previous=1)
         ConfigLog.objects.create(obj_ref=config, config="{}")
         self.service = ClusterObject.objects.create(
-            prototype=service_prototype, cluster=self.cluster, config=config
+            prototype=self.service_prototype, cluster=self.cluster, config=config
         )
         self.service_conf_updated_str = "Service configuration updated"
         self.action_display_name = "test_service_action"
         self.action = Action.objects.create(
             display_name="test_service_action",
-            prototype=service_prototype,
+            prototype=self.service_prototype,
             type="job",
             state_available="any",
         )
@@ -96,6 +96,48 @@ class TestService(BaseTestCase):
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
         )
+
+    def test_create(self):
+        cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_2")
+        self.client.post(
+            path=reverse("service"),
+            data={
+                "cluster_id": cluster.pk,
+                "prototype_id": self.service_prototype.pk,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            obj=cluster,
+            object_type=AuditObjectType.Cluster,
+            operation_name="service added",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
+        )
+
+        self.client.post(
+            path=reverse("service"),
+            data={
+                "cluster_id": cluster.pk,
+                "prototype_id": self.service_prototype.pk,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, "service added")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.object_changes, {})
 
     @staticmethod
     def get_service_and_cluster() -> tuple[ClusterObject, Cluster]:
