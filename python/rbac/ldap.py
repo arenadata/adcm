@@ -26,23 +26,23 @@ from cm.models import ADCM, ConfigLog
 from rbac.models import User, Group, OriginType
 
 
-CERT_ENV_KEY = 'LDAPTLS_CACERT'
+CERT_ENV_KEY = "LDAPTLS_CACERT"
 
 
 def _process_extra_filter(filterstr: str) -> str:
-    filterstr = filterstr or ''
-    if filterstr == '':
+    filterstr = filterstr or ""
+    if filterstr == "":
         return filterstr
 
     # simple single filter ex: `primaryGroupID=513`
-    if '(' not in filterstr and ')' not in filterstr:
-        return f'({filterstr})'
+    if "(" not in filterstr and ")" not in filterstr:
+        return f"({filterstr})"
     else:
         # assume that composed filter is syntactically valid
         return filterstr
 
 
-def configure_tls(enabled, cert_filepath='', conn=None):
+def configure_tls(enabled, cert_filepath="", conn=None):
     os.environ.pop(CERT_ENV_KEY, None)
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
 
@@ -67,7 +67,7 @@ def configure_tls(enabled, cert_filepath='', conn=None):
 
 
 def is_tls(ldap_uri):
-    if 'ldaps://' in ldap_uri.lower():
+    if "ldaps://" in ldap_uri.lower():
         return True
     return False
 
@@ -80,72 +80,72 @@ def _get_ldap_default_settings():
         obj_ref=adcm_object.config, id=adcm_object.config.current
     )
 
-    if current_configlog.attr['ldap_integration']['active']:
-        ldap_config = current_configlog.config['ldap_integration']
+    if current_configlog.attr["ldap_integration"]["active"]:
+        ldap_config = current_configlog.config["ldap_integration"]
 
         user_search = LDAPSearch(
-            base_dn=ldap_config['user_search_base'],
+            base_dn=ldap_config["user_search_base"],
             scope=ldap.SCOPE_SUBTREE,
-            filterstr=f'(&'
-            f'(objectClass={ldap_config.get("user_object_class") or "*"})'
-            f'({ldap_config["user_name_attribute"]}=%(user)s)'
-            f'{_process_extra_filter(ldap_config.get("user_search_filter"))}'
-            f')',
+            filterstr=f"(&"
+            f"(objectClass={ldap_config.get('user_object_class') or '*'})"
+            f"({ldap_config['user_name_attribute']}=%(user)s)"
+            f"{_process_extra_filter(ldap_config.get('user_search_filter'))}"
+            f")",
         )
         group_search = None
-        if ldap_config['group_search_base']:
+        if ldap_config["group_search_base"]:
             group_search = LDAPSearch(
-                base_dn=ldap_config['group_search_base'],
+                base_dn=ldap_config["group_search_base"],
                 scope=ldap.SCOPE_SUBTREE,
-                filterstr=f'(objectClass={ldap_config.get("group_object_class") or "*"})'
-                f'{_process_extra_filter(ldap_config.get("group_search_filter"))}',
+                filterstr=f"(objectClass={ldap_config.get('group_object_class') or '*'})"
+                f"{_process_extra_filter(ldap_config.get('group_search_filter'))}",
             )
         user_attr_map = {
             "username": ldap_config["user_name_attribute"],
-            "first_name": 'givenName',
+            "first_name": "givenName",
             "last_name": "sn",
             "email": "mail",
         }
         group_type = MemberDNGroupType(
-            member_attr=ldap_config['group_member_attribute_name'],
-            name_attr=ldap_config['group_name_attribute'],
+            member_attr=ldap_config["group_member_attribute_name"],
+            name_attr=ldap_config["group_name_attribute"],
         )
 
         default_settings = {
-            'SERVER_URI': ldap_config['ldap_uri'],
-            'BIND_DN': ldap_config['ldap_user'],
-            'BIND_PASSWORD': ansible_decrypt(ldap_config['ldap_password']),
-            'USER_SEARCH': user_search,
-            'USER_OBJECT_CLASS': ldap_config.get("user_object_class", "*"),
-            'USER_FILTER': _process_extra_filter(ldap_config.get("user_search_filter", '')),
-            'GROUP_FILTER': _process_extra_filter(ldap_config.get("group_search_filter", '')),
-            'USER_ATTR_MAP': user_attr_map,
-            'ALWAYS_UPDATE_USER': True,
-            'CACHE_TIMEOUT': 3600,
+            "SERVER_URI": ldap_config["ldap_uri"],
+            "BIND_DN": ldap_config["ldap_user"],
+            "BIND_PASSWORD": ansible_decrypt(ldap_config["ldap_password"]),
+            "USER_SEARCH": user_search,
+            "USER_OBJECT_CLASS": ldap_config.get("user_object_class", "*"),
+            "USER_FILTER": _process_extra_filter(ldap_config.get("user_search_filter", "")),
+            "GROUP_FILTER": _process_extra_filter(ldap_config.get("group_search_filter", "")),
+            "USER_ATTR_MAP": user_attr_map,
+            "ALWAYS_UPDATE_USER": True,
+            "CACHE_TIMEOUT": 3600,
         }
         if group_search:
             default_settings.update(
                 {
-                    'GROUP_SEARCH': group_search,
-                    'GROUP_TYPE': group_type,
-                    'GROUP_OBJECT_CLASS': ldap_config.get("group_object_class", "*"),
-                    'MIRROR_GROUPS': True,
-                    'FIND_GROUP_PERMS': True,
+                    "GROUP_SEARCH": group_search,
+                    "GROUP_TYPE": group_type,
+                    "GROUP_OBJECT_CLASS": ldap_config.get("group_object_class", "*"),
+                    "MIRROR_GROUPS": True,
+                    "FIND_GROUP_PERMS": True,
                 }
             )
 
-        if is_tls(ldap_config['ldap_uri']):
-            cert_filepath = ldap_config.get('tls_ca_cert_file', '')
+        if is_tls(ldap_config["ldap_uri"]):
+            cert_filepath = ldap_config.get("tls_ca_cert_file", "")
             if not cert_filepath or not os.path.exists(cert_filepath):
-                msg = 'NO_CERT_FILE'
+                msg = "NO_CERT_FILE"
                 log.warning(msg)
                 return {}, msg
             connection_options = configure_tls(enabled=True, cert_filepath=cert_filepath)
-            default_settings.update({'CONNECTION_OPTIONS': connection_options})
+            default_settings.update({"CONNECTION_OPTIONS": connection_options})
 
         return default_settings, None
 
-    return {}, 'NO_LDAP_SETTINGS'
+    return {}, "NO_LDAP_SETTINGS"
 
 
 class CustomLDAPBackend(LDAPBackend):
@@ -157,7 +157,7 @@ class CustomLDAPBackend(LDAPBackend):
         self.default_settings, _ = _get_ldap_default_settings()
         if not self.default_settings:
             return None
-        self.is_tls = is_tls(self.default_settings['SERVER_URI'])
+        self.is_tls = is_tls(self.default_settings["SERVER_URI"])
 
         try:
             if not self.__check_user(ldap_user):
@@ -178,8 +178,8 @@ class CustomLDAPBackend(LDAPBackend):
 
     @property
     def _group_search_enabled(self):
-        return 'GROUP_SEARCH' in self.default_settings and bool(
-            self.default_settings.get('GROUP_SEARCH')
+        return "GROUP_SEARCH" in self.default_settings and bool(
+            self.default_settings.get("GROUP_SEARCH")
         )
 
     @staticmethod
@@ -196,10 +196,10 @@ class CustomLDAPBackend(LDAPBackend):
     @contextmanager
     def __ldap_connection(self):
         ldap.set_option(ldap.OPT_REFERRALS, 0)
-        conn = ldap.initialize(self.default_settings['SERVER_URI'])
+        conn = ldap.initialize(self.default_settings["SERVER_URI"])
         conn.protocol_version = ldap.VERSION3
-        configure_tls(self.is_tls, os.environ.get(CERT_ENV_KEY, ''), conn)
-        conn.simple_bind_s(self.default_settings['BIND_DN'], self.default_settings['BIND_PASSWORD'])
+        configure_tls(self.is_tls, os.environ.get(CERT_ENV_KEY, ""), conn)
+        conn.simple_bind_s(self.default_settings["BIND_DN"], self.default_settings["BIND_PASSWORD"])
         try:
             yield conn
         finally:
@@ -207,8 +207,8 @@ class CustomLDAPBackend(LDAPBackend):
 
     def __get_groups_by_group_search(self):
         with self.__ldap_connection() as conn:
-            groups = self.default_settings['GROUP_SEARCH'].execute(conn)
-        log.debug('Found %s groups: %s', len(groups), [i[0] for i in groups])
+            groups = self.default_settings["GROUP_SEARCH"].execute(conn)
+        log.debug("Found %s groups: %s", len(groups), [i[0] for i in groups])
         return groups
 
     def __process_groups(self, user, additional_groups=()):
@@ -238,11 +238,11 @@ class CustomLDAPBackend(LDAPBackend):
         username = ldap_user._username  # pylint: disable=protected-access
 
         if User.objects.filter(username__iexact=username, type=OriginType.Local).exists():
-            log.exception('usernames collision: `%s`', username)
+            log.exception("usernames collision: `%s`", username)
             return False
 
         if self._group_search_enabled:
-            group_member_attr = self.default_settings['GROUP_TYPE'].member_attr
+            group_member_attr = self.default_settings["GROUP_TYPE"].member_attr
             for _, group_attrs in self.__get_groups_by_group_search():
                 if user_dn.lower() in [i.lower() for i in group_attrs.get(group_member_attr, [])]:
                     break
@@ -253,7 +253,7 @@ class CustomLDAPBackend(LDAPBackend):
 
     @staticmethod
     def __get_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
-        group_dn = ''
+        group_dn = ""
         with suppress(IndexError):
             group_dn = [i for i in ldap_groups if i[0] == group_name][0][1]
         return group_dn
@@ -269,7 +269,7 @@ class CustomLDAPBackend(LDAPBackend):
             try:
                 # maybe we'll need more accurate filtering here
                 return Group.objects.get(
-                    name=f'{group.name} [{OriginType.LDAP.value}]', type=OriginType.LDAP.value
+                    name=f"{group.name} [{OriginType.LDAP.value}]", type=OriginType.LDAP.value
                 )
             except Group.DoesNotExist:
                 with atomic():
@@ -280,4 +280,4 @@ class CustomLDAPBackend(LDAPBackend):
                     )
                     return rbac_group
         else:
-            raise ValueError('wrong group type')
+            raise ValueError("wrong group type")
