@@ -92,12 +92,14 @@ def _get_ldap_default_settings():
             f'{_process_extra_filter(ldap_config.get("user_search_filter"))}'
             f')',
         )
-        group_search = LDAPSearch(
-            base_dn=ldap_config['group_search_base'],
-            scope=ldap.SCOPE_SUBTREE,
-            filterstr=f'(objectClass={ldap_config.get("group_object_class") or "*"})'
-            f'{_process_extra_filter(ldap_config.get("group_search_filter"))}',
-        )
+        group_search = None
+        if ldap_config['group_search_base']:
+            group_search = LDAPSearch(
+                base_dn=ldap_config['group_search_base'],
+                scope=ldap.SCOPE_SUBTREE,
+                filterstr=f'(objectClass={ldap_config.get("group_object_class") or "*"})'
+                f'{_process_extra_filter(ldap_config.get("group_search_filter"))}',
+            )
         user_attr_map = {
             "username": ldap_config["user_name_attribute"],
             "first_name": 'givenName',
@@ -116,16 +118,21 @@ def _get_ldap_default_settings():
             'USER_SEARCH': user_search,
             'USER_OBJECT_CLASS': ldap_config.get("user_object_class", "*"),
             'USER_FILTER': _process_extra_filter(ldap_config.get("user_search_filter", '')),
-            'GROUP_SEARCH': group_search,
-            'GROUP_TYPE': group_type,
             'GROUP_FILTER': _process_extra_filter(ldap_config.get("group_search_filter", '')),
-            'GROUP_OBJECT_CLASS': ldap_config.get("group_object_class", "*"),
             'USER_ATTR_MAP': user_attr_map,
-            'MIRROR_GROUPS': True,
             'ALWAYS_UPDATE_USER': True,
-            'FIND_GROUP_PERMS': True,
             'CACHE_TIMEOUT': 3600,
         }
+        if group_search:
+            default_settings.update(
+                {
+                    'GROUP_SEARCH': group_search,
+                    'GROUP_TYPE': group_type,
+                    'GROUP_OBJECT_CLASS': ldap_config.get("group_object_class", "*"),
+                    'MIRROR_GROUPS': True,
+                    'FIND_GROUP_PERMS': True,
+                }
+            )
 
         if is_tls(ldap_config['ldap_uri']):
             cert_filepath = ldap_config.get('tls_ca_cert_file', '')
@@ -169,6 +176,12 @@ class CustomLDAPBackend(LDAPBackend):
 
         return user_or_none
 
+    @property
+    def _group_search_enabled(self):
+        return 'GROUP_SEARCH' in self.default_settings and bool(
+            self.default_settings.get('GROUP_SEARCH')
+        )
+
     @staticmethod
     def __get_local_groups_by_username(username):
         groups = []
@@ -199,6 +212,12 @@ class CustomLDAPBackend(LDAPBackend):
         return groups
 
     def __process_groups(self, user, additional_groups=()):
+        if not self._group_search_enabled:
+            log.warning("Group search is disabled")
+            return
+        # TODO: custom mirror_groups() if not self._group_search_enabled
+        #  user.ldap_user.group_names требует наличия конфигурации для group_search
+        #  вытаскивать группы юзера через self.__ldap_connection
         ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
 
         # ladp-backend managed auth_groups
@@ -214,18 +233,21 @@ class CustomLDAPBackend(LDAPBackend):
 
     def __check_user(self, ldap_user):
         user_dn = ldap_user.dn
+        if user_dn is None:
+            return False
         username = ldap_user._username  # pylint: disable=protected-access
 
         if User.objects.filter(username__iexact=username, type=OriginType.Local).exists():
             log.exception('usernames collision: `%s`', username)
             return False
 
-        group_member_attr = self.default_settings['GROUP_TYPE'].member_attr
-        for _, group_attrs in self.__get_groups_by_group_search():
-            if user_dn.lower() in [i.lower() for i in group_attrs.get(group_member_attr, [])]:
-                break
-        else:
-            return False
+        if self._group_search_enabled:
+            group_member_attr = self.default_settings['GROUP_TYPE'].member_attr
+            for _, group_attrs in self.__get_groups_by_group_search():
+                if user_dn.lower() in [i.lower() for i in group_attrs.get(group_member_attr, [])]:
+                    break
+            else:
+                return False
 
         return True
 
