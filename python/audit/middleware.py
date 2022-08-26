@@ -12,8 +12,10 @@
 import json
 from json.decoder import JSONDecodeError
 
-from audit.models import AuditSession, AuditSessionLoginResult
 from django.contrib.auth.models import AnonymousUser, User
+
+from audit.cef_logger import cef_logger
+from audit.models import AuditSession, AuditSessionLoginResult
 
 
 class AuditLoginMiddleware:
@@ -21,7 +23,7 @@ class AuditLoginMiddleware:
         self.get_response = get_response
 
     @staticmethod
-    def _audit(user: User | AnonymousUser | None = None, username: str = None):
+    def _audit(request_path: str, user: User | AnonymousUser | None = None, username: str = None):
         """Authentication audit"""
         if user is not None and user.is_authenticated:
             result = AuditSessionLoginResult.Success
@@ -38,7 +40,10 @@ class AuditLoginMiddleware:
                 result = AuditSessionLoginResult.UserNotFound
                 user = None
 
-        AuditSession.objects.create(user=user, login_result=result, login_details=details)
+        auditsession = AuditSession.objects.create(
+            user=user, login_result=result, login_details=details
+        )
+        cef_logger(audit_instance=auditsession, signature_id=request_path)
 
     def __call__(self, request):
 
@@ -56,7 +61,7 @@ class AuditLoginMiddleware:
             response = self.get_response(request)
 
             username = request.POST.get("username") or username or request.user.username
-            self._audit(user=request.user, username=username)
+            self._audit(request.path, user=request.user, username=username)
             return response
 
         return self.get_response(request)

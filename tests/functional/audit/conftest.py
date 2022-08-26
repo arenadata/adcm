@@ -11,13 +11,16 @@
 # limitations under the License.
 
 """conftest for audit tests"""
+
 from collections import OrderedDict
+from datetime import datetime
 from pathlib import Path
-from typing import Callable, Dict, Literal, NamedTuple, Optional
+from typing import Callable, Dict, List, Literal, NamedTuple, Optional, Union
 
 import allure
 import pytest
 import requests
+from adcm_client.audit import AuditLogin, AuditLoginList, AuditOperation, AuditOperationList
 from adcm_client.base import ObjectNotFound
 from adcm_client.objects import ADCMClient
 
@@ -25,6 +28,7 @@ from tests.functional.conftest import only_clean_adcm
 from tests.functional.rbac.conftest import BusinessRoles
 from tests.library.audit.checkers import AuditLogChecker
 from tests.library.audit.readers import ParsedAuditLog, YAMLReader
+from tests.library.db import Query, QueryExecutioner
 
 # pylint: disable=redefined-outer-name
 
@@ -229,3 +233,33 @@ def check_failed(response: requests.Response, exact_code: Optional[int] = None):
 def make_auth_header(client: ADCMClient) -> dict:
     """Make authorization header based on API token from ADCM client"""
     return {'Authorization': f'Token {client.api_token()}'}
+
+
+# !===== DB manipulations =====!
+
+
+def format_date_for_db(date: datetime) -> str:
+    """Format date to the SQLite datetime format"""
+    return date.strftime("%Y-%m-%d %H:%M:%S.%f")
+
+
+def set_operations_date(
+    adcm_db: QueryExecutioner, new_date: datetime, operation_records: Union[AuditOperationList, List[AuditOperation]]
+):
+    """Set date for given operation audit records directly in ADCM database"""
+    adcm_db.exec(
+        Query('audit_auditlog')
+        .update([('operation_time', format_date_for_db(new_date))])
+        .where(id=tuple(map(lambda o: o.id, operation_records)))
+    )
+
+
+def set_logins_date(
+    adcm_db: QueryExecutioner, new_date: datetime, login_records: Union[AuditLoginList, List[AuditLogin]]
+):
+    """Set date for given login audit records directly in ADCM database"""
+    adcm_db.exec(
+        Query('audit_auditsession')
+        .update([('login_time', format_date_for_db(new_date))])
+        .where(id=tuple(map(lambda o: o.id, login_records)))
+    )

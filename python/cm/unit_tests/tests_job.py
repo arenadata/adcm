@@ -15,13 +15,14 @@
 import os
 from unittest.mock import Mock, patch
 
+from django.test import TestCase
+from django.utils import timezone
+
 import cm
 import cm.job as job_module
 from cm import config, models
 from cm.logger import log
 from cm.unit_tests import utils
-from django.test import TestCase
-from django.utils import timezone
 
 
 class TestJob(TestCase):
@@ -436,15 +437,15 @@ class TestJob(TestCase):
 
     @patch('cm.job.cook_delta')
     @patch('cm.job.get_old_hc')
-    @patch('cm.job.get_new_hc')
+    @patch('cm.job.get_actual_hc')
     @patch('cm.job.prepare_job')
     def test_re_prepare_job(
-        self, mock_prepare_job, mock_get_new_hc, mock_get_old_hc, mock_cook_delta
+        self, mock_prepare_job, mock_get_actual_hc, mock_get_old_hc, mock_cook_delta
     ):
         # pylint: disable=too-many-locals
 
         new_hc = Mock()
-        mock_get_new_hc.return_value = new_hc
+        mock_get_actual_hc.return_value = new_hc
         old_hc = Mock()
         mock_get_old_hc.return_value = old_hc
         delta = Mock()
@@ -490,7 +491,7 @@ class TestJob(TestCase):
 
         job_module.re_prepare_job(task, job)
 
-        mock_get_new_hc.assert_called_once_with(cluster)
+        mock_get_actual_hc.assert_called_once_with(cluster)
         mock_get_old_hc.assert_called_once_with(task.hostcomponentmap)
         mock_cook_delta.assert_called_once_with(cluster, new_hc, action.hostcomponentmap, old_hc)
         mock_prepare_job.assert_called_once_with(

@@ -93,7 +93,7 @@ describe('Service Host Map Component', () => {
     expect(component).toBeDefined();
   });
 
-  it('should display compnents and hosts as button', () => {
+  it('should display components and hosts as button', () => {
     initDefault(genData());
     const dom = domFirstElems(fixture.nativeElement);
     const components = dom.components;
@@ -133,7 +133,7 @@ describe('Service Host Map Component', () => {
     const host_isLinked = () => host.querySelector('.m2m').classList.contains('linked');
 
     // start: host - select
-    host_btn.click();
+    host_btn.click(); // added class .selected
     fixture.detectChanges();
     expect(host_isSelect()).toBeTrue();
 

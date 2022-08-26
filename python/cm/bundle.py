@@ -17,8 +17,12 @@ import os.path
 import shutil
 import tarfile
 
+from django.db import IntegrityError, transaction
+from version_utils import rpm
+
 import cm.stack
 import cm.status_api
+from adcm.settings import ADCM_VERSION
 from cm import config
 from cm.adcm_config import init_object_config, proto_ref, switch_config
 from cm.errors import raise_AdcmEx as err
@@ -44,12 +48,8 @@ from cm.models import (
     SubAction,
     Upgrade,
 )
-from django.db import IntegrityError, transaction
 from rbac.models import Role
 from rbac.upgrade.role import prepare_action_roles
-from version_utils import rpm
-
-from adcm.settings import ADCM_VERSION
 
 STAGE = (
     StagePrototype,
@@ -278,15 +278,15 @@ def re_check_actions():
         hc = act.hostcomponentmap
         ref = f'in hc_acl of action "{act.name}" of {proto_ref(act.prototype)}'
         for item in hc:
-            sp = StagePrototype.objects.filter(type='service', name=item['service'])
+            sp = StagePrototype.objects.filter(type='service', name=item['service']).first()
             if not sp:
                 msg = 'Unknown service "{}" {}'
                 err('INVALID_ACTION_DEFINITION', msg.format(item['service'], ref))
             if not StagePrototype.objects.filter(
-                parent=sp[0], type='component', name=item['component']
+                parent=sp, type='component', name=item['component']
             ):
                 msg = 'Unknown component "{}" of service "{}" {}'
-                err('INVALID_ACTION_DEFINITION', msg.format(item['component'], sp[0].name, ref))
+                err('INVALID_ACTION_DEFINITION', msg.format(item['component'], sp.name, ref))
 
 
 def check_component_requires(comp):

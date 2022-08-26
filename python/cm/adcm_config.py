@@ -19,9 +19,11 @@ from collections import OrderedDict
 from collections.abc import Mapping
 from typing import Any, Optional, Tuple
 
-import cm.variant
 import yspec.checker
 from ansible.parsing.vault import VaultAES256, VaultSecret
+from django.conf import settings
+from django.db.utils import OperationalError
+
 from cm import config
 from cm.errors import raise_AdcmEx as err
 from cm.logger import log
@@ -35,8 +37,7 @@ from cm.models import (
     Prototype,
     PrototypeConfig,
 )
-from django.conf import settings
-from django.db.utils import OperationalError
+from cm.variant import get_variant, process_variant
 
 SECURE_PARAM_TYPES = ('password', 'secrettext')
 
@@ -232,7 +233,7 @@ def get_prototype_config(proto: Prototype, action: Action = None) -> Tuple[dict,
         else:
             spec[c.name][c.subname] = obj_to_dict(c, flist)
             conf[c.name][c.subname] = get_default(c, proto)
-    return (spec, flat_spec, conf, attr)
+    return spec, flat_spec, conf, attr
 
 
 def make_object_config(obj: ADCMEntity, prototype: Prototype) -> None:
@@ -489,7 +490,7 @@ def ui_config(obj, cl):  # pylint: disable=too-many-locals
         item['read_only'] = bool(config_is_ro(obj, key, spec[key].limits))
         item['activatable'] = bool(group_is_activatable(spec[key]))
         if item['type'] == 'variant':
-            item['limits']['source']['value'] = cm.variant.get_variant(obj, obj_conf, limits)
+            item['limits']['source']['value'] = get_variant(obj, obj_conf, limits)
         item['default'] = get_default(spec[key], obj.prototype)
         if key in flat_conf:
             item['value'] = flat_conf[key]
@@ -520,7 +521,7 @@ def get_action_variant(obj, conf):
     for c in conf:
         if c.type != 'variant':
             continue
-        c.limits['source']['value'] = cm.variant.get_variant(obj, obj_conf, c.limits)
+        c.limits['source']['value'] = get_variant(obj, obj_conf, c.limits)
 
 
 def config_is_ro(obj, key, limits):
@@ -608,7 +609,7 @@ def check_json_config(
         check_value_unselected_field(
             current_config, new_config, current_attr, new_attr, group_keys, config_spec, obj.object
         )
-    cm.variant.process_variant(obj, spec, new_config)
+    process_variant(obj, spec, new_config)
     return check_config_spec(proto, obj, spec, flat_spec, new_config, current_config, new_attr)
 
 

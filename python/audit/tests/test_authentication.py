@@ -14,7 +14,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from audit.models import AuditSession, AuditSessionLoginResult
-from cm.models import Bundle, Prototype, ADCM, ObjectConfig, ConfigLog
+from cm.models import ADCM, Bundle, ConfigLog, ObjectConfig, Prototype
 from rbac.models import User
 
 

@@ -4,5 +4,22 @@ repos:
     hooks:
       - id: black
         additional_dependencies: ['click==8.0.4']
-        language_version: python3.8
+        language_version: python3
+        files: '^python/'
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        args: [
+          "--profile", "black",
+          "--src-path", "python",
+          "--skip-glob", "python/ansible/plugins",
+          "--skip", "python/init_db.py",
+          "--skip", "python/task_runner.py",
+          "--skip", "python/backupdb.py",
+          "--skip", "python/job_runner.py",
+          "--skip", "python/drf_docs.py",
+        ]
+        language_version: python3
         files: '^python/'

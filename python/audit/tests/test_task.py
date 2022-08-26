@@ -14,6 +14,11 @@
 from datetime import datetime
 from unittest.mock import patch
 
+from django.contrib.contenttypes.models import ContentType
+from rest_framework.response import Response
+from rest_framework.status import HTTP_404_NOT_FOUND
+
+from adcm.tests.base import BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -21,12 +26,7 @@ from audit.models import (
     AuditObjectType,
 )
 from cm.models import ADCM, Bundle, Prototype, TaskLog
-from django.contrib.contenttypes.models import ContentType
 from rbac.models import User
-from rest_framework.response import Response
-from rest_framework.status import HTTP_404_NOT_FOUND
-
-from adcm.tests.base import BaseTestCase
 
 
 class TestPolicy(BaseTestCase):
@@ -76,11 +76,11 @@ class TestPolicy(BaseTestCase):
 
     def test_cancel_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.put(path=f"/api/v1/task/{self.task.pk}/cancel/")
+            response: Response = self.client.put(path=f"/api/v1/task/{self.task.pk}/cancel/")
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        assert response.status_code == HTTP_404_NOT_FOUND
         self.check_log(
             log=log,
             operation_name="ADCM task cancelled",
@@ -103,11 +103,11 @@ class TestPolicy(BaseTestCase):
 
     def test_restart_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.put(path=f"/api/v1/task/{self.task.pk}/restart/")
+            response: Response = self.client.put(path=f"/api/v1/task/{self.task.pk}/restart/")
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        assert response.status_code == HTTP_404_NOT_FOUND
         self.check_log(
             log=log,
             operation_name="ADCM task restarted",

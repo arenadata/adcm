@@ -11,20 +11,35 @@
 # limitations under the License.
 
 from datetime import datetime
+from unittest.mock import patch
 
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+)
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import Bundle, ConfigLog, Host, HostProvider, ObjectConfig, Prototype
-from django.urls import reverse
+from cm.models import (
+    Action,
+    Bundle,
+    ConfigLog,
+    Host,
+    HostProvider,
+    ObjectConfig,
+    Prototype,
+    Upgrade,
+)
 from rbac.models import User
-from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestProvider(BaseTestCase):
@@ -36,44 +51,55 @@ class TestProvider(BaseTestCase):
         self.name = "test_provider"
         self.provider_created_str = "Provider created"
 
-    @staticmethod
     def check_provider_updated(
+        self,
         log: AuditLog,
         provider: HostProvider,
         operation_result: AuditLogOperationResult,
         user: User,
     ) -> None:
-        assert log.audit_object.object_id == provider.pk
-        assert log.audit_object.object_name == provider.name
-        assert log.audit_object.object_type == AuditObjectType.Provider
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Provider configuration updated"
-        assert log.operation_type == AuditLogOperationType.Update
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, provider.pk)
+        self.assertEqual(log.audit_object.object_name, provider.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Provider)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, "Provider configuration updated")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.object_changes, {})
 
-    @staticmethod
     def check_provider_deleted(
+        self,
         log: AuditLog,
         provider: HostProvider,
         operation_result: AuditLogOperationResult,
         user: User,
     ) -> None:
-        assert log.audit_object.object_id == provider.pk
-        assert log.audit_object.object_name == provider.name
-        assert log.audit_object.object_type == AuditObjectType.Provider
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Provider deleted"
-        assert log.operation_type == AuditLogOperationType.Delete
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, provider.pk)
+        self.assertEqual(log.audit_object.object_name, provider.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Provider)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, "Provider deleted")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Delete)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.object_changes, {})
+
+    def check_action_log(self, log: AuditLog, provider: HostProvider, operation_name: str) -> None:
+        self.assertEqual(log.audit_object.object_id, provider.pk)
+        self.assertEqual(log.audit_object.object_name, provider.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Provider)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, operation_name)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.object_changes, {})
 
     def test_create(self):
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=reverse("provider"),
             data={
                 "name": self.name,
@@ -83,16 +109,16 @@ class TestProvider(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == res.data["id"]
-        assert log.audit_object.object_name == self.name
-        assert log.audit_object.object_type == AuditObjectType.Provider
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == self.provider_created_str
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Success
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, response.data["id"])
+        self.assertEqual(log.audit_object.object_name, self.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Provider)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, self.provider_created_str)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.object_changes, {})
 
         self.client.post(
             path=reverse("provider"),
@@ -104,17 +130,17 @@ class TestProvider(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert not log.audit_object
-        assert log.operation_name == self.provider_created_str
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Fail
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, self.provider_created_str)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.object_changes, {})
 
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("provider"),
                 data={
                     "name": self.name,
@@ -124,21 +150,20 @@ class TestProvider(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
-        assert not log.audit_object
-        assert log.operation_name == self.provider_created_str
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Denied
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.no_rights_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, self.provider_created_str)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.no_rights_user.pk)
+        self.assertEqual(log.object_changes, {})
 
     def test_delete(self):
         provider = HostProvider.objects.create(
             name="test_provider",
             prototype=self.prototype,
         )
-
         self.client.delete(path=reverse("provider-details", kwargs={"provider_id": provider.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -155,15 +180,14 @@ class TestProvider(BaseTestCase):
             name="test_provider",
             prototype=self.prototype,
         )
-
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 path=reverse("provider-details", kwargs={"provider_id": provider.pk})
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_provider_deleted(
             log=log,
             provider=provider,
@@ -176,7 +200,6 @@ class TestProvider(BaseTestCase):
             name="test_provider",
             prototype=self.prototype,
         )
-
         Host.objects.create(
             fqdn="test_fqdn",
             prototype=Prototype.objects.create(bundle=self.bundle, type="host"),
@@ -216,7 +239,7 @@ class TestProvider(BaseTestCase):
             user=self.test_user,
         )
 
-        res: Response = self.client.patch(
+        response: Response = self.client.patch(
             path=reverse(
                 "config-history-version-restore",
                 kwargs={"provider_id": provider.pk, "version": 1},
@@ -226,7 +249,7 @@ class TestProvider(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertEqual(res.status_code, HTTP_200_OK)
+        self.assertEqual(response.status_code, HTTP_200_OK)
         self.check_provider_updated(
             log=log,
             provider=provider,
@@ -242,7 +265,7 @@ class TestProvider(BaseTestCase):
 
         ConfigLog.objects.create(obj_ref=config, config="{}")
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("config-history", kwargs={"provider_id": provider.pk}),
                 data={"config": {}},
                 content_type=APPLICATION_JSON,
@@ -250,7 +273,7 @@ class TestProvider(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_provider_updated(
             log=log,
             provider=provider,
@@ -259,7 +282,7 @@ class TestProvider(BaseTestCase):
         )
 
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
                     kwargs={"provider_id": provider.pk, "version": 1},
@@ -269,10 +292,69 @@ class TestProvider(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_provider_updated(
             log=log,
             provider=provider,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
+        )
+
+    def test_action_launch(self):
+        provider = HostProvider.objects.create(
+            name="test_provider",
+            prototype=self.prototype,
+        )
+        action = Action.objects.create(
+            display_name="test_component_action",
+            prototype=self.prototype,
+            type="job",
+            state_available="any",
+        )
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "run-task", kwargs={"provider_id": provider.pk, "action_id": action.pk}
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_action_log(
+            log=log, provider=provider, operation_name=f"{action.display_name} action launched"
+        )
+
+    def test_do_upgrade(self):
+        provider = HostProvider.objects.create(
+            name="test_provider",
+            prototype=self.prototype,
+        )
+        action = Action.objects.create(
+            display_name="test_component_action",
+            prototype=self.prototype,
+            type="job",
+            state_available="any",
+        )
+        upgrade = Upgrade.objects.create(
+            name="test_upgrade",
+            bundle=self.bundle,
+            action=action,
+            min_version="1",
+            max_version="99",
+        )
+
+        with patch("api.provider.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "do-provider-upgrade",
+                    kwargs={"provider_id": provider.pk, "upgrade_id": upgrade.pk},
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_action_log(
+            log=log,
+            provider=provider,
+            operation_name=f"{upgrade.action.display_name} action launched",
         )

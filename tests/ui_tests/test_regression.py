@@ -144,6 +144,7 @@ class TestMainInfo:
             text_before = page.get_description()
             config_page = page.open_config_tab()
             config_page.config.set_description('New Awesome Description')
+            config_page.config.type_in_field_with_few_inputs(row="just_line", values=[" "])
             config_page.config.save_config()
             page.open()
             text_after = page.get_description()

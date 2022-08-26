@@ -10,12 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api.action.serializers import StackActionDetailSerializer
-from api.config.serializers import ConfigSerializer
-from api.serializers import UpgradeSerializer
-from api.utils import hlink
-from cm import config
-from cm.models import Bundle, ClusterObject, Prototype
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -28,6 +22,12 @@ from rest_framework.serializers import (
 )
 
 from adcm.serializers import EmptySerializer
+from api.action.serializers import StackActionDetailSerializer
+from api.config.serializers import ConfigSerializer
+from api.serializers import UpgradeSerializer
+from api.utils import hlink
+from cm import config
+from cm.models import Bundle, ClusterObject, Prototype
 
 
 class LoadBundle(EmptySerializer):
@@ -91,6 +91,52 @@ class PrototypeSerializer(EmptySerializer):
     @staticmethod
     def get_bundle_edition(obj):
         return obj.bundle.edition
+
+
+def get_constraint(self, obj):
+    if obj.type == 'component':
+        return obj.constraint
+    return []
+
+
+def get_service_name(self, obj):
+    if obj.type == 'component':
+        return obj.parent.name
+    return ''
+
+
+def get_service_display_name(self, obj):
+    if obj.type == 'component':
+        return obj.parent.display_name
+    return ''
+
+
+def get_service_id(self, obj):
+    if obj.type == 'component':
+        return obj.parent.id
+    return None
+
+
+class PrototypeUISerializer(PrototypeSerializer):
+    parent_id = IntegerField(read_only=True)
+    version_order = IntegerField(read_only=True)
+    shared = BooleanField(read_only=True)
+    constraint = SerializerMethodField(read_only=True)
+    requires = JSONField(read_only=True)
+    bound_to = JSONField(read_only=True)
+    adcm_min_version = CharField(read_only=True)
+    monitoring = CharField(read_only=True)
+    config_group_customization = BooleanField(read_only=True)
+    venv = CharField(read_only=True)
+    allow_maintenance_mode = BooleanField(read_only=True)
+    service_name = SerializerMethodField(read_only=True)
+    service_display_name = SerializerMethodField(read_only=True)
+    service_id = SerializerMethodField(read_only=True)
+
+    get_constraint = get_constraint
+    get_service_name = get_service_name
+    get_service_display_name = get_service_display_name
+    get_service_id = get_service_id
 
 
 class PrototypeShort(ModelSerializer):
@@ -177,8 +223,17 @@ class ProviderTypeSerializer(PrototypeSerializer):
 
 
 class PrototypeDetailSerializer(PrototypeSerializer):
+    constraint = SerializerMethodField()
     actions = StackActionDetailSerializer(many=True, read_only=True)
     config = ConfigSerializer(many=True, read_only=True)
+    service_name = SerializerMethodField(read_only=True)
+    service_display_name = SerializerMethodField(read_only=True)
+    service_id = SerializerMethodField(read_only=True)
+
+    get_constraint = get_constraint
+    get_service_name = get_service_name
+    get_service_display_name = get_service_display_name
+    get_service_id = get_service_id
 
 
 class ProviderTypeDetailSerializer(ProviderTypeSerializer):

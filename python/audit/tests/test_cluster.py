@@ -14,7 +14,19 @@
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from unittest.mock import patch
 
+from django.conf import settings
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_201_CREATED,
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+)
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
@@ -23,6 +35,7 @@ from audit.models import (
     AuditObjectType,
 )
 from cm.models import (
+    Action,
     Bundle,
     Cluster,
     ClusterBind,
@@ -36,19 +49,10 @@ from cm.models import (
     PrototypeExport,
     PrototypeImport,
     ServiceComponent,
+    Upgrade,
 )
-from django.conf import settings
-from django.urls import reverse
 from rbac.models import Policy, Role, User
 from rbac.upgrade.role import init_roles
-from rest_framework.response import Response
-from rest_framework.status import (
-    HTTP_400_BAD_REQUEST,
-    HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
-)
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestCluster(BaseTestCase):
@@ -94,18 +98,18 @@ class TestCluster(BaseTestCase):
         self.component_conf_updated_str = "Component configuration updated"
         self.service_conf_updated_str = "Service configuration updated"
         self.cluster_deleted_str = "Cluster deleted"
+        self.action_display_name = "test_cluster_action"
 
-    @staticmethod
     def check_log_no_obj(
-        log: AuditLog, operation_result: AuditLogOperationResult, user: User
+        self, log: AuditLog, operation_result: AuditLogOperationResult, user: User
     ) -> None:
-        assert not log.audit_object
-        assert log.operation_name == "Cluster created"
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, "Cluster created")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.object_changes, {})
 
     def check_log(  # pylint: disable=too-many-arguments
         self,
@@ -125,30 +129,30 @@ class TestCluster(BaseTestCase):
         if user is None:
             user = self.test_user
 
-        assert log.audit_object.object_id == obj.pk
-        assert log.audit_object.object_name == obj_name
-        assert log.audit_object.object_type == obj_type
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == operation_name
-        assert log.operation_type == operation_type
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, obj.pk)
+        self.assertEqual(log.audit_object.object_name, obj_name)
+        self.assertEqual(log.audit_object.object_type, obj_type)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, operation_name)
+        self.assertEqual(log.operation_type, operation_type)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.object_changes, {})
 
     def check_log_denied(
         self, log: AuditLog, operation_name: str, operation_type: AuditLogOperationType
     ) -> None:
-        assert log.audit_object.object_id == self.cluster.pk
-        assert log.audit_object.object_name == self.cluster.name
-        assert log.audit_object.object_type == AuditObjectType.Cluster
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == operation_name
-        assert log.operation_type == operation_type
-        assert log.operation_result == AuditLogOperationResult.Denied
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.no_rights_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, self.cluster.pk)
+        self.assertEqual(log.audit_object.object_name, self.cluster.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, operation_name)
+        self.assertEqual(log.operation_type, operation_type)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.no_rights_user.pk)
+        self.assertEqual(log.object_changes, {})
 
     def check_cluster_update_config(self, log: AuditLog) -> None:
         self.check_log(
@@ -160,13 +164,24 @@ class TestCluster(BaseTestCase):
         )
 
     def check_cluster_delete_failed_not_found(self, log: AuditLog):
-        assert not log.audit_object
-        assert log.operation_name == self.cluster_deleted_str
-        assert log.operation_type == AuditLogOperationType.Delete
-        assert log.operation_result == AuditLogOperationResult.Fail
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, self.cluster_deleted_str)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Delete)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.object_changes, {})
+
+    def check_action_log(self, log: AuditLog) -> None:
+        self.assertEqual(log.audit_object.object_id, self.cluster.pk)
+        self.assertEqual(log.audit_object.object_name, self.cluster.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, f"{self.action_display_name} action launched")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.object_changes, {})
 
     def create_cluster(self, bundle_id: int, name: str, prototype_id: int):
         return self.client.post(
@@ -222,7 +237,7 @@ class TestCluster(BaseTestCase):
         policy.apply()
 
     def test_create(self):
-        res: Response = self.create_cluster(
+        response: Response = self.create_cluster(
             bundle_id=self.bundle.pk,
             name=self.test_cluster_name,
             prototype_id=self.cluster_prototype.pk,
@@ -232,7 +247,7 @@ class TestCluster(BaseTestCase):
 
         self.check_log(
             log=log,
-            obj=Cluster.objects.get(pk=res.data["id"]),
+            obj=Cluster.objects.get(pk=response.data["id"]),
             obj_type=AuditObjectType.Cluster,
             operation_name="Cluster created",
             operation_type=AuditLogOperationType.Create,
@@ -254,7 +269,7 @@ class TestCluster(BaseTestCase):
 
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.create_cluster(
+            response: Response = self.create_cluster(
                 bundle_id=self.bundle.pk,
                 name=self.test_cluster_name,
                 prototype_id=self.cluster_prototype.pk,
@@ -262,7 +277,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_no_obj(
             log=log,
             operation_result=AuditLogOperationResult.Denied,
@@ -282,7 +297,7 @@ class TestCluster(BaseTestCase):
                 data={"file": f},
             )
 
-        cluster_bundle_res: Response = self.client.post(
+        cluster_bundle_response: Response = self.client.post(
             path=reverse("load-bundle"),
             data={"bundle_file": cluster_bundle_filename},
         )
@@ -296,29 +311,29 @@ class TestCluster(BaseTestCase):
                 data={"file": f},
             )
 
-        provider_bundle_res: Response = self.client.post(
+        provider_bundle_response: Response = self.client.post(
             path=reverse("load-bundle"),
             data={"bundle_file": provider_bundle_filename},
         )
 
         cluster_prototype = Prototype.objects.create(
-            bundle_id=cluster_bundle_res.data["id"], type="cluster"
+            bundle_id=cluster_bundle_response.data["id"], type="cluster"
         )
-        cluster_1_res: Response = self.create_cluster(
-            bundle_id=cluster_bundle_res.data["id"],
+        cluster_1_response: Response = self.create_cluster(
+            bundle_id=cluster_bundle_response.data["id"],
             name="new_test_cluster_1",
             prototype_id=cluster_prototype.pk,
         )
         self.create_cluster(
-            bundle_id=cluster_bundle_res.data["id"],
+            bundle_id=cluster_bundle_response.data["id"],
             name="new_test_cluster_2",
             prototype_id=cluster_prototype.pk,
         )
 
         provider_prototype = Prototype.objects.create(
-            bundle_id=provider_bundle_res.data["id"], type="provider"
+            bundle_id=provider_bundle_response.data["id"], type="provider"
         )
-        provider_res: Response = self.client.post(
+        provider_response: Response = self.client.post(
             path=reverse("provider"),
             data={
                 "name": "new_test_provider",
@@ -327,13 +342,13 @@ class TestCluster(BaseTestCase):
         )
 
         host_prototype = Prototype.objects.create(
-            bundle_id=provider_bundle_res.data["id"], type="host"
+            bundle_id=provider_bundle_response.data["id"], type="host"
         )
-        host_1_res: Response = self.client.post(
+        host_1_response: Response = self.client.post(
             path=reverse("host"),
             data={
                 "prototype_id": host_prototype.pk,
-                "provider_id": provider_res.data["id"],
+                "provider_id": provider_response.data["id"],
                 "fqdn": "test_fqdn_1",
             },
         )
@@ -341,14 +356,14 @@ class TestCluster(BaseTestCase):
             path=reverse("host"),
             data={
                 "prototype_id": host_prototype.pk,
-                "provider_id": provider_res.data["id"],
+                "provider_id": provider_response.data["id"],
                 "fqdn": "test_fqdn_2",
             },
         )
 
         self.client.post(
-            path=reverse("host", kwargs={"cluster_id": cluster_1_res.data["id"]}),
-            data={"host_id": host_1_res.data["id"]},
+            path=reverse("host", kwargs={"cluster_id": cluster_1_response.data["id"]}),
+            data={"host_id": host_1_response.data["id"]},
             content_type=APPLICATION_JSON,
         )
 
@@ -359,10 +374,10 @@ class TestCluster(BaseTestCase):
         )
         service = ClusterObject.objects.create(
             prototype=service_prototype,
-            cluster_id=cluster_1_res.data["id"],
+            cluster_id=cluster_1_response.data["id"],
         )
         self.client.post(
-            path=reverse("service", kwargs={"cluster_id": cluster_1_res.data["id"]}),
+            path=reverse("service", kwargs={"cluster_id": cluster_1_response.data["id"]}),
             data={
                 "service_id": service.pk,
                 "prototype_id": service_prototype.pk,
@@ -373,7 +388,7 @@ class TestCluster(BaseTestCase):
         self.assertFalse(AuditObject.objects.filter(is_deleted=True))
 
         self.client.delete(
-            path=reverse("cluster-details", kwargs={"cluster_id": cluster_1_res.data["id"]})
+            path=reverse("cluster-details", kwargs={"cluster_id": cluster_1_response.data["id"]})
         )
 
         self.assertEqual(AuditObject.objects.filter(is_deleted=True).count(), 1)
@@ -391,13 +406,13 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Delete,
         )
 
-        res: Response = self.client.delete(
+        response: Response = self.client.delete(
             path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_cluster_delete_failed_not_found(log=log)
 
     def test_delete_failed(self):
@@ -408,18 +423,18 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(res.status_code, HTTP_404_NOT_FOUND)
         self.check_cluster_delete_failed_not_found(log=log)
 
     def test_delete_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name=self.cluster_deleted_str,
@@ -429,13 +444,13 @@ class TestCluster(BaseTestCase):
     def test_delete_no_rights_denied(self):
         self.add_no_rights_user_cluster_view_rights()
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
             )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_denied(
             log=log,
             operation_name=self.cluster_deleted_str,
@@ -461,7 +476,7 @@ class TestCluster(BaseTestCase):
 
     def test_update_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk}),
                 data={"display_name": "test_cluster_another_display_name"},
                 content_type=APPLICATION_JSON,
@@ -469,7 +484,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name="Cluster updated",
@@ -514,9 +529,29 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
+        response: Response = self.client.delete(
+            path=reverse(
+                "cluster-bind-details",
+                kwargs={"cluster_id": self.cluster.pk, "bind_id": bind.pk},
+            ),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_log(
+            log=log,
+            obj=self.cluster,
+            obj_type=AuditObjectType.Cluster,
+            operation_name=f"{self.cluster.name}/ unbound",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
+        )
+
     def test_bind_unbind_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
                 data={
                     "export_cluster_id": self.cluster.pk,
@@ -527,7 +562,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name=f"Cluster bound to {self.cluster.name}/{self.service.display_name}",
@@ -545,7 +580,7 @@ class TestCluster(BaseTestCase):
 
         bind = ClusterBind.objects.first()
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 path=reverse(
                     "cluster-bind-details",
                     kwargs={"cluster_id": self.cluster.pk, "bind_id": bind.pk},
@@ -555,7 +590,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name=f"{self.cluster.name}/{self.service.display_name} unbound",
@@ -575,7 +610,7 @@ class TestCluster(BaseTestCase):
 
     def test_update_config_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("config-history", kwargs={"cluster_id": self.cluster.pk}),
                 data={"config": {}},
                 content_type=APPLICATION_JSON,
@@ -583,7 +618,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_denied(
             log=log,
             operation_name=self.cluster_conf_updated_str,
@@ -609,7 +644,7 @@ class TestCluster(BaseTestCase):
 
     def test_add_host_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("host", kwargs={"cluster_id": self.cluster.pk}),
                 data={"host_id": self.host.pk},
                 content_type=APPLICATION_JSON,
@@ -617,7 +652,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name=f"{self.host.fqdn} added",
@@ -646,7 +681,7 @@ class TestCluster(BaseTestCase):
 
     def test_update_host_config_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse(
                     "config-history",
                     kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk},
@@ -657,7 +692,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.host,
@@ -701,7 +736,7 @@ class TestCluster(BaseTestCase):
         self.host.save(update_fields=["cluster"])
 
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("host-component", kwargs={"cluster_id": self.cluster.pk}),
                 data={
                     "hc": [
@@ -717,7 +752,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name="Host-Component map updated",
@@ -743,7 +778,7 @@ class TestCluster(BaseTestCase):
 
     def test_import_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("cluster-import", kwargs={"cluster_id": self.cluster.pk}),
                 data={"bind": []},
                 content_type=APPLICATION_JSON,
@@ -751,7 +786,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name="Cluster import updated",
@@ -779,10 +814,32 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
+    def test_add_service_via_data(self):
+        cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_3")
+        self.client.post(
+            path=reverse("service"),
+            data={
+                "cluster_id": cluster.pk,
+                "service_id": self.service.pk,
+                "prototype_id": self.service_prototype.pk,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            obj=cluster,
+            obj_type=AuditObjectType.Cluster,
+            operation_name=f"{self.service.display_name} service added",
+            operation_type=AuditLogOperationType.Update,
+        )
+
     def test_add_service_denied(self):
         cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_3")
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse("service", kwargs={"cluster_id": cluster.pk}),
                 data={
                     "service_id": self.service.pk,
@@ -793,7 +850,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=cluster,
@@ -806,7 +863,7 @@ class TestCluster(BaseTestCase):
 
     def test_add_service_failed(self):
         cluster = Cluster.objects.create(prototype=self.cluster_prototype, name="test_cluster_3")
-        res: Response = self.client.post(
+        response: Response = self.client.post(
             path=reverse("service", kwargs={"cluster_id": cluster.pk}),
             data={"prototype_id": "some-string"},
             content_type=APPLICATION_JSON,
@@ -814,7 +871,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.check_log(
             log=log,
             obj=cluster,
@@ -845,7 +902,7 @@ class TestCluster(BaseTestCase):
 
     def test_delete_service_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 path=reverse(
                     "service-details",
                     kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
@@ -855,7 +912,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log_denied(
             log=log,
             operation_name=f"{self.service.display_name} service removed",
@@ -885,7 +942,7 @@ class TestCluster(BaseTestCase):
 
         bind = ClusterBind.objects.first()
         self.client.delete(
-            reverse(
+            path=reverse(
                 "service-bind-details",
                 kwargs={
                     "cluster_id": cluster.pk,
@@ -906,10 +963,34 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
+        response: Response = self.client.delete(
+            path=reverse(
+                "service-bind-details",
+                kwargs={
+                    "cluster_id": cluster.pk,
+                    "service_id": self.service.pk,
+                    "bind_id": bind.pk,
+                },
+            ),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_log(
+            log=log,
+            obj=self.service,
+            obj_type=AuditObjectType.Service,
+            operation_name=f"{cluster.name}/{self.service.display_name} unbound",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
+        )
+
     def test_bind_unbind_service_denied(self):
         cluster = self.get_cluster_for_bind()
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse(
                     "service-bind",
                     kwargs={"cluster_id": cluster.pk, "service_id": self.service.pk},
@@ -920,7 +1001,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             obj=self.service,
@@ -942,7 +1023,7 @@ class TestCluster(BaseTestCase):
         bind = ClusterBind.objects.first()
 
         with self.no_rights_user_logged_in:
-            res: Response = self.client.delete(
+            response: Response = self.client.delete(
                 reverse(
                     "service-bind-details",
                     kwargs={
@@ -956,7 +1037,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             obj=self.service,
@@ -995,7 +1076,7 @@ class TestCluster(BaseTestCase):
     def test_update_component_config_denied(self):
         component = self.get_component()
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse(
                     "config-history",
                     kwargs={
@@ -1010,7 +1091,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=component,
@@ -1054,7 +1135,7 @@ class TestCluster(BaseTestCase):
         self.service.config = config
         self.service.save(update_fields=["config"])
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse(
                     "config-history",
                     kwargs={
@@ -1068,7 +1149,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.service,
@@ -1101,7 +1182,7 @@ class TestCluster(BaseTestCase):
 
     def test_service_import_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.post(
+            response: Response = self.client.post(
                 path=reverse(
                     "service-import",
                     kwargs={"cluster_id": self.cluster.pk, "service_id": self.service.pk},
@@ -1112,7 +1193,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             obj=self.service,
@@ -1138,7 +1219,7 @@ class TestCluster(BaseTestCase):
 
     def test_cluster_config_restore_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
                     kwargs={"cluster_id": self.cluster.pk, "version": 1},
@@ -1148,7 +1229,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.cluster,
@@ -1180,7 +1261,7 @@ class TestCluster(BaseTestCase):
 
     def test_host_config_restore_denied(self):
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
                     kwargs={"cluster_id": self.cluster.pk, "host_id": self.host.pk, "version": 1},
@@ -1190,7 +1271,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.host,
@@ -1229,7 +1310,7 @@ class TestCluster(BaseTestCase):
     def test_component_config_restore_denied(self):
         component = self.get_component()
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
                     kwargs={
@@ -1244,7 +1325,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=component,
@@ -1288,7 +1369,7 @@ class TestCluster(BaseTestCase):
         self.service.config = config
         self.service.save(update_fields=["config"])
         with self.no_rights_user_logged_in:
-            res: Response = self.client.patch(
+            response: Response = self.client.patch(
                 path=reverse(
                     "config-history-version-restore",
                     kwargs={
@@ -1302,7 +1383,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert res.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.service,
@@ -1312,3 +1393,48 @@ class TestCluster(BaseTestCase):
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
         )
+
+    def test_action_launch(self):
+        action = Action.objects.create(
+            display_name=self.action_display_name,
+            prototype=self.cluster_prototype,
+            type="job",
+            state_available="any",
+        )
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "run-task", kwargs={"cluster_id": self.cluster.pk, "action_id": action.pk}
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_action_log(log=log)
+
+    def test_do_upgrade(self):
+        action = Action.objects.create(
+            display_name=self.action_display_name,
+            prototype=self.cluster_prototype,
+            type="job",
+            state_available="any",
+        )
+        upgrade = Upgrade.objects.create(
+            name="test_upgrade",
+            bundle=self.bundle,
+            action=action,
+            min_version="1",
+            max_version="99",
+        )
+
+        with patch("api.cluster.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "do-cluster-upgrade",
+                    kwargs={"cluster_id": self.cluster.pk, "upgrade_id": upgrade.pk},
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_action_log(log=log)

@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.test import TestCase
+
 from cm.api import add_host, add_host_provider, add_host_to_cluster
 from cm.errors import AdcmEx
 from cm.models import (
@@ -21,7 +23,6 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.variant import VARIANT_HOST_FUNC, get_variant, var_host_solver, variant_host
-from django.test import TestCase
 
 
 def cook_cluster():

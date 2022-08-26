@@ -13,9 +13,10 @@
 """Common pytest fixtures"""
 
 import pytest
+from rest_framework.test import APIClient
+
 from init_db import init
 from rbac.upgrade.role import init_roles
-from rest_framework.test import APIClient
 
 
 @pytest.fixture

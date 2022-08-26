@@ -12,6 +12,8 @@
 
 # pylint: disable=redefined-builtin
 
+from rest_framework import serializers
+
 from api.action.serializers import ActionShort
 from api.concern.serializers import ConcernItemSerializer, ConcernItemUISerializer
 from api.group_config.serializers import GroupConfigsHyperlinkedIdentityField
@@ -20,7 +22,6 @@ from api.utils import CommonAPIURL, ObjectURL, filter_actions, hlink
 from cm import status_api
 from cm.adcm_config import get_main_info
 from cm.models import Action
-from rest_framework import serializers
 
 
 class ComponentSerializer(serializers.Serializer):

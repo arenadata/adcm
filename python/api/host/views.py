@@ -10,6 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django_filters import rest_framework as drf_filters
+from guardian.mixins import PermissionListMixin
+from guardian.shortcuts import get_objects_for_user
+from rest_framework import permissions, status
+from rest_framework.response import Response
+
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.host.serializers import (
     ClusterHostSerializer,
@@ -40,12 +46,7 @@ from cm.models import (
     ServiceComponent,
 )
 from cm.status_api import make_ui_host_status
-from django_filters import rest_framework as drf_filters
-from guardian.mixins import PermissionListMixin
-from guardian.shortcuts import get_objects_for_user
 from rbac.viewsets import DjangoOnlyObjectPermissions
-from rest_framework import permissions, status
-from rest_framework.response import Response
 
 
 class NumberInFilter(drf_filters.BaseInFilter, drf_filters.NumberFilter):

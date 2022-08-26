@@ -10,11 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from api import docs, views
 from django.urls import include, path, register_converter
-from rbac.endpoints import token
 from rest_framework.schemas import get_schema_view
 from rest_framework_swagger.views import get_swagger_view
+
+from api import docs, views
+from rbac.endpoints import token
 
 register_converter(views.NameConverter, 'name')
 swagger_view = get_swagger_view(title='ArenaData Chapel API')
