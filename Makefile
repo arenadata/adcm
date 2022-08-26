@@ -51,10 +51,7 @@ testpyreqs: ## Install test prereqs into user's pip target dir
 test_image:
 	docker pull $(ADCMBASE_IMAGE):$(ADCMBASE_TAG)
 
-basetests: test_image ## Run tests/base
-	docker run -i --rm -v $(CURDIR)/:/source -w /source/tests/base $(ADCMBASE_IMAGE):$(ADCMBASE_TAG) /venv.sh run default ./run_test.sh
-
-unittests: basetests test_image ## Run unittests
+unittests: test_image ## Run unittests
 	docker run -i --rm -v $(CURDIR)/:/source -w /source/ $(ADCMTEST_IMAGE):$(ADCMBASE_TAG) /venv.sh reqs_and_run default /source/requirements.txt /source/python/run_unit.sh
 
 pytest: ## Run functional tests
