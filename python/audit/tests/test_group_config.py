@@ -459,10 +459,10 @@ class TestGroupConfig(BaseTestCase):
         )
 
     def test_add_host_failed(self):
-        host_ids = Host.objects.all().values_list("pk", flat=True).order_by("-pk")
+        host_pks = Host.objects.all().values_list("pk", flat=True).order_by("-pk")
         response: Response = self.client.post(
             path=f"/api/v1/group-config/{self.group_config.pk}/host/",
-            data={"id": host_ids[0] + 1},
+            data={"id": host_pks[0] + 1},
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
