@@ -10,9 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.utils import timezone
+
 from cm.bundle import load_adcm
 from cm.models import Action, Bundle, JobLog, Prototype, TaskLog
-from django.utils import timezone
 
 
 class PreparationData:

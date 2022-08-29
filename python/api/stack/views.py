@@ -10,6 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rest_framework import decorators, status
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
+from rest_framework.mixins import CreateModelMixin
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+
 from api.action.serializers import StackActionSerializer
 from api.base_view import (
     DetailView,
@@ -18,7 +26,7 @@ from api.base_view import (
     ModelPermOrReadOnlyForAuth,
     PaginatedView,
 )
-from api.stack import serializers, filters
+from api.stack import filters, serializers
 from api.utils import check_obj
 from audit.utils import audit
 from cm.api import accept_license, get_license, load_host_map, load_service_map
@@ -32,13 +40,6 @@ from cm.models import (
     PrototypeImport,
     Upgrade,
 )
-from rest_framework import decorators, status
-from rest_framework.authentication import SessionAuthentication, TokenAuthentication
-from rest_framework.mixins import CreateModelMixin
-from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
 
 
 class CsrfOffSessionAuthentication(SessionAuthentication):

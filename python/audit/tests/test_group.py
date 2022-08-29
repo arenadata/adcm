@@ -12,18 +12,18 @@
 
 from datetime import datetime
 
+from django.urls import reverse
+from rest_framework.response import Response
+from rest_framework.status import HTTP_403_FORBIDDEN
+
+from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
     AuditObjectType,
 )
-from django.urls import reverse
 from rbac.models import Group, User
-from rest_framework.response import Response
-from rest_framework.status import HTTP_403_FORBIDDEN
-
-from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 
 
 class TestGroup(BaseTestCase):
@@ -64,8 +64,9 @@ class TestGroup(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
+        group = Group.objects.get(pk=response.data["id"])
         assert log.audit_object.object_id == response.data["id"]
-        assert log.audit_object.object_name == self.name
+        assert log.audit_object.object_name == group.name
         assert log.audit_object.object_type == AuditObjectType.Group
         assert not log.audit_object.is_deleted
         assert log.operation_name == self.group_created_str

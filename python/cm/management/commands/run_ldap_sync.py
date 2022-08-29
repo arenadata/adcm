@@ -12,14 +12,15 @@
 
 from datetime import timedelta
 
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
 from audit.models import AuditLogOperationResult
 from audit.utils import make_audit_log
 from cm.config import Job
 from cm.job import start_task
 from cm.logger import log_cron_task as log
 from cm.models import ADCM, Action, ConfigLog, TaskLog
-from django.core.management.base import BaseCommand
-from django.utils import timezone
 
 
 def get_settings(adcm_object):

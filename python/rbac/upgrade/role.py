@@ -13,9 +13,13 @@
 """Init or upgrade RBAC roles and permissions"""
 from typing import List
 
-import cm.checker
 import ruyaml
 from adwp_base.errors import raise_AdwpEx as err
+from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
+from django.utils import timezone
+
+import cm.checker
 from cm.models import (
     Action,
     Bundle,
@@ -24,9 +28,6 @@ from cm.models import (
     ProductCategory,
     get_model_by_type,
 )
-from django.contrib.contenttypes.models import ContentType
-from django.db import transaction
-from django.utils import timezone
 from rbac import log
 from rbac.models import Permission, Role, RoleMigration, RoleTypes, re_apply_all_polices
 from rbac.settings import api_settings
@@ -301,7 +302,7 @@ def init_roles():
     """
     Init or upgrade roles and permissions in DB
     To run upgrade call
-    manage.py upgarderole
+    manage.py upgraderole
     """
     role_data = get_role_spec(api_settings.ROLE_SPEC, api_settings.ROLE_SCHEMA)
     check_roles_child(role_data)

@@ -15,9 +15,10 @@ import argparse
 import os
 import sys
 
+import ruyaml
+
 import cm.checker
 import cm.config
-import ruyaml
 
 
 def check_config(data_file, schema_file, print_ok=True):

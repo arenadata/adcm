@@ -13,6 +13,10 @@
 import json
 import os
 
+from rest_framework import serializers
+from rest_framework.reverse import reverse
+
+from adcm.serializers import EmptySerializer
 from api.concern.serializers import ConcernItemSerializer
 from api.utils import hlink
 from cm.ansible_plugin import get_check_log
@@ -20,10 +24,6 @@ from cm.config import RUN_DIR, Job
 from cm.errors import AdcmEx
 from cm.job import start_task
 from cm.models import ClusterObject, Host, JobLog, ServiceComponent, get_object_cluster
-from rest_framework import serializers
-from rest_framework.reverse import reverse
-
-from adcm.serializers import EmptySerializer
 
 
 def get_object_name(obj):

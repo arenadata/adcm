@@ -17,6 +17,10 @@ from datetime import datetime, timedelta
 from enum import Enum
 from subprocess import STDOUT, CalledProcessError, check_output
 
+from django.core.management.base import BaseCommand
+from django.db import transaction
+from django.utils import timezone
+
 from audit.models import AuditLogOperationResult
 from audit.utils import make_audit_log
 from cm import config
@@ -35,9 +39,6 @@ from cm.models import (
     ServiceComponent,
     TaskLog,
 )
-from django.core.management.base import BaseCommand
-from django.db import transaction
-from django.utils import timezone
 
 LOGROTATE_CONF_FILE_TEMPLATE = """
 /adcm/data/log/nginx/*.log {{

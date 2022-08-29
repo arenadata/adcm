@@ -16,7 +16,6 @@ import importlib
 import re
 
 from adwp_base.errors import raise_AdwpEx as err
-from cm.models import Bundle, DummyData, HostComponent, ProductCategory
 from django.contrib.auth.models import Group as AuthGroup
 from django.contrib.auth.models import Permission
 from django.contrib.auth.models import User as AuthUser
@@ -29,6 +28,8 @@ from django.dispatch import receiver
 from django.utils import timezone
 from guardian.models import GroupObjectPermission, UserObjectPermission
 from rest_framework.exceptions import ValidationError
+
+from cm.models import Bundle, DummyData, HostComponent, ProductCategory
 
 
 class ObjectType(models.TextChoices):
@@ -62,6 +63,10 @@ class User(AuthUser):
     type = models.CharField(
         max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
     )
+
+    @property
+    def name(self):
+        return self.username
 
 
 class Group(AuthGroup):

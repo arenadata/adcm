@@ -10,10 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.test import TestCase
+
 import cm.api
 import cm.issue
 from cm.models import Bundle, ClusterBind, ConcernCause, Prototype, PrototypeImport
-from django.test import TestCase
 
 
 class TestImport(TestCase):
