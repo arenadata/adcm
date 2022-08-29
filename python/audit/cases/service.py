@@ -3,7 +3,7 @@ from django.views import View
 from rest_framework.response import Response
 
 from audit.cases.cluster import get_export_cluster_and_service_names, make_export_name
-from audit.cases.common import get_or_create_audit_obj, get_service_name
+from audit.cases.common import get_obj_name, get_or_create_audit_obj, get_service_name
 from audit.models import (
     AuditLogOperationType,
     AuditObject,
@@ -69,7 +69,7 @@ def service_case(
 
             audit_object = get_or_create_audit_obj(
                 object_id=service_pk,
-                object_name=obj.name,
+                object_name=get_obj_name(obj=obj, obj_type=AuditObjectType.Service),
                 object_type=AuditObjectType.Service,
             )
 
@@ -88,7 +88,7 @@ def service_case(
 
             audit_object = get_or_create_audit_obj(
                 object_id=service_pk,
-                object_name=obj.name,
+                object_name=get_obj_name(obj=obj, obj_type=AuditObjectType.Service),
                 object_type=AuditObjectType.Service,
             )
 

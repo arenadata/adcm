@@ -5,6 +5,7 @@ from django.views import View
 from rest_framework.response import Response
 
 from audit.cases.common import (
+    get_obj_name,
     get_or_create_audit_obj,
     get_service_name,
     obj_pk_case,
@@ -229,7 +230,7 @@ def cluster_case(
             )
             audit_object = get_or_create_audit_obj(
                 object_id=service_pk,
-                object_name=service.name,
+                object_name=get_obj_name(obj=service, obj_type=AuditObjectType.Service),
                 object_type=AuditObjectType.Service,
             )
 
@@ -246,7 +247,7 @@ def cluster_case(
             )
             audit_object = get_or_create_audit_obj(
                 object_id=service_pk,
-                object_name=service.name,
+                object_name=get_obj_name(obj=service, obj_type=AuditObjectType.Service),
                 object_type=AuditObjectType.Service,
             )
 

@@ -44,11 +44,19 @@ class TestComponent(BaseTestCase):
         bundle = Bundle.objects.create()
         cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster")
         self.cluster = Cluster.objects.create(prototype=cluster_prototype, name="test_cluster")
-        service_prototype = Prototype.objects.create(bundle=bundle, type="service")
+        service_prototype = Prototype.objects.create(
+            bundle=bundle,
+            type="service",
+            display_name="test_service",
+        )
         self.service = ClusterObject.objects.create(
             prototype=service_prototype, cluster=self.cluster
         )
-        self.component_prototype = Prototype.objects.create(bundle=bundle, type="component")
+        self.component_prototype = Prototype.objects.create(
+            bundle=bundle,
+            type="component",
+            display_name="test_component",
+        )
         config = ObjectConfig.objects.create(current=1, previous=1)
         ConfigLog.objects.create(obj_ref=config, config="{}")
         self.component = ServiceComponent.objects.create(
@@ -70,7 +78,10 @@ class TestComponent(BaseTestCase):
             user = self.test_user
 
         self.assertEqual(log.audit_object.object_id, self.component.pk)
-        self.assertEqual(log.audit_object.object_name, self.component.name)
+        self.assertEqual(
+            log.audit_object.object_name,
+            f"{self.cluster.name}/{self.service.display_name}/{self.component.display_name}",
+        )
         self.assertEqual(log.audit_object.object_type, AuditObjectType.Component)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, "Component configuration updated")
@@ -82,7 +93,10 @@ class TestComponent(BaseTestCase):
 
     def check_action_log(self, log: AuditLog) -> None:
         self.assertEqual(log.audit_object.object_id, self.component.pk)
-        self.assertEqual(log.audit_object.object_name, self.component.name)
+        self.assertEqual(
+            log.audit_object.object_name,
+            f"{self.cluster.name}/{self.service.display_name}/{self.component.display_name}",
+        )
         self.assertEqual(log.audit_object.object_type, AuditObjectType.Component)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, f"{self.action_display_name} action launched")

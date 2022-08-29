@@ -1,3 +1,4 @@
+from django.db.models import Model
 from rest_framework.response import Response
 
 from audit.models import (
@@ -9,7 +10,7 @@ from audit.models import (
     AuditObjectType,
     AuditOperation,
 )
-from cm.models import Action, ClusterObject, Host, TaskLog, Upgrade
+from cm.models import Action, ClusterObject, TaskLog, Upgrade
 
 
 def _get_audit_operation(
@@ -62,6 +63,26 @@ def _task_case(task_pk: str, action: str) -> tuple[AuditOperation, AuditObject |
     return audit_operation, audit_object
 
 
+def get_obj_name(obj: Model, obj_type: str) -> str:
+    if obj_type == "service":
+        obj_name = obj.display_name
+        cluster = getattr(obj, "cluster")
+        if cluster:
+            obj_name = f"{cluster.name}/{obj_name}"
+    elif obj_type == "component":
+        obj_name = obj.display_name
+        service = getattr(obj, "service")
+        if service:
+            obj_name = f"{service.display_name}/{obj_name}"
+            cluster = getattr(service, "cluster")
+            if cluster:
+                obj_name = f"{cluster.name}/{obj_name}"
+    else:
+        obj_name = obj.name
+
+    return obj_name
+
+
 def get_or_create_audit_obj(object_id: str, object_name: str, object_type: str) -> AuditObject:
     audit_object = AuditObject.objects.filter(
         object_id=object_id,
@@ -83,20 +104,8 @@ def get_audit_object_from_resp(response: Response, obj_type: str) -> AuditObject
     if not response_has_data:
         return None
 
-    response_has_name = (
-            response.data.get("name")
-            or response.data.get("username")
-            or response.data.get("fqdn")
-    )
-    if not response_has_name:
-        return None
-
-    if obj_type == AuditObjectType.User:
-        object_name = response.data["username"]
-    elif obj_type == AuditObjectType.Host:
-        object_name = response.data["fqdn"]
-    else:
-        object_name = response.data["name"]
+    obj = AUDIT_OBJECT_TYPE_TO_MODEL_MAP[obj_type].objects.get(pk=response.data["id"])
+    object_name = get_obj_name(obj=obj, obj_type=obj_type)
 
     return get_or_create_audit_obj(
         object_id=response.data["id"],
@@ -145,7 +154,7 @@ def obj_pk_case(
     )
     obj = AUDIT_OBJECT_TYPE_TO_MODEL_MAP[obj_type].objects.filter(pk=obj_pk).first()
     if obj:
-        obj_name = obj_name or obj.name
+        obj_name = get_obj_name(obj=obj, obj_type=obj_type) or obj.name
 
     audit_object = get_or_create_audit_obj(
         object_id=obj_pk,
@@ -178,14 +187,11 @@ def action_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | Non
 
             obj = PATH_STR_TO_OBJ_CLASS_MAP[obj_type].objects.filter(pk=obj_pk).first()
             if obj:
-                if isinstance(obj, Host):
-                    obj_name = obj.fqdn
-                else:
-                    obj_name = obj.name
+                object_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP[PATH_STR_TO_OBJ_CLASS_MAP[obj_type]]
                 audit_object = get_or_create_audit_obj(
                     object_id=obj_pk,
-                    object_name=obj_name,
-                    object_type=MODEL_TO_AUDIT_OBJECT_TYPE_MAP[PATH_STR_TO_OBJ_CLASS_MAP[obj_type]],
+                    object_name=get_obj_name(obj=obj, obj_type=object_type),
+                    object_type=object_type,
                 )
             else:
                 audit_object = None
@@ -209,11 +215,12 @@ def upgrade_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | No
             )
 
             obj = PATH_STR_TO_OBJ_CLASS_MAP[obj_type].objects.filter(pk=obj_pk).first()
+            object_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP[PATH_STR_TO_OBJ_CLASS_MAP[obj_type]]
             if obj:
                 audit_object = get_or_create_audit_obj(
                     object_id=obj_pk,
-                    object_name=obj.name,
-                    object_type=MODEL_TO_AUDIT_OBJECT_TYPE_MAP[PATH_STR_TO_OBJ_CLASS_MAP[obj_type]],
+                    object_name=get_obj_name(obj=obj, obj_type=object_type),
+                    object_type=object_type,
                 )
             else:
                 audit_object = None

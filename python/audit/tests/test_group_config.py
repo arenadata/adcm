@@ -92,14 +92,22 @@ class TestGroupConfig(BaseTestCase):
 
     def get_service(self):
         return ClusterObject.objects.create(
-            prototype=Prototype.objects.create(bundle=self.bundle, type="service"),
+            prototype=Prototype.objects.create(
+                bundle=self.bundle,
+                type="service",
+                display_name="test_service",
+            ),
             cluster=self.cluster,
             config=self.config,
         )
 
     def get_component(self):
         return ServiceComponent.objects.create(
-            prototype=Prototype.objects.create(bundle=self.bundle, type="component"),
+            prototype=Prototype.objects.create(
+                bundle=self.bundle,
+                type="component",
+                display_name="test_component",
+            ),
             cluster=self.cluster,
             service=ClusterObject.objects.create(
                 prototype=Prototype.objects.create(bundle=self.bundle, type="service"),
@@ -113,6 +121,7 @@ class TestGroupConfig(BaseTestCase):
         self,
         log: AuditLog,
         obj,
+        obj_name: str,
         obj_type: AuditObjectType,
         operation_name: str,
         operation_type: AuditLogOperationType,
@@ -120,7 +129,7 @@ class TestGroupConfig(BaseTestCase):
         user: User,
     ) -> None:
         self.assertEqual(log.audit_object.object_id, obj.pk)
-        self.assertEqual(log.audit_object.object_name, obj.name)
+        self.assertEqual(log.audit_object.object_name, obj_name)
         self.assertEqual(log.audit_object.object_type, obj_type)
         self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, operation_name)
@@ -152,6 +161,7 @@ class TestGroupConfig(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.group_config.name} configuration group updated",
             operation_type=AuditLogOperationType.Update,
@@ -172,6 +182,7 @@ class TestGroupConfig(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=self.created_operation_name,
             operation_type=AuditLogOperationType.Create,
@@ -234,6 +245,7 @@ class TestGroupConfig(BaseTestCase):
         self.check_log(
             log=log,
             obj=service,
+            obj_name=f"{self.cluster.name}/{service.display_name}",
             obj_type=AuditObjectType.Service,
             operation_name=self.created_operation_name,
             operation_type=AuditLogOperationType.Create,
@@ -276,6 +288,8 @@ class TestGroupConfig(BaseTestCase):
         self.check_log(
             log=log,
             obj=component,
+            obj_name=f"{self.cluster.name}/{component.service.display_name}"
+            f"/{component.display_name}",
             obj_type=AuditObjectType.Component,
             operation_name=self.created_operation_name,
             operation_type=AuditLogOperationType.Create,
@@ -312,6 +326,7 @@ class TestGroupConfig(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.group_config.name} configuration group deleted",
             operation_type=AuditLogOperationType.Delete,
@@ -331,6 +346,7 @@ class TestGroupConfig(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.group_config.name} configuration group deleted",
             operation_type=AuditLogOperationType.Delete,
@@ -433,6 +449,7 @@ class TestGroupConfig(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.host.fqdn} host added to "
             f"{self.group_config.name} configuration group",
@@ -450,6 +467,7 @@ class TestGroupConfig(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.host.fqdn} host removed from "
             f"{self.group_config.name} configuration group",
@@ -471,6 +489,7 @@ class TestGroupConfig(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"host added to {self.group_config.name} configuration group",
             operation_type=AuditLogOperationType.Update,
@@ -491,6 +510,7 @@ class TestGroupConfig(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.host.fqdn} host added to "
             f"{self.group_config.name} configuration group",
@@ -517,6 +537,7 @@ class TestGroupConfig(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.host.fqdn} host removed from "
             f"{self.group_config.name} configuration group",
