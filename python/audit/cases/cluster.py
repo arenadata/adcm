@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from django.db.models import Model
 from django.views import View
 from rest_framework.response import Response
@@ -19,15 +21,14 @@ from cm.models import Cluster, ClusterBind, ClusterObject, Host
 CONFIGURATION_STR = "configuration "
 
 
-def get_export_cluster_and_service_names(response, view):
+def get_export_cluster_and_service_names(response, view) -> Tuple[str, str]:
     cluster, service = None, None
     cluster_name, service_name = "", ""
     if response and response.data and response.data.get("export_cluster_id"):
         cluster = Cluster.objects.filter(
             pk=response.data["export_cluster_id"],
         ).first()
-
-    if view.request.data.get("export_cluster_id"):
+    elif view.request.data.get("export_cluster_id"):
         cluster = Cluster.objects.filter(
             pk=view.request.data["export_cluster_id"],
         ).first()
@@ -36,8 +37,7 @@ def get_export_cluster_and_service_names(response, view):
         service = ClusterObject.objects.filter(
             pk=response.data["export_service_id"],
         ).first()
-
-    if view.request.data.get("export_service_id"):
+    elif view.request.data.get("export_service_id"):
         service = ClusterObject.objects.filter(
             pk=view.request.data["export_service_id"],
         ).first()
@@ -50,11 +50,10 @@ def get_export_cluster_and_service_names(response, view):
     return cluster_name, service_name
 
 
-def make_export_name(cluster_name, service_name):
+def make_export_name(cluster_name, service_name) -> str:
+    export_name = f"{cluster_name}"
     if service_name:
         export_name = f"{cluster_name}/{service_name}"
-    else:
-        export_name = f"{cluster_name}"
     return export_name
 
 
