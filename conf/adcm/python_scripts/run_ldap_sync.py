@@ -20,7 +20,7 @@ sys.path.append("/adcm/python/")
 
 import adcm.init_django  # pylint: disable=unused-import
 from rbac.models import User, Group, OriginType
-from rbac.ldap import _get_ldap_default_settings, configure_tls, is_tls
+from rbac.ldap import _get_ldap_default_settings, _get_groups_by_user_dn, _get_user_search, _get_ldap_config, configure_tls, is_tls
 from cm.errors import AdcmEx
 from cm.logger import log
 from django.db import DataError, IntegrityError
@@ -29,14 +29,19 @@ CERT_ENV_KEY = "LDAPTLS_CACERT"
 
 
 class SyncLDAP:
-    _settings = None
-    _conn = None
+    def __init__(self):
+        self._settings = None
+        self._conn = None
 
     @property
     def conn(self):
         if self._conn is None:
             self._conn = self._bind()
         return self._conn
+
+    @property
+    def _group_search_configured(self):
+        return "GROUP_SEARCH" in self.settings and bool(self.settings.get("GROUP_SEARCH"))
 
     def _bind(self):
         try:
@@ -63,22 +68,22 @@ class SyncLDAP:
                 error = AdcmEx(error_code)
                 sys.stdout.write(error.msg)
                 raise error
+            self._settings["DEFAULT_USER_SEARCH"] = _get_user_search(_get_ldap_config())
         return self._settings
 
     def sync(self):
         ldap_groups = self.sync_groups()
-        if ldap_groups:
-            self.sync_users(ldap_groups)
-        else:
-            sys.stdout.write("No groups found. Aborting sync users")
+        self.sync_users(ldap_groups)
 
     def sync_groups(self):
         """Synchronize LDAP groups with group model and delete groups which is not found in LDAP"""
-        self.settings["GROUP_SEARCH"].filterstr = f"(&" \
-                                                  f"(objectClass={self.settings['GROUP_OBJECT_CLASS']})" \
-                                                  f"{self.settings['GROUP_FILTER']})"
-        ldap_groups = self.settings["GROUP_SEARCH"].execute(self.conn, {})
-        self._sync_ldap_groups(ldap_groups)
+        ldap_groups = []
+        if self._group_search_configured:
+            self.settings["GROUP_SEARCH"].filterstr = f"(&" \
+                                                      f"(objectClass={self.settings['GROUP_OBJECT_CLASS']})" \
+                                                      f"{self.settings['GROUP_FILTER']})"
+            ldap_groups = self.settings["GROUP_SEARCH"].execute(self.conn, {})
+            self._sync_ldap_groups(ldap_groups)
         sys.stdout.write("Groups were synchronized\n")
         return ldap_groups
 
@@ -169,6 +174,9 @@ class SyncLDAP:
                     if updated:
                         sys.stdout.write("Updated user: %s\n" % username)
 
+                if not self._group_search_configured:
+                    self.__process_user_ldap_groups(user, cname)
+
                 # Remove condition after ADCM-2944
                 if not user.is_active:
                     sys.stdout.write(f"Delete this user and deactivate his session: {user}\n")
@@ -178,13 +186,16 @@ class SyncLDAP:
                     ldap_usernames.add(username)
                     for group in ldap_attributes.get("memberof", []):
                         name = group.split(",")[0][3:]
-                        try:
-                            group = Group.objects.get(name=f"{name} [ldap]", built_in=False,
-                                                      type=OriginType.LDAP)
-                            group.user_set.add(user)
-                            sys.stdout.write(f"Add user {user} to group {group}\n")
-                        except (IntegrityError, DataError) as e:
-                            sys.stdout.write("Error getting group %s: %s\n" % (name, e))
+                        if not self._group_search_configured:
+                            self.__process_user_ldap_groups(user, cname)
+                        else:
+                            try:
+                                group = Group.objects.get(name=f"{name} [ldap]", built_in=False,
+                                                          type=OriginType.LDAP)
+                                group.user_set.add(user)
+                                sys.stdout.write(f"Add user {user} to group {group}\n")
+                            except (IntegrityError, DataError) as e:
+                                sys.stdout.write("Error getting group %s: %s\n" % (name, e))
 
         django_usernames = set(User.objects.filter(type=OriginType.LDAP).values_list("username", flat=True))
         for username in django_usernames - ldap_usernames:
@@ -197,6 +208,25 @@ class SyncLDAP:
         msg = "Sync of users ended successfully."
         msg += f"Couldn\'t synchronize users: {error_names}\n" if error_names else ""
         log.debug(msg)
+
+    def __process_user_ldap_groups(self, user, user_dn):
+        ldap_group_names, err_msg = _get_groups_by_user_dn(
+            user_dn=user_dn,
+            user_search=self.settings["DEFAULT_USER_SEARCH"],
+            conn=self.conn
+        )
+        if err_msg:
+            sys.stdout.write(f"Can't get groups of user `{user_dn}`: {err_msg}\n")
+            raise RuntimeError(err_msg)
+
+        for ldap_group_name in ldap_group_names:
+            group_qs = Group.objects.filter(name=f"{ldap_group_name} [{OriginType.LDAP.value}]")
+            if not group_qs.exists():
+                g = Group.objects.create(name=ldap_group_name, type=OriginType.LDAP)
+            else:
+                g = group_qs[0]
+            g.user_set.add(user)
+            sys.stdout.write(f"Add user {user} to group {ldap_group_name}\n")
 
 
 if __name__ == "__main__":
