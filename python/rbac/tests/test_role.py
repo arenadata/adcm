@@ -18,12 +18,12 @@ from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 
 from cm.models import (
-    ProductCategory,
     Action,
     ActionType,
     Bundle,
     Cluster,
     ClusterObject,
+    ProductCategory,
     Prototype,
     ServiceComponent,
 )
@@ -31,7 +31,7 @@ from init_db import init as init_adcm
 from rbac.models import Role, RoleTypes
 from rbac.roles import ModelRole
 from rbac.tests.test_base import BaseTestCase
-from rbac.upgrade.role import prepare_action_roles, init_roles
+from rbac.upgrade.role import init_roles, prepare_action_roles
 
 
 class RoleModelTest(TestCase):
@@ -154,9 +154,9 @@ class RoleFunctionalTest(BaseTestCase):
     longMessage = False
 
     def setUp(self):
-        super().setUp()
         init_adcm()
         init_roles()
+        super().setUp()
 
         category = ProductCategory.objects.create(
             value="Sample Cluster",
@@ -172,72 +172,69 @@ class RoleFunctionalTest(BaseTestCase):
         )
         self.bundle_1.refresh_from_db()
 
-        actions = [
-            Action(
-                name="cluster_action",
-                type=ActionType.Job,
-                script="./action.yaml",
-                script_type="ansible",
-                state_available="any",
-                prototype=self.clp,
-                display_name="Cluster Action",
-            ),
-            Action(
-                name="service_1_action",
-                type=ActionType.Job,
-                script="./action.yaml",
-                script_type="ansible",
-                state_available="any",
-                prototype=self.sp_1,
-                display_name="Service 1 Action",
-            ),
-            Action(
-                name="component_1_1_action",
-                type=ActionType.Job,
-                script="./action.yaml",
-                script_type="ansible",
-                state_available="any",
-                prototype=self.cop_11,
-                display_name="Component 1 from Service 1 Action",
-            ),
-            Action(
-                name="component_2_1_action",
-                type=ActionType.Job,
-                script="./action.yaml",
-                script_type="ansible",
-                state_available="any",
-                prototype=self.cop_12,
-                display_name="Component 2 from Service 1 Action",
-            ),
-            Action(
-                name="service_2_action",
-                type=ActionType.Job,
-                script="./action.yaml",
-                script_type="ansible",
-                state_available="any",
-                prototype=self.sp_2,
-                display_name="Service 2 Action",
-            ),
-            Action(
-                name="component_1_2_action",
-                type=ActionType.Job,
-                script="./action.yaml",
-                script_type="ansible",
-                state_available="any",
-                prototype=self.cop_21,
-                display_name="Component 1 from Service 2 Action",
-            ),
-            Action(
-                name="component_2_2_action",
-                type=ActionType.Job,
-                script="./action.yaml",
-                script_type="ansible",
-                state_available="any",
-                prototype=self.cop_22,
-                display_name="Component 2 from Service 2 Action",
-            ),
-        ]
-        Action.objects.bulk_create(actions)
+        self.cluster_action = Action.objects.create(
+            name="cluster_action",
+            type=ActionType.Job,
+            script="./action.yaml",
+            script_type="ansible",
+            state_available="any",
+            prototype=self.clp,
+            display_name="Cluster Action",
+        )
+        self.service1_action = Action.objects.create(
+            name="service_1_action",
+            type=ActionType.Job,
+            script="./action.yaml",
+            script_type="ansible",
+            state_available="any",
+            prototype=self.sp_1,
+            display_name="Service 1 Action",
+        )
+        self.component11_action = Action.objects.create(
+            name="component_1_1_action",
+            type=ActionType.Job,
+            script="./action.yaml",
+            script_type="ansible",
+            state_available="any",
+            prototype=self.cop_11,
+            display_name="Component 1 from Service 1 Action",
+        )
+        self.component21_action = Action.objects.create(
+            name="component_2_1_action",
+            type=ActionType.Job,
+            script="./action.yaml",
+            script_type="ansible",
+            state_available="any",
+            prototype=self.cop_12,
+            display_name="Component 2 from Service 1 Action",
+        )
+        self.service2_action = Action.objects.create(
+            name="service_2_action",
+            type=ActionType.Job,
+            script="./action.yaml",
+            script_type="ansible",
+            state_available="any",
+            prototype=self.sp_2,
+            display_name="Service 2 Action",
+        )
+        self.component12_action = Action.objects.create(
+            name="component_1_2_action",
+            type=ActionType.Job,
+            script="./action.yaml",
+            script_type="ansible",
+            state_available="any",
+            prototype=self.cop_21,
+            display_name="Component 1 from Service 2 Action",
+        )
+        self.component22_action = Action.objects.create(
+            name="component_2_2_action",
+            type=ActionType.Job,
+            script="./action.yaml",
+            script_type="ansible",
+            state_available="any",
+            prototype=self.cop_22,
+            display_name="Component 2 from Service 2 Action",
+        )
 
     def test_cook_roles(self):
         prepare_action_roles(self.bundle_1)
@@ -290,8 +287,7 @@ class RoleFunctionalTest(BaseTestCase):
             )
 
     def check_roles(self):
-        bundle = self.bundle_1
-        roles = make_roles_list(bundle)
+        roles = self.make_roles_list()
         for role_data in roles:
             count = Role.objects.filter(**role_data).count()
             self.assertEqual(
@@ -325,230 +321,229 @@ class RoleFunctionalTest(BaseTestCase):
         ).count()
         self.assertEqual(sa_role_count, 6, "Roles missing from base roles")
 
-
-def make_roles_list(bundle):
-    roles = [
-        # hidden action roles
-        {
-            "name": "sample_bundle_1.0_community_cluster_Sample Cluster_cluster_action",
-            "display_name": "sample_bundle_1.0_community_cluster_Sample Cluster_cluster_action",
-            "bundle": bundle,
-            "type": RoleTypes.hidden,
-            "module_name": "rbac.roles",
-            "class_name": "ActionRole",
-            "init_params": {
-                "action_id": 3,
-                "app_name": "cm",
-                "model": "Cluster",
-                "filter": {
-                    "prototype__name": "sample_cluster",
-                    "prototype__type": "cluster",
-                    "prototype__bundle_id": bundle.id,
+    def make_roles_list(self):
+        roles = [
+            # hidden action roles
+            {
+                "name": "sample_bundle_1.0_community_cluster_Sample Cluster_cluster_action",
+                "display_name": "sample_bundle_1.0_community_cluster_Sample Cluster_cluster_action",
+                "bundle": self.bundle_1,
+                "type": RoleTypes.hidden,
+                "module_name": "rbac.roles",
+                "class_name": "ActionRole",
+                "init_params": {
+                    "action_id": self.cluster_action.id,
+                    "app_name": "cm",
+                    "model": "Cluster",
+                    "filter": {
+                        "prototype__name": "sample_cluster",
+                        "prototype__type": "cluster",
+                        "prototype__bundle_id": self.bundle_1.id,
+                    },
                 },
+                "parametrized_by_type": ["cluster"],
             },
-            "parametrized_by_type": ["cluster"],
-        },
-        {
-            "name": "sample_bundle_1.0_community_service_Service 1_service_1_action",
-            "display_name": "sample_bundle_1.0_community_service_Service 1_service_1_action",
-            "bundle": bundle,
-            "type": RoleTypes.hidden,
-            "module_name": "rbac.roles",
-            "class_name": "ActionRole",
-            "init_params": {
-                "action_id": 4,
-                "app_name": "cm",
-                "model": "ClusterObject",
-                "filter": {
-                    "prototype__name": "service_1",
-                    "prototype__type": "service",
-                    "prototype__bundle_id": bundle.id,
+            {
+                "name": "sample_bundle_1.0_community_service_Service 1_service_1_action",
+                "display_name": "sample_bundle_1.0_community_service_Service 1_service_1_action",
+                "bundle": self.bundle_1,
+                "type": RoleTypes.hidden,
+                "module_name": "rbac.roles",
+                "class_name": "ActionRole",
+                "init_params": {
+                    "action_id": self.service1_action.id,
+                    "app_name": "cm",
+                    "model": "ClusterObject",
+                    "filter": {
+                        "prototype__name": "service_1",
+                        "prototype__type": "service",
+                        "prototype__bundle_id": self.bundle_1.id,
+                    },
                 },
+                "parametrized_by_type": ["service"],
             },
-            "parametrized_by_type": ["service"],
-        },
-        {
-            "name": (
-                "sample_bundle_1.0_community_service_service_1_"
-                "component_Component 1 from Service 1_component_1_1_action"
-            ),
-            "display_name": (
-                "sample_bundle_1.0_community_service_service_1_"
-                "component_Component 1 from Service 1_component_1_1_action"
-            ),
-            "bundle": bundle,
-            "type": RoleTypes.hidden,
-            "module_name": "rbac.roles",
-            "class_name": "ActionRole",
-            "init_params": {
-                "action_id": 5,
-                "app_name": "cm",
-                "model": "ServiceComponent",
-                "filter": {
-                    "prototype__name": "component_1",
-                    "prototype__type": "component",
-                    "prototype__bundle_id": bundle.id,
+            {
+                "name": (
+                    "sample_bundle_1.0_community_service_service_1_"
+                    "component_Component 1 from Service 1_component_1_1_action"
+                ),
+                "display_name": (
+                    "sample_bundle_1.0_community_service_service_1_"
+                    "component_Component 1 from Service 1_component_1_1_action"
+                ),
+                "bundle": self.bundle_1,
+                "type": RoleTypes.hidden,
+                "module_name": "rbac.roles",
+                "class_name": "ActionRole",
+                "init_params": {
+                    "action_id": self.component11_action.id,
+                    "app_name": "cm",
+                    "model": "ServiceComponent",
+                    "filter": {
+                        "prototype__name": "component_1",
+                        "prototype__type": "component",
+                        "prototype__bundle_id": self.bundle_1.id,
+                    },
                 },
+                "parametrized_by_type": ["component"],
             },
-            "parametrized_by_type": ["component"],
-        },
-        {
-            "name": (
-                "sample_bundle_1.0_community_service_service_1_"
-                "component_Component 2 from Service 1_component_2_1_action"
-            ),
-            "display_name": (
-                "sample_bundle_1.0_community_service_service_1_"
-                "component_Component 2 from Service 1_component_2_1_action"
-            ),
-            "bundle": bundle,
-            "type": RoleTypes.hidden,
-            "module_name": "rbac.roles",
-            "class_name": "ActionRole",
-            "init_params": {
-                "action_id": 6,
-                "app_name": "cm",
-                "model": "ServiceComponent",
-                "filter": {
-                    "prototype__name": "component_2",
-                    "prototype__type": "component",
-                    "prototype__bundle_id": bundle.id,
+            {
+                "name": (
+                    "sample_bundle_1.0_community_service_service_1_"
+                    "component_Component 2 from Service 1_component_2_1_action"
+                ),
+                "display_name": (
+                    "sample_bundle_1.0_community_service_service_1_"
+                    "component_Component 2 from Service 1_component_2_1_action"
+                ),
+                "bundle": self.bundle_1,
+                "type": RoleTypes.hidden,
+                "module_name": "rbac.roles",
+                "class_name": "ActionRole",
+                "init_params": {
+                    "action_id": self.component21_action.id,
+                    "app_name": "cm",
+                    "model": "ServiceComponent",
+                    "filter": {
+                        "prototype__name": "component_2",
+                        "prototype__type": "component",
+                        "prototype__bundle_id": self.bundle_1.id,
+                    },
                 },
+                "parametrized_by_type": ["component"],
             },
-            "parametrized_by_type": ["component"],
-        },
-        {
-            "name": "sample_bundle_1.0_community_service_Service 2_service_2_action",
-            "display_name": "sample_bundle_1.0_community_service_Service 2_service_2_action",
-            "bundle": bundle,
-            "type": RoleTypes.hidden,
-            "module_name": "rbac.roles",
-            "class_name": "ActionRole",
-            "init_params": {
-                "action_id": 7,
-                "app_name": "cm",
-                "model": "ClusterObject",
-                "filter": {
-                    "prototype__name": "service_2",
-                    "prototype__type": "service",
-                    "prototype__bundle_id": bundle.id,
+            {
+                "name": "sample_bundle_1.0_community_service_Service 2_service_2_action",
+                "display_name": "sample_bundle_1.0_community_service_Service 2_service_2_action",
+                "bundle": self.bundle_1,
+                "type": RoleTypes.hidden,
+                "module_name": "rbac.roles",
+                "class_name": "ActionRole",
+                "init_params": {
+                    "action_id": self.service2_action.id,
+                    "app_name": "cm",
+                    "model": "ClusterObject",
+                    "filter": {
+                        "prototype__name": "service_2",
+                        "prototype__type": "service",
+                        "prototype__bundle_id": self.bundle_1.id,
+                    },
                 },
+                "parametrized_by_type": ["service"],
             },
-            "parametrized_by_type": ["service"],
-        },
-        {
-            "name": (
-                "sample_bundle_1.0_community_service_service_2_"
-                "component_Component 1 from Service 2_component_1_2_action"
-            ),
-            "display_name": (
-                "sample_bundle_1.0_community_service_service_2_"
-                "component_Component 1 from Service 2_component_1_2_action"
-            ),
-            "bundle": bundle,
-            "type": RoleTypes.hidden,
-            "module_name": "rbac.roles",
-            "class_name": "ActionRole",
-            "init_params": {
-                "action_id": 8,
-                "app_name": "cm",
-                "model": "ServiceComponent",
-                "filter": {
-                    "prototype__name": "component_1",
-                    "prototype__type": "component",
-                    "prototype__bundle_id": bundle.id,
+            {
+                "name": (
+                    "sample_bundle_1.0_community_service_service_2_"
+                    "component_Component 1 from Service 2_component_1_2_action"
+                ),
+                "display_name": (
+                    "sample_bundle_1.0_community_service_service_2_"
+                    "component_Component 1 from Service 2_component_1_2_action"
+                ),
+                "bundle": self.bundle_1,
+                "type": RoleTypes.hidden,
+                "module_name": "rbac.roles",
+                "class_name": "ActionRole",
+                "init_params": {
+                    "action_id": self.component12_action.id,
+                    "app_name": "cm",
+                    "model": "ServiceComponent",
+                    "filter": {
+                        "prototype__name": "component_1",
+                        "prototype__type": "component",
+                        "prototype__bundle_id": self.bundle_1.id,
+                    },
                 },
+                "parametrized_by_type": ["component"],
             },
-            "parametrized_by_type": ["component"],
-        },
-        {
-            "name": (
-                "sample_bundle_1.0_community_service_service_2_"
-                "component_Component 2 from Service 2_component_2_2_action"
-            ),
-            "display_name": (
-                "sample_bundle_1.0_community_service_service_2_"
-                "component_Component 2 from Service 2_component_2_2_action"
-            ),
-            "bundle": bundle,
-            "type": RoleTypes.hidden,
-            "module_name": "rbac.roles",
-            "class_name": "ActionRole",
-            "init_params": {
-                "action_id": 9,
-                "app_name": "cm",
-                "model": "ServiceComponent",
-                "filter": {
-                    "prototype__name": "component_2",
-                    "prototype__type": "component",
-                    "prototype__bundle_id": bundle.id,
+            {
+                "name": (
+                    "sample_bundle_1.0_community_service_service_2_"
+                    "component_Component 2 from Service 2_component_2_2_action"
+                ),
+                "display_name": (
+                    "sample_bundle_1.0_community_service_service_2_"
+                    "component_Component 2 from Service 2_component_2_2_action"
+                ),
+                "bundle": self.bundle_1,
+                "type": RoleTypes.hidden,
+                "module_name": "rbac.roles",
+                "class_name": "ActionRole",
+                "init_params": {
+                    "action_id": self.component22_action.id,
+                    "app_name": "cm",
+                    "model": "ServiceComponent",
+                    "filter": {
+                        "prototype__name": "component_2",
+                        "prototype__type": "component",
+                        "prototype__bundle_id": self.bundle_1.id,
+                    },
                 },
+                "parametrized_by_type": ["component"],
             },
-            "parametrized_by_type": ["component"],
-        },
-        # business action roles
-        {
-            "name": "Cluster Action: Cluster Action",
-            "display_name": "Cluster Action: Cluster Action",
-            "description": "Cluster Action: Cluster Action",
-            "type": RoleTypes.business,
-            "module_name": "rbac.roles",
-            "class_name": "ParentRole",
-            "parametrized_by_type": ["cluster"],
-        },
-        {
-            "name": "Service Action: Service 1 Action",
-            "display_name": "Service Action: Service 1 Action",
-            "description": "Service Action: Service 1 Action",
-            "type": RoleTypes.business,
-            "module_name": "rbac.roles",
-            "class_name": "ParentRole",
-            "parametrized_by_type": ["service"],
-        },
-        {
-            "name": "Component Action: Component 1 from Service 1 Action",
-            "display_name": "Component Action: Component 1 from Service 1 Action",
-            "description": "Component Action: Component 1 from Service 1 Action",
-            "type": RoleTypes.business,
-            "module_name": "rbac.roles",
-            "class_name": "ParentRole",
-            "parametrized_by_type": ["service", "component"],
-        },
-        {
-            "name": "Component Action: Component 2 from Service 1 Action",
-            "display_name": "Component Action: Component 2 from Service 1 Action",
-            "description": "Component Action: Component 2 from Service 1 Action",
-            "type": RoleTypes.business,
-            "module_name": "rbac.roles",
-            "class_name": "ParentRole",
-            "parametrized_by_type": ["service", "component"],
-        },
-        {
-            "name": "Service Action: Service 2 Action",
-            "display_name": "Service Action: Service 2 Action",
-            "description": "Service Action: Service 2 Action",
-            "type": RoleTypes.business,
-            "module_name": "rbac.roles",
-            "class_name": "ParentRole",
-            "parametrized_by_type": ["service"],
-        },
-        {
-            "name": "Component Action: Component 1 from Service 2 Action",
-            "display_name": "Component Action: Component 1 from Service 2 Action",
-            "description": "Component Action: Component 1 from Service 2 Action",
-            "type": RoleTypes.business,
-            "module_name": "rbac.roles",
-            "class_name": "ParentRole",
-            "parametrized_by_type": ["service", "component"],
-        },
-        {
-            "name": "Component Action: Component 2 from Service 2 Action",
-            "display_name": "Component Action: Component 2 from Service 2 Action",
-            "description": "Component Action: Component 2 from Service 2 Action",
-            "type": RoleTypes.business,
-            "module_name": "rbac.roles",
-            "class_name": "ParentRole",
-            "parametrized_by_type": ["service", "component"],
-        },
-    ]
-    return roles
+            # business action roles
+            {
+                "name": "Cluster Action: Cluster Action",
+                "display_name": "Cluster Action: Cluster Action",
+                "description": "Cluster Action: Cluster Action",
+                "type": RoleTypes.business,
+                "module_name": "rbac.roles",
+                "class_name": "ParentRole",
+                "parametrized_by_type": ["cluster"],
+            },
+            {
+                "name": "Service Action: Service 1 Action",
+                "display_name": "Service Action: Service 1 Action",
+                "description": "Service Action: Service 1 Action",
+                "type": RoleTypes.business,
+                "module_name": "rbac.roles",
+                "class_name": "ParentRole",
+                "parametrized_by_type": ["service"],
+            },
+            {
+                "name": "Component Action: Component 1 from Service 1 Action",
+                "display_name": "Component Action: Component 1 from Service 1 Action",
+                "description": "Component Action: Component 1 from Service 1 Action",
+                "type": RoleTypes.business,
+                "module_name": "rbac.roles",
+                "class_name": "ParentRole",
+                "parametrized_by_type": ["service", "component"],
+            },
+            {
+                "name": "Component Action: Component 2 from Service 1 Action",
+                "display_name": "Component Action: Component 2 from Service 1 Action",
+                "description": "Component Action: Component 2 from Service 1 Action",
+                "type": RoleTypes.business,
+                "module_name": "rbac.roles",
+                "class_name": "ParentRole",
+                "parametrized_by_type": ["service", "component"],
+            },
+            {
+                "name": "Service Action: Service 2 Action",
+                "display_name": "Service Action: Service 2 Action",
+                "description": "Service Action: Service 2 Action",
+                "type": RoleTypes.business,
+                "module_name": "rbac.roles",
+                "class_name": "ParentRole",
+                "parametrized_by_type": ["service"],
+            },
+            {
+                "name": "Component Action: Component 1 from Service 2 Action",
+                "display_name": "Component Action: Component 1 from Service 2 Action",
+                "description": "Component Action: Component 1 from Service 2 Action",
+                "type": RoleTypes.business,
+                "module_name": "rbac.roles",
+                "class_name": "ParentRole",
+                "parametrized_by_type": ["service", "component"],
+            },
+            {
+                "name": "Component Action: Component 2 from Service 2 Action",
+                "display_name": "Component Action: Component 2 from Service 2 Action",
+                "description": "Component Action: Component 2 from Service 2 Action",
+                "type": RoleTypes.business,
+                "module_name": "rbac.roles",
+                "class_name": "ParentRole",
+                "parametrized_by_type": ["service", "component"],
+            },
+        ]
+        return roles
