@@ -115,17 +115,13 @@ class TestCluster(BaseTestCase):
         self,
         log: AuditLog,
         obj: Cluster | Host | HostComponent | ClusterObject | ServiceComponent,
+        obj_name: str,
         obj_type: AuditObjectType,
         operation_name: str,
         operation_type: AuditLogOperationType,
         operation_result: AuditLogOperationResult = AuditLogOperationResult.Success,
         user: Optional[User] = None,
     ) -> None:
-        if isinstance(obj, Host):
-            obj_name = obj.fqdn
-        else:
-            obj_name = obj.name
-
         if user is None:
             user = self.test_user
 
@@ -158,6 +154,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=self.cluster_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
@@ -247,6 +244,7 @@ class TestCluster(BaseTestCase):
 
         self.check_log(
             log=log,
+            obj_name=self.test_cluster_name,
             obj=Cluster.objects.get(pk=response.data["id"]),
             obj_type=AuditObjectType.Cluster,
             operation_name="Cluster created",
@@ -401,6 +399,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=self.cluster_deleted_str,
             operation_type=AuditLogOperationType.Delete,
@@ -469,6 +468,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name="Cluster updated",
             operation_type=AuditLogOperationType.Update,
@@ -507,6 +507,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"Cluster bound to {self.cluster.name}/",
             operation_type=AuditLogOperationType.Update,
@@ -525,6 +526,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.cluster.name}/ unbound",
             operation_type=AuditLogOperationType.Update,
@@ -545,6 +547,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"Cluster bound to {self.cluster.name}/{self.service.display_name}",
             operation_type=AuditLogOperationType.Update,
@@ -563,6 +566,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.cluster.name}/{self.service.display_name} unbound",
             operation_type=AuditLogOperationType.Update,
@@ -582,6 +586,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.cluster.name}/ unbound",
             operation_type=AuditLogOperationType.Update,
@@ -676,6 +681,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.host.fqdn} host added",
             operation_type=AuditLogOperationType.Update,
@@ -713,6 +719,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.host,
+            obj_name=self.host.name,
             obj_type=AuditObjectType.Host,
             operation_name=self.host_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
@@ -735,6 +742,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.host,
+            obj_name=self.host.name,
             obj_type=AuditObjectType.Host,
             operation_name=self.host_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
@@ -765,6 +773,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name="Host-Component map updated",
             operation_type=AuditLogOperationType.Update,
@@ -810,6 +819,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name="Cluster import updated",
             operation_type=AuditLogOperationType.Update,
@@ -848,6 +858,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=cluster,
+            obj_name=cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.service.display_name} service added",
             operation_type=AuditLogOperationType.Update,
@@ -870,6 +881,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=cluster,
+            obj_name=cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.service.display_name} service added",
             operation_type=AuditLogOperationType.Update,
@@ -893,6 +905,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=cluster,
+            obj_name=cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.service.display_name} service added",
             operation_type=AuditLogOperationType.Update,
@@ -914,6 +927,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=cluster,
+            obj_name=cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name="{service_display_name} service added",
             operation_type=AuditLogOperationType.Update,
@@ -934,6 +948,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=f"{self.service.display_name} service removed",
             operation_type=AuditLogOperationType.Update,
@@ -974,6 +989,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             obj_type=AuditObjectType.Service,
             operation_name=f"Service bound to {cluster.name}/{self.service.display_name}",
             operation_type=AuditLogOperationType.Update,
@@ -997,6 +1013,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             obj_type=AuditObjectType.Service,
             operation_name=f"{cluster.name}/{self.service.display_name} unbound",
             operation_type=AuditLogOperationType.Update,
@@ -1020,6 +1037,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             obj_type=AuditObjectType.Service,
             operation_name=f"{cluster.name}/{self.service.display_name} unbound",
             operation_type=AuditLogOperationType.Update,
@@ -1044,6 +1062,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             obj_type=AuditObjectType.Service,
             operation_name=f"Service bound to {cluster.name}/{self.service.display_name}",
             operation_type=AuditLogOperationType.Update,
@@ -1080,6 +1099,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             obj_type=AuditObjectType.Service,
             operation_name=f"{cluster.name}/{self.service.display_name} unbound",
             operation_type=AuditLogOperationType.Update,
@@ -1107,6 +1127,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=component,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}/{component.display_name}",
             obj_type=AuditObjectType.Component,
             operation_name=self.component_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
@@ -1134,6 +1155,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=component,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}/{component.display_name}",
             obj_type=AuditObjectType.Component,
             operation_name=self.component_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
@@ -1163,6 +1185,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             obj_type=AuditObjectType.Service,
             operation_name=self.service_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
@@ -1192,6 +1215,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             obj_type=AuditObjectType.Service,
             operation_name=self.service_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
@@ -1214,6 +1238,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             obj_type=AuditObjectType.Service,
             operation_name="Service import updated",
             operation_type=AuditLogOperationType.Update,
@@ -1236,6 +1261,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             obj_type=AuditObjectType.Service,
             operation_name="Service import updated",
             operation_type=AuditLogOperationType.Update,
@@ -1272,6 +1298,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.cluster,
+            obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
             operation_name=self.cluster_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
@@ -1293,6 +1320,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.host,
+            obj_name=self.host.fqdn,
             obj_type=AuditObjectType.Host,
             operation_name=self.host_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
@@ -1314,6 +1342,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.host,
+            obj_name=self.host.fqdn,
             obj_type=AuditObjectType.Host,
             operation_name=self.host_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
@@ -1341,6 +1370,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=component,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}/{component.display_name}",
             obj_type=AuditObjectType.Component,
             operation_name=self.component_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
@@ -1368,6 +1398,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=component,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}/{component.display_name}",
             obj_type=AuditObjectType.Component,
             operation_name=self.component_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
@@ -1397,6 +1428,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             obj_type=AuditObjectType.Service,
             operation_name=self.service_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
@@ -1426,6 +1458,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             obj_type=AuditObjectType.Service,
             operation_name=self.service_conf_updated_str,
             operation_type=AuditLogOperationType.Update,
