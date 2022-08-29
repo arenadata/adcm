@@ -126,12 +126,17 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
       this.confirmForm.setValue({ password: this.value.password });
       this.form.get('user.username').disable();
 
-      if (type === 'ldap') {
+      if (type === 'ldap' || value?.is_active) {
         this.userForm.controls.first_name.disable();
         this.userForm.controls.last_name.disable();
         this.userForm.controls.email.disable();
         this.userForm.controls.password.disable();
         this.confirmForm.controls.password.disable();
+      }
+
+      if (value?.is_active) {
+        this.userForm.controls.group.disable();
+        this.userForm.controls.is_superuser.disable();
       }
     }
   }
