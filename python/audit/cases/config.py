@@ -3,7 +3,7 @@ from django.db.models import Model
 from django.views import View
 from rest_framework.response import Response
 
-from audit.cases.common import get_or_create_audit_obj
+from audit.cases.common import get_obj_name, get_or_create_audit_obj
 from audit.models import AuditLogOperationType, AuditObject, AuditOperation
 from cm.models import GroupConfig, Host, ObjectConfig
 
@@ -15,26 +15,6 @@ def _get_obj_type(obj_type: str) -> str:
         return "component"
 
     return obj_type
-
-
-def _get_obj_name(obj: Model, obj_type: str) -> str:
-    if obj_type == "service":
-        obj_name = obj.display_name
-        cluster = getattr(obj, "cluster")
-        if cluster:
-            obj_name = f"{cluster.name}/{obj_name}"
-    elif obj_type == "component":
-        obj_name = obj.display_name
-        service = getattr(obj, "service")
-        if service:
-            obj_name = f"{service.display_name}/{obj_name}"
-            cluster = getattr(service, "cluster")
-            if cluster:
-                obj_name = f"{cluster.name}/{obj_name}"
-    else:
-        obj_name = obj.name
-
-    return obj_name
 
 
 # pylint: disable-next=too-many-locals,too-many-branches,too-many-statements
@@ -64,7 +44,7 @@ def config_case(
             if config:
                 object_type = ContentType.objects.get_for_model(config.object).name
                 object_type = _get_obj_type(obj_type=object_type)
-                object_name = _get_obj_name(obj=config.object, obj_type=object_type)
+                object_name = get_obj_name(obj=config.object, obj_type=object_type)
 
                 audit_object = get_or_create_audit_obj(
                     object_id=config.object.pk,
@@ -100,7 +80,7 @@ def config_case(
             if config:
                 object_type = ContentType.objects.get_for_model(config.object).name
                 object_type = _get_obj_type(object_type)
-                object_name = _get_obj_name(obj=config.object, obj_type=object_type)
+                object_name = get_obj_name(obj=config.object, obj_type=object_type)
 
                 audit_object = get_or_create_audit_obj(
                     object_id=config.object.pk,
@@ -135,7 +115,7 @@ def config_case(
                     obj = response.data.serializer.instance
 
                 object_type = _get_obj_type(obj.object_type.name)
-                object_name = _get_obj_name(obj=obj.object, obj_type=object_type)
+                object_name = get_obj_name(obj=obj.object, obj_type=object_type)
                 audit_object = get_or_create_audit_obj(
                     object_id=obj.object.id,
                     object_name=object_name,
@@ -166,7 +146,7 @@ def config_case(
 
             if obj:
                 object_type = _get_obj_type(obj.object_type.name)
-                object_name = _get_obj_name(obj=obj.object, obj_type=object_type)
+                object_name = get_obj_name(obj=obj.object, obj_type=object_type)
                 audit_object = get_or_create_audit_obj(
                     object_id=obj.object.id,
                     object_name=object_name,
@@ -183,7 +163,7 @@ def config_case(
                 operation_type=AuditLogOperationType.Update,
             )
             object_type = _get_obj_type(config_group.object_type.name)
-            object_name = _get_obj_name(obj=config_group.object, obj_type=object_type)
+            object_name = get_obj_name(obj=config_group.object, obj_type=object_type)
             audit_object = get_or_create_audit_obj(
                 object_id=config_group.pk,
                 object_name=object_name,
@@ -209,7 +189,7 @@ def config_case(
                 operation_type=AuditLogOperationType.Update,
             )
             object_type = _get_obj_type(config_group.object_type.name)
-            object_name = _get_obj_name(obj=config_group.object, obj_type=object_type)
+            object_name = get_obj_name(obj=config_group.object, obj_type=object_type)
             audit_object = get_or_create_audit_obj(
                 object_id=config_group.pk,
                 object_name=object_name,
