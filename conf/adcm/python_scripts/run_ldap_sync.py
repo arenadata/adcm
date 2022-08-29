@@ -96,6 +96,9 @@ class SyncLDAP:
 
     def sync_users(self, ldap_groups):
         """Synchronize LDAP users with user model and delete users which is not found in LDAP"""
+        if not ldap_groups and not self._group_search_configured:
+            sys.stdout.write(f"No groups found. Aborting sync users\n")
+            return
         group_filter = ""
         for group_dn, group_attrs in ldap_groups:
             group_filter += f"(memberOf={group_dn})"
