@@ -1030,6 +1030,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             obj_type=AuditObjectType.Service,
             operation_name=f"Service bound to {cluster.name}/{service.display_name}",
             operation_type=AuditLogOperationType.Update,
@@ -1114,6 +1115,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             obj_type=AuditObjectType.Service,
             operation_name=f"{cluster.name} unbound",
             operation_type=AuditLogOperationType.Update,
@@ -1139,6 +1141,7 @@ class TestCluster(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             obj_type=AuditObjectType.Service,
             operation_name=f"Service bound to {cluster.name}/{service.display_name}",
             operation_type=AuditLogOperationType.Update,

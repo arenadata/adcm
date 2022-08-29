@@ -393,6 +393,7 @@ class TestService(BaseTestCase):
         self.check_log(
             log=log,
             obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             object_type=AuditObjectType.Service,
             operation_name=f"Service bound to {cluster.name}/{service.display_name}",
             operation_type=AuditLogOperationType.Update,
