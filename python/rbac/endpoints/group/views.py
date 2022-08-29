@@ -10,89 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Group view sets"""
-
 from adwp_base.errors import AdwpEx
 from django_filters.rest_framework import CharFilter, DjangoFilterBackend, FilterSet
 from guardian.mixins import PermissionListMixin
-from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.filters import OrderingFilter
-from rest_framework.serializers import (
-    BooleanField,
-    CharField,
-    HyperlinkedIdentityField,
-    IntegerField,
-    ModelSerializer,
-    RegexField,
-    Serializer,
-)
 from rest_framework.status import HTTP_405_METHOD_NOT_ALLOWED
 from rest_framework.viewsets import ModelViewSet
 
 from adcm.permissions import DjangoModelPermissionsAudit
-from adcm.serializers import EmptySerializer
 from audit.utils import audit
-from rbac.models import Group, User
-from rbac.services import group as group_services
-
-
-class UserSerializer(EmptySerializer):
-    id = IntegerField()
-    url = HyperlinkedIdentityField(view_name='rbac:user-detail')
-
-
-class UserGroupSerializer(EmptySerializer):
-    id = IntegerField()
-    url = HyperlinkedIdentityField(view_name='rbac:group-detail')
-
-
-class ExpandedUserSerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    group = UserGroupSerializer(many=True, source='groups')
-    url = HyperlinkedIdentityField(view_name='rbac:user-detail')
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'email',
-            'is_superuser',
-            'group',
-            'url',
-        )
-        expandable_fields = {
-            'group': (
-                'rbac.endpoints.group.views.GroupSerializer',
-                {'many': True, 'source': 'groups'},
-            )
-        }
-
-
-class GroupSerializer(FlexFieldsSerializerMixin, Serializer):
-    """
-    Group serializer
-    Group model inherits 'user_set' property from parent class, which refers to 'auth.User',
-    so it has not our custom properties in expanded fields
-    """
-
-    id = IntegerField(read_only=True)
-    name = RegexField(r'^[^\n]+$', max_length=150, source='name_to_display')
-    description = CharField(max_length=255, allow_blank=True, required=False, default='')
-    user = UserSerializer(many=True, required=False, source='user_set')
-    url = HyperlinkedIdentityField(view_name='rbac:group-detail')
-    built_in = BooleanField(read_only=True)
-    type = CharField(read_only=True)
-
-    class Meta:
-        expandable_fields = {'user': (ExpandedUserSerializer, {'many': True, 'source': 'user_set'})}
-
-    def update(self, instance, validated_data):
-        return group_services.update(instance, partial=self.partial, **validated_data)
-
-    def create(self, validated_data):
-        return group_services.create(**validated_data)
+from rbac.endpoints.group.serializers import GroupSerializer
+from rbac.models import Group
 
 
 class GroupFilterSet(FilterSet):

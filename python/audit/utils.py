@@ -21,6 +21,7 @@ from django.views.generic.base import View
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.request import Request
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, is_success
+from rest_framework.viewsets import ModelViewSet
 
 from audit.cases.cases import get_audit_operation_and_object
 from audit.cases.common import get_or_create_audit_obj
@@ -36,7 +37,8 @@ from audit.models import (
 )
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, HostProvider, TaskLog
-from rbac.models import Role, User
+from rbac.endpoints.group.serializers import GroupAuditSerializer
+from rbac.models import Group, Role, User
 
 
 def _get_view_and_request(args) -> tuple[View, Request]:
@@ -86,6 +88,25 @@ def _get_deleted_obj(view: View, request: Request, kwargs) -> Model | None:
     return deleted_obj
 
 
+def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
+    serializer_class = None
+    if isinstance(current_obj, Group):
+        serializer_class = GroupAuditSerializer
+
+    if not serializer_class:
+        return {}
+
+    current_data = serializer_class(current_obj).data
+    current_fields = {k: v for k, v in current_data.items() if prev_data[k] != v}
+    if not current_fields:
+        return current_fields
+
+    return {
+        "current": current_fields,
+        "previous": {k: v for k, v in prev_data.items() if k in current_fields},
+    }
+
+
 def audit(func):
     # pylint: disable=too-many-statements
     @wraps(func)
@@ -95,16 +116,32 @@ def audit(func):
         audit_operation: AuditOperation
         audit_object: AuditObject
         operation_name: str
-        view: View
+        view: View | ModelViewSet
         request: Request
+        object_changes: dict
 
         error = None
+        prev_data = None
+        current_obj = None
         view, request = _get_view_and_request(args=args)
 
         if request.method == "DELETE":
             deleted_obj = _get_deleted_obj(view=view, request=request, kwargs=kwargs)
         else:
             deleted_obj = None
+
+        if (
+            isinstance(view, ModelViewSet)
+            and view.action in {"update", "partial_update"}
+            and view.queryset
+            and view.kwargs.get("pk")
+        ):
+            if view.__class__.__name__ == "GroupViewSet":
+                prev_data = GroupAuditSerializer(
+                    Group.objects.filter(pk=view.kwargs["pk"]).first()
+                ).data
+                if prev_data:
+                    current_obj = view.queryset[0]
 
         try:
             res = func(*args, **kwargs)
@@ -174,7 +211,11 @@ def audit(func):
             deleted_obj,
         )
         if audit_operation:
-            object_changes: dict = {}
+            if is_success(status_code) and prev_data:
+                current_obj.refresh_from_db()
+                object_changes = _get_object_changes(prev_data=prev_data, current_obj=current_obj)
+            else:
+                object_changes = {}
 
             if is_success(status_code):
                 operation_result = AuditLogOperationResult.Success
