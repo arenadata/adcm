@@ -91,12 +91,12 @@ class SyncLDAP:
                                                       f"{self.settings['GROUP_FILTER']})"
             ldap_groups = self.settings["GROUP_SEARCH"].execute(self.conn, {})
             self._sync_ldap_groups(ldap_groups)
-        sys.stdout.write("Groups were synchronized\n")
+            sys.stdout.write("Groups were synchronized\n")
         return ldap_groups
 
     def sync_users(self, ldap_groups):
         """Synchronize LDAP users with user model and delete users which is not found in LDAP"""
-        if not ldap_groups and not self._group_search_configured:
+        if not ldap_groups and self._group_search_configured:
             sys.stdout.write(f"No groups found. Aborting sync users\n")
             return
         group_filter = ""
