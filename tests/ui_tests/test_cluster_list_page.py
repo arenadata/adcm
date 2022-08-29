@@ -262,7 +262,7 @@ def check_cluster_upgraded(app_fs, upgrade_cluster_name: str, state: str):
 
 
 @allure.step("Check save button and save config")
-def _check_save_in_configs(cluster_config_page, field_type, expected_state):
+def _check_save_in_configs(cluster_config_page, field_type, expected_state, is_default):
     """
     Check save button and save config.
     It is a workaround for each type of field because it won't work other way on ui with selenium.
@@ -276,7 +276,7 @@ def _check_save_in_configs(cluster_config_page, field_type, expected_state):
     if field_type in ['secrettext', 'map', 'boolean']:
         for _ in range(2):
             cluster_config_page.config.click_on_advanced()
-    if field_type == 'password':
+    if field_type == 'password' and is_default:
         cluster_config_page.config.reset_to_default(config_row)
     cluster_config_page.config.check_save_btn_state_and_save_conf(expected_state)
 
@@ -1499,14 +1499,9 @@ class TestClusterConfigPage:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
         check_expectations()
-        if not is_read_only:
+        if (not is_read_only) and (not field_invisible):
             config_row = cluster_config_page.config.get_config_row(field_type)
-            if not cluster_config_page.group_config.is_customization_chbx_checked(config_row):
-                cluster_config_page.config.activate_group_chbx(config_row)
-            _check_save_in_configs(cluster_config_page, field_type, expected["save"])
-            assert cluster_config_page.group_config.is_customization_chbx_checked(
-                cluster_config_page.config.get_config_row(field_type)
-            ), f"Config field {field_type} should be checked"
+            _check_save_in_configs(cluster_config_page, field_type, expected["save"], is_default)
 
 
 class TestClusterGroupConfigPage:
@@ -1657,7 +1652,7 @@ class TestClusterGroupConfigPage:
             config_row = cluster_config_page.config.get_config_row(field_type)
             if not cluster_config_page.group_config.is_customization_chbx_checked(config_row):
                 cluster_config_page.config.activate_group_chbx(config_row)
-            _check_save_in_configs(cluster_config_page, field_type, expected["save"])
+            _check_save_in_configs(cluster_config_page, field_type, expected["save"], is_default)
             assert cluster_config_page.group_config.is_customization_chbx_checked(
                 cluster_config_page.config.get_config_row(field_type)
             ), f"Config field {field_type} should be checked"
@@ -1665,6 +1660,7 @@ class TestClusterGroupConfigPage:
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
+    @pytest.mark.parametrize("is_default", [True, False], ids=("default", "not_default"))
     @pytest.mark.parametrize("group_advanced", [True, False], ids=("group_advanced", "group_non-advanced"))
     @pytest.mark.parametrize("is_read_only", [True, False], ids=("read_only", "not_read_only"))
     @pytest.mark.parametrize(
@@ -1696,6 +1692,7 @@ class TestClusterGroupConfigPage:
         app_fs,
         field_type,
         activatable,
+        is_default,
         group_advanced,
         is_read_only,
         field_advanced,
@@ -1711,7 +1708,7 @@ class TestClusterGroupConfigPage:
                 active=True,
                 group_invisible=False,
                 group_advanced=group_advanced,
-                default=True,
+                default=is_default,
                 required=False,
                 read_only=is_read_only,
                 field_invisible=False,
@@ -1803,7 +1800,7 @@ class TestClusterGroupConfigPage:
             if field_customization:
                 if not cluster_config_page.group_config.is_customization_chbx_checked(config_row):
                     cluster_config_page.config.activate_group_chbx(config_row)
-                _check_save_in_configs(cluster_config_page, field_type, expected["save"])
+                _check_save_in_configs(cluster_config_page, field_type, expected["save"], is_default)
                 assert cluster_config_page.group_config.is_customization_chbx_checked(
                     cluster_config_page.config.get_config_row(field_type)
                 ), f"Config field {field_type} should be checked"
