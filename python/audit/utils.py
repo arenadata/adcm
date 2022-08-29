@@ -35,7 +35,7 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterObject, Host, HostProvider, TaskLog
+from cm.models import Cluster, ClusterBind, ClusterObject, Host, HostProvider, TaskLog
 from rbac.models import Role, User
 
 
@@ -57,7 +57,7 @@ def _get_deleted_obj(view: View, request: Request, kwargs) -> Model | None:
         deleted_obj = view.get_object()
     except AssertionError:
         try:
-            deleted_obj = view.get_obj(kwargs, kwargs["bind_id"])
+            _, deleted_obj = view.get_obj(kwargs, kwargs["bind_id"])
         except AdcmEx:
             try:
                 deleted_obj = view.queryset[0]
@@ -103,6 +103,8 @@ def audit(func):
 
         if request.method == "DELETE":
             deleted_obj = _get_deleted_obj(view=view, request=request, kwargs=kwargs)
+            if deleted_obj is None and "bind_id" in kwargs:
+                deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
         else:
             deleted_obj = None
 
@@ -139,6 +141,9 @@ def audit(func):
 
                 if "service_id" in kwargs:
                     deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
+
+                if "bind_id" in kwargs:
+                    deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
 
             if (
                 getattr(exc, "msg", None)
@@ -240,7 +245,7 @@ def make_audit_log(operation_type, result, operation_status):
         operation_result=result,
         user=system_user,
     )
-    cef_logger(audit_instance=audit_log, signature_id='Background operation', empty_resource=True)
+    cef_logger(audit_instance=audit_log, signature_id="Background operation", empty_resource=True)
 
 
 def audit_finish_task(obj, action_display_name: str, status: str) -> None:
