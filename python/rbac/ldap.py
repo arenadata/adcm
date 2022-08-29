@@ -12,6 +12,7 @@
 
 
 import os
+import re
 from contextlib import contextmanager, suppress
 
 import ldap
@@ -27,6 +28,9 @@ from rbac.models import User, Group, OriginType
 
 
 CERT_ENV_KEY = "LDAPTLS_CACERT"
+CN_PATTERN = re.compile(r"CN=(?P<common_name>.*?)[,$]", re.IGNORECASE)
+ENCODING = "utf-8"
+USER_PLACEHOLDER = "%(user)s"
 
 
 def _process_extra_filter(filterstr: str) -> str:
@@ -72,23 +76,26 @@ def is_tls(ldap_uri):
     return False
 
 
-def _get_ldap_default_settings():
-    configure_tls(enabled=False)
-
+def _get_ldap_config():
     adcm_object = ADCM.objects.get(id=1)
     current_configlog = ConfigLog.objects.get(
         obj_ref=adcm_object.config, id=adcm_object.config.current
     )
-
     if current_configlog.attr["ldap_integration"]["active"]:
-        ldap_config = current_configlog.config["ldap_integration"]
+        return current_configlog.config["ldap_integration"]
+    return None
 
+
+def _get_ldap_default_settings():
+    ldap_config = _get_ldap_config()
+    if ldap_config:
+        configure_tls(enabled=False)
         user_search = LDAPSearch(
             base_dn=ldap_config["user_search_base"],
             scope=ldap.SCOPE_SUBTREE,
             filterstr=f"(&"
             f"(objectClass={ldap_config.get('user_object_class') or '*'})"
-            f"({ldap_config['user_name_attribute']}=%(user)s)"
+            f"({ldap_config['user_name_attribute']}={USER_PLACEHOLDER})"
             f"{_process_extra_filter(ldap_config.get('user_search_filter'))}"
             f")",
         )
@@ -172,12 +179,12 @@ class CustomLDAPBackend(LDAPBackend):
         if isinstance(user_or_none, User):
             user_or_none.type = OriginType.LDAP
             user_or_none.save()
-            self.__process_groups(user_or_none, user_local_groups)
+            self.__process_groups(user_or_none, ldap_user.dn, user_local_groups)
 
         return user_or_none
 
     @property
-    def _group_search_enabled(self):
+    def __group_search_enabled(self):
         return "GROUP_SEARCH" in self.default_settings and bool(
             self.default_settings.get("GROUP_SEARCH")
         )
@@ -211,15 +218,15 @@ class CustomLDAPBackend(LDAPBackend):
         log.debug("Found %s groups: %s", len(groups), [i[0] for i in groups])
         return groups
 
-    def __process_groups(self, user, additional_groups=()):
-        if not self._group_search_enabled:
-            log.warning("Group search is disabled")
+    def __process_groups(self, user, user_dn, additional_groups=()):
+        if not self.__group_search_enabled:
+            log.warning("Group search is disabled. Getting all user groups")
+            for ldap_group_name in self.__get_user_ldap_groups(user_dn):
+                g, created = Group.objects.get_or_create(name=ldap_group_name, type=OriginType.LDAP)
+                g.user_set.add(user)
             return
-        # TODO: custom mirror_groups() if not self._group_search_enabled
-        #  user.ldap_user.group_names требует наличия конфигурации для group_search
-        #  вытаскивать группы юзера через self.__ldap_connection
-        ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
 
+        ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
         # ladp-backend managed auth_groups
         for group in user.groups.filter(name__in=[i[0] for i in ldap_groups]):
             ldap_group_dn = self.__get_ldap_group_dn(group.name, ldap_groups)
@@ -231,6 +238,34 @@ class CustomLDAPBackend(LDAPBackend):
         for g in additional_groups:
             g.user_set.add(user)
 
+    def __get_user_ldap_groups(self, user_dn):
+        user_name_attr = _get_ldap_config()["user_name_attribute"]
+        replace = f"{user_name_attr}={USER_PLACEHOLDER}"
+        search_expr = f"distinguishedName={user_dn}"
+
+        user_search = self.default_settings["USER_SEARCH"]
+        with self.__ldap_connection() as conn:
+            users = conn.search_s(
+                base=user_search.base_dn,
+                scope=user_search.scope,
+                filterstr=user_search.filterstr.replace(replace, search_expr),
+            )
+        if len(users) != 1:
+            raise RuntimeError(f"Not one user found by `{search_expr}` search")
+
+        user_dn_, user_attrs = users[0]
+        if user_dn_.strip().lower() != user_dn.strip().lower():
+            raise RuntimeError(f"Got different user dn: {(user_dn_, user_dn)}. Tune search")
+
+        group_cns = []
+        for group_dn in user_attrs.get("memberOf", []):
+            group_name = " ".join(CN_PATTERN.findall(group_dn.decode(ENCODING)))
+            if group_name:
+                group_cns.append(group_name)
+
+        log.debug("Found %s groups by user dn `%s`: %s", len(group_cns), user_dn, group_cns)
+        return group_cns
+
     def __check_user(self, ldap_user):
         user_dn = ldap_user.dn
         if user_dn is None:
@@ -241,7 +276,7 @@ class CustomLDAPBackend(LDAPBackend):
             log.exception("usernames collision: `%s`", username)
             return False
 
-        if self._group_search_enabled:
+        if self.__group_search_enabled:
             group_member_attr = self.default_settings["GROUP_TYPE"].member_attr
             for _, group_attrs in self.__get_groups_by_group_search():
                 if user_dn.lower() in [i.lower() for i in group_attrs.get(group_member_attr, [])]:
