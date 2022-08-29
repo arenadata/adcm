@@ -113,9 +113,25 @@ def config_case(
                     obj = response.data.serializer.instance
 
                 object_type = _get_obj_type(obj.object_type.name)
+                if object_type == "service":
+                    object_name = obj.object.display_name
+                    cluster = getattr(obj.object, "cluster")
+                    if cluster:
+                        object_name = f"{cluster.name}/{object_name}"
+                elif object_type == "component":
+                    object_name = obj.object.display_name
+                    service = getattr(obj.object, "service")
+                    if service:
+                        object_name = f"{service.display_name}/{object_name}"
+                        cluster = getattr(service, "cluster")
+                        if cluster:
+                            object_name = f"{cluster.name}/{object_name}"
+                else:
+                    object_name = obj.object.name
+
                 audit_object = get_or_create_audit_obj(
                     object_id=obj.object.id,
-                    object_name=obj.object.name,
+                    object_name=object_name,
                     object_type=object_type,
                 )
                 operation_name = f"{obj.name} {audit_operation.name}"
