@@ -20,7 +20,14 @@ sys.path.append("/adcm/python/")
 
 import adcm.init_django  # pylint: disable=unused-import
 from rbac.models import User, Group, OriginType
-from rbac.ldap import _get_ldap_default_settings, _get_groups_by_user_dn, _get_user_search, _get_ldap_config, configure_tls, is_tls
+from rbac.ldap import (
+    _get_groups_by_user_dn,
+    _get_ldap_default_settings,
+    _get_ldap_config,
+    _get_user_search,
+    configure_tls,
+    is_tls
+)
 from cm.errors import AdcmEx
 from cm.logger import log
 from django.db import DataError, IntegrityError
