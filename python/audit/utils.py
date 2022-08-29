@@ -57,7 +57,7 @@ def _get_deleted_obj(view: View, request: Request, kwargs) -> Model | None:
         deleted_obj = view.get_object()
     except AssertionError:
         try:
-            _, deleted_obj = view.get_obj(kwargs, kwargs["bind_id"])
+            deleted_obj = view.get_obj(kwargs, kwargs["bind_id"])
         except AdcmEx:
             try:
                 deleted_obj = view.queryset[0]
@@ -103,7 +103,7 @@ def audit(func):
 
         if request.method == "DELETE":
             deleted_obj = _get_deleted_obj(view=view, request=request, kwargs=kwargs)
-            if deleted_obj is None and "bind_id" in kwargs:
+            if "bind_id" in kwargs:
                 deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
         else:
             deleted_obj = None

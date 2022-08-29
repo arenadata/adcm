@@ -430,7 +430,6 @@ class TestService(BaseTestCase):
             data={"export_cluster_id": cluster.pk},
             content_type=APPLICATION_JSON,
         )
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
         bind = ClusterBind.objects.first()
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(

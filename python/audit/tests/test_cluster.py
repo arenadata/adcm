@@ -955,7 +955,7 @@ class TestCluster(BaseTestCase):
         )
 
     def test_bind_unbind_cluster_to_service(self):
-        cluster, service = self.get_cluster_service_for_bind()
+        cluster, _ = self.get_cluster_service_for_bind()
         self.client.post(
             path=reverse(
                 "service-bind",
@@ -1043,7 +1043,7 @@ class TestCluster(BaseTestCase):
         )
 
     def test_bind_unbind_cluster_to_service_denied(self):
-        cluster, service = self.get_cluster_service_for_bind()
+        cluster, _ = self.get_cluster_service_for_bind()
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
                 path=reverse(
