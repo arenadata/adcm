@@ -222,7 +222,7 @@ class CustomLDAPBackend(LDAPBackend):
         if not self.__group_search_enabled:
             log.warning("Group search is disabled. Getting all user groups")
             for ldap_group_name in self.__get_user_ldap_groups(user_dn):
-                g, created = Group.objects.get_or_create(name=ldap_group_name, type=OriginType.LDAP)
+                g, _ = Group.objects.get_or_create(name=ldap_group_name, type=OriginType.LDAP)
                 g.user_set.add(user)
             return
 
