@@ -663,14 +663,30 @@ def check_value_unselected_field(
     """
 
     # pylint: disable=too-many-boolean-expressions
-    def check_empty_values(key, current, new):
+    def check_empty_values(spec_type, key, current, new):
         key_in_config = key in current and key in new
         if key_in_config and (
             (bool(current[key]) is False and new[key] is None)
             or (current[key] is None and bool(new[key]) is False)
         ):
             return True
+        elif (
+            spec_type == 'structure'
+            and key_in_config
+            and (
+                (check_structure(current) is False and new[key] is None)
+                or (check_structure(new) is False and current[key] is None)
+            )
+        ):
+            return True
         return False
+
+    def check_structure(checked_config):
+        check = True
+        for values in checked_config.values():
+            if values:
+                check = False
+        return check
 
     for k, v in group_keys.items():
         if isinstance(v, Mapping):
@@ -697,7 +713,7 @@ def check_value_unselected_field(
         else:
             if spec[k]['type'] in ['list', 'map', 'string', 'structure']:
                 if config_is_ro(obj, k, spec[k]['limits']) or check_empty_values(
-                    k, current_config, new_config
+                    spec[k]['type'], k, current_config, new_config
                 ):
                     continue
 
