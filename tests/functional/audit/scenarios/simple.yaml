@@ -41,12 +41,12 @@ operations:
   - update:
       what:
         type: component
-        name: {{ adb_service_component }}
+        name: "{{ cluster.name }}/{{ cluster.adb_service.display_name }}/{{ adb_service_component }}"
       how: set-config
   - update:
       what: &adb_service
         type: service
-        name: {{ cluster.adb_service.display_name }}
+        name: "{{ cluster.name }}/{{ cluster.adb_service.display_name }}"
       how:
         operation: set-config
   - update:
@@ -57,7 +57,7 @@ operations:
       what: *cluster
       how: set-hostcomponent
   - update:
-      what: *adb_service
+      what: *cluster
       how:
         operation: launch-action
         # it's display name
@@ -65,8 +65,8 @@ operations:
   - update:
       what: *cluster
       how:
-        operation: launch-action
-        name: Install Cluster
+        operation: complete-action
+        name: Install ADB
     result: fail
   - update:
       what: *cluster

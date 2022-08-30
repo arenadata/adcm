@@ -28,7 +28,7 @@ operations:
   - update: &update-group
       what:
         type: group
-        name: {{ group.name }}
+        name: "{{ group.name }} [local]"
       how: update-rbac-object
   - update: *update-group
     result: fail

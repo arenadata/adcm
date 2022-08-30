@@ -84,7 +84,7 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         NamedOperation('delete-service', '{name} service deleted', (ObjectType.CLUSTER,)),
         NamedOperation('add-host', '{name} host added', (ObjectType.CLUSTER,)),
         NamedOperation('remove-host', '{name} host removed', (ObjectType.CLUSTER,)),
-        NamedOperation('set-hostcomponent', 'Host-component map updated', (ObjectType.CLUSTER,)),
+        NamedOperation('set-hostcomponent', 'Host-Component map updated', (ObjectType.CLUSTER,)),
         # configs
         NamedOperation(
             'set-config',

@@ -15,11 +15,9 @@ Test audit operations with "operation_type == CREATE"
 """
 
 from pathlib import Path
-from typing import Callable, Optional
 
 import allure
 import pytest
-import requests
 from adcm_client.objects import ADCMClient
 
 from tests.functional.audit.conftest import (
@@ -54,32 +52,6 @@ class CreateOperation:
     ROLE = 'rbac/role'
     GROUP = 'rbac/group'
     POLICY = 'rbac/policy'
-
-
-@pytest.fixture()
-def post(sdk_client_fs) -> Callable:
-    """
-    Prepare POST caller with all required credentials, so you only need to give path.
-    Body and stuff are optional.
-    """
-    base_url = sdk_client_fs.url
-    auth_header = make_auth_header(sdk_client_fs)
-
-    def _post(
-        path: str,
-        body: Optional[dict] = None,
-        headers: Optional[dict] = None,
-        path_fmt: Optional[dict] = None,
-        **kwargs,
-    ):
-        body = {} if body is None else body
-        headers = {**auth_header, **({} if headers is None else headers)}
-        path_fmt = {} if path_fmt is None else path_fmt
-        url = f'{base_url}/api/v1/{path.format(**path_fmt)}/'
-        with allure.step(f'Sending post request to {url}'):
-            return requests.post(url, headers=headers, json=body, **kwargs)
-
-    return _post
 
 
 @pytest.fixture()
