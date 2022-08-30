@@ -184,9 +184,6 @@ class SyncLDAP:
                     if updated:
                         sys.stdout.write("Updated user: %s\n" % username)
 
-                if not self._group_search_configured:
-                    self.__process_user_ldap_groups(user, cname)
-
                 # Remove condition after ADCM-2944
                 if not user.is_active:
                     sys.stdout.write(f"Delete this user and deactivate his session: {user}\n")
@@ -194,11 +191,12 @@ class SyncLDAP:
                 else:
                     user.save()
                     ldap_usernames.add(username)
-                    for group in ldap_attributes.get("memberof", []):
-                        name = group.split(",")[0][3:]
-                        if not self._group_search_configured:
-                            self.__process_user_ldap_groups(user, cname)
-                        else:
+
+                    if not self._group_search_configured:
+                        self.__process_user_ldap_groups(user, cname)
+                    else:
+                        for group in ldap_attributes.get("memberof", []):
+                            name = group.split(",")[0][3:]
                             try:
                                 group = Group.objects.get(name=f"{name} [ldap]", built_in=False,
                                                           type=OriginType.LDAP)
