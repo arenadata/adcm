@@ -26,7 +26,7 @@ operations:
   - update:
       what: &import-service
         type: service
-        name: {{ import_service }}
+        name: "{{ import_cluster }}/{{ import_service }}"
       how:
         operation: bind
         name: {{ service_import_success_msg }}
