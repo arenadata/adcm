@@ -146,19 +146,25 @@ class TestService(BaseTestCase):
         self.assertEqual(log.user.pk, self.test_user.pk)
         self.assertEqual(log.object_changes, {})
 
-    @staticmethod
-    def get_service_and_cluster() -> tuple[ClusterObject, Cluster]:
+    def get_service_and_cluster(self) -> tuple[ClusterObject, Cluster]:
         bundle = Bundle.objects.create(name="test_bundle_2")
-        cluster_prototype = Prototype.objects.create(bundle=bundle, type="cluster")
+        cluster_prototype = Prototype.objects.create(
+            bundle=bundle,
+            type="cluster",
+            name="Export_cluster",
+        )
         service_prototype = Prototype.objects.create(
             bundle=bundle,
             type="service",
-            display_name="test_service_2",
+            name="Export_service",
+            display_name="Export service",
         )
-        cluster = Cluster.objects.create(prototype=cluster_prototype, name="test_cluster_2")
-        PrototypeExport.objects.create(prototype=cluster_prototype)
+        cluster = Cluster.objects.create(prototype=cluster_prototype, name="Export cluster")
+        PrototypeExport.objects.create(prototype=cluster_prototype, name="Export_cluster")
         service = ClusterObject.objects.create(prototype=service_prototype, cluster=cluster)
-        PrototypeImport.objects.create(prototype=service_prototype)
+        PrototypeExport.objects.create(prototype=service_prototype, name="Export_service")
+        PrototypeImport.objects.create(prototype=self.service_prototype, name="Export_cluster")
+        PrototypeImport.objects.create(prototype=self.service_prototype, name="Export_service")
 
         return service, cluster
 
@@ -332,10 +338,10 @@ class TestService(BaseTestCase):
             user=self.no_rights_user,
         )
 
-    def test_bind_unbind(self):
-        service, cluster = self.get_service_and_cluster()
+    def test_bind_unbind_cluster_to_service(self):
+        _, cluster = self.get_service_and_cluster()
         self.client.post(
-            path=reverse("service-bind", kwargs={"service_id": service.pk}),
+            path=reverse("service-bind", kwargs={"service_id": self.service.pk}),
             data={"export_cluster_id": cluster.pk},
             content_type=APPLICATION_JSON,
         )
@@ -344,8 +350,50 @@ class TestService(BaseTestCase):
 
         self.check_log(
             log=log,
-            obj=service,
-            obj_name=f"{cluster.name}/{service.display_name}",
+            obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
+            object_type=AuditObjectType.Service,
+            operation_name=f"Service bound to {cluster.name}",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
+        )
+
+        bind = ClusterBind.objects.first()
+        self.client.delete(
+            path=reverse(
+                "service-bind-details", kwargs={"service_id": self.service.pk, "bind_id": bind.pk}
+            ),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
+            object_type=AuditObjectType.Service,
+            operation_name=f"{cluster.name} unbound",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
+        )
+
+    def test_bind_unbind_service_to_service(self):
+        service, cluster = self.get_service_and_cluster()
+        self.client.post(
+            path=reverse("service-bind", kwargs={"service_id": self.service.pk}),
+            data={"export_cluster_id": cluster.pk, "export_service_id": service.pk},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             object_type=AuditObjectType.Service,
             operation_name=f"Service bound to {cluster.name}/{service.display_name}",
             operation_type=AuditLogOperationType.Update,
@@ -356,7 +404,7 @@ class TestService(BaseTestCase):
         bind = ClusterBind.objects.first()
         self.client.delete(
             path=reverse(
-                "service-bind-details", kwargs={"service_id": service.pk, "bind_id": bind.pk}
+                "service-bind-details", kwargs={"service_id": self.service.pk, "bind_id": bind.pk}
             ),
             content_type=APPLICATION_JSON,
         )
@@ -365,8 +413,8 @@ class TestService(BaseTestCase):
 
         self.check_log(
             log=log,
-            obj=service,
-            obj_name=f"{cluster.name}/{service.display_name}",
+            obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             object_type=AuditObjectType.Service,
             operation_name=f"{cluster.name}/{service.display_name} unbound",
             operation_type=AuditLogOperationType.Update,
@@ -374,32 +422,11 @@ class TestService(BaseTestCase):
             user=self.test_user,
         )
 
-        response: Response = self.client.delete(
-            path=reverse(
-                "service-bind-details", kwargs={"service_id": service.pk, "bind_id": bind.pk}
-            ),
-            content_type=APPLICATION_JSON,
-        )
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.check_log(
-            log=log,
-            obj=service,
-            obj_name=f"{cluster.name}/{service.display_name}",
-            object_type=AuditObjectType.Service,
-            operation_name=f"/{service.display_name} unbound",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Fail,
-            user=self.test_user,
-        )
-
     def test_bind_unbind_denied(self):
-        service, cluster = self.get_service_and_cluster()
+        _, cluster = self.get_service_and_cluster()
         with self.no_rights_user_logged_in:
             response: Response = self.client.post(
-                path=reverse("service-bind", kwargs={"service_id": service.pk}),
+                path=reverse("service-bind", kwargs={"service_id": self.service.pk}),
                 data={"export_cluster_id": cluster.pk},
                 content_type=APPLICATION_JSON,
             )
@@ -409,17 +436,17 @@ class TestService(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
-            obj=service,
-            obj_name=f"{cluster.name}/{service.display_name}",
+            obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             object_type=AuditObjectType.Service,
-            operation_name=f"Service bound to {cluster.name}/{service.display_name}",
+            operation_name=f"Service bound to {cluster.name}",
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
         )
 
         self.client.post(
-            path=reverse("service-bind", kwargs={"service_id": service.pk}),
+            path=reverse("service-bind", kwargs={"service_id": self.service.pk}),
             data={"export_cluster_id": cluster.pk},
             content_type=APPLICATION_JSON,
         )
@@ -427,7 +454,8 @@ class TestService(BaseTestCase):
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
                 path=reverse(
-                    "service-bind-details", kwargs={"service_id": service.pk, "bind_id": bind.pk}
+                    "service-bind-details",
+                    kwargs={"service_id": self.service.pk, "bind_id": bind.pk},
                 ),
                 content_type=APPLICATION_JSON,
             )
@@ -437,10 +465,10 @@ class TestService(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
-            obj=service,
-            obj_name=f"{cluster.name}/{service.display_name}",
+            obj=self.service,
+            obj_name=f"{self.cluster.name}/{self.service.display_name}",
             object_type=AuditObjectType.Service,
-            operation_name=f"{cluster.name}/{service.display_name} unbound",
+            operation_name=f"{cluster.name} unbound",
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,

@@ -36,7 +36,7 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterObject, Host, HostProvider, TaskLog
+from cm.models import Cluster, ClusterObject, Host, HostProvider, TaskLog, ClusterBind
 from rbac.endpoints.group.serializers import GroupAuditSerializer
 from rbac.endpoints.policy.serializers import PolicyAuditSerializer
 from rbac.endpoints.role.serializers import RoleAuditSerializer
@@ -173,6 +173,8 @@ def audit(func):
 
         if request.method == "DELETE":
             deleted_obj = _get_deleted_obj(view=view, request=request, kwargs=kwargs)
+            if "bind_id" in kwargs:
+                deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
         else:
             deleted_obj = None
 
@@ -211,6 +213,9 @@ def audit(func):
 
                 if "service_id" in kwargs:
                     deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
+
+                if "bind_id" in kwargs:
+                    deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
 
             if (
                 getattr(exc, "msg", None)
@@ -316,7 +321,7 @@ def make_audit_log(operation_type, result, operation_status):
         operation_result=result,
         user=system_user,
     )
-    cef_logger(audit_instance=audit_log, signature_id='Background operation', empty_resource=True)
+    cef_logger(audit_instance=audit_log, signature_id="Background operation", empty_resource=True)
 
 
 def audit_finish_task(obj, action_display_name: str, status: str) -> None:

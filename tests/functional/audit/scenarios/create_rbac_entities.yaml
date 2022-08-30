@@ -31,7 +31,7 @@ operations:
   - create:
       what:
         type: 'group'
-        name: {{ group.name }}
+        name: "{{ group.name }} [local]"
   - create:
       what:
         type: 'group'
