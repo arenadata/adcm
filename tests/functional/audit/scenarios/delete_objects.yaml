@@ -51,7 +51,7 @@ operations:
   - delete: &group
       what:
         type: group
-        name: groupforU
+        name: groupforU [local]
     result: denied
     username: {{ username }}
   - delete: &role
@@ -82,7 +82,7 @@ operations:
   - delete: &service-group
       what:
         type: service
-        name: service
+        name: cluster/service
       how:
         operation: delete-group-config
         name: service-group
@@ -91,7 +91,7 @@ operations:
   - delete: &component-group
       what:
         type: component
-        name: component
+        name: cluster/service/component
       how:
         operation: delete-group-config
         name: component-group
