@@ -77,7 +77,7 @@ class Command(BaseCommand):
             AuditObject.objects.filter(is_deleted=True)
             .annotate(
                 not_deleted_auditlogs_count=Count(
-                    'auditlog', filter=~Q(auditlog__in=target_operations)
+                    "auditlog", filter=~Q(auditlog__in=target_operations)
                 )
             )
             .filter(not_deleted_auditlogs_count__lte=0)
