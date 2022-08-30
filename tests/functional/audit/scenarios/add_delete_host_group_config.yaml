@@ -46,7 +46,7 @@ operations:
   - update:
       what: &service
         type: service
-        name: service_for_updates
+        name: Cluster for Updates/service_for_updates
       how: &add-host-service
         <<: *add-host
         name: service-group
@@ -71,7 +71,7 @@ operations:
   - update:
       what: &component
         type: component
-        name: component_for_updates
+        name: Cluster for Updates/service_for_updates/component_for_updates
       how: &add-host-component
         <<: *add-host
         name: component-group

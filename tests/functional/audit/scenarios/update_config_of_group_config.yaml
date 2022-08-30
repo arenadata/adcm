@@ -46,7 +46,7 @@ operations:
   - update: &update-service-group-config
       what: &service
         type: service
-        name: service_for_updates
+        name: Cluster for Updates/service_for_updates
       how:
         operation: update-group-config
         name: service-group
@@ -73,7 +73,7 @@ operations:
   - update: &update-component-group-config
       what: &component
         type: component
-        name: component_for_updates
+        name: Cluster for Updates/service_for_updates/component_for_updates
       how:
         operation: update-group-config
         name: component-group

@@ -62,7 +62,7 @@ operations:
     update: &update-service
       what:
         type: service
-        name: service_for_updates
+        name: Cluster for Updates/service_for_updates
       how: set-config
   - <<: *success-service-update
   - <<: *success-service-update
@@ -89,7 +89,7 @@ operations:
     update: &update-component
       what:
         type: component
-        name: component_for_updates
+        name: Cluster for Updates/service_for_updates/component_for_updates
       how: set-config
   - <<: *success-component-update
   - <<: *success-component-update
@@ -136,8 +136,8 @@ operations:
   - &success-host-update
     update: &update-host
       what:
-        type: component
-        name: component_for_updates
+        type: host
+        name: host-0
       how: set-config
   - <<: *success-host-update
   - <<: *success-host-update
