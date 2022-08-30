@@ -73,9 +73,15 @@ class Command(BaseCommand):
         # get delete candidates
         target_operations = AuditLog.objects.filter(operation_time__lt=threshold_date)
         target_logins = AuditSession.objects.filter(login_time__lt=threshold_date)
-        target_objects = AuditObject.objects.annotate(
-            not_deleted_auditlogs_count=Count('auditlog', filter=~Q(auditlog__in=target_operations))
-        ).filter(not_deleted_auditlogs_count__lte=0)
+        target_objects = (
+            AuditObject.objects.filter(is_deleted=True)
+            .annotate(
+                not_deleted_auditlogs_count=Count(
+                    'auditlog', filter=~Q(auditlog__in=target_operations)
+                )
+            )
+            .filter(not_deleted_auditlogs_count__lte=0)
+        )
 
         cleared = False
         if any(qs.exists() for qs in (target_operations, target_logins, target_objects)):
