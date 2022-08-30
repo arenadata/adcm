@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rbac', '0002_rm_default_policy'),
+        ('rbac', '0004_fill_group_name_display_name'),
     ]
 
     operations = [
