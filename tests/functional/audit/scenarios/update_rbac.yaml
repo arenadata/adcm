@@ -15,43 +15,107 @@ settings:
   start-from-first: matched
 
 operations:
-  - update: &update-user
-      what:
+  - update:
+      what: &user
         type: user
         name: {{ user.username }}
       how: update-rbac-object
-  - update: *update-user
+      changes:
+        previous:
+          first_name: {{ changes.user.previous.first_name }}
+          group: [
+            {% for i in changes.user.previous.group %}
+            "{{ i }}"{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+        current:
+          first_name: {{ changes.user.current.first_name }}
+          group: [
+            {% for i in changes.user.current.group %}
+            "{{ i }}"{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+  - update: &update-user-no-changes
+      what: *user
+      how: update-rbac-object
     result: fail
-  - update: *update-user
+  - update: *update-user-no-changes
     result: denied
     username: {{ user.username }}
-  - update: &update-group
-      what:
+  - update:
+      what: &group
         type: group
         name: "{{ group.name }} [local]"
       how: update-rbac-object
-  - update: *update-group
+      changes:
+        previous:
+          description: "{{ changes.group.previous.description }}"
+          user: [
+            {% for i in changes.group.previous.user %}
+            {{ i }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+        current:
+          description: "{{ changes.group.current.description }}"
+          user: [
+            {% for i in changes.group.current.user %}
+            {{ i }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+  - update: &update-group-no-changes
+      what: *group
+      how: update-rbac-object
     result: fail
-  - update: *update-group
+  - update: *update-group-no-changes
     result: denied
     username: {{ user.username }}
-  - update: &update-role
-      what:
+  - update:
+      what: &role
         type: role
         name: {{ role.name }}
       how: update-rbac-object
-  - update: *update-role
+      changes:
+        previous:
+          description: "{{ changes.role.previous.description }}"
+          child: [
+            {% for i in changes.role.previous.child %}
+            {{ i }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+        current:
+          description: "{{ changes.role.current.description }}"
+          child: [
+            {% for i in changes.role.current.child %}
+            {{ i }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+  - update: &update-role-no-changes
+      what: *role
+      how: update-rbac-object
     result: fail
-  - update: *update-role
+  - update: *update-role-no-changes
     result: denied
     username: {{ user.username }}
-  - update: &update-policy
-      what:
+  - update:
+      what: &policy
         type: policy
         name: {{ policy.name }}
       how: update-rbac-object
-  - update: *update-policy
+      changes:
+        previous:
+          description: "{{ changes.policy.previous.description }}"
+          group: {{ changes.policy.previous.group }}
+        current:
+          description: "{{ changes.policy.current.description }}"
+          group: [
+            {% for g in changes.policy.current.group %}
+            "{{ g }}"{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+  - update: &update-policy-no-changes
+      what: *policy
+      how: update-rbac-object
     result: fail
-  - update: *update-policy
+  - update: *update-policy-no-changes
     result: denied
     username: {{ user.username }}
