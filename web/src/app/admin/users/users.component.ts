@@ -88,7 +88,7 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
     return row.username;
   }
 
-  isRowActive = (value) => {
+  isRowInactive = (value) => {
     return !value?.is_active;
   }
 
