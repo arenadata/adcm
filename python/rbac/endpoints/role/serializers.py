@@ -21,38 +21,38 @@ from rbac.utils import BaseRelatedSerializer
 
 class RoleChildSerializer(BaseRelatedSerializer):
     id = PrimaryKeyRelatedField(queryset=Role.objects.all())
-    url = HyperlinkedIdentityField(view_name='rbac:role-detail')
+    url = HyperlinkedIdentityField(view_name="rbac:role-detail")
 
 
 class RoleSerializer(FlexFieldsSerializerMixin, ModelSerializer):
-    url = HyperlinkedIdentityField(view_name='rbac:role-detail')
+    url = HyperlinkedIdentityField(view_name="rbac:role-detail")
     child = RoleChildSerializer(many=True)
-    name = RegexField(r'^[^\n]*$', max_length=160, required=False, allow_blank=True)
-    display_name = RegexField(r'^[^\n]*$', max_length=160, required=True)
+    name = RegexField(r"^[^\n]*$", max_length=160, required=False, allow_blank=True)
+    display_name = RegexField(r"^[^\n]*$", max_length=160, required=True)
     category = SerializerMethodField(read_only=True)
 
     class Meta:
         model = Role
         fields = (
-            'id',
-            'name',
-            'description',
-            'display_name',
-            'built_in',
-            'type',
-            'category',
-            'parametrized_by_type',
-            'child',
-            'url',
-            'any_category',
+            "id",
+            "name",
+            "description",
+            "display_name",
+            "built_in",
+            "type",
+            "category",
+            "parametrized_by_type",
+            "child",
+            "url",
+            "any_category",
         )
         extra_kwargs = {
-            'parametrized_by_type': {'read_only': True},
-            'built_in': {'read_only': True},
-            'type': {'read_only': True},
-            'any_category': {'read_only': True},
+            "parametrized_by_type": {"read_only": True},
+            "built_in": {"read_only": True},
+            "type": {"read_only": True},
+            "any_category": {"read_only": True},
         }
-        expandable_fields = {'child': ('rbac.endpoints.role.views.RoleSerializer', {'many': True})}
+        expandable_fields = {"child": ("rbac.endpoints.role.views.RoleSerializer", {"many": True})}
 
     @staticmethod
     def get_category(obj):

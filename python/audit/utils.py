@@ -39,6 +39,7 @@ from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, HostProvider, TaskLog
 from rbac.endpoints.group.serializers import GroupAuditSerializer
 from rbac.endpoints.role.serializers import RoleAuditSerializer
+from rbac.endpoints.user.serializers import UserAuditSerializer
 from rbac.models import Group, Role, User
 
 
@@ -95,6 +96,8 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
         serializer_class = GroupAuditSerializer
     elif isinstance(current_obj, Role):
         serializer_class = RoleAuditSerializer
+    elif isinstance(current_obj, User):
+        serializer_class = UserAuditSerializer
 
     if not serializer_class:
         return {}
@@ -104,10 +107,17 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
     if not current_fields:
         return current_fields
 
-    return {
+    object_changes = {
         "current": current_fields,
         "previous": {k: v for k, v in prev_data.items() if k in current_fields},
     }
+    if object_changes["current"].get("password"):
+        object_changes["current"]["password"] = "******"
+
+    if object_changes["previous"].get("password"):
+        object_changes["previous"]["password"] = "******"
+
+    return object_changes
 
 
 def _get_obj_changes_data(view: ModelViewSet) -> tuple[dict | None, Model | None]:
@@ -126,6 +136,9 @@ def _get_obj_changes_data(view: ModelViewSet) -> tuple[dict | None, Model | None
         elif view.__class__.__name__ == "RoleViewSet":
             serializer_class = RoleAuditSerializer
             model = Role
+        elif view.__class__.__name__ == "UserViewSet":
+            serializer_class = UserAuditSerializer
+            model = User
 
         if serializer_class:
             current_obj = model.objects.filter(pk=view.kwargs["pk"]).first()

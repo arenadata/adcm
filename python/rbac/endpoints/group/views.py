@@ -24,11 +24,11 @@ from rbac.models import Group
 
 
 class GroupFilterSet(FilterSet):
-    name = CharFilter(field_name='display_name', label='name')
+    name = CharFilter(field_name="display_name", label="name")
 
     class Meta:
         model = Group
-        fields = ('id', 'type')
+        fields = ("id", "type")
 
 
 class GroupOrderingFilter(OrderingFilter):
@@ -41,12 +41,12 @@ class GroupOrderingFilter(OrderingFilter):
         fix_ordering = []
 
         for field in ordering:
-            if field == '-name':
-                fix_ordering.append('-display_name')
+            if field == "-name":
+                fix_ordering.append("-display_name")
                 continue
 
-            if field == 'name':
-                fix_ordering.append('display_name')
+            if field == "name":
+                fix_ordering.append("display_name")
                 continue
 
             fix_ordering.append(field)
@@ -58,11 +58,11 @@ class GroupViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-ma
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = (DjangoModelPermissionsAudit,)
-    permission_required = ['rbac.view_group']
+    permission_required = ["rbac.view_group"]
     filter_backends = (DjangoFilterBackend, GroupOrderingFilter)
     filterset_class = GroupFilterSet
-    ordering_fields = ('id', 'name')
-    search_fields = ('name', 'description', 'display_name')
+    ordering_fields = ("id", "name")
+    search_fields = ("name", "description", "display_name")
 
     @audit
     def create(self, request, *args, **kwargs):
@@ -77,8 +77,8 @@ class GroupViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-ma
         instance = self.get_object()
         if instance.built_in:
             raise AdwpEx(
-                'GROUP_DELETE_ERROR',
-                msg='Built-in group could not be deleted',
+                "GROUP_DELETE_ERROR",
+                msg="Built-in group could not be deleted",
                 http_code=HTTP_405_METHOD_NOT_ALLOWED,
             )
 

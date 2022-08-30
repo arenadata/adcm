@@ -46,28 +46,28 @@ class RoleFilter(filters.FilterSet):
     class Meta:
         model = Role
         fields = (
-            'id',
-            'name',
-            'display_name',
-            'built_in',
-            'type',
-            'child',
+            "id",
+            "name",
+            "display_name",
+            "built_in",
+            "type",
+            "child",
         )
 
 
 class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-many-ancestors
     serializer_class = RoleSerializer
     permission_classes = (DjangoModelPermissionsAudit,)
-    permission_required = ['rbac.view_role']
+    permission_required = ["rbac.view_role"]
     filterset_class = RoleFilter
-    ordering_fields = ('id', 'name', 'display_name', 'built_in', 'type')
-    search_fields = ('name', 'display_name')
+    ordering_fields = ("id", "name", "display_name", "built_in", "type")
+    search_fields = ("name", "display_name")
 
     def get_queryset(self, *args, **kwargs):
         queryset = get_objects_for_user(**self.get_get_objects_for_user_kwargs(Role.objects.all()))
-        if is_expanded(self.request, 'child'):
+        if is_expanded(self.request, "child"):
             return queryset.prefetch_related(
-                Prefetch('child', queryset=queryset.exclude(type=RoleTypes.hidden)),
+                Prefetch("child", queryset=queryset.exclude(type=RoleTypes.hidden)),
             )
         return queryset
 
@@ -84,7 +84,7 @@ class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
 
     @audit
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
+        partial = kwargs.pop("partial", False)
         instance = self.get_object()
 
         if instance.built_in:
@@ -107,6 +107,6 @@ class RoleViewSet(PermissionListMixin, ModelViewSet):  # pylint: disable=too-man
             return Response(status=HTTP_405_METHOD_NOT_ALLOWED)
         return super().destroy(request, *args, **kwargs)
 
-    @action(methods=['get'], detail=False)
+    @action(methods=["get"], detail=False)
     def category(self, request):
         return Response(sorted(b.value for b in ProductCategory.objects.all()))
