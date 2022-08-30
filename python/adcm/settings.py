@@ -23,6 +23,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 
 import json
 import os
+import sys
 from os.path import dirname
 
 from django.core.management.utils import get_random_secret_key
@@ -253,6 +254,11 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'data/log/adwp.log'),
         },
+        'stdout': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'stream': sys.stdout,
+        },
     },
     'loggers': {
         'django': {
@@ -273,6 +279,11 @@ LOGGING = {
         },
         'django_auth_ldap': {
             'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'stdout': {
+            'handlers': ['stdout'],
             'level': 'DEBUG',
             'propagate': True,
         },
