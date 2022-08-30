@@ -24,6 +24,7 @@ from audit.models import (
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
+    AuditObject,
     AuditObjectType,
 )
 from cm.job import finish_task
@@ -41,7 +42,10 @@ class TestComponent(BaseTestCase):
         ConfigLog.objects.create(
             obj_ref=config, config="{}", attr={"ldap_integration": {"active": True}}
         )
-        self.adcm = ADCM.objects.create(prototype=self.prototype, name="ADCM", config=config)
+        self.adcm_name = "ADCM"
+        self.adcm = ADCM.objects.create(
+            prototype=self.prototype, name=self.adcm_name, config=config
+        )
         self.action = Action.objects.create(
             display_name="test_adcm_action",
             prototype=self.prototype,
@@ -163,6 +167,20 @@ class TestComponent(BaseTestCase):
         )
 
     def test_action_finish_success(self):
+        audit_object = AuditObject.objects.create(
+            object_id=self.adcm.pk,
+            object_name=self.adcm_name,
+            object_type=AuditObjectType.ADCM,
+        )
+        AuditLog.objects.create(
+            audit_object=audit_object,
+            operation_name=f"{self.action.display_name} action completed",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Success,
+            object_changes={},
+            user=self.test_user,
+        )
+
         finish_task(task=self.task, job=None, status="success")
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
@@ -171,6 +189,7 @@ class TestComponent(BaseTestCase):
             log=log,
             operation_name=f"{self.action.display_name} action completed",
             operation_result=AuditLogOperationResult.Success,
+            user=self.test_user,
         )
 
     def test_action_finish_fail(self):
