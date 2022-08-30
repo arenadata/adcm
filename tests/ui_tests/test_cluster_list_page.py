@@ -1741,7 +1741,8 @@ class TestClusterGroupConfigPage:
                     if (cluster_config_page.config.advanced and field_advanced) or not field_advanced:
                         cluster_config_page.config.expand_or_close_group(group_name, expand=True)
                         assert len(cluster_config_page.config.get_all_config_rows()) >= 2, "Field should be visible"
-                        check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
+                        if is_default:
+                            check_default_field_values_in_configs(cluster_config_page, config_item, field_type, config)
                         if is_read_only:
                             if config_item.tag_name == 'app-field':
                                 assert cluster_config_page.config.is_element_read_only(
