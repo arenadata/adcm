@@ -273,11 +273,17 @@ def _check_save_in_configs(cluster_config_page, field_type, expected_state, is_d
         cluster_config_page.config.click_add_item_btn_in_row(config_row)
     if field_type in ['string', 'integer', 'text', 'float', 'file', 'json']:
         config_row.click()
-    if field_type in ['secrettext', 'map', 'boolean']:
-        for _ in range(2):
-            cluster_config_page.config.click_on_advanced()
-    if field_type == 'password' and is_default:
-        cluster_config_page.config.reset_to_default(config_row)
+    if field_type in ['secrettext', 'boolean']:
+        if is_default:
+            cluster_config_page.config.reset_to_default(config_row)
+        else:
+            for _ in range(2):
+                cluster_config_page.config.click_on_advanced()
+    if field_type in ['password', 'map']:
+        if is_default:
+            cluster_config_page.config.reset_to_default(config_row)
+        else:
+            config_row.click()
     cluster_config_page.config.check_save_btn_state_and_save_conf(expected_state)
 
 
@@ -1499,7 +1505,7 @@ class TestClusterConfigPage:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
         check_expectations()
-        if (not is_read_only) and (not field_invisible):
+        if (not is_read_only) and (not field_invisible) and not is_required:
             _check_save_in_configs(cluster_config_page, field_type, expected["save"], is_default)
 
 
