@@ -21,11 +21,11 @@ sys.path.append("/adcm/python/")
 import adcm.init_django  # pylint: disable=unused-import
 from rbac.models import User, Group, OriginType
 from rbac.ldap import (
-    _get_groups_by_user_dn,
-    _get_ldap_default_settings,
-    _get_ldap_config,
-    _get_user_search,
     configure_tls,
+    get_groups_by_user_dn,
+    get_ldap_config,
+    get_ldap_default_settings,
+    get_user_search,
     is_tls
 )
 from cm.errors import AdcmEx
@@ -70,12 +70,12 @@ class SyncLDAP:
     @property
     def settings(self):
         if self._settings is None:
-            self._settings, error_code = _get_ldap_default_settings()
+            self._settings, error_code = get_ldap_default_settings()
             if error_code is not None:
                 error = AdcmEx(error_code)
                 sys.stdout.write(error.msg)
                 raise error
-            self._settings["DEFAULT_USER_SEARCH"] = _get_user_search(_get_ldap_config())
+            self._settings["DEFAULT_USER_SEARCH"] = get_user_search(get_ldap_config())
         return self._settings
 
     def sync(self):
@@ -86,9 +86,11 @@ class SyncLDAP:
         """Synchronize LDAP groups with group model and delete groups which is not found in LDAP"""
         ldap_groups = []
         if self._group_search_configured:
-            self.settings["GROUP_SEARCH"].filterstr = f"(&" \
-                                                      f"(objectClass={self.settings['GROUP_OBJECT_CLASS']})" \
-                                                      f"{self.settings['GROUP_FILTER']})"
+            self.settings["GROUP_SEARCH"].filterstr = (
+                f"(&"
+                f"(objectClass={self.settings['GROUP_OBJECT_CLASS']})"
+                f"{self.settings['GROUP_FILTER']})"
+            )
             ldap_groups = self.settings["GROUP_SEARCH"].execute(self.conn, {})
             self._sync_ldap_groups(ldap_groups)
             sys.stdout.write("Groups were synchronized\n")
@@ -193,7 +195,7 @@ class SyncLDAP:
                     ldap_usernames.add(username)
 
                     if not self._group_search_configured:
-                        self.__process_user_ldap_groups(user, cname)
+                        self._process_user_ldap_groups(user, cname)
                     else:
                         for group in ldap_attributes.get("memberof", []):
                             name = group.split(",")[0][3:]
@@ -217,8 +219,8 @@ class SyncLDAP:
         msg += f"Couldn\'t synchronize users: {error_names}\n" if error_names else ""
         log.debug(msg)
 
-    def __process_user_ldap_groups(self, user, user_dn):
-        ldap_group_names, err_msg = _get_groups_by_user_dn(
+    def _process_user_ldap_groups(self, user, user_dn):
+        ldap_group_names, err_msg = get_groups_by_user_dn(
             user_dn=user_dn,
             user_search=self.settings["DEFAULT_USER_SEARCH"],
             conn=self.conn

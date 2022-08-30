@@ -76,7 +76,7 @@ def is_tls(ldap_uri):
     return False
 
 
-def _get_ldap_config():
+def get_ldap_config():
     adcm_object = ADCM.objects.get(id=1)
     current_configlog = ConfigLog.objects.get(
         obj_ref=adcm_object.config, id=adcm_object.config.current
@@ -86,9 +86,9 @@ def _get_ldap_config():
     return None
 
 
-def _get_groups_by_user_dn(user_dn, user_search, conn):
+def get_groups_by_user_dn(user_dn, user_search, conn):
     err_msg = None
-    user_name_attr = _get_ldap_config()["user_name_attribute"]
+    user_name_attr = get_ldap_config()["user_name_attribute"]
     replace = f"{user_name_attr}={USER_PLACEHOLDER}"
     search_expr = f"distinguishedName={user_dn}"
 
@@ -116,7 +116,7 @@ def _get_groups_by_user_dn(user_dn, user_search, conn):
     return group_cns, err_msg
 
 
-def _get_user_search(ldap_config):
+def get_user_search(ldap_config):
     return LDAPSearch(
         base_dn=ldap_config["user_search_base"],
         scope=ldap.SCOPE_SUBTREE,
@@ -128,8 +128,8 @@ def _get_user_search(ldap_config):
     )
 
 
-def _get_ldap_default_settings():
-    ldap_config = _get_ldap_config()
+def get_ldap_default_settings():
+    ldap_config = get_ldap_config()
     if ldap_config:
         configure_tls(enabled=False)
         group_search = None
@@ -155,7 +155,7 @@ def _get_ldap_default_settings():
             "SERVER_URI": ldap_config["ldap_uri"],
             "BIND_DN": ldap_config["ldap_user"],
             "BIND_PASSWORD": ansible_decrypt(ldap_config["ldap_password"]),
-            "USER_SEARCH": _get_user_search(ldap_config),
+            "USER_SEARCH": get_user_search(ldap_config),
             "USER_OBJECT_CLASS": ldap_config.get("user_object_class", "*"),
             "USER_FILTER": _process_extra_filter(ldap_config.get("user_search_filter", "")),
             "GROUP_FILTER": _process_extra_filter(ldap_config.get("group_search_filter", "")),
@@ -194,7 +194,7 @@ class CustomLDAPBackend(LDAPBackend):
         self.is_tls = False
 
     def authenticate_ldap_user(self, ldap_user, password):
-        self.default_settings, _ = _get_ldap_default_settings()
+        self.default_settings, _ = get_ldap_default_settings()
         if not self.default_settings:
             return None
         self.is_tls = is_tls(self.default_settings["SERVER_URI"])
@@ -255,7 +255,7 @@ class CustomLDAPBackend(LDAPBackend):
         if not self.__group_search_enabled:
             log.warning("Group search is disabled. Getting all user groups")
             with self.__ldap_connection() as conn:
-                ldap_group_names, err_msg = _get_groups_by_user_dn(
+                ldap_group_names, err_msg = get_groups_by_user_dn(
                     user_dn=user_dn, user_search=self.default_settings["USER_SEARCH"], conn=conn
                 )
             if err_msg:
