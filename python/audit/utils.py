@@ -38,9 +38,10 @@ from audit.models import (
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, HostProvider, TaskLog
 from rbac.endpoints.group.serializers import GroupAuditSerializer
+from rbac.endpoints.policy.serializers import PolicyAuditSerializer
 from rbac.endpoints.role.serializers import RoleAuditSerializer
 from rbac.endpoints.user.serializers import UserAuditSerializer
-from rbac.models import Group, Role, User
+from rbac.models import Group, Policy, Role, User
 
 
 def _get_view_and_request(args) -> tuple[View, Request]:
@@ -98,6 +99,8 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
         serializer_class = RoleAuditSerializer
     elif isinstance(current_obj, User):
         serializer_class = UserAuditSerializer
+    elif isinstance(current_obj, Policy):
+        serializer_class = PolicyAuditSerializer
 
     if not serializer_class:
         return {}
@@ -139,6 +142,9 @@ def _get_obj_changes_data(view: ModelViewSet) -> tuple[dict | None, Model | None
         elif view.__class__.__name__ == "UserViewSet":
             serializer_class = UserAuditSerializer
             model = User
+        elif view.__class__.__name__ == "PolicyViewSet":
+            serializer_class = PolicyAuditSerializer
+            model = Policy
 
         if serializer_class:
             current_obj = model.objects.filter(pk=view.kwargs["pk"]).first()
