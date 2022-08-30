@@ -114,7 +114,7 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
         delete filters[f];
       }
     });
-    const data = this.backupData?.results?.filter(function (item) {
+    const data = this.backupData?.results?.filter((item) => {
       for (let key in filters) {
         if (item[key] === undefined || item[key] !== filters[key]) {
           return false;
