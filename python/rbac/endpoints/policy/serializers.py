@@ -141,6 +141,7 @@ class PolicyAuditSerializer(ModelSerializer):
     role = SerializerMethodField()
     object = SerializerMethodField()
     user = SerializerMethodField()
+    group = SerializerMethodField()
 
     class Meta:
         model = Policy
@@ -170,3 +171,7 @@ class PolicyAuditSerializer(ModelSerializer):
     @staticmethod
     def get_user(obj: Policy) -> list[str, ...]:
         return [user.username for user in obj.user.all()]
+
+    @staticmethod
+    def get_group(obj: Policy) -> list[str, ...]:
+        return [group.name for group in obj.group.all()]
