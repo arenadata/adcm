@@ -36,7 +36,7 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterObject, Host, HostProvider, TaskLog, ClusterBind
+from cm.models import Cluster, ClusterBind, ClusterObject, Host, HostProvider, TaskLog
 from rbac.endpoints.group.serializers import GroupAuditSerializer
 from rbac.endpoints.policy.serializers import PolicyAuditSerializer
 from rbac.endpoints.role.serializers import RoleAuditSerializer
