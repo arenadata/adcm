@@ -1500,7 +1500,6 @@ class TestClusterConfigPage:
         cluster_config_page.config.click_on_advanced()
         check_expectations()
         if (not is_read_only) and (not field_invisible):
-            config_row = cluster_config_page.config.get_config_row(field_type)
             _check_save_in_configs(cluster_config_page, field_type, expected["save"], is_default)
 
 
