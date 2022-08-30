@@ -42,7 +42,7 @@ class TestRole(BaseTestCase):
         self.role_created_str = "Role created"
         self.role_updated_str = "Role updated"
 
-    def check_log(
+    def check_log(  # pylint: disable=too-many-arguments
         self,
         log: AuditLog,
         obj: Role | None,
@@ -50,6 +50,7 @@ class TestRole(BaseTestCase):
         operation_type: AuditLogOperationType,
         operation_result: AuditLogOperationResult,
         user: User,
+        object_changes: dict | None = None,
     ) -> None:
         if obj:
             self.assertEqual(log.audit_object.object_id, obj.pk)
@@ -59,16 +60,27 @@ class TestRole(BaseTestCase):
         else:
             self.assertFalse(log.audit_object)
 
+        if object_changes is None:
+            object_changes = {}
+
         self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, operation_type)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
-        self.assertEqual(log.object_changes, {})
+        self.assertEqual(log.object_changes, object_changes)
 
     def check_log_update(
-        self, log: AuditLog, obj: Role, operation_result: AuditLogOperationResult, user: User
+        self,
+        log: AuditLog,
+        obj: Role,
+        operation_result: AuditLogOperationResult,
+        user: User,
+        object_changes: dict | None = None,
     ) -> None:
+        if object_changes is None:
+            object_changes = {}
+
         return self.check_log(
             log=log,
             obj=obj,
@@ -76,6 +88,7 @@ class TestRole(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
             operation_result=operation_result,
             user=user,
+            object_changes=object_changes,
         )
 
     def test_create(self):
@@ -180,10 +193,12 @@ class TestRole(BaseTestCase):
         )
 
     def test_update_put(self):
+        new_display_name = "new_display_name"
+        prev_display_name = self.role.display_name
         self.client.put(
             path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
             data={
-                "display_name": "new_display_name",
+                "display_name": new_display_name,
                 "child": [{"id": self.child.pk}],
             },
             content_type=APPLICATION_JSON,
@@ -196,6 +211,10 @@ class TestRole(BaseTestCase):
             obj=self.role,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
+            object_changes={
+                "current": {"display_name": new_display_name, "child": [self.child.display_name]},
+                "previous": {"display_name": prev_display_name, "child": []},
+            },
         )
 
     def test_update_put_denied(self):
@@ -220,6 +239,8 @@ class TestRole(BaseTestCase):
         )
 
     def test_update_patch(self):
+        new_display_name = "new_display_name"
+        prev_display_name = self.role.display_name
         self.client.patch(
             path=reverse(self.detail_name, kwargs={"pk": self.role.pk}),
             data={
@@ -236,6 +257,10 @@ class TestRole(BaseTestCase):
             obj=self.role,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
+            object_changes={
+                "current": {"display_name": new_display_name, "child": [self.child.display_name]},
+                "previous": {"display_name": prev_display_name, "child": []},
+            },
         )
 
     def test_update_patch_denied(self):

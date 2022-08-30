@@ -92,5 +92,5 @@ class GroupAuditSerializer(ModelSerializer):
         fields = ("name", "description", "user")
 
     @staticmethod
-    def get_user(obj: Group):
+    def get_user(obj: Group) -> list[str, ...]:
         return [user.username for user in obj.user_set.all()]

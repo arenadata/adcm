@@ -38,6 +38,7 @@ from audit.models import (
 from cm.errors import AdcmEx
 from cm.models import Cluster, ClusterObject, Host, HostProvider, TaskLog
 from rbac.endpoints.group.serializers import GroupAuditSerializer
+from rbac.endpoints.role.serializers import RoleAuditSerializer
 from rbac.models import Group, Role, User
 
 
@@ -92,6 +93,8 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
     serializer_class = None
     if isinstance(current_obj, Group):
         serializer_class = GroupAuditSerializer
+    elif isinstance(current_obj, Role):
+        serializer_class = RoleAuditSerializer
 
     if not serializer_class:
         return {}
@@ -105,6 +108,32 @@ def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
         "current": current_fields,
         "previous": {k: v for k, v in prev_data.items() if k in current_fields},
     }
+
+
+def _get_obj_changes_data(view: ModelViewSet) -> tuple[dict | None, Model | None]:
+    prev_data = None
+    current_obj = None
+    serializer_class = None
+    model = None
+    if (
+        isinstance(view, ModelViewSet)
+        and view.action in {"update", "partial_update"}
+        and view.kwargs.get("pk")
+    ):
+        if view.__class__.__name__ == "GroupViewSet":
+            serializer_class = GroupAuditSerializer
+            model = Group
+        elif view.__class__.__name__ == "RoleViewSet":
+            serializer_class = RoleAuditSerializer
+            model = Role
+
+        if serializer_class:
+            current_obj = model.objects.filter(pk=view.kwargs["pk"]).first()
+            prev_data = serializer_class(model.objects.filter(pk=view.kwargs["pk"]).first()).data
+            if current_obj:
+                prev_data = serializer_class(current_obj).data
+
+    return prev_data, current_obj
 
 
 def audit(func):
@@ -121,8 +150,6 @@ def audit(func):
         object_changes: dict
 
         error = None
-        prev_data = None
-        current_obj = None
         view, request = _get_view_and_request(args=args)
 
         if request.method == "DELETE":
@@ -130,18 +157,7 @@ def audit(func):
         else:
             deleted_obj = None
 
-        if (
-            isinstance(view, ModelViewSet)
-            and view.action in {"update", "partial_update"}
-            and view.queryset
-            and view.kwargs.get("pk")
-        ):
-            if view.__class__.__name__ == "GroupViewSet":
-                prev_data = GroupAuditSerializer(
-                    Group.objects.filter(pk=view.kwargs["pk"]).first()
-                ).data
-                if prev_data:
-                    current_obj = view.queryset[0]
+        prev_data, current_obj = _get_obj_changes_data(view=view)
 
         try:
             res = func(*args, **kwargs)
