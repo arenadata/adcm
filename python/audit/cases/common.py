@@ -83,7 +83,12 @@ def get_obj_name(obj: Model, obj_type: str) -> str:
     return obj_name
 
 
-def get_or_create_audit_obj(object_id: str, object_name: str, object_type: str) -> AuditObject:
+def get_or_create_audit_obj(
+        object_id: str,
+        object_name: str,
+        object_type: str,
+        action_id: int | None = None,
+) -> AuditObject:
     audit_object = AuditObject.objects.filter(
         object_id=object_id,
         object_type=object_type,
@@ -94,6 +99,7 @@ def get_or_create_audit_obj(object_id: str, object_name: str, object_type: str) 
             object_id=object_id,
             object_name=object_name,
             object_type=object_type,
+            action_id=action_id,
         )
 
     return audit_object

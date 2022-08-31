@@ -166,7 +166,7 @@ class TestComponent(BaseTestCase):
             user=self.test_user,
         )
 
-    def test_action_finish_success(self):
+    def test_action_finish_no_user_success(self):
         audit_object = AuditObject.objects.create(
             object_id=self.adcm.pk,
             object_name=self.adcm_name,
@@ -174,6 +174,47 @@ class TestComponent(BaseTestCase):
         )
         AuditLog.objects.create(
             audit_object=audit_object,
+            operation_name=f"{self.action.display_name} action completed",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Success,
+            object_changes={},
+            user=self.test_user,
+        )
+
+        finish_task(task=self.task, job=None, status="success")
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_adcm_updated(
+            log=log,
+            operation_name=f"{self.action.display_name} action completed",
+            operation_result=AuditLogOperationResult.Success,
+        )
+
+    def test_action_finish_with_user_success(self):
+        action_ids = TaskLog.objects.all().values_list("pk", flat=True).order_by("-pk")
+        audit_object = AuditObject.objects.create(
+            object_id=self.adcm.pk,
+            object_name=self.adcm_name,
+            object_type=AuditObjectType.ADCM,
+            action_id=action_ids[0] + 1,
+        )
+        AuditLog.objects.create(
+            audit_object=audit_object,
+            operation_name=f"{self.action.display_name} action completed",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Success,
+            object_changes={},
+            user=self.no_rights_user,
+        )
+        audit_object_2 = AuditObject.objects.create(
+            object_id=self.adcm.pk,
+            object_name=self.adcm_name,
+            object_type=AuditObjectType.ADCM,
+            action_id=self.action.pk,
+        )
+        AuditLog.objects.create(
+            audit_object=audit_object_2,
             operation_name=f"{self.action.display_name} action completed",
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Success,

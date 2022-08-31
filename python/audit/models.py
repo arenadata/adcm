@@ -65,6 +65,7 @@ class AuditObject(models.Model):
     object_name = models.CharField(max_length=160)
     object_type = models.CharField(max_length=16, choices=AuditObjectType.choices)
     is_deleted = models.BooleanField(default=False)
+    action_id = models.PositiveIntegerField(null=True)
 
 
 class AuditLog(models.Model):
