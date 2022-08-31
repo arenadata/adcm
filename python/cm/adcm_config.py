@@ -1044,7 +1044,7 @@ def set_object_config(obj, keys, value):
     log_value = value
     if pconf.type in SECURE_PARAM_TYPES:
         log_value = "****"
-    log.info(f"update {obj_ref(obj)} config {key}/{subkey} to {log_value}")
+    log.info("update %s config %s/%s to `%s`", obj_ref(obj), key, subkey, log_value)
     return value
 
 

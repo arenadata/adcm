@@ -32,7 +32,7 @@ class TestHC(TestCase):
         except AdcmEx as e:
             self.assertEqual(e.code, 'PROVIDER_CONFLICT')
             self.assertEqual(
-                e.msg, 'There is host #1 "server02.inter.net" of host provider #1 "TestProvider"'
+                e.msg, 'There is host #1 "server02.inter.net" of host provider #1 `TestProvider`'
             )
         for host in Host.objects.filter(provider=provider):
             cm.api.delete_host(host)
