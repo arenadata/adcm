@@ -108,7 +108,7 @@ def prepared_changes(sdk_client_fs, rbac_create_data, new_rbac_objects_info) -> 
             },
         },
         'policy': {
-            'previous': {'description': initial['group'].get('description', ''), 'group': []},
+            'previous': {'description': initial['policy'].get('description', ''), 'group': []},
             'current': {
                 'description': _get('policy', 'description'),
                 'group': [f"{c.group(id=i['id']).name} [local]" for i in _get('policy', 'group')],
