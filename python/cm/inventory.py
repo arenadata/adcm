@@ -37,6 +37,9 @@ from cm.models import (
 )
 
 
+MAINTENANCE_MODE = "maintenance_mode"
+
+
 def process_config_and_attr(obj, conf, attr=None, spec=None):
     if not spec:
         if isinstance(obj, GroupConfig):
@@ -252,16 +255,20 @@ def get_host_groups(cluster, delta, action_host=None):
     groups = {}
     all_hosts = HostComponent.objects.filter(cluster=cluster)
     for hc in all_hosts:
-        if in_mm(hc) or (action_host and hc.host.id not in action_host):
+        if action_host and hc.host.id not in action_host:
             continue
 
         key1 = f'{hc.service.prototype.name}.{hc.component.prototype.name}'
+        if in_mm(hc):
+            key1 = f"k{key1}.{MAINTENANCE_MODE}"
         if key1 not in groups:
             groups[key1] = {'hosts': {}}
         groups[key1]['hosts'][hc.host.fqdn] = get_obj_config(hc.host)
         groups[key1]['hosts'][hc.host.fqdn].update(get_host_vars(hc.host, hc.component))
 
         key2 = f'{hc.service.prototype.name}'
+        if in_mm(hc):
+            key2 = f"k{key2}.{MAINTENANCE_MODE}"
         if key2 not in groups:
             groups[key2] = {'hosts': {}}
         groups[key2]['hosts'][hc.host.fqdn] = get_obj_config(hc.host)
@@ -284,16 +291,19 @@ def get_host_groups(cluster, delta, action_host=None):
 def get_hosts(host_list, obj, action_host=None):
     group = {}
     for host in host_list:
-        if host.maintenance_mode == MaintenanceModeType.On.value or (
-            action_host and host.id not in action_host
-        ):
+        if action_host and host.id not in action_host:
             continue
-        group[host.fqdn] = get_obj_config(host)
-        group[host.fqdn]['adcm_hostid'] = host.id
-        group[host.fqdn]['state'] = host.state
-        group[host.fqdn]['multi_state'] = host.multi_state
+
+        key = host.fqdn
+        if host.maintenance_mode == MaintenanceModeType.On.value:
+            key = f"{key}.{MAINTENANCE_MODE}"
+
+        group[key] = get_obj_config(host)
+        group[key]['adcm_hostid'] = host.id
+        group[key]['state'] = host.state
+        group[key]['multi_state'] = host.multi_state
         if not isinstance(obj, Host):
-            group[host.fqdn].update(get_host_vars(host, obj))
+            group[key].update(get_host_vars(host, obj))
     return group
 
 
