@@ -31,7 +31,8 @@ class TestGroup(BaseTestCase):
         super().setUp()
 
         self.name = "test_group"
-        self.group = Group.objects.create(name="test_group_2")
+        self.description = "test_description"
+        self.group = Group.objects.create(name="test_group_2", description=self.description)
         self.list_name = "rbac:group-list"
         self.detail_name = "rbac:group-detail"
         self.group_created_str = "Group created"
@@ -44,17 +45,21 @@ class TestGroup(BaseTestCase):
         operation_type: AuditLogOperationType,
         operation_result: AuditLogOperationResult,
         user: User,
+        object_changes: dict | None = None,
     ) -> None:
-        assert log.audit_object.object_id == self.group.pk
-        assert log.audit_object.object_name == self.group.name
-        assert log.audit_object.object_type == AuditObjectType.Group
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == operation_name
-        assert log.operation_type == operation_type
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        if object_changes is None:
+            object_changes = {}
+
+        self.assertEqual(log.audit_object.object_id, self.group.pk)
+        self.assertEqual(log.audit_object.object_name, self.group.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Group)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, operation_name)
+        self.assertEqual(log.operation_type, operation_type)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.object_changes, object_changes)
 
     def test_create(self):
         response: Response = self.client.post(
@@ -65,16 +70,16 @@ class TestGroup(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         group = Group.objects.get(pk=response.data["id"])
-        assert log.audit_object.object_id == response.data["id"]
-        assert log.audit_object.object_name == group.name
-        assert log.audit_object.object_type == AuditObjectType.Group
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == self.group_created_str
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Success
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, response.data["id"])
+        self.assertEqual(log.audit_object.object_name, group.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Group)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, self.group_created_str)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertIsInstance(log.object_changes, dict)
 
         self.client.post(
             path=reverse(self.list_name),
@@ -83,13 +88,13 @@ class TestGroup(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert not log.audit_object
-        assert log.operation_name == self.group_created_str
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Fail
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, self.group_created_str)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertIsInstance(log.object_changes, dict)
 
     def test_create_denied(self):
         with self.no_rights_user_logged_in:
@@ -100,14 +105,14 @@ class TestGroup(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert response.status_code == HTTP_403_FORBIDDEN
-        assert not log.audit_object
-        assert log.operation_name == self.group_created_str
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Denied
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.no_rights_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, self.group_created_str)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.no_rights_user.pk)
+        self.assertIsInstance(log.object_changes, dict)
 
     def test_delete(self):
         self.client.delete(
@@ -134,7 +139,7 @@ class TestGroup(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert response.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             operation_name="Group deleted",
@@ -144,23 +149,29 @@ class TestGroup(BaseTestCase):
         )
 
     def test_update_put(self):
+        new_description = "new_test_description"
+        prev_description = self.group.description
         self.client.put(
             path=reverse(self.detail_name, kwargs={"pk": self.group.pk}),
             data={
                 "name": self.group.name,
-                "display_name": "new_display_name",
+                "description": new_description,
+                "user": [{"id": self.test_user.pk}],
             },
             content_type=APPLICATION_JSON,
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
         self.check_log(
             log=log,
             operation_name=self.group_updated_str,
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
+            object_changes={
+                "current": {"description": new_description, "user": [self.test_user.username]},
+                "previous": {"description": prev_description, "user": []},
+            },
         )
 
     def test_update_put_denied(self):
@@ -176,7 +187,7 @@ class TestGroup(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert response.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             operation_name=self.group_updated_str,
@@ -186,9 +197,13 @@ class TestGroup(BaseTestCase):
         )
 
     def test_update_patch(self):
+        new_description = "new_test_description"
         self.client.patch(
             path=reverse(self.detail_name, kwargs={"pk": self.group.pk}),
-            data={"display_name": "new_display_name"},
+            data={
+                "description": new_description,
+                "user": [{"id": self.test_user.pk}],
+            },
             content_type=APPLICATION_JSON,
         )
 
@@ -200,6 +215,10 @@ class TestGroup(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
+            object_changes={
+                "current": {"description": new_description, "user": [self.test_user.username]},
+                "previous": {"description": self.description, "user": []},
+            },
         )
 
     def test_update_patch_denied(self):
@@ -212,7 +231,7 @@ class TestGroup(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert response.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             operation_name=self.group_updated_str,
