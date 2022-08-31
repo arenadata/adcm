@@ -71,12 +71,59 @@ def new_rbac_objects_info(sdk_client_fs) -> Dict[str, Dict[str, Dict]]:
     }
 
 
+@pytest.fixture()
+def prepared_changes(sdk_client_fs, rbac_create_data, new_rbac_objects_info) -> dict:
+    """
+    Prepare dict with "obejct_changes"
+    """
+    c = sdk_client_fs
+    initial = rbac_create_data
+
+    def _get(key1, key2):
+        return new_rbac_objects_info[key1]['correct'][key2]
+
+    return {
+        'user': {
+            'previous': {'first_name': initial['user']['first_name'], 'group': []},
+            'current': {
+                'first_name': _get('user', 'first_name'),
+                'group': [f"{c.group(id=i['id']).name} [local]" for i in _get('user', 'group')],
+            },
+        },
+        'group': {
+            'previous': {'description': initial['group'].get('description', ''), 'user': []},
+            'current': {
+                'description': _get('group', 'description'),
+                'user': [c.user(id=i['id']).username for i in _get('group', 'user')],
+            },
+        },
+        'role': {
+            'previous': {
+                'description': initial['role']['description'],
+                'child': [c.role(id=i['id']).display_name for i in initial['role']['child']],
+            },
+            'current': {
+                'description': _get('role', 'description'),
+                'child': [c.role(id=i['id']).display_name for i in _get('role', 'child')],
+            },
+        },
+        'policy': {
+            'previous': {'description': initial['policy'].get('description', ''), 'group': []},
+            'current': {
+                'description': _get('policy', 'description'),
+                'group': [f"{c.group(id=i['id']).name} [local]" for i in _get('policy', 'group')],
+            },
+        },
+    }
+
+
 @pytest.mark.parametrize('parse_with_context', ['update_rbac.yaml'], indirect=True)
 @pytest.mark.parametrize('http_method', ['PATCH', 'PUT'])  # pylint: disable-next=too-many-arguments
 def test_update_rbac_objects(
     http_method: str,
     rbac_objects,
     new_rbac_objects_info,
+    prepared_changes,
     parse_with_context,
     rbac_create_data,
     sdk_client_fs,
@@ -92,7 +139,7 @@ def test_update_rbac_objects(
         check_succeed(change_as_admin(rbac_object=obj, data=new_info['correct']))
         check_failed(change_as_admin(rbac_object=obj, data=new_info['incorrect']), exact_code=400)
         check_failed(change_as_unauthorized(rbac_object=obj, data=new_info['incorrect']), exact_code=403)
-    checker = AuditLogChecker(parse_with_context(rbac_create_data))
+    checker = AuditLogChecker(parse_with_context({**rbac_create_data, 'changes': {**prepared_changes}}))
     checker.set_user_map(sdk_client_fs)
     checker.check(sdk_client_fs.audit_operation_list())
 
