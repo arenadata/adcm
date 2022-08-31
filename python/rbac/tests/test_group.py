@@ -10,8 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.test import TestCase
 from django.contrib.auth.models import Group as AuthGroup
+from django.test import TestCase
+
 from rbac.models import Group, OriginType
 
 

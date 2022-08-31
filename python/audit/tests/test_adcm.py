@@ -207,20 +207,12 @@ class TestComponent(BaseTestCase):
             object_changes={},
             user=self.no_rights_user,
         )
-        audit_object_2 = AuditObject.objects.create(
-            object_id=self.adcm.pk,
-            object_name=self.adcm_name,
-            object_type=AuditObjectType.ADCM,
-            action_id=self.action.pk,
-        )
-        AuditLog.objects.create(
-            audit_object=audit_object_2,
-            operation_name=f"{self.action.display_name} action completed",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
-            object_changes={},
-            user=self.test_user,
-        )
+        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "run-task", kwargs={"adcm_id": self.adcm.pk, "action_id": self.action.pk}
+                )
+            )
 
         finish_task(task=self.task, job=None, status="success")
 
