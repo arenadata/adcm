@@ -44,11 +44,11 @@ operations:
       how:  update-rbac-object
       changes:
         previous:
-          name: "groupforU [local]"
+          name: "groupforU"
           description: ""
-          user: []
+          user: ["newuser"]  # this user is added in previous step
         current:
-          name: "ChangedGroupName [local]"
+          name: "ChangedGroupName"
           description: "Whole new description"
           user: ["admin"]
   - update:
@@ -81,7 +81,7 @@ operations:
         current:
           name: "NewPolicyName"
           description: "Whole new description"
-          role: "View provider configurations"
+          role: "New Custom Role"
           user: ["newuser"]
           group: ["ChangedGroupName [local]"]
           object:

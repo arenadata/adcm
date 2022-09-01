@@ -107,11 +107,11 @@ def prepared_changes(sdk_client_fs, rbac_create_data, new_rbac_objects_info) -> 
                 "child": [c.role(id=i["id"]).display_name for i in _get("role", "child")],
             },
         },
-        'policy': {
-            'previous': {'description': initial['policy'].get('description', ''), 'group': []},
-            'current': {
-                'description': _get('policy', 'description'),
-                'group': [f"{c.group(id=i['id']).name} [local]" for i in _get('policy', 'group')],
+        "policy": {
+            "previous": {"description": initial["policy"].get("description", ""), "group": []},
+            "current": {
+                "description": _get("policy", "description"),
+                "group": [f"{c.group(id=i['id']).name} [local]" for i in _get("policy", "group")],
             },
         },
     }
