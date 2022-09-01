@@ -14,7 +14,7 @@
 import os
 import re
 from contextlib import contextmanager, suppress
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Type
 
 import ldap
 from django.contrib.auth.models import Group as DjangoGroup
@@ -237,7 +237,7 @@ class CustomLDAPBackend(LDAPBackend):
             groups = [g.group for g in user.groups.all() if g.group.type == OriginType.Local]
         return groups
 
-    def get_user_model(self) -> User:
+    def get_user_model(self) -> Type[User]:
         return User
 
     @contextmanager
