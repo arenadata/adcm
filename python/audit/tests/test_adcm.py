@@ -12,22 +12,19 @@
 
 
 from datetime import datetime
-from unittest.mock import patch
 
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN
+from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
-    AuditObject,
     AuditObjectType,
 )
-from cm.job import finish_task
 from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectConfig, Prototype, TaskLog
 from rbac.models import User
 
@@ -133,105 +130,4 @@ class TestADCM(BaseTestCase):
             operation_name=self.adcm_conf_updated_str,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
-        )
-
-    def test_action_launch(self):
-        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(
-                path=reverse(
-                    "run-task", kwargs={"adcm_id": self.adcm.pk, "action_id": self.action.pk}
-                )
-            )
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        self.check_adcm_updated(
-            log=log,
-            operation_name=f"{self.action.display_name} action launched",
-            operation_result=AuditLogOperationResult.Success,
-            user=self.test_user,
-        )
-
-        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(
-                path=reverse("run-task", kwargs={"adcm_id": 999, "action_id": self.action.pk})
-            )
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        self.check_adcm_updated(
-            log=log,
-            operation_name=f"{self.action.display_name} action launched",
-            operation_result=AuditLogOperationResult.Fail,
-            user=self.test_user,
-        )
-
-    def test_action_finish_no_user_success(self):
-        audit_object = AuditObject.objects.create(
-            object_id=self.adcm.pk,
-            object_name=self.adcm_name,
-            object_type=AuditObjectType.ADCM,
-        )
-        AuditLog.objects.create(
-            audit_object=audit_object,
-            operation_name=f"{self.action.display_name} action completed",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
-            object_changes={},
-            user=self.test_user,
-        )
-
-        finish_task(task=self.task, job=None, status="success")
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        self.check_adcm_updated(
-            log=log,
-            operation_name=f"{self.action.display_name} action completed",
-            operation_result=AuditLogOperationResult.Success,
-        )
-
-    def test_action_finish_with_user_success(self):
-        action_ids = TaskLog.objects.all().values_list("pk", flat=True).order_by("-pk")
-        audit_object = AuditObject.objects.create(
-            object_id=self.adcm.pk,
-            object_name=self.adcm_name,
-            object_type=AuditObjectType.ADCM,
-            action_id=action_ids[0] + 1,
-        )
-        AuditLog.objects.create(
-            audit_object=audit_object,
-            operation_name=f"{self.action.display_name} action completed",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
-            object_changes={},
-            user=self.no_rights_user,
-        )
-        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(
-                path=reverse(
-                    "run-task", kwargs={"adcm_id": self.adcm.pk, "action_id": self.action.pk}
-                )
-            )
-
-        finish_task(task=self.task, job=None, status="success")
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        self.check_adcm_updated(
-            log=log,
-            operation_name=f"{self.action.display_name} action completed",
-            operation_result=AuditLogOperationResult.Success,
-            user=self.test_user,
-        )
-
-    def test_action_finish_fail(self):
-        finish_task(task=self.task, job=None, status="fail")
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        self.check_adcm_updated(
-            log=log,
-            operation_name=f"{self.action.display_name} action completed",
-            operation_result=AuditLogOperationResult.Fail,
         )

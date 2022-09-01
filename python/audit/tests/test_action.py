@@ -70,6 +70,7 @@ class TestAction(BaseTestCase):
             finish_date=datetime.now(),
             action=self.action,
         )
+        self.action_create_view = "api.action.views.create"
 
     def get_cluster_service_component(self) -> tuple[Cluster, ClusterObject, ServiceComponent]:
         cluster = Cluster.objects.create(
@@ -126,7 +127,7 @@ class TestAction(BaseTestCase):
         self.assertEqual(log.object_changes, {})
 
     def test_adcm_launch(self):
-        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+        with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
                     "run-task", kwargs={"adcm_id": self.adcm.pk, "action_id": self.action.pk}
@@ -145,7 +146,7 @@ class TestAction(BaseTestCase):
             user=self.test_user,
         )
 
-        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+        with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse("run-task", kwargs={"adcm_id": 999, "action_id": self.action.pk})
             )
@@ -206,7 +207,7 @@ class TestAction(BaseTestCase):
             object_changes={},
             user=self.no_rights_user,
         )
-        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+        with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
                     "run-task", kwargs={"adcm_id": self.adcm.pk, "action_id": self.action.pk}
@@ -243,7 +244,7 @@ class TestAction(BaseTestCase):
 
     def test_component_launch(self):
         cluster, service, component = self.get_cluster_service_component()
-        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
+        with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
                     "run-task",
@@ -271,7 +272,7 @@ class TestAction(BaseTestCase):
     def test_component_launch_denied(self):
         cluster, service, component = self.get_cluster_service_component()
         with (
-            patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)),
+            patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)),
             self.no_rights_user_logged_in,
         ):
             response: Response = self.client.post(
