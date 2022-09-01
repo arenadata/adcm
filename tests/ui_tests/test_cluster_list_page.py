@@ -427,6 +427,7 @@ class TestClusterListPage:
             ("upgrade_with_hc_acl_and_disclaimer", None, True, False, DISCLAIMER_TEXT),
             ("upgrade_with_config_and_disclaimer", {"somestring2": "test"}, False, False, DISCLAIMER_TEXT),
             ("upgrade_with_config_and_hc_acl_and_disclaimer", {"somestring2": "test"}, True, False, DISCLAIMER_TEXT),
+            ("upgrade_have_long_config", {"some_float": "1.1", "some_integer": "1"}, False, False, False),
             # next steps are skipped until https://tracker.yandex.ru/ADCM-3001
             # ("upgrade_with_hc_acl", None, True, True, False),
             # ("upgrade_with_config_and_hc_acl", {"somestring2": "test"}, True, True, False),

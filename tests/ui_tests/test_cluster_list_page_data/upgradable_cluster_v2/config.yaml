@@ -170,6 +170,210 @@
         - name: someint2
           type: integer
           default: 122
+    - name: upgrade_have_long_config
+      description: The cluster will be prepared for upgra
+      from_edition:
+        - community
+      versions:
+        min: 0.1
+        max: 1.5
+      scripts:
+        - <<: *action
+          name: first_action
+        - name: switch action
+          script: bundle_switch
+          script_type: internal
+        - <<: *action
+          name: first action after switch
+      config:
+        - name: __main_info
+          type: text
+          required: false
+          default: MAIN_INFO
+        - name: some_float
+          type: float
+        - name: some_boolean
+          type: boolean
+          default: true
+        - name: some_integer
+          type: integer
+        - name: some_password
+          type: password
+          required: false
+          default: password
+        - name: some_string
+          type: string
+          required: false
+          default: string
+        - name: some_list
+          type: list
+          default:
+            - value1
+            - value2
+            - value3
+        - name: some_file
+          type: file
+          required: false
+          default: ./cluster_file
+        - name: some_option
+          type: option
+          option:
+            KEY1: VALUE1
+            KEY2: VALUE2
+          default: VALUE1
+        - name: some_text
+          type: text
+          required: false
+          default: text
+        - name: some_structure
+          type: structure
+          required: false
+          yspec: ./schema.yaml
+        - name: some_map
+          type: map
+          default:
+            integer_key: '10'
+            string_key: string
+        - name: some_secrettext
+          type: secrettext
+          default: secrettext
+        - name: some_json
+          type: json
+          required: false
+          default:
+            key: value
+        - name: some_group
+          type: group
+          subs:
+            - name: float_in_some_group
+              type: float
+              default: 0.1
+            - name: boolean_in_some_group
+              type: boolean
+              required: false
+              default: true
+            - name: integer_in_some_group
+              type: integer
+              required: false
+              default: 10
+            - name: password_in_some_group
+              type: password
+              required: false
+              default: password
+            - name: string_in_some_group
+              type: string
+              required: false
+              default: string
+            - name: list_in_some_group
+              type: list
+              required: false
+              default:
+                - value1
+                - value2
+                - value3
+            - name: file_in_some_group
+              type: file
+              required: false
+              default: ./cluster_file
+            - name: option_in_some_group
+              type: option
+              required: false
+              option:
+                KEY1: VALUE1
+                KEY2: VALUE2
+              default: VALUE1
+            - name: text_in_some_group
+              type: text
+              required: false
+              default: text
+            - name: structure_in_some_group
+              type: structure
+              required: false
+              yspec: ./schema.yaml
+            - name: map_in_some_group
+              type: map
+              required: false
+              default:
+                integer_key: '10'
+                string_key: string
+            - name: secrettext_in_some_group
+              type: secrettext
+              required: false
+              default: secrettext
+            - name: json_in_some_group
+              type: json
+              required: false
+              default:
+                key: value
+        - name: activatable_group
+          type: group
+          activatable: True
+          active: True
+          subs:
+            - name: float_in_activatable_group
+              type: float
+              required: false
+              default: 0.1
+            - name: boolean_in_activatable_group
+              type: boolean
+              required: false
+              default: true
+            - name: integer_in_activatable_group
+              type: integer
+              required: false
+              default: 10
+            - name: password_in_activatable_group
+              type: password
+              required: false
+              default: password
+            - name: string_in_activatable_group
+              type: string
+              required: false
+              default: string
+            - name: list_in_activatable_group
+              type: list
+              required: false
+              default:
+                - value1
+                - value2
+                - value3
+            - name: file_in_activatable_group
+              type: file
+              required: false
+              default: ./cluster_file
+            - name: option_in_activatable_group
+              type: option
+              required: false
+              option:
+                KEY1: VALUE1
+                KEY2: VALUE2
+              default: VALUE1
+            - name: text_in_activatable_group
+              type: text
+              required: false
+              default: text
+            - name: structure_in_activatable_group
+              type: structure
+              required: false
+              yspec: ./schema.yaml
+            - name: map_in_activatable_group
+              type: map
+              required: false
+              default:
+                integer_key: '10'
+                string_key: string
+            - name: secrettext_in_activatable_group
+              type: secrettext
+              required: false
+              default: secrettext
+            - name: json_in_activatable_group
+              type: json
+              required: false
+              default:
+                key: value
+      states:
+        available: any
+        on_success: upgraded
 
   config: &config
     - name: somestring

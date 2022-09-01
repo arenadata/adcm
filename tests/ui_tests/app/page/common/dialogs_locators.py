@@ -30,4 +30,6 @@ class ActionDialog:
     body = Locator(By.CSS_SELECTOR, "mat-dialog-container", "Dialog with choices")
     text = Locator(By.CSS_SELECTOR, "app-dialog mat-dialog-content", "Dialog content")
     next_btn = Locator(By.CSS_SELECTOR, "div[aria-expanded='true'] .mat-stepper-next", "Next button in action dialog")
-    run = Locator(By.CSS_SELECTOR, "app-dialog button[color='accent']", "Run button in action dialog")
+    run = Locator(
+        By.CSS_SELECTOR, "app-dialog .controls-container button[color='accent']", "Run button in action dialog"
+    )
