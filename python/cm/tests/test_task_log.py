@@ -10,44 +10,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.test import TestCase
+from adcm.tests.base import BaseTestCase
+from cm.models import ConcernType
+from cm.tests.utils import (
+    gen_adcm,
+    gen_cluster,
+    gen_concern_item,
+    gen_job_log,
+    gen_task_log,
+)
 
-from cm import models
-from cm.unit_tests import utils
 
-
-class TaskLogLockTest(TestCase):
+class TaskLogLockTest(BaseTestCase):
     """Tests for `cm.models.TaskLog` lock-related methods"""
 
     def setUp(self) -> None:
-        utils.gen_adcm()
+        super().setUp()
+
+        gen_adcm()
 
     def test_lock_affected__lock_is_single(self):
-        cluster = utils.gen_cluster()
-        task = utils.gen_task_log(cluster)
-        utils.gen_job_log(task)
-        task.lock = utils.gen_concern_item(models.ConcernType.Lock)
+        cluster = gen_cluster()
+        task = gen_task_log(cluster)
+        gen_job_log(task)
+        task.lock = gen_concern_item(ConcernType.Lock)
         task.save()
-
         task.lock_affected([cluster])
+
         self.assertFalse(cluster.locked)
 
     def test_lock_affected(self):
-        cluster = utils.gen_cluster()
-        task = utils.gen_task_log(cluster)
-        utils.gen_job_log(task)
-
+        cluster = gen_cluster()
+        task = gen_task_log(cluster)
+        gen_job_log(task)
         task.lock_affected([cluster])
+
         self.assertTrue(cluster.locked)
+
         task.refresh_from_db()
+
         self.assertIsNotNone(task.lock)
 
     def test_unlock_affected(self):
-        cluster = utils.gen_cluster()
-        task = utils.gen_task_log(cluster)
-        utils.gen_job_log(task)
+        cluster = gen_cluster()
+        task = gen_task_log(cluster)
+        gen_job_log(task)
         task.lock_affected([cluster])
-
         task.unlock_affected()
+
         self.assertFalse(cluster.locked)
         self.assertIsNone(task.lock)

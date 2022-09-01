@@ -94,15 +94,18 @@ def check_required_import(obj: [Cluster, ClusterObject]):
 
 
 def do_check_import(cluster, service=None):
-    def check_import(pi):
-        if not pi.required:
-            return (True, 'NOT_REQIURED')
+    def check_import(_pi):
+        if not _pi.required:
+            return True, 'NOT_REQUIRED'
+
         import_exist = (False, None)
         for cb in ClusterBind.objects.filter(cluster=cluster):
-            if cb.source_cluster and cb.source_cluster.prototype.name == pi.name:
+            if cb.source_cluster and cb.source_cluster.prototype.name == _pi.name:
                 import_exist = (True, 'CLUSTER_IMPORTED')
-            if cb.source_service and cb.source_service.prototype.name == pi.name:
+
+            if cb.source_service and cb.source_service.prototype.name == _pi.name:
                 import_exist = (True, 'SERVICE_IMPORTED')
+
         return import_exist
 
     res = (True, None)
