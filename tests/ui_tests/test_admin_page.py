@@ -397,12 +397,40 @@ class TestAdminUsersPage:
     def test_add_group_to_ldap_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
         """Check that user can add group to ldap user"""
 
-        users_page.header.wait_success_job_amount_from_header(1)
+        with allure.step("Wait ldap integration ends"):
+            users_page.header.wait_success_job_amount_from_header(1)
         test_group = sdk_client_fs.group_create('test_group')
         users_page.update_user_info(ldap_user_in_group['name'], group=test_group.name)
         with allure.step(f'Check user {user.username} is listed in users list with changed params'):
             user_row = users_page.get_user_row_by_username(ldap_user_in_group['name'])
             assert test_group.name in user_row.text, "User group didn't changed"
+
+    @pytest.mark.ldap()
+    @pytest.mark.usefixtures("configure_adcm_ldap_ad")
+    def test_filter_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
+        """Check that users can be filtered"""
+
+        with allure.step("Wait ldap integration ends"):
+            users_page.header.wait_success_job_amount_from_header(1)
+        users_page.driver.refresh()
+        users_page.filter_users_by("status", "active")
+        with allure.step("Check users are filtered by active status"):
+            assert len(users_page.get_all_user_rows()) == 4, "Should be 4 visible active users"
+        users_page.remove_user_filter()
+        users_page.filter_users_by("status", "inactive")
+        with allure.step("Check users are filtered by inactive status"):
+            assert len(users_page.get_all_user_rows()) == 0, "Should be 0 visible inactive users"
+        users_page.remove_user_filter()
+        users_page.filter_users_by("type", "local")
+        with allure.step("Check users are filtered by local type"):
+            assert len(users_page.get_all_user_rows()) == 3, "Should be 0 visible local users"
+        users_page.remove_user_filter()
+        users_page.filter_users_by("type", "ldap")
+        with allure.step("Check users are filtered by ldap status"):
+            assert len(users_page.get_all_user_rows()) == 1, "Should be 0 visible ldap users"
+        users_page.filter_users_by("status", "active")
+        with allure.step("Check users are filtered both by active status and ldap"):
+            assert len(users_page.get_all_user_rows()) == 1, "Should be 0 visible active ldap users"
 
 
 @pytest.mark.usefixtures("login_to_adcm_over_api")
