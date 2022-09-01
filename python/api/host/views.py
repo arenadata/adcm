@@ -48,6 +48,10 @@ from cm.models import (
 from cm.status_api import make_ui_host_status
 from rbac.viewsets import DjangoOnlyObjectPermissions
 
+CLUSTER_VIEW = "cm.view_cluster"
+PROVIDER_VIEW = "cm.view_hostprovider"
+HOST_VIEW = "cm.view_host"
+
 
 class NumberInFilter(drf_filters.BaseInFilter, drf_filters.NumberFilter):
     pass
@@ -94,12 +98,10 @@ class HostFilter(drf_filters.FilterSet):
 
 def get_host_queryset(queryset, user, kwargs):
     if "cluster_id" in kwargs:
-        cluster = get_object_for_user(user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"])
+        cluster = get_object_for_user(user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"])
         queryset = queryset.filter(cluster=cluster)
     if "provider_id" in kwargs:
-        provider = get_object_for_user(
-            user, "cm.view_hostprovider", HostProvider, id=kwargs["provider_id"]
-        )
+        provider = get_object_for_user(user, PROVIDER_VIEW, HostProvider, id=kwargs["provider_id"])
         queryset = queryset.filter(provider=provider)
 
     return queryset
@@ -109,7 +111,7 @@ class HostList(PermissionListMixin, PaginatedView):
     queryset = Host.objects.all()
     serializer_class = HostSerializer
     serializer_class_ui = HostUISerializer
-    permission_required = ["cm.view_host"]
+    permission_required = [HOST_VIEW]
     filterset_class = HostFilter
     filterset_fields = (
         "cluster_id",
@@ -151,12 +153,12 @@ class HostList(PermissionListMixin, PaginatedView):
         if serializer.is_valid():
             if "provider_id" in kwargs:  # List provider hosts
                 provider = get_object_for_user(
-                    request.user, "cm.view_hostprovider", HostProvider, id=kwargs["provider_id"]
+                    request.user, PROVIDER_VIEW, HostProvider, id=kwargs["provider_id"]
                 )
             else:
                 provider = serializer.validated_data.get("provider_id")
                 provider = get_object_for_user(
-                    request.user, "cm.view_hostprovider", HostProvider, id=provider.id
+                    request.user, PROVIDER_VIEW, HostProvider, id=provider.id
                 )
 
             check_custom_perm(request.user, "add_host_to", "hostprovider", provider)
@@ -182,12 +184,10 @@ class HostListCluster(HostList):
             cluster = None
             if "cluster_id" in kwargs:
                 cluster = get_object_for_user(
-                    request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+                    request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"]
                 )
 
-            host = get_object_for_user(
-                request.user, "cm.view_host", Host, id=validated_data.get("id")
-            )
+            host = get_object_for_user(request.user, HOST_VIEW, Host, id=validated_data.get("id"))
             check_custom_perm(request.user, "map_host_to", "cluster", cluster)
             add_host_to_cluster(cluster, host)
 
@@ -210,7 +210,7 @@ class HostDetail(PermissionListMixin, DetailView):
     serializer_class_put = HostUpdateSerializer
     serializer_class_patch = HostUpdateSerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
-    permission_required = ["cm.view_host"]
+    permission_required = [HOST_VIEW]
     lookup_field = "id"
     lookup_url_kwarg = "host_id"
     error_code = "HOST_NOT_FOUND"
@@ -227,7 +227,7 @@ class HostDetail(PermissionListMixin, DetailView):
         if "cluster_id" in kwargs:
             # Remove host from cluster
             cluster = get_object_for_user(
-                request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+                request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"]
             )
             check_host(host, cluster)
             check_custom_perm(request.user, "unmap_host_from", "cluster", cluster)
@@ -292,18 +292,18 @@ class StatusList(GenericUIView):
 
     def get(self, request, *args, **kwargs):
         cluster = None
-        host = get_object_for_user(request.user, "cm.view_host", Host, id=kwargs["host_id"])
+        host = get_object_for_user(request.user, HOST_VIEW, Host, id=kwargs["host_id"])
         if "cluster_id" in kwargs:
             cluster = get_object_for_user(
-                request.user, "cm.view_cluster", Cluster, id=kwargs["cluster_id"]
+                request.user, CLUSTER_VIEW, Cluster, id=kwargs["cluster_id"]
             )
         if "provider_id" in kwargs:
             provider = get_object_for_user(
-                request.user, "cm.view_hostprovider", HostProvider, id=kwargs["provider_id"]
+                request.user, PROVIDER_VIEW, HostProvider, id=kwargs["provider_id"]
             )
             host = get_object_for_user(
                 request.user,
-                "cm.view_host",
+                HOST_VIEW,
                 Host.objects.filter(provider=provider),
                 id=kwargs["host_id"],
             )
