@@ -121,7 +121,10 @@ class ClusterUpdateSerializer(Serializer):
     id = IntegerField(read_only=True)
     name = CharField(
         max_length=80,
-        validators=[CharFieldMatchValidator(CLUSTER_NAME_PATTERN)],
+        validators=[
+            ClusterUniqueValidator(queryset=Cluster.objects.all()),
+            CharFieldMatchValidator(CLUSTER_NAME_PATTERN),
+        ],
         required=False,
         help_text="Cluster name",
     )

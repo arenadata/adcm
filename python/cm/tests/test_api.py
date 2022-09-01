@@ -227,7 +227,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_cluster_patching(self):
-        name = "test_cluster"
+        name = "test-cluster"
         cluster_url = reverse("cluster")
 
         self.load_bundle(self.bundle_adh_name)
@@ -239,7 +239,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         cluster_id = response.json()["id"]
         first_cluster_url = reverse("cluster-details", kwargs={"cluster_id": cluster_id})
 
-        patched_name = "patched_cluster"
+        patched_name = "patched-cluster"
 
         response = self.client.patch(
             first_cluster_url, {"name": patched_name}, content_type="application/json"
