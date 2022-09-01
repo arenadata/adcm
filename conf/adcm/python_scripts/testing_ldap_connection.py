@@ -25,7 +25,7 @@ from cm.errors import AdcmEx
 CERT_ENV_KEY = 'LDAPTLS_CACERT'
 
 
-def bind():
+def bind() -> None:
     ldap_config, error_code = get_ldap_default_settings()
     if error_code is not None:
         error = AdcmEx(error_code)
