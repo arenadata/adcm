@@ -86,6 +86,9 @@ export class AttributeService {
     ]));
   }
 
+  removeAttributes() {
+    this._attributes = null;
+  }
 
   rawAttributes() {
     let json = {};
