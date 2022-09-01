@@ -78,7 +78,7 @@ operations:
   - create: &serv-conf-gr
       what:
         type: service
-        name: service
+        name: cluster/service
       how:
         operation: create-group-config
         name: service-group
@@ -90,7 +90,7 @@ operations:
   - create: &comp-conf-gr
       what:
         type: component
-        name: component
+        name: cluster/service/component
       how:
         operation: create-group-config
         name: component-group

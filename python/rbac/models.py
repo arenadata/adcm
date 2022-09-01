@@ -64,6 +64,10 @@ class User(AuthUser):
         max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
     )
 
+    @property
+    def name(self):
+        return self.username
+
 
 class Group(AuthGroup):
     """

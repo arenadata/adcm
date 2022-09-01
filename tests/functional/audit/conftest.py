@@ -15,7 +15,7 @@
 from collections import OrderedDict
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Dict, List, Literal, NamedTuple, Optional, Union
+from typing import Callable, Dict, List, Literal, NamedTuple, Optional, Union, OrderedDict as OrderedDictType
 
 import allure
 import pytest
@@ -114,7 +114,7 @@ class CreateDeleteOperation:
 
 
 @pytest.fixture()
-def rbac_create_data(sdk_client_fs) -> OrderedDict[str, dict]:
+def rbac_create_data(sdk_client_fs) -> OrderedDictType[str, dict]:
     """Prepare data to create RBAC objects"""
     business_role = sdk_client_fs.role(name=BusinessRoles.ViewADCMSettings.value.role_name)
     adcm_user_role = sdk_client_fs.role(name='ADCM User')

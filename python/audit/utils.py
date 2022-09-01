@@ -21,6 +21,7 @@ from django.views.generic.base import View
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.request import Request
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, is_success
+from rest_framework.viewsets import ModelViewSet
 
 from audit.cases.cases import get_audit_operation_and_object
 from audit.cases.common import get_or_create_audit_obj
@@ -35,8 +36,12 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterObject, Host, HostProvider, TaskLog
-from rbac.models import Role, User
+from cm.models import Cluster, ClusterBind, ClusterObject, Host, HostProvider, TaskLog
+from rbac.endpoints.group.serializers import GroupAuditSerializer
+from rbac.endpoints.policy.serializers import PolicyAuditSerializer
+from rbac.endpoints.role.serializers import RoleAuditSerializer
+from rbac.endpoints.user.serializers import UserAuditSerializer
+from rbac.models import Group, Policy, Role, User
 
 
 def _get_view_and_request(args) -> tuple[View, Request]:
@@ -86,6 +91,70 @@ def _get_deleted_obj(view: View, request: Request, kwargs) -> Model | None:
     return deleted_obj
 
 
+def _get_object_changes(prev_data: dict, current_obj: Model) -> dict:
+    serializer_class = None
+    if isinstance(current_obj, Group):
+        serializer_class = GroupAuditSerializer
+    elif isinstance(current_obj, Role):
+        serializer_class = RoleAuditSerializer
+    elif isinstance(current_obj, User):
+        serializer_class = UserAuditSerializer
+    elif isinstance(current_obj, Policy):
+        serializer_class = PolicyAuditSerializer
+
+    if not serializer_class:
+        return {}
+
+    current_data = serializer_class(current_obj).data
+    current_fields = {k: v for k, v in current_data.items() if prev_data[k] != v}
+    if not current_fields:
+        return current_fields
+
+    object_changes = {
+        "current": current_fields,
+        "previous": {k: v for k, v in prev_data.items() if k in current_fields},
+    }
+    if object_changes["current"].get("password"):
+        object_changes["current"]["password"] = "******"
+
+    if object_changes["previous"].get("password"):
+        object_changes["previous"]["password"] = "******"
+
+    return object_changes
+
+
+def _get_obj_changes_data(view: ModelViewSet) -> tuple[dict | None, Model | None]:
+    prev_data = None
+    current_obj = None
+    serializer_class = None
+    model = None
+    if (
+        isinstance(view, ModelViewSet)
+        and view.action in {"update", "partial_update"}
+        and view.kwargs.get("pk")
+    ):
+        if view.__class__.__name__ == "GroupViewSet":
+            serializer_class = GroupAuditSerializer
+            model = Group
+        elif view.__class__.__name__ == "RoleViewSet":
+            serializer_class = RoleAuditSerializer
+            model = Role
+        elif view.__class__.__name__ == "UserViewSet":
+            serializer_class = UserAuditSerializer
+            model = User
+        elif view.__class__.__name__ == "PolicyViewSet":
+            serializer_class = PolicyAuditSerializer
+            model = Policy
+
+        if serializer_class:
+            current_obj = model.objects.filter(pk=view.kwargs["pk"]).first()
+            prev_data = serializer_class(model.objects.filter(pk=view.kwargs["pk"]).first()).data
+            if current_obj:
+                prev_data = serializer_class(current_obj).data
+
+    return prev_data, current_obj
+
+
 def audit(func):
     # pylint: disable=too-many-statements
     @wraps(func)
@@ -95,16 +164,21 @@ def audit(func):
         audit_operation: AuditOperation
         audit_object: AuditObject
         operation_name: str
-        view: View
+        view: View | ModelViewSet
         request: Request
+        object_changes: dict
 
         error = None
         view, request = _get_view_and_request(args=args)
 
         if request.method == "DELETE":
             deleted_obj = _get_deleted_obj(view=view, request=request, kwargs=kwargs)
+            if "bind_id" in kwargs:
+                deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
         else:
             deleted_obj = None
+
+        prev_data, current_obj = _get_obj_changes_data(view=view)
 
         try:
             res = func(*args, **kwargs)
@@ -140,6 +214,9 @@ def audit(func):
                 if "service_id" in kwargs:
                     deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
 
+                if "bind_id" in kwargs:
+                    deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
+
             if (
                 getattr(exc, "msg", None)
                 and "django model doesn't has __error_code__ attribute" in exc.msg
@@ -150,10 +227,11 @@ def audit(func):
             if not deleted_obj:
                 status_code = exc.status_code
             else:  # when denied returns 404 from PermissionListMixin
-                if getattr(exc, "msg", None) and (
+                if getattr(exc, "msg", None) and (  # pylint: disable=too-many-boolean-expressions
                     "There is host" in exc.msg
                     or "belong to cluster" in exc.msg
                     or "of bundle" in exc.msg
+                    or ("host doesn't exist" in exc.msg and not isinstance(deleted_obj, Host))
                 ):
                     status_code = error.status_code
                 else:
@@ -173,7 +251,11 @@ def audit(func):
             deleted_obj,
         )
         if audit_operation:
-            object_changes: dict = {}
+            if is_success(status_code) and prev_data:
+                current_obj.refresh_from_db()
+                object_changes = _get_object_changes(prev_data=prev_data, current_obj=current_obj)
+            else:
+                object_changes = {}
 
             if is_success(status_code):
                 operation_result = AuditLogOperationResult.Success
@@ -239,7 +321,7 @@ def make_audit_log(operation_type, result, operation_status):
         operation_result=result,
         user=system_user,
     )
-    cef_logger(audit_instance=audit_log, signature_id='Background operation', empty_resource=True)
+    cef_logger(audit_instance=audit_log, signature_id="Background operation", empty_resource=True)
 
 
 def audit_finish_task(obj, action_display_name: str, status: str) -> None:

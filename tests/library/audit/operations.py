@@ -85,7 +85,7 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         NamedOperation('delete-service', '{name} service deleted', (ObjectType.CLUSTER,)),
         NamedOperation('add-host', '{name} host added', (ObjectType.CLUSTER,)),
         NamedOperation('remove-host', '{name} host removed', (ObjectType.CLUSTER,)),
-        NamedOperation('set-hostcomponent', 'Host-component map updated', (ObjectType.CLUSTER,)),
+        NamedOperation('set-hostcomponent', 'Host-Component map updated', (ObjectType.CLUSTER,)),
         # configs
         NamedOperation(
             'set-config',  # restore is the same
@@ -258,7 +258,7 @@ def convert_to_operations(
         username = operation_data.pop('username', default_username)
         result = OperationResult(operation_data.pop('result', default_result))
         # there should be at least one
-        type_ = next(filter(is_name_of_object_type, data.keys()))
+        type_ = next(filter(is_name_of_operation_type, data.keys()))
         operation_info = data[type_]
         operation_type = OperationType(type_)
         object_ = operation_info['what']
@@ -268,8 +268,7 @@ def convert_to_operations(
                 user_id=username_id_map[username],
                 operation_type=operation_type,
                 operation_result=result,
-                # TODO implement object_changes passing in scenario
-                object_changes={},
+                object_changes=operation_info.get('changes', {}),
                 object_type=object_type,
                 object_name=object_.get('name', None),
                 username=username,
@@ -279,7 +278,7 @@ def convert_to_operations(
     return operations
 
 
-def is_name_of_object_type(name: str) -> bool:
+def is_name_of_operation_type(name: str) -> bool:
     """Check if name is one of `OperationType` names"""
     for type_ in OperationType:
         if name == type_.value:

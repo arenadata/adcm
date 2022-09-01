@@ -51,7 +51,7 @@ class TestPolicy(BaseTestCase):
         self.detail_name = "rbac:policy-detail"
         self.policy_updated_str = "Policy updated"
 
-    def check_log(
+    def check_log(  # pylint: disable=too-many-arguments
         self,
         log: AuditLog,
         obj: Policy | None,
@@ -59,6 +59,7 @@ class TestPolicy(BaseTestCase):
         operation_type: AuditLogOperationType,
         operation_result: AuditLogOperationResult,
         user: User,
+        object_changes: dict | None = None,
     ) -> None:
         if obj:
             self.assertEqual(log.audit_object.object_id, obj.pk)
@@ -68,16 +69,27 @@ class TestPolicy(BaseTestCase):
         else:
             self.assertFalse(log.audit_object)
 
+        if object_changes is None:
+            object_changes = {}
+
         self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, operation_type)
         self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.user.pk, user.pk)
-        self.assertEqual(log.object_changes, {})
+        self.assertEqual(log.object_changes, object_changes)
 
     def check_log_update(
-        self, log: AuditLog, obj: Policy, operation_result: AuditLogOperationResult, user: User
+        self,
+        log: AuditLog,
+        obj: Policy,
+        operation_result: AuditLogOperationResult,
+        user: User,
+        object_changes: dict | None = None,
     ) -> None:
+        if object_changes is None:
+            object_changes = {}
+
         return self.check_log(
             log=log,
             obj=obj,
@@ -85,6 +97,7 @@ class TestPolicy(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
             operation_result=operation_result,
             user=user,
+            object_changes=object_changes,
         )
 
     def test_create(self):
@@ -175,6 +188,8 @@ class TestPolicy(BaseTestCase):
         )
 
     def test_update_put(self):
+        new_test_description = "new_test_description"
+        prev_description = self.policy.description
         self.client.put(
             path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
             data={
@@ -188,12 +203,32 @@ class TestPolicy(BaseTestCase):
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
+        self.policy.refresh_from_db()
         self.check_log_update(
             log=log,
             obj=self.policy,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
+            object_changes={
+                "current": {
+                    "description": new_test_description,
+                    "role": self.role.display_name,
+                    "object": [
+                        {
+                            "id": self.cluster.pk,
+                            "name": self.cluster_name,
+                            "type": "cluster",
+                        }
+                    ],
+                    "user": [self.test_user.username],
+                },
+                "previous": {
+                    "description": prev_description,
+                    "role": "",
+                    "object": [],
+                    "user": [],
+                },
+            },
         )
 
     def test_update_put_denied(self):
@@ -223,6 +258,8 @@ class TestPolicy(BaseTestCase):
         )
 
     def test_update_patch(self):
+        new_test_description = "new_test_description"
+        prev_description = self.policy.description
         self.client.patch(
             path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
             data={
@@ -235,12 +272,32 @@ class TestPolicy(BaseTestCase):
         )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
+        self.policy.refresh_from_db()
         self.check_log_update(
             log=log,
             obj=self.policy,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
+            object_changes={
+                "current": {
+                    "description": new_test_description,
+                    "role": self.role.display_name,
+                    "object": [
+                        {
+                            "id": self.cluster.pk,
+                            "name": self.cluster_name,
+                            "type": "cluster",
+                        }
+                    ],
+                    "user": [self.test_user.username],
+                },
+                "previous": {
+                    "description": prev_description,
+                    "role": "",
+                    "object": [],
+                    "user": [],
+                },
+            },
         )
 
     def test_update_patch_denied(self):
