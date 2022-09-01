@@ -33,3 +33,4 @@ class ActionDialog:
     run = Locator(
         By.CSS_SELECTOR, "app-dialog .controls-container button[color='accent']", "Run button in action dialog"
     )
+    yes = Locator(By.XPATH, "//button//span[contains(text(), 'Yes')]", "Yes button in delete dialog")
