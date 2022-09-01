@@ -212,10 +212,6 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
 
-        response = self.client.put(this_cluster_url, {})
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        self.assertEqual(response.json()["detail"], 'Method "PUT" not allowed.')
-
         response = self.client.delete(this_cluster_url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
