@@ -14,11 +14,12 @@
 import os
 import re
 from contextlib import contextmanager, suppress
+from typing import List, Optional, Tuple
 
 import ldap
 from django.contrib.auth.models import Group as DjangoGroup
 from django.db.transaction import atomic
-from django_auth_ldap.backend import LDAPBackend
+from django_auth_ldap.backend import LDAPBackend, _LDAPUser
 from django_auth_ldap.config import LDAPSearch, MemberDNGroupType
 
 from cm.adcm_config import ansible_decrypt
@@ -46,7 +47,9 @@ def _process_extra_filter(filterstr: str) -> str:
         return filterstr
 
 
-def configure_tls(enabled, cert_filepath="", conn=None):
+def configure_tls(
+    enabled: bool, cert_filepath: str = "", conn: Optional[ldap.ldapobject.LDAPObject] = None
+) -> Optional[dict]:
     os.environ.pop(CERT_ENV_KEY, None)
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
 
@@ -70,13 +73,13 @@ def configure_tls(enabled, cert_filepath="", conn=None):
     return None
 
 
-def is_tls(ldap_uri):
+def is_tls(ldap_uri: str) -> bool:
     if "ldaps://" in ldap_uri.lower():
         return True
     return False
 
 
-def get_ldap_config():
+def get_ldap_config() -> Optional[dict]:
     adcm_object = ADCM.objects.get(id=1)
     current_configlog = ConfigLog.objects.get(
         obj_ref=adcm_object.config, id=adcm_object.config.current
@@ -86,7 +89,9 @@ def get_ldap_config():
     return None
 
 
-def get_groups_by_user_dn(user_dn, user_search, conn):
+def get_groups_by_user_dn(
+    user_dn: str, user_search: LDAPSearch, conn: ldap.ldapobject.LDAPObject
+) -> Tuple[Optional[List[str]], Optional[str]]:
     err_msg = None
     user_name_attr = get_ldap_config()["user_name_attribute"]
     replace = f"{user_name_attr}={USER_PLACEHOLDER}"
@@ -116,7 +121,7 @@ def get_groups_by_user_dn(user_dn, user_search, conn):
     return group_cns, err_msg
 
 
-def get_user_search(ldap_config):
+def get_user_search(ldap_config: dict) -> LDAPSearch:
     return LDAPSearch(
         base_dn=ldap_config["user_search_base"],
         scope=ldap.SCOPE_SUBTREE,
@@ -128,7 +133,7 @@ def get_user_search(ldap_config):
     )
 
 
-def get_ldap_default_settings():
+def get_ldap_default_settings() -> Tuple[dict, Optional[str]]:
     ldap_config = get_ldap_config()
     if ldap_config:
         configure_tls(enabled=False)
@@ -193,17 +198,19 @@ class CustomLDAPBackend(LDAPBackend):
         self.default_settings = {}
         self.is_tls = False
 
-    def authenticate_ldap_user(self, ldap_user, password):
+    def authenticate_ldap_user(
+        self, ldap_user: User | _LDAPUser, password: str
+    ) -> Optional[_LDAPUser]:
         self.default_settings, _ = get_ldap_default_settings()
         if not self.default_settings:
             return None
         self.is_tls = is_tls(self.default_settings["SERVER_URI"])
 
         try:
-            if not self.__check_user(ldap_user):
+            if not self._check_user(ldap_user):
                 return None
             # pylint: disable=protected-access
-            user_local_groups = self.__get_local_groups_by_username(ldap_user._username)
+            user_local_groups = self._get_local_groups_by_username(ldap_user._username)
             user_or_none = super().authenticate_ldap_user(ldap_user, password)
         except Exception as e:  # pylint: disable=broad-except
             log.exception(e)
@@ -212,29 +219,29 @@ class CustomLDAPBackend(LDAPBackend):
         if isinstance(user_or_none, User):
             user_or_none.type = OriginType.LDAP
             user_or_none.save()
-            self.__process_groups(user_or_none, ldap_user.dn, user_local_groups)
+            self._process_groups(user_or_none, ldap_user.dn, user_local_groups)
 
         return user_or_none
 
     @property
-    def __group_search_enabled(self):
+    def _group_search_enabled(self) -> bool:
         return "GROUP_SEARCH" in self.default_settings and bool(
             self.default_settings.get("GROUP_SEARCH")
         )
 
     @staticmethod
-    def __get_local_groups_by_username(username):
+    def _get_local_groups_by_username(username: str) -> List[Group]:
         groups = []
         with suppress(User.DoesNotExist):
             user = User.objects.get(username__iexact=username, type=OriginType.LDAP)
             groups = [g.group for g in user.groups.all() if g.group.type == OriginType.Local]
         return groups
 
-    def get_user_model(self):
+    def get_user_model(self) -> User:
         return User
 
     @contextmanager
-    def __ldap_connection(self):
+    def _ldap_connection(self) -> ldap.ldapobject.LDAPObject:
         ldap.set_option(ldap.OPT_REFERRALS, 0)
         conn = ldap.initialize(self.default_settings["SERVER_URI"])
         conn.protocol_version = ldap.VERSION3
@@ -245,16 +252,18 @@ class CustomLDAPBackend(LDAPBackend):
         finally:
             conn.unbind_s()
 
-    def __get_groups_by_group_search(self):
-        with self.__ldap_connection() as conn:
+    def _get_groups_by_group_search(self) -> List[Tuple[str, dict]]:
+        with self._ldap_connection() as conn:
             groups = self.default_settings["GROUP_SEARCH"].execute(conn)
         log.debug("Found %s groups: %s", len(groups), [i[0] for i in groups])
         return groups
 
-    def __process_groups(self, user, user_dn, additional_groups=()):
-        if not self.__group_search_enabled:
+    def _process_groups(
+        self, user: User | _LDAPUser, user_dn: str, additional_groups: List[Group] = ()
+    ) -> None:
+        if not self._group_search_enabled:
             log.warning("Group search is disabled. Getting all user groups")
-            with self.__ldap_connection() as conn:
+            with self._ldap_connection() as conn:
                 ldap_group_names, err_msg = get_groups_by_user_dn(
                     user_dn=user_dn, user_search=self.default_settings["USER_SEARCH"], conn=conn
                 )
@@ -269,8 +278,8 @@ class CustomLDAPBackend(LDAPBackend):
         ldap_groups = list(zip(user.ldap_user.group_names, user.ldap_user.group_dns))
         # ladp-backend managed auth_groups
         for group in user.groups.filter(name__in=[i[0] for i in ldap_groups]):
-            ldap_group_dn = self.__get_ldap_group_dn(group.name, ldap_groups)
-            rbac_group = self.__get_rbac_group(group, ldap_group_dn)
+            ldap_group_dn = self._get_ldap_group_dn(group.name, ldap_groups)
+            rbac_group = self._get_rbac_group(group, ldap_group_dn)
             group.user_set.remove(user)
             rbac_group.user_set.add(user)
             if group.user_set.count() == 0:
@@ -278,7 +287,7 @@ class CustomLDAPBackend(LDAPBackend):
         for g in additional_groups:
             g.user_set.add(user)
 
-    def __check_user(self, ldap_user):
+    def _check_user(self, ldap_user: _LDAPUser) -> bool:
         user_dn = ldap_user.dn
         if user_dn is None:
             return False
@@ -288,9 +297,9 @@ class CustomLDAPBackend(LDAPBackend):
             log.exception("usernames collision: `%s`", username)
             return False
 
-        if self.__group_search_enabled:
+        if self._group_search_enabled:
             group_member_attr = self.default_settings["GROUP_TYPE"].member_attr
-            for _, group_attrs in self.__get_groups_by_group_search():
+            for _, group_attrs in self._get_groups_by_group_search():
                 if user_dn.lower() in [i.lower() for i in group_attrs.get(group_member_attr, [])]:
                     break
             else:
@@ -299,14 +308,14 @@ class CustomLDAPBackend(LDAPBackend):
         return True
 
     @staticmethod
-    def __get_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
+    def _get_ldap_group_dn(group_name: str, ldap_groups: list) -> str:
         group_dn = ""
         with suppress(IndexError):
             group_dn = [i for i in ldap_groups if i[0] == group_name][0][1]
         return group_dn
 
     @staticmethod
-    def __get_rbac_group(group, ldap_group_dn):
+    def _get_rbac_group(group: Group | DjangoGroup, ldap_group_dn: str) -> Group:
         """
         Get corresponding rbac_group for auth_group or create `ldap` type rbac_group if not exists
         """
