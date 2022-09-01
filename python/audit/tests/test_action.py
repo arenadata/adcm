@@ -17,7 +17,7 @@ from unittest.mock import patch
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
+from rest_framework.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
 
 from adcm.tests.base import BaseTestCase
 from audit.models import (
@@ -70,6 +70,32 @@ class TestAction(BaseTestCase):
             finish_date=datetime.now(),
             action=self.action,
         )
+
+    def get_cluster_service_component(self) -> tuple[Cluster, ClusterObject, ServiceComponent]:
+        cluster = Cluster.objects.create(
+            prototype=Prototype.objects.create(bundle=self.bundle, type="cluster"),
+            name="test_cluster",
+        )
+        service = ClusterObject.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=self.bundle,
+                type="service",
+                display_name="test_service",
+            ),
+            cluster=cluster,
+        )
+        component = ServiceComponent.objects.create(
+            prototype=Prototype.objects.create(
+                bundle=self.bundle,
+                type="component",
+                display_name="test_component",
+            ),
+            cluster=cluster,
+            service=service,
+            config=self.config,
+        )
+
+        return cluster, service, component
 
     def check_obj_updated(  # pylint: disable=too-many-arguments
         self,
@@ -216,28 +242,7 @@ class TestAction(BaseTestCase):
         )
 
     def test_component_launch(self):
-        cluster = Cluster.objects.create(
-            prototype=Prototype.objects.create(bundle=self.bundle, type="cluster"),
-            name="test_cluster",
-        )
-        service = ClusterObject.objects.create(
-            prototype=Prototype.objects.create(
-                bundle=self.bundle,
-                type="service",
-                display_name="test_service",
-            ),
-            cluster=cluster,
-        )
-        component = ServiceComponent.objects.create(
-            prototype=Prototype.objects.create(
-                bundle=self.bundle,
-                type="component",
-                display_name="test_component",
-            ),
-            cluster=cluster,
-            service=service,
-            config=self.config,
-        )
+        cluster, service, component = self.get_cluster_service_component()
         with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
                 path=reverse(
@@ -261,4 +266,35 @@ class TestAction(BaseTestCase):
             operation_name=f"{self.action.display_name} action launched",
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
+        )
+
+    def test_component_launch_denied(self):
+        cluster, service, component = self.get_cluster_service_component()
+        with (
+            patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)),
+            self.no_rights_user_logged_in,
+        ):
+            response: Response = self.client.post(
+                path=reverse(
+                    "run-task",
+                    kwargs={
+                        "cluster_id": cluster.pk,
+                        "service_id": service.pk,
+                        "component_id": component.pk,
+                        "action_id": self.action.pk,
+                    },
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_obj_updated(
+            log=log,
+            obj_pk=component.pk,
+            obj_type=AuditObjectType.Component,
+            obj_name=f"{cluster.name}/{service.display_name}/{component.display_name}",
+            operation_name=f"{self.action.display_name} action launched",
+            operation_result=AuditLogOperationResult.Denied,
+            user=self.no_rights_user,
         )
