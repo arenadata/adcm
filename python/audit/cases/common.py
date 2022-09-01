@@ -180,6 +180,7 @@ def action_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | Non
         case (
             [obj_type, obj_pk, "action", action_pk, "run"]
             | [_, _, obj_type, obj_pk, "action", action_pk, "run"]
+            | [_, _, _, _, obj_type, obj_pk, "action", action_pk, "run"]
         ):
             audit_operation = AuditOperation(
                 name="{action_display_name} action launched",
