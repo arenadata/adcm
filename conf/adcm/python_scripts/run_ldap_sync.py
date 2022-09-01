@@ -45,16 +45,16 @@ class SyncLDAP:
         self._conn = None
 
     @property
-    def conn(self):
+    def conn(self) -> ldap.ldapobject.LDAPObject:
         if self._conn is None:
             self._conn = self._bind()
         return self._conn
 
     @property
-    def _group_search_configured(self):
+    def _group_search_configured(self) -> bool:
         return "GROUP_SEARCH" in self.settings and bool(self.settings.get("GROUP_SEARCH"))
 
-    def _bind(self):
+    def _bind(self) -> ldap.ldapobject.LDAPObject:
         try:
             ldap.set_option(ldap.OPT_REFERRALS, 0)
             conn = ldap.initialize(self.settings["SERVER_URI"])
@@ -71,7 +71,7 @@ class SyncLDAP:
             raise
         return conn
 
-    def unbind(self):
+    def unbind(self) -> None:
         if self._conn is not None:
             self.conn.unbind_s()
             self._conn = None
@@ -87,11 +87,11 @@ class SyncLDAP:
             self._settings["DEFAULT_USER_SEARCH"] = get_user_search(get_ldap_config())
         return self._settings
 
-    def sync(self):
+    def sync(self) -> None:
         ldap_groups = self.sync_groups()
         self.sync_users(ldap_groups)
 
-    def sync_groups(self):
+    def sync_groups(self) -> list:
         """Synchronize LDAP groups with group model and delete groups which is not found in LDAP"""
         ldap_groups = []
         if self._group_search_configured:
@@ -105,7 +105,7 @@ class SyncLDAP:
             stdout_logger.info("Groups were synchronized")
         return ldap_groups
 
-    def sync_users(self, ldap_groups):
+    def sync_users(self, ldap_groups: list) -> None:
         """Synchronize LDAP users with user model and delete users which is not found in LDAP"""
         if not ldap_groups and self._group_search_configured:
             stdout_logger.info("No groups found. Aborting sync users")
@@ -125,7 +125,7 @@ class SyncLDAP:
         self._sync_ldap_users(ldap_users)
         stdout_logger.info("Users were synchronized")
 
-    def _sync_ldap_groups(self, ldap_groups):
+    def _sync_ldap_groups(self, ldap_groups: list) -> None:
         new_groups = set()
         error_names = []
         for cname, ldap_attributes in ldap_groups:
@@ -156,7 +156,7 @@ class SyncLDAP:
         msg += f"Couldn't synchronize groups: {error_names}\n" if error_names else ""
         log.debug(msg)
 
-    def _sync_ldap_users(self, ldap_users):
+    def _sync_ldap_users(self, ldap_users: list) -> None:
         ldap_usernames = set()
         error_names = []
         for cname, ldap_attributes in ldap_users:
@@ -230,7 +230,7 @@ class SyncLDAP:
         msg += f"Couldn't synchronize users: {error_names}\n" if error_names else ""
         log.debug(msg)
 
-    def _process_user_ldap_groups(self, user, user_dn):
+    def _process_user_ldap_groups(self, user: User, user_dn: str) -> None:
         ldap_group_names, err_msg = get_groups_by_user_dn(
             user_dn=user_dn,
             user_search=self.settings["DEFAULT_USER_SEARCH"],
