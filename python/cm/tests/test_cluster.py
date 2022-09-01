@@ -21,7 +21,13 @@ class TestCluster(BaseTestCase):
         self.login("admin", "admin")
         url = reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
 
-        valid_names = ["letters", "all-12 to.ge--the r", "Just cluster namE", "Another.clus-ter"]
+        valid_names = [
+            "letters",
+            "all-12 to.ge--the r",
+            "Just cluster namE",
+            "Another.clus-ter",
+            "endswithdigit4",
+        ]
         invalid_names = [
             "1starts with digit",
             "-starts with hyphen",
