@@ -37,6 +37,7 @@ from api.utils import (
     get_upgradable_func,
     hlink,
 )
+from api.validators import CLUSTER_NAME_PATTERN, CharFieldMatchValidator
 from cm.adcm_config import get_main_info
 from cm.api import add_cluster, add_hc, bind, multi_bind
 from cm.errors import AdcmEx
@@ -114,6 +115,26 @@ class ClusterDetailSerializer(ClusterSerializer):
     @staticmethod
     def get_status(obj):
         return get_cluster_status(obj)
+
+
+class ClusterUpdateSerializer(Serializer):
+    id = IntegerField(read_only=True)
+    name = CharField(
+        max_length=80,
+        validators=[CharFieldMatchValidator(CLUSTER_NAME_PATTERN)],
+        required=False,
+        help_text="Cluster name",
+    )
+    description = CharField(help_text="Cluster description", required=False)
+
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get("name", instance.name)
+        instance.description = validated_data.get("description", instance.description)
+        instance.save()
+        return instance
+
+    def create(self, validated_data):
+        raise RuntimeError("Wrong serializer for `create`")
 
 
 class ClusterUISerializer(ClusterDetailSerializer):
