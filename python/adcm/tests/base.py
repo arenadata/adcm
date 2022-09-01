@@ -60,10 +60,15 @@ class BaseTestCase(TestCase):
             self.test_bundle_filename,
         )
 
-    def login(self):
+    def login(self, username=None, password=None):
+        if not username:
+            username = self.test_user_username
+        if not password:
+            password = self.test_user_password
+
         response: Response = self.client.post(
             path=reverse("rbac:token"),
-            data={"username": self.test_user_username, "password": self.test_user_password},
+            data={"username": username, "password": password},
             content_type=APPLICATION_JSON,
         )
         self.client.defaults["Authorization"] = f"Token {response.data['token']}"
