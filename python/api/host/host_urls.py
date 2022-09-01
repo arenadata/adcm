@@ -17,13 +17,13 @@ from api.host.views import HostDetail, StatusList
 
 urlpatterns = [
     path(
-        '<int:host_id>/',
+        "<int:host_id>/",
         include(
             [
-                path('', HostDetail.as_view(), name='host-details'),
-                path('config/', include('api.config.urls'), {'object_type': 'host'}),
-                path('action/', include('api.action.urls'), {'object_type': 'host'}),
-                path('status/', StatusList.as_view(), name='host-status'),
+                path("", HostDetail.as_view(), name="host-details"),
+                path("config/", include("api.config.urls"), {"object_type": "host"}),
+                path("action/", include("api.action.urls"), {"object_type": "host"}),
+                path("status/", StatusList.as_view(), name="host-status"),
             ]
         ),
     ),

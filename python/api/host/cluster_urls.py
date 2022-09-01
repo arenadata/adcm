@@ -16,6 +16,6 @@ from django.urls import include, path
 from api.host.views import HostListCluster
 
 urlpatterns = [
-    path('', HostListCluster.as_view(), name='host'),
-    path('', include('api.host.host_urls')),
+    path("", HostListCluster.as_view(), name="host"),
+    path("", include("api.host.host_urls")),
 ]

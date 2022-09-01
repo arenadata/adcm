@@ -16,6 +16,6 @@ from django.urls import include, path
 from api.host.views import HostList
 
 urlpatterns = [
-    path('', HostList.as_view(), name='host'),
-    path('', include('api.host.host_urls')),
+    path("", HostList.as_view(), name="host"),
+    path("", include("api.host.host_urls")),
 ]
