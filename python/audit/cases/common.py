@@ -87,12 +87,10 @@ def get_or_create_audit_obj(
         object_id: str,
         object_name: str,
         object_type: str,
-        action_id: int | None = None,
 ) -> AuditObject:
     audit_object = AuditObject.objects.filter(
         object_id=object_id,
         object_type=object_type,
-        action_id=action_id,
     ).first()
 
     if not audit_object:
@@ -100,7 +98,6 @@ def get_or_create_audit_obj(
             object_id=object_id,
             object_name=object_name,
             object_type=object_type,
-            action_id=action_id,
         )
 
     return audit_object
@@ -200,7 +197,6 @@ def action_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | Non
                     object_id=obj_pk,
                     object_name=get_obj_name(obj=obj, obj_type=object_type),
                     object_type=object_type,
-                    action_id=action_pk,
                 )
             else:
                 audit_object = None

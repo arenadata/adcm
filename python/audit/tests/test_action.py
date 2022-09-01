@@ -197,7 +197,6 @@ class TestAction(BaseTestCase):
             object_id=self.adcm.pk,
             object_name=self.adcm_name,
             object_type=AuditObjectType.ADCM,
-            action_id=action_ids[0] + 1,
         )
         AuditLog.objects.create(
             audit_object=audit_object,
@@ -206,6 +205,7 @@ class TestAction(BaseTestCase):
             operation_result=AuditLogOperationResult.Success,
             object_changes={},
             user=self.no_rights_user,
+            action_id=action_ids[0] + 1,
         )
         with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
             self.client.post(
