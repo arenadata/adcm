@@ -1,6 +1,9 @@
 import re
 
-from rest_framework.serializers import ValidationError
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import RegexValidator
+
+from cm.errors import AdcmEx
 
 CLUSTER_NAME_PATTERN = re.compile(
     r"^[a-zA-Z]"  # starts with latin letter (upper/lower case)
@@ -9,10 +12,11 @@ CLUSTER_NAME_PATTERN = re.compile(
 )  # as a result of this pattern min_length = 2
 
 
-class CharFieldMatchValidator:
-    def __init__(self, regexp: re.Pattern):
-        self.regexp = regexp
-
+class ClusterNameRegExValidator(RegexValidator):
     def __call__(self, value):
-        if not self.regexp.match(value):
-            raise ValidationError(f"`{value}` does not match `{self.regexp.pattern}` pattern")
+        try:
+            super().__call__(self, value)
+        except DjangoValidationError as e:
+            raise AdcmEx(
+                code="CLUSTER_CONFLICT", msg=f"Name `{value}` doesn't meet requirements"
+            ) from e

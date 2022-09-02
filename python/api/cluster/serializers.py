@@ -131,7 +131,7 @@ class ClusterUpdateSerializer(Serializer):
         required=False,
         help_text="Cluster name",
     )
-    description = CharField(help_text="Cluster description", required=False)
+    description = CharField(required=False, help_text="Cluster description")
 
     def update(self, instance, validated_data):
         instance.name = validated_data.get("name", instance.name)
