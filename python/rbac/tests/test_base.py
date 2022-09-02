@@ -12,8 +12,8 @@
 
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from django.test import TestCase
 
+from adcm.tests.base import BaseTestCase
 from cm.models import Bundle, Prototype
 from rbac.models import Role
 
@@ -21,12 +21,14 @@ from rbac.models import Role
 def cook_perm(codename, model, app="cm"):
     content, _ = ContentType.objects.get_or_create(app_label=app, model=model)
     perm, _ = Permission.objects.get_or_create(codename=f"{codename}_{model}", content_type=content)
+
     return perm
 
 
 def cook_role(name, class_name, obj_type=None):
     if obj_type is None:
         obj_type = []
+
     return Role.objects.create(
         name=name,
         display_name=name,
@@ -36,7 +38,7 @@ def cook_role(name, class_name, obj_type=None):
     )
 
 
-class BaseTestCase(TestCase):  # pylint: disable=too-many-instance-attributes
+class RBACBaseTestCase(BaseTestCase):  # pylint: disable=too-many-instance-attributes
     def setUp(self) -> None:
         self.create_bundles_and_prototypes()
         self.create_permissions()
@@ -116,11 +118,13 @@ class BaseTestCase(TestCase):  # pylint: disable=too-many-instance-attributes
     def object_role(self):
         object_role = cook_role("object role", "ObjectRole")
         object_role.permissions.add(self.view_cluster_perm)
+
         return object_role
 
     def model_role(self):
         model_role = cook_role("model role", "ModelRole")
         model_role.permissions.add(self.add_host_perm)
+
         return model_role
 
     def object_role_view_perm_cluster(self):
@@ -128,6 +132,7 @@ class BaseTestCase(TestCase):  # pylint: disable=too-many-instance-attributes
         cluster_role.permissions.add(self.view_cluster_perm)
         role = cook_role("view", "ParentRole")
         role.child.add(cluster_role)
+
         return role
 
     def object_role_custom_perm_cluster_service(self):
@@ -137,6 +142,7 @@ class BaseTestCase(TestCase):  # pylint: disable=too-many-instance-attributes
         service_role.permissions.add(self.change_service_config_perm)
         role = cook_role("change_config", "ParentRole")
         role.child.add(cluster_role, service_role)
+
         return role
 
     def object_role_custom_perm_cluster_service_component(self):
@@ -148,6 +154,7 @@ class BaseTestCase(TestCase):  # pylint: disable=too-many-instance-attributes
         component_role.permissions.add(self.change_component_config_perm)
         role = cook_role("change_config", "ParentRole")
         role.child.add(cluster_role, service_role, component_role)
+
         return role
 
     def object_role_custom_perm_service_component_host(self):
@@ -159,6 +166,7 @@ class BaseTestCase(TestCase):  # pylint: disable=too-many-instance-attributes
         host_role.permissions.add(self.change_host_config_perm)
         role = cook_role("change_config", "ParentRole")
         role.child.add(service_role, component_role, host_role)
+
         return role
 
     def object_role_custom_perm_cluster_host(self):
@@ -168,6 +176,7 @@ class BaseTestCase(TestCase):  # pylint: disable=too-many-instance-attributes
         host_role.permissions.add(self.change_host_config_perm)
         role = cook_role("change_config", "ParentRole")
         role.child.add(cluster_role, host_role)
+
         return role
 
     def object_role_custom_perm_cluster_service_component_host(self):
@@ -181,6 +190,7 @@ class BaseTestCase(TestCase):  # pylint: disable=too-many-instance-attributes
         host_role.permissions.add(self.change_host_config_perm)
         role = cook_role("change_config", "ParentRole")
         role.child.add(cluster_role, service_role, component_role, host_role)
+
         return role
 
     def object_role_custom_perm_provider_host(self):
@@ -190,6 +200,7 @@ class BaseTestCase(TestCase):  # pylint: disable=too-many-instance-attributes
         host_role.permissions.add(self.change_host_config_perm)
         role = cook_role("change_config", "ParentRole")
         role.child.add(provider_role, host_role)
+
         return role
 
     def model_role_view_cluster_service_component_perm(self):
@@ -201,4 +212,5 @@ class BaseTestCase(TestCase):  # pylint: disable=too-many-instance-attributes
         component_role.permissions.add(self.view_component_perm)
         role = cook_role("view_objects", "ParentRole")
         role.child.add(cluster_role, service_role, component_role)
+
         return role
