@@ -748,7 +748,11 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
         task.unlock_affected()
         set_task_status(task, status, ctx.event)
 
-    audit_finish_task(obj=obj, action_display_name=action.display_name, status=status)
+    audit_finish_task(
+        obj=obj,
+        action_display_name=action.display_name,
+        status=status,
+    )
 
     ctx.event.send_state()
 
