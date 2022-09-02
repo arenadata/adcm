@@ -71,7 +71,12 @@
         param:
           type:
             integer
-
+    host_action:
+      <<: *action
+      host_action: true
+      display_name: Host action
+      params:
+        ansible_tags: wait, success
 
 - type: service
   name: actions_service

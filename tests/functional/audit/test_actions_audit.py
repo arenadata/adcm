@@ -17,24 +17,24 @@ from typing import Callable, Tuple, Type, Union
 import allure
 import pytest
 import requests
-from adcm_client.audit import OperationType
-from adcm_client.objects import ADCMClient, Bundle, Cluster, Job, Policy, Provider, Task, ADCM
+from adcm_client.audit import AuditOperation, ObjectType, OperationResult, OperationType
+from adcm_client.objects import ADCM, ADCMClient, Bundle, Cluster, Job, Policy, Provider, Task
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,
+    check_400,
     check_403,
     check_404,
     check_409,
     check_succeed,
     make_auth_header,
     parametrize_audit_scenario_parsing,
-    check_400,
 )
 from tests.functional.rbac.conftest import BusinessRoles as BR
 from tests.functional.rbac.conftest import create_policy
-from tests.functional.tools import AnyADCMObject, ProviderRelatedObject, ClusterRelatedObject
+from tests.functional.tools import AnyADCMObject, ClusterRelatedObject, ProviderRelatedObject
 from tests.library.audit.checkers import AuditLogChecker
 
 # pylint: disable=redefined-outer-name
@@ -199,11 +199,11 @@ class TestProviderObjectActions(RunActionTestMixin):
         _action_run_test_init(self, sdk_client_fs, new_user_client)
 
     @pytest.fixture()
-    def _add_cluster_to_host(self, cluster, provider):
+    def _add_host_to_cluster(self, cluster, provider):
         cluster.host_add(provider.host())
 
     @parametrize_audit_scenario_parsing("provider_actions.yaml", NEW_USER)
-    @pytest.mark.usefixtures("grant_view_on_cluster", "_add_cluster_to_host")
+    @pytest.mark.usefixtures("grant_view_on_cluster", "_add_host_to_cluster")
     def test_run_provider_actions(self, provider, audit_log_checker, post):
         """
         Test audit of provider objects' actions from host/provider/cluster's perspective:
@@ -216,6 +216,19 @@ class TestProviderObjectActions(RunActionTestMixin):
         self._run_host_actions(provider, post)
         audit_log_checker.set_user_map(self.client)
         audit_log_checker.check(self.client.audit_operation_list(operation_type=OperationType.UPDATE))
+
+    def test_simple_run_host_action(self, provider, cluster, sdk_client_fs):
+        """Test audit of successful launch of `host_action: true`"""
+        host = cluster.host_add(provider.host())
+        action = host.action(name='host_action')
+        url = f"{sdk_client_fs.url}/api/v1/host/{host.id}/action/{action.id}/run/"
+        check_succeed(requests.post(url, json={"config": {"param": 1}}, headers=make_auth_header(sdk_client_fs)))
+        audit_log: AuditOperation = sdk_client_fs.audit_operation_list()[0]
+        with allure.step(f"Check audit record: {audit_log}"):
+            assert audit_log.user_id == sdk_client_fs.me().id, "Incorrect used_id, admin's expected"
+            assert audit_log.object_type == ObjectType.HOST, "Incorrect object type"
+            assert audit_log.operation_name == f"{action.display_name} action launched", "Incorrect operation name"
+            assert audit_log.operation_result == OperationResult.SUCCESS, "Operation should've succeed"
 
     def _run_provider_actions(self, provider: Provider, post: Callable):
         provider_action_prefix = f"provider/{provider.id}/action/"
@@ -284,9 +297,6 @@ class TestUpgrade(RunActionTestMixin):
         )
         checker.set_user_map(self.client)
         checker.check(self.client.audit_operation_list())
-
-
-# TODO test host actions?
 
 
 class TestADCMActions:
