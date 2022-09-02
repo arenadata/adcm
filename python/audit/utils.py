@@ -32,7 +32,6 @@ from audit.models import (
     AuditLogOperationResult,
     AuditLogOperationType,
     AuditObject,
-    AuditObjectType,
     AuditOperation,
 )
 from cm.errors import AdcmEx
@@ -329,14 +328,9 @@ def audit_finish_task(obj, action_display_name: str, status: str) -> None:
     if not obj_type:
         return
 
-    if obj_type == AuditObjectType.Host:
-        obj_name = obj.fqdn
-    else:
-        obj_name = obj.name
-
     audit_object = get_or_create_audit_obj(
         object_id=obj.pk,
-        object_name=obj_name,
+        object_name=obj.name,
         object_type=obj_type,
     )
     if status == "success":

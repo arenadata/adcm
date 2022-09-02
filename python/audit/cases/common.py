@@ -83,7 +83,11 @@ def get_obj_name(obj: Model, obj_type: str) -> str:
     return obj_name
 
 
-def get_or_create_audit_obj(object_id: str, object_name: str, object_type: str) -> AuditObject:
+def get_or_create_audit_obj(
+        object_id: str,
+        object_name: str,
+        object_type: str,
+) -> AuditObject:
     audit_object = AuditObject.objects.filter(
         object_id=object_id,
         object_type=object_type,
@@ -173,6 +177,7 @@ def action_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | Non
         case (
             [obj_type, obj_pk, "action", action_pk, "run"]
             | [_, _, obj_type, obj_pk, "action", action_pk, "run"]
+            | [_, _, _, _, obj_type, obj_pk, "action", action_pk, "run"]
         ):
             audit_operation = AuditOperation(
                 name="{action_display_name} action launched",

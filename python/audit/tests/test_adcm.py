@@ -12,12 +12,11 @@
 
 
 from datetime import datetime
-from unittest.mock import patch
 
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN
+from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 
 from adcm.tests.base import APPLICATION_JSON, BaseTestCase
 from audit.models import (
@@ -26,12 +25,11 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.job import finish_task
 from cm.models import ADCM, Action, Bundle, ConfigLog, ObjectConfig, Prototype, TaskLog
 from rbac.models import User
 
 
-class TestComponent(BaseTestCase):
+class TestADCM(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -41,7 +39,10 @@ class TestComponent(BaseTestCase):
         ConfigLog.objects.create(
             obj_ref=config, config="{}", attr={"ldap_integration": {"active": True}}
         )
-        self.adcm = ADCM.objects.create(prototype=self.prototype, name="ADCM", config=config)
+        self.adcm_name = "ADCM"
+        self.adcm = ADCM.objects.create(
+            prototype=self.prototype, name=self.adcm_name, config=config
+        )
         self.action = Action.objects.create(
             display_name="test_adcm_action",
             prototype=self.prototype,
@@ -129,57 +130,4 @@ class TestComponent(BaseTestCase):
             operation_name=self.adcm_conf_updated_str,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
-        )
-
-    def test_action_launch(self):
-        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(
-                path=reverse(
-                    "run-task", kwargs={"adcm_id": self.adcm.pk, "action_id": self.action.pk}
-                )
-            )
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        self.check_adcm_updated(
-            log=log,
-            operation_name=f"{self.action.display_name} action launched",
-            operation_result=AuditLogOperationResult.Success,
-            user=self.test_user,
-        )
-
-        with patch("api.action.views.create", return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(
-                path=reverse("run-task", kwargs={"adcm_id": 999, "action_id": self.action.pk})
-            )
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        self.check_adcm_updated(
-            log=log,
-            operation_name=f"{self.action.display_name} action launched",
-            operation_result=AuditLogOperationResult.Fail,
-            user=self.test_user,
-        )
-
-    def test_action_finish_success(self):
-        finish_task(task=self.task, job=None, status="success")
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        self.check_adcm_updated(
-            log=log,
-            operation_name=f"{self.action.display_name} action completed",
-            operation_result=AuditLogOperationResult.Success,
-        )
-
-    def test_action_finish_fail(self):
-        finish_task(task=self.task, job=None, status="fail")
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        self.check_adcm_updated(
-            log=log,
-            operation_name=f"{self.action.display_name} action completed",
-            operation_result=AuditLogOperationResult.Fail,
         )
