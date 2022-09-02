@@ -12,12 +12,12 @@
   </ng-container>
   <a
     *ngSwitchCase="IMPlaceholderItemType.Cluster"
-    [routerLink]="['/cluster', placeholder.ids.cluster, 'main']"
+    [routerLink]="['/cluster', placeholder.ids.cluster, sectionByCause()]"
     class="issue"
   >{{placeholder.name}}</a>
   <a
     *ngSwitchCase="IMPlaceholderItemType.Service"
-    [routerLink]="['/cluster', placeholder.ids.cluster, 'service', placeholder.ids.service, 'main']"
+    [routerLink]="['/cluster', placeholder.ids.cluster, 'service', placeholder.ids.service, 'config']"
     class="issue"
   >{{placeholder.name}}</a>
   <a
@@ -27,12 +27,12 @@
   >{{placeholder.name}}</a>
   <a
     *ngSwitchCase="IMPlaceholderItemType.HostProvider"
-    [routerLink]="['/provider', placeholder.ids.provider, 'main']"
+    [routerLink]="['/provider', placeholder.ids.provider, 'config']"
     class="issue"
   >{{placeholder.name}} </a>
   <a
     *ngSwitchCase="IMPlaceholderItemType.Host"
-    [routerLink]="['/host', placeholder.ids.host, 'main']"
+    [routerLink]="['/host', placeholder.ids.host, 'config']"
     class="issue"
   >{{placeholder.name}}</a>
   <a
