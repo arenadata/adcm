@@ -23,7 +23,7 @@ def host_and_provider_case(
         case ["host", host_pk] | ["provider", _, "host", host_pk]:
             deleted_obj: Host
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Host.capitalize()} " f"{AuditLogOperationType.Delete}d",
+                name=f"{AuditObjectType.Host.capitalize()} {AuditLogOperationType.Delete}d",
                 operation_type=AuditLogOperationType.Delete,
             )
             object_name = None
