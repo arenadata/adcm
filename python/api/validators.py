@@ -12,11 +12,23 @@ CLUSTER_NAME_PATTERN = re.compile(
 )  # as a result of this pattern min_length = 2
 
 
-class ClusterNameRegExValidator(RegexValidator):
+class RegExValidator(RegexValidator):
+    def __init__(
+        self, regex: str | re.Pattern, error_code: str, error_msg: str = "", *args, **kwargs
+    ):
+        super().__init__(regex, *args, **kwargs)
+        self.error_code = error_code
+        self.error_msg = error_msg
+
     def __call__(self, value):
         try:
             super().__call__(self, value)
         except DjangoValidationError as e:
-            raise AdcmEx(
-                code="CLUSTER_CONFLICT", msg=f"Name `{value}` doesn't meet requirements"
-            ) from e
+            raise AdcmEx(code=self.error_code, msg=self.error_msg.format(value=value)) from e
+
+
+ClusterNameRegExValidator = RegExValidator(
+    regex=CLUSTER_NAME_PATTERN,
+    error_code="CLUSTER_CONFLICT",
+    error_msg="Name `{value}` doesn't meets requirements",
+)
