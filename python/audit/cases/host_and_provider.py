@@ -59,7 +59,7 @@ def host_and_provider_case(
 
         case ["provider", provider_pk]:
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Provider.capitalize()} " f"{AuditLogOperationType.Delete}d",
+                name=f"{AuditObjectType.Provider.capitalize()} {AuditLogOperationType.Delete}d",
                 operation_type=AuditLogOperationType.Delete,
             )
             if isinstance(deleted_obj, HostProvider):
