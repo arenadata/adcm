@@ -62,7 +62,7 @@ class TestCluster(BaseTestCase):
         super().setUp()
 
         self.bundle = Bundle.objects.create()
-        self.test_cluster_name = "test_cluster"
+        self.test_cluster_name = "test-cluster"
         self.cluster_prototype = Prototype.objects.create(bundle=self.bundle, type="cluster")
         config = ObjectConfig.objects.create(current=1, previous=1)
         ConfigLog.objects.create(obj_ref=config, config="{}")
@@ -333,7 +333,7 @@ class TestCluster(BaseTestCase):
         )
         cluster_1_response: Response = self.create_cluster(
             bundle_id=cluster_bundle_response.data["id"],
-            name="new_test_cluster_1",
+            name="new-test-cluster-1",
             prototype_id=cluster_prototype.pk,
         )
         self.create_cluster(
