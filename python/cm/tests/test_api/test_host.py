@@ -219,8 +219,6 @@ class TestHostAPI(BaseTestCase):
 
     def test_host_update_fqdn_success(self):
         new_test_fqdn = "new_test_fqdn"
-        self.host.state = "active"
-        self.host.save(update_fields=["state"])
 
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
@@ -233,6 +231,9 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(self.host.fqdn, new_test_fqdn)
 
     def test_host_update_same_fqdn_success(self):
+        self.host.state = "active"
+        self.host.save(update_fields=["state"])
+
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
             data={"fqdn": self.host.fqdn, "maintenance_mode": "on"},
@@ -242,6 +243,9 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_host_update_fqdn_created_state_fail(self):
+        self.host.state = "active"
+        self.host.save(update_fields=["state"])
+
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
             data={"fqdn": "new_test_fqdn", "maintenance_mode": "on"},
@@ -251,6 +255,9 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     def test_host_update_fqdn_has_cluster_fail(self):
+        self.host.state = "active"
+        self.host.save(update_fields=["state"])
+
         cluster = Cluster.objects.create(
             prototype=Prototype.objects.create(bundle=Bundle.objects.first(), type="cluster"),
             name="test_cluster",
@@ -268,9 +275,6 @@ class TestHostAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
 
     def test_host_update_wrong_fqdn_fail(self):
-        self.host.state = "active"
-        self.host.save(update_fields=["state"])
-
         response: Response = self.client.patch(
             path=reverse("host-details", kwargs={"host_id": self.host.pk}),
             data={"fqdn": ".new_test_fqdn", "maintenance_mode": "on"},

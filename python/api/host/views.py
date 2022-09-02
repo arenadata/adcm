@@ -275,11 +275,11 @@ class HostDetail(PermissionListMixin, DetailView):
         if (
             "fqdn" in request.data
             and request.data["fqdn"] != host.fqdn
-            and (host.cluster or host.state == "created")
+            and (host.cluster or host.state != "created")
         ):
             raise AdcmEx(
                 code="HOST_UPDATE_ERROR",
-                msg="FQDN can't be changed if cluster bound or CREATED state",
+                msg="FQDN can't be changed if cluster bound or not CREATED state",
                 http_code=HTTP_409_CONFLICT,
             )
 
