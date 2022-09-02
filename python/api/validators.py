@@ -14,7 +14,7 @@ CLUSTER_NAME_PATTERN = re.compile(
 
 class RegExValidator(RegexValidator):
     def __init__(
-        self, regex: str | re.Pattern, error_code: str, error_msg: str = "", *args, **kwargs
+        self, *args, regex: str | re.Pattern, error_code: str, error_msg: str = "", **kwargs
     ):
         super().__init__(regex, *args, **kwargs)
         self.error_code = error_code
