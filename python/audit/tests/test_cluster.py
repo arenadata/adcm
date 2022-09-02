@@ -506,7 +506,6 @@ class TestCluster(BaseTestCase):
         )
 
     def test_bind_unbind_empty_data(self):
-        cluster, _ = self.get_cluster_service_for_bind()
         self.client.post(
             path=reverse("cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
             data={},
@@ -520,7 +519,7 @@ class TestCluster(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
-            operation_name=f"Cluster bound to ",
+            operation_name="Cluster bound to ",
             operation_result=AuditLogOperationResult.Fail,
             operation_type=AuditLogOperationType.Update,
         )
