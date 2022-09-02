@@ -24,7 +24,6 @@ from audit.models import (
     AuditLog,
     AuditLogOperationResult,
     AuditLogOperationType,
-    AuditObject,
     AuditObjectType,
 )
 from cm.job import finish_task
@@ -160,71 +159,6 @@ class TestAction(BaseTestCase):
             obj_type=AuditObjectType.ADCM,
             operation_name=f"{self.action.display_name} action launched",
             operation_result=AuditLogOperationResult.Fail,
-            user=self.test_user,
-        )
-
-    def test_adcm_finish_no_user_success(self):
-        audit_object = AuditObject.objects.create(
-            object_id=self.adcm.pk,
-            object_name=self.adcm_name,
-            object_type=AuditObjectType.ADCM,
-        )
-        AuditLog.objects.create(
-            audit_object=audit_object,
-            operation_name=f"{self.action.display_name} action completed",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
-            object_changes={},
-            user=self.test_user,
-        )
-
-        finish_task(task=self.task, job=None, status="success")
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        self.check_obj_updated(
-            log=log,
-            obj_pk=self.adcm.pk,
-            obj_name=self.adcm_name,
-            obj_type=AuditObjectType.ADCM,
-            operation_name=f"{self.action.display_name} action completed",
-            operation_result=AuditLogOperationResult.Success,
-        )
-
-    def test_adcm_finish_with_user_success(self):
-        action_ids = TaskLog.objects.all().values_list("pk", flat=True).order_by("-pk")
-        audit_object = AuditObject.objects.create(
-            object_id=self.adcm.pk,
-            object_name=self.adcm_name,
-            object_type=AuditObjectType.ADCM,
-        )
-        AuditLog.objects.create(
-            audit_object=audit_object,
-            operation_name=f"{self.action.display_name} action completed",
-            operation_type=AuditLogOperationType.Update,
-            operation_result=AuditLogOperationResult.Success,
-            object_changes={},
-            user=self.no_rights_user,
-            action_id=action_ids[0] + 1,
-        )
-        with patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)):
-            self.client.post(
-                path=reverse(
-                    "run-task", kwargs={"adcm_id": self.adcm.pk, "action_id": self.action.pk}
-                )
-            )
-
-        finish_task(task=self.task, job=None, status="success")
-
-        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
-
-        self.check_obj_updated(
-            log=log,
-            obj_pk=self.adcm.pk,
-            obj_name=self.adcm_name,
-            obj_type=AuditObjectType.ADCM,
-            operation_name=f"{self.action.display_name} action completed",
-            operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
         )
 

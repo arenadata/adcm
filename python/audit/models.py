@@ -75,7 +75,6 @@ class AuditLog(models.Model):
     operation_time = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(DjangoUser, on_delete=models.CASCADE, null=True)
     object_changes = models.JSONField(default=dict)
-    action_id = models.PositiveIntegerField(null=True)
 
 
 class AuditSession(models.Model):

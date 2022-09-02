@@ -752,7 +752,6 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
         obj=obj,
         action_display_name=action.display_name,
         status=status,
-        action_id=action.pk,
     )
 
     ctx.event.send_state()
