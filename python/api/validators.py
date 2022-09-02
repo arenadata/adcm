@@ -22,7 +22,7 @@ class RegExValidator(RegexValidator):
 
     def __call__(self, value):
         try:
-            super().__call__(self, value)
+            super().__call__(value)
         except DjangoValidationError as e:
             raise AdcmEx(code=self.error_code, msg=self.error_msg.format(value=value)) from e
 
