@@ -130,9 +130,6 @@ class ClusterDetail(PermissionListMixin, DetailView):
 
     @audit
     def put(self, request, *args, **kwargs):
-        """
-        Edit cluster
-        """
         obj = self.get_object()
         serializer = self.get_serializer(obj, data=request.data, partial=False)
         return update(serializer)
