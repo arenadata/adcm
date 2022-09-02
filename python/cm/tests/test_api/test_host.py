@@ -242,7 +242,7 @@ class TestHostAPI(BaseTestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_host_update_fqdn_created_state_fail(self):
+    def test_host_update_fqdn_not_created_state_fail(self):
         self.host.state = "active"
         self.host.save(update_fields=["state"])
 
@@ -253,6 +253,7 @@ class TestHostAPI(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "HOST_UPDATE_ERROR")
 
     def test_host_update_fqdn_has_cluster_fail(self):
         self.host.state = "active"
@@ -273,6 +274,7 @@ class TestHostAPI(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "HOST_UPDATE_ERROR")
 
     def test_host_update_wrong_fqdn_fail(self):
         response: Response = self.client.patch(
@@ -281,4 +283,18 @@ class TestHostAPI(BaseTestCase):
             content_type=APPLICATION_JSON,
         )
 
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "HOST_CONFLICT")
+
+    def test_host_update_not_created_state_wrong_fqdn_fail(self):
+        self.host.state = "active"
+        self.host.save(update_fields=["state"])
+
+        response: Response = self.client.patch(
+            path=reverse("host-details", kwargs={"host_id": self.host.pk}),
+            data={"fqdn": ".new_test_fqdn", "maintenance_mode": "on"},
+            content_type=APPLICATION_JSON,
+        )
+
+        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
+        self.assertEqual(response.json()["code"], "HOST_CONFLICT")

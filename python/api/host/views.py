@@ -20,7 +20,6 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
-    HTTP_409_CONFLICT,
 )
 
 from api.base_view import DetailView, GenericUIView, PaginatedView
@@ -272,21 +271,18 @@ class HostDetail(PermissionListMixin, DetailView):
             },
             partial=partial,
         )
-        if (
-            "fqdn" in request.data
-            and request.data["fqdn"] != host.fqdn
-            and (host.cluster or host.state != "created")
-        ):
-            raise AdcmEx(
-                code="HOST_UPDATE_ERROR",
-                msg="FQDN can't be changed if cluster bound or not CREATED state",
-                http_code=HTTP_409_CONFLICT,
-            )
 
         if serializer.is_valid(raise_exception=True):
             self.__check_maintenance_mode_constraint(
                 host.maintenance_mode, serializer.validated_data["maintenance_mode"]
             )
+            if (
+                "fqdn" in request.data
+                and request.data["fqdn"] != host.fqdn
+                and (host.cluster or host.state != "created")
+            ):
+                raise AdcmEx("HOST_UPDATE_ERROR")
+
             serializer.save(**kwargs)
             load_service_map()
 

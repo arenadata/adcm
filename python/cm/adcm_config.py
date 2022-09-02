@@ -25,7 +25,7 @@ from django.conf import settings
 from django.db.utils import OperationalError
 
 from cm import config
-from cm.errors import raise_AdcmEx as err
+from cm.errors import raise_adcm_ex as err
 from cm.logger import log
 from cm.models import (
     ADCM,

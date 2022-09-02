@@ -11,13 +11,14 @@
 # limitations under the License.
 
 from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import RegexValidator
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     BooleanField,
     CharField,
     ChoiceField,
     IntegerField,
-    RegexField,
     SerializerMethodField,
 )
 from rest_framework.validators import UniqueValidator
@@ -44,16 +45,26 @@ class HostUniqueValidator(UniqueValidator):
             raise AdcmEx("HOST_CONFLICT", "duplicate host") from e
 
 
+class HostFQDNRegexValidator(RegexValidator):
+    def __call__(self, value):
+        try:
+            super().__call__(value)
+        except DjangoValidationError as e:
+            raise AdcmEx("HOST_CONFLICT", "host FQDN doesn't meet requirements") from e
+
+
 class HostSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     cluster_id = IntegerField(read_only=True)
     prototype_id = IntegerField(help_text="id of host type")
     provider_id = IntegerField()
-    fqdn = RegexField(
-        regex=settings.REGEX_HOST_FQDN,
+    fqdn = CharField(
         max_length=253,
         help_text="fully qualified domain name",
-        validators=[HostUniqueValidator(queryset=Host.objects.all())],
+        validators=[
+            HostUniqueValidator(queryset=Host.objects.all()),
+            HostFQDNRegexValidator(regex=settings.REGEX_HOST_FQDN),
+        ],
     )
     description = CharField(required=False, allow_blank=True)
     state = CharField(read_only=True)
