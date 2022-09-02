@@ -505,6 +505,26 @@ class TestCluster(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
         )
 
+    def test_bind_unbind_empty_data(self):
+        cluster, _ = self.get_cluster_service_for_bind()
+        self.client.post(
+            path=reverse("cluster-bind", kwargs={"cluster_id": self.cluster.pk}),
+            data={},
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_log(
+            log=log,
+            obj=self.cluster,
+            obj_name=self.cluster.name,
+            obj_type=AuditObjectType.Cluster,
+            operation_name=f"Cluster bound to ",
+            operation_result=AuditLogOperationResult.Fail,
+            operation_type=AuditLogOperationType.Update,
+        )
+
     def test_bind_unbind_cluster_to_cluster(self):
         cluster, _ = self.get_cluster_service_for_bind()
         self.client.post(
