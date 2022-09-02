@@ -18,7 +18,7 @@ import allure
 import pytest
 import requests
 from adcm_client.audit import OperationType
-from adcm_client.objects import ADCMClient, Bundle, Cluster, Job, Policy, Provider, Task
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Job, Policy, Provider, Task, ADCM
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.functional.audit.conftest import (
@@ -30,10 +30,11 @@ from tests.functional.audit.conftest import (
     check_succeed,
     make_auth_header,
     parametrize_audit_scenario_parsing,
+    check_400,
 )
 from tests.functional.rbac.conftest import BusinessRoles as BR
 from tests.functional.rbac.conftest import create_policy
-from tests.functional.tools import AnyADCMObject
+from tests.functional.tools import AnyADCMObject, ProviderRelatedObject, ClusterRelatedObject
 from tests.library.audit.checkers import AuditLogChecker
 
 # pylint: disable=redefined-outer-name
@@ -60,7 +61,9 @@ def provider(sdk_client_fs) -> Provider:
 
 
 @pytest.fixture()
-def build_policy(sdk_client_fs, new_user_client) -> Callable[[BR, AnyADCMObject], Policy]:
+def build_policy(
+    sdk_client_fs, new_user_client
+) -> Callable[[BR, Union[ClusterRelatedObject, ProviderRelatedObject, ADCM]], Policy]:
     """Prepare "policy builder" that grants some permission to (already created) new user"""
     user_id = new_user_client.me().id
     return lambda role, obj: create_policy(sdk_client_fs, role, [obj], [sdk_client_fs.user(id=user_id)], [])
@@ -287,7 +290,27 @@ class TestUpgrade(RunActionTestMixin):
 
 
 class TestADCMActions:
-    """TODO"""
+    """Test audit of ADCM actions"""
+
+    @parametrize_audit_scenario_parsing("adcm_actions.yaml", NEW_USER)
+    @pytest.mark.usefixtures("prepare_settings")
+    def test_adcm_actions(self, sdk_client_fs, audit_log_checker, new_user_client, build_policy):
+        """Test audit of ADCM actions"""
+        adcm = sdk_client_fs.adcm()
+        build_policy(BR.ViewADCMSettings, adcm)
+        sync_action = adcm.action(name="test_ldap_connection")
+        url = f"{sdk_client_fs.url}/api/v1/adcm/{adcm.id}/action/{sync_action.id}/run/"
+        with allure.step("Run action and get denied"):
+            check_404(requests.post(url, headers=make_auth_header(new_user_client)))
+        with allure.step("Fail to run action"):
+            check_400(
+                requests.post(url, json={"config": {"i": "doesnotexist"}}, headers=make_auth_header(sdk_client_fs))
+            )
+        with allure.step("Run action successfuly"):
+            check_succeed(requests.post(url, headers=make_auth_header(sdk_client_fs)))
+        _wait_all_finished(sdk_client_fs)
+        audit_log_checker.set_user_map(sdk_client_fs)
+        audit_log_checker.check(sdk_client_fs.audit_operation_list())
 
 
 class TestTaskCancelRestart(RunActionTestMixin):
