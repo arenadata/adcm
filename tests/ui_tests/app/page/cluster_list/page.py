@@ -199,7 +199,7 @@ class ClusterListPage(BasePageObject):
         self.wait_element_visible(ActionDialog.body)
         if disclaimer_text:
             assert self.find_element(ActionDialog.text).text == disclaimer_text, "Different text in disclaimer dialog"
-            self.find_and_click(ActionDialog.run)
+            self.find_and_click(ActionDialog.yes)
             self.wait_element_visible(ActionDialog.body)
         if config:
             for key, value in config.items():
