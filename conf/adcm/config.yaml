@@ -2,7 +2,7 @@
 
   type: adcm
   name: ADCM
-  version: 1.9
+  version: 2.0
 
   actions:
     run_ldap_sync:
@@ -176,6 +176,7 @@
           description: |
             The distinguished name (DN) of the directory object from which to search for entries. For example: "ou=Groups,dc=ad,dc=ranger-test".
           type: string
+          required: false
         - name: "group_search_filter"
           display_name: "Group search filter"
           description: |
