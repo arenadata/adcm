@@ -45,20 +45,20 @@ class TestCluster(BaseTestCase):
             response = self.client.patch(
                 path=url, data={"name": name}, content_type=APPLICATION_JSON
             )
-            assert response.status_code == status.HTTP_200_OK
-            assert response.json()["name"] == name
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.json()["name"], name)
 
             response = self.client.put(path=url, data={"name": name}, content_type=APPLICATION_JSON)
-            assert response.status_code == status.HTTP_200_OK
-            assert response.json()["name"] == name
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.json()["name"], name)
 
         for name in invalid_names:
             response = self.client.patch(
                 path=url, data={"name": name}, content_type=APPLICATION_JSON
             )
-            assert response.status_code == status.HTTP_400_BAD_REQUEST
-            assert "name" in response.json()
+            self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+            self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
 
             response = self.client.put(path=url, data={"name": name}, content_type=APPLICATION_JSON)
-            assert response.status_code == status.HTTP_400_BAD_REQUEST
-            assert "name" in response.json()
+            self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+            self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
