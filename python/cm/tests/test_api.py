@@ -159,7 +159,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_cluster(self):  # pylint: disable=too-many-statements
-        cluster_name = "test_cluster"
+        cluster_name = "test-cluster"
         cluster_url = reverse("cluster")
         self.load_bundle(self.bundle_adh_name)
         bundle_id, proto_id = self.get_cluster_proto_id()
@@ -487,7 +487,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         service_proto_id = self.get_service_proto_id()
         bundle_id, cluster_proto_id = self.get_cluster_proto_id()
 
-        cluster = "test_cluster"
+        cluster = "test-cluster"
         cluster_url = reverse("cluster")
         response = self.client.post(
             cluster_url, {"name": cluster, "prototype_id": cluster_proto_id}
