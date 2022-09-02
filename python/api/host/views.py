@@ -13,8 +13,15 @@
 from django_filters import rest_framework as drf_filters
 from guardian.mixins import PermissionListMixin
 from guardian.shortcuts import get_objects_for_user
-from rest_framework import permissions, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_409_CONFLICT,
+)
 
 from api.base_view import DetailView, GenericUIView, PaginatedView
 from api.host.serializers import (
@@ -165,7 +172,7 @@ class HostList(PermissionListMixin, PaginatedView):
 
             return create(serializer)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
 class HostListProvider(HostList):
@@ -191,9 +198,9 @@ class HostListCluster(HostList):
             check_custom_perm(request.user, "map_host_to", "cluster", cluster)
             add_host_to_cluster(cluster, host)
 
-            return Response(self.get_serializer(host).data, status=status.HTTP_201_CREATED)
+            return Response(self.get_serializer(host).data, status=HTTP_201_CREATED)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
 def check_host(host, cluster):
@@ -237,7 +244,7 @@ class HostDetail(PermissionListMixin, DetailView):
             check_custom_perm(request.user, "remove", "host", host)
             delete_host(host)
 
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=HTTP_204_NO_CONTENT)
 
     def patch(self, request, *args, **kwargs):
         return self.__update_host_object(request, *args, **kwargs)
@@ -265,6 +272,17 @@ class HostDetail(PermissionListMixin, DetailView):
             },
             partial=partial,
         )
+        if (
+            "fqdn" in request.data
+            and request.data["fqdn"] != host.fqdn
+            and (host.cluster or host.state == "created")
+        ):
+            raise AdcmEx(
+                code="HOST_UPDATE_ERROR",
+                msg="FQDN can't be changed if cluster bound or CREATED state",
+                http_code=HTTP_409_CONFLICT,
+            )
+
         if serializer.is_valid(raise_exception=True):
             self.__check_maintenance_mode_constraint(
                 host.maintenance_mode, serializer.validated_data["maintenance_mode"]
@@ -272,9 +290,9 @@ class HostDetail(PermissionListMixin, DetailView):
             serializer.save(**kwargs)
             load_service_map()
 
-            return Response(self.get_serializer(self.get_object()).data, status=status.HTTP_200_OK)
+            return Response(self.get_serializer(self.get_object()).data, status=HTTP_200_OK)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
     @staticmethod
     def __check_maintenance_mode_constraint(old_mode, new_mode):
@@ -287,7 +305,7 @@ class HostDetail(PermissionListMixin, DetailView):
 
 class StatusList(GenericUIView):
     queryset = HostComponent.objects.all()
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = StatusSerializer
 
     def get(self, request, *args, **kwargs):

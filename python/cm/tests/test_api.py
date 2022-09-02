@@ -328,7 +328,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
             },
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["desc"], "Host name is too long. Max length is 256")
+        self.assertIn("fqdn", response.json())
 
         response = self.client.post(
             host_url,

@@ -10,12 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.conf import settings
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     BooleanField,
     CharField,
     ChoiceField,
     IntegerField,
+    RegexField,
     SerializerMethodField,
 )
 from rest_framework.validators import UniqueValidator
@@ -47,7 +49,9 @@ class HostSerializer(EmptySerializer):
     cluster_id = IntegerField(read_only=True)
     prototype_id = IntegerField(help_text="id of host type")
     provider_id = IntegerField()
-    fqdn = CharField(
+    fqdn = RegexField(
+        regex=settings.REGEX_HOST_FQDN,
+        max_length=253,
         help_text="fully qualified domain name",
         validators=[HostUniqueValidator(queryset=Host.objects.all())],
     )
@@ -99,7 +103,9 @@ class HostUpdateSerializer(HostDetailSerializer):
         instance.maintenance_mode = validated_data.get(
             "maintenance_mode", instance.maintenance_mode
         )
+        instance.fqdn = validated_data.get("fqdn", instance.fqdn)
         instance.save()
+
         update_hierarchy_issues(instance.cluster)
         update_hierarchy_issues(instance.provider)
         update_issue_after_deleting()
