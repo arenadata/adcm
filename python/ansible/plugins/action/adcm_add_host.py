@@ -52,6 +52,7 @@ result:
 import sys
 
 from ansible.errors import AnsibleError
+
 from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm/python')
@@ -59,7 +60,7 @@ import adcm.init_django  # pylint: disable=unused-import
 import cm.api
 from cm.ansible_plugin import get_object_id_from_context
 from cm.errors import AdcmEx
-from cm.logger import log
+from cm.logger import logger
 
 
 class ActionModule(ActionBase):
@@ -79,7 +80,7 @@ class ActionModule(ActionBase):
         if 'description' in self._task.args:
             desc = self._task.args['description']
 
-        log.info('ansible module adcm_add_host: provider %s, fqdn %s', provider_id, fqdn)
+        logger.info('ansible module adcm_add_host: provider %s, fqdn %s', provider_id, fqdn)
 
         try:
             host = cm.api.add_provider_host(provider_id, fqdn, desc)

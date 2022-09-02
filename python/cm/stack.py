@@ -35,7 +35,7 @@ from cm.adcm_config import (
     type_is_complex,
 )
 from cm.errors import raise_AdcmEx as err
-from cm.logger import log
+from cm.logger import logger
 from cm.models import (
     StageAction,
     StagePrototype,
@@ -69,7 +69,7 @@ def save_object_definition(path, fname, conf, obj_list, bundle_hash, adcm=False)
         return err('INVALID_OBJECT_DEFINITION', msg.format(def_type, fname))
     check_object_definition(fname, conf, def_type, obj_list)
     obj = save_prototype(path, conf, def_type, bundle_hash)
-    log.info('Save definition of %s "%s" %s to stage', def_type, conf['name'], conf['version'])
+    logger.info('Save definition of %s "%s" %s to stage', def_type, conf['name'], conf['version'])
     obj_list[cook_obj_id(conf)] = fname
     return obj
 
@@ -135,9 +135,9 @@ def check_adcm_config(conf_file):
 def read_definition(conf_file, conf_type):
     if os.path.isfile(conf_file):
         conf = check_adcm_config(conf_file)
-        log.info('Read config file: "%s"', conf_file)
+        logger.info('Read config file: "%s"', conf_file)
         return conf
-    log.warning('Can not open config file: "%s"', conf_file)
+    logger.warning('Can not open config file: "%s"', conf_file)
     return {}
 
 

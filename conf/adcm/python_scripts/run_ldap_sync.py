@@ -22,7 +22,7 @@ import adcm.init_django  # pylint: disable=unused-import
 from rbac.models import User, Group, OriginType
 from rbac.ldap import _get_ldap_default_settings, configure_tls, is_tls
 from cm.errors import AdcmEx
-from cm.logger import log
+from cm.logger import logger
 from django.db import DataError, IntegrityError
 
 CERT_ENV_KEY = "LDAPTLS_CACERT"
@@ -126,7 +126,7 @@ class SyncLDAP:
             group.delete()
         msg = "Sync of groups ended successfully."
         msg += f"Couldn\'t synchronize groups: {error_names}\n" if error_names else ""
-        log.debug(msg)
+        logger.debug(msg)
 
     def _sync_ldap_users(self, ldap_users):
         ldap_usernames = set()
@@ -196,7 +196,7 @@ class SyncLDAP:
             # user.save()
         msg = "Sync of users ended successfully."
         msg += f"Couldn\'t synchronize users: {error_names}\n" if error_names else ""
-        log.debug(msg)
+        logger.debug(msg)
 
 
 if __name__ == "__main__":

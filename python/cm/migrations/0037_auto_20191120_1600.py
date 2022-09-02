@@ -13,7 +13,7 @@
 
 from django.db import migrations
 
-from cm.logger import log
+from cm.logger import logger
 
 
 def fix_task(apps, schema_editor):
@@ -28,7 +28,7 @@ def fix_task(apps, schema_editor):
         if action.prototype.type == 'service':
             if 'service' not in selector:
                 selector['service'] = task.object_id
-                log.debug('update task #%s new selector: %s', task.id, selector)
+                logger.debug('update task #%s new selector: %s', task.id, selector)
                 task.selector = selector
                 task.save()
 
@@ -47,7 +47,7 @@ def fix_job(apps, schema_editor):
         if action.prototype.type == 'service':
             if 'service' not in selector:
                 selector['service'] = task.object_id
-                log.debug('update job #%s new selector: %s', job.id, selector)
+                logger.debug('update job #%s new selector: %s', job.id, selector)
                 job.selector = selector
                 job.save()
 

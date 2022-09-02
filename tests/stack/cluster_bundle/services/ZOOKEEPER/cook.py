@@ -9,10 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from cm.logger import log
+from cm.logger import logger
 
 
 def task_generator(action):
-    log.debug("call task_generator: %s", action)
+    logger.debug("call task_generator: %s", action)
 
     return {'action'}

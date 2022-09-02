@@ -21,7 +21,7 @@ from cm.bundle import load_adcm
 from cm.config import SECRETS_FILE
 from cm.issue import update_hierarchy_issues
 from cm.job import abort_all
-from cm.logger import log
+from cm.logger import logger
 from cm.models import (
     CheckLog,
     Cluster,
@@ -49,7 +49,7 @@ def create_status_user():
     User.objects.create_superuser(username, "", password, built_in=True)
     with open(SECRETS_FILE, 'w', encoding='utf_8') as f:
         json.dump({'adcmuser': {'user': username, 'password': password}, 'token': token}, f)
-    log.info('Update secret file %s OK', SECRETS_FILE)
+    logger.info('Update secret file %s OK', SECRETS_FILE)
 
 
 def create_dummy_data():
@@ -78,13 +78,13 @@ def recheck_issues():
 
 
 def init():
-    log.info("Start initializing ADCM DB...")
+    logger.info("Start initializing ADCM DB...")
     if not User.objects.filter(username='admin').exists():
         User.objects.create_superuser('admin', 'admin@example.com', 'admin', built_in=True)
     create_status_user()
     if not User.objects.filter(username='system').exists():
         User.objects.create_superuser('system', '', None, built_in=True)
-        log.info('Create system user')
+        logger.info('Create system user')
     event = Event()
     abort_all(event)
     clear_temp_tables()
@@ -93,7 +93,7 @@ def init():
     create_dummy_data()
     drop_locks()
     recheck_issues()
-    log.info("ADCM DB is initialized")
+    logger.info("ADCM DB is initialized")
 
 
 if __name__ == '__main__':

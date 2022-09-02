@@ -21,7 +21,7 @@ from django_auth_ldap.backend import LDAPBackend
 from django_auth_ldap.config import LDAPSearch, MemberDNGroupType
 
 from cm.adcm_config import ansible_decrypt
-from cm.logger import log
+from cm.logger import logger
 from cm.models import ADCM, ConfigLog
 from rbac.models import Group, OriginType, User
 
@@ -130,7 +130,7 @@ def _get_ldap_default_settings():
             cert_filepath = ldap_config.get('tls_ca_cert_file', '')
             if not cert_filepath or not os.path.exists(cert_filepath):
                 msg = 'NO_CERT_FILE'
-                log.warning(msg)
+                logger.warning(msg)
                 return {}, msg
             connection_options = configure_tls(enabled=True, cert_filepath=cert_filepath)
             default_settings.update({'CONNECTION_OPTIONS': connection_options})
@@ -158,7 +158,7 @@ class CustomLDAPBackend(LDAPBackend):
             user_local_groups = self.__get_local_groups_by_username(ldap_user._username)
             user_or_none = super().authenticate_ldap_user(ldap_user, password)
         except Exception as e:  # pylint: disable=broad-except
-            log.exception(e)
+            logger.exception(e)
             return None
 
         if isinstance(user_or_none, User):
@@ -194,7 +194,7 @@ class CustomLDAPBackend(LDAPBackend):
     def __get_groups_by_group_search(self):
         with self.__ldap_connection() as conn:
             groups = self.default_settings['GROUP_SEARCH'].execute(conn)
-        log.debug('Found %s groups: %s', len(groups), [i[0] for i in groups])
+        logger.debug('Found %s groups: %s', len(groups), [i[0] for i in groups])
         return groups
 
     def __process_groups(self, user, additional_groups=()):
@@ -216,7 +216,7 @@ class CustomLDAPBackend(LDAPBackend):
         username = ldap_user._username  # pylint: disable=protected-access
 
         if User.objects.filter(username__iexact=username, type=OriginType.Local).exists():
-            log.exception('usernames collision: `%s`', username)
+            logger.exception('usernames collision: `%s`', username)
             return False
 
         group_member_attr = self.default_settings['GROUP_TYPE'].member_attr

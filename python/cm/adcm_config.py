@@ -26,7 +26,7 @@ from django.db.utils import OperationalError
 
 from cm import config
 from cm.errors import raise_AdcmEx as err
-from cm.logger import log
+from cm.logger import logger
 from cm.models import (
     ADCM,
     Action,
@@ -207,7 +207,7 @@ def load_social_auth():
         cl = ConfigLog.objects.get(obj_ref=adcm[0].config, id=adcm[0].config.current)
         prepare_social_auth(cl.config)
     except OperationalError as e:
-        log.error('load_social_auth error: %s', e)
+        logger.error('load_social_auth error: %s', e)
 
 
 def get_prototype_config(proto: Prototype, action: Action = None) -> Tuple[dict, dict, dict, dict]:
@@ -682,7 +682,7 @@ def check_value_unselected_field(
                     f"Value of `{k}` activatable group is different in current and new attr."
                     f" Current: ({current_attr[k]['active']}), New: ({new_attr[k]['active']})"
                 )
-                log.info(msg)
+                logger.info(msg)
                 err('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD', msg)
             check_value_unselected_field(
                 current_config[k],
@@ -710,7 +710,7 @@ def check_value_unselected_field(
                     f"Value of `{k}` field is different in current and new config."
                     f" Current: ({current_config[k]}), New: ({new_config[k]})"
                 )
-                log.info(msg)
+                logger.info(msg)
                 err('GROUP_CONFIG_CHANGE_UNSELECTED_FIELD', msg)
 
 
@@ -1024,7 +1024,7 @@ def set_object_config(obj, keys, value):
     log_value = value
     if pconf.type in SECURE_PARAM_TYPES:
         log_value = '****'
-    log.info('update %s config %s/%s to "%s"', obj_ref(obj), key, subkey, log_value)
+    logger.info('update %s config %s/%s to "%s"', obj_ref(obj), key, subkey, log_value)
     return value
 
 

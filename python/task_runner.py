@@ -25,7 +25,7 @@ from django.utils import timezone
 import adcm.init_django  # pylint: disable=unused-import
 from cm.config import CODE_DIR, LOG_DIR, RUN_DIR, Job
 from cm.job import finish_task, re_prepare_job
-from cm.logger import log
+from cm.logger import logger
 from cm.models import JobLog, LogStorage, TaskLog
 
 TASK_ID = 0
@@ -42,7 +42,7 @@ def terminate_job(task, jobs):
 
 
 def terminate_task(signum, frame):
-    log.info("cancel task #%s, signal: #%s", TASK_ID, signum)
+    logger.info("cancel task #%s, signal: #%s", TASK_ID, signum)
     task = TaskLog.objects.get(id=TASK_ID)
     jobs = JobLog.objects.filter(task_id=TASK_ID)
 
@@ -55,7 +55,7 @@ def terminate_task(signum, frame):
         time.sleep(0.5)
 
     if i == 10:
-        log.warning("no jobs running for task #%s", TASK_ID)
+        logger.warning("no jobs running for task #%s", TASK_ID)
         finish_task(task, None, Job.ABORTED)
 
     os._exit(signum)
@@ -65,21 +65,21 @@ signal.signal(signal.SIGTERM, terminate_task)
 
 
 def run_job(task_id, job_id, err_file):
-    log.debug("task run job #%s of task #%s", job_id, task_id)
+    logger.debug("task run job #%s of task #%s", job_id, task_id)
     cmd = [
         '/adcm/python/job_venv_wrapper.sh',
         TaskLog.objects.get(id=task_id).action.venv,
         os.path.join(CODE_DIR, 'job_runner.py'),
         str(job_id),
     ]
-    log.info("task run job cmd: %s", ' '.join(cmd))
+    logger.info("task run job cmd: %s", ' '.join(cmd))
     try:
         proc = subprocess.Popen(cmd, stderr=err_file)
         res = proc.wait()
 
         return res
     except Exception:  # pylint: disable=broad-except
-        log.error("exception running job %s", job_id)
+        logger.error("exception running job %s", job_id)
 
         return 1
 
@@ -96,11 +96,11 @@ def set_log_body(job):
 
 
 def run_task(task_id, args=None):
-    log.debug("task_runner.py called as: %s", sys.argv)
+    logger.debug("task_runner.py called as: %s", sys.argv)
     try:
         task = TaskLog.objects.get(id=task_id)
     except ObjectDoesNotExist:
-        log.error("no task %s", task_id)
+        logger.error("no task %s", task_id)
 
         return
 
@@ -108,21 +108,21 @@ def run_task(task_id, args=None):
     task.save()
     jobs = JobLog.objects.filter(task_id=task.id).order_by('id')
     if not jobs:
-        log.error("no jobs for task %s", task.id)
+        logger.error("no jobs for task %s", task.id)
         finish_task(task, None, Job.FAILED)
 
         return
 
     err_file = open(os.path.join(LOG_DIR, 'job_runner.err'), 'a+', encoding='utf_8')
 
-    log.info("run task #%s", task_id)
+    logger.info("run task #%s", task_id)
 
     job = None
     count = 0
     res = 0
     for job in jobs:
         if args == 'restart' and job.status == Job.SUCCESS:
-            log.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
+            logger.info('skip job #%s status "%s" of task #%s', job.id, job.status, task_id)
 
             continue
         task.refresh_from_db()
@@ -151,7 +151,7 @@ def run_task(task_id, args=None):
 
     err_file.close()
 
-    log.info("finish task #%s, ret %s", task_id, res)
+    logger.info("finish task #%s, ret %s", task_id, res)
 
 
 def do():

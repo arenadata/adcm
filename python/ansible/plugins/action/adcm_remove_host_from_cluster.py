@@ -50,6 +50,7 @@ result:
 import sys
 
 from ansible.errors import AnsibleError
+
 from ansible.plugins.action import ActionBase
 
 sys.path.append('/adcm/python')
@@ -57,7 +58,7 @@ import adcm.init_django  # pylint: disable=unused-import
 import cm.api
 from cm.ansible_plugin import get_object_id_from_context
 from cm.errors import AdcmEx
-from cm.logger import log
+from cm.logger import logger
 
 
 class ActionModule(ActionBase):
@@ -74,7 +75,9 @@ class ActionModule(ActionBase):
         fqdn = self._task.args.get('fqdn', None)
         host_id = self._task.args.get('host_id', None)
 
-        log.info('ansible module: cluster_id %s, fqdn %s, host_id: %s', cluster_id, fqdn, host_id)
+        logger.info(
+            'ansible module: cluster_id %s, fqdn %s, host_id: %s', cluster_id, fqdn, host_id
+        )
         try:
             cm.api.remove_host_from_cluster_by_id(cluster_id, fqdn, host_id)
         except AdcmEx as e:

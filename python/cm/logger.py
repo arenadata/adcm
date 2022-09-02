@@ -15,8 +15,8 @@ import os
 
 from cm import config
 
-log = logging.getLogger('adcm')
-log.setLevel(logging.DEBUG)
+logger = logging.getLogger('adcm')
+logger.setLevel(logging.DEBUG)
 
 
 def get_log_handler(fname):
@@ -28,7 +28,7 @@ def get_log_handler(fname):
     return handler
 
 
-log.addHandler(get_log_handler(config.LOG_FILE))
+logger.addHandler(get_log_handler(config.LOG_FILE))
 
 
 log_cron_task = logging.getLogger('cron_task')

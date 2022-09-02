@@ -12,7 +12,7 @@
 
 from cm.errors import AdcmEx
 from cm.errors import raise_AdcmEx as err
-from cm.logger import log
+from cm.logger import logger
 from cm.models import (
     ClusterObject,
     GroupConfig,
@@ -277,7 +277,7 @@ VARIANT_FUNCTIONS = {
 
 def get_builtin_variant(obj, func_name, args):
     if func_name not in VARIANT_FUNCTIONS:
-        log.warning('unknown variant builtin function: %s', func_name)
+        logger.warning('unknown variant builtin function: %s', func_name)
         return None
     try:
         return VARIANT_FUNCTIONS[func_name](obj, args)

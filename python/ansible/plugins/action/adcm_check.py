@@ -104,7 +104,7 @@ sys.path.append('/adcm/python')
 import adcm.init_django  # pylint: disable=unused-import
 from cm.ansible_plugin import log_check
 from cm.errors import AdcmEx
-from cm.logger import log
+from cm.logger import logger
 
 
 class ActionModule(ActionBase):
@@ -167,7 +167,7 @@ class ActionModule(ActionBase):
             'message': msg,
         }
 
-        log.debug(
+        logger.debug(
             'ansible adcm_check: %s, %s',
             ', '.join([f'{k}: {v}' for k, v in group.items() if v]),
             ', '.join([f'{k}: {v}' for k, v in check.items() if v]),
