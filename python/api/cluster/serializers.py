@@ -66,7 +66,10 @@ class ClusterSerializer(Serializer):
     prototype_id = IntegerField(help_text="ID of Cluster type")
     name = CharField(
         help_text="Cluster name",
-        validators=[ClusterUniqueValidator(queryset=Cluster.objects.all())],
+        validators=[
+            ClusterUniqueValidator(queryset=Cluster.objects.all()),
+            CharFieldMatchValidator(CLUSTER_NAME_PATTERN),
+        ],
     )
     description = CharField(help_text="Cluster description", required=False)
     state = CharField(read_only=True)
