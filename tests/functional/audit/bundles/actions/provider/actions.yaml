@@ -17,7 +17,7 @@
 
   tasks:
     - name: Pause for 30 seconds
-      ansible.builtin.pause:
+      pause:
         seconds: 30
       tags:
         - wait

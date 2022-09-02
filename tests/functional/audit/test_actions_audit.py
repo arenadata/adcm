@@ -11,13 +11,15 @@
 # limitations under the License.
 
 """Test audit of actions"""
-
-from typing import Callable
+import time
+from typing import Callable, Union
 
 import allure
 import pytest
+import requests
 from adcm_client.audit import OperationType
-from adcm_client.objects import ADCMClient, Cluster, Policy, Provider
+from adcm_client.objects import ADCMClient, Cluster, Policy, Provider, Task, Job
+from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
@@ -33,6 +35,8 @@ from tests.functional.rbac.conftest import create_policy
 from tests.functional.tools import AnyADCMObject
 
 # pylint: disable=redefined-outer-name
+
+DummyTask = type('DummyTask', (), {'id': 10000})
 
 
 @pytest.fixture()
@@ -223,6 +227,82 @@ class TestProviderObjectActions(RunActionTestMixin):
             success_action_path = f"{path}{_succeed_action_id(host)}/run"
             fail_action_path = f"{path}{_fail_action_id(host)}/run"
             self.run_actions(success_action_path, fail_action_path, post)
+
+
+class TestUpgrade:
+    """Test audit of upgrade: simple (old) and with actions (new)"""
+
+    def test_cluster_upgrade(self):
+        """Test audit of cluster's simple upgrades/upgrades with actions"""
+        raise NotImplementedError
+
+    def test_provider_upgrade(self):
+        """Test audit of provider's simple upgrades/upgrades with actions"""
+        raise NotImplementedError
+
+
+class TestADCMActions:
+    """TODO"""
+
+
+class TestTaskCancelRestart(RunActionTestMixin):
+    """Test audit of cancelling/restarting tasks with one/multi jobs"""
+
+    pytestmark = [pytest.mark.usefixtures('init', 'grant_view_on_cluster')]
+
+    @pytest.fixture()
+    def init(self, sdk_client_fs, new_user_client):
+        """Fill all utility fields for audit of actions testing"""
+        _action_run_test_init(self, sdk_client_fs, new_user_client)
+
+    @parametrize_audit_scenario_parsing("cancel_restart.yaml", {**NEW_USER, "action_display_name": "Terminate Simple"})
+    def test_task_with_one_job(self, cluster, audit_log_checker):
+        """Test audit of cancel/restart tasks with one job"""
+        task = cluster.action(name="terminatable_simple").run(**self.correct_config)
+        time.sleep(1)  # easy way to make task "cancellable"
+        self._test_task_cancel_restart(task, audit_log_checker)
+
+    @parametrize_audit_scenario_parsing("cancel_restart.yaml", {**NEW_USER, "action_display_name": "Terminate Multi"})
+    def test_task_with_multiple_jobs(self, cluster, audit_log_checker):
+        """Test audit of cancel/restart tasks with many jobs"""
+        task: Task = cluster.action(name="terminatable_multi").run(**self.correct_config)
+        second_job = self._get_job("second_step", task)
+        with allure.step("Wait for second job to start"):
+            self._wait_for_status(second_job)
+        self._test_task_cancel_restart(task, audit_log_checker)
+
+    def _test_task_cancel_restart(self, task, audit_checker):
+        with allure.step("Cancel task with result: denied, success, fail"):
+            check_404(self._cancel(task, self.unauth_creds))
+            check_succeed(self._cancel(task, self.admin_creds))
+            check_409(self._cancel(task, self.admin_creds))
+        with allure.step("Restart task with result: denied, fail, success"):
+            check_404(self._restart(task, self.unauth_creds))
+            check_409(self._restart(DummyTask(), self.admin_creds))
+            check_succeed(self._restart(task, self.admin_creds))
+        _wait_all_finished(self.client)
+        audit_checker.set_user_map(self.client)
+        audit_checker.check(self.client.audit_operation_list())
+
+    def _cancel(self, task: Union[Task, DummyTask], headers: dict):
+        url = f'{self.client.url}/api/v1/task/{task.id}/cancel/'
+        with allure.step(f"Cancel task via PUT {url}"):
+            return requests.put(url, headers=headers)
+
+    def _restart(self, task: Union[Task, DummyTask], headers: dict):
+        url = f'{self.client.url}/api/v1/task/{task.id}/restart/'
+        with allure.step(f"Restart task via PUT {url}"):
+            return requests.put(url, headers=headers)
+
+    def _get_job(self, name: str, task: Task) -> Job:
+        return next(filter(lambda j: j.display_name == name, task.job_list()))
+
+    def _wait_for_status(self, job: Job, status: str = "running", **kwargs):
+        def _wait():
+            job.reread()
+            assert job.status == status, f'Job {job.display_name} should be in status {status}'
+
+        wait_until_step_succeeds(_wait, timeout=7, period=1, **kwargs)
 
 
 def _wait_all_finished(client):
