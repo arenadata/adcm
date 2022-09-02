@@ -45,7 +45,7 @@ def _task_case(task_pk: str, action: str) -> tuple[AuditOperation, AuditObject |
         action_name = "task"
 
     audit_operation = AuditOperation(
-        name=f"{action_name} {action}ed",
+        name=f"{action_name} {action}ed".capitalize(),
         operation_type=AuditLogOperationType.Update,
     )
     audit_object = get_or_create_audit_obj(
