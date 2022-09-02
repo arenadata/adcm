@@ -124,6 +124,9 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
             '{name} configuration group deleted',
             (ObjectType.CLUSTER, ObjectType.SERVICE, ObjectType.COMPONENT),
         ),
+        # Upgrades
+        # TODO be sure this name is correct
+        NamedOperation('do-upgrade', 'Upgraded to {name}', (ObjectType.CLUSTER, ObjectType.PROVIDER)),
     )
 }
 

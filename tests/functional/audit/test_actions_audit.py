@@ -12,18 +12,19 @@
 
 """Test audit of actions"""
 import time
-from typing import Callable, Union
+from typing import Callable, Tuple, Type, Union
 
 import allure
 import pytest
 import requests
 from adcm_client.audit import OperationType
-from adcm_client.objects import ADCMClient, Cluster, Policy, Provider, Task, Job
+from adcm_client.objects import ADCMClient, Bundle, Cluster, Job, Policy, Provider, Task
 from adcm_pytest_plugin.utils import wait_until_step_succeeds
 
 from tests.functional.audit.conftest import (
     BUNDLES_DIR,
     NEW_USER,
+    check_403,
     check_404,
     check_409,
     check_succeed,
@@ -33,10 +34,11 @@ from tests.functional.audit.conftest import (
 from tests.functional.rbac.conftest import BusinessRoles as BR
 from tests.functional.rbac.conftest import create_policy
 from tests.functional.tools import AnyADCMObject
+from tests.library.audit.checkers import AuditLogChecker
 
 # pylint: disable=redefined-outer-name
 
-DummyTask = type('DummyTask', (), {'id': 10000})
+DummyTask = type("DummyTask", (), {"id": 10000})
 
 
 @pytest.fixture()
@@ -198,7 +200,7 @@ class TestProviderObjectActions(RunActionTestMixin):
         cluster.host_add(provider.host())
 
     @parametrize_audit_scenario_parsing("provider_actions.yaml", NEW_USER)
-    @pytest.mark.usefixtures('grant_view_on_cluster', '_add_cluster_to_host')
+    @pytest.mark.usefixtures("grant_view_on_cluster", "_add_cluster_to_host")
     def test_run_provider_actions(self, provider, audit_log_checker, post):
         """
         Test audit of provider objects' actions from host/provider/cluster's perspective:
@@ -229,16 +231,59 @@ class TestProviderObjectActions(RunActionTestMixin):
             self.run_actions(success_action_path, fail_action_path, post)
 
 
-class TestUpgrade:
+class TestUpgrade(RunActionTestMixin):
     """Test audit of upgrade: simple (old) and with actions (new)"""
 
-    def test_cluster_upgrade(self):
-        """Test audit of cluster's simple upgrades/upgrades with actions"""
-        raise NotImplementedError
+    SIMPLE = "Simple Upgrade"
+    SUCCEED = "Succeed Upgrade"
+    FAIL = "Fail Upgrade"
 
-    def test_provider_upgrade(self):
-        """Test audit of provider's simple upgrades/upgrades with actions"""
-        raise NotImplementedError
+    @pytest.fixture()
+    def init(self, sdk_client_fs, new_user_client):
+        """Fill all required utilities for audit of actions tests"""
+        _action_run_test_init(self, sdk_client_fs, new_user_client)
+
+    @pytest.fixture()
+    def upload_new_bundles(self, sdk_client_fs) -> Tuple[Bundle, Bundle]:
+        """Upload new versions for cluster and provider bundles"""
+        return (
+            sdk_client_fs.upload_from_fs(BUNDLES_DIR / "actions" / "new_cluster"),
+            sdk_client_fs.upload_from_fs(BUNDLES_DIR / "actions" / "new_provider"),
+        )
+
+    @pytest.mark.parametrize("parse_with_context", ["upgrade.yaml"], indirect=True)
+    @pytest.mark.parametrize("type_to_pick", [Cluster, Provider])
+    @pytest.mark.usefixtures("grant_view_on_cluster", "grant_view_on_provider", "upload_new_bundles", "init")
+    def test_upgrade(self, type_to_pick: Type, cluster, provider, parse_with_context):
+        """Test audit of cluster/provider simple upgrade/upgrade with action"""
+        if type_to_pick == Cluster:
+            obj = cluster
+        elif type_to_pick == Provider:
+            obj = provider
+        else:
+            raise ValueError("Either cluster or provider")
+        type_name = type_to_pick.__name__.lower()
+        upgrade_base = f"{self.client.url}/api/v1/{type_name}/{obj.id}/upgrade/"
+        # we can run them in for loop even though it's success, because of how bundle is written
+        for name in (self.SIMPLE, self.FAIL, self.SUCCEED):
+            upgrade = obj.upgrade(name=name)
+            url = f"{upgrade_base}{upgrade.id}/do/"
+            for headers, actual_url, check_response in (
+                (self.unauth_creds, url, check_403),
+                (self.admin_creds, f"{upgrade_base}1000/do/", check_404),
+                (self.admin_creds, url, check_succeed),
+            ):
+                with allure.step(f"Run upgrade '{name}' on {type_name} {obj.name} via POST to {actual_url}"):
+                    check_response(requests.post(actual_url, headers=headers))
+                _wait_all_finished(self.client)
+        checker = AuditLogChecker(
+            parse_with_context({"username": NEW_USER["username"], "name": obj.name, "object_type": type_name})
+        )
+        checker.set_user_map(self.client)
+        checker.check(self.client.audit_operation_list())
+
+
+# TODO test host actions?
 
 
 class TestADCMActions:
@@ -248,7 +293,7 @@ class TestADCMActions:
 class TestTaskCancelRestart(RunActionTestMixin):
     """Test audit of cancelling/restarting tasks with one/multi jobs"""
 
-    pytestmark = [pytest.mark.usefixtures('init', 'grant_view_on_cluster')]
+    pytestmark = [pytest.mark.usefixtures("init", "grant_view_on_cluster")]
 
     @pytest.fixture()
     def init(self, sdk_client_fs, new_user_client):
@@ -285,12 +330,12 @@ class TestTaskCancelRestart(RunActionTestMixin):
         audit_checker.check(self.client.audit_operation_list())
 
     def _cancel(self, task: Union[Task, DummyTask], headers: dict):
-        url = f'{self.client.url}/api/v1/task/{task.id}/cancel/'
+        url = f"{self.client.url}/api/v1/task/{task.id}/cancel/"
         with allure.step(f"Cancel task via PUT {url}"):
             return requests.put(url, headers=headers)
 
     def _restart(self, task: Union[Task, DummyTask], headers: dict):
-        url = f'{self.client.url}/api/v1/task/{task.id}/restart/'
+        url = f"{self.client.url}/api/v1/task/{task.id}/restart/"
         with allure.step(f"Restart task via PUT {url}"):
             return requests.put(url, headers=headers)
 
@@ -300,7 +345,7 @@ class TestTaskCancelRestart(RunActionTestMixin):
     def _wait_for_status(self, job: Job, status: str = "running", **kwargs):
         def _wait():
             job.reread()
-            assert job.status == status, f'Job {job.display_name} should be in status {status}'
+            assert job.status == status, f"Job {job.display_name} should be in status {status}"
 
         wait_until_step_succeeds(_wait, timeout=7, period=1, **kwargs)
 
