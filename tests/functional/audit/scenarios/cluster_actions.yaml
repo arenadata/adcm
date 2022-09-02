@@ -73,6 +73,7 @@ operations:
     result: fail
   - update: *run-fail-service-action
   - update: *complete-fail-service-action
+    result: fail
   - update: *run-succeed-service-action
   - update: *complete-succeed-service-action
   # run component actions

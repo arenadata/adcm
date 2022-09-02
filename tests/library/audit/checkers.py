@@ -74,6 +74,7 @@ class AuditLogChecker:
         Note that given audit records are sorted by `operation_time`.
         """
         sorted_audit_records = sorted(audit_records, key=lambda rec: rec.operation_time)
+        total_amount = len(sorted_audit_records)
         operations = convert_to_operations(
             self._raw_operations, self._operation_defaults.username, self._operation_defaults.result, self._user_map
         )
@@ -83,6 +84,7 @@ class AuditLogChecker:
         except AssertionError:
             self._attach_all_operations_and_expected_one(sorted_audit_records, first_expected_operation)
             raise
+        last_found_ind = -1
         last_processed_operation = None
         for i, expected_operation in enumerate(operations):
             try:
@@ -92,12 +94,15 @@ class AuditLogChecker:
                 if last_processed_operation:
                     allure.attach(
                         pprint.pformat(last_processed_operation),
-                        name=f'Last processed operation #{i}',  # not i - 1, because it's "natural" position of item
+                        # not i - 1, because it's "natural" position of item
+                        name=f'Last processed operation #{i} (as log #{last_found_ind})',
                         attachment_type=allure.attachment_type.JSON,
                     )
                 raise
             else:
                 last_processed_operation = expected_operation
+                # last_found_ind can't be "correctly" calculated for "one of should match"
+                last_found_ind = total_amount - len(suitable_records) - 1
 
     def set_user_map(
         self, client_: Optional[ADCMClient] = None, user_id_map_: Optional[Dict[str, int]] = None, **user_ids: int
