@@ -43,6 +43,7 @@ class TestPolicy(BaseTestCase):
             start_date=datetime.now(),
             finish_date=datetime.now(),
         )
+        self.task_restarted_str = "Task restarted"
 
     def check_log(
         self,
@@ -106,7 +107,7 @@ class TestPolicy(BaseTestCase):
 
         self.check_log(
             log=log,
-            operation_name="Task restarted",
+            operation_name=self.task_restarted_str,
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
             obj=self.adcm,
@@ -123,7 +124,7 @@ class TestPolicy(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
-            operation_name="Task restarted",
+            operation_name=self.task_restarted_str,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
             obj=self.adcm,
@@ -141,7 +142,7 @@ class TestPolicy(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
-            operation_name="Task restarted",
+            operation_name=self.task_restarted_str,
             operation_result=AuditLogOperationResult.Fail,
             user=self.test_user,
             obj=None,
