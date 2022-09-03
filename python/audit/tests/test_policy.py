@@ -23,7 +23,7 @@ from audit.models import (
     AuditLogOperationType,
     AuditObjectType,
 )
-from cm.models import Bundle, Cluster, Prototype
+from cm.models import Bundle, Cluster, HostProvider, Prototype
 from rbac.models import Policy, Role, RoleTypes, User
 
 
@@ -42,7 +42,7 @@ class TestPolicy(BaseTestCase):
             name="test_role",
             display_name="test_role",
             type=RoleTypes.role,
-            parametrized_by_type=["cluster"],
+            parametrized_by_type=["cluster", "provider"],
             module_name="rbac.roles",
             class_name="ObjectRole",
         )
@@ -50,6 +50,10 @@ class TestPolicy(BaseTestCase):
         self.list_name = "rbac:policy-list"
         self.detail_name = "rbac:policy-detail"
         self.policy_updated_str = "Policy updated"
+        self.provider = HostProvider.objects.create(
+            name="test_provider",
+            prototype=Prototype.objects.create(bundle=bundle, type="provider"),
+        )
 
     def check_log(  # pylint: disable=too-many-arguments
         self,
@@ -263,7 +267,10 @@ class TestPolicy(BaseTestCase):
         self.client.patch(
             path=reverse(self.detail_name, kwargs={"pk": self.policy.pk}),
             data={
-                "object": [{"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"}],
+                "object": [
+                    {"id": self.cluster.pk, "name": self.cluster_name, "type": "cluster"},
+                    {"id": self.provider.pk, "name": self.provider.name, "type": "provider"},
+                ],
                 "role": {"id": self.role.pk},
                 "user": [{"id": self.test_user.pk}],
                 "description": "new_test_description",
@@ -287,7 +294,12 @@ class TestPolicy(BaseTestCase):
                             "id": self.cluster.pk,
                             "name": self.cluster_name,
                             "type": "cluster",
-                        }
+                        },
+                        {
+                            "id": self.provider.pk,
+                            "name": self.provider.name,
+                            "type": "provider",
+                        },
                     ],
                     "user": [self.test_user.username],
                 },
