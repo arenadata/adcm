@@ -40,7 +40,8 @@ from cm.models import (
     PrototypeExport,
     PrototypeImport,
 )
-from rbac.models import User
+from rbac.models import Policy, Role, User
+from rbac.upgrade.role import init_roles
 
 
 class TestService(BaseTestCase):
@@ -276,6 +277,13 @@ class TestService(BaseTestCase):
         )
 
     def test_delete_denied(self):
+        init_roles()
+        role = Role.objects.get(name="View service config")
+        policy = Policy.objects.create(name="test_policy", role=role)
+        policy.user.add(self.no_rights_user)
+        policy.add_object(self.service)
+        policy.apply()
+
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
                 path=reverse("service-details", kwargs={"service_id": self.service.pk}),

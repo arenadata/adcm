@@ -15,6 +15,7 @@ from datetime import datetime
 from unittest.mock import patch
 
 from django.contrib.contenttypes.models import ContentType
+from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import HTTP_404_NOT_FOUND
 
@@ -49,21 +50,26 @@ class TestPolicy(BaseTestCase):
         operation_name: str,
         operation_result: AuditLogOperationResult,
         user: User,
+        obj: ADCM | None,
     ):
-        assert log.audit_object.object_id == self.adcm.pk
-        assert log.audit_object.object_name == self.adcm.name
-        assert log.audit_object.object_type == AuditObjectType.ADCM
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == operation_name
-        assert log.operation_type == AuditLogOperationType.Update
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        if obj:
+            self.assertEqual(log.audit_object.object_id, obj.pk)
+            self.assertEqual(log.audit_object.object_name, obj.name)
+            self.assertEqual(log.audit_object.object_type, AuditObjectType.ADCM)
+            self.assertFalse(log.audit_object.is_deleted)
+        else:
+            self.assertFalse(obj)
+
+        self.assertEqual(log.operation_name, operation_name)
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.object_changes, {})
 
     def test_cancel(self):
         with patch("api.job.views.cancel_task"):
-            self.client.put(path=f"/api/v1/task/{self.task.pk}/cancel/")
+            self.client.put(path=reverse("task-cancel", kwargs={"task_id": self.task.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -72,25 +78,29 @@ class TestPolicy(BaseTestCase):
             operation_name="Task cancelled",
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
+            obj=self.adcm,
         )
 
     def test_cancel_denied(self):
         with self.no_rights_user_logged_in:
-            response: Response = self.client.put(path=f"/api/v1/task/{self.task.pk}/cancel/")
+            response: Response = self.client.put(
+                path=reverse("task-cancel", kwargs={"task_id": self.task.pk}),
+            )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert response.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             operation_name="Task cancelled",
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
+            obj=self.adcm,
         )
 
     def test_restart(self):
         with patch("api.job.views.restart_task"):
-            self.client.put(path=f"/api/v1/task/{self.task.pk}/restart/")
+            self.client.put(path=reverse("task-restart", kwargs={"task_id": self.task.pk}))
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
@@ -99,18 +109,40 @@ class TestPolicy(BaseTestCase):
             operation_name="Task restarted",
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
+            obj=self.adcm,
         )
 
     def test_restart_denied(self):
         with self.no_rights_user_logged_in:
-            response: Response = self.client.put(path=f"/api/v1/task/{self.task.pk}/restart/")
+            response: Response = self.client.put(
+                path=reverse("task-restart", kwargs={"task_id": self.task.pk}),
+            )
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert response.status_code == HTTP_404_NOT_FOUND
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
         self.check_log(
             log=log,
             operation_name="Task restarted",
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
+            obj=self.adcm,
+        )
+
+    def test_restart_failed(self):
+        task_pks = TaskLog.objects.all().values_list("pk", flat=True).order_by("-pk")
+        with patch("api.job.views.restart_task"):
+            response: Response = self.client.put(
+                path=reverse("task-restart", kwargs={"task_id": task_pks[0] + 1}),
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.check_log(
+            log=log,
+            operation_name="Task restarted",
+            operation_result=AuditLogOperationResult.Fail,
+            user=self.test_user,
+            obj=None,
         )
