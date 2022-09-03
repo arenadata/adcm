@@ -15,8 +15,8 @@ import json
 from adwp_base.errors import AdwpEx
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from django.test import TestCase
 
+from adcm.tests.base import BaseTestCase
 from cm.models import (
     Action,
     ActionType,
@@ -30,24 +30,27 @@ from cm.models import (
 from init_db import init as init_adcm
 from rbac.models import Role, RoleTypes
 from rbac.roles import ModelRole
-from rbac.tests.test_base import BaseTestCase
+from rbac.tests.test_base import RBACBaseTestCase
 from rbac.upgrade.role import init_roles, prepare_action_roles
 
 
-class RoleModelTest(TestCase):
+class RoleModelTest(BaseTestCase):
     def test_role_class(self):
         r = Role(module_name="qwe")
         with self.assertRaises(AdwpEx) as context:
             r.get_role_obj()
-            self.assertEqual(context.exception.error_code, "ROLE_MODULE_ERROR")
+
+        self.assertEqual(context.exception.error_code, "ROLE_MODULE_ERROR")
 
         r = Role(module_name="rbac", class_name="qwe")
         with self.assertRaises(AdwpEx) as context:
             r.get_role_obj()
-            self.assertEqual(context.exception.error_code, "ROLE_CLASS_ERROR")
+
+        self.assertEqual(context.exception.error_code, "ROLE_CLASS_ERROR")
 
         r = Role(module_name="rbac.roles", class_name="ModelRole")
         obj = r.get_role_obj()
+
         self.assertTrue(isinstance(obj, ModelRole))
 
     def test_max_length(self):
@@ -55,14 +58,20 @@ class RoleModelTest(TestCase):
 
         role = Role.objects.create(name="name", class_name="class", module_name="module")
         name_max_length = role._meta.get_field("name").max_length
+
         self.assertEqual(name_max_length, 160)
+
         class_name_max_length = role._meta.get_field("class_name").max_length
+
         self.assertEqual(class_name_max_length, 32)
+
         module_name_max_length = role._meta.get_field("module_name").max_length
+
         self.assertEqual(module_name_max_length, 32)
 
     def test_default(self):
         role = Role.objects.create()
+
         self.assertEqual(role.name, "")
         self.assertEqual(role.description, "")
         self.assertFalse(role.child.exists())
@@ -106,7 +115,8 @@ class RoleModelTest(TestCase):
         r1.save()
         with self.assertRaises(AdwpEx) as e:
             r1.filter()
-            self.assertEqual(e.exception.error_code, "ROLE_FILTER_ERROR")
+
+        self.assertEqual(e.exception.error_code, "ROLE_FILTER_ERROR")
 
         r2 = Role(
             name="add",
@@ -118,7 +128,8 @@ class RoleModelTest(TestCase):
         r2.save()
         with self.assertRaises(AdwpEx) as e:
             r1.filter()
-            self.assertEqual(e.exception.error_code, "ROLE_FILTER_ERROR")
+
+        self.assertEqual(e.exception.error_code, "ROLE_FILTER_ERROR")
 
     def test_object_complex_filter(self):
         r = Role(
@@ -150,13 +161,14 @@ class RoleModelTest(TestCase):
         self.assertEqual([a1], list(r.filter()))
 
 
-class RoleFunctionalTest(BaseTestCase):
+class RoleFunctionalTestRBAC(RBACBaseTestCase):
     longMessage = False
 
     def setUp(self):
+        super().setUp()
+
         init_adcm()
         init_roles()
-        super().setUp()
 
         category = ProductCategory.objects.create(
             value="Sample Cluster",
@@ -235,91 +247,6 @@ class RoleFunctionalTest(BaseTestCase):
             prototype=self.cop_22,
             display_name="Component 2 from Service 2 Action",
         )
-
-    def test_cook_roles(self):
-        prepare_action_roles(self.bundle_1)
-        self.check_roles()
-        self.check_permission()
-
-    def check_permission(self):
-        permissions = [
-            {
-                "content_type": ContentType.objects.get_for_model(Cluster),
-                "codename": "run_action_Cluster Action",
-                "name": "Can run Cluster Action actions",
-            },
-            {
-                "content_type": ContentType.objects.get_for_model(ClusterObject),
-                "codename": "run_action_Service 1 Action",
-                "name": "Can run Service 1 Action actions",
-            },
-            {
-                "content_type": ContentType.objects.get_for_model(ClusterObject),
-                "codename": "run_action_Service 2 Action",
-                "name": "Can run Service 2 Action actions",
-            },
-            {
-                "content_type": ContentType.objects.get_for_model(ServiceComponent),
-                "codename": "run_action_Component 1 from Service 1 Action",
-                "name": "Can run Component 1 from Service 1 Action actions",
-            },
-            {
-                "content_type": ContentType.objects.get_for_model(ServiceComponent),
-                "codename": "run_action_Component 2 from Service 1 Action",
-                "name": "Can run Component 2 from Service 1 Action actions",
-            },
-            {
-                "content_type": ContentType.objects.get_for_model(ServiceComponent),
-                "codename": "run_action_Component 1 from Service 2 Action",
-                "name": "Can run Component 1 from Service 2 Action actions",
-            },
-            {
-                "content_type": ContentType.objects.get_for_model(ServiceComponent),
-                "codename": "run_action_Component 2 from Service 2 Action",
-                "name": "Can run Component 2 from Service 2 Action actions",
-            },
-        ]
-        for permission_data in permissions:
-            self.assertEqual(
-                Permission.objects.filter(**permission_data).count(),
-                1,
-                f"Permission does not exist:\n{json.dumps(permission_data, default=str, indent=2)}",
-            )
-
-    def check_roles(self):
-        roles = self.make_roles_list()
-        for role_data in roles:
-            count = Role.objects.filter(**role_data).count()
-            self.assertEqual(
-                count,
-                1,
-                f"Role does not exist or not unique: {count} !=  1\n"
-                f"{json.dumps(role_data, indent=2, default=str)}",
-            )
-            role = Role.objects.filter(**role_data).first()
-            if role == RoleTypes.business:
-                self.assertEqual(role.child.count(), 1, "Role cannot have more than one child.")
-            if role == RoleTypes.hidden:
-                self.assertFalse(role.child.exists(), "Role cannot have children.")
-
-        ca_role = Role.objects.get(name="Cluster Administrator")
-        self.assertEqual(
-            ca_role.child.filter(name="Cluster Action: Cluster Action").count(),
-            1,
-            "Cluster Action: Cluster Action role missing from base role",
-        )
-        sa_role = Role.objects.get(name="Service Administrator")
-        sa_role_count = sa_role.child.filter(
-            name__in=[
-                "Service Action: Service 1 Action",
-                "Component Action: Component 1 from Service 1 Action",
-                "Component Action: Component 2 from Service 1 Action",
-                "Service Action: Service 2 Action",
-                "Component Action: Component 1 from Service 2 Action",
-                "Component Action: Component 2 from Service 2 Action",
-            ]
-        ).count()
-        self.assertEqual(sa_role_count, 6, "Roles missing from base roles")
 
     def make_roles_list(self):
         roles = [
@@ -546,4 +473,97 @@ class RoleFunctionalTest(BaseTestCase):
                 "parametrized_by_type": ["service", "component"],
             },
         ]
+
         return roles
+
+    def test_cook_roles(self):
+        prepare_action_roles(self.bundle_1)
+
+        self.check_roles()
+        self.check_permission()
+
+    def check_permission(self):
+        permissions = [
+            {
+                "content_type": ContentType.objects.get_for_model(Cluster),
+                "codename": "run_action_Cluster Action",
+                "name": "Can run Cluster Action actions",
+            },
+            {
+                "content_type": ContentType.objects.get_for_model(ClusterObject),
+                "codename": "run_action_Service 1 Action",
+                "name": "Can run Service 1 Action actions",
+            },
+            {
+                "content_type": ContentType.objects.get_for_model(ClusterObject),
+                "codename": "run_action_Service 2 Action",
+                "name": "Can run Service 2 Action actions",
+            },
+            {
+                "content_type": ContentType.objects.get_for_model(ServiceComponent),
+                "codename": "run_action_Component 1 from Service 1 Action",
+                "name": "Can run Component 1 from Service 1 Action actions",
+            },
+            {
+                "content_type": ContentType.objects.get_for_model(ServiceComponent),
+                "codename": "run_action_Component 2 from Service 1 Action",
+                "name": "Can run Component 2 from Service 1 Action actions",
+            },
+            {
+                "content_type": ContentType.objects.get_for_model(ServiceComponent),
+                "codename": "run_action_Component 1 from Service 2 Action",
+                "name": "Can run Component 1 from Service 2 Action actions",
+            },
+            {
+                "content_type": ContentType.objects.get_for_model(ServiceComponent),
+                "codename": "run_action_Component 2 from Service 2 Action",
+                "name": "Can run Component 2 from Service 2 Action actions",
+            },
+        ]
+        for permission_data in permissions:
+            self.assertEqual(
+                Permission.objects.filter(**permission_data).count(),
+                1,
+                f"Permission does not exist:\n{json.dumps(permission_data, default=str, indent=2)}",
+            )
+
+    def check_roles(self):
+        roles = self.make_roles_list()
+        for role_data in roles:
+            count = Role.objects.filter(**role_data).count()
+
+            self.assertEqual(
+                count,
+                1,
+                f"Role does not exist or not unique: {count} !=  1\n"
+                f"{json.dumps(role_data, indent=2, default=str)}",
+            )
+
+            role = Role.objects.filter(**role_data).first()
+            if role == RoleTypes.business:
+                self.assertEqual(role.child.count(), 1, "Role cannot have more than one child.")
+
+            if role == RoleTypes.hidden:
+                self.assertFalse(role.child.exists(), "Role cannot have children.")
+
+        ca_role = Role.objects.get(name="Cluster Administrator")
+
+        self.assertEqual(
+            ca_role.child.filter(name="Cluster Action: Cluster Action").count(),
+            1,
+            "Cluster Action: Cluster Action role missing from base role",
+        )
+
+        sa_role = Role.objects.get(name="Service Administrator")
+        sa_role_count = sa_role.child.filter(
+            name__in=[
+                "Service Action: Service 1 Action",
+                "Component Action: Component 1 from Service 1 Action",
+                "Component Action: Component 2 from Service 1 Action",
+                "Service Action: Service 2 Action",
+                "Component Action: Component 1 from Service 2 Action",
+                "Component Action: Component 2 from Service 2 Action",
+            ]
+        ).count()
+
+        self.assertEqual(sa_role_count, 6, "Roles missing from base roles")

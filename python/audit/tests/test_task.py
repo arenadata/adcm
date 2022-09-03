@@ -69,7 +69,7 @@ class TestPolicy(BaseTestCase):
 
         self.check_log(
             log=log,
-            operation_name="ADCM task cancelled",
+            operation_name="Task cancelled",
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
         )
@@ -83,7 +83,7 @@ class TestPolicy(BaseTestCase):
         assert response.status_code == HTTP_404_NOT_FOUND
         self.check_log(
             log=log,
-            operation_name="ADCM task cancelled",
+            operation_name="Task cancelled",
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
         )
@@ -96,7 +96,7 @@ class TestPolicy(BaseTestCase):
 
         self.check_log(
             log=log,
-            operation_name="ADCM task restarted",
+            operation_name="Task restarted",
             operation_result=AuditLogOperationResult.Success,
             user=self.test_user,
         )
@@ -110,7 +110,7 @@ class TestPolicy(BaseTestCase):
         assert response.status_code == HTTP_404_NOT_FOUND
         self.check_log(
             log=log,
-            operation_name="ADCM task restarted",
+            operation_name="Task restarted",
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
         )

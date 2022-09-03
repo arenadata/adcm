@@ -25,7 +25,7 @@ import cm.status_api
 from adcm.settings import ADCM_VERSION
 from cm import config
 from cm.adcm_config import init_object_config, proto_ref, switch_config
-from cm.errors import raise_AdcmEx as err
+from cm.errors import raise_adcm_ex as err
 from cm.logger import log
 from cm.models import (
     ADCM,

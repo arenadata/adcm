@@ -12,36 +12,35 @@
 
 from unittest.mock import Mock, call, patch
 
-from django.test import TestCase
+from adcm.tests.base import BaseTestCase
+from cm.adcm_config import process_config
 
-import cm.adcm_config
 
-
-class TestAdcmConfig(TestCase):
-    @patch('cm.adcm_config.cook_file_type_name')
+class TestAdcmConfig(BaseTestCase):
+    @patch("cm.adcm_config.cook_file_type_name")
     def test_process_config(self, mock_cook_file_type_name):
-        mock_cook_file_type_name.return_value = 'data_from_file'
+        mock_cook_file_type_name.return_value = "data_from_file"
         obj_mock = Mock()
 
         test_data = [
-            ({'global': {'type': 'file'}}, {'global': ''}, {'global': 'data_from_file'}),
+            ({"global": {"type": "file"}}, {"global": ""}, {"global": "data_from_file"}),
             (
-                {'global': {'test': {'type': 'file'}}},
-                {'global': {'test': ''}},
-                {'global': {'test': 'data_from_file'}},
+                {"global": {"test": {"type": "file"}}},
+                {"global": {"test": ""}},
+                {"global": {"test": "data_from_file"}},
             ),
         ]
 
         for spec, conf, test_conf in test_data:
             with self.subTest(conf=conf, spec=spec):
 
-                config = cm.adcm_config.process_config(obj_mock, spec, conf)
+                config = process_config(obj_mock, spec, conf)
 
                 self.assertDictEqual(config, test_conf)
 
         mock_cook_file_type_name.assert_has_calls(
             [
-                call(obj_mock, 'global', ''),
-                call(obj_mock, 'global', 'test'),
+                call(obj_mock, "global", ""),
+                call(obj_mock, "global", "test"),
             ]
         )

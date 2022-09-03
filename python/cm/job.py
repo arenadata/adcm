@@ -27,7 +27,7 @@ from cm import adcm_config, api, config, inventory, issue, variant
 from cm.adcm_config import process_file_type
 from cm.api_context import ctx
 from cm.errors import AdcmEx
-from cm.errors import raise_AdcmEx as err
+from cm.errors import raise_adcm_ex as err
 from cm.hierarchy import Tree
 from cm.inventory import get_obj_config, process_config_and_attr
 from cm.logger import log
@@ -748,7 +748,11 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
         task.unlock_affected()
         set_task_status(task, status, ctx.event)
 
-    audit_finish_task(obj=obj, action_display_name=action.display_name, status=status)
+    audit_finish_task(
+        obj=obj,
+        action_display_name=action.display_name,
+        status=status,
+    )
 
     ctx.event.send_state()
 

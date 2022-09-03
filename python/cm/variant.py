@@ -11,7 +11,7 @@
 # limitations under the License.
 
 from cm.errors import AdcmEx
-from cm.errors import raise_AdcmEx as err
+from cm.errors import raise_adcm_ex as err
 from cm.logger import log
 from cm.models import (
     ClusterObject,
@@ -177,7 +177,7 @@ VARIANT_HOST_FUNC = {
 def var_host_solver(cluster, func_map, args):
     def check_key(key, args):
         if not isinstance(args, dict):
-            err('CONFIG_VARIANT_ERROR', 'predicte item should be a map')
+            err('CONFIG_VARIANT_ERROR', 'predicate item should be a map')
         if key not in args:
             err('CONFIG_VARIANT_ERROR', f'no "{key}" key in solver args')
 
