@@ -165,7 +165,7 @@ def cluster_case(
 
         case ["cluster", cluster_pk, "service"]:
             audit_operation = AuditOperation(
-                name="{service_display_name} service added",
+                name="service added",
                 operation_type=AuditLogOperationType.Update,
             )
 
@@ -179,9 +179,7 @@ def cluster_case(
                     service_display_name = get_service_name(service)
 
             if service_display_name:
-                audit_operation.name = audit_operation.name.format(
-                    service_display_name=service_display_name,
-                )
+                audit_operation.name = f"{service_display_name} {audit_operation.name}"
 
             obj = Cluster.objects.get(pk=cluster_pk)
             audit_object = get_or_create_audit_obj(
@@ -192,7 +190,7 @@ def cluster_case(
 
         case ["cluster", cluster_pk, "service", service_pk]:
             audit_operation = AuditOperation(
-                name="{service_display_name} service removed",
+                name="service removed",
                 operation_type=AuditLogOperationType.Update,
             )
 
@@ -207,9 +205,7 @@ def cluster_case(
                         service_display_name = get_service_name(service)
 
             if service_display_name:
-                audit_operation.name = audit_operation.name.format(
-                    service_display_name=service_display_name,
-                )
+                audit_operation.name = f"{service_display_name} {audit_operation.name}"
 
             obj = Cluster.objects.get(pk=cluster_pk)
             audit_object = get_or_create_audit_obj(

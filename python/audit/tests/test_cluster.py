@@ -924,7 +924,7 @@ class TestCluster(BaseTestCase):
             obj=cluster,
             obj_name=cluster.name,
             obj_type=AuditObjectType.Cluster,
-            operation_name="{service_display_name} service added",
+            operation_name="service added",
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Fail,
         )
