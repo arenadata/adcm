@@ -363,6 +363,13 @@ class AdminUsersPage(GeneralAdminPage):
     def filter_users_by(self, filter_name: str, filter_option_name: str):
         """Filter users"""
 
+        def click_dropdown_option():
+            for filter_option in self.find_elements(AdminUsersLocators.filter_dropdown_option):
+                if filter_option.text.lower() == filter_option_name.lower():
+                    filter_option.click()
+                    return
+            raise AssertionError(f"Filter option '{filter_option_name}' not found")
+
         self.find_and_click(AdminUsersLocators.filter_btn)
         self.wait_element_visible(AdminUsersLocators.FilterPopup.block)
         for filter_item in self.find_elements(AdminUsersLocators.FilterPopup.filter_item):
@@ -370,9 +377,7 @@ class AdminUsersPage(GeneralAdminPage):
                 filter_item.click()
         self.wait_element_visible(AdminUsersLocators.filter_dropdown_select).click()
         self.wait_element_visible(AdminUsersLocators.filter_dropdown_option)
-        for filter_option in self.find_elements(AdminUsersLocators.filter_dropdown_option):
-            if filter_option.text.lower() == filter_option_name.lower():
-                filter_option.click()
+        click_dropdown_option()
         self.wait_page_is_opened()
 
     @allure.step('Remove filter from users page')
