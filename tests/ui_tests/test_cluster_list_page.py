@@ -1507,7 +1507,7 @@ class TestClusterConfigPage:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
         check_expectations()
-        if (not is_read_only) and (not field_invisible) and not is_required:
+        if (not is_read_only) and (not field_invisible) and (not is_required) and is_default:
             _check_save_in_configs(cluster_config_page, field_type, expected["save"], is_default)
 
 
@@ -1659,7 +1659,8 @@ class TestClusterGroupConfigPage:
             config_row = cluster_config_page.config.get_config_row(field_type)
             if not cluster_config_page.group_config.is_customization_chbx_checked(config_row):
                 cluster_config_page.config.activate_group_chbx(config_row)
-            _check_save_in_configs(cluster_config_page, field_type, expected["save"], is_default)
+            if not is_required:
+                _check_save_in_configs(cluster_config_page, field_type, expected["save"], is_default)
             assert cluster_config_page.group_config.is_customization_chbx_checked(
                 cluster_config_page.config.get_config_row(field_type)
             ), f"Config field {field_type} should be checked"
@@ -1808,7 +1809,8 @@ class TestClusterGroupConfigPage:
             if field_customization:
                 if not cluster_config_page.group_config.is_customization_chbx_checked(config_row):
                     cluster_config_page.config.activate_group_chbx(config_row)
-                _check_save_in_configs(cluster_config_page, field_type, expected["save"], is_default)
+                if not is_read_only:
+                    _check_save_in_configs(cluster_config_page, field_type, expected["save"], is_default)
                 assert cluster_config_page.group_config.is_customization_chbx_checked(
                     cluster_config_page.config.get_config_row(field_type)
                 ), f"Config field {field_type} should be checked"
