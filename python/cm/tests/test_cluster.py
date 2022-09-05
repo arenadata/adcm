@@ -27,7 +27,6 @@ class TestCluster(BaseTestCase):
             "endswithdigit4",
         ]
         invalid_names = [
-            "1starts with digit",
             "-starts with hyphen",
             ".starts with dot",
             "Ends with hyphen-",
