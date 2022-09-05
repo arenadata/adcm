@@ -20,7 +20,12 @@ from django.http.response import Http404
 from django.views.generic.base import View
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.request import Request
-from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, is_success
+from rest_framework.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    is_success,
+)
 from rest_framework.viewsets import ModelViewSet
 
 from audit.cases.cases import get_audit_operation_and_object
@@ -197,7 +202,7 @@ def audit(func):
                 "doesn't exist" in exc.msg
                 or "service is not installed in specified cluster" in exc.msg
             ):
-                if "action" in exc.msg:
+                if "action_id" in kwargs:
                     # trying to run action without permission, no deleted_obj
                     force_operation_result = AuditLogOperationResult.Denied
                 else:
@@ -226,9 +231,11 @@ def audit(func):
             if (
                 getattr(exc, "msg", None)
                 and "django model doesn't has __error_code__ attribute" in exc.msg
-                and "task_id" in kwargs
             ):
-                deleted_obj = TaskLog.objects.filter(pk=kwargs["task_id"]).first()
+                if "task_id" in kwargs:
+                    deleted_obj = TaskLog.objects.filter(pk=kwargs["task_id"]).first()
+                elif "action_id" in kwargs:
+                    force_operation_result = AuditLogOperationResult.Denied
 
             if not deleted_obj:
                 status_code = exc.status_code

@@ -158,7 +158,7 @@ class TestAction(BaseTestCase):
             obj_name=self.adcm_name,
             obj_type=AuditObjectType.ADCM,
             operation_name=f"{self.action.display_name} action launched",
-            operation_result=AuditLogOperationResult.Fail,
+            operation_result=AuditLogOperationResult.Denied,
             user=self.test_user,
         )
 
