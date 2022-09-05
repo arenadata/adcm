@@ -519,7 +519,7 @@ class TestCluster(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
-            operation_name="Cluster bound to ",
+            operation_name="Cluster bound to",
             operation_result=AuditLogOperationResult.Fail,
             operation_type=AuditLogOperationType.Update,
         )
@@ -538,7 +538,7 @@ class TestCluster(BaseTestCase):
             obj=self.cluster,
             obj_name=self.cluster.name,
             obj_type=AuditObjectType.Cluster,
-            operation_name=" unbound",
+            operation_name="unbound",
             operation_result=AuditLogOperationResult.Fail,
             operation_type=AuditLogOperationType.Update,
         )

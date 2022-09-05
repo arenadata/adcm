@@ -63,7 +63,7 @@ def service_case(
             cluster_name, service_name = get_export_cluster_and_service_names(response, view)
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Service.capitalize()} "
-                f"bound to {make_export_name(cluster_name, service_name)}",
+                f"bound to {make_export_name(cluster_name, service_name)}".strip(),
                 operation_type=AuditLogOperationType.Update,
             )
 
@@ -84,7 +84,7 @@ def service_case(
                     service_name = get_service_name(deleted_obj.source_service)
 
             audit_operation = AuditOperation(
-                name=f"{make_export_name(cluster_name, service_name)} unbound",
+                name=f"{make_export_name(cluster_name, service_name)} unbound".strip(),
                 operation_type=AuditLogOperationType.Update,
             )
 

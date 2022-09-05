@@ -225,7 +225,7 @@ def cluster_case(
             cluster_name, service_name = get_export_cluster_and_service_names(response, view)
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Service.capitalize()} bound to "
-                f"{make_export_name(cluster_name, service_name)}",
+                f"{make_export_name(cluster_name, service_name)}".strip(),
                 operation_type=AuditLogOperationType.Update,
             )
             audit_object = get_or_create_audit_obj(
@@ -244,7 +244,7 @@ def cluster_case(
                     service_name = get_service_name(deleted_obj.source_service)
 
             audit_operation = AuditOperation(
-                name=f"{make_export_name(cluster_name, service_name)} unbound",
+                name=f"{make_export_name(cluster_name, service_name)} unbound".strip(),
                 operation_type=AuditLogOperationType.Update,
             )
             audit_object = get_or_create_audit_obj(
@@ -306,7 +306,7 @@ def cluster_case(
 
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Cluster.capitalize()} bound to "
-                f"{make_export_name(cluster_name, service_name)}",
+                f"{make_export_name(cluster_name, service_name)}".strip(),
                 operation_type=AuditLogOperationType.Update,
             )
             audit_object = get_or_create_audit_obj(
@@ -326,7 +326,7 @@ def cluster_case(
                     service_name = get_service_name(deleted_obj.source_service)
 
             audit_operation = AuditOperation(
-                name=f"{make_export_name(cluster_name, service_name)} unbound",
+                name=f"{make_export_name(cluster_name, service_name)} unbound".strip(),
                 operation_type=AuditLogOperationType.Update,
             )
 
