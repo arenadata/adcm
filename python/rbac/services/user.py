@@ -93,12 +93,13 @@ def update(
     password: str = Empty,
     profile: dict = Empty,
     groups: list = Empty,
+    is_active: bool = Empty,
 ) -> models.User:
     """Full or partial User update"""
     if (username is not Empty) and (username != user.username):
         raise AdwpEx('USER_UPDATE_ERROR', msg='Username could not be changed')
 
-    args = (username, first_name, last_name, email, is_superuser)
+    args = (username, first_name, last_name, email, is_superuser, is_active)
     if not partial and not all((arg is not Empty for arg in args)):
         raise AdwpEx('USER_UPDATE_ERROR', msg='Full User update with partial argset is forbidden')
 
@@ -114,6 +115,7 @@ def update(
         'email': email,
         'is_superuser': is_superuser,
         'password': password,
+        'is_active': is_active,
     }
     if user.type == models.OriginType.LDAP and any(
         (value is not Empty and getattr(user, key) != value) for key, value in names.items()
@@ -123,6 +125,7 @@ def update(
     set_not_empty_attr(user, partial, 'last_name', last_name, '')
     set_not_empty_attr(user, partial, 'email', email, '')
     set_not_empty_attr(user, partial, 'profile', profile, '')
+    set_not_empty_attr(user, partial, 'is_active', is_active, True)
     _set_password(user, password)
 
     if context_user is None or context_user.is_superuser:
@@ -143,6 +146,7 @@ def create(
     is_superuser: bool = None,
     profile: dict = None,
     groups: list = None,
+    is_active: bool = None,
 ) -> models.User:
     """Create User"""
     if is_superuser:
@@ -162,6 +166,7 @@ def create(
             last_name=last_name,
             email=email,
             profile=profile,
+            is_active=is_active,
         )
     except IntegrityError as exc:
         raise AdwpEx('USER_CREATE_ERROR', msg=f'User creation failed with error {exc}') from exc

@@ -9,12 +9,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import re
 from typing import Type, Tuple, Any
 
-from django.db import IntegrityError
 from django.db.models import Model
-from django.utils import timezone as tz
 from rest_framework import serializers
 
 
@@ -79,40 +76,3 @@ def set_not_empty_attr(obj, partial: bool, attr: str, value: Any, default: Any =
     else:
         value = value if value is not Empty else default
         setattr(obj, attr, value)
-
-
-USER_VERBOSE_DATE_FMT = '%Y-%m-%d_%H:%M:%S'
-USER_RESTORE_USERNAME_PATTERN = re.compile(
-    r'(?P<original_username>.*)(?:_\d{4}(?:-\d{2}){2}_\d{2}:\d{2}:\d{2}){2}'
-)
-
-
-def delete_user(user):
-    """mark user as inactive and set date_unjoined"""
-    now = tz.now()
-    user.date_unjoined = now
-    user.is_active = False
-    user.username = (
-        f'{user.username}_'
-        f'{user.date_joined.strftime(USER_VERBOSE_DATE_FMT)}_'
-        f'{now.strftime(USER_VERBOSE_DATE_FMT)}'
-    )
-    user.save()
-    return user
-
-
-def restore_user(user):
-    match = USER_RESTORE_USERNAME_PATTERN.match(user.username)
-    if not match or not match.group('original_username'):
-        raise RuntimeError  # TODO: replace with actual AdcmEx when this will be used
-
-    user.username = match.group('original_username')
-    user.is_active = True
-    user.date_unjoined = None
-    try:
-        user.save()
-    except IntegrityError as e:
-        if 'username' in str(e):
-            raise e  # TODO: raise AdcmEx
-        raise e
-    return user
