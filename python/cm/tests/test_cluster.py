@@ -25,6 +25,7 @@ class TestCluster(BaseTestCase):
             "Just cluster namE",
             "Another.clus-ter",
             "endswithdigit4",
+            "1startswithdigit",
         ]
         invalid_names = [
             "-starts with hyphen",
