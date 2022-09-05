@@ -161,6 +161,7 @@ def audit(func):
         # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 
         audit_operation: AuditOperation
+        force_operation_result: AuditLogOperationResult | None = None
         audit_object: AuditObject
         operation_name: str
         view: View | ModelViewSet
@@ -196,25 +197,31 @@ def audit(func):
                 "doesn't exist" in exc.msg
                 or "service is not installed in specified cluster" in exc.msg
             ):
-                _kwargs = None
-                if "cluster_id" in kwargs:
-                    _kwargs = kwargs
-                elif "cluster_id" in view.kwargs:
-                    _kwargs = view.kwargs
+                if "action" in exc.msg:
+                    # trying to run action without permission, no deleted_obj
+                    force_operation_result = AuditLogOperationResult.Denied
+                else:
+                    _kwargs = None
+                    if "cluster_id" in kwargs:
+                        _kwargs = kwargs
+                    elif "cluster_id" in view.kwargs:
+                        _kwargs = view.kwargs
 
-                if _kwargs:
-                    deleted_obj = Cluster.objects.filter(pk=_kwargs["cluster_id"]).first()
+                    if _kwargs:
+                        deleted_obj = Cluster.objects.filter(pk=_kwargs["cluster_id"]).first()
 
-                if "provider_id" in kwargs and "host_id" in kwargs:
-                    deleted_obj = Host.objects.filter(pk=kwargs["host_id"]).first()
-                elif "provider_id" in view.kwargs:
-                    deleted_obj = HostProvider.objects.filter(pk=view.kwargs["provider_id"]).first()
+                    if "provider_id" in kwargs and "host_id" in kwargs:
+                        deleted_obj = Host.objects.filter(pk=kwargs["host_id"]).first()
+                    elif "provider_id" in view.kwargs:
+                        deleted_obj = HostProvider.objects.filter(
+                            pk=view.kwargs["provider_id"]
+                        ).first()
 
-                if "service_id" in kwargs:
-                    deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
+                    if "service_id" in kwargs:
+                        deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
 
-                if "bind_id" in kwargs:
-                    deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
+                    if "bind_id" in kwargs:
+                        deleted_obj = ClusterBind.objects.filter(pk=kwargs["bind_id"]).first()
 
             if (
                 getattr(exc, "msg", None)
@@ -256,12 +263,15 @@ def audit(func):
             else:
                 object_changes = {}
 
-            if is_success(status_code):
-                operation_result = AuditLogOperationResult.Success
-            elif status_code == HTTP_403_FORBIDDEN:
-                operation_result = AuditLogOperationResult.Denied
+            if force_operation_result is not None:
+                operation_result = force_operation_result
             else:
-                operation_result = AuditLogOperationResult.Fail
+                if is_success(status_code):
+                    operation_result = AuditLogOperationResult.Success
+                elif status_code == HTTP_403_FORBIDDEN:
+                    operation_result = AuditLogOperationResult.Denied
+                else:
+                    operation_result = AuditLogOperationResult.Fail
 
             if isinstance(view.request.user, DjangoUser):
                 user = view.request.user
