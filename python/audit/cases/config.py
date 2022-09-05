@@ -3,20 +3,10 @@ from django.db.models import Model
 from django.views import View
 from rest_framework.response import Response
 
+from adcm.utils import get_obj_type
 from audit.cases.common import get_obj_name, get_or_create_audit_obj
 from audit.models import AuditLogOperationType, AuditObject, AuditOperation
 from cm.models import GroupConfig, Host, ObjectConfig
-
-
-def get_obj_type(obj_type: str) -> str:
-    if obj_type == "cluster object":
-        return "service"
-    elif obj_type == "service component":
-        return "component"
-    elif obj_type == "host provider":
-        return "provider"
-
-    return obj_type
 
 
 # pylint: disable-next=too-many-locals,too-many-branches,too-many-statements

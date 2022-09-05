@@ -22,7 +22,7 @@ from rest_framework.fields import (
 from rest_framework.relations import HyperlinkedIdentityField, PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
 
-from audit.cases.config import get_obj_type
+from adcm.utils import get_obj_type
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 from rbac.models import Group, Policy, Role, RoleTypes, User
 from rbac.utils import BaseRelatedSerializer

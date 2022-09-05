@@ -84,6 +84,8 @@ def _get_deleted_obj(view: View, request: Request, kwargs) -> Model | None:
     except PermissionDenied:
         if "cluster_id" in kwargs:
             deleted_obj = Cluster.objects.filter(pk=kwargs["cluster_id"]).first()
+        elif "service_id" in kwargs:
+            deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
         else:
             deleted_obj = None
 
