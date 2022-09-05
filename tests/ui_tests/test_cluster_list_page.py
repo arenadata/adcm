@@ -1494,6 +1494,8 @@ class TestClusterConfigPage:
                                 if is_advanced:
                                     cluster_config_page.config.click_on_advanced()
                                 cluster_config_page.config.expand_or_close_group(group_name, expand=True)
+                            if field_type == "password":
+                                cluster_config_page.config.reset_to_default(config_item)
                             else:
                                 cluster_config_page.config.click_on_advanced()
                                 cluster_config_page.config.click_on_advanced()
