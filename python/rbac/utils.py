@@ -19,7 +19,9 @@ from rest_framework import serializers
 class BaseRelatedSerializer(serializers.Serializer):
     def to_internal_value(self, data):
         data = super().to_internal_value(data)
-        return data['id']
+        if "id" not in data:
+            raise serializers.ValidationError("This field may not be empty.")
+        return data["id"]
 
 
 def update_m2m_field(m2m, instances) -> None:
