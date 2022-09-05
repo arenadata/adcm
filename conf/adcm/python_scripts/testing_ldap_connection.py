@@ -19,14 +19,14 @@ os.environ["PYTHONPATH"] = "/adcm/python/"
 sys.path.append("/adcm/python/")
 
 import adcm.init_django  # pylint: disable=unused-import
-from rbac.ldap import _get_ldap_default_settings, configure_tls, is_tls
+from rbac.ldap import get_ldap_default_settings, configure_tls, is_tls
 from cm.errors import AdcmEx
 
 CERT_ENV_KEY = 'LDAPTLS_CACERT'
 
 
-def bind():
-    ldap_config, error_code = _get_ldap_default_settings()
+def bind() -> None:
+    ldap_config, error_code = get_ldap_default_settings()
     if error_code is not None:
         error = AdcmEx(error_code)
         sys.stdout.write(error.msg)
