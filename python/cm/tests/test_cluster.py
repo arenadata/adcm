@@ -18,9 +18,7 @@ class TestCluster(BaseTestCase):
         self.cluster = Cluster.objects.create(name="test_cluster_name", prototype=self.prototype)
 
     def test_cluster_name_validation(self):
-        self.login("admin", "admin")
         url = reverse("cluster-details", kwargs={"cluster_id": self.cluster.pk})
-
         valid_names = [
             "letters",
             "all-12 to.ge--the r",
@@ -41,24 +39,29 @@ class TestCluster(BaseTestCase):
             "Use-forbidden!chars",
         ]
 
-        for name in valid_names:
-            response = self.client.patch(
-                path=url, data={"name": name}, content_type=APPLICATION_JSON
-            )
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertEqual(response.json()["name"], name)
+        with self.another_user_loged_in("admin", "admin"):
+            for name in valid_names:
+                response = self.client.patch(
+                    path=url, data={"name": name}, content_type=APPLICATION_JSON
+                )
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+                self.assertEqual(response.json()["name"], name)
 
-            response = self.client.put(path=url, data={"name": name}, content_type=APPLICATION_JSON)
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertEqual(response.json()["name"], name)
+                response = self.client.put(
+                    path=url, data={"name": name}, content_type=APPLICATION_JSON
+                )
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+                self.assertEqual(response.json()["name"], name)
 
-        for name in invalid_names:
-            response = self.client.patch(
-                path=url, data={"name": name}, content_type=APPLICATION_JSON
-            )
-            self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
-            self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
+            for name in invalid_names:
+                response = self.client.patch(
+                    path=url, data={"name": name}, content_type=APPLICATION_JSON
+                )
+                self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+                self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
 
-            response = self.client.put(path=url, data={"name": name}, content_type=APPLICATION_JSON)
-            self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
-            self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
+                response = self.client.put(
+                    path=url, data={"name": name}, content_type=APPLICATION_JSON
+                )
+                self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+                self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")

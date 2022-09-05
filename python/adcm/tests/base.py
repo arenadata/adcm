@@ -60,15 +60,10 @@ class BaseTestCase(TestCase):
             self.test_bundle_filename,
         )
 
-    def login(self, username=None, password=None):
-        if not username:
-            username = self.test_user_username
-        if not password:
-            password = self.test_user_password
-
+    def login(self):
         response: Response = self.client.post(
             path=reverse("rbac:token"),
-            data={"username": username, "password": password},
+            data={"username": self.test_user_username, "password": self.test_user_password},
             content_type=APPLICATION_JSON,
         )
         self.client.defaults["Authorization"] = f"Token {response.data['token']}"
@@ -83,6 +78,19 @@ class BaseTestCase(TestCase):
                 "username": self.no_rights_user_username,
                 "password": self.no_rights_user_password,
             },
+            content_type=APPLICATION_JSON,
+        )
+        self.client.defaults["Authorization"] = f"Token {response.data['token']}"
+
+        yield
+
+        self.login()
+
+    @contextmanager
+    def another_user_loged_in(self, username: str, password: str):
+        response: Response = self.client.post(
+            path=reverse("rbac:token"),
+            data={"username": username, "password": password},
             content_type=APPLICATION_JSON,
         )
         self.client.defaults["Authorization"] = f"Token {response.data['token']}"
