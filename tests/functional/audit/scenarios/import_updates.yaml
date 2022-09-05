@@ -53,24 +53,24 @@ operations:
   # unbind
   - update:
       what: *import-cluster
-      how:
+      how: &cluster-unbind
         operation: unbind
         name: {{ cluster_import_success_msg }}
     result: denied
     username: {{ username }}
   - update:
       what: *import-service
-      how:
+      how: &service-unbind
         operation: unbind
         name: {{ service_import_success_msg }}
     result: denied
     username: {{ username }}
   - update:
       what: *import-cluster
-      how: *empty-bind
+      how: *cluster-unbind
   - update:
       what: *import-service
-      how: *empty-bind
+      how: *service-unbind
   - update:
       what: *import-cluster
       how: &empty-unbind
@@ -79,7 +79,7 @@ operations:
     result: fail
   - update:
       what: *import-service
-      how: *empty-bind
+      how: *empty-unbind
     result: fail
   # update imports
   - update: &update-cluster-import
