@@ -120,7 +120,7 @@ class ClusterDetailSerializer(ClusterSerializer):
         return get_cluster_status(obj)
 
 
-class ClusterUpdateSerializer(Serializer):
+class ClusterUpdateSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     name = CharField(
         max_length=80,
@@ -138,9 +138,6 @@ class ClusterUpdateSerializer(Serializer):
         instance.description = validated_data.get("description", instance.description)
         instance.save()
         return instance
-
-    def create(self, validated_data):
-        raise RuntimeError("Wrong serializer for `create`")
 
 
 class ClusterUISerializer(ClusterDetailSerializer):
