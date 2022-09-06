@@ -165,10 +165,8 @@ def _get_obj_changes_data(view: ModelViewSet) -> tuple[dict | None, Model | None
     return prev_data, current_obj
 
 
-def _get_operation_result_by_action(
-    action_pk: int | None, adcm_pk: int | None
-) -> AuditLogOperationResult:
-    if not ADCM.objects.filter(pk=adcm_pk):
+def _get_operation_result_by_action(action_pk: int, adcm_pk: int | None) -> AuditLogOperationResult:
+    if adcm_pk is not None and not ADCM.objects.filter(pk=adcm_pk):
         return AuditLogOperationResult.Fail
     if Action.objects.filter(pk=action_pk):
         return AuditLogOperationResult.Denied
@@ -217,9 +215,12 @@ def audit(func):
                 "doesn't exist" in exc.msg
                 or "service is not installed in specified cluster" in exc.msg
             ):
-                if isinstance(exc, AdcmEx) and "action_id" in kwargs:
+                if "action_id" in kwargs:
                     # trying to run action without permission, no deleted_obj needed
-                    force_operation_result = AuditLogOperationResult.Denied
+                    force_operation_result = _get_operation_result_by_action(
+                        action_pk=kwargs["action_id"],
+                        adcm_pk=kwargs.get("adcm_id"),
+                    )
                 else:
                     _kwargs = None
                     if "cluster_id" in kwargs:
@@ -251,7 +252,7 @@ def audit(func):
                     deleted_obj = TaskLog.objects.filter(pk=kwargs["task_id"]).first()
                 elif "action_id" in kwargs:
                     force_operation_result = _get_operation_result_by_action(
-                        action_pk=kwargs.get("action_id"), adcm_pk=kwargs.get("adcm_id")
+                        action_pk=kwargs["action_id"], adcm_pk=kwargs.get("adcm_id")
                     )
 
             if not deleted_obj:
