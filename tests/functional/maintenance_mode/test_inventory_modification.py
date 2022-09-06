@@ -182,9 +182,7 @@ def check_hosts_in_mm_are_absent(inventory: dict, cluster: Cluster, service_name
         hc["host"] for hc in cluster.hostcomponent() if hc["component"] == SECOND_COMPONENT
     }.difference(hostnames_in_mm)
     _check_groups(inventory, expected, expected_on_second_component, service_name)
-    components_with_mm = {
-        hc["component"] for hc in cluster.hostcomponent() if hc["host"] in hostnames_in_mm
-    }
+    components_with_mm = {hc["component"] for hc in cluster.hostcomponent() if hc["host"] in hostnames_in_mm}
     if len(components_with_mm) == 0:
         raise RuntimeError('There should be at least 1 component with host in MM')
     for component in components_with_mm:
