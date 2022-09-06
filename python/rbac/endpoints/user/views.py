@@ -81,7 +81,7 @@ class UserSerializer(FlexFieldsSerializerMixin, serializers.Serializer):
         default="",
     )
     is_superuser = serializers.BooleanField(default=False)
-    is_active = serializers.BooleanField()
+    is_active = serializers.BooleanField(default=True)
     password = PasswordField(trim_whitespace=False)
     url = serializers.HyperlinkedIdentityField(view_name="rbac:user-detail")
     profile = serializers.JSONField(required=False, default="")
