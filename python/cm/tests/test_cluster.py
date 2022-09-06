@@ -39,7 +39,7 @@ class TestCluster(BaseTestCase):
             "Use-forbidden!chars",
         ]
 
-        with self.another_user_loged_in("admin", "admin"):
+        with self.another_user_loged_in(username="admin", password="admin"):
             for name in valid_names:
                 response = self.client.patch(
                     path=url, data={"name": name}, content_type=APPLICATION_JSON
