@@ -260,7 +260,7 @@ def get_host_groups(cluster, delta, action_host=None):
 
         key1 = f"{hc.service.prototype.name}.{hc.component.prototype.name}"
         if in_mm(hc):
-            key1 = f"k{key1}.{MAINTENANCE_MODE}"
+            key1 = f"{key1}.{MAINTENANCE_MODE}"
         if key1 not in groups:
             groups[key1] = {"hosts": {}}
         groups[key1]["hosts"][hc.host.fqdn] = get_obj_config(hc.host)
@@ -268,7 +268,7 @@ def get_host_groups(cluster, delta, action_host=None):
 
         key2 = f"{hc.service.prototype.name}"
         if in_mm(hc):
-            key2 = f"k{key2}.{MAINTENANCE_MODE}"
+            key2 = f"{key2}.{MAINTENANCE_MODE}"
         if key2 not in groups:
             groups[key2] = {"hosts": {}}
         groups[key2]["hosts"][hc.host.fqdn] = get_obj_config(hc.host)
