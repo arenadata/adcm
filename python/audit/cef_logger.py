@@ -16,7 +16,6 @@ from collections import OrderedDict
 from typing import Tuple, Union
 
 from django.conf import settings
-from django.utils import timezone as tz
 
 from audit.apps import AuditConfig
 from audit.models import AuditLog, AuditLogOperationResult, AuditSession
@@ -41,7 +40,6 @@ def cef_logger(
     empty_resource: bool = False,
 ) -> None:
     extension = OrderedDict.fromkeys(CEFLogConstants.extension_keys, None)
-    extension["timestamp"] = str(tz.now())
 
     if isinstance(audit_instance, AuditSession):
         operation_name = CEFLogConstants.operation_name_session
@@ -53,6 +51,7 @@ def cef_logger(
             )
         extension["operation"] = operation_name
         extension["result"] = audit_instance.login_result
+        extension["timestamp"] = str(audit_instance.login_time)
 
     elif isinstance(audit_instance, AuditLog):
         operation_name = audit_instance.operation_name
@@ -67,6 +66,7 @@ def cef_logger(
         extension["result"] = audit_instance.operation_result
         if audit_instance.operation_result == AuditLogOperationResult.Denied:
             severity = 3
+        extension["timestamp"] = str(audit_instance.operation_time)
 
     else:
         raise NotImplementedError
