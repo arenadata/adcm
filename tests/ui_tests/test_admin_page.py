@@ -31,6 +31,7 @@ from adcm_client.objects import (
     Provider,
 )
 from adcm_pytest_plugin import utils
+from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import random_string
 
 from tests.ui_tests.app.app import ADCMTest
@@ -389,7 +390,7 @@ class TestAdminUsersPage:
     def test_add_ldap_group_to_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
         """Check that user can't add ldap group to usual user"""
         with allure.step("Wait ldap integration ends"):
-            users_page.header.wait_success_job_amount_from_header(1)
+            wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), 'success')
         users_page.check_user_group_change_is_disabled(user.username, "adcm_users")
 
     @pytest.mark.ldap()
@@ -398,7 +399,7 @@ class TestAdminUsersPage:
         """Check that user can add group to ldap user"""
 
         with allure.step("Wait ldap integration ends"):
-            users_page.header.wait_success_job_amount_from_header(1)
+            wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), 'success')
         test_group = sdk_client_fs.group_create('test_group')
         users_page.update_user_info(ldap_user_in_group['name'], group=test_group.name)
         with allure.step(f'Check user {user.username} is listed in users list with changed params'):
@@ -411,7 +412,7 @@ class TestAdminUsersPage:
         """Check that users can be filtered"""
 
         with allure.step("Wait ldap integration ends"):
-            users_page.header.wait_success_job_amount_from_header(1)
+            wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), 'success')
         users_page.driver.refresh()
         users_page.filter_users_by("status", "active")
         with allure.step("Check users are filtered by active status"):
