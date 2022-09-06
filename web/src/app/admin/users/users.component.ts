@@ -24,6 +24,7 @@ import { AddButtonComponent, BaseFormDirective } from '../../shared/add-componen
 import { RbacUserService } from '../../services/rbac-user.service';
 import { RbacUserFormComponent } from '../../components/rbac/user-form/rbac-user-form.component';
 import { IFilter } from "../../shared/configuration/tools/filter/filter.component";
+import { BehaviorSubject } from "rxjs";
 
 const groupNameMapper = (user: RbacUserModel) => {
   return user.group.map((group) => group.name).join(', ');
@@ -70,7 +71,8 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
     }
   ] as IColumns<RbacUserModel>;
 
-  type: TypeName = 'user';
+  type: TypeName = 'user'
+  filteredData$: BehaviorSubject<any> = new BehaviorSubject<any>(null);
 
   userFilters: IFilter[] = [
     {

@@ -8,11 +8,11 @@
   </button>
 </div>
 
-<app-filter [filterList]="userFilters" [data]="data$"></app-filter>
+<app-filter [filterList]="userFilters" [externalData]="data$" [innerData]="filteredData$"></app-filter>
 
 <adwp-list
   [columns]="listColumns"
-  [dataSource]="data$ | async"
+  [dataSource]="filteredData$ | async"
   [paging]="paging | async"
   [sort]="sorting | async"
   [defaultSort]="defaultSort"

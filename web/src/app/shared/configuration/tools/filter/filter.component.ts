@@ -9,9 +9,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+/**
+ * INSTRUCTIONS
+ * For the filter to work correctly, you need to create a filter rules with IFilter stucture in filter parent component
+ * "copy" of the BehaviourSubject with data for the table and pass it to the table. You must pass both the original
+ * and the "copy" to the filter component
+ */
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { BaseDirective } from "../../../directives";
+import { BehaviorSubject } from "rxjs";
 
 export interface IFilter {
   id: number,
@@ -47,7 +54,7 @@ export interface IFilterOption {
                 <mat-option *ngFor="let p of filter.options" [value]="p.value">{{ p.display_name }}</mat-option>
               </mat-select>
               <button mat-button matSuffix mat-icon-button aria-label="Clear"
-                      *ngIf="this.filterForm?.getRawValue()[filter.filter_field]"
+                      *ngIf="clearButtonVisible(filter.filter_field)"
                       (click)="clear(filter.filter_field, $event)">
                 <mat-icon>refresh</mat-icon>
               </button>
@@ -67,10 +74,12 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
   filterForm = new FormGroup({});
   availableFilters: any[];
   activeFilters: number[] = [];
-  preFilteredData: any;
   backupData: any;
+  freezeBackupData: boolean = false;
+  externalChanges: boolean = false;
   @Input() filterList: IFilter[] = [];
-  @Input() data: any;
+  @Input() externalData: BehaviorSubject<any>;
+  @Input() innerData: BehaviorSubject<any>;
 
   get filters() {
     return this.filterList.filter((filter) => (this.activeFilters?.includes(filter.id)));
@@ -88,15 +97,31 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
       filter_field: filter.filter_field,
     }));
 
-    this.data.subscribe((values: any) => {
-      this.preFilteredData = values?.results;
-      if (!this.backupData) this.backupData = values;
+    this.externalData.subscribe((values: any) => {
+      this.externalChanges = true;
+      this.freezeBackupData = false;
+
+      if (this.externalChanges && values) {
+        this.innerData.next(values);
+
+        this.innerData.subscribe((values: any) => {
+          if (!this.backupData || !this.freezeBackupData) {
+            this.backupData = values;
+            this.freezeBackupData = false;
+          }
+
+          if (this.externalChanges) {
+            this.externalChanges = false;
+            this.applyFilters();
+          }
+        })
+      }
     });
   }
 
   clear(filter, event: any) {
     this.filterForm.get(filter).setValue(undefined);
-    this.data.next(this.backupData);
+    this.innerData.next(this.backupData);
     event.preventDefault();
     event.stopPropagation();
   }
@@ -124,7 +149,13 @@ export class FilterComponent extends BaseDirective implements OnInit, OnDestroy 
       return true;
     });
 
-    this.data.next({...this.backupData, count: data.length, results: data});
+    this.freezeBackupData = true;
+    this.innerData.next({...this.backupData, count: data.length, results: data});
+  }
+
+  clearButtonVisible(field) {
+    const value = this.filterForm?.getRawValue()[field];
+    return value || (typeof value === 'boolean' && !value);
   }
 
   toggleFilters(filter) {
