@@ -23,6 +23,7 @@ from rest_framework.request import Request
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, is_success
 from rest_framework.viewsets import ModelViewSet
 
+import cm.logger
 from audit.cases.cases import get_audit_operation_and_object
 from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
@@ -35,7 +36,16 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterBind, ClusterObject, Host, HostProvider, TaskLog
+from cm.models import (
+    ADCM,
+    Action,
+    Cluster,
+    ClusterBind,
+    ClusterObject,
+    Host,
+    HostProvider,
+    TaskLog,
+)
 from rbac.endpoints.group.serializers import GroupAuditSerializer
 from rbac.endpoints.policy.serializers import PolicyAuditSerializer
 from rbac.endpoints.role.serializers import RoleAuditSerializer
@@ -156,6 +166,16 @@ def _get_obj_changes_data(view: ModelViewSet) -> tuple[dict | None, Model | None
     return prev_data, current_obj
 
 
+def _get_operation_result_by_action(
+    action_pk: int | None, adcm_pk: int | None
+) -> AuditLogOperationResult:
+    if not ADCM.objects.filter(pk=adcm_pk):
+        return AuditLogOperationResult.Fail
+    if Action.objects.filter(pk=action_pk):
+        return AuditLogOperationResult.Denied
+    return AuditLogOperationResult.Fail
+
+
 def audit(func):
     # pylint: disable=too-many-statements
     @wraps(func)
@@ -194,13 +214,12 @@ def audit(func):
         except (AdcmEx, AdwpEx, ValidationError) as exc:
             error = exc
             res = None
-
             if getattr(exc, "msg", None) and (
                 "doesn't exist" in exc.msg
                 or "service is not installed in specified cluster" in exc.msg
             ):
-                if "action_id" in kwargs:
-                    # trying to run action without permission, no deleted_obj
+                if isinstance(exc, AdcmEx) and "action_id" in kwargs:
+                    # trying to run action without permission, no deleted_obj needed
                     force_operation_result = AuditLogOperationResult.Denied
                 else:
                     _kwargs = None
@@ -232,7 +251,9 @@ def audit(func):
                 if "task_id" in kwargs:
                     deleted_obj = TaskLog.objects.filter(pk=kwargs["task_id"]).first()
                 elif "action_id" in kwargs:
-                    force_operation_result = AuditLogOperationResult.Denied
+                    force_operation_result = _get_operation_result_by_action(
+                        action_pk=kwargs.get("action_id"), adcm_pk=kwargs.get("adcm_id")
+                    )
 
             if not deleted_obj:
                 status_code = exc.status_code
