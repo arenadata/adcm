@@ -71,7 +71,7 @@ def cef_logger(
     else:
         raise NotImplementedError
 
-    extension = " ".join([f"{k}={v}" for k, v in extension.items() if v is not None])
+    extension = " ".join([f"{k}=\"{v}\"" for k, v in extension.items() if v is not None])
 
     msg = (
         f"{CEFLogConstants.cef_version}|{CEFLogConstants.device_vendor}|"
