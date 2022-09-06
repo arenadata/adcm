@@ -293,3 +293,9 @@ LOGGING = {
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+CLUSTER_NAME_PATTERN = (
+    r"^[a-zA-Z0-9]"  # starts with latin letter (upper/lower case) or digit
+    r"[a-zA-Z0-9-\. ]*?"  # latin letters (upper/lower case), digits, hyphens, dots, whitespaces
+    r"[a-zA-Z0-9]$"  # ends with latin letter (upper/lower case) or digit
+)  # as a result of this pattern min_length = 2

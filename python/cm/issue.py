@@ -14,7 +14,7 @@ from cm.adcm_config import get_prototype_config, obj_ref, proto_ref
 from cm.errors import AdcmEx
 from cm.errors import raise_AdcmEx as err
 from cm.hierarchy import Tree
-from cm.logger import log
+from cm.logger import logger
 from cm.models import (
     ADCMEntity,
     Cluster,
@@ -38,7 +38,7 @@ def check_config(obj):  # pylint: disable=too-many-branches
         if 'required' in value:
             if value['required']:
                 if key in conf and conf[key] is None:
-                    log.debug('required config key %s of %s is missing', key, obj_ref(obj))
+                    logger.debug('required config key %s of %s is missing', key, obj_ref(obj))
                     return False
         else:
             if key in attr:
@@ -47,16 +47,16 @@ def check_config(obj):  # pylint: disable=too-many-branches
             for subkey in value:
                 if value[subkey]['required']:
                     if key not in conf:
-                        log.debug('required config group %s of %s is missing', key, obj_ref(obj))
+                        logger.debug('required config group %s of %s is missing', key, obj_ref(obj))
                         return False
                     if subkey in conf[key]:
                         if conf[key][subkey] is None:
                             msg = 'required config value for key %s/%s of %s is missing'
-                            log.debug(msg, key, subkey, obj_ref(obj))
+                            logger.debug(msg, key, subkey, obj_ref(obj))
                             return False
                     else:
                         msg = 'required config key %s/%s of %s is missing'
-                        log.debug(msg, key, subkey, obj_ref(obj))
+                        logger.debug(msg, key, subkey, obj_ref(obj))
                         return False
     return True
 
@@ -75,7 +75,7 @@ def check_required_services(cluster):
         try:
             ClusterObject.objects.get(cluster=cluster, prototype=proto)
         except ClusterObject.DoesNotExist:
-            log.debug('required service %s of %s is missing', proto_ref(proto), obj_ref(cluster))
+            logger.debug('required service %s of %s is missing', proto_ref(proto), obj_ref(cluster))
             return False
     return True
 
@@ -128,7 +128,7 @@ def check_hc(cluster):
                 const = comp.constraint
                 if len(const) == 2 and const[0] == 0:
                     continue
-                log.debug('void host components for %s', proto_ref(co.prototype))
+                logger.debug('void host components for %s', proto_ref(co.prototype))
                 return False
 
     for service in ClusterObject.objects.filter(cluster=cluster):
@@ -346,7 +346,7 @@ def update_issue_after_deleting():
         if concern.owner is None:
             concern_str = str(concern)
             concern.delete()
-            log.info('Deleted %s', concern_str)
+            logger.info('Deleted %s', concern_str)
         elif related != affected:
             for object_moved_out_hierarchy in related.difference(affected):
                 object_moved_out_hierarchy.remove_from_concerns(concern)

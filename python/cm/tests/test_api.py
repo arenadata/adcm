@@ -159,7 +159,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_cluster(self):  # pylint: disable=too-many-statements
-        cluster_name = "test_cluster"
+        cluster_name = "test-cluster"
         cluster_url = reverse("cluster")
         self.load_bundle(self.bundle_adh_name)
         bundle_id, proto_id = self.get_cluster_proto_id()
@@ -212,10 +212,6 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
 
-        response = self.client.put(this_cluster_url, {})
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        self.assertEqual(response.json()["detail"], 'Method "PUT" not allowed.')
-
         response = self.client.delete(this_cluster_url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -231,7 +227,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_cluster_patching(self):
-        name = "test_cluster"
+        name = "test-cluster"
         cluster_url = reverse("cluster")
 
         self.load_bundle(self.bundle_adh_name)
@@ -243,7 +239,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         cluster_id = response.json()["id"]
         first_cluster_url = reverse("cluster-details", kwargs={"cluster_id": cluster_id})
 
-        patched_name = "patched_cluster"
+        patched_name = "patched-cluster"
 
         response = self.client.patch(
             first_cluster_url, {"name": patched_name}, content_type="application/json"
@@ -491,7 +487,7 @@ class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
         service_proto_id = self.get_service_proto_id()
         bundle_id, cluster_proto_id = self.get_cluster_proto_id()
 
-        cluster = "test_cluster"
+        cluster = "test-cluster"
         cluster_url = reverse("cluster")
         response = self.client.post(
             cluster_url, {"name": cluster, "prototype_id": cluster_proto_id}

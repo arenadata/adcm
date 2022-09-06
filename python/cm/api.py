@@ -32,7 +32,7 @@ from cm.adcm_config import (
 from cm.api_context import ctx
 from cm.errors import AdcmEx
 from cm.errors import raise_AdcmEx as err
-from cm.logger import log
+from cm.logger import logger
 from cm.models import (
     ADCM,
     ADCMEntity,
@@ -151,7 +151,7 @@ def add_cluster(proto, name, desc=''):
         cm.issue.update_hierarchy_issues(cluster)
     cm.status_api.post_event('create', 'cluster', cluster.id)
     load_service_map()
-    log.info(f'cluster #{cluster.id} {cluster.name} is added')
+    logger.info(f'cluster #{cluster.id} {cluster.name} is added')
     return cluster
 
 
@@ -172,7 +172,7 @@ def add_host(proto, provider, fqdn, desc=''):
     ctx.event.send_state()
     cm.status_api.post_event('create', 'host', host.id, 'provider', str(provider.id))
     load_service_map()
-    log.info(f'host #{host.id} {host.fqdn} is added')
+    logger.info(f'host #{host.id} {host.fqdn} is added')
     return host
 
 
@@ -199,7 +199,7 @@ def add_host_provider(proto, name, desc=''):
         cm.issue.update_hierarchy_issues(provider)
     ctx.event.send_state()
     cm.status_api.post_event('create', 'provider', provider.id)
-    log.info(f'host provider #{provider.id} {provider.name} is added')
+    logger.info(f'host provider #{provider.id} {provider.name} is added')
     return provider
 
 
@@ -220,7 +220,7 @@ def delete_host_provider(provider, cancel_tasks=True):
     provider_id = provider.id
     provider.delete()
     cm.status_api.post_event('delete', 'provider', provider_id)
-    log.info(f'host provider #{provider_id} is deleted')
+    logger.info(f'host provider #{provider_id} is deleted')
 
 
 def add_host_to_cluster(cluster, host):
@@ -241,7 +241,9 @@ def add_host_to_cluster(cluster, host):
         re_apply_object_policy(cluster)
     cm.status_api.post_event('add', 'host', host.id, 'cluster', str(cluster.id))
     load_service_map()
-    log.info('host #%s %s is added to cluster #%s %s', host.id, host.fqdn, cluster.id, cluster.name)
+    logger.info(
+        'host #%s %s is added to cluster #%s %s', host.id, host.fqdn, cluster.id, cluster.name
+    )
     return host
 
 
@@ -292,7 +294,7 @@ def delete_host(host, cancel_tasks=True):
     cm.status_api.post_event('delete', 'host', host_id)
     load_service_map()
     cm.issue.update_issue_after_deleting()
-    log.info(f'host #{host_id} is deleted')
+    logger.info(f'host #{host_id} is deleted')
 
 
 def delete_host_by_id(host_id):
@@ -366,7 +368,7 @@ def delete_service(service: ClusterObject, cancel_tasks=True) -> None:
     re_apply_object_policy(cluster)
     cm.status_api.post_event('delete', 'service', service_id)
     load_service_map()
-    log.info(f'service #{service_id} is deleted')
+    logger.info(f'service #{service_id} is deleted')
 
 
 def delete_cluster(cluster, cancel_tasks=True):
@@ -376,7 +378,7 @@ def delete_cluster(cluster, cancel_tasks=True):
     hosts = cluster.host_set.all()
     host_ids = [str(host.id) for host in hosts]
     hosts.update(maintenance_mode=MaintenanceModeType.Disabled)
-    log.debug(
+    logger.debug(
         'Deleting cluster #%s. Set `%s` maintenance mode value for `%s` hosts.',
         cluster_id,
         MaintenanceModeType.Disabled,
@@ -444,7 +446,7 @@ def add_service_to_cluster(cluster, proto):
         re_apply_object_policy(cluster)
     cm.status_api.post_event('add', 'service', cs.id, 'cluster', str(cluster.id))
     load_service_map()
-    log.info(
+    logger.info(
         f'service #{cs.id} {cs.prototype.name} is added to cluster #{cluster.id} {cluster.name}'
     )
     return cs
@@ -851,7 +853,7 @@ def multi_bind(cluster, service, bind_list):  # pylint: disable=too-many-locals,
             export_obj = get_bind_obj(value.source_cluster, value.source_service)
             check_import_default(import_obj, export_obj)
             value.delete()
-            log.info('unbind %s from %s', obj_ref(export_obj), obj_ref(import_obj))
+            logger.info('unbind %s from %s', obj_ref(export_obj), obj_ref(import_obj))
 
         for key, value in new_bind.items():
             if key in old_bind:
@@ -859,7 +861,7 @@ def multi_bind(cluster, service, bind_list):  # pylint: disable=too-many-locals,
             (pi, cb, export_obj) = value
             check_multi_bind(pi, cluster, service, cb.source_cluster, cb.source_service)
             cb.save()
-            log.info('bind %s to %s', obj_ref(export_obj), obj_ref(import_obj))
+            logger.info('bind %s to %s', obj_ref(export_obj), obj_ref(import_obj))
 
         cm.issue.update_hierarchy_issues(cluster)
 

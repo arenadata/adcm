@@ -85,3 +85,16 @@ class BaseTestCase(TestCase):
         yield
 
         self.login()
+
+    @contextmanager
+    def another_user_loged_in(self, username: str, password: str):
+        response: Response = self.client.post(
+            path=reverse("rbac:token"),
+            data={"username": username, "password": password},
+            content_type=APPLICATION_JSON,
+        )
+        self.client.defaults["Authorization"] = f"Token {response.data['token']}"
+
+        yield
+
+        self.login()

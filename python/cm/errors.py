@@ -14,7 +14,7 @@ import rest_framework.status as rfs
 from rest_framework.exceptions import APIException
 from rest_framework.views import exception_handler
 
-from cm.logger import log
+from cm.logger import logger
 
 WARN = 'warning'
 ERR = 'error'
@@ -238,7 +238,7 @@ def raise_AdcmEx(code, msg='', args=''):
     (_, err_msg, _, _) = get_error(code)
     if msg != '':
         err_msg = msg
-    log.error(err_msg)
+    logger.error(err_msg)
     raise AdcmEx(code, msg=msg, args=args)
 
 

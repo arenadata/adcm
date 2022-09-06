@@ -21,16 +21,16 @@ from django.utils import timezone
 import cm
 import cm.job as job_module
 from cm import config, models
-from cm.logger import log
+from cm.logger import logger
 from cm.unit_tests import utils
 
 
 class TestJob(TestCase):
     def setUp(self):
-        log.debug = Mock()
-        log.error = Mock()
-        log.info = Mock()
-        log.warning = Mock()
+        logger.debug = Mock()
+        logger.error = Mock()
+        logger.info = Mock()
+        logger.warning = Mock()
 
     def test_set_job_status(self):
         bundle = models.Bundle.objects.create()
