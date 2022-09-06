@@ -214,7 +214,7 @@ def configure_adcm_for_ldap(
     ssl_on: bool,
     ssl_cert: Optional[Path],
     user_base: str,
-    group_base: str,
+    group_base: Optional[str],
     extra_config: Optional[dict] = None,
 ):
     """Set ADCM settings to work with LDAP (for tests only)"""
