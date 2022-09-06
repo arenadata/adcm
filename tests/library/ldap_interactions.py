@@ -26,8 +26,8 @@ from ldap.ldapobject import SimpleLDAPObject
 
 from tests.library.utils import ConfigError
 
-LDAP_PREFIX = 'ldap://'
-LDAPS_PREFIX = 'ldaps://'
+LDAP_PREFIX = "ldap://"
+LDAPS_PREFIX = "ldaps://"
 
 
 class LDAPTestConfig(NamedTuple):
@@ -52,18 +52,18 @@ class LDAPEntityManager:
     # it will be added to user/group names
     _uni: str
 
-    _BASE_OU_MODLIST = [('objectClass', [b'top', b'organizationalUnit'])]
-    _BASE_GROUP_MODLIST = [('objectClass', [b'top', b'group'])]
-    _BASE_USER_MODLIST = [('objectClass', [b'top', b'person', b'organizationalPerson', b'user'])]
+    _BASE_OU_MODLIST = [("objectClass", [b"top", b"organizationalUnit"])]
+    _BASE_GROUP_MODLIST = [("objectClass", [b"top", b"group"])]
+    _BASE_USER_MODLIST = [("objectClass", [b"top", b"person", b"organizationalPerson", b"user"])]
 
-    _ACTIVE_USER_UAC = b'512'  # regular user
-    _INACTIVE_USER_UAC = b'514'  # user, inactive
-    _DEFAULT_USER_UAC = b'546'  # user, inactive, password not required
+    _ACTIVE_USER_UAC = b"512"  # regular user
+    _INACTIVE_USER_UAC = b"514"  # user, inactive
+    _DEFAULT_USER_UAC = b"546"  # user, inactive, password not required
 
     _ATTR_MAP = {
-        'first_name': 'givenName',
-        'last_name': 'sn',
-        'email': 'mail',
+        "first_name": "givenName",
+        "last_name": "sn",
+        "email": "mail",
     }
 
     def __init__(self, config: LDAPTestConfig, test_name: str):
@@ -73,12 +73,12 @@ class LDAPEntityManager:
 
         self._created_records = []
         self._config = config
-        self._uni = str(crc32(f'{test_name}{uuid.uuid4()}'.encode('utf-8')))
+        self._uni = str(crc32(f"{test_name}{uuid.uuid4()}".encode("utf-8")))
         # for the cleanup we'll need the CN with uppercase node names, I think
-        corrected_base_ou_dn = ','.join(
+        corrected_base_ou_dn = ",".join(
             map(
-                lambda x: ((parts := x.split('=')) and f'{parts[0].upper()}={parts[1]}'),
-                self._config.base_ou_dn.split(','),
+                lambda x: ((parts := x.split("=")) and f"{parts[0].upper()}={parts[1]}"),
+                self._config.base_ou_dn.split(","),
             )
         )
         self.test_dn = self.create_ou(self._uni, corrected_base_ou_dn)
@@ -90,25 +90,25 @@ class LDAPEntityManager:
         self.clean_test_ou()
         self.conn.unbind()
 
-    @allure.step('Create OU {name}')
+    @allure.step("Create OU {name}")
     def create_ou(self, name: str, custom_base_dn: str = None) -> str:
         """Create OU (use for 'isolation' in tests)"""
         base_dn = custom_base_dn or self.test_dn
-        new_dn = f'OU={name},{base_dn}'
+        new_dn = f"OU={name},{base_dn}"
         self.conn.add_s(new_dn, self._BASE_OU_MODLIST)
         self._created_records.append(new_dn)
         return new_dn
 
-    @allure.step('Create group {name}')
+    @allure.step("Create group {name}")
     def create_group(self, name: str, custom_base_dn: str = None) -> str:
         """Create group (CN) that can include users"""
         base_dn = custom_base_dn or self.test_dn
-        new_dn = f'CN={name},{base_dn}'
+        new_dn = f"CN={name},{base_dn}"
         self.conn.add_s(new_dn, self._BASE_GROUP_MODLIST)
         self._created_records.append(new_dn)
         return new_dn
 
-    @allure.step('Create user {name} with password {password}')
+    @allure.step("Create user {name} with password {password}")
     def create_user(
         self,
         name: str,
@@ -123,8 +123,8 @@ class LDAPEntityManager:
         """
         extra_modlist = extra_modlist or []
         base_dn = custom_base_dn or self.test_dn
-        new_dn = f'CN={name},{base_dn}'
-        self.conn.add_s(new_dn, self._BASE_USER_MODLIST + [('sAMAccountName', name.encode('utf-8'))] + extra_modlist)
+        new_dn = f"CN={name},{base_dn}"
+        self.conn.add_s(new_dn, self._BASE_USER_MODLIST + [("sAMAccountName", name.encode("utf-8"))] + extra_modlist)
         self._created_records.append(new_dn)
         self.set_user_password(new_dn, password)
         self.activate_user(new_dn)
@@ -135,28 +135,28 @@ class LDAPEntityManager:
         self.conn.delete_s(dn)
         self._created_records.remove(dn)
 
-    @allure.step('Activate user {user_dn}')
+    @allure.step("Activate user {user_dn}")
     def activate_user(self, user_dn: str, uac: bytes = _ACTIVE_USER_UAC) -> None:
         """Activate user"""
-        self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, 'userAccountControl', uac)])  # pylint: disable=no-member
+        self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, "userAccountControl", uac)])  # pylint: disable=no-member
 
-    @allure.step('Deactivate user {user_dn}')
+    @allure.step("Deactivate user {user_dn}")
     def deactivate_user(self, user_dn: str, uac: bytes = _INACTIVE_USER_UAC) -> None:
         """Deactivate user"""
-        self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, 'userAccountControl', uac)])  # pylint: disable=no-member
+        self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, "userAccountControl", uac)])  # pylint: disable=no-member
 
     @allure.step('Set password "{password}" for user {user_dn}')
     def set_user_password(self, user_dn: str, password: str) -> None:
         """Set password for an existing user"""
-        pass_utf16 = f'"{password}"'.encode('utf-16-le')
-        self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, 'unicodePwd', [pass_utf16])])  # pylint: disable=no-member
+        pass_utf16 = f'"{password}"'.encode("utf-16-le")
+        self.conn.modify_s(user_dn, [(ldap.MOD_REPLACE, "unicodePwd", [pass_utf16])])  # pylint: disable=no-member
 
-    @allure.step('Update user in LDAP')
+    @allure.step("Update user in LDAP")
     def update_user(self, user_dn: str, **fields: str):
         """Update user record"""
         try:
             self.conn.modify_s(
-                user_dn, [(ldap.MOD_REPLACE, self._ATTR_MAP[k], [v.encode('utf-8')]) for k, v in fields.items()]
+                user_dn, [(ldap.MOD_REPLACE, self._ATTR_MAP[k], [v.encode("utf-8")]) for k, v in fields.items()]
             )
         except KeyError as e:
             unknown_fields = {k for k in fields if k in self._ATTR_MAP}
@@ -165,19 +165,19 @@ class LDAPEntityManager:
                 f'Input was: {", ".join(unknown_fields)}'
             ) from e
 
-    @allure.step('Add user {user_dn} to {group_dn}')
+    @allure.step("Add user {user_dn} to {group_dn}")
     def add_user_to_group(self, user_dn: str, group_dn: str) -> None:
         """Add user to a group"""
-        mod_group = [(ldap.MOD_ADD, 'member', [user_dn.encode('utf-8')])]  # pylint: disable=no-member
+        mod_group = [(ldap.MOD_ADD, "member", [user_dn.encode("utf-8")])]  # pylint: disable=no-member
         self.conn.modify_s(group_dn, mod_group)
 
-    @allure.step('Remove user {user_dn} from {group_dn}')
+    @allure.step("Remove user {user_dn} from {group_dn}")
     def remove_user_from_group(self, user_dn: str, group_dn: str) -> None:
         """Remove user from group"""
-        mod_group = [(ldap.MOD_DELETE, 'member', [user_dn.encode('utf-8')])]  # pylint: disable=no-member
+        mod_group = [(ldap.MOD_DELETE, "member", [user_dn.encode("utf-8")])]  # pylint: disable=no-member
         self.conn.modify_s(group_dn, mod_group)
 
-    @allure.step('Cleat test OU')
+    @allure.step("Cleat test OU")
     def clean_test_ou(self):
         """Remove every object in test OU"""
         if self.test_dn is None:
@@ -191,7 +191,7 @@ class LDAPEntityManager:
                 self.conn.delete(dn)
         else:
             # error was leading to tests re-run that can make more "dead" objects
-            warnings.warn(f'Not all entities in test OU were deleted: {entities}')
+            warnings.warn(f"Not all entities in test OU were deleted: {entities}")
             return
         self._created_records = []
         self.test_dn = None
@@ -226,25 +226,26 @@ def configure_adcm_for_ldap(
         if config.uri.startswith(LDAP_PREFIX):
             uri = uri.replace(LDAP_PREFIX, LDAPS_PREFIX)
         if ssl_cert is None:
-            raise ConfigError('AD SSL cert should be uploaded to ADCM')
-        ssl_extra_config['tls_ca_cert_file'] = str(ssl_cert)
+            raise ConfigError("AD SSL cert should be uploaded to ADCM")
+        ssl_extra_config["tls_ca_cert_file"] = str(ssl_cert)
     elif not ssl_on and config.uri.startswith(LDAPS_PREFIX):
         uri = uri.replace(LDAPS_PREFIX, LDAP_PREFIX)
 
     adcm = client.adcm()
     adcm.config_set_diff(
         {
-            'attr': {'ldap_integration': {'active': True}},
-            'config': {
-                'ldap_integration': {
-                    'ldap_uri': uri,
-                    'ldap_user': config.admin_dn,
-                    'ldap_password': config.admin_pass,
-                    'user_search_base': user_base,
-                    'group_search_base': group_base,
+            "attr": {"ldap_integration": {"active": True}},
+            "config": {
+                "ldap_integration": {
+                    "ldap_uri": uri,
+                    "ldap_user": config.admin_dn,
+                    "ldap_password": config.admin_pass,
+                    "user_search_base": user_base,
+                    "group_search_base": group_base,
                     **ssl_extra_config,
                     **extra_config,
                 }
             },
-        }
+        },
+        attach_to_allure=False,
     )
