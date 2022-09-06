@@ -8,7 +8,7 @@ import {
   ContentChild,
   ContentChildren,
   HostBinding,
-  Input, OnChanges,
+  Input, OnChanges, OnDestroy,
   QueryList, SimpleChanges,
   TemplateRef,
   ViewChild,
@@ -31,7 +31,7 @@ import { CONFIG_FIELD, FieldComponent } from '@app/shared/configuration/field/fi
   `,
   styleUrls: ['./attribute-provider.component.scss'],
 })
-export class ConfigFieldAttributeProviderComponent implements OnChanges, AfterViewInit {
+export class ConfigFieldAttributeProviderComponent implements OnChanges, AfterViewInit, OnDestroy {
 
   template: TemplateRef<any>;
 
@@ -78,12 +78,15 @@ export class ConfigFieldAttributeProviderComponent implements OnChanges, AfterVi
           this.containerRef.instance.parametersForm = this.parametersForm;
           Promise.resolve().then(() => {
             this.containerRef.instance.field = this.fieldComponent.first
-            this.attributesSrv.removeAttributes();
           });
         }
       });
     } else {
       this.template = this.field.template;
     }
+  }
+
+  ngOnDestroy() {
+    this.attributesSrv.removeAttributes();
   }
 }
