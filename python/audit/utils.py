@@ -23,7 +23,6 @@ from rest_framework.request import Request
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, is_success
 from rest_framework.viewsets import ModelViewSet
 
-import cm.logger
 from audit.cases.cases import get_audit_operation_and_object
 from audit.cases.common import get_or_create_audit_obj
 from audit.cef_logger import cef_logger
