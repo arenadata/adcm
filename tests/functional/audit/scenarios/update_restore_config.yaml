@@ -141,9 +141,11 @@ operations:
       how: set-config
   - <<: *success-host-update
   - <<: *success-host-update
+  - <<: *success-host-update
   - &fail-host-update
     update: *update-host
     result: fail
+  - <<: *fail-host-update
   - <<: *fail-host-update
   - <<: *fail-host-update
   - &denied-host-update
@@ -152,10 +154,14 @@ operations:
     username: {{ username }}
   - <<: *denied-host-update
   - <<: *denied-host-update
+  - <<: *denied-host-update
   # host restore
   - <<: *fail-host-update
   - <<: *fail-host-update
+  - <<: *fail-host-update
   - <<: *denied-host-update
   - <<: *denied-host-update
+  - <<: *denied-host-update
+  - <<: *success-host-update
   - <<: *success-host-update
   - <<: *success-host-update
