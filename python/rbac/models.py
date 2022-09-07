@@ -29,8 +29,6 @@ from rest_framework.exceptions import ValidationError
 
 from cm.models import Bundle, ProductCategory, HostComponent, DummyData
 
-from .utils import delete_user
-
 
 class ObjectType(models.TextChoices):
     cluster = 'cluster', 'cluster'
@@ -60,10 +58,11 @@ class User(AuthUser):
 
     profile = models.JSONField(default=str)
     built_in = models.BooleanField(default=False, null=False)
-    date_unjoined = models.DateTimeField(null=True)
 
     def delete(self, using=None, keep_parents=False):
-        delete_user(self)
+        self.is_active = False
+        self.save()
+
     type = models.CharField(
         max_length=16, choices=OriginType.choices, null=False, default=OriginType.Local
     )

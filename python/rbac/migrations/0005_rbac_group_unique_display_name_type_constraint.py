@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('rbac', '0005_user_date_unjoined'),
+        ('rbac', '0004_fill_group_name_display_name'),
     ]
 
     operations = [
