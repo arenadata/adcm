@@ -515,15 +515,13 @@ def ui_config(obj, cl):  # pylint: disable=too-many-locals
 
 
 def get_action_variant(obj, conf):
-    obj_conf = {}
     if obj.config:
         cl = ConfigLog.objects.filter(obj_ref=obj.config, id=obj.config.current).first()
         if cl:
-            obj_conf = cl.config
             for c in conf:
                 if c.type != 'variant':
                     continue
-                c.limits['source']['value'] = cm.variant.get_variant(obj, obj_conf, c.limits)
+                c.limits['source']['value'] = cm.variant.get_variant(obj, cl.config, c.limits)
 
 
 def config_is_ro(obj, key, limits):
