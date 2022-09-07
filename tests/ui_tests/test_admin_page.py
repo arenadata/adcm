@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name, unused-argument
+# pylint: disable=redefined-outer-name, unused-argument, too-many-lines
 
 """UI tests for /admin page"""
 
@@ -31,6 +31,7 @@ from adcm_client.objects import (
     Provider,
 )
 from adcm_pytest_plugin import utils
+from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import random_string
 
 from tests.ui_tests.app.app import ADCMTest
@@ -389,7 +390,7 @@ class TestAdminUsersPage:
     def test_add_ldap_group_to_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
         """Check that user can't add ldap group to usual user"""
         with allure.step("Wait ldap integration ends"):
-            users_page.header.wait_success_job_amount_from_header(1)
+            wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), 'success')
         users_page.check_user_group_change_is_disabled(user.username, "adcm_users")
 
     @pytest.mark.ldap()
@@ -397,12 +398,50 @@ class TestAdminUsersPage:
     def test_add_group_to_ldap_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
         """Check that user can add group to ldap user"""
 
-        users_page.header.wait_success_job_amount_from_header(1)
+        with allure.step("Wait ldap integration ends"):
+            wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), 'success')
         test_group = sdk_client_fs.group_create('test_group')
         users_page.update_user_info(ldap_user_in_group['name'], group=test_group.name)
         with allure.step(f'Check user {user.username} is listed in users list with changed params'):
             user_row = users_page.get_user_row_by_username(ldap_user_in_group['name'])
             assert test_group.name in user_row.text, "User group didn't changed"
+
+    @pytest.mark.ldap()
+    @pytest.mark.usefixtures("configure_adcm_ldap_ad")
+    def test_filter_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
+        """Check that users can be filtered"""
+
+        with allure.step("Wait ldap integration ends"):
+            wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), 'success')
+        users_page.driver.refresh()
+        users_page.filter_users_by("status", "active")
+        with allure.step("Check users are filtered by active status"):
+            assert users_page.get_all_user_names() == [
+                user.username for user in sdk_client_fs.user_list(is_active=True)
+            ], "Not all active users are visible"
+        users_page.remove_user_filter()
+        users_page.filter_users_by("status", "inactive")
+        with allure.step("Check users are filtered by inactive status"):
+            assert users_page.get_all_user_names() == [
+                user.username for user in sdk_client_fs.user_list(is_active=False)
+            ], "Not all inactive users are visible"
+        users_page.remove_user_filter()
+        users_page.filter_users_by("type", "local")
+        with allure.step("Check users are filtered by local type"):
+            assert users_page.get_all_user_names() == [
+                user.username for user in sdk_client_fs.user_list(type='local')
+            ], "Not all local users are visible"
+        users_page.remove_user_filter()
+        users_page.filter_users_by("type", "ldap")
+        with allure.step("Check users are filtered by ldap status"):
+            assert users_page.get_all_user_names() == [
+                user.username for user in sdk_client_fs.user_list(type='ldap')
+            ], "Not all ldap users are visible"
+        users_page.filter_users_by("status", "active")
+        with allure.step("Check users are filtered both by active status and ldap"):
+            assert users_page.get_all_user_names() == [
+                user.username for user in sdk_client_fs.user_list(is_active=True, type='ldap')
+            ], "Not all active ldap users are visible"
 
 
 @pytest.mark.usefixtures("login_to_adcm_over_api")
