@@ -326,7 +326,7 @@ def make_audit_log(operation_type, result, operation_status):
     cef_logger(audit_instance=audit_log, signature_id="Background operation", empty_resource=True)
 
 
-def audit_finish_task(obj, action_display_name: str, action_id: int, status: str) -> None:
+def audit_finish_task(obj, action_display_name: str, status: str) -> None:
     obj_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP.get(obj.__class__)
     if not obj_type:
         return

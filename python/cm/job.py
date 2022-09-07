@@ -751,7 +751,6 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
     audit_finish_task(
         obj=obj,
         action_display_name=action.display_name,
-        action_id=action.pk,
         status=status,
     )
 
