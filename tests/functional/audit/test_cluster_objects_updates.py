@@ -269,7 +269,7 @@ class TestImportAudit:
             parse_with_context(
                 {
                     'import_cluster': import_cluster.name,
-                    'import_service': f'{import_cluster.name}/{import_cluster.service().display_name}',
+                    'import_service': import_cluster.service().display_name,
                     'cluster_import_success_msg': export_cluster.name,
                     'service_import_success_msg': f'{export_cluster.name}/{export_service_dn}',
                     'username': NEW_USER['username'],
