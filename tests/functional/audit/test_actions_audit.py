@@ -220,7 +220,7 @@ class TestProviderObjectActions(RunActionTestMixin):
     def test_simple_run_host_action(self, provider, cluster, sdk_client_fs):
         """Test audit of successful launch of `host_action: true`"""
         host = cluster.host_add(provider.host())
-        action = host.action(name='host_action')
+        action = host.action(name="host_action")
         url = f"{sdk_client_fs.url}/api/v1/host/{host.id}/action/{action.id}/run/"
         check_succeed(requests.post(url, json={"config": {"param": 1}}, headers=make_auth_header(sdk_client_fs)))
         audit_log: AuditOperation = sdk_client_fs.audit_operation_list()[0]
