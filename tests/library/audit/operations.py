@@ -52,7 +52,8 @@ class NamedOperation(NamedTuple):
                 'Please check definition of an operation.'
             )
         try:
-            return self.naming_template.format(type_=object_type.value.capitalize(), **format_args)
+            type_ = object_type.value.capitalize() if object_type != ObjectType.ADCM else object_type.value.upper()
+            return self.naming_template.format(type_=type_, **format_args).strip()
         except KeyError as e:
             raise KeyError(
                 f'It looks like you missed some keys required to format "{self.naming_template}" string\n'
@@ -87,22 +88,10 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         NamedOperation('set-hostcomponent', 'Host-Component map updated', (ObjectType.CLUSTER,)),
         # configs
         NamedOperation(
-            'set-config',
+            'set-config',  # restore is the same
             '{type_} configuration updated',
             _OBJECTS_WITH_ACTIONS_AND_CONFIGS,
         ),
-        # group configs
-        NamedOperation(
-            'add-host-to-gc',
-            '{name} host added to {group_name} configuration group',
-            _OBJECTS_WITH_CONFIG_GROUPS,
-        ),
-        NamedOperation(
-            'remove-host-from-gc',
-            '{name} host removed from {group_name} configuration group',
-            _OBJECTS_WITH_CONFIG_GROUPS,
-        ),
-        NamedOperation('delete-cg', '{group_name} configuration group deleted', _OBJECTS_WITH_CONFIG_GROUPS),
         # RBAC
         NamedOperation(
             'change-properties',
@@ -117,9 +106,24 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         NamedOperation('complete-background-task', '"{name}" job completed', (ObjectType.ADCM,)),
         # Group config
         NamedOperation(
+            'add-host-to-group-config',
+            '{host} host added to {name} configuration group',
+            _OBJECTS_WITH_CONFIG_GROUPS,
+        ),
+        NamedOperation(
+            'remove-host-from-group-config',
+            '{host} host removed from {name} configuration group',
+            _OBJECTS_WITH_CONFIG_GROUPS,
+        ),
+        NamedOperation(
+            'update-group-config',
+            '{name} configuration group updated',
+            _OBJECTS_WITH_CONFIG_GROUPS,
+        ),
+        NamedOperation(
             'delete-group-config',
             '{name} configuration group deleted',
-            (ObjectType.CLUSTER, ObjectType.SERVICE, ObjectType.COMPONENT),
+            _OBJECTS_WITH_CONFIG_GROUPS,
         ),
     )
 }
@@ -226,7 +230,7 @@ class Operation:
         """
         There are cases when object type is required for building operation name,
         but will not be presented in operation object (audit object reference == None).
-        This funciton sets object-related fields to None based on the case.
+        This function sets object-related fields to None based on the case.
         """
         if (
             (
