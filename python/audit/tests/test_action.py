@@ -34,12 +34,14 @@ from cm.models import (
     Cluster,
     ClusterObject,
     ConfigLog,
+    Host,
     ObjectConfig,
     Prototype,
     ServiceComponent,
     TaskLog,
 )
-from rbac.models import User
+from rbac.models import Policy, Role, User
+from rbac.upgrade.role import init_roles
 
 
 class TestAction(BaseTestCase):
@@ -158,7 +160,7 @@ class TestAction(BaseTestCase):
             obj_name=self.adcm_name,
             obj_type=AuditObjectType.ADCM,
             operation_name=f"{self.action.display_name} action launched",
-            operation_result=AuditLogOperationResult.Fail,
+            operation_result=AuditLogOperationResult.Denied,
             user=self.test_user,
         )
 
@@ -233,3 +235,65 @@ class TestAction(BaseTestCase):
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
         )
+
+    def test_host_denied(self):
+        init_roles()
+
+        adcm_role = Role.objects.get(name="View ADCM settings")
+        adcm_policy = Policy.objects.create(name="test_adcm_policy", role=adcm_role)
+        adcm_policy.user.add(self.no_rights_user)
+        adcm_policy.add_object(self.adcm)
+        adcm_policy.apply()
+
+        host = Host.objects.create(
+            fqdn="test_host",
+            prototype=Prototype.objects.create(bundle=self.bundle, type="host"),
+        )
+        host_role = Role.objects.get(name="View host configurations")
+        host_policy = Policy.objects.create(name="test_host_policy", role=host_role)
+        host_policy.user.add(self.no_rights_user)
+        host_policy.add_object(host)
+        host_policy.apply()
+
+        cluster, service, component = self.get_cluster_service_component()
+        component_role = Role.objects.get(name="View component configurations")
+        component_policy = Policy.objects.create(name="test_component_policy", role=component_role)
+        component_policy.user.add(self.no_rights_user)
+        component_policy.add_object(component)
+        component_policy.apply()
+
+        paths = [
+            reverse("run-task", kwargs={"adcm_id": self.adcm.pk, "action_id": self.action.pk}),
+            reverse("run-task", kwargs={"cluster_id": cluster.pk, "action_id": self.action.pk}),
+            reverse("run-task", kwargs={"host_id": host.pk, "action_id": self.action.pk}),
+            reverse("run-task", kwargs={"component_id": component.pk, "action_id": self.action.pk}),
+            reverse(
+                "run-task",
+                kwargs={
+                    "service_id": service.pk,
+                    "component_id": component.pk,
+                    "action_id": self.action.pk,
+                },
+            ),
+            reverse(
+                "run-task",
+                kwargs={
+                    "cluster_id": cluster.pk,
+                    "service_id": service.pk,
+                    "component_id": component.pk,
+                    "action_id": self.action.pk,
+                },
+            ),
+        ]
+
+        with (
+            patch(self.action_create_view, return_value=Response(status=HTTP_201_CREATED)),
+            self.no_rights_user_logged_in,
+        ):
+            for path in paths:
+                response: Response = self.client.post(path=path)
+
+                log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+                self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+                self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)

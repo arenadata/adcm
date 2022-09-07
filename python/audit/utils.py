@@ -20,7 +20,12 @@ from django.http.response import Http404
 from django.views.generic.base import View
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.request import Request
-from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, is_success
+from rest_framework.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    is_success,
+)
 from rest_framework.viewsets import ModelViewSet
 
 from audit.cases.cases import get_audit_operation_and_object
@@ -35,7 +40,15 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterBind, ClusterObject, Host, HostProvider, TaskLog
+from cm.models import (
+    Action,
+    Cluster,
+    ClusterBind,
+    ClusterObject,
+    Host,
+    HostProvider,
+    TaskLog,
+)
 from rbac.endpoints.group.serializers import GroupAuditSerializer
 from rbac.endpoints.policy.serializers import PolicyAuditSerializer
 from rbac.endpoints.role.serializers import RoleAuditSerializer
@@ -227,6 +240,13 @@ def audit(func):
 
             if not deleted_obj:
                 status_code = exc.status_code
+                if (
+                    status_code == HTTP_404_NOT_FOUND
+                    and kwargs.get("action_id")
+                    and Action.objects.filter(pk=kwargs["action_id"]).exists()
+                ):
+                    status_code = HTTP_403_FORBIDDEN
+
             else:  # when denied returns 404 from PermissionListMixin
                 if getattr(exc, "msg", None) and (  # pylint: disable=too-many-boolean-expressions
                     "There is host" in exc.msg
