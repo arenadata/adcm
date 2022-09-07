@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 120
-skip-string-normalization = false
+skip-string-normalization = true
 target-version = ['py39']
 include = '\.py$'
 exclude = '''
