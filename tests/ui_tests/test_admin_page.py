@@ -416,37 +416,32 @@ class TestAdminUsersPage:
         users_page.driver.refresh()
         users_page.filter_users_by("status", "active")
         with allure.step("Check users are filtered by active status"):
-            active_users = sdk_client_fs.user_list(is_active=True).data
-            assert len(users_page.get_all_user_rows()) == len(
-                active_users
-            ), f"Should be {len(active_users)} visible active users"
+            assert users_page.get_all_user_names() == [
+                user.username for user in sdk_client_fs.user_list(is_active=True)
+            ], "Not all active users are visible"
         users_page.remove_user_filter()
         users_page.filter_users_by("status", "inactive")
         with allure.step("Check users are filtered by inactive status"):
-            inactive_users = sdk_client_fs.user_list(is_active=False).data
-            assert len(users_page.get_all_user_rows()) == len(
-                inactive_users
-            ), f"Should be {len(inactive_users)} visible inactive users"
+            assert users_page.get_all_user_names() == [
+                user.username for user in sdk_client_fs.user_list(is_active=False)
+            ], "Not all inactive users are visible"
         users_page.remove_user_filter()
         users_page.filter_users_by("type", "local")
         with allure.step("Check users are filtered by local type"):
-            local_users = sdk_client_fs.user_list(type='local').data
-            assert len(users_page.get_all_user_rows()) == len(
-                local_users
-            ), f"Should be {len(local_users)} visible local users"
+            assert users_page.get_all_user_names() == [
+                user.username for user in sdk_client_fs.user_list(type='local')
+            ], "Not all local users are visible"
         users_page.remove_user_filter()
         users_page.filter_users_by("type", "ldap")
         with allure.step("Check users are filtered by ldap status"):
-            ldap_users = sdk_client_fs.user_list(type='ldap').data
-            assert len(users_page.get_all_user_rows()) == len(
-                ldap_users
-            ), f"Should be {len(ldap_users)} visible ldap users"
+            assert users_page.get_all_user_names() == [
+                user.username for user in sdk_client_fs.user_list(type='ldap')
+            ], "Not all ldap users are visible"
         users_page.filter_users_by("status", "active")
         with allure.step("Check users are filtered both by active status and ldap"):
-            active_ldap_users = sdk_client_fs.user_list(is_active=True, type='ldap').data
-            assert len(users_page.get_all_user_rows()) == len(
-                active_ldap_users
-            ), f"Should be {active_ldap_users} visible active ldap users"
+            assert users_page.get_all_user_names() == [
+                user.username for user in sdk_client_fs.user_list(is_active=True, type='ldap')
+            ], "Not all active ldap users are visible"
 
 
 @pytest.mark.usefixtures("login_to_adcm_over_api")
