@@ -17,7 +17,7 @@ from adwp_base.errors import AdwpEx
 from django.contrib.auth.models import User as DjangoUser
 from django.db.models import Model
 from django.http.response import Http404
-from django.urls import reverse
+from django.urls import resolve
 from django.views.generic.base import View
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.request import Request
@@ -279,7 +279,7 @@ def audit(func):
                 user=user,
                 object_changes=object_changes,
             )
-            cef_logger(audit_instance=auditlog, signature_id=request.path)
+            cef_logger(audit_instance=auditlog, signature_id=resolve(request.path).route)
 
         if error:
             raise error
@@ -349,10 +349,4 @@ def audit_finish_task(obj, action_display_name: str, action_id: int, status: str
         object_changes={},
     )
 
-    cef_logger(
-        audit_instance=audit_log,
-        signature_id=reverse(
-            "run-task",
-            kwargs={'object_type': obj_type, f"{obj_type}_id": obj.pk, "action_id": action_id},
-        ),
-    )
+    cef_logger(audit_instance=audit_log, signature_id="Action completion")
