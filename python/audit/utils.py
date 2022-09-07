@@ -17,6 +17,7 @@ from adwp_base.errors import AdwpEx
 from django.contrib.auth.models import User as DjangoUser
 from django.db.models import Model
 from django.http.response import Http404
+from django.urls import reverse
 from django.views.generic.base import View
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.request import Request
@@ -325,7 +326,7 @@ def make_audit_log(operation_type, result, operation_status):
     cef_logger(audit_instance=audit_log, signature_id="Background operation", empty_resource=True)
 
 
-def audit_finish_task(obj, action_display_name: str, status: str) -> None:
+def audit_finish_task(obj, action_display_name: str, action_id: int, status: str) -> None:
     obj_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP.get(obj.__class__)
     if not obj_type:
         return
@@ -340,10 +341,18 @@ def audit_finish_task(obj, action_display_name: str, status: str) -> None:
     else:
         operation_result = AuditLogOperationResult.Fail
 
-    AuditLog.objects.create(
+    audit_log = AuditLog.objects.create(
         audit_object=audit_object,
         operation_name=f"{action_display_name} action completed",
         operation_type=AuditLogOperationType.Update,
         operation_result=operation_result,
         object_changes={},
+    )
+
+    cef_logger(
+        audit_instance=audit_log,
+        signature_id=reverse(
+            "run-task",
+            kwargs={'object_type': obj_type, f"{obj_type}_id": obj.pk, "action_id": action_id},
+        ),
     )
