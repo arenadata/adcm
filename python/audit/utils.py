@@ -32,7 +32,6 @@ from audit.models import (
     AuditLogOperationResult,
     AuditLogOperationType,
     AuditObject,
-    AuditObjectType,
     AuditOperation,
 )
 from cm.errors import AdcmEx
@@ -85,6 +84,8 @@ def _get_deleted_obj(view: View, request: Request, kwargs) -> Model | None:
     except PermissionDenied:
         if "cluster_id" in kwargs:
             deleted_obj = Cluster.objects.filter(pk=kwargs["cluster_id"]).first()
+        elif "service_id" in kwargs:
+            deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
         else:
             deleted_obj = None
 
@@ -329,14 +330,9 @@ def audit_finish_task(obj, action_display_name: str, status: str) -> None:
     if not obj_type:
         return
 
-    if obj_type == AuditObjectType.Host:
-        obj_name = obj.fqdn
-    else:
-        obj_name = obj.name
-
     audit_object = get_or_create_audit_obj(
         object_id=obj.pk,
-        object_name=obj_name,
+        object_name=obj.name,
         object_type=obj_type,
     )
     if status == "success":

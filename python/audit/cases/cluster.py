@@ -23,20 +23,20 @@ CONFIGURATION_STR = "configuration "
 def get_export_cluster_and_service_names(response: Response, view: View) -> tuple[str, str]:
     cluster, service = None, None
     cluster_name, service_name = "", ""
-    if response and response.data and response.data.get("export_cluster_id"):
+    if response and response.data and isinstance(response.data.get("export_cluster_id"), int):
         cluster = Cluster.objects.filter(
             pk=response.data["export_cluster_id"],
         ).first()
-    elif view.request.data.get("export_cluster_id"):
+    elif isinstance(view.request.data.get("export_cluster_id"), int):
         cluster = Cluster.objects.filter(
             pk=view.request.data["export_cluster_id"],
         ).first()
 
-    if response and response.data and response.data.get("export_service_id"):
+    if response and response.data and isinstance(response.data.get("export_service_id"), int):
         service = ClusterObject.objects.filter(
             pk=response.data["export_service_id"],
         ).first()
-    elif view.request.data.get("export_service_id"):
+    elif isinstance(view.request.data.get("export_service_id"), int):
         service = ClusterObject.objects.filter(
             pk=view.request.data["export_service_id"],
         ).first()
@@ -50,9 +50,11 @@ def get_export_cluster_and_service_names(response: Response, view: View) -> tupl
 
 
 def make_export_name(cluster_name: str, service_name: str) -> str:
-    export_name = cluster_name
-    if service_name:
+    export_name = ""
+    if cluster_name and service_name:
         export_name = f"{cluster_name}/{service_name}"
+    elif cluster_name:
+        export_name = f"{cluster_name}"
     return export_name
 
 
@@ -165,7 +167,7 @@ def cluster_case(
 
         case ["cluster", cluster_pk, "service"]:
             audit_operation = AuditOperation(
-                name="{service_display_name} service added",
+                name="service added",
                 operation_type=AuditLogOperationType.Update,
             )
 
@@ -179,9 +181,7 @@ def cluster_case(
                     service_display_name = get_service_name(service)
 
             if service_display_name:
-                audit_operation.name = audit_operation.name.format(
-                    service_display_name=service_display_name,
-                )
+                audit_operation.name = f"{service_display_name} {audit_operation.name}"
 
             obj = Cluster.objects.get(pk=cluster_pk)
             audit_object = get_or_create_audit_obj(
@@ -192,7 +192,7 @@ def cluster_case(
 
         case ["cluster", cluster_pk, "service", service_pk]:
             audit_operation = AuditOperation(
-                name="{service_display_name} service removed",
+                name="service removed",
                 operation_type=AuditLogOperationType.Update,
             )
 
@@ -207,9 +207,7 @@ def cluster_case(
                         service_display_name = get_service_name(service)
 
             if service_display_name:
-                audit_operation.name = audit_operation.name.format(
-                    service_display_name=service_display_name,
-                )
+                audit_operation.name = f"{service_display_name} {audit_operation.name}"
 
             obj = Cluster.objects.get(pk=cluster_pk)
             audit_object = get_or_create_audit_obj(
@@ -223,7 +221,7 @@ def cluster_case(
             cluster_name, service_name = get_export_cluster_and_service_names(response, view)
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Service.capitalize()} bound to "
-                f"{make_export_name(cluster_name, service_name)}",
+                f"{make_export_name(cluster_name, service_name)}".strip(),
                 operation_type=AuditLogOperationType.Update,
             )
             audit_object = get_or_create_audit_obj(
@@ -234,13 +232,15 @@ def cluster_case(
 
         case ["cluster", _, "service", service_pk, "bind", _]:
             service = ClusterObject.objects.get(pk=service_pk)
-            service_name = ""
-            if deleted_obj and isinstance(deleted_obj, ClusterBind) and deleted_obj.source_service:
-                deleted_obj: ClusterBind
-                service_name = get_service_name(deleted_obj.source_service)
+            cluster_name, service_name = "", ""
+            if deleted_obj and isinstance(deleted_obj, ClusterBind):
+                cluster_name = deleted_obj.source_cluster.name
+                if deleted_obj.source_service:
+                    deleted_obj: ClusterBind
+                    service_name = get_service_name(deleted_obj.source_service)
 
             audit_operation = AuditOperation(
-                name=f"{make_export_name(deleted_obj.source_cluster.name, service_name)} unbound",
+                name=f"{make_export_name(cluster_name, service_name)} unbound".strip(),
                 operation_type=AuditLogOperationType.Update,
             )
             audit_object = get_or_create_audit_obj(
@@ -302,7 +302,7 @@ def cluster_case(
 
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Cluster.capitalize()} bound to "
-                f"{make_export_name(cluster_name, service_name)}",
+                f"{make_export_name(cluster_name, service_name)}".strip(),
                 operation_type=AuditLogOperationType.Update,
             )
             audit_object = get_or_create_audit_obj(
@@ -314,13 +314,15 @@ def cluster_case(
         case ["cluster", cluster_pk, "bind", _]:
             obj = Cluster.objects.get(pk=cluster_pk)
 
-            service_name = ""
-            if deleted_obj and isinstance(deleted_obj, ClusterBind) and deleted_obj.source_service:
-                deleted_obj: ClusterBind
-                service_name = get_service_name(deleted_obj.source_service)
+            cluster_name, service_name = "", ""
+            if deleted_obj and isinstance(deleted_obj, ClusterBind):
+                cluster_name = deleted_obj.source_cluster.name
+                if deleted_obj.source_service:
+                    deleted_obj: ClusterBind
+                    service_name = get_service_name(deleted_obj.source_service)
 
             audit_operation = AuditOperation(
-                name=f"{make_export_name(deleted_obj.source_cluster.name, service_name)} unbound",
+                name=f"{make_export_name(cluster_name, service_name)} unbound".strip(),
                 operation_type=AuditLogOperationType.Update,
             )
 

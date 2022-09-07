@@ -14,9 +14,9 @@ from cm.models import Action, ClusterObject, TaskLog, Upgrade
 
 
 def _get_audit_operation(
-        obj_type: AuditObjectType,
-        operation_type: AuditLogOperationType,
-        operation_aux_str: str | None = None
+    obj_type: AuditObjectType,
+    operation_type: AuditLogOperationType,
+    operation_aux_str: str | None = None,
 ):
     if obj_type == AuditObjectType.ADCM:
         operation_name = obj_type.upper()
@@ -37,28 +37,26 @@ def _task_case(task_pk: str, action: str) -> tuple[AuditOperation, AuditObject |
     if action == "cancel":
         action = f"{action}l"
 
-    obj = TaskLog.objects.get(pk=task_pk)
-    obj_type = obj.object_type.name
+    obj = TaskLog.objects.filter(pk=task_pk).first()
 
-    if obj_type == "adcm":
-        obj_type = obj_type.upper()
-    else:
-        obj_type = obj_type.capitalize()
-
-    if obj.action:
+    if obj and obj.action:
         action_name = obj.action.display_name
     else:
         action_name = "task"
 
     audit_operation = AuditOperation(
-        name=f"{obj_type} {action_name} {action}ed",
+        name=f"{action_name} {action}ed".capitalize(),
         operation_type=AuditLogOperationType.Update,
     )
-    audit_object = get_or_create_audit_obj(
-        object_id=task_pk,
-        object_name=obj.task_object.name,
-        object_type=obj.object_type.name,
-    )
+
+    if obj:
+        audit_object = get_or_create_audit_obj(
+            object_id=task_pk,
+            object_name=obj.task_object.name,
+            object_type=obj.object_type.name,
+        )
+    else:
+        audit_object = None
 
     return audit_operation, audit_object
 
@@ -83,7 +81,11 @@ def get_obj_name(obj: Model, obj_type: str) -> str:
     return obj_name
 
 
-def get_or_create_audit_obj(object_id: str, object_name: str, object_type: str) -> AuditObject:
+def get_or_create_audit_obj(
+        object_id: str,
+        object_name: str,
+        object_type: str,
+) -> AuditObject:
     audit_object = AuditObject.objects.filter(
         object_id=object_id,
         object_type=object_type,
@@ -125,10 +127,10 @@ def get_service_name(service: ClusterObject) -> str:
 
 
 def response_case(
-        obj_type: AuditObjectType,
-        operation_type: AuditLogOperationType,
-        response: Response | None = None,
-        operation_aux_str: str | None = None
+    obj_type: AuditObjectType,
+    operation_type: AuditLogOperationType,
+    response: Response | None = None,
+    operation_aux_str: str | None = None,
 ) -> tuple[AuditOperation, AuditObject | None]:
     audit_operation = _get_audit_operation(
         obj_type=obj_type,
@@ -141,11 +143,11 @@ def response_case(
 
 
 def obj_pk_case(
-        obj_type: AuditObjectType,
-        operation_type: AuditLogOperationType,
-        obj_pk: int,
-        obj_name: str | None = None,
-        operation_aux_str: str | None = None,
+    obj_type: AuditObjectType,
+    operation_type: AuditLogOperationType,
+    obj_pk: int,
+    obj_name: str | None = None,
+    operation_aux_str: str | None = None,
 ) -> tuple[AuditOperation, AuditObject | None]:
     audit_operation = _get_audit_operation(
         obj_type=obj_type,
@@ -173,6 +175,7 @@ def action_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | Non
         case (
             [obj_type, obj_pk, "action", action_pk, "run"]
             | [_, _, obj_type, obj_pk, "action", action_pk, "run"]
+            | [_, _, _, _, obj_type, obj_pk, "action", action_pk, "run"]
         ):
             audit_operation = AuditOperation(
                 name="{action_display_name} action launched",

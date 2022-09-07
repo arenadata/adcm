@@ -9,3 +9,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+- type: cluster
+  name: cluster_for_updates
+  version: 1.2
+  config_group_customization: true
+
+  config: &config
+    - &param
+      name: param_1
+      type: string
+      required: false
+    - <<: *param
+      name: param_2
+    - <<: *param
+      name: param_3
+
+- type: service
+  name: service_for_updates
+  version: 1.1
+  config_group_customization: true
+
+  config: *config
+
+  components:
+    component_for_updates:
+      config_group_customization: true
+      config: *config

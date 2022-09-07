@@ -1,0 +1,129 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from adcm.tests.base import BaseTestCase
+from cm.api import add_host_to_cluster, save_hc
+from cm.errors import AdcmEx
+from cm.job import check_hostcomponentmap
+from cm.models import Action, ClusterObject, Host, ServiceComponent
+from cm.tests.test_upgrade import (
+    cook_cluster,
+    cook_cluster_bundle,
+    cook_provider,
+    cook_provider_bundle,
+)
+
+
+class TestHC(BaseTestCase):
+    def test_action_hc_simple(self):  # pylint: disable=too-many-locals
+        b1 = cook_cluster_bundle("1.0")
+        cluster = cook_cluster(b1, "Test1")
+        b2 = cook_provider_bundle("1.0")
+        provider = cook_provider(b2, "DF01")
+        h1 = Host.objects.get(provider=provider, fqdn="server01.inter.net")
+        action = Action(name="run")
+        hc_list, _ = check_hostcomponentmap(cluster, action, [])
+
+        self.assertEqual(hc_list, None)
+
+        try:
+            action = Action(name="run", hostcomponentmap="qwe")
+            hc_list, _ = check_hostcomponentmap(cluster, action, [])
+
+            self.assertNotEqual(hc_list, None)
+        except AdcmEx as e:
+            self.assertEqual(e.code, "TASK_ERROR")
+            self.assertEqual(e.msg, "hc is required")
+
+        co = ClusterObject.objects.get(cluster=cluster, prototype__name="hadoop")
+        sc1 = ServiceComponent.objects.get(cluster=cluster, service=co, prototype__name="server")
+        try:
+            action = Action(name="run", hostcomponentmap="qwe")
+            hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": 500}]
+            hc_list, _ = check_hostcomponentmap(cluster, action, hc)
+
+            self.assertNotEqual(hc_list, None)
+        except AdcmEx as e:
+            self.assertEqual(e.code, "HOST_NOT_FOUND")
+
+        try:
+            action = Action(name="run", hostcomponentmap="qwe")
+            hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": h1.id}]
+            hc_list, _ = check_hostcomponentmap(cluster, action, hc)
+
+            self.assertNotEqual(hc_list, None)
+        except AdcmEx as e:
+            self.assertEqual(e.code, "FOREIGN_HOST")
+
+        add_host_to_cluster(cluster, h1)
+        try:
+            action = Action(name="run", hostcomponentmap="qwe")
+            hc = [{"service_id": 500, "component_id": sc1.id, "host_id": h1.id}]
+            hc_list, _ = check_hostcomponentmap(cluster, action, hc)
+
+            self.assertNotEqual(hc_list, None)
+        except AdcmEx as e:
+            self.assertEqual(e.code, "CLUSTER_SERVICE_NOT_FOUND")
+
+        try:
+            action = Action(name="run", hostcomponentmap="qwe")
+            hc = [{"service_id": co.id, "component_id": 500, "host_id": h1.id}]
+            hc_list, _ = check_hostcomponentmap(cluster, action, hc)
+
+            self.assertNotEqual(hc_list, None)
+        except AdcmEx as e:
+            self.assertEqual(e.code, "COMPONENT_NOT_FOUND")
+
+    def test_action_hc(self):  # pylint: disable=too-many-locals
+        b1 = cook_cluster_bundle("1.0")
+        cluster = cook_cluster(b1, "Test1")
+        b2 = cook_provider_bundle("1.0")
+        provider = cook_provider(b2, "DF01")
+
+        h1 = Host.objects.get(provider=provider, fqdn="server01.inter.net")
+        h2 = Host.objects.get(provider=provider, fqdn="server02.inter.net")
+        co = ClusterObject.objects.get(cluster=cluster, prototype__name="hadoop")
+        sc1 = ServiceComponent.objects.get(cluster=cluster, service=co, prototype__name="server")
+
+        add_host_to_cluster(cluster, h1)
+        add_host_to_cluster(cluster, h2)
+
+        try:
+            act_hc = [{"service": "hadoop", "component": "server", "action": "delete"}]
+            action = Action(name="run", hostcomponentmap=act_hc)
+            hc = [{"service_id": co.id, "component_id": sc1.id, "host_id": h1.id}]
+            hc_list, _ = check_hostcomponentmap(cluster, action, hc)
+
+            self.assertNotEqual(hc_list, None)
+        except AdcmEx as e:
+            self.assertEqual(e.code, "WRONG_ACTION_HC")
+            self.assertEqual(e.msg[:32], 'no permission to "add" component')
+
+        act_hc = [{"service": "hadoop", "component": "server", "action": "add"}]
+        action = Action(name="run", hostcomponentmap=act_hc)
+        hc = [
+            {"service_id": co.id, "component_id": sc1.id, "host_id": h1.id},
+            {"service_id": co.id, "component_id": sc1.id, "host_id": h2.id},
+        ]
+        hc_list, _ = check_hostcomponentmap(cluster, action, hc)
+
+        self.assertNotEqual(hc_list, None)
+
+        save_hc(cluster, hc_list)
+        act_hc = [{"service": "hadoop", "component": "server", "action": "remove"}]
+        action = Action(name="run", hostcomponentmap=act_hc)
+        hc = [
+            {"service_id": co.id, "component_id": sc1.id, "host_id": h2.id},
+        ]
+        hc_list, _ = check_hostcomponentmap(cluster, action, hc)
+
+        self.assertNotEqual(hc_list, None)

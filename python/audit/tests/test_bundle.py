@@ -42,55 +42,53 @@ class TestBundle(BaseTestCase):
         )
         Prototype.objects.create(bundle=self.bundle, type="cluster", name=bundle_name)
 
-    @staticmethod
     def check_log_upload(
-        log: AuditLog, operation_result: AuditLogOperationResult, user: User
+        self, log: AuditLog, operation_result: AuditLogOperationResult, user: User
     ) -> None:
-        assert not log.audit_object
-        assert log.operation_name == "Bundle uploaded"
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, "Bundle uploaded")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.object_changes, {})
 
-    @staticmethod
     def check_log_load_no_obj(
-        log: AuditLog, operation_result: AuditLogOperationResult, user: User
+        self, log: AuditLog, operation_result: AuditLogOperationResult, user: User
     ) -> None:
-        assert not log.audit_object
-        assert log.operation_name == "Bundle loaded"
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertFalse(log.audit_object)
+        self.assertEqual(log.operation_name, "Bundle loaded")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, user.pk)
+        self.assertEqual(log.object_changes, {})
 
     def check_log_denied(
         self, log: AuditLog, operation_name: str, operation_type: AuditLogOperationType
     ) -> None:
-        assert log.audit_object.object_id == self.bundle.pk
-        assert log.audit_object.object_name == self.bundle.name
-        assert log.audit_object.object_type == AuditObjectType.Bundle
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == operation_name
-        assert log.operation_type == operation_type
-        assert log.operation_result == AuditLogOperationResult.Denied
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.no_rights_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, self.bundle.pk)
+        self.assertEqual(log.audit_object.object_name, self.bundle.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Bundle)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, operation_name)
+        self.assertEqual(log.operation_type, operation_type)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Denied)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.no_rights_user.pk)
+        self.assertEqual(log.object_changes, {})
 
     def check_log_deleted(self, log: AuditLog, operation_result: AuditLogOperationResult):
-        assert log.audit_object.object_id == self.bundle.pk
-        assert log.audit_object.object_name == self.bundle.name
-        assert log.audit_object.object_type == AuditObjectType.Bundle
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Bundle deleted"
-        assert log.operation_type == AuditLogOperationType.Delete
-        assert log.operation_result == operation_result
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, self.bundle.pk)
+        self.assertEqual(log.audit_object.object_name, self.bundle.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Bundle)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, "Bundle deleted")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Delete)
+        self.assertEqual(log.operation_result, operation_result)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.object_changes, {})
 
     def load_bundle(self) -> Response:
         return self.client.post(
@@ -111,16 +109,16 @@ class TestBundle(BaseTestCase):
         response: Response = self.load_bundle()
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == response.data["id"]
-        assert log.audit_object.object_name == "hc_acl_in_service_noname"
-        assert log.audit_object.object_type == AuditObjectType.Bundle
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Bundle loaded"
-        assert log.operation_type == AuditLogOperationType.Create
-        assert log.operation_result == AuditLogOperationResult.Success
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, response.data["id"])
+        self.assertEqual(log.audit_object.object_name, "hc_acl_in_service_noname")
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Bundle)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, "Bundle loaded")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Create)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.object_changes, {})
 
         return response
 
@@ -156,7 +154,7 @@ class TestBundle(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.first()
 
-        assert response.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_upload(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
@@ -203,7 +201,7 @@ class TestBundle(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert response.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_load_no_obj(
             log=log, operation_result=AuditLogOperationResult.Denied, user=self.no_rights_user
         )
@@ -214,7 +212,7 @@ class TestBundle(BaseTestCase):
         Bundle.objects.get(pk=response.data["id"]).delete()
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.is_deleted
+        self.assertTrue(log.audit_object.is_deleted)
 
     def test_update(self):
         with patch("api.stack.views.update_bundle"):
@@ -225,16 +223,16 @@ class TestBundle(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == self.bundle.pk
-        assert log.audit_object.object_name == self.bundle.name
-        assert log.audit_object.object_type == AuditObjectType.Bundle
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Bundle updated"
-        assert log.operation_type == AuditLogOperationType.Update
-        assert log.operation_result == AuditLogOperationResult.Success
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, self.bundle.pk)
+        self.assertEqual(log.audit_object.object_name, self.bundle.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Bundle)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, "Bundle updated")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.object_changes, {})
 
     def test_update_denied(self):
         with self.no_rights_user_logged_in:
@@ -245,7 +243,7 @@ class TestBundle(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert response.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_denied(
             log=log, operation_name="Bundle updated", operation_type=AuditLogOperationType.Update
         )
@@ -255,16 +253,16 @@ class TestBundle(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert log.audit_object.object_id == self.bundle.pk
-        assert log.audit_object.object_name == self.bundle.name
-        assert log.audit_object.object_type == AuditObjectType.Bundle
-        assert not log.audit_object.is_deleted
-        assert log.operation_name == "Bundle license accepted"
-        assert log.operation_type == AuditLogOperationType.Update
-        assert log.operation_result == AuditLogOperationResult.Success
-        assert isinstance(log.operation_time, datetime)
-        assert log.user.pk == self.test_user.pk
-        assert isinstance(log.object_changes, dict)
+        self.assertEqual(log.audit_object.object_id, self.bundle.pk)
+        self.assertEqual(log.audit_object.object_name, self.bundle.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Bundle)
+        self.assertFalse(log.audit_object.is_deleted)
+        self.assertEqual(log.operation_name, "Bundle license accepted")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.object_changes, {})
 
     def test_license_accepted_denied(self):
         with self.no_rights_user_logged_in:
@@ -274,7 +272,7 @@ class TestBundle(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert response.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_denied(
             log=log,
             operation_name="Bundle license accepted",
@@ -297,7 +295,7 @@ class TestBundle(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert response.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_denied(
             log=log, operation_name="Bundle deleted", operation_type=AuditLogOperationType.Delete
         )

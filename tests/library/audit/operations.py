@@ -52,7 +52,8 @@ class NamedOperation(NamedTuple):
                 'Please check definition of an operation.'
             )
         try:
-            return self.naming_template.format(type_=object_type.value.capitalize(), **format_args)
+            type_ = object_type.value.capitalize() if object_type != ObjectType.ADCM else object_type.value.upper()
+            return self.naming_template.format(type_=type_, **format_args).strip()
         except KeyError as e:
             raise KeyError(
                 f'It looks like you missed some keys required to format "{self.naming_template}" string\n'
@@ -81,34 +82,27 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         NamedOperation('change-description', 'Bundle updated', (ObjectType.BUNDLE,)),
         # cluster
         NamedOperation('add-service', '{name} service added', (ObjectType.CLUSTER,)),
-        NamedOperation('delete-service', '{name} service deleted', (ObjectType.CLUSTER,)),
+        NamedOperation('remove-service', '{name} service removed', (ObjectType.CLUSTER,)),
         NamedOperation('add-host', '{name} host added', (ObjectType.CLUSTER,)),
         NamedOperation('remove-host', '{name} host removed', (ObjectType.CLUSTER,)),
         NamedOperation('set-hostcomponent', 'Host-Component map updated', (ObjectType.CLUSTER,)),
         # configs
         NamedOperation(
-            'set-config',
+            'set-config',  # restore is the same
             '{type_} configuration updated',
             _OBJECTS_WITH_ACTIONS_AND_CONFIGS,
         ),
-        # group configs
-        NamedOperation(
-            'add-host-to-gc',
-            '{name} host added to {group_name} configuration group',
-            _OBJECTS_WITH_CONFIG_GROUPS,
-        ),
-        NamedOperation(
-            'remove-host-from-gc',
-            '{name} host removed from {group_name} configuration group',
-            _OBJECTS_WITH_CONFIG_GROUPS,
-        ),
-        NamedOperation('delete-cg', '{group_name} configuration group deleted', _OBJECTS_WITH_CONFIG_GROUPS),
         # RBAC
         NamedOperation(
             'change-properties',
             '{type_} updated',
             (ObjectType.USER, ObjectType.GROUP, ObjectType.ROLE, ObjectType.POLICY),
         ),
+        # Imports / Binds
+        NamedOperation('change-imports', '{type_} import updated', (ObjectType.CLUSTER, ObjectType.SERVICE)),
+        # ! note that name in (un-)bind operations is like "<Export cluster name>/<Export service display name>"
+        NamedOperation('bind', '{type_} bound to {name}', (ObjectType.CLUSTER, ObjectType.SERVICE)),
+        NamedOperation('unbind', '{name} unbound', (ObjectType.CLUSTER, ObjectType.SERVICE)),
         # Actions
         NamedOperation('launch-action', '{name} action launched', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         NamedOperation('complete-action', '{name} action completed', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
@@ -120,9 +114,24 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         NamedOperation('complete-background-task', '"{name}" job completed', (ObjectType.ADCM,)),
         # Group config
         NamedOperation(
+            'add-host-to-group-config',
+            '{host} host added to {name} configuration group',
+            _OBJECTS_WITH_CONFIG_GROUPS,
+        ),
+        NamedOperation(
+            'remove-host-from-group-config',
+            '{host} host removed from {name} configuration group',
+            _OBJECTS_WITH_CONFIG_GROUPS,
+        ),
+        NamedOperation(
+            'update-group-config',
+            '{name} configuration group updated',
+            _OBJECTS_WITH_CONFIG_GROUPS,
+        ),
+        NamedOperation(
             'delete-group-config',
             '{name} configuration group deleted',
-            (ObjectType.CLUSTER, ObjectType.SERVICE, ObjectType.COMPONENT),
+            _OBJECTS_WITH_CONFIG_GROUPS,
         ),
         # Upgrades
         # TODO be sure this name is correct

@@ -11,6 +11,7 @@
 # limitations under the License.
 
 """Test audit of actions"""
+
 import time
 from typing import Callable, Tuple, Type, Union
 
