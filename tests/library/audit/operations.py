@@ -106,6 +106,9 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         # Actions
         NamedOperation('launch-action', '{name} action launched', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         NamedOperation('complete-action', '{name} action completed', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        # Tasks
+        NamedOperation('cancel-task', '{name} canceled', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        NamedOperation('restart-task', '{name} restarted', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         # Background tasks
         NamedOperation('launch-background-task', '"{name}" job launched', (ObjectType.ADCM,)),
         NamedOperation('complete-background-task', '"{name}" job completed', (ObjectType.ADCM,)),
@@ -130,6 +133,9 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
             '{name} configuration group deleted',
             _OBJECTS_WITH_CONFIG_GROUPS,
         ),
+        # Upgrades
+        # TODO be sure this name is correct
+        NamedOperation('do-upgrade', 'Upgraded to {name}', (ObjectType.CLUSTER, ObjectType.PROVIDER)),
     )
 }
 

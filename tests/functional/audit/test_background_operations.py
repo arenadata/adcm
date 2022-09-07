@@ -58,29 +58,6 @@ def make_objects_old(adcm_db, sdk_client_fs, cluster_with_history) -> None:
     set_operations_date(adcm_db, old_date, sdk_client_fs.audit_operation_list(paging={'limit': 4}))
 
 
-@pytest.fixture()
-def prepare_settings(sdk_client_fs):
-    """Prepare settings for correct log rotation / cleanup"""
-    sdk_client_fs.adcm().config_set_diff(
-        {
-            'attr': {'logrotate': {'active': True}, 'ldap_integration': {'active': True}},
-            'config': {
-                'job_log': {'log_rotation_on_fs': 10, 'log_rotation_in_db': 10},
-                'config_rotation': {'config_rotation_in_db': 1},
-                'audit_data_retention': {'retention_period': 1},
-                'ldap_integration': {
-                    'ldap_uri': 'ldap://doesnot.exist',
-                    'ldap_user': 'someuse',
-                    'ldap_password': 'password',
-                    'user_search_base': 'db=Users',
-                    'group_search_base': 'ldksjf',
-                    'sync_interval': 1,
-                },
-            },
-        }
-    )
-
-
 @parametrize_audit_scenario_parsing('background_tasks.yaml')
 @pytest.mark.usefixtures('make_objects_old', 'prepare_settings')
 def test_background_operations_audit(audit_log_checker, adcm_fs, sdk_client_fs):

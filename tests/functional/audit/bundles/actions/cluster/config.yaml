@@ -32,7 +32,7 @@
       display_name: Fail
       params:
         ansible_tags: fail
-    wait_and_succeed:
+    wait_and_succeed: &wait_and_succeed
       <<: *action
       display_name: Wait And Succeed
       params:
@@ -42,6 +42,41 @@
       display_name: Wait And Fail
       params:
         ansible_tags: wait, fail
+    terminatable_simple:
+      <<: *wait_and_succeed
+      display_name: Terminate Simple
+      allow_to_terminate: true
+    terminatable_multi:
+      display_name: Terminate Multi
+      allow_to_terminate: true
+      type: task
+      scripts:
+        - &multijob
+          name: first_step
+          script_type: ansible
+          script: ./actions.yaml
+          params:
+            ansible_tags: succeed
+        - <<: *multijob
+          name: second_step
+          params:
+            ansible_tags: wait
+        - <<: *multijob
+          name: third_step
+      states:
+        available: any
+      params:
+        ansible_tags: success
+      config:
+        param:
+          type:
+            integer
+    host_action:
+      <<: *action
+      host_action: true
+      display_name: Host action
+      params:
+        ansible_tags: wait, success
 
 - type: service
   name: actions_service

@@ -140,6 +140,29 @@ def rbac_create_data(sdk_client_fs) -> OrderedDictType[str, dict]:
     )
 
 
+@pytest.fixture()
+def prepare_settings(sdk_client_fs):
+    """Prepare settings for correct log rotation / cleanup AND LDAP"""
+    sdk_client_fs.adcm().config_set_diff(
+        {
+            'attr': {'logrotate': {'active': True}, 'ldap_integration': {'active': True}},
+            'config': {
+                'job_log': {'log_rotation_on_fs': 10, 'log_rotation_in_db': 10},
+                'config_rotation': {'config_rotation_in_db': 1},
+                'audit_data_retention': {'retention_period': 1},
+                'ldap_integration': {
+                    'ldap_uri': 'ldap://doesnot.exist',
+                    'ldap_user': 'someuse',
+                    'ldap_password': 'password',
+                    'user_search_base': 'db=Users',
+                    'group_search_base': 'ldksjf',
+                    'sync_interval': 1,
+                },
+            },
+        }
+    )
+
+
 # requesting utilities
 
 

@@ -10,26 +10,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Do stuff
-  hosts: localhost
-  connection: local
-  gather_facts: no
+settings:
+  process-type: sequence
+  start-from-first: matched
 
-  tasks:
-    - name: Pause for 30 seconds
-      pause:
-        seconds: 30
-      tags:
-        - wait
-    - name: Succeed
-      fail:
-        msg: "Successful step"
-      when: "{{ 1 != 1 }}"
-      tags:
-        - success
-    - name: Fail
-      fail:
-        msg: "Failed step"
-      when: "{{ 1 == 1 }}"
-      tags:
-        - fail
+operations:
+  - update: &run-adcm-action
+      what: &adcm
+        type: adcm
+        name: ADCM
+      how:
+        operation: launch-action
+        name: Test LDAP connection
+    result: denied
+    username: {{ username }}
+  - update: *run-adcm-action
+    result: fail
+  - update: *run-adcm-action
+  - update:
+      what: *adcm
+      how:
+        operation: complete-action
+        name: Test LDAP connection
+    result: fail
