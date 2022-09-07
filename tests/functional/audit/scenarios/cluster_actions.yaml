@@ -1,0 +1,121 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+settings:
+  process-type: exact
+  start-from-first: matched
+
+operations:
+  # run cluster actions
+  - update: &run-succeed-cluster-action
+      what: &cluster
+        type: cluster
+        name: Actions Cluster
+      how: &run-succeed
+        operation: launch-action
+        name: Succeed
+    result: denied
+    username: {{ username }}
+  - update: *run-succeed-cluster-action
+    result: fail
+  - update: &run-fail-cluster-action
+      what: *cluster
+      how: &run-fail
+        operation: launch-action
+        name: Fail
+  - update:
+      what: *cluster
+      how: &complete-fail
+        operation: complete-action
+        name: Fail
+    result: fail
+  - update: *run-succeed-cluster-action
+  - update:
+      what: *cluster
+      how: &complete-succeed
+        operation: complete-action
+        name: Succeed
+  # run service actions
+  - update: &run-succeed-service-action
+      what: &service
+        type: service
+        name: Actions Cluster/actions_service
+      how: *run-succeed
+    result: denied
+    username: {{ username }}
+  - update: *run-succeed-service-action
+    result: fail
+  - update: &run-fail-service-action
+      what: *service
+      how: *run-fail
+  - update: &complete-fail-service-action
+      what: *service
+      how: *complete-fail
+    result: fail
+  - update: *run-succeed-service-action
+  - update: &complete-succeed-service-action
+      what: *service
+      how: *complete-succeed
+  # service from cluster
+  - update: *run-succeed-service-action
+    result: denied
+    username: {{ username }}
+  - update: *run-succeed-service-action
+    result: fail
+  - update: *run-fail-service-action
+  - update: *complete-fail-service-action
+    result: fail
+  - update: *run-succeed-service-action
+  - update: *complete-succeed-service-action
+  # run component actions
+  - update: &run-succeed-component-action
+      what: &component
+        type: component
+        name: Actions Cluster/actions_service/actions_component
+      how: *run-succeed
+    result: denied
+    username: {{ username }}
+  - update: *run-succeed-component-action
+    result: fail
+  - update: &run-fail-component-action
+      what: *component
+      how: *run-fail
+  - update: &complete-fail-component-action
+      what: *component
+      how: *complete-fail
+    result: fail
+  - update: *run-succeed-component-action
+  - update: &complete-succeed-component-action
+      what: *component
+      how: *complete-succeed
+  # component from service
+  - update: *run-succeed-component-action
+    result: denied
+    username: {{ username }}
+  - update: *run-succeed-component-action
+    result: fail
+  - update: *run-fail-component-action
+  - update: *complete-fail-component-action
+    result: fail
+  - update: *run-succeed-component-action
+  - update: *complete-succeed-component-action
+  # component from cluster
+  - update: *run-succeed-component-action
+    result: denied
+    username: {{ username }}
+  - update: *run-succeed-component-action
+    result: fail
+  - update: *run-fail-component-action
+  - update: *complete-fail-component-action
+    result: fail
+  - update: *run-succeed-component-action
+  - update: *complete-succeed-component-action

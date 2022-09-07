@@ -157,7 +157,7 @@ class Operation:
     EXCLUDED_FROM_COMPARISON: ClassVar = ('username', 'code')
 
     # main info
-    user_id: int
+    user_id: Optional[int]
     operation_type: OperationType
     operation_name: str = field(init=False)
     operation_result: OperationResult
@@ -176,6 +176,7 @@ class Operation:
     def __post_init__(self):
         self.operation_name = self._detect_operation_name()
         self._nullify_object()
+        self._nullify_user()
 
     def is_equal_to(self, operation_object: AuditOperation) -> bool:
         """Compare this operation to an API audit operation object"""
@@ -244,6 +245,18 @@ class Operation:
         ):
             self.object_type = None
             self.object_name = None
+
+    def _nullify_user(self) -> None:
+        """
+        There are cases when there will be no user (e.g. finishing actions),
+        so it's easier to change all of them in one place rather than always set it in audit scenario.
+        Bad thing is that this replacement is not obvious for the audit scenario writer,
+        but I find this the cheaper and cleaner way, because there are too few cases for that:
+        making it clearly "None" in scenario will make us "consider" nullable users in both parser and converter.
+        """
+        if self.operation_type == OperationType.UPDATE and (self.code.get('operation') == 'complete-action'):
+            self.user_id = None
+            self.username = None
 
 
 def convert_to_operations(

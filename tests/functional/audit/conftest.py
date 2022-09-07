@@ -205,7 +205,7 @@ def unauthorized_creds(new_user_client) -> Dict[Literal['Authorization'], str]:
 
 
 @allure.step('Expecting request to succeed')
-def check_succeed(response: requests.Response):
+def check_succeed(response: requests.Response) -> requests.Response:
     """Check that request has succeeded"""
     allowed_codes = (200, 201, 204)
     assert (
@@ -213,9 +213,10 @@ def check_succeed(response: requests.Response):
     ) in allowed_codes, (
         f'Request failed with code: {code}\nBody: {response.json() if not code >= 500 else response.text}'
     )
+    return response
 
 
-def check_failed(response: requests.Response, exact_code: Optional[int] = None):
+def check_failed(response: requests.Response, exact_code: Optional[int] = None) -> requests.Response:
     """Check that request has failed"""
     with allure.step(f'Expecting request to fail with code {exact_code if exact_code else ">=400 and < 500"}'):
         assert response.status_code < 500, 'Request should not failed with 500'
@@ -228,6 +229,27 @@ def check_failed(response: requests.Response, exact_code: Optional[int] = None):
                 'Request was expected to be failed, '
                 f'but status code was {response.status_code}.\nBody: {response.json()}'
             )
+    return response
+
+
+def check_400(response: requests.Response) -> requests.Response:
+    """Check that request failed with 400 code"""
+    return check_failed(response, 400)
+
+
+def check_403(response: requests.Response) -> requests.Response:
+    """Check that request failed with 403 code"""
+    return check_failed(response, 403)
+
+
+def check_404(response: requests.Response) -> requests.Response:
+    """Check that request failed with 404 code"""
+    return check_failed(response, 404)
+
+
+def check_409(response: requests.Response) -> requests.Response:
+    """Check that request failed with 409 code"""
+    return check_failed(response, 409)
 
 
 def make_auth_header(client: ADCMClient) -> dict:
