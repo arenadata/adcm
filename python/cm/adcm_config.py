@@ -515,14 +515,13 @@ def ui_config(obj, cl):  # pylint: disable=too-many-locals
 
 
 def get_action_variant(obj, conf):
-    obj_conf = {}
     if obj.config:
-        cl = ConfigLog.objects.get(obj_ref=obj.config, id=obj.config.current)
-        obj_conf = cl.config
-    for c in conf:
-        if c.type != 'variant':
-            continue
-        c.limits['source']['value'] = cm.variant.get_variant(obj, obj_conf, c.limits)
+        cl = ConfigLog.objects.filter(obj_ref=obj.config, id=obj.config.current).first()
+        if cl:
+            for c in conf:
+                if c.type != 'variant':
+                    continue
+                c.limits['source']['value'] = cm.variant.get_variant(obj, cl.config, c.limits)
 
 
 def config_is_ro(obj, key, limits):
@@ -1033,12 +1032,12 @@ def get_main_info(obj: Optional[ADCMEntity]) -> Optional[str]:
     """Return __main_info for object"""
     if obj.config is None:
         return None
-    cl = ConfigLog.objects.get(id=obj.config.current)
-    _, spec, _, _ = get_prototype_config(obj.prototype)
+    cl = ConfigLog.objects.filter(id=obj.config.current).first()
+    if cl:
+        _, spec, _, _ = get_prototype_config(obj.prototype)
 
-    if '__main_info' in cl.config:
-        return cl.config['__main_info']
-    elif '__main_info/' in spec:
-        return get_default(spec['__main_info/'], obj.prototype)
-    else:
-        return None
+        if '__main_info' in cl.config:
+            return cl.config['__main_info']
+        elif '__main_info/' in spec:
+            return get_default(spec['__main_info/'], obj.prototype)
+    return None
