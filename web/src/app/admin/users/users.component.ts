@@ -89,7 +89,7 @@ export class UsersComponent extends RbacEntityListDirective<RbacUserModel> imple
   }
 
   isRowInactive = (value) => {
-    return !value?.is_active;
+    return value?.is_active === false;
   }
 
 }

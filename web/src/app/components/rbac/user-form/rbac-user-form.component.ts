@@ -165,6 +165,10 @@ export class RbacUserFormComponent extends RbacFormDirective<RbacUserModel> {
     });
   }
 
+  _isUserNotActive(value) {
+    return value?.is_active === false;
+  }
+
   _updateAndSetValueForForm(form) {
     const formValue = { ...this.value };
     Object.keys(formValue).forEach((prop) => {
