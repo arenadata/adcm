@@ -19,32 +19,16 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.db import transaction
-from django.test import Client, TestCase
 from django.urls import reverse
 from rest_framework import status
 
-from init_db import init as init_adcm
-from rbac.upgrade.role import init_roles
+from adcm.tests.base import TestBase
 
 
-# pylint: disable=too-many-instance-attributes
-class TestBase(TestCase):
-    files_dir = os.path.join(settings.BASE_DIR, "python", "cm", "tests", "files")
-
+class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
     def setUp(self) -> None:
-        init_adcm()
-        init_roles()
-
-        self.client = Client(HTTP_USER_AGENT="Mozilla/5.0")
-        response = self.client.post(
-            path=reverse("rbac:token"),
-            data={"username": "admin", "password": "admin"},
-            content_type="application/json",
-        )
-        self.client.defaults["Authorization"] = f"Token {response.data['token']}"
-
-        self.client_unauthorized = Client(HTTP_USER_AGENT="Mozilla/5.0")
-
+        super().setUp()
+        self.files_dir = os.path.join(settings.BASE_DIR, "python", "cm", "tests", "files")
         self.bundle_adh_name = "adh.1.5.tar"
         self.bundle_ssh_name = "ssh.1.0.tar"
         self.cluster = "adh42"
@@ -52,23 +36,6 @@ class TestBase(TestCase):
         self.service = "ZOOKEEPER"
         self.component = "ZOOKEEPER_SERVER"
 
-    def load_bundle(self, bundle_name):
-        with open(os.path.join(self.files_dir, bundle_name), encoding="utf-8") as f:
-            with transaction.atomic():
-                response = self.client.post(
-                    path=reverse("upload-bundle"),
-                    data={"file": f},
-                )
-            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        with transaction.atomic():
-            response = self.client.post(
-                path=reverse("load-bundle"),
-                data={"bundle_file": bundle_name},
-            )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-
-class TestAPI(TestBase):  # pylint: disable=too-many-public-methods
     def get_service_proto_id(self):
         response = self.client.get(reverse("service-type"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
