@@ -565,16 +565,19 @@ class TestAdminGroupsPage:
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_create_group_with_ldap_user_on_admin_groups_page(self, app_fs, ldap_user):
+    def test_create_group_with_ldap_user_on_admin_groups_page(self, sdk_client_fs, app_fs, ldap_user_in_group):
         """Test create a group on /admin/groups"""
 
+        wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), 'success')
         groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
-        groups_page.create_custom_group(self.custom_group.name, self.custom_group.description, ldap_user["name"])
+        groups_page.create_custom_group(
+            self.custom_group.name, self.custom_group.description, ldap_user_in_group["name"]
+        )
         current_groups = groups_page.get_all_groups()
-        with allure.step('Check that there are 1 custom group'):
-            assert len(current_groups) == 1, "There should be 1 group on the page"
+        with allure.step('Check that there are 1 custom group and 1 ldap'):
+            assert len(current_groups) == 2, "There should be 2 group on the page"
             assert (
-                AdminGroupInfo(name='Test_group', description='Test description', users=ldap_user["name"])
+                AdminGroupInfo(name='Test_group', description='Test description', users=ldap_user_in_group["name"])
                 in current_groups
             ), "Created group should be on the page"
 
