@@ -32,7 +32,7 @@ operations:
   - update: &run-fail-upgrade
       what: *object
       how:
-        operation: launch-action
+        operation: launch-upgrade
         name: "Upgrade: Fail Upgrade"
     result: denied
     username: {{ username }}
@@ -42,14 +42,14 @@ operations:
   - update:
       what: *object
       how:
-        operation: complete-action
+        operation: complete-upgrade
         name: "Upgrade: Fail Upgrade"
     result: fail
   # succeed upgrade
   - update: &run-succeed-upgrade
       what: *object
       how:
-        operation: launch-action
+        operation: launch-upgrade
         name: "Upgrade: Succeed Upgrade"
     result: denied
     username: {{ username }}
@@ -59,5 +59,5 @@ operations:
   - update:
       what: *object
       how:
-        operation: complete-action
+        operation: complete-upgrade
         name: "Upgrade: Succeed Upgrade"
