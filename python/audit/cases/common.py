@@ -42,10 +42,10 @@ def _task_case(task_pk: str, action: str) -> tuple[AuditOperation, AuditObject |
     if obj and obj.action:
         action_name = obj.action.display_name
     else:
-        action_name = "task"
+        action_name = "Task"
 
     audit_operation = AuditOperation(
-        name=f"{action_name} {action}ed".capitalize(),
+        name=f"{action_name} {action}ed",
         operation_type=AuditLogOperationType.Update,
     )
 
