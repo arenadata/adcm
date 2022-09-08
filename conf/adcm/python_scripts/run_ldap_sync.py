@@ -156,7 +156,7 @@ class SyncLDAP:
                 except KeyError:
                     defaults[field] = ""
 
-            username = defaults.pop("username")
+            username = defaults["username"]
             kwargs = {
                 "username__iexact": username,
                 "type": OriginType.LDAP,
