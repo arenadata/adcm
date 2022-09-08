@@ -23,7 +23,7 @@
       states:
         available: any
     - <<: *upgrade
-      name: Success Upgrade
+      name: Succeed Upgrade
       scripts:
         - &before
           name: before
