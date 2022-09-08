@@ -11,7 +11,7 @@
 # limitations under the License.
 
 """Complex checks for audit tests stored here"""
-
+from datetime import datetime
 from pprint import pformat
 from typing import Collection, List, NamedTuple, Tuple, Union
 
@@ -96,21 +96,26 @@ def _extract_basic_info(client: ADCMClient, log: Union[AuditOperation, AuditLogi
     """Return result, name and extension"""
     username = client.user(id=log.user_id).username if log.user_id else None
     if isinstance(log, AuditOperation):
-        time = log.operation_time.strftime(DATETIME_FMT)
+        time = _format_time(log.operation_time)
         return (
             (result := log.operation_result.value),
             (name := log.operation_name),
             (
-                f'actor="{username}" act="{log.operation_type}" operation="{name}" resource="{log.object_name}" '
+                f'actor="{username}" act="{log.operation_type.value}" operation="{name}" resource="{log.object_name}" '
                 f'result="{result}" timestamp="{time}"'
             ),
         )
-    time = log.login_time.strftime(DATETIME_FMT)
+    time = _format_time(log.login_time)
     return (
         (result := log.login_result.value),
         (name := "User logged"),
         f'actor="{username}" operation="{name}" result="{result}" timestamp="{time}"',
     )
+
+
+def _format_time(time: datetime):
+    t = time.strftime(DATETIME_FMT)
+    return f'{t[:-2]}:{t[-2:]}'
 
 
 def _attach_cef_logs(cef_logs: Collection[CEFRecord]) -> None:

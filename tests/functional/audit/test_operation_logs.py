@@ -88,6 +88,6 @@ def test_simple_flow(sdk_client_fs, audit_log_checker, adcm_fs, adb_bundle, dumm
             raise RuntimeError("An error should be raised on attempt of changing config")
     with allure.step("Delete cluster"):
         cluster.delete()
+    check_audit_cef_logs(sdk_client_fs, adcm_fs.container)
     audit_log_checker.set_user_map(sdk_client_fs)
     audit_log_checker.check(sdk_client_fs.audit_operation_list())
-    check_audit_cef_logs(sdk_client_fs, adcm_fs.container)
