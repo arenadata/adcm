@@ -49,14 +49,18 @@ def service_case(
         case ["service", _]:
             deleted_obj: ClusterObject
             audit_operation = AuditOperation(
-                name=f"{deleted_obj.display_name} service removed",
+                name="service removed",
                 operation_type=AuditLogOperationType.Update,
             )
-            audit_object = get_or_create_audit_obj(
-                object_id=deleted_obj.cluster.pk,
-                object_name=deleted_obj.cluster.name,
-                object_type=AuditObjectType.Cluster,
-            )
+            if deleted_obj:
+                audit_operation.name = f"{deleted_obj.display_name} {audit_operation.name}"
+                audit_object = get_or_create_audit_obj(
+                    object_id=deleted_obj.cluster.pk,
+                    object_name=deleted_obj.cluster.name,
+                    object_type=AuditObjectType.Cluster,
+                )
+            else:
+                audit_object = None
 
         case ["service", service_pk, "bind"]:
             obj = ClusterObject.objects.get(pk=service_pk)
