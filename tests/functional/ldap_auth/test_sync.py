@@ -18,23 +18,23 @@ from typing import Optional, Tuple
 import allure
 import pytest
 import requests
-from adcm_client.objects import ADCMClient, Group, ADCM, User
+from adcm_client.objects import ADCM, ADCMClient, Group, User
 from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
-from adcm_pytest_plugin.utils import wait_until_step_succeeds, random_string
+from adcm_pytest_plugin.utils import random_string, wait_until_step_succeeds
 from coreapi.exceptions import ErrorMessage
 
 from tests.functional.conftest import only_clean_adcm
 from tests.functional.ldap_auth.utils import (
-    get_ldap_group_from_adcm,
-    get_ldap_user_from_adcm,
+    DEFAULT_LOCAL_USERS,
+    SYNC_ACTION_NAME,
+    TEST_CONNECTION_ACTION,
     check_existing_groups,
     check_existing_users,
-    DEFAULT_LOCAL_USERS,
-    TEST_CONNECTION_ACTION,
-    SYNC_ACTION_NAME,
+    get_ldap_group_from_adcm,
+    get_ldap_user_from_adcm,
 )
-from tests.functional.rbac.conftest import RbacRoles, BusinessRoles
-from tests.library.assertions import expect_no_api_error, expect_api_error
+from tests.functional.rbac.conftest import BusinessRoles, RbacRoles
+from tests.library.assertions import expect_api_error, expect_no_api_error
 from tests.library.ldap_interactions import LDAPTestConfig, configure_adcm_for_ldap
 
 # pylint: disable=redefined-outer-name
@@ -205,15 +205,12 @@ class TestLDAPSyncAction:
             ldap_ad.remove_user_from_group(ldap_user_in_group['dn'], ldap_group['dn'])
             _run_sync(sdk_client_fs)
         with allure.step('Check user was removed only from LDAP group'):
-            check_existing_users(sdk_client_fs)
-            # Uncomment after ADCM-2944
-            # check_existing_users(sdk_client_fs, {ldap_user_in_group['name']})
+            check_existing_users(sdk_client_fs, {ldap_user_in_group['name']})
             check_existing_groups(sdk_client_fs, {ldap_group['name']}, {another_group.name})
             group.reread()
             assert len(group.user_list()) == 0, 'Group from LDAP should be empty'
             another_group.reread()
-            assert len(another_group.user_list()) == 0, 'Local group should not have deleted users in it'
-            # assert len(another_group.user_list()) == 1, 'Local group should still have deactivated users in it'
+            assert len(another_group.user_list()) == 1, 'Local group should still have deactivated users in it'
 
     def test_user_deactivated(self, sdk_client_fs, ldap_ad, ldap_user_in_group):
         """Test that user is deactivated in ADCM after it's deactivated in AD"""
@@ -228,9 +225,8 @@ class TestLDAPSyncAction:
             with session_should_expire(**credentials):
                 ldap_ad.deactivate_user(ldap_user['dn'])
                 _run_sync(sdk_client_fs)
-                # TODO return after ADCM-ADCM-2944
-                # user.reread()
-                # assert not user.is_active, 'User should be deactivated'
+                user.reread()
+                assert not user.is_active, 'User should be deactivated'
                 expect_api_error('login as deactivated user', ADCMClient, **credentials)
 
     def test_user_deleted(self, sdk_client_fs, ldap_ad, ldap_user_in_group):
@@ -249,11 +245,9 @@ class TestLDAPSyncAction:
             with session_should_expire(**credentials):
                 ldap_ad.delete(ldap_user_in_group['dn'])
                 _run_sync(sdk_client_fs)
-                check_existing_users(sdk_client_fs)
-                # Uncomment after ADCM-2944
-                # check_existing_users(sdk_client_fs, {ldap_user_in_group['name']})
-                # user = get_ldap_user_from_adcm(sdk_client_fs, ldap_user_in_group['name'])
-                # assert not user.is_active, 'User should be deactivated'
+                check_existing_users(sdk_client_fs, {ldap_user_in_group['name']})
+                user = get_ldap_user_from_adcm(sdk_client_fs, ldap_user_in_group['name'])
+                assert not user.is_active, 'User should be deactivated'
                 expect_api_error('login as deleted user', ADCMClient, **credentials)
 
     def test_name_email_sync_from_ldap(self, sdk_client_fs, ldap_ad, ldap_user_in_group):
