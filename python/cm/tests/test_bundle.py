@@ -87,8 +87,8 @@ class TestBundle(TestBase):
 
     @contextmanager
     def make_bundle_from_str(self, bundle_content: str, filename: str) -> str:
-        tmp_filepath = os.path.join(self.files_dir, 'config.yaml')
-        with open(tmp_filepath, 'wt', encoding='utf-8') as config:
+        tmp_filepath = os.path.join(self.files_dir, "config.yaml")
+        with open(tmp_filepath, "wt", encoding="utf-8") as config:
             config.write(bundle_content)
 
         bundle_filepath = os.path.join(self.files_dir, filename)
@@ -105,27 +105,31 @@ class TestBundle(TestBase):
         finally:
             os.remove(bundle_filepath)
 
-    def test_duplicated_upgrade_script_names(self):
+    def test_upload_duplicated_upgrade_script_names(self):
+        same_script_name = "Same name"
+        same_version = "2.11"
+        same_state_available = "any"
+        same_state_on_success = "upgradable"
         kwargs = {
-            'upg1_name': '666',
-            'upg1_min_version': '2.11',
-            'upg1_max_strict': '666',
-            'upg1_script1_name': 'Pre upgrade check',
-            'upg1_script2_name': 'Bundle upgrade',
-            'upg1_script3_name': 'Post-upgrade actions',
-            'upg1_state_available': 'any',
-            'upg1_state_on_success': 'upgradable',
-            'upg2_name': '666',
-            'upg2_min_version': '2.10',
-            'upg2_max_strict': '2.11',
-            'upg2_script1_name': 'Pre upgrade check',
-            'upg2_script2_name': 'Bundle upgrade',
-            'upg2_script3_name': 'Post-upgrade actions',
-            'upg2_state_available': 'any',
-            'upg2_state_on_success': 'upgrade config',
+            "upg1_name": "upg1_name",
+            "upg1_min_version": same_version,
+            "upg1_max_strict": same_version,
+            "upg1_script1_name": same_script_name,
+            "upg1_script2_name": same_script_name,
+            "upg1_script3_name": same_script_name,
+            "upg1_state_available": same_state_available,
+            "upg1_state_on_success": same_state_on_success,
+            "upg2_name": "upg2_name",
+            "upg2_min_version": same_version,
+            "upg2_max_strict": same_version,
+            "upg2_script1_name": same_script_name,
+            "upg2_script2_name": same_script_name,
+            "upg2_script3_name": same_script_name,
+            "upg2_state_available": same_state_available,
+            "upg2_state_on_success": same_state_on_success,
         }
         with self.make_bundle_from_str(
             bundle_content=self.bundle_config_template.format(**kwargs),
-            filename='test_bundle.tar.gz',
+            filename="test_bundle.tar.gz",
         ) as bundle:
             self.load_bundle(bundle)
