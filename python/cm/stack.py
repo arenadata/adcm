@@ -288,7 +288,7 @@ def save_upgrade(proto, conf, bundle_hash):
         set_version(upg, item)
         dict_to_obj(item, 'description', upg)
         if 'scripts' in item:
-            upg.action = save_actions(proto, item, bundle_hash)
+            upg.action = save_actions(proto, item, bundle_hash, upg)
         if 'states' in item:
             dict_to_obj(item['states'], 'available', upg)
             if 'available' in item['states']:
@@ -406,12 +406,20 @@ SET = 'set'
 UNSET = 'unset'
 
 
-def save_actions(proto, conf, bundle_hash):
+def save_actions(proto, conf, bundle_hash, upgrade: StageUpgrade | None = None):
     if in_dict(conf, 'versions'):
         conf['type'] = 'task'
         upgrade_name = conf['name']
         conf['display_name'] = f'Upgrade: {upgrade_name}'
-        action_name = f"{proto.name}_{proto.version}_{proto.edition}_upgrade_{upgrade_name}"
+        if upgrade is not None:
+            action_name = (
+                f"{proto.name}_{proto.version}_{proto.edition}_upgrade_{upgrade_name}_{upgrade.min_version}_strict_"
+                f"{upgrade.min_strict}-{upgrade.max_version}_strict_{upgrade.min_strict}_editions-"
+                f"{'_'.join(upgrade.from_edition)}_state_available-{'_'.join(upgrade.state_available)}_"
+                f"state_on_success-{upgrade.state_on_success}"
+            )
+        else:
+            action_name = f"{proto.name}_{proto.version}_{proto.edition}_upgrade_{upgrade_name}"
         action_name = re.sub(r'\s+', '_', action_name).strip().lower()
         action_name = re.sub(r'\(|\)', '', action_name)
         upgrade_action = save_action(proto, conf, bundle_hash, action_name)
