@@ -29,7 +29,6 @@ class TestBundle(TestBase):
   name: Monitoring
   version: 666
   edition: community
-  adcm_min_version: 2022.08.10.17
   description: Monitoring and Control Software
 
   upgrade:
