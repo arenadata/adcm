@@ -12,7 +12,6 @@
 
 """Test audit of actions"""
 
-import time
 from typing import Callable, Tuple, Type, Union
 
 import allure
@@ -338,7 +337,7 @@ class TestTaskCancelRestart(RunActionTestMixin):
     def test_task_with_one_job(self, cluster, audit_log_checker):
         """Test audit of cancel/restart tasks with one job"""
         task = cluster.action(name="terminatable_simple").run(**self.correct_config)
-        time.sleep(1)  # easy way to make task "cancellable"
+        self._wait_for_status(task.job())
         self._test_task_cancel_restart(task, audit_log_checker)
 
     @parametrize_audit_scenario_parsing("cancel_restart.yaml", {**NEW_USER, "action_display_name": "Terminate Multi"})
@@ -357,7 +356,7 @@ class TestTaskCancelRestart(RunActionTestMixin):
             check_409(self._cancel(task, self.admin_creds))
         with allure.step("Restart task with result: denied, fail, success"):
             check_404(self._restart(task, self.unauth_creds))
-            check_409(self._restart(DummyTask(), self.admin_creds))
+            check_404(self._restart(DummyTask(), self.admin_creds))
             check_succeed(self._restart(task, self.admin_creds))
         _wait_all_finished(self.client)
         audit_checker.set_user_map(self.client)
@@ -381,9 +380,10 @@ class TestTaskCancelRestart(RunActionTestMixin):
             job.reread()
             assert job.status == status, f"Job {job.display_name} should be in status {status}"
 
-        wait_until_step_succeeds(_wait, timeout=7, period=1, **kwargs)
+        wait_until_step_succeeds(_wait, timeout=9, period=1, **kwargs)
 
 
+@allure.step("Wait all tasks are finished")
 def _wait_all_finished(client):
     for j in client.job_list():
         j.task().wait()
