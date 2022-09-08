@@ -134,8 +134,9 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
             _OBJECTS_WITH_CONFIG_GROUPS,
         ),
         # Upgrades
-        # TODO be sure this name is correct
         NamedOperation('do-upgrade', 'Upgraded to {name}', (ObjectType.CLUSTER, ObjectType.PROVIDER)),
+        NamedOperation('launch-upgrade', '{name} upgrade launched', (ObjectType.CLUSTER, ObjectType.PROVIDER)),
+        NamedOperation('complete-upgrade', '{name} upgrade completed', (ObjectType.CLUSTER, ObjectType.PROVIDER)),
     )
 }
 
