@@ -55,4 +55,5 @@ class TestBase(TestCase):
                 path=reverse("load-bundle"),
                 data={"bundle_file": bundle_name},
             )
+            print(response.json())
         self.assertEqual(response.status_code, status.HTTP_200_OK)
