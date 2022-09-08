@@ -23,10 +23,10 @@ import { FormGroup } from "@angular/forms";
   selector: 'app-config-fields',
   template: `
     <ng-container *ngFor="let item of dataOptions; trackBy: trackBy">
-      <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form"></app-group-fields>
+      <app-group-fields *ngIf="isPanel(item); else one" [panel]="item" [form]="form" [uniqId]="uniqId"></app-group-fields>
       <ng-template #one>
         <ng-container *ngIf="!item.hidden">
-          <app-config-field-attribute-provider [form]="form" [options]="item">
+          <app-config-field-attribute-provider [form]="form" [options]="item" [uniqId]="uniqId">
             <app-field *configField [form]="form" [options]="item"></app-field>
           </app-config-field-attribute-provider>
         </ng-container>
@@ -38,6 +38,7 @@ export class ConfigFieldsComponent extends BaseDirective {
 
   @Input() dataOptions: TFormOptions[] = [];
   @Input() form: FormGroup;
+  @Input() uniqId: string;
   @Output()
   event = new EventEmitter<{ name: string; data?: any }>();
 

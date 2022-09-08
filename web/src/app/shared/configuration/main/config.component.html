@@ -15,6 +15,7 @@
 
 <div class="fields" [@history]="historyShow ? 'show' : 'hide'">
   <app-config-fields #fls [model]="rawConfig | async"
+                     [uniqId]="attributeUniqId"
                      (event)="onReady()"></app-config-fields>
 </div>
 
