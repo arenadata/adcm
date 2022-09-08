@@ -17,7 +17,7 @@
   >{{placeholder.name}}</a>
   <a
     *ngSwitchCase="IMPlaceholderItemType.Service"
-    [routerLink]="['/cluster', placeholder.ids.cluster, 'service', placeholder.ids.service, 'config']"
+    [routerLink]="['/cluster', placeholder.ids.cluster, 'service', placeholder.ids.service, sectionByCause()]"
     class="issue"
   >{{placeholder.name}}</a>
   <a

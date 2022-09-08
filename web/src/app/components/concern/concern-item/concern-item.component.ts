@@ -24,6 +24,8 @@ export class ConcernItemComponent {
         return 'config';
       case CauseType.Import:
         return 'import';
+      case CauseType.Service:
+        return 'service';
       default:
         return 'main';
     }
