@@ -282,11 +282,6 @@ class TestAPI(BaseTestCase):
         self.assertEqual(response.status_code, HTTP_409_CONFLICT)
         self.assertEqual(response.json()["code"], "CLUSTER_CONFLICT")
 
-        response: Response = self.client.put(this_cluster_url, {})
-
-        self.assertEqual(response.status_code, HTTP_405_METHOD_NOT_ALLOWED)
-        self.assertEqual(response.json()["detail"], 'Method "PUT" not allowed.')
-
         response: Response = self.client.delete(this_cluster_url)
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
