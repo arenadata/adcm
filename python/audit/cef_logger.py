@@ -13,7 +13,7 @@
 
 import logging
 from collections import OrderedDict
-from typing import Tuple, Union
+from typing import Callable, Optional, Tuple, Union
 
 from django.conf import settings
 
@@ -37,6 +37,7 @@ def cef_logger(
     signature_id: str,
     severity: int = 1,
     empty_resource: bool = False,
+    stdout_writer: Optional[Callable] = None,
 ) -> None:
     extension = OrderedDict.fromkeys(CEFLogConstants.extension_keys, None)
 
@@ -73,5 +74,7 @@ def cef_logger(
         f"{CEFLogConstants.device_product}|{CEFLogConstants.adcm_version}|"
         f"{signature_id}|{operation_name}|{severity}|{extension}"
     )
-
-    audit_log.info(msg)
+    if stdout_writer is not None:
+        stdout_writer(msg)
+    else:
+        audit_log.info(msg)

@@ -55,6 +55,7 @@ from rbac.endpoints.policy.serializers import PolicyAuditSerializer
 from rbac.endpoints.role.serializers import RoleAuditSerializer
 from rbac.endpoints.user.serializers import UserAuditSerializer
 from rbac.models import Group, Policy, Role, User
+from utils import write_to_wsgi_stdout
 
 
 def _get_view_and_request(args) -> tuple[View, Request]:
@@ -343,7 +344,12 @@ def make_audit_log(operation_type, result, operation_status):
         operation_result=result,
         user=system_user,
     )
-    cef_logger(audit_instance=audit_log, signature_id="Background operation", empty_resource=True)
+    cef_logger(
+        audit_instance=audit_log,
+        signature_id="Background operation",
+        empty_resource=True,
+        stdout_writer=write_to_wsgi_stdout,
+    )
 
 
 def audit_finish_task(obj, operation_name: str, status: str) -> None:
