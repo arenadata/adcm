@@ -182,7 +182,7 @@ class TestRole(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert response.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log(
             log=log,
             obj=self.role,
@@ -230,7 +230,7 @@ class TestRole(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert response.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_update(
             log=log,
             obj=self.role,
@@ -276,7 +276,7 @@ class TestRole(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert response.status_code == HTTP_403_FORBIDDEN
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
         self.check_log_update(
             log=log,
             obj=self.role,
@@ -296,7 +296,7 @@ class TestRole(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        assert response.status_code == HTTP_400_BAD_REQUEST
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
         self.check_log_update(
             log=log,
             obj=self.role,

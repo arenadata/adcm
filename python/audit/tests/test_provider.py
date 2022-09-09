@@ -356,5 +356,5 @@ class TestProvider(BaseTestCase):
         self.check_action_log(
             log=log,
             provider=provider,
-            operation_name=f"{upgrade.action.display_name} action launched",
+            operation_name=f"{upgrade.action.display_name} upgrade launched",
         )

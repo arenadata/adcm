@@ -12,9 +12,9 @@ from cm.models import Host, HostProvider
 
 
 def host_and_provider_case(
-        path: list[str, ...],
-        response: Response,
-        deleted_obj: Model,
+    path: list[str, ...],
+    response: Response,
+    deleted_obj: Model,
 ) -> tuple[AuditOperation, AuditObject | None]:
     audit_operation = None
     audit_object = None
@@ -23,8 +23,7 @@ def host_and_provider_case(
         case ["host", host_pk] | ["provider", _, "host", host_pk]:
             deleted_obj: Host
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Host.capitalize()} "
-                     f"{AuditLogOperationType.Delete}d",
+                name=f"{AuditObjectType.Host.capitalize()} {AuditLogOperationType.Delete}d",
                 operation_type=AuditLogOperationType.Delete,
             )
             object_name = None
@@ -60,8 +59,7 @@ def host_and_provider_case(
 
         case ["provider", provider_pk]:
             audit_operation = AuditOperation(
-                name=f"{AuditObjectType.Provider.capitalize()} "
-                     f"{AuditLogOperationType.Delete}d",
+                name=f"{AuditObjectType.Provider.capitalize()} {AuditLogOperationType.Delete}d",
                 operation_type=AuditLogOperationType.Delete,
             )
             if isinstance(deleted_obj, HostProvider):
@@ -73,7 +71,10 @@ def host_and_provider_case(
             else:
                 audit_object = None
 
-        case ["provider", provider_pk, "config", "history"]:
+        case (
+            ["provider", provider_pk, "config", "history"]
+            | ["provider", provider_pk, "config", "history", _, "restore"]
+        ):
             audit_operation, audit_object = obj_pk_case(
                 obj_type=AuditObjectType.Provider,
                 operation_type=AuditLogOperationType.Update,

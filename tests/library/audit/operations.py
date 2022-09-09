@@ -52,7 +52,8 @@ class NamedOperation(NamedTuple):
                 'Please check definition of an operation.'
             )
         try:
-            return self.naming_template.format(type_=object_type.value.capitalize(), **format_args)
+            type_ = object_type.value.capitalize() if object_type != ObjectType.ADCM else object_type.value.upper()
+            return self.naming_template.format(type_=type_, **format_args).strip()
         except KeyError as e:
             raise KeyError(
                 f'It looks like you missed some keys required to format "{self.naming_template}" string\n'
@@ -81,46 +82,65 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         NamedOperation('change-description', 'Bundle updated', (ObjectType.BUNDLE,)),
         # cluster
         NamedOperation('add-service', '{name} service added', (ObjectType.CLUSTER,)),
-        NamedOperation('delete-service', '{name} service deleted', (ObjectType.CLUSTER,)),
+        NamedOperation('remove-service', '{name} service removed', (ObjectType.CLUSTER,)),
+        # there should be an object cleanup for this case
+        NamedOperation('remove-not-existing-service', 'service removed', (ObjectType.CLUSTER,)),
         NamedOperation('add-host', '{name} host added', (ObjectType.CLUSTER,)),
         NamedOperation('remove-host', '{name} host removed', (ObjectType.CLUSTER,)),
         NamedOperation('set-hostcomponent', 'Host-Component map updated', (ObjectType.CLUSTER,)),
         # configs
         NamedOperation(
-            'set-config',
+            'set-config',  # restore is the same
             '{type_} configuration updated',
             _OBJECTS_WITH_ACTIONS_AND_CONFIGS,
         ),
-        # group configs
-        NamedOperation(
-            'add-host-to-gc',
-            '{name} host added to {group_name} configuration group',
-            _OBJECTS_WITH_CONFIG_GROUPS,
-        ),
-        NamedOperation(
-            'remove-host-from-gc',
-            '{name} host removed from {group_name} configuration group',
-            _OBJECTS_WITH_CONFIG_GROUPS,
-        ),
-        NamedOperation('delete-cg', '{group_name} configuration group deleted', _OBJECTS_WITH_CONFIG_GROUPS),
         # RBAC
         NamedOperation(
             'change-properties',
             '{type_} updated',
             (ObjectType.USER, ObjectType.GROUP, ObjectType.ROLE, ObjectType.POLICY),
         ),
+        # Imports / Binds
+        NamedOperation('change-imports', '{type_} import updated', (ObjectType.CLUSTER, ObjectType.SERVICE)),
+        # ! note that name in (un-)bind operations is like "<Export cluster name>/<Export service display name>"
+        NamedOperation('bind', '{type_} bound to {name}', (ObjectType.CLUSTER, ObjectType.SERVICE)),
+        NamedOperation('unbind', '{name} unbound', (ObjectType.CLUSTER, ObjectType.SERVICE)),
         # Actions
         NamedOperation('launch-action', '{name} action launched', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         NamedOperation('complete-action', '{name} action completed', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        # Tasks
+        NamedOperation('cancel-task', '{name} cancelled', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        NamedOperation('restart-task', '{name} restarted', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        # object will be nullified
+        NamedOperation('restart-not-existing-task', '{name} restarted', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         # Background tasks
         NamedOperation('launch-background-task', '"{name}" job launched', (ObjectType.ADCM,)),
         NamedOperation('complete-background-task', '"{name}" job completed', (ObjectType.ADCM,)),
         # Group config
         NamedOperation(
+            'add-host-to-group-config',
+            '{host} host added to {name} configuration group',
+            _OBJECTS_WITH_CONFIG_GROUPS,
+        ),
+        NamedOperation(
+            'remove-host-from-group-config',
+            '{host} host removed from {name} configuration group',
+            _OBJECTS_WITH_CONFIG_GROUPS,
+        ),
+        NamedOperation(
+            'update-group-config',
+            '{name} configuration group updated',
+            _OBJECTS_WITH_CONFIG_GROUPS,
+        ),
+        NamedOperation(
             'delete-group-config',
             '{name} configuration group deleted',
-            (ObjectType.CLUSTER, ObjectType.SERVICE, ObjectType.COMPONENT),
+            _OBJECTS_WITH_CONFIG_GROUPS,
         ),
+        # Upgrades
+        NamedOperation('do-upgrade', 'Upgraded to {name}', (ObjectType.CLUSTER, ObjectType.PROVIDER)),
+        NamedOperation('launch-upgrade', '{name} upgrade launched', (ObjectType.CLUSTER, ObjectType.PROVIDER)),
+        NamedOperation('complete-upgrade', '{name} upgrade completed', (ObjectType.CLUSTER, ObjectType.PROVIDER)),
     )
 }
 
@@ -153,7 +173,7 @@ class Operation:
     EXCLUDED_FROM_COMPARISON: ClassVar = ('username', 'code')
 
     # main info
-    user_id: int
+    user_id: Optional[int]
     operation_type: OperationType
     operation_name: str = field(init=False)
     operation_result: OperationResult
@@ -172,6 +192,7 @@ class Operation:
     def __post_init__(self):
         self.operation_name = self._detect_operation_name()
         self._nullify_object()
+        self._nullify_user()
 
     def is_equal_to(self, operation_object: AuditOperation) -> bool:
         """Compare this operation to an API audit operation object"""
@@ -226,7 +247,7 @@ class Operation:
         """
         There are cases when object type is required for building operation name,
         but will not be presented in operation object (audit object reference == None).
-        This funciton sets object-related fields to None based on the case.
+        This function sets object-related fields to None based on the case.
         """
         if (
             (
@@ -236,10 +257,32 @@ class Operation:
             # some operations don't have object, like Bundle upload,
             # because no ADCM object is created on this operation
             or (self.operation_name == _NAMED_OPERATIONS['upload'].naming_template)
-            or (self.code.get('operation') in {'launch-background-task', 'complete-background-task'})
+            or (
+                self.code.get('operation')
+                in {
+                    'launch-background-task',
+                    'complete-background-task',
+                    'remove-not-existing-service',
+                    'restart-not-existing-task',
+                }
+            )
         ):
             self.object_type = None
             self.object_name = None
+
+    def _nullify_user(self) -> None:
+        """
+        There are cases when there will be no user (e.g. finishing actions),
+        so it's easier to change all of them in one place rather than always set it in audit scenario.
+        Bad thing is that this replacement is not obvious for the audit scenario writer,
+        but I find this the cheaper and cleaner way, because there are too few cases for that:
+        making it clearly "None" in scenario will make us "consider" nullable users in both parser and converter.
+        """
+        if self.operation_type == OperationType.UPDATE and (
+            self.code.get('operation') in {'complete-action', 'complete-upgrade'}
+        ):
+            self.user_id = None
+            self.username = None
 
 
 def convert_to_operations(

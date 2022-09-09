@@ -37,22 +37,26 @@ def _task_case(task_pk: str, action: str) -> tuple[AuditOperation, AuditObject |
     if action == "cancel":
         action = f"{action}l"
 
-    obj = TaskLog.objects.get(pk=task_pk)
+    obj = TaskLog.objects.filter(pk=task_pk).first()
 
-    if obj.action:
+    if obj and obj.action:
         action_name = obj.action.display_name
     else:
-        action_name = "task"
+        action_name = "Task"
 
     audit_operation = AuditOperation(
-        name=f"{action_name} {action}ed".capitalize(),
+        name=f"{action_name} {action}ed",
         operation_type=AuditLogOperationType.Update,
     )
-    audit_object = get_or_create_audit_obj(
-        object_id=task_pk,
-        object_name=obj.task_object.name,
-        object_type=obj.object_type.name,
-    )
+
+    if obj:
+        audit_object = get_or_create_audit_obj(
+            object_id=task_pk,
+            object_name=obj.task_object.name,
+            object_type=obj.object_type.name,
+        )
+    else:
+        audit_object = None
 
     return audit_operation, audit_object
 
@@ -205,14 +209,17 @@ def upgrade_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | No
     match path:
         case [obj_type, obj_pk, "upgrade", upgrade_pk, "do"]:
             upgrade = Upgrade.objects.filter(pk=upgrade_pk).first()
-            if not (upgrade and upgrade.action):
-                return None, None
+            if upgrade and upgrade.action:
+                audit_operation_name = f"{upgrade.action.display_name} upgrade launched"
+            elif upgrade:
+                audit_operation_name = f"Upgraded to {upgrade.name}"
+            else:
+                audit_operation_name = "Upgraded to"
 
             audit_operation = AuditOperation(
-                name=f"{upgrade.action.display_name} action launched",
+                name=audit_operation_name,
                 operation_type=AuditLogOperationType.Update,
             )
-
             obj = PATH_STR_TO_OBJ_CLASS_MAP[obj_type].objects.filter(pk=obj_pk).first()
             object_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP[PATH_STR_TO_OBJ_CLASS_MAP[obj_type]]
             if obj:

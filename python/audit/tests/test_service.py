@@ -11,8 +11,10 @@
 # limitations under the License.
 
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import patch
 
+from django.conf import settings
 from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -40,7 +42,8 @@ from cm.models import (
     PrototypeExport,
     PrototypeImport,
 )
-from rbac.models import User
+from rbac.models import Policy, Role, User
+from rbac.upgrade.role import init_roles
 
 
 class TestService(BaseTestCase):
@@ -138,13 +141,16 @@ class TestService(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.assertFalse(log.audit_object)
-        self.assertEqual(log.operation_name, "service added")
-        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
-        self.assertIsInstance(log.operation_time, datetime)
-        self.assertEqual(log.user.pk, self.test_user.pk)
-        self.assertEqual(log.object_changes, {})
+        self.check_log(
+            log=log,
+            obj=cluster,
+            obj_name=cluster.name,
+            object_type=AuditObjectType.Cluster,
+            operation_name="service added",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Fail,
+            user=self.test_user,
+        )
 
     def get_service_and_cluster(self) -> tuple[ClusterObject, Cluster]:
         bundle = Bundle.objects.create(name="test_bundle_2")
@@ -275,7 +281,31 @@ class TestService(BaseTestCase):
             user=self.test_user,
         )
 
+        response: Response = self.client.delete(
+            path=reverse("service-details", kwargs={"service_id": self.service.pk}),
+            content_type=APPLICATION_JSON,
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
+        self.assertEqual(log.operation_name, "service removed")
+        self.assertEqual(log.operation_type, AuditLogOperationType.Update)
+        self.assertEqual(log.operation_result, AuditLogOperationResult.Fail)
+        self.assertIsInstance(log.operation_time, datetime)
+        self.assertEqual(log.user.pk, self.test_user.pk)
+        self.assertEqual(log.object_changes, {})
+
+        self.assertFalse(log.audit_object)
+
     def test_delete_denied(self):
+        init_roles()
+        role = Role.objects.get(name="View service config")
+        policy = Policy.objects.create(name="test_policy", role=role)
+        policy.user.add(self.no_rights_user)
+        policy.add_object(self.service)
+        policy.apply()
+
         with self.no_rights_user_logged_in:
             response: Response = self.client.delete(
                 path=reverse("service-details", kwargs={"service_id": self.service.pk}),
@@ -294,6 +324,103 @@ class TestService(BaseTestCase):
             operation_type=AuditLogOperationType.Update,
             operation_result=AuditLogOperationResult.Denied,
             user=self.no_rights_user,
+        )
+
+    def test_delete_new(self):
+        init_roles()
+        role = Role.objects.get(name="View service configurations")
+        bundle_filename = "import.tar"
+        with open(
+            Path(settings.BASE_DIR, "python/audit/tests/files", bundle_filename),
+            encoding="utf-8",
+        ) as f:
+            self.client.post(
+                path=reverse("upload-bundle"),
+                data={"file": f},
+            )
+
+        self.client.post(
+            path=reverse("load-bundle"),
+            data={"bundle_file": bundle_filename},
+        )
+
+        response: Response = self.client.post(
+            path=reverse("cluster"),
+            data={
+                "name": "Cluster name",
+                "prototype_id": Prototype.objects.get(name="importer_cluster").pk,
+            },
+        )
+
+        cluster = Cluster.objects.get(pk=response.data["id"])
+        response: Response = self.client.post(
+            path=reverse("service"),
+            data={
+                "cluster_id": response.data["id"],
+                "prototype_id": Prototype.objects.get(name="importer_service").pk,
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        service = ClusterObject.objects.get(pk=response.data["id"])
+        username = "new_user"
+        password = "password"
+        response: Response = self.client.post(
+            path=reverse("rbac:user-list"),
+            data={
+                "username": username,
+                "password": password,
+                "first_name": "aaa",
+                "last_name": "aaa",
+                "email": "aa@aa.ru",
+                "group": [],
+            },
+        )
+
+        user = User.objects.get(pk=response.data["id"])
+        response: Response = self.client.post(
+            path=reverse("rbac:role-list"),
+            data={
+                "display_name": "rolename",
+                "type": "role",
+                "category": [],
+                "parametrized_by_type": [],
+                "child": [{"id": role.pk}],
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        created_role = Role.objects.get(pk=response.data["id"])
+        self.client.post(
+            path=reverse("rbac:policy-list"),
+            data={
+                "name": "policy_name",
+                "role": {"id": created_role.pk},
+                "user": [{"id": user.pk}],
+                "group": [],
+                "object": [{"name": service.name, "type": "service", "id": service.pk}],
+            },
+            content_type=APPLICATION_JSON,
+        )
+
+        with self.another_user_logged_in(username=username, password=password):
+            response: Response = self.client.delete(
+                path=reverse("service-details", kwargs={"service_id": service.pk}),
+                content_type=APPLICATION_JSON,
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
+        self.check_log(
+            log=log,
+            obj=cluster,
+            obj_name=cluster.name,
+            object_type=AuditObjectType.Cluster,
+            operation_name=f"{service.display_name} service removed",
+            operation_type=AuditLogOperationType.Update,
+            operation_result=AuditLogOperationResult.Denied,
+            user=user,
         )
 
     def test_import(self):

@@ -49,6 +49,7 @@ from cm.models import (
     ServiceComponent,
     SubAction,
     TaskLog,
+    Upgrade,
     get_object_cluster,
 )
 from cm.status_api import post_event
@@ -748,9 +749,15 @@ def finish_task(task: TaskLog, job: Optional[JobLog], status: str):
         task.unlock_affected()
         set_task_status(task, status, ctx.event)
 
+    upgrade = Upgrade.objects.filter(action=action).first()
+    if upgrade:
+        operation_name = f"{action.display_name} upgrade completed"
+    else:
+        operation_name = f"{action.display_name} action completed"
+
     audit_finish_task(
         obj=obj,
-        action_display_name=action.display_name,
+        operation_name=operation_name,
         status=status,
     )
 

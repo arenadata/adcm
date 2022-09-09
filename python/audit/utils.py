@@ -17,10 +17,16 @@ from adwp_base.errors import AdwpEx
 from django.contrib.auth.models import User as DjangoUser
 from django.db.models import Model
 from django.http.response import Http404
+from django.urls import resolve
 from django.views.generic.base import View
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.request import Request
-from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_403_FORBIDDEN, is_success
+from rest_framework.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    is_success,
+)
 from rest_framework.viewsets import ModelViewSet
 
 from audit.cases.cases import get_audit_operation_and_object
@@ -35,7 +41,15 @@ from audit.models import (
     AuditOperation,
 )
 from cm.errors import AdcmEx
-from cm.models import Cluster, ClusterBind, ClusterObject, Host, HostProvider, TaskLog
+from cm.models import (
+    Action,
+    Cluster,
+    ClusterBind,
+    ClusterObject,
+    Host,
+    HostProvider,
+    TaskLog,
+)
 from rbac.endpoints.group.serializers import GroupAuditSerializer
 from rbac.endpoints.policy.serializers import PolicyAuditSerializer
 from rbac.endpoints.role.serializers import RoleAuditSerializer
@@ -84,6 +98,8 @@ def _get_deleted_obj(view: View, request: Request, kwargs) -> Model | None:
     except PermissionDenied:
         if "cluster_id" in kwargs:
             deleted_obj = Cluster.objects.filter(pk=kwargs["cluster_id"]).first()
+        elif "service_id" in kwargs:
+            deleted_obj = ClusterObject.objects.filter(pk=kwargs["service_id"]).first()
         else:
             deleted_obj = None
 
@@ -225,6 +241,13 @@ def audit(func):
 
             if not deleted_obj:
                 status_code = exc.status_code
+                if (
+                    status_code == HTTP_404_NOT_FOUND
+                    and kwargs.get("action_id")
+                    and Action.objects.filter(pk=kwargs["action_id"]).exists()
+                ):
+                    status_code = HTTP_403_FORBIDDEN
+
             else:  # when denied returns 404 from PermissionListMixin
                 if getattr(exc, "msg", None) and (  # pylint: disable=too-many-boolean-expressions
                     "There is host" in exc.msg
@@ -276,7 +299,7 @@ def audit(func):
                 user=user,
                 object_changes=object_changes,
             )
-            cef_logger(audit_instance=auditlog, signature_id=request.path)
+            cef_logger(audit_instance=auditlog, signature_id=resolve(request.path).route)
 
         if error:
             raise error
@@ -323,7 +346,7 @@ def make_audit_log(operation_type, result, operation_status):
     cef_logger(audit_instance=audit_log, signature_id="Background operation", empty_resource=True)
 
 
-def audit_finish_task(obj, action_display_name: str, status: str) -> None:
+def audit_finish_task(obj, operation_name: str, status: str) -> None:
     obj_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP.get(obj.__class__)
     if not obj_type:
         return
@@ -338,10 +361,12 @@ def audit_finish_task(obj, action_display_name: str, status: str) -> None:
     else:
         operation_result = AuditLogOperationResult.Fail
 
-    AuditLog.objects.create(
+    audit_log = AuditLog.objects.create(
         audit_object=audit_object,
-        operation_name=f"{action_display_name} action completed",
+        operation_name=operation_name,
         operation_type=AuditLogOperationType.Update,
         operation_result=operation_result,
         object_changes={},
     )
+
+    cef_logger(audit_instance=audit_log, signature_id="Action completion")
