@@ -268,7 +268,10 @@ class TestUpgrade(RunActionTestMixin):
         )
 
     @pytest.mark.parametrize("parse_with_context", ["upgrade.yaml"], indirect=True)
-    @pytest.mark.parametrize("type_to_pick", [Cluster, Provider])
+    @pytest.mark.parametrize(
+        "type_to_pick",
+        [Cluster, pytest.param(Provider, marks=pytest.mark.skip(reason="https://tracker.yandex.ru/ADCM-3179"))],
+    )
     @pytest.mark.usefixtures(
         "grant_view_on_cluster", "grant_view_on_provider", "upload_new_bundles", "init"
     )  # pylint: disable-next=too-many-locals

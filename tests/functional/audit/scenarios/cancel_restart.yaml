@@ -44,7 +44,7 @@ operations:
   - update:
       what: *cluster
       how:
-        operation: restart-task
+        operation: restart-not-existing-task
         name: Task
     result: fail
   - update: *restart
