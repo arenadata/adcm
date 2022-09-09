@@ -170,18 +170,13 @@ class TestCluster(BaseTestCase):
     def check_action_log(
         self,
         log: AuditLog,
-        obj: Cluster | None,
         operation_name: str,
         operation_result: AuditLogOperationResult,
     ) -> None:
-        if obj:
-            self.assertEqual(log.audit_object.object_id, obj.pk)
-            self.assertEqual(log.audit_object.object_name, obj.name)
-            self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
-            self.assertFalse(log.audit_object.is_deleted)
-        else:
-            self.assertFalse(log.audit_object)
-
+        self.assertEqual(log.audit_object.object_id, self.cluster.pk)
+        self.assertEqual(log.audit_object.object_name, self.cluster.name)
+        self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
+        self.assertFalse(log.audit_object.is_deleted)
         self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, AuditLogOperationType.Update)
         self.assertEqual(log.operation_result, operation_result)
@@ -1611,7 +1606,6 @@ class TestCluster(BaseTestCase):
 
         self.check_action_log(
             log=log,
-            obj=self.cluster,
             operation_name=f"{self.action_display_name} action launched",
             operation_result=AuditLogOperationResult.Success,
         )
@@ -1643,7 +1637,6 @@ class TestCluster(BaseTestCase):
 
         self.check_action_log(
             log=log,
-            obj=self.cluster,
             operation_name=f"{self.action_display_name} upgrade launched",
             operation_result=AuditLogOperationResult.Success,
         )
@@ -1668,7 +1661,6 @@ class TestCluster(BaseTestCase):
 
         self.check_action_log(
             log=log,
-            obj=self.cluster,
             operation_name=f"Upgraded to {upgrade.name}",
             operation_result=AuditLogOperationResult.Success,
         )
@@ -1685,7 +1677,6 @@ class TestCluster(BaseTestCase):
 
         self.check_action_log(
             log=log,
-            obj=None,
             operation_name="Upgraded to",
             operation_result=AuditLogOperationResult.Fail,
         )
