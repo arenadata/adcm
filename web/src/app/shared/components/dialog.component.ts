@@ -136,6 +136,6 @@ export class DialogComponent implements OnInit {
   }
 
   _isUserInactive() {
-    return !this.data?.model?.value?.is_active;
+    return !this.data?.model?.value?.is_active === false;
   }
 }
