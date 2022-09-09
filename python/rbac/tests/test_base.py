@@ -10,9 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.test import TestCase
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
+from django.test import TestCase
 
 from cm.models import Bundle, Prototype
 from rbac.models import Role
@@ -38,7 +38,6 @@ def cook_role(name, class_name, obj_type=None):
 
 class BaseTestCase(TestCase):  # pylint: disable=too-many-instance-attributes
     def setUp(self) -> None:
-        super().setUp()
         self.create_bundles_and_prototypes()
         self.create_permissions()
 

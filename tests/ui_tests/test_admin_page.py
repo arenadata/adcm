@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name, unused-argument
+# pylint: disable=redefined-outer-name, unused-argument, too-many-lines
 
 """UI tests for /admin page"""
 
@@ -31,6 +31,7 @@ from adcm_client.objects import (
     Provider,
 )
 from adcm_pytest_plugin import utils
+from adcm_pytest_plugin.steps.actions import wait_for_task_and_assert_result
 from adcm_pytest_plugin.utils import random_string
 
 from tests.ui_tests.app.app import ADCMTest
@@ -336,11 +337,14 @@ class TestAdminUsersPage:
                 params['username'], params['password'], params['first_name'], params['last_name'], params['email']
             )
             assert users_page.is_user_presented(params['username']), f'User {params["username"]} was not created'
-        with allure.step(f'Delete user {params["username"]}'):
+        with allure.step(f'Deactivate user {params["username"]}'):
             users_page.delete_user(params['username'])
-            assert not users_page.is_user_presented(
+            assert users_page.is_user_presented(
                 params['username']
-            ), f'User {params["username"]} should not be in users list'
+            ), f'User {params["username"]} should be in users list'
+            # TODO after ADCM-2582
+            #  * check user row looks deactivated
+            #  * check user detail table can't be edited
 
     def test_change_admin_password(self, users_page: AdminUsersPage):
         """Change admin password, login with new credentials"""
@@ -389,7 +393,7 @@ class TestAdminUsersPage:
     def test_add_ldap_group_to_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
         """Check that user can't add ldap group to usual user"""
         with allure.step("Wait ldap integration ends"):
-            users_page.header.wait_success_job_amount_from_header(1)
+            wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), 'success')
         users_page.check_user_group_change_is_disabled(user.username, "adcm_users")
 
     @pytest.mark.ldap()
@@ -397,12 +401,50 @@ class TestAdminUsersPage:
     def test_add_group_to_ldap_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
         """Check that user can add group to ldap user"""
 
-        users_page.header.wait_success_job_amount_from_header(1)
+        with allure.step("Wait ldap integration ends"):
+            wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), 'success')
         test_group = sdk_client_fs.group_create('test_group')
         users_page.update_user_info(ldap_user_in_group['name'], group=test_group.name)
         with allure.step(f'Check user {user.username} is listed in users list with changed params'):
             user_row = users_page.get_user_row_by_username(ldap_user_in_group['name'])
             assert test_group.name in user_row.text, "User group didn't changed"
+
+    @pytest.mark.ldap()
+    @pytest.mark.usefixtures("configure_adcm_ldap_ad")
+    def test_filter_users(self, user, users_page, sdk_client_fs, ldap_user_in_group):
+        """Check that users can be filtered"""
+
+        with allure.step("Wait ldap integration ends"):
+            wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), 'success')
+        users_page.driver.refresh()
+        users_page.filter_users_by("status", "active")
+        with allure.step("Check users are filtered by active status"):
+            assert users_page.get_all_user_names() == [
+                user.username for user in sdk_client_fs.user_list(is_active=True)
+            ], "Not all active users are visible"
+        users_page.remove_user_filter()
+        users_page.filter_users_by("status", "inactive")
+        with allure.step("Check users are filtered by inactive status"):
+            assert users_page.get_all_user_names() == [
+                user.username for user in sdk_client_fs.user_list(is_active=False)
+            ], "Not all inactive users are visible"
+        users_page.remove_user_filter()
+        users_page.filter_users_by("type", "local")
+        with allure.step("Check users are filtered by local type"):
+            assert users_page.get_all_user_names() == [
+                user.username for user in sdk_client_fs.user_list(type='local')
+            ], "Not all local users are visible"
+        users_page.remove_user_filter()
+        users_page.filter_users_by("type", "ldap")
+        with allure.step("Check users are filtered by ldap status"):
+            assert users_page.get_all_user_names() == [
+                user.username for user in sdk_client_fs.user_list(type='ldap')
+            ], "Not all ldap users are visible"
+        users_page.filter_users_by("status", "active")
+        with allure.step("Check users are filtered both by active status and ldap"):
+            assert users_page.get_all_user_names() == [
+                user.username for user in sdk_client_fs.user_list(is_active=True, type='ldap')
+            ], "Not all active ldap users are visible"
 
 
 @pytest.mark.usefixtures("login_to_adcm_over_api")
@@ -526,16 +568,19 @@ class TestAdminGroupsPage:
 
     @pytest.mark.ldap()
     @pytest.mark.usefixtures("configure_adcm_ldap_ad")
-    def test_create_group_with_ldap_user_on_admin_groups_page(self, app_fs, ldap_user):
+    def test_create_group_with_ldap_user_on_admin_groups_page(self, sdk_client_fs, app_fs, ldap_user_in_group):
         """Test create a group on /admin/groups"""
 
+        wait_for_task_and_assert_result(sdk_client_fs.adcm().action(name="run_ldap_sync").run(), 'success')
         groups_page = AdminGroupsPage(app_fs.driver, app_fs.adcm.url).open()
-        groups_page.create_custom_group(self.custom_group.name, self.custom_group.description, ldap_user["name"])
+        groups_page.create_custom_group(
+            self.custom_group.name, self.custom_group.description, ldap_user_in_group["name"]
+        )
         current_groups = groups_page.get_all_groups()
-        with allure.step('Check that there are 1 custom group'):
-            assert len(current_groups) == 1, "There should be 1 group on the page"
+        with allure.step('Check that there are 1 custom group and 1 ldap'):
+            assert len(current_groups) == 2, "There should be 2 group on the page"
             assert (
-                AdminGroupInfo(name='Test_group', description='Test description', users=ldap_user["name"])
+                AdminGroupInfo(name='Test_group', description='Test description', users=ldap_user_in_group["name"])
                 in current_groups
             ), "Created group should be on the page"
 
