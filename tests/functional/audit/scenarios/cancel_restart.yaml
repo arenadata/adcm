@@ -25,13 +25,13 @@ operations:
     result: denied
     username: {{ username }}
   - update: *cancel
-  - update: *cancel
-    result: fail
   - update: &complete-action
       what: *cluster
       how:
         operation: complete-action
         name: {{ action_display_name }}
+    result: fail
+  - update: *cancel
     result: fail
 
   - update: &restart

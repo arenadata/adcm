@@ -107,7 +107,7 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         NamedOperation('launch-action', '{name} action launched', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         NamedOperation('complete-action', '{name} action completed', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         # Tasks
-        NamedOperation('cancel-task', '{name} canceled', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        NamedOperation('cancel-task', '{name} cancelled', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         NamedOperation('restart-task', '{name} restarted', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         # Background tasks
         NamedOperation('launch-background-task', '"{name}" job launched', (ObjectType.ADCM,)),
