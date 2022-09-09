@@ -167,12 +167,12 @@ class TestCluster(BaseTestCase):
         self.assertEqual(log.user.pk, self.test_user.pk)
         self.assertEqual(log.object_changes, {})
 
-    def check_action_log(self, log: AuditLog) -> None:
+    def check_action_log(self, log: AuditLog, operation_name: str) -> None:
         self.assertEqual(log.audit_object.object_id, self.cluster.pk)
         self.assertEqual(log.audit_object.object_name, self.cluster.name)
         self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
         self.assertFalse(log.audit_object.is_deleted)
-        self.assertEqual(log.operation_name, f"{self.action_display_name} action launched")
+        self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, AuditLogOperationType.Update)
         self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
         self.assertIsInstance(log.operation_time, datetime)
@@ -1599,7 +1599,7 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_action_log(log=log)
+        self.check_action_log(log=log, operation_name=f"{self.action_display_name} action launched")
 
     def test_do_upgrade(self):
         action = Action.objects.create(
@@ -1626,4 +1626,26 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_action_log(log=log)
+        self.check_action_log(
+            log=log, operation_name=f"{self.action_display_name} upgrade launched"
+        )
+
+    def test_do_upgrade_no_action(self):
+        upgrade = Upgrade.objects.create(
+            name="test_upgrade",
+            bundle=self.bundle,
+            min_version="1",
+            max_version="99",
+        )
+
+        with patch("api.cluster.views.create", return_value=Response(status=HTTP_201_CREATED)):
+            self.client.post(
+                path=reverse(
+                    "do-cluster-upgrade",
+                    kwargs={"cluster_id": self.cluster.pk, "upgrade_id": upgrade.pk},
+                )
+            )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_action_log(log=log, operation_name=f"Upgraded to {upgrade.name}")

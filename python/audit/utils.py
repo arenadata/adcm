@@ -342,7 +342,7 @@ def audit_finish_task(obj, action_display_name: str, status: str) -> None:
 
     AuditLog.objects.create(
         audit_object=audit_object,
-        operation_name=f"{action_display_name} action completed",
+        operation_name=f"{action_display_name} upgrade completed",
         operation_type=AuditLogOperationType.Update,
         operation_result=operation_result,
         object_changes={},
