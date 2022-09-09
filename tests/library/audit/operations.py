@@ -107,7 +107,7 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         NamedOperation('launch-action', '{name} action launched', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         NamedOperation('complete-action', '{name} action completed', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         # Tasks
-        NamedOperation('cancel-task', '{name} canceled', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        NamedOperation('cancel-task', '{name} cancelled', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         NamedOperation('restart-task', '{name} restarted', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         # Background tasks
         NamedOperation('launch-background-task', '"{name}" job launched', (ObjectType.ADCM,)),
@@ -266,7 +266,9 @@ class Operation:
         but I find this the cheaper and cleaner way, because there are too few cases for that:
         making it clearly "None" in scenario will make us "consider" nullable users in both parser and converter.
         """
-        if self.operation_type == OperationType.UPDATE and (self.code.get('operation') == 'complete-action'):
+        if self.operation_type == OperationType.UPDATE and (
+            self.code.get('operation') in {'complete-action', 'complete-upgrade'}
+        ):
             self.user_id = None
             self.username = None
 
