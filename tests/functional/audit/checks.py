@@ -100,9 +100,17 @@ def _extract_basic_info(client: ADCMClient, log: Union[AuditOperation, AuditLogi
         return (
             (result := log.operation_result.value),
             (name := log.operation_name),
-            (
-                f'actor="{username}" act="{log.operation_type.value}" operation="{name}" resource="{log.object_name}" '
-                f'result="{result}" timestamp="{time}"'
+            " ".join(
+                f'{k}="{v}"'
+                for k, v in {
+                    'actor': username,
+                    'act': log.operation_type.value,
+                    'operation': name,
+                    'resource': log.object_name,
+                    'result': result,
+                    'timestamp': time,
+                }.items()
+                if v is not None
             ),
         )
     time = _format_time(log.login_time)
