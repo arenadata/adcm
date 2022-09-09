@@ -174,7 +174,7 @@ class TestAction(BaseTestCase):
             obj_pk=self.adcm.pk,
             obj_name=self.adcm_name,
             obj_type=AuditObjectType.ADCM,
-            operation_name=f"{self.action.display_name} upgrade completed",
+            operation_name=f"{self.action.display_name} action completed",
             operation_result=AuditLogOperationResult.Fail,
         )
 
