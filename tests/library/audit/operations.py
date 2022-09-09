@@ -266,7 +266,9 @@ class Operation:
         but I find this the cheaper and cleaner way, because there are too few cases for that:
         making it clearly "None" in scenario will make us "consider" nullable users in both parser and converter.
         """
-        if self.operation_type == OperationType.UPDATE and (self.code.get('operation') == 'complete-action'):
+        if self.operation_type == OperationType.UPDATE and (
+            self.code.get('operation') in {'complete-action', 'complete-upgrade'}
+        ):
             self.user_id = None
             self.username = None
 

@@ -40,6 +40,9 @@
           script_type: ansible
           params:
             ansible_tags: succeed
+      config: &config
+        - name: param
+          type: string
     - <<: *upgrade
       name: Fail Upgrade
       scripts:
@@ -50,6 +53,7 @@
           script_type: ansible
           params:
             ansible_tags: fail
+      config: *config
 
 - type: host
   name: actions_host
