@@ -347,6 +347,7 @@ def cluster_case(
             ["cluster", _, "host", host_pk, "config", "history"]
             | ["cluster", _, "host", host_pk, "config", "history", _, "restore"]
             | ["provider", _, "host", host_pk, "config", "history"]
+            | ["provider", _, "host", host_pk, "config", "history", _, "restore"]
             | ["host", host_pk, "config", "history"]
             | ["host", host_pk, "config", "history", _, "restore"]
         ):
