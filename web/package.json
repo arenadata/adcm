@@ -16,7 +16,7 @@
   },
   "private": true,
   "dependencies": {
-    "@adwp-ui/widgets": "0.0.65",
+    "@adwp-ui/widgets": "0.0.67",
     "@angular/animations": "^11.2.14",
     "@angular/cdk": "^11.2.13",
     "@angular/common": "^11.2.14",
