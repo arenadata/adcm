@@ -80,7 +80,7 @@ def check_audit_cef_logs(client: ADCMClient, adcm_container: Container):
             result, name, extension = _extract_basic_info(client, log)
             with allure.step(f"Check CEF log #{i} is corresponding to {log.id} '{name}' with result '{result}'"):
                 corresponding_cef_log: CEFRecord = cef_records[i]
-                expected_severity = "3" if result == OperationResult.DENIED else "1"
+                expected_severity = "3" if result == OperationResult.DENIED.value else "1"
                 for param, expected in (("name", name), ("severity", expected_severity), ("extension", extension)):
 
                     if getattr(corresponding_cef_log, param) != expected:

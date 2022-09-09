@@ -16,7 +16,7 @@ from typing import Tuple
 
 import allure
 import pytest
-from adcm_client.base import NoSuchEndpointOrAccessIsDenied
+import requests
 from adcm_client.objects import ADCMClient, Bundle, Host, User
 from adcm_pytest_plugin.steps.actions import run_cluster_action_and_assert_result
 
@@ -80,12 +80,11 @@ def test_simple_flow(sdk_client_fs, audit_log_checker, adcm_fs, adb_bundle, dumm
     create_policy(sdk_client_fs, BusinessRoles.ViewClusterConfigurations, [cluster], users=[new_user], groups=[])
     new_client.reread()
     with allure.step("Try to change config from unauthorized user"):
-        try:
-            new_client.cluster(id=cluster.id).config_set_diff(config)
-        except NoSuchEndpointOrAccessIsDenied:
-            pass
-        else:
-            raise RuntimeError("An error should be raised on attempt of changing config")
+        requests.post(
+            f"{new_client.url}/api/v1/cluster/{cluster.id}/config/history/",
+            json={},
+            headers={"Authorization": f"Token {new_client.api_token()}"},
+        )
     with allure.step("Delete cluster"):
         cluster.delete()
     check_audit_cef_logs(sdk_client_fs, adcm_fs.container)
