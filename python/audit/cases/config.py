@@ -3,20 +3,10 @@ from django.db.models import Model
 from django.views import View
 from rest_framework.response import Response
 
+from adcm.utils import get_obj_type
 from audit.cases.common import get_obj_name, get_or_create_audit_obj
 from audit.models import AuditLogOperationType, AuditObject, AuditOperation
 from cm.models import GroupConfig, Host, ObjectConfig
-
-
-def _get_obj_type(obj_type: str) -> str:
-    if obj_type == "cluster object":
-        return "service"
-    elif obj_type == "service component":
-        return "component"
-    elif obj_type == "host provider":
-        return "provider"
-
-    return obj_type
 
 
 # pylint: disable-next=too-many-locals,too-many-branches,too-many-statements
@@ -45,7 +35,7 @@ def config_case(
 
             if config:
                 object_type = ContentType.objects.get_for_model(config.object).name
-                object_type = _get_obj_type(obj_type=object_type)
+                object_type = get_obj_type(obj_type=object_type)
                 object_name = get_obj_name(obj=config.object, obj_type=object_type)
 
                 audit_object = get_or_create_audit_obj(
@@ -81,7 +71,7 @@ def config_case(
 
             if config:
                 object_type = ContentType.objects.get_for_model(config.object).name
-                object_type = _get_obj_type(object_type)
+                object_type = get_obj_type(object_type)
                 object_name = get_obj_name(obj=config.object, obj_type=object_type)
 
                 audit_object = get_or_create_audit_obj(
@@ -116,7 +106,7 @@ def config_case(
                 else:
                     obj = response.data.serializer.instance
 
-                object_type = _get_obj_type(obj.object_type.name)
+                object_type = get_obj_type(obj.object_type.name)
                 object_name = get_obj_name(obj=obj.object, obj_type=object_type)
                 audit_object = get_or_create_audit_obj(
                     object_id=obj.object.id,
@@ -147,7 +137,7 @@ def config_case(
                 obj = GroupConfig.objects.filter(pk=group_config_pk).first()
 
             if obj:
-                object_type = _get_obj_type(obj.object_type.name)
+                object_type = get_obj_type(obj.object_type.name)
                 object_name = get_obj_name(obj=obj.object, obj_type=object_type)
                 audit_object = get_or_create_audit_obj(
                     object_id=obj.object.id,
@@ -164,7 +154,7 @@ def config_case(
                 name=f"host added to {config_group.name} configuration group",
                 operation_type=AuditLogOperationType.Update,
             )
-            object_type = _get_obj_type(config_group.object_type.name)
+            object_type = get_obj_type(config_group.object_type.name)
             object_name = get_obj_name(obj=config_group.object, obj_type=object_type)
             audit_object = get_or_create_audit_obj(
                 object_id=config_group.pk,
@@ -190,7 +180,7 @@ def config_case(
                 name=f"{obj.name} host removed from {config_group.name} configuration group",
                 operation_type=AuditLogOperationType.Update,
             )
-            object_type = _get_obj_type(config_group.object_type.name)
+            object_type = get_obj_type(config_group.object_type.name)
             object_name = get_obj_name(obj=config_group.object, obj_type=object_type)
             audit_object = get_or_create_audit_obj(
                 object_id=config_group.pk,

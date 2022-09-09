@@ -30,16 +30,20 @@ def service_case(
                 operation_type=AuditLogOperationType.Update,
             )
 
+            cluster_pk = None
             if response and response.data:
                 if response.data.get("cluster_id"):
-                    cluster = Cluster.objects.filter(pk=response.data["cluster_id"]).first()
+                    cluster_pk = response.data["cluster_id"]
 
                 if response.data.get("display_name"):
                     audit_operation.name = f"{response.data['display_name']} {audit_operation.name}"
+            elif view.request.data.get("cluster_id"):
+                cluster_pk = view.request.data["cluster_id"]
 
-            if cluster:
+            if cluster_pk:
+                cluster = Cluster.objects.filter(pk=cluster_pk).first()
                 audit_object = get_or_create_audit_obj(
-                    object_id=cluster.pk,
+                    object_id=cluster_pk,
                     object_name=cluster.name,
                     object_type=AuditObjectType.Cluster,
                 )
@@ -49,21 +53,25 @@ def service_case(
         case ["service", _]:
             deleted_obj: ClusterObject
             audit_operation = AuditOperation(
-                name=f"{deleted_obj.display_name} service removed",
+                name="service removed",
                 operation_type=AuditLogOperationType.Update,
             )
-            audit_object = get_or_create_audit_obj(
-                object_id=deleted_obj.cluster.pk,
-                object_name=deleted_obj.cluster.name,
-                object_type=AuditObjectType.Cluster,
-            )
+            if deleted_obj:
+                audit_operation.name = f"{deleted_obj.display_name} {audit_operation.name}"
+                audit_object = get_or_create_audit_obj(
+                    object_id=deleted_obj.cluster.pk,
+                    object_name=deleted_obj.cluster.name,
+                    object_type=AuditObjectType.Cluster,
+                )
+            else:
+                audit_object = None
 
         case ["service", service_pk, "bind"]:
             obj = ClusterObject.objects.get(pk=service_pk)
             cluster_name, service_name = get_export_cluster_and_service_names(response, view)
             audit_operation = AuditOperation(
                 name=f"{AuditObjectType.Service.capitalize()} "
-                f"bound to {make_export_name(cluster_name, service_name)}",
+                f"bound to {make_export_name(cluster_name, service_name)}".strip(),
                 operation_type=AuditLogOperationType.Update,
             )
 
@@ -76,13 +84,15 @@ def service_case(
         case ["service", service_pk, "bind", _]:
             obj = ClusterObject.objects.get(pk=service_pk)
 
-            service_name = ""
-            if deleted_obj and isinstance(deleted_obj, ClusterBind) and deleted_obj.source_service:
-                deleted_obj: ClusterBind
-                service_name = get_service_name(deleted_obj.source_service)
+            cluster_name, service_name = "", ""
+            if deleted_obj and isinstance(deleted_obj, ClusterBind):
+                cluster_name = deleted_obj.source_cluster.name
+                if deleted_obj.source_service:
+                    deleted_obj: ClusterBind
+                    service_name = get_service_name(deleted_obj.source_service)
 
             audit_operation = AuditOperation(
-                name=f"{make_export_name(deleted_obj.source_cluster.name, service_name)} unbound",
+                name=f"{make_export_name(cluster_name, service_name)} unbound".strip(),
                 operation_type=AuditLogOperationType.Update,
             )
 

@@ -87,10 +87,14 @@ class BaseTestCase(TestCase):
         self.login()
 
     @contextmanager
-    def another_user_loged_in(self, username: str, password: str):
+    def another_user_logged_in(self, username: str, password: str):
+        self.client.post(path=reverse("rbac:logout"))
         response: Response = self.client.post(
             path=reverse("rbac:token"),
-            data={"username": username, "password": password},
+            data={
+                "username": username,
+                "password": password,
+            },
             content_type=APPLICATION_JSON,
         )
         self.client.defaults["Authorization"] = f"Token {response.data['token']}"

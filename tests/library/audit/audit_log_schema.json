@@ -192,11 +192,11 @@
             },
             "name": {
               "type": "string",
-              "description": "Depending on context it may be display name of action/service, FQDN of host, etc."
+              "description": "Depending on context it may be display name of action/service, group config name, etc."
             },
-            "group_name": {
+            "host": {
               "type": "string",
-              "description": "Used for 'config group' related operations"
+              "description": "Used for 'config group' related operations, etc"
             }
           },
           "required": [

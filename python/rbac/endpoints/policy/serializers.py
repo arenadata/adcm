@@ -22,6 +22,7 @@ from rest_framework.fields import (
 from rest_framework.relations import HyperlinkedIdentityField, PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
 
+from adcm.utils import get_obj_type
 from cm.models import Cluster, ClusterObject, Host, HostProvider, ServiceComponent
 from rbac.models import Group, Policy, Role, RoleTypes, User
 from rbac.utils import BaseRelatedSerializer
@@ -164,7 +165,11 @@ class PolicyAuditSerializer(ModelSerializer):
     @staticmethod
     def get_object(obj: Policy) -> list[dict[str, int | str]]:
         return [
-            {"id": obj.object.pk, "name": obj.object.name, "type": obj.content_type.name}
+            {
+                "id": obj.object.pk,
+                "name": obj.object.name,
+                "type": get_obj_type(obj.content_type.name),
+            }
             for obj in obj.object.all()
         ]
 
