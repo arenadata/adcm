@@ -364,6 +364,7 @@ class TestTaskCancelRestart(RunActionTestMixin):
         with allure.step("Cancel task with result: denied, success, fail"):
             check_404(self._cancel(task, self.unauth_creds))
             check_succeed(self._cancel(task, self.admin_creds))
+            _wait_all_finished(self.client)
             check_409(self._cancel(task, self.admin_creds))
         with allure.step("Restart task with result: denied, fail, success"):
             check_404(self._restart(task, self.unauth_creds))
