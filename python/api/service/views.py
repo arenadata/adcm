@@ -57,7 +57,7 @@ class ServiceListView(PermissionListMixin, PaginatedView):
             cluster = get_object_for_user(
                 request.user, 'cm.view_cluster', Cluster, id=kwargs['cluster_id']
             )
-            queryset = queryset.filter(cluster=cluster)
+            queryset = queryset.filter(cluster=cluster).select_related("config")
         return self.get_page(self.filter_queryset(queryset), request)
 
     def post(self, request, *args, **kwargs):
