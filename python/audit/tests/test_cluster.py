@@ -167,14 +167,24 @@ class TestCluster(BaseTestCase):
         self.assertEqual(log.user.pk, self.test_user.pk)
         self.assertEqual(log.object_changes, {})
 
-    def check_action_log(self, log: AuditLog, operation_name: str) -> None:
-        self.assertEqual(log.audit_object.object_id, self.cluster.pk)
-        self.assertEqual(log.audit_object.object_name, self.cluster.name)
-        self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
-        self.assertFalse(log.audit_object.is_deleted)
+    def check_action_log(
+        self,
+        log: AuditLog,
+        obj: Cluster | None,
+        operation_name: str,
+        operation_result: AuditLogOperationResult,
+    ) -> None:
+        if obj:
+            self.assertEqual(log.audit_object.object_id, obj.pk)
+            self.assertEqual(log.audit_object.object_name, obj.name)
+            self.assertEqual(log.audit_object.object_type, AuditObjectType.Cluster)
+            self.assertFalse(log.audit_object.is_deleted)
+        else:
+            self.assertFalse(log.audit_object)
+
         self.assertEqual(log.operation_name, operation_name)
         self.assertEqual(log.operation_type, AuditLogOperationType.Update)
-        self.assertEqual(log.operation_result, AuditLogOperationResult.Success)
+        self.assertEqual(log.operation_result, operation_result)
         self.assertIsInstance(log.operation_time, datetime)
         self.assertEqual(log.object_changes, {})
 
@@ -1599,7 +1609,12 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_action_log(log=log, operation_name=f"{self.action_display_name} action launched")
+        self.check_action_log(
+            log=log,
+            obj=self.cluster,
+            operation_name=f"{self.action_display_name} action launched",
+            operation_result=AuditLogOperationResult.Success,
+        )
 
     def test_do_upgrade(self):
         action = Action.objects.create(
@@ -1627,7 +1642,10 @@ class TestCluster(BaseTestCase):
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
         self.check_action_log(
-            log=log, operation_name=f"{self.action_display_name} upgrade launched"
+            log=log,
+            obj=self.cluster,
+            operation_name=f"{self.action_display_name} upgrade launched",
+            operation_result=AuditLogOperationResult.Success,
         )
 
     def test_do_upgrade_no_action(self):
@@ -1648,4 +1666,26 @@ class TestCluster(BaseTestCase):
 
         log: AuditLog = AuditLog.objects.order_by("operation_time").last()
 
-        self.check_action_log(log=log, operation_name=f"Upgraded to {upgrade.name}")
+        self.check_action_log(
+            log=log,
+            obj=self.cluster,
+            operation_name=f"Upgraded to {upgrade.name}",
+            operation_result=AuditLogOperationResult.Success,
+        )
+
+    def test_do_upgrade_no_upgrade(self):
+        self.client.post(
+            path=reverse(
+                "do-cluster-upgrade",
+                kwargs={"cluster_id": self.cluster.pk, "upgrade_id": 1},
+            )
+        )
+
+        log: AuditLog = AuditLog.objects.order_by("operation_time").last()
+
+        self.check_action_log(
+            log=log,
+            obj=None,
+            operation_name="Upgraded to",
+            operation_result=AuditLogOperationResult.Fail,
+        )

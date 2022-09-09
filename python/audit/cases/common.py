@@ -208,19 +208,19 @@ def upgrade_case(path: list[str, ...]) -> tuple[AuditOperation, AuditObject | No
 
     match path:
         case [obj_type, obj_pk, "upgrade", upgrade_pk, "do"]:
-            upgrade = Upgrade.objects.filter(pk=upgrade_pk).first()
-            if not upgrade:
-                return None, None
-
-            if upgrade.action:
-                operation_name = f"{upgrade.action.display_name} upgrade launched"
-            else:
-                operation_name = f"Upgraded to {upgrade.name}"
-
             audit_operation = AuditOperation(
-                name=operation_name,
+                name="Upgraded to",
                 operation_type=AuditLogOperationType.Update,
             )
+
+            upgrade = Upgrade.objects.filter(pk=upgrade_pk).first()
+            if not upgrade:
+                return audit_operation, None
+
+            if upgrade.action:
+                audit_operation.name = f"{upgrade.action.display_name} upgrade launched"
+            else:
+                audit_operation.name = f"{audit_operation.name} {upgrade.name}"
 
             obj = PATH_STR_TO_OBJ_CLASS_MAP[obj_type].objects.filter(pk=obj_pk).first()
             object_type = MODEL_TO_AUDIT_OBJECT_TYPE_MAP[PATH_STR_TO_OBJ_CLASS_MAP[obj_type]]
