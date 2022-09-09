@@ -11,7 +11,7 @@
 # limitations under the License.
 
 settings:
-  process-type: exact
+  process-type: sequence
   start-from-first: matched
 
 operations:
@@ -44,6 +44,6 @@ operations:
   - update:
       what: *cluster
       how:
-        operation: remove-service
+        operation: remove-not-existing-service
         name: ""
     result: fail

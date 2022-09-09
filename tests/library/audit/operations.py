@@ -83,6 +83,8 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         # cluster
         NamedOperation('add-service', '{name} service added', (ObjectType.CLUSTER,)),
         NamedOperation('remove-service', '{name} service removed', (ObjectType.CLUSTER,)),
+        # there should be an object cleanup for this case
+        NamedOperation('remove-not-existing-service', 'service removed', (ObjectType.CLUSTER,)),
         NamedOperation('add-host', '{name} host added', (ObjectType.CLUSTER,)),
         NamedOperation('remove-host', '{name} host removed', (ObjectType.CLUSTER,)),
         NamedOperation('set-hostcomponent', 'Host-Component map updated', (ObjectType.CLUSTER,)),
@@ -109,6 +111,8 @@ _NAMED_OPERATIONS: Dict[Union[str, Tuple[OperationResult, str]], NamedOperation]
         # Tasks
         NamedOperation('cancel-task', '{name} cancelled', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         NamedOperation('restart-task', '{name} restarted', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
+        # object will be nullified
+        NamedOperation('restart-not-existing-task', '{name} restarted', _OBJECTS_WITH_ACTIONS_AND_CONFIGS),
         # Background tasks
         NamedOperation('launch-background-task', '"{name}" job launched', (ObjectType.ADCM,)),
         NamedOperation('complete-background-task', '"{name}" job completed', (ObjectType.ADCM,)),
@@ -253,7 +257,15 @@ class Operation:
             # some operations don't have object, like Bundle upload,
             # because no ADCM object is created on this operation
             or (self.operation_name == _NAMED_OPERATIONS['upload'].naming_template)
-            or (self.code.get('operation') in {'launch-background-task', 'complete-background-task'})
+            or (
+                self.code.get('operation')
+                in {
+                    'launch-background-task',
+                    'complete-background-task',
+                    'remove-not-existing-service',
+                    'restart-not-existing-task',
+                }
+            )
         ):
             self.object_type = None
             self.object_name = None
