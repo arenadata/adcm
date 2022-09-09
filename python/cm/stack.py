@@ -287,8 +287,6 @@ def save_upgrade(proto, conf, bundle_hash):
         upg = StageUpgrade(name=item["name"])
         set_version(upg, item)
         dict_to_obj(item, "description", upg)
-        if "scripts" in item:
-            upg.action = save_actions(proto, item, bundle_hash, upg)
         if "states" in item:
             dict_to_obj(item["states"], "available", upg)
             if "available" in item["states"]:
@@ -297,6 +295,8 @@ def save_upgrade(proto, conf, bundle_hash):
                 upg.state_on_success = item["states"]["on_success"]
         if in_dict(item, "from_edition"):
             upg.from_edition = item["from_edition"]
+        if "scripts" in item:
+            upg.action = save_actions(proto, item, bundle_hash, upg)
         upg.save()
 
 
