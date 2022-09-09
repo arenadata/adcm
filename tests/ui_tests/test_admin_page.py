@@ -337,11 +337,14 @@ class TestAdminUsersPage:
                 params['username'], params['password'], params['first_name'], params['last_name'], params['email']
             )
             assert users_page.is_user_presented(params['username']), f'User {params["username"]} was not created'
-        with allure.step(f'Delete user {params["username"]}'):
+        with allure.step(f'Deactivate user {params["username"]}'):
             users_page.delete_user(params['username'])
-            assert not users_page.is_user_presented(
+            assert users_page.is_user_presented(
                 params['username']
-            ), f'User {params["username"]} should not be in users list'
+            ), f'User {params["username"]} should be in users list'
+            # TODO after ADCM-2582
+            #  * check user row looks deactivated
+            #  * check user detail table can't be edited
 
     def test_change_admin_password(self, users_page: AdminUsersPage):
         """Change admin password, login with new credentials"""

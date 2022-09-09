@@ -55,7 +55,7 @@ def test_delete_newly_created_user(new_user: User, sdk_client_fs: ADCMClient):
     """Create new user and delete it"""
     admin_client = sdk_client_fs
     new_user.delete()
-    check_user_does_not_exist(admin_client, new_user.username)
+    check_user_is_deactivated(admin_client, new_user.username)
 
 
 def test_change_password(new_user: User, sdk_client_fs: ADCMClient):
@@ -126,11 +126,13 @@ def check_user_exists(client: ADCMClient, username: str):
     )
 
 
-@allure.step('Check that user {username} does not exist')
-def check_user_does_not_exist(client: ADCMClient, username: str):
+@allure.step('Check that user {username} is deactivated')
+def check_user_is_deactivated(client: ADCMClient, username: str):
     """Check that username isn't presented in list of user"""
     presented_usernames = {user.username for user in client.user_list()}
-    assert username not in presented_usernames, f"User with username {username} shouldn't be in list of users"
+    assert username in presented_usernames, f"User with username {username} should be in list of users"
+    user: User = client.user(username=username)
+    assert not user.is_active, "User should be inactive"
 
 
 # !===== UTILITIES =====!
