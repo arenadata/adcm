@@ -33,6 +33,7 @@ export class GroupFieldsComponent implements OnInit {
   group_config: { [key: string]: boolean };
   @Input() panel: IPanelOptions;
   @Input() form: FormGroup;
+  @Input() uniqId: string;
   @ViewChild('ep') expanel: MatExpansionPanel;
 
   constructor(private service: FieldService, private attributesSrv: AttributeService) {}
@@ -84,7 +85,7 @@ export class GroupFieldsComponent implements OnInit {
   }
 
   clickGroupCheckbox(event): void {
-    this.attributesSrv.groupCheckboxToggle(this.panel.name, !this.group_config.checkboxValue);
+    this.attributesSrv.groupCheckboxToggle(this.panel.name, !this.group_config.checkboxValue, this.uniqId);
     this.panel.value = this.group_config.checkboxValue = !this.group_config.checkboxValue;
     event.preventDefault();
     event.stopPropagation();

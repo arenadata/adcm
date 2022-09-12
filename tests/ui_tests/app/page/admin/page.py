@@ -214,6 +214,13 @@ class AdminUsersPage(GeneralAdminPage):
         except TimeoutException:
             return []
 
+    def get_all_user_names(self) -> List[WebElement]:
+        """Get all users names"""
+        try:
+            return [self.find_child(user, AdminUsersLocators.Row.username).text for user in self.get_all_user_rows()]
+        except TimeoutException:
+            return []
+
     @allure.step('Get user row where username is {username}')
     def get_user_row_by_username(self, username: str) -> WebElement:
         """Search for user row by username and return it"""
@@ -253,9 +260,10 @@ class AdminUsersPage(GeneralAdminPage):
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
         email: Optional[str] = None,
+        group: Optional[str] = None,
     ):  # pylint: disable-next=too-many-arguments
         """Update some of fields for user"""
-        if not (password or first_name or last_name or email):
+        if not (password or first_name or last_name or email or group):
             raise ValueError("You should provide at least one field's value to make an update")
         user_row = self.get_user_row_by_username(username)
         self.find_child(user_row, AdminUsersLocators.Row.username).click()
@@ -269,7 +277,22 @@ class AdminUsersPage(GeneralAdminPage):
         ):
             if value:
                 self.send_text_to_element(locator, value)
-        self.find_and_click(AdminUsersLocators.AddUserPopup.save_btn)
+        if group:
+            with allure.step(f"Select group {group} in popup"):
+                self.find_and_click(popup_locators.select_groups)
+                self.wait_element_visible(popup_locators.group_item)
+                available_groups = self.find_elements(popup_locators.group_item)
+                for available_group in available_groups:
+                    if available_group.text == group:
+                        self.scroll_to(available_group)
+                        self.hover_element(available_group)
+                        available_group.click()
+                        self.find_and_click(popup_locators.block, is_js=True)
+                        break
+                else:
+                    raise AssertionError(f"There are no group {group} in select group popup")
+
+        self.scroll_to(AdminUsersLocators.AddUserPopup.save_btn).click()
         self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
 
     @allure.step('Change password of user {username} to {password}')
@@ -282,6 +305,24 @@ class AdminUsersPage(GeneralAdminPage):
         self.send_text_to_element(AdminUsersLocators.AddUserPopup.password_confirm, password)
         self.find_and_click(AdminUsersLocators.AddUserPopup.save_btn)
         self.wait_element_hide(AdminUsersLocators.AddUserPopup.block)
+
+    @allure.step('Check that changing user group is prohibited')
+    def check_user_group_change_is_disabled(self, username: str, group_name: str):
+        """Check that changing user group is prohibited"""
+
+        user_row = self.get_user_row_by_username(username)
+        self.find_child(user_row, AdminUsersLocators.Row.username).click()
+        self.wait_element_visible(AdminUsersLocators.AddUserPopup.block)
+
+        self.find_and_click(AdminUsersLocators.AddUserPopup.select_groups)
+        self.wait_element_visible(AdminUsersLocators.AddUserPopup.group_item)
+        available_groups = self.find_elements(AdminUsersLocators.AddUserPopup.group_item)
+        for available_group in available_groups:
+            if available_group.text == group_name:
+                assert "disabled" in available_group.get_attribute("class"), f"Group {group_name} should be disabled"
+                break
+        else:
+            raise AssertionError(f"There are no group {group_name} in select group popup")
 
     @allure.step('Check that changing ldap user is prohibited')
     def check_ldap_user(self, username: str):
@@ -324,6 +365,39 @@ class AdminUsersPage(GeneralAdminPage):
         """Check that delete button is not presented in user row"""
         user_row = self.get_user_row_by_username(username)
         assert not self.is_child_displayed(user_row, AdminUsersLocators.Row.delete_btn, timeout=3)
+
+    @allure.step('Filter users by {filter_name}')
+    def filter_users_by(self, filter_name: str, filter_option_name: str):
+        """Filter users"""
+
+        def click_filter_item():
+            for filter_item in self.find_elements(AdminUsersLocators.FilterPopup.filter_item):
+                if filter_item.text.lower() == filter_name.lower():
+                    filter_item.click()
+                    return
+            raise AssertionError(f"Filter '{filter_name}' not found")
+
+        def click_dropdown_option():
+            for filter_option in self.find_elements(AdminUsersLocators.filter_dropdown_option):
+                if filter_option.text.lower() == filter_option_name.lower():
+                    filter_option.click()
+                    return
+            raise AssertionError(f"Filter option '{filter_option_name}' not found")
+
+        self.find_and_click(AdminUsersLocators.filter_btn)
+        self.wait_element_visible(AdminUsersLocators.FilterPopup.block)
+        click_filter_item()
+        self.wait_element_visible(AdminUsersLocators.filter_dropdown_select).click()
+        self.wait_element_visible(AdminUsersLocators.filter_dropdown_option)
+        click_dropdown_option()
+        self.wait_page_is_opened()
+
+    @allure.step('Remove filter from users page')
+    def remove_user_filter(self):
+        """Remove filter from users page"""
+
+        self.find_and_click(AdminUsersLocators.filter_dropdown_remove)
+        self.wait_page_is_opened()
 
 
 class AdminGroupsPage(GeneralAdminPage):
