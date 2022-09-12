@@ -12,7 +12,7 @@
 
 from cm.adcm_config import get_prototype_config, obj_ref, proto_ref
 from cm.errors import AdcmEx
-from cm.errors import raise_AdcmEx as err
+from cm.errors import raise_adcm_ex as err
 from cm.hierarchy import Tree
 from cm.logger import logger
 from cm.models import (

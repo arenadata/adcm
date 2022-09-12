@@ -22,48 +22,44 @@ from adcm.settings import ADCM_VERSION
 
 
 class APIRoot(routers.APIRootView):
-    """
-    Arenadata Chapel API
-    """
-
     permission_classes = (permissions.AllowAny,)
     api_root_dict = {
-        'adcm': 'adcm',
-        'audit': 'audit:root',
-        'cluster': 'cluster',
-        'provider': 'provider',
-        'host': 'host',
-        'service': 'service',
-        'component': 'component',
-        'group-config': 'group-config-list',
-        'config': 'config-list',
-        'config-log': 'config-log-list',
-        'job': 'job',
-        'stack': 'stack',
-        'stats': 'stats',
-        'task': 'task',
-        'info': 'adcm-info',
-        'concern': 'concern',
-        'rbac': 'rbac:root',
-        'token': 'token',
+        "adcm": "adcm",
+        "audit": "audit:root",
+        "cluster": "cluster",
+        "provider": "provider",
+        "host": "host",
+        "service": "service",
+        "component": "component",
+        "group-config": "group-config-list",
+        "config": "config-list",
+        "config-log": "config-log-list",
+        "job": "job",
+        "stack": "stack",
+        "stats": "stats",
+        "task": "task",
+        "info": "adcm-info",
+        "concern": "concern",
+        "rbac": "rbac:root",
+        "token": "token",
     }
 
 
 class NameConverter:
     regex = cm.stack.NAME_REGEX
 
-    def to_python(self, value):
+    @staticmethod
+    def to_python(value):
         return value
 
-    def to_url(self, value):
+    @staticmethod
+    def to_url(value):
         return value
 
 
 class ADCMInfo(APIView):
     permission_classes = (permissions.AllowAny,)
 
-    def get(self, request):
-        """
-        General info about ADCM
-        """
-        return Response({'adcm_version': ADCM_VERSION, 'google_oauth': cm.api.has_google_oauth()})
+    @staticmethod
+    def get(request):
+        return Response({"adcm_version": ADCM_VERSION, "google_oauth": cm.api.has_google_oauth()})

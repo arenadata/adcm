@@ -27,7 +27,7 @@ from adcm.serializers import EmptySerializer
 from api.config.serializers import ConfigSerializerUI
 from api.utils import UrlField, check_obj, hlink
 from cm.adcm_config import get_action_variant, get_prototype_config, ui_config
-from cm.errors import raise_AdcmEx
+from cm.errors import raise_adcm_ex
 from cm.models import Cluster, GroupConfig, HostProvider, PrototypeConfig
 
 
@@ -118,7 +118,7 @@ class UIConfigField(JSONField):
     def to_representation(self, value):
         obj = value.obj_ref.object
         if obj is None:
-            raise_AdcmEx('INVALID_CONFIG_UPDATE', f'unknown object type "{value.obj_ref}"')
+            raise_adcm_ex('INVALID_CONFIG_UPDATE', f'unknown object type "{value.obj_ref}"')
         if isinstance(obj, GroupConfig):
             obj = obj.object
         return ui_config(obj, value)

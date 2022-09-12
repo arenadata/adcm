@@ -26,7 +26,7 @@ from cm.api import (
     check_license,
     version_in,
 )
-from cm.errors import raise_AdcmEx as err
+from cm.errors import raise_adcm_ex as err
 from cm.logger import logger
 from cm.models import (
     Cluster,
