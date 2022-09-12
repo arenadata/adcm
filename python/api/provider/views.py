@@ -42,7 +42,7 @@ class ProviderList(PermissionListMixin, PaginatedView):
 
     queryset = HostProvider.objects.all()
     serializer_class = serializers.ProviderSerializer
-    serializer_class_ui = serializers.ProviderUISerializer
+    serializer_class_ui = serializers.ProviderDetailUISerializer
     serializer_class_post = serializers.ProviderDetailSerializer
     filterset_fields = ('name', 'prototype_id')
     ordering_fields = ('name', 'state', 'prototype__display_name', 'prototype__version_order')
@@ -61,7 +61,7 @@ class ProviderDetail(PermissionListMixin, DetailView):
 
     queryset = HostProvider.objects.all()
     serializer_class = serializers.ProviderDetailSerializer
-    serializer_class_ui = serializers.ProviderUISerializer
+    serializer_class_ui = serializers.ProviderDetailUISerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_hostprovider']
     lookup_field = 'id'

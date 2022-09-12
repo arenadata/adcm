@@ -118,7 +118,47 @@ class StatusSerializer(serializers.Serializer):
         return get_host_status(obj)
 
 
-class HostUISerializer(HostDetailSerializer):
+class HostUISerializer(HostSerializer):
+    actions = serializers.SerializerMethodField()
+    cluster_name = serializers.SerializerMethodField()
+    prototype_version = serializers.SerializerMethodField()
+    prototype_name = serializers.SerializerMethodField()
+    prototype_display_name = serializers.SerializerMethodField()
+    provider_name = serializers.SerializerMethodField()
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
+    status = serializers.SerializerMethodField()
+
+    def get_actions(self, obj):
+        act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
+        self.context['host_id'] = obj.id
+        actions = ActionShort(filter_actions(obj, act_set), many=True, context=self.context)
+        return actions.data
+
+    def get_cluster_name(self, obj):
+        if obj.cluster:
+            return obj.cluster.name
+        return None
+
+    def get_prototype_version(self, obj):
+        return obj.prototype.version
+
+    def get_prototype_name(self, obj):
+        return obj.prototype.name
+
+    def get_prototype_display_name(self, obj):
+        return obj.prototype.display_name
+
+    def get_provider_name(self, obj):
+        if obj.provider:
+            return obj.provider.name
+        return None
+
+    def get_status(self, obj):
+        return get_host_status(obj)
+
+
+class HostDetailUISerializer(HostDetailSerializer):
     actions = serializers.SerializerMethodField()
     cluster_name = serializers.SerializerMethodField()
     prototype_version = serializers.SerializerMethodField()

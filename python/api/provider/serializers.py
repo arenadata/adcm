@@ -74,6 +74,36 @@ class ProviderDetailSerializer(ProviderSerializer):
 
 
 class ProviderUISerializer(ProviderDetailSerializer):
+    edition = serializers.CharField(read_only=True)
+    locked = serializers.BooleanField(read_only=True)
+    action = CommonAPIURL(view_name='object-action')
+    actions = serializers.SerializerMethodField()
+    prototype_version = serializers.SerializerMethodField()
+    prototype_name = serializers.SerializerMethodField()
+    prototype_display_name = serializers.SerializerMethodField()
+    upgrade = hlink('provider-upgrade', 'id', 'provider_id')
+    upgradable = serializers.SerializerMethodField()
+    get_upgradable = get_upgradable_func
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
+
+    def get_actions(self, obj):
+        act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
+        self.context['provider_id'] = obj.id
+        actions = ActionShort(filter_actions(obj, act_set), many=True, context=self.context)
+        return actions.data
+
+    def get_prototype_version(self, obj):
+        return obj.prototype.version
+
+    def get_prototype_name(self, obj):
+        return obj.prototype.name
+
+    def get_prototype_display_name(self, obj):
+        return obj.prototype.display_name
+
+
+class ProviderDetailUISerializer(ProviderDetailSerializer):
     actions = serializers.SerializerMethodField()
     prototype_version = serializers.SerializerMethodField()
     prototype_name = serializers.SerializerMethodField()
