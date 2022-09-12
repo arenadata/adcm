@@ -8,12 +8,15 @@
   </button>
 </div>
 
+<app-filter [filterList]="userFilters" [externalData]="data$" [innerData]="filteredData$"></app-filter>
+
 <adwp-list
   [columns]="listColumns"
-  [dataSource]="data$ | async"
+  [dataSource]="filteredData$ | async"
   [paging]="paging | async"
   [sort]="sorting | async"
   [defaultSort]="defaultSort"
+  [isRowInactiveHandler]="isRowInactive"
   (clickRow)="clickRow($event)"
   (auxclickRow)="auxclickRow($event)"
   (changePaging)="onChangePaging($event)"
