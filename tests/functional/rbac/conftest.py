@@ -171,7 +171,7 @@ class BusinessRoles(Enum):
         "Create provider", lambda x: x.provider_create(name=f"new_provider {random_string(5)}"), Deny.CreateProvider
     )
     CreateCluster = BusinessRole(
-        "Create cluster", lambda x: x.cluster_create(name=f"new_cluster {random_string(5)}"), Deny.CreateCluster
+        "Create cluster", lambda x: x.cluster_create(name=f"new cluster {random_string(5)}"), Deny.CreateCluster
     )
     EditClusterConfigurations = BusinessRole(
         "Edit cluster configurations", methodcaller("config_set_diff", {}), Deny.ChangeConfigOf(Cluster)
