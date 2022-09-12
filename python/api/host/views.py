@@ -105,7 +105,7 @@ class HostList(PermissionListMixin, PaginatedView):
 
     queryset = Host.objects.all()
     serializer_class = serializers.HostSerializer
-    serializer_class_ui = serializers.HostUISerializer
+    #    serializer_class_ui = serializers.HostUISerializer
     permission_required = ['cm.view_host']
     filterset_class = HostFilter
     filterset_fields = (
