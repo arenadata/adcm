@@ -31,7 +31,7 @@ BASE_DIR = Path(__file__).absolute().parent.parent.parent
 CONF_DIR = BASE_DIR / "data" / "conf"
 SECRET_KEY_FILE = CONF_DIR / "secret_key.txt"
 CONFIG_FILE = BASE_DIR / "config.json"
-PID_FILE = "/run/uwsgi.pid"
+DOCKER_CONTAINER_STDOUT = "/proc/1/fd/1"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
@@ -264,11 +264,6 @@ LOGGING = {
         },
         "django_auth_ldap": {
             "handlers": ["file"],
-            "level": "DEBUG",
-            "propagate": True,
-        },
-        "audit": {
-            "handlers": ["stdout"],
             "level": "DEBUG",
             "propagate": True,
         },

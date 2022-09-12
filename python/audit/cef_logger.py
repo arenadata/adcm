@@ -10,17 +10,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-import logging
+import io
+import os
+import sys
 from collections import OrderedDict
-from typing import Callable, Optional, Tuple, Union
+from contextlib import redirect_stdout
+from typing import Tuple, Union
 
 from django.conf import settings
 
-from audit.apps import AuditConfig
 from audit.models import AuditLog, AuditLogOperationResult, AuditSession
-
-audit_log = logging.getLogger(AuditConfig.name)
 
 
 class CEFLogConstants:
@@ -37,7 +36,6 @@ def cef_logger(
     signature_id: str,
     severity: int = 1,
     empty_resource: bool = False,
-    stdout_writer: Optional[Callable] = None,
 ) -> None:
     extension = OrderedDict.fromkeys(CEFLogConstants.extension_keys, None)
 
@@ -74,5 +72,5 @@ def cef_logger(
         f"{CEFLogConstants.device_product}|{CEFLogConstants.adcm_version}|"
         f"{signature_id}|{operation_name}|{severity}|{extension}"
     )
-    if stdout_writer is None or not stdout_writer(msg):
-        audit_log.info(msg)
+    with redirect_stdout(io.open(settings.DOCKER_CONTAINER_STDOUT, "wt", 1)):
+        sys.stdout.write(f"{msg}{os.linesep}")
