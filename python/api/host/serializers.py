@@ -119,6 +119,7 @@ class StatusSerializer(serializers.Serializer):
 
 
 class HostUISerializer(HostSerializer):
+    actions = serializers.SerializerMethodField()
     cluster_name = serializers.SerializerMethodField()
     prototype_version = serializers.SerializerMethodField()
     prototype_name = serializers.SerializerMethodField()
@@ -126,6 +127,13 @@ class HostUISerializer(HostSerializer):
     provider_name = serializers.SerializerMethodField()
     concerns = ConcernItemUISerializer(many=True, read_only=True)
     status = serializers.SerializerMethodField()
+
+    def get_actions(self, obj):
+        act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
+        self.context['host_id'] = obj.id
+        actions = ActionShort(filter_actions(obj, act_set), many=True, context=self.context)
+        return actions.data
 
     def get_cluster_name(self, obj):
         if obj.cluster:
