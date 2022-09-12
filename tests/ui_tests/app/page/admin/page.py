@@ -214,6 +214,13 @@ class AdminUsersPage(GeneralAdminPage):
         except TimeoutException:
             return []
 
+    def get_all_user_names(self) -> List[WebElement]:
+        """Get all users names"""
+        try:
+            return [self.find_child(user, AdminUsersLocators.Row.username).text for user in self.get_all_user_rows()]
+        except TimeoutException:
+            return []
+
     @allure.step('Get user row where username is {username}')
     def get_user_row_by_username(self, username: str) -> WebElement:
         """Search for user row by username and return it"""
@@ -358,6 +365,39 @@ class AdminUsersPage(GeneralAdminPage):
         """Check that delete button is not presented in user row"""
         user_row = self.get_user_row_by_username(username)
         assert not self.is_child_displayed(user_row, AdminUsersLocators.Row.delete_btn, timeout=3)
+
+    @allure.step('Filter users by {filter_name}')
+    def filter_users_by(self, filter_name: str, filter_option_name: str):
+        """Filter users"""
+
+        def click_filter_item():
+            for filter_item in self.find_elements(AdminUsersLocators.FilterPopup.filter_item):
+                if filter_item.text.lower() == filter_name.lower():
+                    filter_item.click()
+                    return
+            raise AssertionError(f"Filter '{filter_name}' not found")
+
+        def click_dropdown_option():
+            for filter_option in self.find_elements(AdminUsersLocators.filter_dropdown_option):
+                if filter_option.text.lower() == filter_option_name.lower():
+                    filter_option.click()
+                    return
+            raise AssertionError(f"Filter option '{filter_option_name}' not found")
+
+        self.find_and_click(AdminUsersLocators.filter_btn)
+        self.wait_element_visible(AdminUsersLocators.FilterPopup.block)
+        click_filter_item()
+        self.wait_element_visible(AdminUsersLocators.filter_dropdown_select).click()
+        self.wait_element_visible(AdminUsersLocators.filter_dropdown_option)
+        click_dropdown_option()
+        self.wait_page_is_opened()
+
+    @allure.step('Remove filter from users page')
+    def remove_user_filter(self):
+        """Remove filter from users page"""
+
+        self.find_and_click(AdminUsersLocators.filter_dropdown_remove)
+        self.wait_page_is_opened()
 
 
 class AdminGroupsPage(GeneralAdminPage):

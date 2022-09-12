@@ -15,6 +15,7 @@ export interface AttributeOptions {
 export type AttributesOptions = Record<ConfigAttributeNames, AttributeOptions>
 
 export interface AttributeWrapper {
+  uniqId: string;
   fieldTemplate: TemplateRef<any>;
   wrapperOptions: ConfigAttributeOptions;
   fieldOptions: IFieldOptions;
@@ -52,25 +53,28 @@ export class AttributeService {
     ConfigAttributeNames.CUSTOM_GROUP_KEYS
   ];
 
-  get attributes(): Attributes {
+  get attributes(): Attributes[] {
     return this._attributes;
   }
 
-  private _attributes: Attributes;
+  private _attributes: Attributes[] = [];
 
   constructor(@Inject(ATTRIBUTES_OPTIONS) private _configs: AttributesOptions, private _fb: FormBuilder) {
   }
 
-  init(json: ConfigAttributesJSON): void {
-    this._attributes = this._createAttributes(this._activeAttributes, json, this._configs);
+  init(json: ConfigAttributesJSON): string {
+    const uniqId = Math.random().toString(36).slice(2);
+    this._attributes[uniqId] = this._createAttributes(this._activeAttributes, json, this._configs);
+
+    return uniqId;
   }
 
-  getByName(name: ConfigAttributeNames): ConfigAttribute {
-    return this._attributes.has(name) ? this._attributes.get(name) : undefined;
+  getByName(name: ConfigAttributeNames, uniqId): ConfigAttribute {
+    return this._attributes[uniqId].has(name) ? this._attributes[uniqId].get(name) : undefined;
   }
 
-  groupCheckboxToggle(groupName, value): void {
-    this.attributes.get(ConfigAttributeNames.GROUP_KEYS).value[groupName].value = value
+  groupCheckboxToggle(groupName, value, uniqId): void {
+    this.attributes[uniqId].get(ConfigAttributeNames.GROUP_KEYS).value[groupName].value = value
   }
 
   private _createAttributes(_activeAttributes: Partial<ConfigAttributeNames>[], json: ConfigAttributesJSON, configs: AttributesOptions): Attributes {
@@ -86,11 +90,14 @@ export class AttributeService {
     ]));
   }
 
+  removeAttributes(uniqId) {
+    delete this._attributes[uniqId];
+  }
 
-  rawAttributes() {
+  rawAttributes(uniqId) {
     let json = {};
-    if (this._attributes) {
-      for (const [key, value] of this._attributes.entries()) {
+    if (this._attributes[uniqId]) {
+      for (const [key, value] of this._attributes[uniqId].entries()) {
         json = {
           ...json,
           [key]: value.form.getRawValue()
