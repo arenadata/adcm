@@ -1,5 +1,4 @@
 import { Component, Input } from '@angular/core';
-
 import { ConcernService } from '@app/services/concern.service';
 import { Concern } from '@app/models/concern/concern';
 
