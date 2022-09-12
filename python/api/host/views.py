@@ -200,7 +200,7 @@ class HostDetail(PermissionListMixin, DetailView):
 
     queryset = Host.objects.all()
     serializer_class = serializers.HostDetailSerializer
-    serializer_class_ui = serializers.HostUISerializer
+    serializer_class_ui = serializers.HostDetailUISerializer
     serializer_class_put = serializers.HostUpdateSerializer
     serializer_class_patch = serializers.HostUpdateSerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
