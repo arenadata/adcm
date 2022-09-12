@@ -10,7 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db import IntegrityError
+from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import RegexValidator
+from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -18,6 +21,7 @@ from rest_framework.serializers import (
     IntegerField,
     SerializerMethodField,
 )
+from rest_framework.validators import UniqueValidator
 
 from adcm.serializers import EmptySerializer
 from api.action.serializers import ActionShort
@@ -28,25 +32,48 @@ from cm.adcm_config import get_main_info
 from cm.api import add_host
 from cm.errors import AdcmEx
 from cm.issue import update_hierarchy_issues, update_issue_after_deleting
-from cm.models import Action, HostProvider, MaintenanceModeType, Prototype
+from cm.models import Action, Host, HostProvider, MaintenanceModeType, Prototype
 from cm.stack import validate_name
 from cm.status_api import get_host_status
+
+
+class HostUniqueValidator(UniqueValidator):
+    def __call__(self, value, serializer_field):
+        try:
+            super().__call__(value, serializer_field)
+        except ValidationError as e:
+            raise AdcmEx("HOST_CONFLICT", "duplicate host") from e
+
+
+class HostFQDNRegexValidator(RegexValidator):
+    def __call__(self, value):
+        try:
+            super().__call__(value)
+        except DjangoValidationError as e:
+            raise AdcmEx("HOST_CONFLICT", "host FQDN doesn't meet requirements") from e
 
 
 class HostSerializer(EmptySerializer):
     id = IntegerField(read_only=True)
     cluster_id = IntegerField(read_only=True)
-    prototype_id = IntegerField(help_text='id of host type')
+    prototype_id = IntegerField(help_text="id of host type")
     provider_id = IntegerField()
-    fqdn = CharField(help_text='fully qualified domain name')
+    fqdn = CharField(
+        max_length=253,
+        help_text="fully qualified domain name",
+        validators=[
+            HostUniqueValidator(queryset=Host.objects.all()),
+            HostFQDNRegexValidator(regex=settings.REGEX_HOST_FQDN),
+        ],
+    )
     description = CharField(required=False, allow_blank=True)
     state = CharField(read_only=True)
     maintenance_mode = ChoiceField(choices=MaintenanceModeType.choices, read_only=True)
-    url = ObjectURL(read_only=True, view_name='host-details')
+    url = ObjectURL(read_only=True, view_name="host-details")
 
     @staticmethod
     def validate_prototype_id(prototype_id):
-        return check_obj(Prototype, {'id': prototype_id, 'type': 'host'})
+        return check_obj(Prototype, {"id": prototype_id, "type": "host"})
 
     @staticmethod
     def validate_provider_id(provider_id):
@@ -54,26 +81,23 @@ class HostSerializer(EmptySerializer):
 
     @staticmethod
     def validate_fqdn(name):
-        return validate_name(name, 'Host name')
+        return validate_name(name, "Host name")
 
     def create(self, validated_data):
-        try:
-            return add_host(
-                validated_data.get('prototype_id'),
-                validated_data.get('provider_id'),
-                validated_data.get('fqdn'),
-                validated_data.get('description', ''),
-            )
-        except IntegrityError:
-            raise AdcmEx("HOST_CONFLICT", "duplicate host") from None
+        return add_host(
+            validated_data.get("prototype_id"),
+            validated_data.get("provider_id"),
+            validated_data.get("fqdn"),
+            validated_data.get("description", ""),
+        )
 
 
 class HostDetailSerializer(HostSerializer):
     bundle_id = IntegerField(read_only=True)
     status = SerializerMethodField()
-    config = CommonAPIURL(view_name='object-config')
-    action = CommonAPIURL(view_name='object-action')
-    prototype = hlink('host-type-details', 'prototype_id', 'prototype_id')
+    config = CommonAPIURL(view_name="object-config")
+    action = CommonAPIURL(view_name="object-action")
+    prototype = hlink("host-type-details", "prototype_id", "prototype_id")
     multi_state = StringListSerializer(read_only=True)
     concerns = ConcernItemSerializer(many=True, read_only=True)
     locked = BooleanField(read_only=True)
@@ -88,17 +112,20 @@ class HostUpdateSerializer(HostDetailSerializer):
 
     def update(self, instance, validated_data):
         instance.maintenance_mode = validated_data.get(
-            'maintenance_mode', instance.maintenance_mode
+            "maintenance_mode", instance.maintenance_mode
         )
+        instance.fqdn = validated_data.get("fqdn", instance.fqdn)
         instance.save()
+
         update_hierarchy_issues(instance.cluster)
         update_hierarchy_issues(instance.provider)
         update_issue_after_deleting()
+
         return instance
 
 
 class ClusterHostSerializer(HostSerializer):
-    host_id = IntegerField(source='id')
+    host_id = IntegerField(source="id")
     prototype_id = IntegerField(read_only=True)
     provider_id = IntegerField(read_only=True)
     fqdn = CharField(read_only=True)
@@ -109,14 +136,12 @@ class ProvideHostSerializer(HostSerializer):
     provider_id = IntegerField(read_only=True)
 
     def create(self, validated_data):
-        provider = check_obj(HostProvider, self.context.get('provider_id'))
-        proto = Prototype.obj.get(bundle=provider.prototype.bundle, type='host')
-        try:
-            return add_host(
-                proto, provider, validated_data.get('fqdn'), validated_data.get('description', '')
-            )
-        except IntegrityError:
-            raise AdcmEx("HOST_CONFLICT", "duplicate host") from None
+        provider = check_obj(HostProvider, self.context.get("provider_id"))
+        proto = Prototype.obj.get(bundle=provider.prototype.bundle, type="host")
+
+        return add_host(
+            proto, provider, validated_data.get("fqdn"), validated_data.get("description", "")
+        )
 
 
 class StatusSerializer(EmptySerializer):
@@ -141,15 +166,17 @@ class HostUISerializer(HostDetailSerializer):
 
     def get_actions(self, obj):
         act_set = Action.objects.filter(prototype=obj.prototype)
-        self.context['object'] = obj
-        self.context['host_id'] = obj.id
+        self.context["object"] = obj
+        self.context["host_id"] = obj.id
         actions = ActionShort(filter_actions(obj, act_set), many=True, context=self.context)
+
         return actions.data
 
     @staticmethod
     def get_cluster_name(obj):
         if obj.cluster:
             return obj.cluster.name
+
         return None
 
     @staticmethod

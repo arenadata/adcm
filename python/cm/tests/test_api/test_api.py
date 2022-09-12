@@ -12,7 +12,6 @@
 # pylint: disable=too-many-lines
 
 import os
-import string
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -67,7 +66,7 @@ class TestAPI(BaseTestCase):
         init_adcm()
         init_roles()
 
-        self.files_dir = os.path.join(settings.BASE_DIR, "python", "cm", "tests", "files")
+        self.files_dir = settings.BASE_DIR / "python" / "cm" / "tests" / "files"
         self.bundle_adh_name = "adh.1.5.tar"
         self.bundle_ssh_name = "ssh.1.0.tar"
         self.cluster = "adh42"
@@ -364,143 +363,6 @@ class TestAPI(BaseTestCase):
 
         response: Response = self.client.delete(
             reverse("bundle-details", kwargs={"bundle_id": bundle_id})
-        )
-
-        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-
-    def test_host(self):  # pylint: disable=too-many-statements
-        host = "test.server.net"
-        host_url = reverse("host")
-
-        self.load_bundle(self.bundle_ssh_name)
-        ssh_bundle_id, host_proto = self.get_host_proto_id()
-
-        response: Response = self.client.post(host_url, {})
-
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["fqdn"], ["This field is required."])
-
-        response: Response = self.client.post(
-            host_url, {"fqdn": host, "prototype_id": host_proto, "provider_id": 0}
-        )
-
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.assertEqual(response.json()["code"], "PROVIDER_NOT_FOUND")
-
-        _, provider_proto = self.get_host_provider_proto_id()
-        response: Response = self.client.post(
-            reverse("provider"), {"name": "DF1", "prototype_id": provider_proto}
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        provider_id = response.json()["id"]
-
-        response: Response = self.client.post(
-            host_url, {"fqdn": host, "prototype_id": 42, "provider_id": provider_id}
-        )
-
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.assertEqual(response.json()["code"], "PROTOTYPE_NOT_FOUND")
-
-        response: Response = self.client.post(host_url, {"fqdn": host, "provider_id": provider_id})
-
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["prototype_id"], ["This field is required."])
-
-        response: Response = self.client.post(host_url, {"fqdn": host, "prototype_id": host_proto})
-
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["provider_id"], ["This field is required."])
-
-        response: Response = self.client.post(
-            host_url,
-            {
-                "fqdn": f"x{'deadbeef' * 32}",  # 257 chars
-                "prototype_id": host_proto,
-                "provider_id": provider_id,
-            },
-        )
-
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["desc"], "Host name is too long. Max length is 256")
-
-        response: Response = self.client.post(
-            host_url,
-            {
-                "fqdn": f"x{string.punctuation}",
-                "prototype_id": host_proto,
-                "provider_id": provider_id,
-            },
-        )
-
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["code"], "WRONG_NAME")
-
-        response: Response = self.client.post(
-            host_url, {"fqdn": host, "prototype_id": host_proto, "provider_id": provider_id}
-        )
-
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
-
-        host_id = response.json()["id"]
-
-        this_host_url = reverse("host-details", kwargs={"host_id": host_id})
-
-        response: Response = self.client.get(this_host_url)
-
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertEqual(response.json()["fqdn"], host)
-
-        response: Response = self.client.put(this_host_url, {}, content_type=APPLICATION_JSON)
-
-        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertEqual(
-            response.json(),
-            {
-                "prototype_id": ["This field is required."],
-                "provider_id": ["This field is required."],
-                "fqdn": ["This field is required."],
-                "maintenance_mode": ["This field is required."],
-            },
-        )
-
-        response: Response = self.client.post(
-            host_url, {"fqdn": host, "prototype_id": host_proto, "provider_id": provider_id}
-        )
-
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.json()["code"], "HOST_CONFLICT")
-
-        response: Response = self.client.delete(this_host_url)
-
-        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-
-        response: Response = self.client.get(this_host_url)
-
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.assertEqual(response.json()["code"], "HOST_NOT_FOUND")
-
-        response: Response = self.client.delete(this_host_url)
-
-        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
-        self.assertEqual(response.json()["code"], "HOST_NOT_FOUND")
-
-        response: Response = self.client.delete(
-            reverse("bundle-details", kwargs={"bundle_id": ssh_bundle_id})
-        )
-
-        self.assertEqual(response.status_code, HTTP_409_CONFLICT)
-        self.assertEqual(response.json()["code"], "BUNDLE_CONFLICT")
-
-        response: Response = self.client.delete(
-            reverse("provider-details", kwargs={"provider_id": provider_id})
-        )
-
-        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
-
-        response: Response = self.client.delete(
-            reverse("bundle-details", kwargs={"bundle_id": ssh_bundle_id})
         )
 
         self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
