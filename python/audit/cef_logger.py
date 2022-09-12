@@ -72,5 +72,5 @@ def cef_logger(
         f"{CEFLogConstants.device_product}|{CEFLogConstants.adcm_version}|"
         f"{signature_id}|{operation_name}|{severity}|{extension}"
     )
-    with redirect_stdout(io.open(settings.DOCKER_CONTAINER_STDOUT, "wt", 1)):
+    with redirect_stdout(io.open(settings.DOCKER_CONTAINER_STDOUT, "wt", 1, encoding="utf-8")):
         sys.stdout.write(f"{msg}{os.linesep}")
