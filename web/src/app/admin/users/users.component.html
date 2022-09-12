@@ -16,6 +16,7 @@
   [paging]="paging | async"
   [sort]="sorting | async"
   [defaultSort]="defaultSort"
+  [isRowInactiveHandler]="isRowInactive"
   (clickRow)="clickRow($event)"
   (auxclickRow)="auxclickRow($event)"
   (changePaging)="onChangePaging($event)"
