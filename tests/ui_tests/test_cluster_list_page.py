@@ -261,6 +261,26 @@ def check_cluster_upgraded(app_fs, upgrade_cluster_name: str, state: str):
     assert cluster_page.get_cluster_state_from_row(row) == state, f"Cluster state should be {state}"
 
 
+@allure.step("Check save button and save config")
+def _check_save_in_configs(cluster_config_page, field_type, expected_state):
+    """
+    Check save button and save config.
+    It is a workaround for each type of field because it won't work other way on ui with selenium.
+    """
+
+    config_row = cluster_config_page.config.get_config_row(field_type)
+    if field_type == 'list':
+        cluster_config_page.config.click_add_item_btn_in_row(config_row)
+    if field_type in ['string', 'integer', 'text', 'float', 'file', 'json']:
+        config_row.click()
+    if field_type in ['secrettext', 'map', 'boolean']:
+        for _ in range(2):
+            cluster_config_page.config.click_on_advanced()
+    if field_type == 'password':
+        cluster_config_page.config.reset_to_default(config_row)
+    cluster_config_page.config.check_save_btn_state_and_save_conf(expected_state)
+
+
 # !===== Tests =====!
 
 
@@ -1131,7 +1151,6 @@ class TestClusterConfigPage:
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
     # pylint: disable=too-many-locals
-    @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3037")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
@@ -1193,16 +1212,16 @@ class TestClusterConfigPage:
             if expected['alerts'] and not is_read_only:
                 cluster_config_page.config.check_invalid_value_message(field_type)
 
+        with allure.step('Check that save button is disabled'):
+            assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
         if is_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
         check_expectations()
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
 
     # pylint: enable=too-many-locals
-
     @pytest.mark.full()
     @parametrize_by_data_subdirs(__file__, 'bundles_for_numbers_tests')
     def test_number_validation_on_cluster_config_page(self, sdk_client_fs: ADCMClient, path, app_fs):
@@ -1390,7 +1409,6 @@ class TestClusterConfigPage:
         with allure.step('Check that save button is disabled'):
             assert cluster_config_page.config.is_save_btn_disabled(), 'Save button should be disabled'
 
-    @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3037")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
@@ -1481,7 +1499,14 @@ class TestClusterConfigPage:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
         check_expectations()
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
+        if not is_read_only:
+            config_row = cluster_config_page.config.get_config_row(field_type)
+            if not cluster_config_page.group_config.is_customization_chbx_checked(config_row):
+                cluster_config_page.config.activate_group_chbx(config_row)
+            _check_save_in_configs(cluster_config_page, field_type, expected["save"])
+            assert cluster_config_page.group_config.is_customization_chbx_checked(
+                cluster_config_page.config.get_config_row(field_type)
+            ), f"Config field {field_type} should be checked"
 
 
 class TestClusterGroupConfigPage:
@@ -1548,9 +1573,8 @@ class TestClusterGroupConfigPage:
         group_conf_page.group_config.create_few_groups(11)
         group_conf_page.table.check_pagination(second_page_item_amount=1)
 
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals, undefined-loop-variable, too-many-statements
 
-    @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3037")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("is_advanced", [True, False], ids=("field_advanced", "field_non-advanced"))
@@ -1618,27 +1642,26 @@ class TestClusterGroupConfigPage:
                         assert cluster_config_page.group_config.is_customization_chbx_disabled(
                             config_item
                         ), f"Checkbox for field {field_type} should be disabled"
-                    if config_group_customization and not is_read_only:
-                        if not cluster_config_page.group_config.is_customization_chbx_checked(config_item):
-                            cluster_config_page.config.check_save_btn_state_and_save_conf(False)
-                            cluster_config_page.group_config.click_on_customization_chbx(config_item)
-                        cluster_config_page.config.check_save_btn_state_and_save_conf(True)
-                        assert cluster_config_page.group_config.is_customization_chbx_checked(
-                            config_item
-                        ), f"Config field {field_type} should be checked"
             if expected['alerts'] and (not is_read_only) and config_group_customization:
+                if not cluster_config_page.group_config.is_customization_chbx_checked(config_item):
+                    cluster_config_page.config.activate_group_chbx(config_item)
                 cluster_config_page.config.check_invalid_value_message(field_type)
 
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if is_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
         else:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         check_expectations()
+        if config_group_customization and not is_read_only:
+            config_row = cluster_config_page.config.get_config_row(field_type)
+            if not cluster_config_page.group_config.is_customization_chbx_checked(config_row):
+                cluster_config_page.config.activate_group_chbx(config_row)
+            _check_save_in_configs(cluster_config_page, field_type, expected["save"])
+            assert cluster_config_page.group_config.is_customization_chbx_checked(
+                cluster_config_page.config.get_config_row(field_type)
+            ), f"Config field {field_type} should be checked"
 
-    @pytest.mark.skip("https://tracker.yandex.ru/ADCM-3037")
     @pytest.mark.full()
     @pytest.mark.parametrize("field_type", TYPES)
     @pytest.mark.parametrize("activatable", [True, False], ids=("activatable", "non-activatable"))
@@ -1760,7 +1783,6 @@ class TestClusterGroupConfigPage:
                     else:
                         assert len(cluster_config_page.config.get_all_config_rows()) == 1, "Field should not be visible"
 
-        cluster_config_page.config.check_save_btn_state_and_save_conf(expected['save'])
         if group_advanced:
             cluster_config_page.config.check_no_rows_or_groups_on_page()
             cluster_config_page.group_config.check_no_rows()
@@ -1768,6 +1790,23 @@ class TestClusterGroupConfigPage:
             check_expectations()
         cluster_config_page.config.click_on_advanced()
         check_expectations()
+        if config_group_customization is not False and not is_read_only:
+            group_row = cluster_config_page.group_config.get_all_group_rows()[0]
+            config_row = cluster_config_page.group_config.get_all_group_config_rows()[0]
+            if (
+                activatable
+                and group_customization
+                and not cluster_config_page.group_config.is_customization_chbx_checked(group_row)
+                and not cluster_config_page.group_config.is_customization_chbx_disabled(group_row)
+            ):
+                cluster_config_page.group_config.click_on_customization_chbx(group_row)
+            if field_customization:
+                if not cluster_config_page.group_config.is_customization_chbx_checked(config_row):
+                    cluster_config_page.config.activate_group_chbx(config_row)
+                _check_save_in_configs(cluster_config_page, field_type, expected["save"])
+                assert cluster_config_page.group_config.is_customization_chbx_checked(
+                    cluster_config_page.config.get_config_row(field_type)
+                ), f"Config field {field_type} should be checked"
 
     def test_two_fields_on_cluster_config_page(self, sdk_client_fs: ADCMClient, app_fs):
         """Test two different fields on group config page"""

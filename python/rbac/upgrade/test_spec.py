@@ -10,124 +10,81 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint:disable=redefined-outer-name
 
 import os
+from pathlib import Path
 
-import pytest
 import ruyaml
+from django.test import TestCase
 
 MANDATORY_KEYS = ["name", "type", "module_name", "class_name"]
 
 BUSINESS_PARAMETRISATION = [
-    set(["cluster"]),
-    set(["cluster", "service"]),
-    set(["cluster", "component"]),
-    set(["cluster", "service", "component"]),
-    set(["service"]),
-    set(["service", "component"]),
-    set(["component"]),
-    set(["provider", "host"]),
-    set(["provider"]),
-    set(["host"]),
-    set([]),
+    {"cluster"},
+    {"cluster", "service"},
+    {"cluster", "component"},
+    {"cluster", "service", "component"},
+    {"service"},
+    {"service", "component"},
+    {"component"},
+    {"provider", "host"},
+    {"provider"},
+    {"host"},
+    set(),
 ]
 
 
-@pytest.fixture(scope="module")
-def spec_data():
-    """Read role_spec.yaml and parse it to structure"""
-    with open(os.path.join(os.path.dirname(__file__), "role_spec.yaml"), encoding="utf-8") as f:
-        return ruyaml.YAML().load(f)
+class TestRoleSpecification(TestCase):
+    def setUp(self) -> None:
+        with open(Path(os.path.dirname(__file__), "role_spec.yaml"), encoding="utf-8") as f:
+            self.spec_data: dict = ruyaml.YAML().load(f)
+        self.role_map: dict = {role["name"]: role for role in self.spec_data["roles"]}
+        self.roots = self.role_map.copy()
+        for value in self.role_map.values():
+            if "child" in value:
+                for child in value["child"]:
+                    if child in self.roots:
+                        del self.roots[child]
 
+    def test_structure(self):
+        self.assertIn("version", self.spec_data)
+        self.assertIn("roles", self.spec_data)
 
-@pytest.fixture(scope="module")
-def role_map(spec_data):
-    """Make a map from spec_data based on name"""
-    result = {}
-    for r in spec_data["roles"]:
-        result[r["name"]] = r
-    return result
+    def test_mandatory_fields(self):
+        for role in self.spec_data["roles"]:
+            for key in MANDATORY_KEYS:
+                self.assertIn(key, role)
 
+    def test_children(self):
+        for v in self.role_map.values():
+            if "child" in v:
+                for child in v["child"]:
+                    self.assertIn(child, self.role_map)
 
-@pytest.fixture(scope="module")
-def roots(role_map: dict):
-    roots = role_map.copy()
-    for v in role_map.values():
-        if "child" in v:
-            for c in v["child"]:
-                if c in roots:
-                    del roots[c]
-    return roots
-
-
-def test_structure(spec_data):
-    """Test that role spec is map and has keys version and roles"""
-    assert "version" in spec_data
-    assert "roles" in spec_data
-
-
-def test_mandatory_fields(spec_data):
-    """All roles must have mandatory fields"""
-    for r in spec_data["roles"]:
-        for mk in MANDATORY_KEYS:
-            assert mk in r, f'There is no field "{mk}" in  role {r["name"]}'
-
-
-def test_childs(role_map: map):
-    """Check that all children defined"""
-    for k, v in role_map.items():
-        if "child" in v:
-            for ch in v["child"]:
-                assert ch in role_map, f'There is no such role "{ch}". Error in role "{k}"'
-
-
-def is_in_set(allowed: list[set], value: set):
-    for s in allowed:
-        if s == value:
-            return True
-    return False
-
-
-def test_allowed_parametrization(role_map: dict):
-    """Check that parametrize_by_type for business permissions is in allowed list."""
-    for k, v in role_map.items():
-        if "parametrized_by" in v:
-            if v["type"] == "business":
-                assert is_in_set(
-                    BUSINESS_PARAMETRISATION, set(v["parametrized_by"])
-                ), f'Wrong parametrization for role "{k}". See ADCM-2498 for more information.'
-
-
-class Visited(Exception):
-    pass
-
-
-def tree_dive_in(roles: dict, visited: dict, path: list, role: dict, root):
-    if role["name"] in visited:
-        raise AssertionError(f'In the tree from \"{root["name"]}\" we got a cycle: {path}')
-    visited[role["name"]] = True
-    if "child" in role:
-        for c in role["child"]:
-            tree_dive_in(roles, visited.copy(), path + [c], roles[c], root)
-
-
-def test_acyclic(role_map: dict, roots: dict):
-    """Check that role specification is a DAG"""
-    for v in roots.values():
-        tree_dive_in(role_map, {}, [v["name"]], v, v)
-
-
-EXCLUDE = {
-    "ADCM User": True,
-    "Cluster Administrator": True,
-    "Service Administrator": True,
-    "Provider Administrator": True,
-}
-
-
-def is_exclude(name: str) -> bool:
-    try:
-        return EXCLUDE[name]
-    except KeyError:
+    @staticmethod
+    def _is_in_set(allowed: list[set[str]], value: set):
+        for s in allowed:
+            if s == value:
+                return True
         return False
+
+    def test_allowed_parametrization(self):
+        for v in self.role_map.values():
+            if "parametrized_by" in v:
+                if v["type"] == "business":
+                    self.assertTrue(
+                        self._is_in_set(BUSINESS_PARAMETRISATION, set(v["parametrized_by"]))
+                    )
+
+    def _tree_dive_in(self, roles: dict, visited: dict, path: list, role: dict, root):
+        if role["name"] in visited:
+            raise AssertionError(f'In the tree from "{root["name"]}" we got a cycle: {path}')
+
+        visited[role["name"]] = True
+        if "child" in role:
+            for c in role["child"]:
+                self._tree_dive_in(roles, visited.copy(), path + [c], roles[c], root)
+
+    def test_acyclic(self):
+        for value in self.roots.values():
+            self._tree_dive_in(self.role_map, {}, [value["name"]], value, value)

@@ -291,6 +291,12 @@ class CommonConfigMenuObj(BasePageObject):
             self.find_children(field_row, self.locators.ConfigRow.input)[id].click()
             self.find_children(field_row, self.locators.ConfigRow.input)[id].send_keys(value)
 
+    @allure.step('Click item button in config row')
+    def click_add_item_btn_in_row(self, row: Union[WebElement, str]):
+        """Click item button in config row"""
+        field_row = row if isinstance(row, WebElement) else self.get_config_row(display_name=row)
+        self.find_child(field_row, self.locators.ConfigRow.add_item_btn).click()
+
     @allure.step('Select option "{option}" in option field')
     def select_option(self, row: Union[WebElement, str], option: str):
         """For config type option select item from dropdown"""
