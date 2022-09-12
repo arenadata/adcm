@@ -84,7 +84,7 @@ class ClusterDetail(PermissionListMixin, DetailView):
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_cluster']
     serializer_class = serializers.ClusterDetailSerializer
-    serializer_class_ui = serializers.ClusterUISerializer
+    serializer_class_ui = serializers.ClusterDetailUISerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'cluster_id'
     error_code = 'CLUSTER_NOT_FOUND'
