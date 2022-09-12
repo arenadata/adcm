@@ -17,6 +17,7 @@
 0       2       *       *       *       run-parts /etc/periodic/daily
 0       3       *       *       6       run-parts /etc/periodic/weekly
 0       5       1       *       *       run-parts /etc/periodic/monthly
-0       8       */1     *       *       python /adcm/python/manage.py logrotate --target all
-0       10      */1     *       *       python /adcm/python/manage.py clearaudit
-*/1     *       *       *       *       python /adcm/python/manage.py run_ldap_sync
+0       8       */1     *       *       python /adcm/python/manage.py logrotate --target all > /proc/1/fd/1 2>&1
+0       10      */1     *       *       python /adcm/python/manage.py clearaudit > /proc/1/fd/1 2>&1
+*/1     *       *       *       *       python /adcm/python/manage.py run_ldap_sync > /proc/1/fd/1 2>&1
+*/1     *       *       *       *       python /adcm/python/manage.py simplecommand > /proc/1/fd/1 2>&1
