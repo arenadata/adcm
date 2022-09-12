@@ -74,7 +74,5 @@ def cef_logger(
         f"{CEFLogConstants.device_product}|{CEFLogConstants.adcm_version}|"
         f"{signature_id}|{operation_name}|{severity}|{extension}"
     )
-    if stdout_writer is not None:
-        stdout_writer(msg)
-    else:
+    if stdout_writer is None or not stdout_writer(msg):
         audit_log.info(msg)
