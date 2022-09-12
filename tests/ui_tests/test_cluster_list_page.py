@@ -571,7 +571,7 @@ class TestClusterServicePage:
         cluster_list_page = ClusterListPage(app_fs.driver, app_fs.adcm.url).open()
         row = cluster_list_page.table.get_all_rows()[0]
         cluster_list_page.click_on_concern_by_object_name(row, params["concern_object_name"])
-        cluster_main_page = ClusterMainPage(app_fs.driver, app_fs.adcm.url, cluster.id)
+        cluster_main_page = ClusterConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id)
         cluster_main_page.wait_page_is_opened()
         cluster_main_page.check_cluster_toolbar(CLUSTER_NAME)
 
@@ -583,7 +583,7 @@ class TestClusterServicePage:
         cluster_service_page = ClusterServicesPage(app_fs.driver, app_fs.adcm.url, cluster.id).open()
         row = cluster_service_page.table.get_all_rows()[0]
         cluster_service_page.click_on_concern_by_object_name(row, params["concern_object_name"])
-        service_main_page = ServiceMainPage(app_fs.driver, app_fs.adcm.url, cluster.id, 1)
+        service_main_page = ServiceConfigPage(app_fs.driver, app_fs.adcm.url, cluster.id, 1)
         service_main_page.wait_page_is_opened()
         service_main_page.check_service_toolbar(CLUSTER_NAME, SERVICE_NAME)
 
@@ -742,7 +742,7 @@ class TestClusterHostPage:
         cluster_host_page.wait_page_is_opened()
         row = cluster_host_page.table.get_all_rows()[0]
         cluster_host_page.click_on_concern_by_object_name(row, params["concern_object_name"])
-        host_page = HostMainPage(app_fs.driver, app_fs.adcm.url, host.id)
+        host_page = HostConfigPage(app_fs.driver, app_fs.adcm.url, host.id)
         host_page.wait_page_is_opened()
         host_page.check_host_toolbar(HOST_NAME)
 

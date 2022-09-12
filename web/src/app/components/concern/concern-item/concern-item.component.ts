@@ -1,6 +1,5 @@
 import { Component, Input } from '@angular/core';
-
-import { IMPlaceholderItem, IMPlaceholderItemType } from '@app/models/concern/concern-reason';
+import { CauseType, IMPlaceholderItem, IMPlaceholderItemType } from '@app/models/concern/concern-reason';
 
 @Component({
   selector: 'app-concern-item',
@@ -12,8 +11,24 @@ export class ConcernItemComponent {
   IMPlaceholderItemType = IMPlaceholderItemType;
 
   @Input() item: string;
+  @Input() cause: string;
   @Input() placeholder: IMPlaceholderItem;
 
   runAction() {}
+
+  sectionByCause() {
+    switch (this.cause) {
+      case CauseType.HostComponent:
+        return 'host_component';
+      case CauseType.Config:
+        return 'config';
+      case CauseType.Import:
+        return 'import';
+      case CauseType.Service:
+        return 'service';
+      default:
+        return 'main';
+    }
+  }
 
 }
