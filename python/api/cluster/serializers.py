@@ -84,6 +84,39 @@ class ClusterSerializer(serializers.Serializer):
         return instance
 
 
+class ClusterUISerializer(ClusterSerializer):
+    actions = serializers.SerializerMethodField()
+    edition = serializers.CharField(read_only=True)
+    prototype_version = serializers.SerializerMethodField()
+    prototype_name = serializers.SerializerMethodField()
+    prototype_display_name = serializers.SerializerMethodField()
+    upgrade = hlink('cluster-upgrade', 'id', 'cluster_id')
+    upgradable = serializers.SerializerMethodField()
+    get_upgradable = get_upgradable_func
+    concerns = ConcernItemUISerializer(many=True, read_only=True)
+    locked = serializers.BooleanField(read_only=True)
+    status = serializers.SerializerMethodField()
+
+    def get_actions(self, obj):
+        act_set = Action.objects.filter(prototype=obj.prototype)
+        self.context['object'] = obj
+        self.context['cluster_id'] = obj.id
+        actions = ActionShort(filter_actions(obj, act_set), many=True, context=self.context)
+        return actions.data
+
+    def get_prototype_version(self, obj):
+        return obj.prototype.version
+
+    def get_prototype_name(self, obj):
+        return obj.prototype.name
+
+    def get_prototype_display_name(self, obj):
+        return obj.prototype.display_name
+
+    def get_status(self, obj):
+        return get_cluster_status(obj)
+
+
 class ClusterDetailSerializer(ClusterSerializer):
     bundle_id = serializers.IntegerField(read_only=True)
     edition = serializers.CharField(read_only=True)
@@ -109,7 +142,7 @@ class ClusterDetailSerializer(ClusterSerializer):
         return get_cluster_status(obj)
 
 
-class ClusterUISerializer(ClusterDetailSerializer):
+class ClusterDetailUISerializer(ClusterDetailSerializer):
     actions = serializers.SerializerMethodField()
     prototype_version = serializers.SerializerMethodField()
     prototype_name = serializers.SerializerMethodField()
