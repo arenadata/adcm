@@ -26,11 +26,11 @@ def gen_bundle(name='') -> models.Bundle:
     return models.Bundle.objects.create(**_gen_name(name or 'bundle_'), version='1.0.0')
 
 
-def gen_prototype(bundle: models.Bundle, proto_type) -> models.Prototype:
+def gen_prototype(bundle: models.Bundle, proto_type, name="") -> models.Prototype:
     """Generate prototype of specified type from bundle"""
     return models.Prototype.objects.create(
         type=proto_type,
-        name='_'.join((proto_type, bundle.name)),
+        name=name or '_'.join((proto_type, bundle.name)),
         version=bundle.version,
         bundle=bundle,
     )
@@ -53,7 +53,7 @@ def gen_adcm() -> models.ADCM:
         return models.ADCM.objects.create(name='ADCM', prototype=prototype)
 
 
-def gen_cluster(name='', bundle=None, prototype=None) -> models.Cluster:
+def gen_cluster(name='', bundle=None, prototype=None, config=None) -> models.Cluster:
     """Generate cluster from specified prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
@@ -61,10 +61,11 @@ def gen_cluster(name='', bundle=None, prototype=None) -> models.Cluster:
     return models.Cluster.objects.create(
         **_gen_name(name or 'cluster_'),
         prototype=prototype,
+        config=config,
     )
 
 
-def gen_service(cluster, bundle=None, prototype=None) -> models.ClusterObject:
+def gen_service(cluster, bundle=None, prototype=None, config=None) -> models.ClusterObject:
     """Generate service of specified cluster and prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
@@ -72,10 +73,11 @@ def gen_service(cluster, bundle=None, prototype=None) -> models.ClusterObject:
     return models.ClusterObject.objects.create(
         cluster=cluster,
         prototype=prototype,
+        config=config,
     )
 
 
-def gen_component(service, bundle=None, prototype=None) -> models.ServiceComponent:
+def gen_component(service, bundle=None, prototype=None, config=None) -> models.ServiceComponent:
     """Generate service component for specified service and prototype"""
     if not prototype:
         bundle = bundle or gen_bundle()
@@ -84,6 +86,7 @@ def gen_component(service, bundle=None, prototype=None) -> models.ServiceCompone
         cluster=service.cluster,
         service=service,
         prototype=prototype,
+        config=config,
     )
 
 
