@@ -61,7 +61,7 @@ class ProviderDetail(PermissionListMixin, DetailView):
 
     queryset = HostProvider.objects.all()
     serializer_class = serializers.ProviderDetailSerializer
-    serializer_class_ui = serializers.ProviderUISerializer
+    serializer_class_ui = serializers.ProviderDetailUISerializer
     permission_classes = (DjangoOnlyObjectPermissions,)
     permission_required = ['cm.view_hostprovider']
     lookup_field = 'id'
